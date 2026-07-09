@@ -49,6 +49,7 @@ def parse_market_data_runtime_config(raw: dict[str, Any]) -> MarketDataRuntimeCo
         data_client_name=runtime_raw.get("data_client_name", "IB"),
         data_only=runtime_raw.get("data_only", True),
         build_nautilus_node=runtime_raw.get("build_nautilus_node", True),
+        manual_live_node_start=runtime_raw.get("manual_live_node_start", False),
         run_live_node=runtime_raw.get("run_live_node", False),
     )
 

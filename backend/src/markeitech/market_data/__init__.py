@@ -30,6 +30,7 @@ from markeitech.market_data.planner import (
     WarmupKind,
     build_market_data_plan,
 )
+from markeitech.market_data.smoke import run_smoke, run_smoke_with_factory
 
 __all__ = [
     "InteractiveBrokersConnectionConfig",
@@ -51,5 +52,7 @@ __all__ = [
     "build_trading_node_config",
     "load_market_data_runtime_config",
     "parse_market_data_runtime_config",
+    "run_smoke",
+    "run_smoke_with_factory",
     "start_live_node",
 ]

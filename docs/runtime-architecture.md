@@ -33,6 +33,8 @@ Only the later guarded LiveNode bootstrap should translate those intents into li
 
 The guarded bootstrap may construct a Nautilus `TradingNode` from validated config, but starting the node requires explicit manual opt-in and a confirmation token because it can connect to IB.
 
+The manual smoke command is the first path allowed to call `TradingNode.run()`. It must print the validated plan and guard state before starting, and it remains outside automated tests.
+
 ## Initial Runtime Topology
 
 ```text

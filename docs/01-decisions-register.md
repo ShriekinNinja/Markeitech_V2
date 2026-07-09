@@ -107,3 +107,11 @@ Status: accepted
 Building a Nautilus `TradingNode` is allowed from validated config, but starting it requires `run_live_node=true`, `manual_live_node_start=true`, and the confirmation token `I_UNDERSTAND_THIS_CONNECTS_TO_IB`.
 
 Reason: Starting the LiveNode can connect to Interactive Brokers. The default development path must remain offline-safe and data-only, while still allowing an explicit manual smoke-test path later.
+
+## DR-0014: Manual Smoke Command Before Live Subscriptions
+
+Status: accepted
+
+Add a separate `markeitech-market-data-smoke` command for manual IB smoke testing.
+
+Reason: The normal dry-run CLI should remain harmless. Any command that may start the Nautilus LiveNode must be visually distinct, print the validated plan first, require explicit config flags, and require the confirmation token. Automated tests must use fake nodes rather than IB.

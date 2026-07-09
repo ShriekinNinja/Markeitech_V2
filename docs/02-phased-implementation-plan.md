@@ -71,6 +71,13 @@ Fourth implementation slice:
 - Keep the default example config in dry-run mode.
 - Test bootstrap behavior with fake nodes, not live IB connections.
 
+Fifth implementation slice:
+
+- Add `markeitech-market-data-smoke` manual smoke-test CLI.
+- Print the validated plan before attempting LiveNode start.
+- Refuse smoke startup unless manual config flags and confirmation token are present.
+- Keep automated smoke tests on fake nodes only.
+
 ## Stage 3: Persistence And Recovery
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.

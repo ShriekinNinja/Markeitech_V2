@@ -47,6 +47,8 @@ Use NautilusTrader for:
 
 Live market-data runtime must be centered on a NautilusTrader LiveNode. Markeitech may add configuration, validation, planning, and product-specific event boundaries around the LiveNode, but it must not build a parallel live market-data loop when Nautilus can own the runtime concern.
 
+LiveNode startup must remain manual and guarded until IB smoke testing is explicitly approved. Dry-run tooling should validate configuration, plans, and request intents without connecting to IB.
+
 Interactive Brokers integration must have two coordinated paths:
 
 1. NautilusTrader IB adapter for all supported functionality.

@@ -75,6 +75,24 @@ LiveNode start requires all of:
 
 The checked-in example config keeps both start flags disabled.
 
+## Manual Smoke Command
+
+After the dry-run command succeeds, copy or edit a local config for smoke testing:
+
+```toml
+[runtime]
+manual_live_node_start = true
+run_live_node = true
+```
+
+Then run:
+
+```bash
+uv run markeitech-market-data-smoke config/market-data.example.toml --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
+```
+
+The command prints the same plan summary as the dry run and refuses to start unless both config flags and the confirmation token are present. Automated tests use a fake node; they do not connect to IB.
+
 ## Execution Safety
 
 Execution is disabled by default:

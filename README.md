@@ -37,6 +37,8 @@ uv run pytest
 uv run ruff check .
 uv run black --check .
 uv run markeitech-market-data-plan config/market-data.example.toml
+# Manual IB smoke path only after editing config start flags:
+# uv run markeitech-market-data-smoke config/market-data.example.toml --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
 uv run fastapi dev backend/src/markeitech/api.py
 ```
 
