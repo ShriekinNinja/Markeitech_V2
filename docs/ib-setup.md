@@ -51,6 +51,16 @@ The runtime must fail clearly if active instrument values are missing when marke
 
 Background instruments may be configured for historical warmup followed by live 1-minute bar tracking. Examples include ES, SPX, VIX, QQQ, SPY, MAG7 symbols, and later additional operator-selected instruments. Background instruments are not tick-by-tick streams unless promoted to active.
 
+## Dry-Run Validation
+
+Before connecting to IB, validate the local runtime plan:
+
+```bash
+uv run markeitech-market-data-plan config/market-data.example.toml
+```
+
+The command builds the Nautilus `TradingNodeConfig`, validates the market-data registry, and prints planned warmups and subscriptions. It does not start `TradingNode.run()` and does not connect to IB.
+
 ## Execution Safety
 
 Execution is disabled by default:

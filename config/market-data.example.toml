@@ -1,0 +1,99 @@
+[runtime]
+active_instrument_id = "NQU6.CME"
+trader_id = "MARKEITECH-001"
+data_client_name = "IB"
+data_only = true
+build_nautilus_node = true
+run_live_node = false
+
+[ib]
+host = "127.0.0.1"
+port = 7497
+client_id = 1
+use_regular_trading_hours = false
+market_data_type = 1
+connection_timeout_seconds = 300
+request_timeout_seconds = 60
+read_only = true
+
+[[instruments]]
+role = "active"
+data_mode = "tick_by_tick"
+analysis_profile = "active_tick"
+enabled = true
+priority = 0
+
+[instruments.contract]
+root_symbol = "NQ"
+exchange = "CME"
+instrument_id = "NQU6.CME"
+security_type = "FUT"
+ib_symbol = "NQ"
+ib_exchange = "CME"
+ib_security_type = "FUT"
+expiry = 2026-09-18
+ib_last_trade_date_or_contract_month = "20260918"
+session_timezone = "America/New_York"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m"]
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+
+[[instruments]]
+role = "background"
+data_mode = "live_1m_bars"
+analysis_profile = "background_bar"
+enabled = true
+priority = 20
+
+[instruments.contract]
+root_symbol = "ES"
+exchange = "CME"
+instrument_id = "ESU6.CME"
+security_type = "FUT"
+ib_symbol = "ES"
+ib_exchange = "CME"
+ib_security_type = "FUT"
+expiry = 2026-09-18
+ib_last_trade_date_or_contract_month = "20260918"
+session_timezone = "America/New_York"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m"]
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+
+[[instruments]]
+role = "background"
+data_mode = "live_1m_bars"
+analysis_profile = "background_bar"
+enabled = true
+priority = 50
+
+[instruments.contract]
+root_symbol = "SPX"
+exchange = "CBOE"
+instrument_id = "^SPX.CBOE"
+security_type = "IND"
+ib_symbol = "SPX"
+ib_exchange = "CBOE"
+ib_security_type = "IND"
+session_timezone = "America/New_York"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m", "1d"]
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true

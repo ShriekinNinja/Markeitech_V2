@@ -36,6 +36,7 @@ uv sync
 uv run pytest
 uv run ruff check .
 uv run black --check .
+uv run markeitech-market-data-plan config/market-data.example.toml
 uv run fastapi dev backend/src/markeitech/api.py
 ```
 

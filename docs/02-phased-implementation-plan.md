@@ -48,6 +48,13 @@ First implementation slice:
 - Plan background-instrument live 1-minute bars after warmup.
 - Do not start `TradingNode.run()` or connect to IB in automated tests.
 
+Second implementation slice:
+
+- Load market-data runtime config from local TOML.
+- Provide `config/market-data.example.toml`.
+- Add `markeitech-market-data-plan` dry-run CLI.
+- Print planned warmups, subscriptions, data clients, and execution-client state without connecting to IB.
+
 ## Stage 3: Persistence And Recovery
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.

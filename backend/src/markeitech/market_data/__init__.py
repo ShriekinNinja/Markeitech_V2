@@ -4,6 +4,10 @@ from markeitech.market_data.config import (
     InteractiveBrokersConnectionConfig,
     MarketDataRuntimeConfig,
 )
+from markeitech.market_data.loader import (
+    load_market_data_runtime_config,
+    parse_market_data_runtime_config,
+)
 from markeitech.market_data.nautilus import build_trading_node_config
 from markeitech.market_data.planner import (
     PlannedSubscription,
@@ -22,4 +26,6 @@ __all__ = [
     "WarmupKind",
     "build_market_data_plan",
     "build_trading_node_config",
+    "load_market_data_runtime_config",
+    "parse_market_data_runtime_config",
 ]
