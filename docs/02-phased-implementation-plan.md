@@ -23,16 +23,20 @@ Deliver typed, versioned models for contract identity, trade ticks, quote ticks,
 Implemented:
 
 - Pydantic v2 domain contracts under `backend/src/markeitech/domain`.
-- Explicit NQ contract identity validation.
+- Generic instrument contract validation with explicit futures support.
+- One-active-many-background instrument registry validation.
+- NQ convenience contract for the first active instrument.
 - UTC timestamp and IANA timezone validation.
 - Canonical trade tick, quote tick, classified trade, and one-minute bar models.
 - Readiness, gap, source-health, gateway-event, and strategy-state-event models.
 - Deterministic trade classification helper.
-- Unit tests for contract identity, timestamp rules, timezone rules, dedupe keys, quote freshness, classification, bars, readiness, gaps, source health, and event shapes.
+- Unit tests for contract identity, active/background registry rules, timestamp rules, timezone rules, dedupe keys, quote freshness, classification, bars, readiness, gaps, source health, and event shapes.
 
 ## Stage 2: Market Data Foundation
 
-Deliver one authoritative NQ market-data runtime using NautilusTrader IB support where possible and a narrow native IB adapter only for missing capabilities.
+Deliver one authoritative market-data runtime using NautilusTrader IB support where possible and a narrow native IB adapter only for missing capabilities.
+
+Stage 2 starts with NQ as the active tick-by-tick instrument and supports background instruments through 1-minute historical or incremental bar monitoring.
 
 Not started.
 
@@ -50,7 +54,7 @@ Not started.
 
 ## Stage 5: Frontend Dashboard
 
-Deliver operational NQ cockpit with chart, session context, readiness, source health, gaps, active bar, completed bars, and reconnect behavior.
+Deliver operational cockpit with active-instrument chart, session context, readiness, source health, gaps, active bar, completed bars, background signal dashboard, and reconnect behavior.
 
 Not started.
 

@@ -11,6 +11,7 @@ from markeitech.domain.base import VersionedDomainModel, require_utc
 
 class GatewayEventType(StrEnum):
     SNAPSHOT = "snapshot"
+    ACTIVE_INSTRUMENT_CHANGED = "active.instrument.changed"
     BAR_ACTIVE = "bar.active"
     BAR_COMPLETED = "bar.completed"
     READINESS_UPDATE = "readiness.update"
@@ -42,6 +43,19 @@ class GatewayEvent(VersionedDomainModel):
     event_ts: datetime
     ts_init: datetime
     payload: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("event_ts", "ts_init")
+    @classmethod
+    def _timestamps_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+
+class ActiveInstrumentChangedEvent(VersionedDomainModel):
+    previous_instrument_id: str | None = None
+    active_instrument_id: str = Field(min_length=1)
+    event_ts: datetime
+    ts_init: datetime
+    reason: str = Field(min_length=1)
 
     @field_validator("event_ts", "ts_init")
     @classmethod

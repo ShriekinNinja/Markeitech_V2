@@ -2,11 +2,11 @@
 
 Markeitech is a greenfield market-analysis, strategy-research, backtesting, replay, dashboard, and later live-trading platform for discretionary and systematic futures trading.
 
-Initial focus is explicit-expiry NQ futures through Interactive Brokers, with NautilusTrader used as the primary trading-system runtime wherever practical.
+Initial active focus is explicit-expiry NQ futures through Interactive Brokers, with NautilusTrader used as the primary trading-system runtime wherever practical. The runtime is designed for one active tick-by-tick instrument plus multiple background monitored instruments.
 
 ## Stage 0 Scope
 
-This repository is currently bootstrapped only through Stage 0:
+This repository is currently bootstrapped through Stage 1:
 
 - Python 3.13 uv project
 - NautilusTrader with Interactive Brokers and Docker extras declared
@@ -16,8 +16,9 @@ This repository is currently bootstrapped only through Stage 0:
 - pytest, ruff, and black configured
 - Vite + React + TypeScript frontend skeleton
 - Architecture and setup documentation
+- Pydantic domain contracts for active/background instrument configuration and market-data events
 
-Trading execution is intentionally not implemented. Data-only mode is the default and only Stage 0 posture.
+Trading execution is intentionally not implemented. Data-only mode is the default posture.
 
 ## Requirements
 
@@ -53,9 +54,11 @@ npm run dev
 
 ## Configuration
 
-Copy `.env.example` to `.env` when running locally. Stage 0 docs require:
+Copy `.env.example` to `.env` when running locally. Current docs require:
 
-- explicit NQ contract configuration before market-data startup
+- explicit active instrument configuration before market-data startup
+- NQ as the first active tick-by-tick instrument
+- optional background instruments monitored through 1-minute bars
 - IB Gateway or TWS timestamps configured to UTC
 - IB read-only/data-only mode by default
 - no live execution unless a later stage explicitly enables it

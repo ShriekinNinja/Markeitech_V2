@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from markeitech.domain import (
+    ActiveInstrumentChangedEvent,
     GapSeverity,
     GapState,
     GatewayEvent,
@@ -87,6 +88,19 @@ def test_gateway_event_shape() -> None:
 
     assert event.schema_version == "1.0"
     assert event.event_type == GatewayEventType.READINESS_UPDATE
+
+
+def test_active_instrument_changed_event_shape() -> None:
+    event = ActiveInstrumentChangedEvent(
+        previous_instrument_id="NQU6.CME",
+        active_instrument_id="ESU6.CME",
+        event_ts=utc_now(),
+        ts_init=utc_now(),
+        reason="operator_switch",
+    )
+
+    assert event.previous_instrument_id == "NQU6.CME"
+    assert event.active_instrument_id == "ESU6.CME"
 
 
 def test_strategy_state_event_shape() -> None:

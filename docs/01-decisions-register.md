@@ -38,9 +38,9 @@ Reason: The first build phase must not make accidental live orders possible.
 
 Status: accepted
 
-Initial NQ runtime uses explicit individual futures contracts only.
+Futures runtime uses explicit individual futures contracts only.
 
-Reason: Continuous futures can roll automatically and would violate the requirement to preserve data under original contract identity.
+Reason: Continuous futures can roll automatically and would violate the requirement to preserve data under original contract identity. NQ is the first active futures target, but the rule applies to all futures roots.
 
 ## DR-0006: Frontend Toolchain
 
@@ -73,3 +73,13 @@ Status: accepted
 Implement Stage 1 contracts as pure Pydantic models and deterministic Python functions under `markeitech.domain`.
 
 Reason: Domain contracts must be testable before IB connectivity, persistence, WebSockets, or strategy runtime exist. NautilusTrader integration remains a runtime boundary for later stages rather than a dependency inside these external backend event schemas.
+
+## DR-0010: Active And Background Instrument Roles
+
+Status: accepted
+
+Support exactly one enabled active instrument and multiple enabled background instruments.
+
+Reason: The operator needs one runtime-switchable instrument for live tick-by-tick data and real-time analysis, while other instruments can still contribute historical-bar-based context, indicators, zones, trends, and dashboard signals.
+
+The active instrument must use tick-by-tick data. Background instruments initially use 1-minute historical or incremental bars. Switching the active instrument changes stream ownership but must not mutate instrument identity.

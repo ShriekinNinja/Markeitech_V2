@@ -41,6 +41,22 @@ Authoritative market-data runtime
               Frontend
 ```
 
+## Instrument Runtime Model
+
+Markeitech supports multiple configured instruments with one enabled active instrument at a time.
+
+The active instrument receives live tick-by-tick data, real-time trade/quote classification, active bar construction, dashboard primary chart updates, and later strategy eligibility. Stage 2 starts with explicit-expiry NQ as the first active instrument.
+
+Background instruments are monitored through bounded historical or incremental 1-minute bar refreshes. They can produce indicators, zones, trend state, context, and dashboard signals while another instrument remains active. Examples include ES, SPX, VIX, QQQ, SPY, MAG7 names, and later additional operator-selected instruments.
+
+Switching the active instrument changes runtime stream ownership:
+
+- the old active instrument can downgrade to background monitoring or be disabled by policy
+- the new active instrument upgrades to live tick-by-tick ownership
+- each instrument keeps separate readiness, gap state, checkpoints, bars, analytics, and signals
+- dashboard primary views follow the active instrument
+- signal views may include both active and background instruments
+
 ## Ownership Boundaries
 
 ### Interactive Brokers Boundary
@@ -90,7 +106,10 @@ IB Gateway should be read-only during data phases.
 
 - All timestamps are UTC at storage and event boundaries.
 - Session definitions use IANA timezones, never fixed UTC offsets.
-- Initial futures contracts are explicit-expiry NQ contracts.
+- Futures contracts are explicit-expiry contracts.
+- Stage 2 starts with NQ as the first active instrument.
+- Exactly one enabled instrument is active at a time.
+- Background instruments initially use 1-minute historical/incremental bars.
 - No silent rollover.
 - No duplicate canonical events.
 - No duplicated subscriptions.

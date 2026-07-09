@@ -1,10 +1,10 @@
 # Interactive Brokers Setup
 
-## Stage 0 Posture
+## Current Posture
 
-Interactive Brokers is documented but not connected in Stage 0.
+Interactive Brokers is documented but not connected yet.
 
-Market-data startup begins in Stage 2 only after explicit NQ contract configuration and operator approval.
+Market-data startup begins in Stage 2 only after explicit active-instrument configuration and operator approval.
 
 ## Supported Connection Paths
 
@@ -36,16 +36,18 @@ Configure TWS or IB Gateway to return market-data timestamps in UTC before conne
 
 ## Contract Configuration
 
-Initial runtime requires an explicit NQ futures contract. Do not configure continuous futures for canonical data capture.
+Initial runtime requires an explicit active futures contract. NQ is the first active target. Do not configure continuous futures for canonical data capture.
 
-Required values:
+Initial active NQ values:
 
 - `NQ_SYMBOL=NQ`
 - `NQ_EXCHANGE=CME`
 - `NQ_CONTRACT_EXPIRY=YYYYMMDD`
 - `NQ_INSTRUMENT_ID=<explicit NautilusTrader instrument id>`
 
-The runtime must fail clearly if these values are missing when market-data startup is implemented.
+The runtime must fail clearly if active instrument values are missing when market-data startup is implemented.
+
+Background instruments may be configured for 1-minute historical/incremental bar monitoring. Examples include ES, SPX, VIX, QQQ, SPY, MAG7 symbols, and later additional operator-selected instruments. Background instruments are not tick-by-tick streams unless promoted to active.
 
 ## Execution Safety
 

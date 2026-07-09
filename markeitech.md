@@ -4,7 +4,9 @@ You are building **Markeitech by Markeitect** from scratch in an empty repositor
 
 This is a greenfield implementation. Do not preserve or recreate any legacy architecture unless explicitly useful. Build a production-grade market-analysis, strategy-research, backtesting, replay, dashboard, and later live-trading platform for discretionary and systematic futures trading.
 
-Initial focus: **NQ front-month futures through Interactive Brokers**.
+Initial active focus: **explicit-expiry NQ futures through Interactive Brokers**.
+
+The system must support one runtime-switchable active instrument for live tick-by-tick data and real-time analysis, plus multiple background monitored instruments using historical or incremental 1-minute bars for indicators, zones, trends, context, and dashboard signals.
 
 Primary design principle: use **NautilusTrader as extensively as practical**. Do not duplicate NautilusTrader capabilities unless there is a documented reason.
 
@@ -108,7 +110,8 @@ Acceptance criteria:
 
 Implement typed, versioned domain models for:
 
-- explicit NQ contract configuration
+- explicit instrument and futures contract configuration
+- one active tick-by-tick instrument plus multiple background monitored instruments
 - canonical trade ticks
 - canonical bid/ask quote ticks
 - classified trades
@@ -125,7 +128,9 @@ Rules:
 - All timestamps are UTC.
 - Use IANA timezones for sessions.
 - Never use fixed UTC offsets for London/New York sessions.
-- Initial instrument is explicit-expiry NQ futures.
+- Initial active instrument is explicit-expiry NQ futures.
+- The architecture must support runtime active-instrument switching.
+- Background instruments initially use 1-minute historical/incremental bars.
 - Do not silently roll contracts.
 - Preserve historical data under original contract identity.
 
@@ -153,14 +158,15 @@ Acceptance criteria:
 
 # Stage 2 - Market Data Foundation
 
-Build one authoritative NQ market-data runtime.
+Build one authoritative market-data runtime.
 
 Responsibilities:
 
-- Resolve explicit NQ contract.
+- Resolve the explicit active instrument contract, initially NQ.
 - Connect to IB through NautilusTrader.
-- Subscribe to live tick-by-tick `Last`.
-- Subscribe to live tick-by-tick `BidAsk`.
+- Subscribe the active instrument to live tick-by-tick `Last`.
+- Subscribe the active instrument to live tick-by-tick `BidAsk`.
+- Monitor configured background instruments through 1-minute historical/incremental bars.
 - Normalize events once.
 - Deduplicate events once.
 - Classify trades once.
@@ -183,7 +189,9 @@ Do not use `reqHistoricalTicks` as routine startup bootstrap.
 Acceptance criteria:
 
 - Startup fails clearly when explicit contract config is missing.
-- Runtime starts NQ-only.
+- Runtime starts with NQ as the active instrument.
+- Runtime can switch the active instrument without mutating contract identity.
+- Runtime can monitor multiple background instruments.
 - No execution client initializes by default.
 - Live trade and quote streams are both active.
 - 1-minute bars are produced from canonical trade events.
@@ -281,6 +289,7 @@ Build a focused React cockpit.
 Initial frontend scope:
 
 - one active instrument
+- background monitored instruments and signal stream
 - one primary chart
 - latest two trading sessions visible
 - WebSocket connection state

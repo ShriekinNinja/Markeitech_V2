@@ -18,27 +18,51 @@ Current schema version: `1.0`.
 
 ## Contract Identity
 
-Initial instrument support is explicit-expiry NQ futures only.
+Initial active instrument support is explicit-expiry NQ futures. The contract layer supports multiple configured instruments so the runtime can keep one active tick-by-tick instrument while monitoring many background instruments.
 
 Required fields:
 
 - root symbol
 - exchange
-- expiry
+- expiry for futures
 - NautilusTrader instrument id
 - IB contract identity fields needed for unambiguous resolution
 
 Continuous futures and silent rollover are prohibited for canonical storage and backend events.
 
-Implemented model:
+Implemented models:
 
+- `InstrumentContractConfig`
+- `FuturesContractConfig`
+- `EquityLikeContractConfig`
+- `InstrumentRuntimeConfig`
+- `InstrumentRegistryConfig`
 - `NQContractConfig`
 
 Rejected identity examples:
 
 - `NQ.CME`
 - `NQ.XCME`
+- `ES.CME`
 - IB `CONTFUT`
+
+## Active And Background Instruments
+
+The runtime model separates configured instruments from active instruments.
+
+Roles:
+
+- `active`: exactly one enabled instrument. It receives live tick-by-tick data, real-time classification, real-time active bar construction, primary chart updates, and later strategy eligibility.
+- `background`: many enabled instruments. They are monitored with historical or incremental 1m bars for indicators, zones, trends, context, and signal dashboard events.
+- `disabled`: configured but not monitored.
+
+Data modes:
+
+- `tick_by_tick`: required for the active instrument.
+- `historical_1m`: required for background instruments in the initial design.
+- `disabled`: required for disabled instruments.
+
+Switching the active instrument changes runtime ownership. It must not mutate instrument identity or silently roll any futures contract.
 
 ## Timestamp Rules
 
@@ -53,7 +77,8 @@ Domain models reject naive timestamps and non-UTC aware timestamps at constructi
 
 Stage 1 defines:
 
-- explicit NQ contract configuration
+- explicit instrument and futures contract configuration
+- one-active-many-background registry configuration
 - canonical trade ticks
 - canonical bid/ask quote ticks
 - classified trades
@@ -64,6 +89,8 @@ Stage 1 defines:
 - gateway events
 - strategy state events
 - extension points for levels, zones, and signals
+
+The event catalog includes `active.instrument.changed` for future runtime switches.
 
 Current modules:
 

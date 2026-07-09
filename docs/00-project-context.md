@@ -2,7 +2,7 @@
 
 Markeitech by Markeitect is a greenfield trading-system platform for market analysis, strategy research, deterministic replay, dashboarding, backtesting, and later controlled execution.
 
-The initial production target is explicit-expiry NQ futures through Interactive Brokers. The implementation must use NautilusTrader as extensively as practical for trading-domain runtime concerns.
+The initial active production target is explicit-expiry NQ futures through Interactive Brokers. The implementation must use NautilusTrader as extensively as practical for trading-domain runtime concerns and must support one active tick-by-tick instrument plus multiple background monitored instruments.
 
 ## Primary Goals
 
