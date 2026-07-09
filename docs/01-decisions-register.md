@@ -82,4 +82,4 @@ Support exactly one enabled active instrument and multiple enabled background in
 
 Reason: The operator needs one runtime-switchable instrument for live tick-by-tick data and real-time analysis, while other instruments can still contribute historical-bar-based context, indicators, zones, trends, and dashboard signals.
 
-The active instrument must use tick-by-tick data. Background instruments initially use 1-minute historical or incremental bars. Switching the active instrument changes stream ownership but must not mutate instrument identity.
+Every enabled instrument must warm up from historical bars and receive multi-timeframe annotations before live tracking. The active instrument must use tick-by-tick data. Background instruments track live 1-minute bars after warmup. Switching the active instrument changes stream ownership but must not mutate instrument identity.

@@ -47,7 +47,7 @@ Initial active NQ values:
 
 The runtime must fail clearly if active instrument values are missing when market-data startup is implemented.
 
-Background instruments may be configured for 1-minute historical/incremental bar monitoring. Examples include ES, SPX, VIX, QQQ, SPY, MAG7 symbols, and later additional operator-selected instruments. Background instruments are not tick-by-tick streams unless promoted to active.
+Background instruments may be configured for historical warmup followed by live 1-minute bar tracking. Examples include ES, SPX, VIX, QQQ, SPY, MAG7 symbols, and later additional operator-selected instruments. Background instruments are not tick-by-tick streams unless promoted to active.
 
 ## Execution Safety
 

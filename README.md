@@ -58,7 +58,7 @@ Copy `.env.example` to `.env` when running locally. Current docs require:
 
 - explicit active instrument configuration before market-data startup
 - NQ as the first active tick-by-tick instrument
-- optional background instruments monitored through 1-minute bars
+- optional background instruments warmed from history and then monitored through live 1-minute bars
 - IB Gateway or TWS timestamps configured to UTC
 - IB read-only/data-only mode by default
 - no live execution unless a later stage explicitly enables it

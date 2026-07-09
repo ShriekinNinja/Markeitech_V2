@@ -9,8 +9,10 @@ from markeitech.domain import (
     InstrumentRegistryConfig,
     InstrumentRole,
     InstrumentRuntimeConfig,
+    InstrumentWarmupConfig,
     NQContractConfig,
     SecurityType,
+    WarmupTimeframe,
 )
 from pydantic import ValidationError
 
@@ -63,10 +65,9 @@ def background_runtime(
     return InstrumentRuntimeConfig(
         contract=contract,
         role=InstrumentRole.BACKGROUND,
-        data_mode=InstrumentDataMode.HISTORICAL_1M,
+        data_mode=InstrumentDataMode.LIVE_1M_BARS,
         analysis_profile=AnalysisProfile.BACKGROUND_BAR,
         priority=50,
-        historical_refresh_interval_seconds=60,
     )
 
 
@@ -126,6 +127,9 @@ def test_registry_allows_one_active_and_multiple_background_instruments() -> Non
 
     assert registry.active_runtime.contract.instrument_id == "NQU6.CME"
     assert len(registry.instruments) == 3
+    for runtime in registry.instruments:
+        assert runtime.warmup is not None
+        assert WarmupTimeframe.ONE_MINUTE in runtime.warmup.timeframes
 
 
 def test_registry_rejects_multiple_active_instruments() -> None:
@@ -144,16 +148,39 @@ def test_registry_rejects_active_instrument_without_tick_mode() -> None:
         InstrumentRuntimeConfig(
             contract=nq_contract(),
             role=InstrumentRole.ACTIVE,
-            data_mode=InstrumentDataMode.HISTORICAL_1M,
+            data_mode=InstrumentDataMode.LIVE_1M_BARS,
             analysis_profile=AnalysisProfile.ACTIVE_TICK,
         )
 
 
-def test_background_instrument_requires_historical_refresh_interval() -> None:
-    with pytest.raises(ValidationError, match="historical refresh interval"):
+def test_background_instrument_requires_live_1m_bar_mode() -> None:
+    with pytest.raises(ValidationError, match="live 1m bar"):
         InstrumentRuntimeConfig(
             contract=es_contract(),
             role=InstrumentRole.BACKGROUND,
-            data_mode=InstrumentDataMode.HISTORICAL_1M,
+            data_mode=InstrumentDataMode.HISTORICAL_WARMUP_ONLY,
             analysis_profile=AnalysisProfile.BACKGROUND_BAR,
         )
+
+
+def test_enabled_instrument_requires_warmup_configuration() -> None:
+    with pytest.raises(ValidationError, match="warmup configuration"):
+        InstrumentRuntimeConfig(
+            contract=es_contract(),
+            role=InstrumentRole.BACKGROUND,
+            data_mode=InstrumentDataMode.LIVE_1M_BARS,
+            analysis_profile=AnalysisProfile.BACKGROUND_BAR,
+            warmup=None,
+        )
+
+
+def test_warmup_config_describes_multi_timeframe_annotation() -> None:
+    warmup = InstrumentWarmupConfig(lookback_sessions=10)
+
+    assert warmup.lookback_sessions == 10
+    assert WarmupTimeframe.FIFTEEN_MINUTE in warmup.timeframes
+    assert warmup.annotate_support_resistance is True
+    assert warmup.annotate_emas is True
+    assert warmup.annotate_trend is True
+    assert warmup.annotate_vwap is True
+    assert warmup.annotate_fvgs is True

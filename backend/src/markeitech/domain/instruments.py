@@ -23,7 +23,8 @@ class InstrumentRole(StrEnum):
 
 class InstrumentDataMode(StrEnum):
     TICK_BY_TICK = "tick_by_tick"
-    HISTORICAL_1M = "historical_1m"
+    LIVE_1M_BARS = "live_1m_bars"
+    HISTORICAL_WARMUP_ONLY = "historical_warmup_only"
     DISABLED = "disabled"
 
 
@@ -31,6 +32,33 @@ class AnalysisProfile(StrEnum):
     ACTIVE_TICK = "active_tick"
     BACKGROUND_BAR = "background_bar"
     SIGNALS_ONLY = "signals_only"
+
+
+class WarmupTimeframe(StrEnum):
+    ONE_MINUTE = "1m"
+    FIVE_MINUTE = "5m"
+    FIFTEEN_MINUTE = "15m"
+    THIRTY_MINUTE = "30m"
+    ONE_HOUR = "1h"
+    DAILY = "1d"
+
+
+class InstrumentWarmupConfig(VersionedDomainModel):
+    lookback_sessions: int = Field(default=5, ge=1)
+    timeframes: tuple[WarmupTimeframe, ...] = Field(
+        default=(
+            WarmupTimeframe.ONE_MINUTE,
+            WarmupTimeframe.FIVE_MINUTE,
+            WarmupTimeframe.FIFTEEN_MINUTE,
+            WarmupTimeframe.THIRTY_MINUTE,
+        ),
+        min_length=1,
+    )
+    annotate_support_resistance: bool = True
+    annotate_emas: bool = True
+    annotate_trend: bool = True
+    annotate_vwap: bool = True
+    annotate_fvgs: bool = True
 
 
 class InstrumentContractConfig(VersionedDomainModel):
@@ -126,21 +154,23 @@ class InstrumentRuntimeConfig(VersionedDomainModel):
     analysis_profile: AnalysisProfile
     enabled: bool = True
     priority: int = Field(default=100, ge=0)
-    historical_refresh_interval_seconds: int | None = Field(default=None, ge=1)
+    warmup: InstrumentWarmupConfig | None = Field(default_factory=InstrumentWarmupConfig)
 
     @model_validator(mode="after")
     def _role_and_data_mode_must_match(self) -> InstrumentRuntimeConfig:
         if not self.enabled and self.role != InstrumentRole.DISABLED:
             raise ValueError("disabled instruments must use disabled role")
+        if self.enabled and self.warmup is None:
+            raise ValueError("enabled instruments require warmup configuration")
         if self.role == InstrumentRole.ACTIVE and self.data_mode != InstrumentDataMode.TICK_BY_TICK:
             raise ValueError("active instrument must use tick-by-tick data mode")
         if self.role == InstrumentRole.BACKGROUND:
-            if self.data_mode != InstrumentDataMode.HISTORICAL_1M:
-                raise ValueError("background instruments must use historical 1m data mode")
-            if self.historical_refresh_interval_seconds is None:
-                raise ValueError("background instruments require a historical refresh interval")
+            if self.data_mode != InstrumentDataMode.LIVE_1M_BARS:
+                raise ValueError("background instruments must use live 1m bar data mode")
         if self.role == InstrumentRole.DISABLED and self.data_mode != InstrumentDataMode.DISABLED:
             raise ValueError("disabled instruments must use disabled data mode")
+        if self.role == InstrumentRole.DISABLED and self.warmup is not None:
+            raise ValueError("disabled instruments must not define warmup configuration")
         return self
 
 

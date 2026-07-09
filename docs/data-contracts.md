@@ -53,14 +53,21 @@ The runtime model separates configured instruments from active instruments.
 Roles:
 
 - `active`: exactly one enabled instrument. It receives live tick-by-tick data, real-time classification, real-time active bar construction, primary chart updates, and later strategy eligibility.
-- `background`: many enabled instruments. They are monitored with historical or incremental 1m bars for indicators, zones, trends, context, and signal dashboard events.
+- `background`: many enabled instruments. They warm up from historical bars, are annotated across configured timeframes, and then track live 1m bars for indicators, zones, trends, context, and signal dashboard events.
 - `disabled`: configured but not monitored.
 
 Data modes:
 
 - `tick_by_tick`: required for the active instrument.
-- `historical_1m`: required for background instruments in the initial design.
+- `live_1m_bars`: required for background instruments after historical warmup.
+- `historical_warmup_only`: reserved for configured instruments that should be analyzed from history without live tracking.
 - `disabled`: required for disabled instruments.
+
+Warmup:
+
+- Every enabled instrument requires warmup configuration.
+- Warmup defines lookback sessions and derived analysis timeframes.
+- Initial annotations include support/resistance, EMAs, trend, VWAP, and FVGs.
 
 Switching the active instrument changes runtime ownership. It must not mutate instrument identity or silently roll any futures contract.
 

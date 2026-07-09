@@ -47,7 +47,9 @@ Markeitech supports multiple configured instruments with one enabled active inst
 
 The active instrument receives live tick-by-tick data, real-time trade/quote classification, active bar construction, dashboard primary chart updates, and later strategy eligibility. Stage 2 starts with explicit-expiry NQ as the first active instrument.
 
-Background instruments are monitored through bounded historical or incremental 1-minute bar refreshes. They can produce indicators, zones, trend state, context, and dashboard signals while another instrument remains active. Examples include ES, SPX, VIX, QQQ, SPY, MAG7 names, and later additional operator-selected instruments.
+At boot, every enabled instrument is warmed from historical bars, analyzed across configured timeframes, and annotated with market context such as support/resistance zones, EMAs, trend, VWAP, FVGs, session levels, and later additional structures.
+
+Background instruments then track live 1-minute bars through Nautilus where supported. They can produce indicators, zones, trend state, context, and dashboard signals while another instrument remains active. Examples include ES, SPX, VIX, QQQ, SPY, MAG7 names, and later additional operator-selected instruments.
 
 Switching the active instrument changes runtime stream ownership:
 
@@ -109,7 +111,8 @@ IB Gateway should be read-only during data phases.
 - Futures contracts are explicit-expiry contracts.
 - Stage 2 starts with NQ as the first active instrument.
 - Exactly one enabled instrument is active at a time.
-- Background instruments initially use 1-minute historical/incremental bars.
+- Every enabled instrument warms up from historical bars before live tracking.
+- Background instruments track live 1-minute bars after warmup.
 - No silent rollover.
 - No duplicate canonical events.
 - No duplicated subscriptions.

@@ -6,7 +6,9 @@ This is a greenfield implementation. Do not preserve or recreate any legacy arch
 
 Initial active focus: **explicit-expiry NQ futures through Interactive Brokers**.
 
-The system must support one runtime-switchable active instrument for live tick-by-tick data and real-time analysis, plus multiple background monitored instruments using historical or incremental 1-minute bars for indicators, zones, trends, context, and dashboard signals.
+The system must support one runtime-switchable active instrument for live tick-by-tick data and real-time analysis, plus multiple background monitored instruments.
+
+At boot, every enabled instrument must be warmed from historical data, analyzed across configured timeframes, and annotated with market context such as support/resistance zones, EMAs, trend, VWAP, FVGs, session levels, and later additional structures. After warmup, background instruments track live 1-minute bars through Nautilus where supported, while the active instrument tracks live tick-by-tick data.
 
 Primary design principle: use **NautilusTrader as extensively as practical**. Do not duplicate NautilusTrader capabilities unless there is a documented reason.
 
@@ -130,7 +132,8 @@ Rules:
 - Never use fixed UTC offsets for London/New York sessions.
 - Initial active instrument is explicit-expiry NQ futures.
 - The architecture must support runtime active-instrument switching.
-- Background instruments initially use 1-minute historical/incremental bars.
+- Every enabled instrument warms up from historical bars before live tracking.
+- Background instruments track live 1-minute bars after warmup.
 - Do not silently roll contracts.
 - Preserve historical data under original contract identity.
 
@@ -166,7 +169,8 @@ Responsibilities:
 - Connect to IB through NautilusTrader.
 - Subscribe the active instrument to live tick-by-tick `Last`.
 - Subscribe the active instrument to live tick-by-tick `BidAsk`.
-- Monitor configured background instruments through 1-minute historical/incremental bars.
+- Warm and analyze every enabled instrument from historical bars.
+- Monitor configured background instruments through live 1-minute bars.
 - Normalize events once.
 - Deduplicate events once.
 - Classify trades once.
@@ -191,7 +195,7 @@ Acceptance criteria:
 - Startup fails clearly when explicit contract config is missing.
 - Runtime starts with NQ as the active instrument.
 - Runtime can switch the active instrument without mutating contract identity.
-- Runtime can monitor multiple background instruments.
+- Runtime can monitor multiple background instruments after historical warmup.
 - No execution client initializes by default.
 - Live trade and quote streams are both active.
 - 1-minute bars are produced from canonical trade events.

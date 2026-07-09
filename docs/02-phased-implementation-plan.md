@@ -36,7 +36,7 @@ Implemented:
 
 Deliver one authoritative market-data runtime using NautilusTrader IB support where possible and a narrow native IB adapter only for missing capabilities.
 
-Stage 2 starts with NQ as the active tick-by-tick instrument and supports background instruments through 1-minute historical or incremental bar monitoring.
+Stage 2 starts with NQ as the active tick-by-tick instrument. Every enabled instrument warms up from historical bars, gets multi-timeframe annotations, and then tracks live data according to its role. Background instruments track live 1-minute bars after warmup.
 
 Not started.
 
