@@ -99,3 +99,11 @@ Status: accepted
 Map market-data plans into Nautilus-oriented request intents before implementing live subscription calls.
 
 Reason: Historical warmups, active tick subscriptions, background bar subscriptions, and ownership rules can be validated deterministically without connecting to IB. A later guarded bootstrap should be the only layer that translates these intents into live Nautilus method calls.
+
+## DR-0013: Manual Confirmation For LiveNode Start
+
+Status: accepted
+
+Building a Nautilus `TradingNode` is allowed from validated config, but starting it requires `run_live_node=true`, `manual_live_node_start=true`, and the confirmation token `I_UNDERSTAND_THIS_CONNECTS_TO_IB`.
+
+Reason: Starting the LiveNode can connect to Interactive Brokers. The default development path must remain offline-safe and data-only, while still allowing an explicit manual smoke-test path later.

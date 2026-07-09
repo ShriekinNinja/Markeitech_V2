@@ -31,6 +31,8 @@ Before any live connection, Markeitech builds three deterministic layers:
 
 Only the later guarded LiveNode bootstrap should translate those intents into live Nautilus method calls.
 
+The guarded bootstrap may construct a Nautilus `TradingNode` from validated config, but starting the node requires explicit manual opt-in and a confirmation token because it can connect to IB.
+
 ## Initial Runtime Topology
 
 ```text

@@ -4,6 +4,7 @@ trader_id = "MARKEITECH-001"
 data_client_name = "IB"
 data_only = true
 build_nautilus_node = true
+manual_live_node_start = false
 run_live_node = false
 
 [ib]

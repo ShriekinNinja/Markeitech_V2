@@ -63,6 +63,14 @@ Third implementation slice:
 - Include the request intents in the dry-run CLI output.
 - Keep request intents offline-safe; do not call live Nautilus subscription methods yet.
 
+Fourth implementation slice:
+
+- Add guarded Nautilus LiveNode bootstrap helpers.
+- Allow LiveNode construction from validated config.
+- Refuse LiveNode start unless `run_live_node=true`, `manual_live_node_start=true`, and the caller provides the explicit confirmation token.
+- Keep the default example config in dry-run mode.
+- Test bootstrap behavior with fake nodes, not live IB connections.
+
 ## Stage 3: Persistence And Recovery
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.

@@ -85,7 +85,7 @@ def test_parse_rejects_runtime_that_would_start_livenode() -> None:
     raw = raw_config()
     raw["runtime"]["run_live_node"] = True  # type: ignore[index]
 
-    with pytest.raises(ValidationError, match="must not start"):
+    with pytest.raises(ValidationError, match="manual_live_node_start"):
         parse_market_data_runtime_config(raw)
 
 
@@ -103,6 +103,15 @@ def test_cli_plan_summary_for_checked_in_example() -> None:
     assert summary["data_client_names"] == ["IB"]
     assert summary["execution_clients"] == []
     assert summary["run_live_node"] is False
+    assert summary["bootstrap"] == {
+        "schema_version": "1.0",
+        "can_build_node": True,
+        "will_start_node": False,
+        "data_only": True,
+        "read_only_ib": True,
+        "execution_clients_enabled": False,
+        "data_client_name": "IB",
+    }
     assert len(summary["planned_warmups"]) == 3
     assert {"instrument_id": "NQU6.CME", "kind": "tick_last", "source": "nautilus_ib"} in summary[
         "planned_subscriptions"

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from markeitech.market_data.bootstrap import build_livenode_bootstrap_summary
 from markeitech.market_data.intents import build_nautilus_request_plan
 from markeitech.market_data.loader import load_market_data_runtime_config
 from markeitech.market_data.nautilus import build_trading_node_config
@@ -27,8 +28,10 @@ def build_plan_summary(config_path: Path) -> dict[str, Any]:
         data_client_name=runtime_config.data_client_name,
     )
     node_config = build_trading_node_config(runtime_config)
+    bootstrap_summary = build_livenode_bootstrap_summary(runtime_config)
     return {
         "active_instrument_id": plan.active_instrument_id,
+        "bootstrap": bootstrap_summary.model_dump(mode="json"),
         "data_client_names": sorted(node_config.data_clients),
         "execution_clients": sorted(node_config.exec_clients),
         "run_live_node": runtime_config.run_live_node,

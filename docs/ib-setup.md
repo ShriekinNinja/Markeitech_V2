@@ -63,6 +63,18 @@ The command builds the Nautilus `TradingNodeConfig`, validates the market-data r
 
 The dry-run output includes Nautilus-oriented request intents. These are validation artifacts only; they are not live subscriptions until a later guarded bootstrap translates them into Nautilus calls.
 
+## Guarded LiveNode Bootstrap
+
+Stage 2 can build a Nautilus `TradingNode` object from validated config, but starting it remains manual-only.
+
+LiveNode start requires all of:
+
+- `run_live_node=true`
+- `manual_live_node_start=true`
+- explicit confirmation token: `I_UNDERSTAND_THIS_CONNECTS_TO_IB`
+
+The checked-in example config keeps both start flags disabled.
+
 ## Execution Safety
 
 Execution is disabled by default:

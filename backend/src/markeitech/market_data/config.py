@@ -26,14 +26,15 @@ class MarketDataRuntimeConfig(VersionedDomainModel):
     data_client_name: str = Field(default="IB", min_length=1)
     data_only: bool = True
     build_nautilus_node: bool = True
+    manual_live_node_start: bool = False
     run_live_node: bool = False
 
     @model_validator(mode="after")
     def _runtime_must_remain_data_only_for_stage_2(self) -> MarketDataRuntimeConfig:
         if not self.data_only:
             raise ValueError("Stage 2 runtime must be data-only")
-        if self.run_live_node:
-            raise ValueError("Stage 2 first slice must not start the Nautilus LiveNode")
+        if self.run_live_node and not self.manual_live_node_start:
+            raise ValueError("LiveNode start requires explicit manual_live_node_start")
         if not self.ib.read_only:
             raise ValueError("Stage 2 IB connection must be read-only")
         return self
