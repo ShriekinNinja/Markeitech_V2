@@ -45,6 +45,8 @@ Use NautilusTrader for:
 - clocks/time handling
 - lifecycle management
 
+Live market-data runtime must be centered on a NautilusTrader LiveNode. Markeitech may add configuration, validation, planning, and product-specific event boundaries around the LiveNode, but it must not build a parallel live market-data loop when Nautilus can own the runtime concern.
+
 Interactive Brokers integration must have two coordinated paths:
 
 1. NautilusTrader IB adapter for all supported functionality.
@@ -165,6 +167,7 @@ Build one authoritative market-data runtime.
 
 Responsibilities:
 
+- Build a data-only Nautilus LiveNode configuration.
 - Resolve the explicit active instrument contract, initially NQ.
 - Connect to IB through NautilusTrader.
 - Subscribe the active instrument to live tick-by-tick `Last`.

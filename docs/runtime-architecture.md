@@ -21,13 +21,15 @@ NautilusTrader should be the primary system boundary for trading-domain runtime 
 
 Markeitech adds bounded services around NautilusTrader for product-specific contracts, storage metadata, WebSocket presentation, dashboard state, strategy-worker isolation, and operator controls.
 
+The market-data runtime is LiveNode-centered. Markeitech builds validated plans and configuration around NautilusTrader, then uses Nautilus `TradingNodeConfig` and the Interactive Brokers data client as the runtime container for live market data.
+
 ## Initial Runtime Topology
 
 ```text
 IB Gateway / TWS
       |
       v
-NautilusTrader IB data client
+NautilusTrader LiveNode + IB data client
       |
       v
 Authoritative market-data runtime
@@ -65,7 +67,7 @@ Switching the active instrument changes runtime stream ownership:
 
 Interactive Brokers connectivity is coordinated through two paths:
 
-- NautilusTrader IB adapter for supported functionality.
+- NautilusTrader IB data client inside a LiveNode for supported functionality.
 - A narrow native IB API adapter only for capabilities NautilusTrader does not expose.
 
 Both paths must share contract identity, timestamps, sessions, normalization, health, reconnection, persistence, and deduplication rules.

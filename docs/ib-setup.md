@@ -6,11 +6,13 @@ Interactive Brokers is documented but not connected yet.
 
 Market-data startup begins in Stage 2 only after explicit active-instrument configuration and operator approval.
 
+The Stage 2 runtime is centered on a Nautilus `TradingNodeConfig`. Automated tests may build the LiveNode configuration and subscription plan, but they must not start the node or connect to IB.
+
 ## Supported Connection Paths
 
 Preferred:
 
-- NautilusTrader Interactive Brokers adapter.
+- NautilusTrader Interactive Brokers data client inside a LiveNode.
 
 Allowed only when needed:
 

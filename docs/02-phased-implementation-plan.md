@@ -38,7 +38,15 @@ Deliver one authoritative market-data runtime using NautilusTrader IB support wh
 
 Stage 2 starts with NQ as the active tick-by-tick instrument. Every enabled instrument warms up from historical bars, gets multi-timeframe annotations, and then tracks live data according to its role. Background instruments track live 1-minute bars after warmup.
 
-Not started.
+First implementation slice:
+
+- Add a Nautilus `TradingNodeConfig` builder for data-only LiveNode configuration.
+- Add an Interactive Brokers data-client config wrapper.
+- Keep execution clients, strategies, and actors empty by default.
+- Add a deterministic market-data planner that turns the instrument registry into warmup requests and subscription ownership.
+- Plan active-instrument tick-by-tick `Last`, tick-by-tick `BidAsk`, and 1-minute bars.
+- Plan background-instrument live 1-minute bars after warmup.
+- Do not start `TradingNode.run()` or connect to IB in automated tests.
 
 ## Stage 3: Persistence And Recovery
 
