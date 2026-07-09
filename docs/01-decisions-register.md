@@ -91,3 +91,11 @@ Status: accepted
 Stage 2 market-data runtime configuration is centered on NautilusTrader `TradingNodeConfig` and the Interactive Brokers data client.
 
 Reason: The final runtime should run inside Nautilus LiveNode instead of a separate homegrown market-data loop. Markeitech owns validation, planning, product-specific contracts, and event boundaries around that LiveNode. Automated tests build configuration and plans but do not start the node or connect to IB.
+
+## DR-0012: Offline Request Intents Before Live Subscriptions
+
+Status: accepted
+
+Map market-data plans into Nautilus-oriented request intents before implementing live subscription calls.
+
+Reason: Historical warmups, active tick subscriptions, background bar subscriptions, and ownership rules can be validated deterministically without connecting to IB. A later guarded bootstrap should be the only layer that translates these intents into live Nautilus method calls.

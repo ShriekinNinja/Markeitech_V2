@@ -61,6 +61,8 @@ uv run markeitech-market-data-plan config/market-data.example.toml
 
 The command builds the Nautilus `TradingNodeConfig`, validates the market-data registry, and prints planned warmups and subscriptions. It does not start `TradingNode.run()` and does not connect to IB.
 
+The dry-run output includes Nautilus-oriented request intents. These are validation artifacts only; they are not live subscriptions until a later guarded bootstrap translates them into Nautilus calls.
+
 ## Execution Safety
 
 Execution is disabled by default:

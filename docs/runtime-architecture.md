@@ -23,6 +23,14 @@ Markeitech adds bounded services around NautilusTrader for product-specific cont
 
 The market-data runtime is LiveNode-centered. Markeitech builds validated plans and configuration around NautilusTrader, then uses Nautilus `TradingNodeConfig` and the Interactive Brokers data client as the runtime container for live market data.
 
+Before any live connection, Markeitech builds three deterministic layers:
+
+- validated instrument registry and runtime config
+- ownership plan for warmups and subscriptions
+- Nautilus-oriented request intents for historical bars, trade ticks, quote ticks, and bars
+
+Only the later guarded LiveNode bootstrap should translate those intents into live Nautilus method calls.
+
 ## Initial Runtime Topology
 
 ```text

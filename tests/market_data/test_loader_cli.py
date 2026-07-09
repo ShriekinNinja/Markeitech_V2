@@ -103,7 +103,19 @@ def test_cli_plan_summary_for_checked_in_example() -> None:
     assert summary["data_client_names"] == ["IB"]
     assert summary["execution_clients"] == []
     assert summary["run_live_node"] is False
-    assert len(summary["warmups"]) == 3
+    assert len(summary["planned_warmups"]) == 3
     assert {"instrument_id": "NQU6.CME", "kind": "tick_last", "source": "nautilus_ib"} in summary[
-        "subscriptions"
+        "planned_subscriptions"
     ]
+    assert {
+        "instrument_id": "NQU6.CME",
+        "kind": "subscribe_trade_ticks",
+        "data_client_name": "IB",
+        "bar_type": None,
+    } in summary["nautilus_subscription_intents"]
+    assert {
+        "instrument_id": "ESU6.CME",
+        "kind": "subscribe_bars",
+        "data_client_name": "IB",
+        "bar_type": "ESU6.CME-1-MINUTE-LAST-EXTERNAL",
+    } in summary["nautilus_subscription_intents"]

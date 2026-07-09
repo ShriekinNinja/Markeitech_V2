@@ -16,9 +16,11 @@ from markeitech.domain import (
 from markeitech.market_data import (
     InteractiveBrokersConnectionConfig,
     MarketDataRuntimeConfig,
+    NautilusIntentKind,
     PlannedSubscription,
     SubscriptionKind,
     build_market_data_plan,
+    build_nautilus_request_plan,
     build_trading_node_config,
 )
 from markeitech.market_data.planner import MarketDataRuntimePlan
@@ -113,6 +115,39 @@ def test_market_data_plan_assigns_active_tick_and_background_bar_streams() -> No
     assert ("^SPX.CBOE", SubscriptionKind.BAR_1M) in subscriptions
     assert ("ESU6.CME", SubscriptionKind.TICK_LAST) not in subscriptions
     assert ("^SPX.CBOE", SubscriptionKind.TICK_BID_ASK) not in subscriptions
+
+
+def test_nautilus_request_plan_maps_warmups_and_subscriptions() -> None:
+    plan = build_market_data_plan(registry())
+    request_plan = build_nautilus_request_plan(plan, data_client_name="IB")
+
+    assert {warmup.instrument_id for warmup in request_plan.warmups} == {
+        "NQU6.CME",
+        "ESU6.CME",
+        "^SPX.CBOE",
+    }
+    nq_warmup = next(
+        warmup for warmup in request_plan.warmups if warmup.instrument_id == "NQU6.CME"
+    )
+    assert "NQU6.CME-1-MINUTE-LAST-EXTERNAL" in nq_warmup.bar_types
+    assert "NQU6.CME-15-MINUTE-LAST-EXTERNAL" in nq_warmup.bar_types
+
+    subscriptions = {
+        (subscription.instrument_id, subscription.kind, subscription.bar_type)
+        for subscription in request_plan.subscriptions
+    }
+    assert ("NQU6.CME", NautilusIntentKind.SUBSCRIBE_TRADE_TICKS, None) in subscriptions
+    assert ("NQU6.CME", NautilusIntentKind.SUBSCRIBE_QUOTE_TICKS, None) in subscriptions
+    assert (
+        "NQU6.CME",
+        NautilusIntentKind.SUBSCRIBE_BARS,
+        "NQU6.CME-1-MINUTE-LAST-EXTERNAL",
+    ) in subscriptions
+    assert (
+        "ESU6.CME",
+        NautilusIntentKind.SUBSCRIBE_BARS,
+        "ESU6.CME-1-MINUTE-LAST-EXTERNAL",
+    ) in subscriptions
 
 
 def test_market_data_plan_rejects_duplicate_stream_ownership() -> None:

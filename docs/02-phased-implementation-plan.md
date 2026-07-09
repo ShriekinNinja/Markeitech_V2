@@ -55,6 +55,14 @@ Second implementation slice:
 - Add `markeitech-market-data-plan` dry-run CLI.
 - Print planned warmups, subscriptions, data clients, and execution-client state without connecting to IB.
 
+Third implementation slice:
+
+- Map the deterministic market-data plan into Nautilus-oriented request intents.
+- Represent historical bar warmup intents with Nautilus-style bar type strings.
+- Represent active trade tick, active quote tick, and 1-minute bar subscription intents.
+- Include the request intents in the dry-run CLI output.
+- Keep request intents offline-safe; do not call live Nautilus subscription methods yet.
+
 ## Stage 3: Persistence And Recovery
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.
