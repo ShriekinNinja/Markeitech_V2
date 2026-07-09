@@ -1,16 +1,20 @@
 # Data Contracts
 
-Stage 0 does not implement domain contracts. This document defines the constraints that Stage 1 must satisfy.
+Stage 1 implements domain contracts under `backend/src/markeitech/domain`.
+
+These contracts are intentionally pure backend schemas and deterministic helpers. They do not connect to Interactive Brokers, NautilusTrader live nodes, persistence, WebSockets, frontend code, or strategy workers.
 
 ## Versioning
 
-Every externally visible backend event must include:
+Every externally visible backend event includes or derives:
 
 - schema version
 - event type
 - instrument identity
 - UTC event timestamp
 - UTC ingestion or initialization timestamp where relevant
+
+Current schema version: `1.0`.
 
 ## Contract Identity
 
@@ -26,6 +30,16 @@ Required fields:
 
 Continuous futures and silent rollover are prohibited for canonical storage and backend events.
 
+Implemented model:
+
+- `NQContractConfig`
+
+Rejected identity examples:
+
+- `NQ.CME`
+- `NQ.XCME`
+- IB `CONTFUT`
+
 ## Timestamp Rules
 
 - Store timestamps in UTC.
@@ -33,9 +47,11 @@ Continuous futures and silent rollover are prohibited for canonical storage and 
 - Use IANA timezones for session calculations.
 - Do not use fixed UTC offsets for London or New York sessions.
 
+Domain models reject naive timestamps and non-UTC aware timestamps at construction time.
+
 ## Stage 1 Contract Families
 
-Stage 1 should define:
+Stage 1 defines:
 
 - explicit NQ contract configuration
 - canonical trade ticks
@@ -48,6 +64,14 @@ Stage 1 should define:
 - gateway events
 - strategy state events
 - extension points for levels, zones, and signals
+
+Current modules:
+
+- `markeitech.domain.instruments`
+- `markeitech.domain.market_data`
+- `markeitech.domain.classification`
+- `markeitech.domain.state`
+- `markeitech.domain.events`
 
 ## Delta Classification Contract
 
@@ -66,6 +90,12 @@ Exposed outputs:
 - unknown volume
 - delta
 - classified-volume ratio
+
+Implemented helper:
+
+- `classify_trade(trade, quote, previous_trade=None, max_quote_age=...)`
+
+The default quote freshness window is two seconds. Stage 2 may tune this by configuration when real IB data characteristics are observed.
 
 ## Persistence Expectations
 

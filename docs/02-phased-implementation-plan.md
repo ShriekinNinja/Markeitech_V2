@@ -20,7 +20,15 @@ Stop condition:
 
 Deliver typed, versioned models for contract identity, trade ticks, quote ticks, classified trades, bars, readiness, gaps, health, gateway events, and strategy state events.
 
-Not started.
+Implemented:
+
+- Pydantic v2 domain contracts under `backend/src/markeitech/domain`.
+- Explicit NQ contract identity validation.
+- UTC timestamp and IANA timezone validation.
+- Canonical trade tick, quote tick, classified trade, and one-minute bar models.
+- Readiness, gap, source-health, gateway-event, and strategy-state-event models.
+- Deterministic trade classification helper.
+- Unit tests for contract identity, timestamp rules, timezone rules, dedupe keys, quote freshness, classification, bars, readiness, gaps, source health, and event shapes.
 
 ## Stage 2: Market Data Foundation
 

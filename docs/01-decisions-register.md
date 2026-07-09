@@ -60,8 +60,16 @@ Reason: Slow or reconnecting UI clients must not degrade ingestion, analytics, s
 
 ## DR-0008: Domain Schema Library
 
-Status: proposed for Stage 1
+Status: accepted
 
 Use Pydantic v2 for external API and backend domain-event schemas while preserving NautilusTrader native models inside the trading runtime where practical.
 
 Reason: Stage 1 needs typed, versioned, JSON-serializable contracts with useful validation and schema generation.
+
+## DR-0009: Stage 1 Domain Contract Boundary
+
+Status: accepted
+
+Implement Stage 1 contracts as pure Pydantic models and deterministic Python functions under `markeitech.domain`.
+
+Reason: Domain contracts must be testable before IB connectivity, persistence, WebSockets, or strategy runtime exist. NautilusTrader integration remains a runtime boundary for later stages rather than a dependency inside these external backend event schemas.
