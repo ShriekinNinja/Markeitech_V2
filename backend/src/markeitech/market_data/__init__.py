@@ -52,9 +52,19 @@ from markeitech.market_data.planner import (
     build_market_data_plan,
 )
 from markeitech.market_data.smoke import run_smoke, run_smoke_with_factory
+from markeitech.market_data.switching import (
+    ActiveInstrumentSwitchCoordinator,
+    ActiveInstrumentSwitchRequest,
+    ActiveSwitchSnapshot,
+    ActiveSwitchStatus,
+)
 
 __all__ = [
     "InteractiveBrokersConnectionConfig",
+    "ActiveInstrumentSwitchCoordinator",
+    "ActiveInstrumentSwitchRequest",
+    "ActiveSwitchSnapshot",
+    "ActiveSwitchStatus",
     "LIVE_NODE_START_CONFIRMATION",
     "LiveNodeAction",
     "LiveNodeActionKind",

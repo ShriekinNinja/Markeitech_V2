@@ -78,6 +78,10 @@ Switching the active instrument changes runtime stream ownership:
 - dashboard primary views follow the active instrument
 - signal views may include both active and background instruments
 
+Runtime switching uses a make-before-break handover. The candidate must already be enabled and must have completed the boot warmup. The actor subscribes candidate trade and quote ticks, waits until both stream types have produced data, then changes the logical active instrument and removes the previous active tick streams. All 1-minute bar subscriptions remain unchanged.
+
+Only one instrument is logically active during this process, although the candidate and current active instrument can briefly have overlapping tick subscriptions while readiness is established. A timeout or subscription failure removes the candidate streams and keeps the previous instrument active. The Stage 2 actor exposes the internal switch command; operator-facing command transport belongs to the later gateway stage.
+
 ## Ownership Boundaries
 
 ### Interactive Brokers Boundary

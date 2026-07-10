@@ -54,6 +54,8 @@ Roles:
 
 - `active`: exactly one enabled instrument. It receives live tick-by-tick data, real-time classification, real-time active bar construction, primary chart updates, and later strategy eligibility.
 - `background`: many enabled instruments. They warm up from historical bars, are annotated across configured timeframes, and then track live 1m bars for indicators, zones, trends, context, and signal dashboard events.
+
+An active-instrument switch request identifies an enabled target, request ID, UTC request timestamp, and reason. Runtime switch state exposes the current active instrument, optional candidate, candidate trade/quote readiness, deadline, and last failure. A successful promotion emits `ActiveInstrumentChangedEvent`; failed attempts do not change logical active ownership.
 - `disabled`: configured but not monitored.
 
 Data modes:

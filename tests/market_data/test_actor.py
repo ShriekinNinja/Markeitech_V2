@@ -23,6 +23,12 @@ class FakeActorApi:
     def subscribe_bars(self, *args: Any, **kwargs: Any) -> None:
         self.calls.append(("subscribe_bars", args, kwargs))
 
+    def unsubscribe_trade_ticks(self, *args: Any, **kwargs: Any) -> None:
+        self.calls.append(("unsubscribe_trade_ticks", args, kwargs))
+
+    def unsubscribe_quote_ticks(self, *args: Any, **kwargs: Any) -> None:
+        self.calls.append(("unsubscribe_quote_ticks", args, kwargs))
+
 
 def test_actor_target_converts_action_values_to_nautilus_objects() -> None:
     actor = FakeActorApi()
@@ -46,6 +52,8 @@ def test_actor_target_converts_action_values_to_nautilus_objects() -> None:
         bar_type="ESU6.CME-1-MINUTE-LAST-EXTERNAL",
         data_client_name="IB",
     )
+    target.unsubscribe_trade_ticks(instrument_id="NQU6.CME", data_client_name="IB")
+    target.unsubscribe_quote_ticks(instrument_id="NQU6.CME", data_client_name="IB")
 
     assert request_id == "request-id"
     assert str(actor.calls[0][1][0]) == "NQU6.CME-1-MINUTE-LAST-EXTERNAL"
@@ -53,6 +61,8 @@ def test_actor_target_converts_action_values_to_nautilus_objects() -> None:
     assert actor.calls[0][2]["end"] == now
     assert str(actor.calls[1][1][0]) == "NQU6.CME"
     assert str(actor.calls[3][1][0]) == "ESU6.CME-1-MINUTE-LAST-EXTERNAL"
+    assert str(actor.calls[4][1][0]) == "NQU6.CME"
+    assert str(actor.calls[5][1][0]) == "NQU6.CME"
     assert all(str(call[2]["client_id"]) == "IB" for call in actor.calls)
 
 

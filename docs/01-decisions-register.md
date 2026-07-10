@@ -131,3 +131,11 @@ Status: accepted
 Execute market-data actions through a Nautilus `Actor` and require all historical request callbacks plus a successful warmup analysis handler before any live subscription is submitted.
 
 Reason: Nautilus historical requests are asynchronous, so request call order alone cannot guarantee that instruments are analyzed and annotated before live tracking. The coordinator makes readiness explicit, blocks subscriptions on missing history or analysis failure, and gives the later analytics engine a stable historical snapshot boundary.
+
+## DR-0017: Make-Before-Break Active Instrument Switching
+
+Status: accepted
+
+Promote only enabled, warmed background instruments. Subscribe candidate trade and quote ticks and require data from both streams before atomically changing logical active ownership and removing the previous active tick subscriptions. Keep 1-minute bars subscribed for every monitored instrument throughout the handover.
+
+Reason: Waiting for candidate data avoids a blind interval during an operator switch. A short overlap in physical tick subscriptions is acceptable because exactly one instrument remains logically active. Timeout and failure rollback preserve the previous active instrument and prevent a partially ready candidate from taking ownership.

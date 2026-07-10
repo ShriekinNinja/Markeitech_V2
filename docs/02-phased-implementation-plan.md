@@ -95,6 +95,18 @@ Seventh implementation slice:
 - Register the IB data-client factory, attach the actor, and build the LiveNode before guarded startup.
 - Keep automated tests on fake actors and nodes; the manual smoke command remains the only path allowed to connect to IB.
 
+Eighth implementation slice:
+
+- Add an internal active-instrument switch command and deterministic coordinator.
+- Restrict promotion to enabled instruments after the boot warmup reaches live state.
+- Subscribe the candidate trade and quote streams before changing logical ownership.
+- Require both a candidate trade tick and quote tick before promotion.
+- Preserve every 1-minute bar subscription throughout the handover.
+- Unsubscribe the previous active tick streams only after candidate readiness.
+- Roll back candidate streams on timeout or failure and repair previous-active subscriptions best-effort.
+- Reject duplicate, concurrent, unknown, and already-active switch requests.
+- Leave HTTP/WebSocket operator command transport to the gateway stage.
+
 ## Stage 3: Persistence And Recovery
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.
