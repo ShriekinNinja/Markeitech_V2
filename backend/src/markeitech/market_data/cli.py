@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from markeitech.market_data.actions import build_livenode_action_plan
 from markeitech.market_data.bootstrap import build_livenode_bootstrap_summary
 from markeitech.market_data.intents import build_nautilus_request_plan
 from markeitech.market_data.loader import load_market_data_runtime_config
@@ -27,6 +28,7 @@ def build_plan_summary(config_path: Path) -> dict[str, Any]:
         plan,
         data_client_name=runtime_config.data_client_name,
     )
+    action_plan = build_livenode_action_plan(request_plan)
     node_config = build_trading_node_config(runtime_config)
     bootstrap_summary = build_livenode_bootstrap_summary(runtime_config)
     return {
@@ -67,6 +69,17 @@ def build_plan_summary(config_path: Path) -> dict[str, Any]:
                 "bar_type": subscription.bar_type,
             }
             for subscription in request_plan.subscriptions
+        ],
+        "livenode_actions": [
+            {
+                "instrument_id": action.instrument_id,
+                "kind": action.kind.value,
+                "phase": action.phase.value,
+                "data_client_name": action.data_client_name,
+                "bar_type": action.bar_type,
+                "lookback_sessions": action.lookback_sessions,
+            }
+            for action in action_plan.actions
         ],
     }
 

@@ -128,3 +128,19 @@ def test_cli_plan_summary_for_checked_in_example() -> None:
         "data_client_name": "IB",
         "bar_type": "ESU6.CME-1-MINUTE-LAST-EXTERNAL",
     } in summary["nautilus_subscription_intents"]
+    assert {
+        "instrument_id": "NQU6.CME",
+        "kind": "subscribe_trade_ticks",
+        "phase": "live_subscription",
+        "data_client_name": "IB",
+        "bar_type": None,
+        "lookback_sessions": None,
+    } in summary["livenode_actions"]
+    assert {
+        "instrument_id": "NQU6.CME",
+        "kind": "request_historical_bars",
+        "phase": "warmup",
+        "data_client_name": "IB",
+        "bar_type": "NQU6.CME-1-MINUTE-LAST-EXTERNAL",
+        "lookback_sessions": 5,
+    } in summary["livenode_actions"]

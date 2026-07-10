@@ -115,3 +115,11 @@ Status: accepted
 Add a separate `markeitech-market-data-smoke` command for manual IB smoke testing.
 
 Reason: The normal dry-run CLI should remain harmless. Any command that may start the Nautilus LiveNode must be visually distinct, print the validated plan first, require explicit config flags, and require the confirmation token. Automated tests must use fake nodes rather than IB.
+
+## DR-0015: Ordered LiveNode Actions Before Real Calls
+
+Status: accepted
+
+Translate Nautilus request intents into ordered LiveNode actions before wiring real Nautilus method calls.
+
+Reason: Warmup requests must happen before live subscriptions, active/background ownership must stay deterministic, and duplicate actions must be caught before any IB connection. A fake-friendly action executor keeps this layer testable without TWS or IB Gateway.

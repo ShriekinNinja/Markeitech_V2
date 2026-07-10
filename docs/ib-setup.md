@@ -93,6 +93,8 @@ uv run markeitech-market-data-smoke config/market-data.example.toml --confirm I_
 
 The command prints the same plan summary as the dry run and refuses to start unless both config flags and the confirmation token are present. Automated tests use a fake node; they do not connect to IB.
 
+Dry-run output also includes ordered LiveNode actions. These actions are still validation artifacts until a later adapter maps them to real Nautilus calls.
+
 ## Execution Safety
 
 Execution is disabled by default:

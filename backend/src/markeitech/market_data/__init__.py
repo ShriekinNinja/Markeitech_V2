@@ -1,5 +1,13 @@
 """Market-data runtime planning and Nautilus LiveNode configuration."""
 
+from markeitech.market_data.actions import (
+    LiveNodeAction,
+    LiveNodeActionKind,
+    LiveNodeActionPhase,
+    LiveNodeActionPlan,
+    build_livenode_action_plan,
+    execute_livenode_action_plan,
+)
 from markeitech.market_data.bootstrap import (
     LIVE_NODE_START_CONFIRMATION,
     LiveNodeBootstrapSummary,
@@ -35,6 +43,10 @@ from markeitech.market_data.smoke import run_smoke, run_smoke_with_factory
 __all__ = [
     "InteractiveBrokersConnectionConfig",
     "LIVE_NODE_START_CONFIRMATION",
+    "LiveNodeAction",
+    "LiveNodeActionKind",
+    "LiveNodeActionPhase",
+    "LiveNodeActionPlan",
     "LiveNodeBootstrapSummary",
     "MarketDataRuntimeConfig",
     "NautilusIntentKind",
@@ -46,10 +58,12 @@ __all__ = [
     "SubscriptionKind",
     "WarmupKind",
     "build_live_node",
+    "build_livenode_action_plan",
     "build_livenode_bootstrap_summary",
     "build_market_data_plan",
     "build_nautilus_request_plan",
     "build_trading_node_config",
+    "execute_livenode_action_plan",
     "load_market_data_runtime_config",
     "parse_market_data_runtime_config",
     "run_smoke",

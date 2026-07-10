@@ -28,8 +28,9 @@ Before any live connection, Markeitech builds three deterministic layers:
 - validated instrument registry and runtime config
 - ownership plan for warmups and subscriptions
 - Nautilus-oriented request intents for historical bars, trade ticks, quote ticks, and bars
+- ordered LiveNode actions for warmups and live subscriptions
 
-Only the later guarded LiveNode bootstrap should translate those intents into live Nautilus method calls.
+Only the later guarded LiveNode adapter should translate those actions into live Nautilus method calls.
 
 The guarded bootstrap may construct a Nautilus `TradingNode` from validated config, but starting the node requires explicit manual opt-in and a confirmation token because it can connect to IB.
 

@@ -78,6 +78,14 @@ Fifth implementation slice:
 - Refuse smoke startup unless manual config flags and confirmation token are present.
 - Keep automated smoke tests on fake nodes only.
 
+Sixth implementation slice:
+
+- Map Nautilus request intents into ordered LiveNode actions.
+- Keep warmup historical bar requests before live subscriptions.
+- Add a fake-friendly action executor protocol.
+- Include LiveNode actions in dry-run output.
+- Do not call real Nautilus subscription methods yet.
+
 ## Stage 3: Persistence And Recovery
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.
