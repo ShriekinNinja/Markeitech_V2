@@ -1,0 +1,71 @@
+from __future__ import annotations
+
+from datetime import timedelta
+from typing import Any
+
+from markeitech.domain.base import utc_datetime_from_unix_ns
+from markeitech.domain.market_data import (
+    CanonicalQuoteTick,
+    CanonicalTradeTick,
+    OneMinuteBar,
+)
+
+ONE_MINUTE_NS = 60_000_000_000
+
+
+def normalize_trade_tick(tick: Any, *, source: str = "ib") -> CanonicalTradeTick:
+    return CanonicalTradeTick(
+        instrument_id=str(tick.instrument_id),
+        event_ts=utc_datetime_from_unix_ns(tick.ts_event),
+        ts_init=utc_datetime_from_unix_ns(tick.ts_init),
+        event_ts_ns=tick.ts_event,
+        ts_init_ns=tick.ts_init,
+        price=tick.price.as_decimal(),
+        size=tick.size.as_decimal(),
+        source_trade_id=str(tick.trade_id),
+        source=source,
+    )
+
+
+def normalize_quote_tick(tick: Any, *, source: str = "ib") -> CanonicalQuoteTick:
+    return CanonicalQuoteTick(
+        instrument_id=str(tick.instrument_id),
+        event_ts=utc_datetime_from_unix_ns(tick.ts_event),
+        ts_init=utc_datetime_from_unix_ns(tick.ts_init),
+        event_ts_ns=tick.ts_event,
+        ts_init_ns=tick.ts_init,
+        bid_price=tick.bid_price.as_decimal(),
+        ask_price=tick.ask_price.as_decimal(),
+        bid_size=tick.bid_size.as_decimal(),
+        ask_size=tick.ask_size.as_decimal(),
+        source=source,
+    )
+
+
+def normalize_one_minute_bar(bar: Any, *, source: str = "ib") -> OneMinuteBar:
+    duration = bar.bar_type.spec.timedelta
+    if duration != timedelta(minutes=1):
+        raise ValueError(f"expected a one-minute bar, received {bar.bar_type}")
+
+    open_ts_ns = bar.ts_event
+    close_ts_ns = open_ts_ns + ONE_MINUTE_NS
+    volume = bar.volume.as_decimal()
+    return OneMinuteBar(
+        instrument_id=str(bar.bar_type.instrument_id),
+        event_ts=utc_datetime_from_unix_ns(close_ts_ns),
+        ts_init=utc_datetime_from_unix_ns(bar.ts_init),
+        event_ts_ns=close_ts_ns,
+        ts_init_ns=bar.ts_init,
+        open_ts=utc_datetime_from_unix_ns(open_ts_ns),
+        close_ts=utc_datetime_from_unix_ns(close_ts_ns),
+        open=bar.open.as_decimal(),
+        high=bar.high.as_decimal(),
+        low=bar.low.as_decimal(),
+        close=bar.close.as_decimal(),
+        volume=volume,
+        buy_volume=0,
+        sell_volume=0,
+        unknown_volume=volume,
+        source=source,
+        is_revision=bool(getattr(bar, "is_revision", False)),
+    )

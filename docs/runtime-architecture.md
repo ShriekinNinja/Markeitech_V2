@@ -82,6 +82,16 @@ Runtime switching uses a make-before-break handover. The candidate must already 
 
 Only one instrument is logically active during this process, although the candidate and current active instrument can briefly have overlapping tick subscriptions while readiness is established. A timeout or subscription failure removes the candidate streams and keeps the previous instrument active. The Stage 2 actor exposes the internal switch command; operator-facing command transport belongs to the later gateway stage.
 
+## Live Data Ingestion
+
+The market-data actor normalizes Nautilus `TradeTick`, `QuoteTick`, and external 1-minute `Bar` objects at the runtime boundary. Canonical events retain UTC datetimes, original nanosecond timestamps, decimal prices and quantities, source identity, and venue trade IDs where available. Data for unconfigured instruments is rejected.
+
+Each configured instrument has an isolated runtime snapshot containing event counts and its latest trade, quote, classified trade, external bar, and active tick-built bar. Snapshot role follows the runtime switch coordinator rather than the boot registry, so active ownership changes without replacing instrument state.
+
+Subscribed trades are classified against the latest valid same-instrument quote. The logical active instrument also builds a provisional 1-minute bar from classified ticks. That bar carries classified buy, sell, and unknown volume and becomes complete when the first trade in the next minute arrives. Nautilus/IB external bars are completed bars whose volume remains unknown-side unless a later reconciliation step can prove attribution.
+
+Normalized events flow through an injectable sink. Stage 2 does not persist or broadcast them yet; persistence and WebSocket delivery consume this boundary in later stages.
+
 ## Ownership Boundaries
 
 ### Interactive Brokers Boundary

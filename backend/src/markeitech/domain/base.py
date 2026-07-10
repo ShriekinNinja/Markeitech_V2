@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 SCHEMA_VERSION = "1.0"
 
@@ -44,11 +44,34 @@ class InstrumentEvent(VersionedDomainModel):
     instrument_id: str = Field(min_length=1)
     event_ts: datetime
     ts_init: datetime
+    event_ts_ns: int | None = Field(default=None, ge=0)
+    ts_init_ns: int | None = Field(default=None, ge=0)
 
     @field_validator("event_ts", "ts_init")
     @classmethod
     def _timestamps_must_be_utc(cls, value: datetime) -> datetime:
         return require_utc(value)
 
+    @model_validator(mode="after")
+    def _nanosecond_timestamps_must_match_datetimes(self) -> InstrumentEvent:
+        for field_name, ns_field_name in (
+            ("event_ts", "event_ts_ns"),
+            ("ts_init", "ts_init_ns"),
+        ):
+            timestamp_ns = getattr(self, ns_field_name)
+            if timestamp_ns is None:
+                continue
+            if utc_datetime_from_unix_ns(timestamp_ns) != getattr(self, field_name):
+                raise ValueError(
+                    f"{ns_field_name} must match {field_name} at microsecond precision"
+                )
+        return self
+
     def event_key_parts(self) -> tuple[Any, ...]:
-        return (self.schema_version, self.instrument_id, self.event_ts.isoformat())
+        event_time = self.event_ts_ns if self.event_ts_ns is not None else self.event_ts.isoformat()
+        return (self.schema_version, self.instrument_id, event_time)
+
+
+def utc_datetime_from_unix_ns(timestamp_ns: int) -> datetime:
+    seconds, nanoseconds = divmod(timestamp_ns, 1_000_000_000)
+    return datetime.fromtimestamp(seconds, tz=UTC).replace(microsecond=nanoseconds // 1_000)

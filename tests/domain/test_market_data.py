@@ -60,6 +60,11 @@ def test_trade_dedupe_key_is_stable() -> None:
     assert first.dedupe_key == second.dedupe_key
 
 
+def test_nanosecond_timestamp_must_match_datetime() -> None:
+    with pytest.raises(ValidationError, match="event_ts_ns must match"):
+        trade(event_ts_ns=1)
+
+
 def test_quote_rejects_crossed_market() -> None:
     with pytest.raises(ValidationError, match="ask price"):
         quote(bid_price=Decimal("20001.00"), ask_price=Decimal("20000.50"))

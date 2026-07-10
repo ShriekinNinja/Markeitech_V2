@@ -139,3 +139,11 @@ Status: accepted
 Promote only enabled, warmed background instruments. Subscribe candidate trade and quote ticks and require data from both streams before atomically changing logical active ownership and removing the previous active tick subscriptions. Keep 1-minute bars subscribed for every monitored instrument throughout the handover.
 
 Reason: Waiting for candidate data avoids a blind interval during an operator switch. A short overlap in physical tick subscriptions is acceptable because exactly one instrument remains logically active. Timeout and failure rollback preserve the previous active instrument and prevent a partially ready candidate from taking ownership.
+
+## DR-0018: Canonical Normalization At The Actor Boundary
+
+Status: accepted
+
+Normalize Nautilus ticks and bars immediately inside the market-data actor, preserve original nanosecond timestamps and decimal values, and route canonical events into isolated per-instrument snapshots before persistence or presentation.
+
+Reason: Nautilus remains the live runtime authority while Markeitech needs stable, versioned contracts for analytics, storage, and the dashboard. Preserving raw timestamp precision prevents tick identity loss. External IB bars retain unknown-side volume, while active tick-built bars expose only classification that can be supported by observed trades and quotes.

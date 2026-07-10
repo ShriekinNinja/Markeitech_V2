@@ -14,6 +14,7 @@ from markeitech.market_data.actor import (
     NautilusActorActionTarget,
     conservative_warmup_start,
 )
+from markeitech.market_data.bars import ActiveOneMinuteBarBuilder, TickBarUpdate
 from markeitech.market_data.bootstrap import (
     LIVE_NODE_START_CONFIRMATION,
     LiveNodeBootstrapSummary,
@@ -44,12 +45,21 @@ from markeitech.market_data.loader import (
     parse_market_data_runtime_config,
 )
 from markeitech.market_data.nautilus import build_trading_node_config
+from markeitech.market_data.normalization import (
+    normalize_one_minute_bar,
+    normalize_quote_tick,
+    normalize_trade_tick,
+)
 from markeitech.market_data.planner import (
     PlannedSubscription,
     PlannedWarmup,
     SubscriptionKind,
     WarmupKind,
     build_market_data_plan,
+)
+from markeitech.market_data.routing import (
+    InstrumentMarketDataSnapshot,
+    LiveMarketDataRouter,
 )
 from markeitech.market_data.smoke import run_smoke, run_smoke_with_factory
 from markeitech.market_data.switching import (
@@ -61,8 +71,10 @@ from markeitech.market_data.switching import (
 
 __all__ = [
     "InteractiveBrokersConnectionConfig",
+    "InstrumentMarketDataSnapshot",
     "ActiveInstrumentSwitchCoordinator",
     "ActiveInstrumentSwitchRequest",
+    "ActiveOneMinuteBarBuilder",
     "ActiveSwitchSnapshot",
     "ActiveSwitchStatus",
     "LIVE_NODE_START_CONFIRMATION",
@@ -71,6 +83,7 @@ __all__ = [
     "LiveNodeActionPhase",
     "LiveNodeActionPlan",
     "LiveNodeBootstrapSummary",
+    "LiveMarketDataRouter",
     "MarkeitechMarketDataActor",
     "MarketDataRuntimeConfig",
     "NautilusIntentKind",
@@ -81,6 +94,7 @@ __all__ = [
     "PlannedSubscription",
     "PlannedWarmup",
     "SubscriptionKind",
+    "TickBarUpdate",
     "WarmupKind",
     "WarmupCoordinator",
     "WarmupSnapshot",
@@ -96,6 +110,9 @@ __all__ = [
     "execute_livenode_action",
     "execute_livenode_action_plan",
     "load_market_data_runtime_config",
+    "normalize_one_minute_bar",
+    "normalize_quote_tick",
+    "normalize_trade_tick",
     "parse_market_data_runtime_config",
     "run_smoke",
     "run_smoke_with_factory",

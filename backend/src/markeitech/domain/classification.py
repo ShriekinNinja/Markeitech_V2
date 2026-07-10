@@ -37,6 +37,8 @@ def classify_trade(
         instrument_id=trade.instrument_id,
         event_ts=trade.event_ts,
         ts_init=trade.ts_init,
+        event_ts_ns=trade.event_ts_ns,
+        ts_init_ns=trade.ts_init_ns,
         trade=trade,
         quote=matched_quote,
         side=side,

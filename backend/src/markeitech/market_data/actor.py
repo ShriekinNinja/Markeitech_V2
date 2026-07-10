@@ -15,6 +15,11 @@ from markeitech.market_data.coordinator import (
     WarmupReadyHandler,
     WarmupState,
 )
+from markeitech.market_data.routing import (
+    InstrumentMarketDataSnapshot,
+    LiveMarketDataRouter,
+    MarketDataEventSink,
+)
 from markeitech.market_data.switching import (
     ActiveInstrumentSwitchCoordinator,
     ActiveInstrumentSwitchRequest,
@@ -135,6 +140,7 @@ class MarkeitechMarketDataActor(Actor):
         *,
         on_warmup_ready: WarmupReadyHandler,
         on_active_instrument_changed: Callable[[ActiveInstrumentChangedEvent], None] | None = None,
+        on_market_data_event: MarketDataEventSink | None = None,
         resolve_warmup_start: WarmupStartResolver | None = None,
     ) -> None:
         super().__init__()
@@ -168,6 +174,11 @@ class MarkeitechMarketDataActor(Actor):
             runtime_ready=lambda: self._warmup.state == WarmupState.LIVE,
             on_changed=self._handle_active_instrument_changed,
         )
+        self._router = LiveMarketDataRouter(
+            instrument_ids=enabled_instrument_ids,
+            active_instrument_id=lambda: self._switch.snapshot.active_instrument_id,
+            on_event=on_market_data_event,
+        )
 
     @property
     def warmup_state(self) -> WarmupState:
@@ -181,6 +192,10 @@ class MarkeitechMarketDataActor(Actor):
     def last_active_instrument_changed_event(self) -> ActiveInstrumentChangedEvent | None:
         return self._last_active_instrument_changed_event
 
+    @property
+    def market_data_snapshots(self) -> tuple[InstrumentMarketDataSnapshot, ...]:
+        return self._router.snapshots()
+
     def on_start(self) -> None:
         self._warmup.start()
 
@@ -190,14 +205,19 @@ class MarkeitechMarketDataActor(Actor):
             self._warmup.record_historical_data(bar_type=str(bar_type), data=data)
 
     def on_trade_tick(self, tick: Any) -> None:
+        self._router.handle_trade_tick(tick)
         event = self._switch.observe_trade_tick(str(tick.instrument_id))
         if event is not None:
             self._cancel_switch_timer()
 
     def on_quote_tick(self, tick: Any) -> None:
+        self._router.handle_quote_tick(tick)
         event = self._switch.observe_quote_tick(str(tick.instrument_id))
         if event is not None:
             self._cancel_switch_timer()
+
+    def on_bar(self, bar: Any) -> None:
+        self._router.handle_bar(bar)
 
     def request_active_instrument_switch(
         self,
@@ -220,6 +240,7 @@ class MarkeitechMarketDataActor(Actor):
         self._switch_timer_name = None
 
     def _handle_active_instrument_changed(self, event: ActiveInstrumentChangedEvent) -> None:
+        self._router.activate_instrument(event.active_instrument_id)
         self._last_active_instrument_changed_event = event
         if self._on_active_instrument_changed is not None:
             self._on_active_instrument_changed(event)

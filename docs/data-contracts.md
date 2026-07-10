@@ -56,6 +56,10 @@ Roles:
 - `background`: many enabled instruments. They warm up from historical bars, are annotated across configured timeframes, and then track live 1m bars for indicators, zones, trends, context, and signal dashboard events.
 
 An active-instrument switch request identifies an enabled target, request ID, UTC request timestamp, and reason. Runtime switch state exposes the current active instrument, optional candidate, candidate trade/quote readiness, deadline, and last failure. A successful promotion emits `ActiveInstrumentChangedEvent`; failed attempts do not change logical active ownership.
+
+Canonical instrument events may include `event_ts_ns` and `ts_init_ns` alongside UTC datetimes. The integer nanosecond fields preserve source identity; when present, they must match their datetime fields at Python's microsecond precision. Canonical trades also retain the venue/source trade ID.
+
+One-minute bars identify their source and completion state. IB external bars are completed and initially assign all volume to unknown-side volume. Active tick-built bars are provisional until minute rollover and carry buy, sell, and unknown volume derived only from the configured trade-classification rules.
 - `disabled`: configured but not monitored.
 
 Data modes:

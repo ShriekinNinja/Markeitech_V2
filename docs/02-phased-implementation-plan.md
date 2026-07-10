@@ -107,6 +107,18 @@ Eighth implementation slice:
 - Reject duplicate, concurrent, unknown, and already-active switch requests.
 - Leave HTTP/WebSocket operator command transport to the gateway stage.
 
+Ninth implementation slice:
+
+- Normalize Nautilus trade ticks, quote ticks, and external 1-minute bars into Markeitech domain events.
+- Preserve source nanosecond timestamps alongside UTC datetimes and retain venue trade IDs.
+- Route every event to isolated per-instrument runtime snapshots.
+- Classify subscribed trades against the latest valid same-instrument quote.
+- Build provisional active-instrument 1-minute bars from classified ticks and complete them on minute rollover.
+- Mark tick-built provisional/completed bars separately from completed IB external bars.
+- Emit normalized events through an injectable runtime sink for later persistence and WebSocket stages.
+- Reject data for instruments outside the configured runtime registry.
+- Defer stale-data, gap, retry, and reconnect policy to the next Stage 2 hardening slice.
+
 ## Stage 3: Persistence And Recovery
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.

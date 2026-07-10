@@ -23,15 +23,18 @@ class CanonicalTradeTick(InstrumentEvent):
     price: Decimal = Field(gt=0)
     size: Decimal = Field(gt=0)
     sequence: int | None = Field(default=None, ge=0)
+    source_trade_id: str | None = Field(default=None, min_length=1)
     source: str = Field(default="ib", min_length=1)
 
     @computed_field
     @property
     def dedupe_key(self) -> str:
         sequence = "none" if self.sequence is None else str(self.sequence)
+        source_trade_id = self.source_trade_id or "none"
+        event_time = self.event_ts_ns if self.event_ts_ns is not None else self.event_ts.isoformat()
         return (
-            f"trade:{self.instrument_id}:{self.event_ts.isoformat()}:"
-            f"{self.price}:{self.size}:{sequence}:{self.source}"
+            f"trade:{self.instrument_id}:{event_time}:"
+            f"{self.price}:{self.size}:{sequence}:{source_trade_id}:{self.source}"
         )
 
 
@@ -53,8 +56,9 @@ class CanonicalQuoteTick(InstrumentEvent):
     @property
     def dedupe_key(self) -> str:
         sequence = "none" if self.sequence is None else str(self.sequence)
+        event_time = self.event_ts_ns if self.event_ts_ns is not None else self.event_ts.isoformat()
         return (
-            f"quote:{self.instrument_id}:{self.event_ts.isoformat()}:"
+            f"quote:{self.instrument_id}:{event_time}:"
             f"{self.bid_price}:{self.ask_price}:{self.bid_size}:{self.ask_size}:"
             f"{sequence}:{self.source}"
         )
@@ -116,6 +120,9 @@ class OneMinuteBar(InstrumentEvent):
     buy_volume: Decimal = Field(ge=0)
     sell_volume: Decimal = Field(ge=0)
     unknown_volume: Decimal = Field(ge=0)
+    source: str = Field(default="ib", min_length=1)
+    is_revision: bool = False
+    is_complete: bool = True
 
     @field_validator("open_ts", "close_ts")
     @classmethod
