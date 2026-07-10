@@ -119,6 +119,18 @@ Ninth implementation slice:
 - Reject data for instruments outside the configured runtime registry.
 - Defer stale-data, gap, retry, and reconnect policy to the next Stage 2 hardening slice.
 
+Tenth implementation slice:
+
+- Track required live streams by current instrument role.
+- Mark streams as waiting, healthy, stale, or session-paused using configurable thresholds.
+- Produce per-instrument readiness and source-level health snapshots.
+- Detect missing external 1-minute intervals and keep gaps open until late bars recover them.
+- Ignore provisional tick-built bars when evaluating authoritative external-bar continuity.
+- Re-evaluate health on a one-second actor timer and emit only semantic transitions.
+- Recalculate required streams immediately after an active-instrument switch.
+- Inject session-open policy so closed markets can pause stale-data expectations.
+- Leave physical IB reconnect and transport retries to NautilusTrader; Markeitech owns observable degradation and recovery state.
+
 ## Stage 3: Persistence And Recovery
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.

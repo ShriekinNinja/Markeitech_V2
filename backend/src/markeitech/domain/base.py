@@ -75,3 +75,14 @@ class InstrumentEvent(VersionedDomainModel):
 def utc_datetime_from_unix_ns(timestamp_ns: int) -> datetime:
     seconds, nanoseconds = divmod(timestamp_ns, 1_000_000_000)
     return datetime.fromtimestamp(seconds, tz=UTC).replace(microsecond=nanoseconds // 1_000)
+
+
+def unix_ns_from_utc_datetime(value: datetime) -> int:
+    value = require_utc(value)
+    epoch = datetime(1970, 1, 1, tzinfo=UTC)
+    elapsed = value - epoch
+    return (
+        elapsed.days * 86_400_000_000_000
+        + elapsed.seconds * 1_000_000_000
+        + elapsed.microseconds * 1_000
+    )

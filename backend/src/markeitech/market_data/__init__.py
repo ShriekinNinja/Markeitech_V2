@@ -33,6 +33,15 @@ from markeitech.market_data.coordinator import (
     WarmupState,
     require_historical_coverage,
 )
+from markeitech.market_data.health import (
+    InstrumentMarketDataHealth,
+    MarketDataHealthMonitor,
+    MarketDataHealthPolicy,
+    MarketDataHealthSnapshot,
+    MarketDataStreamHealth,
+    MarketDataStreamKind,
+    MarketDataStreamStatus,
+)
 from markeitech.market_data.intents import (
     NautilusIntentKind,
     NautilusRequestPlan,
@@ -72,6 +81,7 @@ from markeitech.market_data.switching import (
 __all__ = [
     "InteractiveBrokersConnectionConfig",
     "InstrumentMarketDataSnapshot",
+    "InstrumentMarketDataHealth",
     "ActiveInstrumentSwitchCoordinator",
     "ActiveInstrumentSwitchRequest",
     "ActiveOneMinuteBarBuilder",
@@ -86,6 +96,12 @@ __all__ = [
     "LiveMarketDataRouter",
     "MarkeitechMarketDataActor",
     "MarketDataRuntimeConfig",
+    "MarketDataHealthMonitor",
+    "MarketDataHealthPolicy",
+    "MarketDataHealthSnapshot",
+    "MarketDataStreamHealth",
+    "MarketDataStreamKind",
+    "MarketDataStreamStatus",
     "NautilusIntentKind",
     "NautilusRequestPlan",
     "NautilusSubscriptionIntent",

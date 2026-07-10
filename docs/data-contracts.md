@@ -60,6 +60,8 @@ An active-instrument switch request identifies an enabled target, request ID, UT
 Canonical instrument events may include `event_ts_ns` and `ts_init_ns` alongside UTC datetimes. The integer nanosecond fields preserve source identity; when present, they must match their datetime fields at Python's microsecond precision. Canonical trades also retain the venue/source trade ID.
 
 One-minute bars identify their source and completion state. IB external bars are completed and initially assign all volume to unknown-side volume. Active tick-built bars are provisional until minute rollover and carry buy, sell, and unknown volume derived only from the configured trade-classification rules.
+
+Market-data stream health identifies trade-tick, quote-tick, or external 1-minute-bar streams and reports `waiting`, `healthy`, `stale`, or `paused`. Instrument health combines the streams required by its current runtime role with external-bar gap state. Source health aggregates instrument degradation without taking ownership of the underlying Nautilus reconnect lifecycle.
 - `disabled`: configured but not monitored.
 
 Data modes:

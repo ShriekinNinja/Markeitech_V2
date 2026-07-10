@@ -147,3 +147,11 @@ Status: accepted
 Normalize Nautilus ticks and bars immediately inside the market-data actor, preserve original nanosecond timestamps and decimal values, and route canonical events into isolated per-instrument snapshots before persistence or presentation.
 
 Reason: Nautilus remains the live runtime authority while Markeitech needs stable, versioned contracts for analytics, storage, and the dashboard. Preserving raw timestamp precision prevents tick identity loss. External IB bars retain unknown-side volume, while active tick-built bars expose only classification that can be supported by observed trades and quotes.
+
+## DR-0019: Observe Health Without Duplicating Reconnect Ownership
+
+Status: accepted
+
+Track role-based stream freshness and external-bar continuity inside Markeitech, while leaving the physical Interactive Brokers reconnect and retry lifecycle to NautilusTrader.
+
+Reason: The product needs explicit waiting, stale, gap, degraded, and recovered states for persistence and operator visibility. A second connection-recovery loop would compete with Nautilus and risk duplicate subscriptions. Session-open policy remains injectable so stale thresholds are evaluated only when data is expected.

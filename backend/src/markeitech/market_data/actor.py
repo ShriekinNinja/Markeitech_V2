@@ -15,6 +15,12 @@ from markeitech.market_data.coordinator import (
     WarmupReadyHandler,
     WarmupState,
 )
+from markeitech.market_data.health import (
+    MarketDataHealthMonitor,
+    MarketDataHealthSink,
+    MarketDataHealthSnapshot,
+    SessionOpenResolver,
+)
 from markeitech.market_data.routing import (
     InstrumentMarketDataSnapshot,
     LiveMarketDataRouter,
@@ -141,6 +147,8 @@ class MarkeitechMarketDataActor(Actor):
         on_warmup_ready: WarmupReadyHandler,
         on_active_instrument_changed: Callable[[ActiveInstrumentChangedEvent], None] | None = None,
         on_market_data_event: MarketDataEventSink | None = None,
+        on_market_data_health: MarketDataHealthSink | None = None,
+        is_session_open: SessionOpenResolver | None = None,
         resolve_warmup_start: WarmupStartResolver | None = None,
     ) -> None:
         super().__init__()
@@ -174,10 +182,19 @@ class MarkeitechMarketDataActor(Actor):
             runtime_ready=lambda: self._warmup.state == WarmupState.LIVE,
             on_changed=self._handle_active_instrument_changed,
         )
+        self._external_market_data_sink = on_market_data_event
+        self._health = MarketDataHealthMonitor(
+            instrument_ids=enabled_instrument_ids,
+            active_instrument_id=lambda: self._switch.snapshot.active_instrument_id,
+            now=lambda: self.clock.utc_now(),
+            is_session_open=is_session_open or (lambda _instrument_id, _now: True),
+            on_change=on_market_data_health,
+        )
+        self._health_timer_started = False
         self._router = LiveMarketDataRouter(
             instrument_ids=enabled_instrument_ids,
             active_instrument_id=lambda: self._switch.snapshot.active_instrument_id,
-            on_event=on_market_data_event,
+            on_event=self._handle_market_data_event,
         )
 
     @property
@@ -196,8 +213,24 @@ class MarkeitechMarketDataActor(Actor):
     def market_data_snapshots(self) -> tuple[InstrumentMarketDataSnapshot, ...]:
         return self._router.snapshots()
 
+    @property
+    def market_data_health(self) -> MarketDataHealthSnapshot:
+        return self._health.current
+
     def on_start(self) -> None:
         self._warmup.start()
+        self.clock.set_timer(
+            name="market-data-health",
+            interval=timedelta(seconds=1),
+            callback=lambda _event: self._health.evaluate(),
+        )
+        self._health_timer_started = True
+
+    def on_stop(self) -> None:
+        if self._health_timer_started:
+            self.clock.cancel_timer("market-data-health")
+            self._health_timer_started = False
+        self._cancel_switch_timer()
 
     def on_historical_data(self, data: Any) -> None:
         bar_type = getattr(data, "bar_type", None)
@@ -241,9 +274,15 @@ class MarkeitechMarketDataActor(Actor):
 
     def _handle_active_instrument_changed(self, event: ActiveInstrumentChangedEvent) -> None:
         self._router.activate_instrument(event.active_instrument_id)
+        self._health.evaluate()
         self._last_active_instrument_changed_event = event
         if self._on_active_instrument_changed is not None:
             self._on_active_instrument_changed(event)
+
+    def _handle_market_data_event(self, event: Any) -> None:
+        self._health.observe(event)
+        if self._external_market_data_sink is not None:
+            self._external_market_data_sink(event)
 
     def _cancel_switch_timer(self) -> None:
         if self._switch_timer_name is not None:

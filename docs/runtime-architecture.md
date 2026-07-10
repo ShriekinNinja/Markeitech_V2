@@ -92,6 +92,16 @@ Subscribed trades are classified against the latest valid same-instrument quote.
 
 Normalized events flow through an injectable sink. Stage 2 does not persist or broadcast them yet; persistence and WebSocket delivery consume this boundary in later stages.
 
+## Live Health And Gaps
+
+Live health requirements follow current runtime ownership. The active instrument requires fresh trade ticks, quote ticks, and completed external 1-minute bars. Background instruments require fresh completed external 1-minute bars. Provisional and completed tick-built bars do not satisfy the external-bar health requirement.
+
+Each required stream is waiting, healthy, stale, or session-paused. Stale thresholds are configurable, and session-open policy is injected so an exchange calendar can suspend expectations outside trading hours. The actor evaluates health once per second and emits a health snapshot only when semantic state changes.
+
+External bar continuity is tracked by interval. Missing 1-minute opens create warning, degraded, or critical gap state based on count. A gap remains open across newer bars and closes only when late data fills every missing interval.
+
+NautilusTrader owns the physical Interactive Brokers connection lifecycle and reconnect behavior. Markeitech does not create a competing reconnect loop; it observes canonical data, reports degradation, and records recovery transitions for later persistence and operator presentation.
+
 ## Ownership Boundaries
 
 ### Interactive Brokers Boundary

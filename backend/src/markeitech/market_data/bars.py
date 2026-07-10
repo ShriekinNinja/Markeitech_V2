@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from markeitech.domain.base import utc_datetime_from_unix_ns
+from markeitech.domain.base import unix_ns_from_utc_datetime, utc_datetime_from_unix_ns
 from markeitech.domain.market_data import ClassifiedTrade, OneMinuteBar, TradeSide
 from markeitech.market_data.normalization import ONE_MINUTE_NS
 
@@ -112,10 +112,10 @@ class ActiveOneMinuteBarBuilder:
 def _event_ns(trade: ClassifiedTrade) -> int:
     if trade.event_ts_ns is not None:
         return trade.event_ts_ns
-    return int(trade.event_ts.timestamp() * 1_000_000_000)
+    return unix_ns_from_utc_datetime(trade.event_ts)
 
 
 def _init_ns(trade: ClassifiedTrade) -> int:
     if trade.ts_init_ns is not None:
         return trade.ts_init_ns
-    return int(trade.ts_init.timestamp() * 1_000_000_000)
+    return unix_ns_from_utc_datetime(trade.ts_init)
