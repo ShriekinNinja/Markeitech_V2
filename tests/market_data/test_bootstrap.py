@@ -16,6 +16,7 @@ from markeitech.market_data import (
     MarketDataRuntimeConfig,
     build_live_node,
     build_livenode_bootstrap_summary,
+    build_prepared_market_data_live_node,
     start_live_node,
 )
 from pydantic import ValidationError
@@ -25,6 +26,19 @@ class FakeNode:
     def __init__(self, *, config: Any) -> None:
         self.config = config
         self.started = False
+        self.built = False
+        self.trader = self
+        self.actors: list[Any] = []
+        self.data_client_factories: dict[str, type[Any]] = {}
+
+    def add_actor(self, actor: Any) -> None:
+        self.actors.append(actor)
+
+    def add_data_client_factory(self, name: str, factory: type[Any]) -> None:
+        self.data_client_factories[name] = factory
+
+    def build(self) -> None:
+        self.built = True
 
     def run(self) -> str:
         self.started = True
@@ -80,6 +94,27 @@ def test_build_live_node_uses_node_factory_without_starting() -> None:
     assert node.started is False
     assert str(node.config.trader_id) == "MARK-001"
     assert node.config.exec_clients == {}
+
+
+def test_build_prepared_live_node_attaches_actor_and_builds_clients() -> None:
+    actors: list[tuple[Any, Any]] = []
+
+    def actor_factory(action_plan: Any, *, on_warmup_ready: Any) -> object:
+        actors.append((action_plan, on_warmup_ready))
+        return object()
+
+    node = build_prepared_market_data_live_node(
+        runtime_config(),
+        node_factory=FakeNode,
+        actor_factory=actor_factory,
+        data_client_factory=type("FakeDataClientFactory", (), {}),
+    )
+
+    assert node.built is True
+    assert node.started is False
+    assert node.actors and node.actors[0] is not None
+    assert node.data_client_factories.keys() == {"IB"}
+    assert actors[0][0].active_instrument_id == "NQU6.CME"
 
 
 def test_build_live_node_refuses_when_disabled_by_config() -> None:

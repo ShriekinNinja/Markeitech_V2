@@ -86,6 +86,15 @@ Sixth implementation slice:
 - Include LiveNode actions in dry-run output.
 - Do not call real Nautilus subscription methods yet.
 
+Seventh implementation slice:
+
+- Add a Nautilus `Actor` bridge for historical requests and live subscriptions.
+- Coordinate asynchronous warmup completion instead of relying only on call order.
+- Pass the completed historical snapshot through an injectable analysis handler before subscribing.
+- Block all live subscriptions when warmup coverage or analysis fails.
+- Register the IB data-client factory, attach the actor, and build the LiveNode before guarded startup.
+- Keep automated tests on fake actors and nodes; the manual smoke command remains the only path allowed to connect to IB.
+
 ## Stage 3: Persistence And Recovery
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.

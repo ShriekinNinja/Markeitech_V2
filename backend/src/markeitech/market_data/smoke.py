@@ -8,8 +8,8 @@ from typing import Any
 from markeitech.market_data.bootstrap import (
     LIVE_NODE_START_CONFIRMATION,
     LiveNodeLike,
-    build_live_node,
     build_livenode_bootstrap_summary,
+    build_prepared_market_data_live_node,
     start_live_node,
 )
 from markeitech.market_data.cli import build_plan_summary
@@ -82,5 +82,5 @@ def run_smoke_with_factory(
 
 def _build_node(runtime_config: Any, *, node_factory: Any | None) -> LiveNodeLike:
     if node_factory is None:
-        return build_live_node(runtime_config)
-    return build_live_node(runtime_config, node_factory=node_factory)
+        return build_prepared_market_data_live_node(runtime_config)
+    return build_prepared_market_data_live_node(runtime_config, node_factory=node_factory)

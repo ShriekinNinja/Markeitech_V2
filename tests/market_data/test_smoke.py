@@ -10,6 +10,18 @@ class FakeNode:
     def __init__(self, *, config: Any) -> None:
         self.config = config
         self.started = False
+        self.built = False
+        self.trader = self
+        self.actors: list[Any] = []
+
+    def add_actor(self, actor: Any) -> None:
+        self.actors.append(actor)
+
+    def add_data_client_factory(self, name: str, factory: type[Any]) -> None:
+        del name, factory
+
+    def build(self) -> None:
+        self.built = True
 
     def run(self) -> str:
         self.started = True

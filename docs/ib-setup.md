@@ -2,11 +2,11 @@
 
 ## Current Posture
 
-Interactive Brokers is documented but not connected yet.
+Interactive Brokers connectivity is implemented behind a manual-only smoke command. No live connection is made by automated tests or the default configuration.
 
 Market-data startup begins in Stage 2 only after explicit active-instrument configuration and operator approval.
 
-The Stage 2 runtime is centered on a Nautilus `TradingNodeConfig`. Automated tests may build the LiveNode configuration and subscription plan, but they must not start the node or connect to IB.
+The Stage 2 runtime is centered on a Nautilus `TradingNodeConfig` and a Markeitech market-data actor. Automated tests build configuration, action plans, coordinators, and fake nodes, but they must not start a real node or connect to IB.
 
 ## Supported Connection Paths
 
@@ -65,7 +65,7 @@ The dry-run output includes Nautilus-oriented request intents. These are validat
 
 ## Guarded LiveNode Bootstrap
 
-Stage 2 can build a Nautilus `TradingNode` object from validated config, but starting it remains manual-only.
+Stage 2 can prepare a Nautilus `TradingNode` from validated config by registering the IB data-client factory, attaching the market-data actor, and building the node clients. Starting it remains manual-only.
 
 LiveNode start requires all of:
 
@@ -91,9 +91,9 @@ Then run:
 uv run markeitech-market-data-smoke config/market-data.example.toml --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
 ```
 
-The command prints the same plan summary as the dry run and refuses to start unless both config flags and the confirmation token are present. Automated tests use a fake node; they do not connect to IB.
+The command prints the same plan summary as the dry run and refuses to start unless both config flags and the confirmation token are present. After startup, the actor requests every configured historical warmup, waits for all asynchronous completions, validates historical coverage, and only then submits active and background live subscriptions. Automated tests use fake actors and nodes; they do not connect to IB.
 
-Dry-run output also includes ordered LiveNode actions. These actions are still validation artifacts until a later adapter maps them to real Nautilus calls.
+Dry-run output also includes ordered LiveNode actions. The manual smoke path maps those actions to real Nautilus actor calls after the startup guards pass.
 
 ## Execution Safety
 

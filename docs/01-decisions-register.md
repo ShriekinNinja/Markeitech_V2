@@ -123,3 +123,11 @@ Status: accepted
 Translate Nautilus request intents into ordered LiveNode actions before wiring real Nautilus method calls.
 
 Reason: Warmup requests must happen before live subscriptions, active/background ownership must stay deterministic, and duplicate actions must be caught before any IB connection. A fake-friendly action executor keeps this layer testable without TWS or IB Gateway.
+
+## DR-0016: Actor-Owned Asynchronous Warmup Gate
+
+Status: accepted
+
+Execute market-data actions through a Nautilus `Actor` and require all historical request callbacks plus a successful warmup analysis handler before any live subscription is submitted.
+
+Reason: Nautilus historical requests are asynchronous, so request call order alone cannot guarantee that instruments are analyzed and annotated before live tracking. The coordinator makes readiness explicit, blocks subscriptions on missing history or analysis failure, and gives the later analytics engine a stable historical snapshot boundary.

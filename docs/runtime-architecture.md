@@ -23,18 +23,22 @@ Markeitech adds bounded services around NautilusTrader for product-specific cont
 
 The market-data runtime is LiveNode-centered. Markeitech builds validated plans and configuration around NautilusTrader, then uses Nautilus `TradingNodeConfig` and the Interactive Brokers data client as the runtime container for live market data.
 
-Before any live connection, Markeitech builds three deterministic layers:
+Before any live connection, Markeitech builds four deterministic layers:
 
 - validated instrument registry and runtime config
 - ownership plan for warmups and subscriptions
 - Nautilus-oriented request intents for historical bars, trade ticks, quote ticks, and bars
 - ordered LiveNode actions for warmups and live subscriptions
 
-Only the later guarded LiveNode adapter should translate those actions into live Nautilus method calls.
+The Markeitech market-data actor translates those actions into Nautilus calls. Historical requests are asynchronous, so an explicit coordinator waits for every request callback, passes the collected bars through the warmup analysis boundary, and only then starts role-based live subscriptions. A warmup or analysis failure leaves the actor unsubscribed.
+
+The prepared-node builder registers the Interactive Brokers data-client factory, attaches the market-data actor, and calls `TradingNode.build()` before the guarded start path can call `TradingNode.run()`.
 
 The guarded bootstrap may construct a Nautilus `TradingNode` from validated config, but starting the node requires explicit manual opt-in and a confirmation token because it can connect to IB.
 
 The manual smoke command is the first path allowed to call `TradingNode.run()`. It must print the validated plan and guard state before starting, and it remains outside automated tests.
+
+Warmup lookbacks currently over-fetch calendar days to cover the configured minimum session count across weekends and common closures. Exact exchange-calendar session resolution remains a later refinement at the session/calendar boundary.
 
 ## Initial Runtime Topology
 

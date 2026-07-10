@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from enum import StrEnum
 from typing import Any, Protocol
 
@@ -81,6 +82,7 @@ class LiveNodeActionTarget(Protocol):
         bar_type: str,
         lookback_sessions: int,
         data_client_name: str,
+        callback: Callable[[Any], None] | None = None,
     ) -> Any: ...
 
     def subscribe_trade_ticks(
@@ -128,6 +130,15 @@ def execute_livenode_action_plan(
     return results
 
 
+def execute_livenode_action(
+    action: LiveNodeAction,
+    target: LiveNodeActionTarget,
+    *,
+    callback: Callable[[Any], None] | None = None,
+) -> Any:
+    return _execute_action(action, target, callback=callback)
+
+
 def _warmup_actions(warmup: NautilusWarmupIntent) -> list[LiveNodeAction]:
     return [
         LiveNodeAction(
@@ -167,7 +178,12 @@ def _subscription_action(subscription: NautilusSubscriptionIntent) -> LiveNodeAc
     raise ValueError(f"unsupported Nautilus intent kind: {subscription.kind}")
 
 
-def _execute_action(action: LiveNodeAction, target: LiveNodeActionTarget) -> Any:
+def _execute_action(
+    action: LiveNodeAction,
+    target: LiveNodeActionTarget,
+    *,
+    callback: Callable[[Any], None] | None = None,
+) -> Any:
     if action.kind == LiveNodeActionKind.REQUEST_HISTORICAL_BARS:
         if action.bar_type is None or action.lookback_sessions is None:
             raise RuntimeError("historical bar action missing required fields")
@@ -176,6 +192,7 @@ def _execute_action(action: LiveNodeAction, target: LiveNodeActionTarget) -> Any
             bar_type=action.bar_type,
             lookback_sessions=action.lookback_sessions,
             data_client_name=action.data_client_name,
+            callback=callback,
         )
     if action.kind == LiveNodeActionKind.SUBSCRIBE_TRADE_TICKS:
         return target.subscribe_trade_ticks(

@@ -3,18 +3,41 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, Protocol
 
+from nautilus_trader.adapters.interactive_brokers.factories import (
+    InteractiveBrokersLiveDataClientFactory,
+)
 from nautilus_trader.live.node import TradingNode
 from pydantic import Field
 
 from markeitech.domain.base import VersionedDomainModel
+from markeitech.market_data.actions import build_livenode_action_plan
+from markeitech.market_data.actor import MarkeitechMarketDataActor
 from markeitech.market_data.config import MarketDataRuntimeConfig
+from markeitech.market_data.coordinator import (
+    WarmupReadyHandler,
+    require_historical_coverage,
+)
+from markeitech.market_data.intents import build_nautilus_request_plan
 from markeitech.market_data.nautilus import build_trading_node_config
+from markeitech.market_data.planner import build_market_data_plan
 
 LIVE_NODE_START_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_IB"
 
 
 class LiveNodeLike(Protocol):
     def run(self) -> Any: ...
+
+
+class LiveNodeTraderLike(Protocol):
+    def add_actor(self, actor: Any) -> None: ...
+
+
+class ConfigurableLiveNodeLike(LiveNodeLike, Protocol):
+    trader: LiveNodeTraderLike
+
+    def add_data_client_factory(self, name: str, factory: type[Any]) -> None: ...
+
+    def build(self) -> None: ...
 
 
 class LiveNodeBootstrapSummary(VersionedDomainModel):
@@ -49,6 +72,29 @@ def build_live_node(
         raise RuntimeError("Nautilus LiveNode construction is disabled by config")
     node_config = build_trading_node_config(config)
     return node_factory(config=node_config)
+
+
+def build_prepared_market_data_live_node(
+    config: MarketDataRuntimeConfig,
+    *,
+    node_factory: Callable[..., ConfigurableLiveNodeLike] = TradingNode,
+    actor_factory: Callable[..., Any] = MarkeitechMarketDataActor,
+    on_warmup_ready: WarmupReadyHandler = require_historical_coverage,
+    data_client_factory: type[Any] = InteractiveBrokersLiveDataClientFactory,
+) -> ConfigurableLiveNodeLike:
+    node = build_live_node(config, node_factory=node_factory)
+    runtime_plan = build_market_data_plan(config.instrument_registry)
+    request_plan = build_nautilus_request_plan(
+        runtime_plan,
+        data_client_name=config.data_client_name,
+    )
+    action_plan = build_livenode_action_plan(request_plan)
+    actor = actor_factory(action_plan, on_warmup_ready=on_warmup_ready)
+
+    node.trader.add_actor(actor)
+    node.add_data_client_factory(config.data_client_name, data_client_factory)
+    node.build()
+    return node
 
 
 def start_live_node(

@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import date
 from typing import Any
 
@@ -35,6 +36,7 @@ class FakeActionTarget:
         bar_type: str,
         lookback_sessions: int,
         data_client_name: str,
+        callback: Callable[[Any], None] | None = None,
     ) -> str:
         payload = {
             "instrument_id": instrument_id,
@@ -43,6 +45,8 @@ class FakeActionTarget:
             "data_client_name": data_client_name,
         }
         self.calls.append(("request_historical_bars", payload))
+        if callback is not None:
+            callback(f"request-{bar_type}")
         return "historical"
 
     def subscribe_trade_ticks(self, *, instrument_id: str, data_client_name: str) -> str:
