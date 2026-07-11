@@ -97,6 +97,28 @@ The runtime monitors required-stream freshness and external 1-minute bar continu
 
 Dry-run output also includes ordered LiveNode actions. The manual smoke path maps those actions to real Nautilus actor calls after the startup guards pass.
 
+## Duration-Limited Paper Acceptance
+
+Create `config/market-data.local.toml` from the checked-in example and keep it local. Set the actual paper socket port plus both manual startup flags. The repository ignores this filename.
+
+Run the offline plan first:
+
+```bash
+uv run markeitech-market-data-plan config/market-data.local.toml
+```
+
+Then run the bounded acceptance command:
+
+```bash
+uv run markeitech-market-data-acceptance config/market-data.local.toml \
+  --duration 90 \
+  --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
+```
+
+The command starts the real prepared LiveNode, observes it for the requested duration, stops it gracefully, and prints a JSON report. It passes only when warmup completes, the active instrument receives trade and quote ticks, every enabled instrument receives completed external 1-minute bars, source health is healthy, IB is read-only, and execution remains disabled.
+
+For the first paper run, prefer NQ active plus ES background. Add SPX and other independently entitled feeds after the CME path passes so entitlement failures remain easy to isolate.
+
 ## Execution Safety
 
 Execution is disabled by default:

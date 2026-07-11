@@ -154,3 +154,25 @@ def test_active_tick_bar_rolls_to_completed_bar_at_next_minute() -> None:
     assert tick_bars[1].unknown_volume == 3
     assert tick_bars[1].ts_init > tick_bars[1].event_ts
     assert tick_bars[2].volume == 3
+
+
+def test_router_records_and_drops_ib_sentinel_quote() -> None:
+    router = LiveMarketDataRouter(
+        instrument_ids={"NQU6.CME"},
+        active_instrument_id=lambda: "NQU6.CME",
+    )
+    sentinel = QuoteTick(
+        instrument_id=InstrumentId.from_str("NQU6.CME"),
+        bid_price=Price.from_str("-1"),
+        ask_price=Price.from_str("-1"),
+        bid_size=Quantity.from_str("0"),
+        ask_size=Quantity.from_str("0"),
+        ts_event=EVENT_NS,
+        ts_init=INIT_NS,
+    )
+
+    assert router.handle_quote_tick(sentinel) is None
+    snapshot = router.snapshot("NQU6.CME")
+    assert snapshot.quote_tick_count == 0
+    assert snapshot.dropped_event_count == 1
+    assert "bid=-1" in snapshot.last_drop_reason

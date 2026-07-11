@@ -1,5 +1,13 @@
 """Market-data runtime planning and Nautilus LiveNode configuration."""
 
+from markeitech.market_data.acceptance import (
+    AcceptanceCheck,
+    AcceptanceCheckStatus,
+    AcceptanceInstrumentResult,
+    AcceptanceStatus,
+    PaperIbAcceptanceReport,
+    run_paper_ib_acceptance,
+)
 from markeitech.market_data.actions import (
     LiveNodeAction,
     LiveNodeActionKind,
@@ -55,6 +63,7 @@ from markeitech.market_data.loader import (
 )
 from markeitech.market_data.nautilus import build_trading_node_config
 from markeitech.market_data.normalization import (
+    MarketDataNormalizationError,
     normalize_one_minute_bar,
     normalize_quote_tick,
     normalize_trade_tick,
@@ -87,6 +96,10 @@ __all__ = [
     "ActiveOneMinuteBarBuilder",
     "ActiveSwitchSnapshot",
     "ActiveSwitchStatus",
+    "AcceptanceCheck",
+    "AcceptanceCheckStatus",
+    "AcceptanceInstrumentResult",
+    "AcceptanceStatus",
     "LIVE_NODE_START_CONFIRMATION",
     "LiveNodeAction",
     "LiveNodeActionKind",
@@ -99,6 +112,7 @@ __all__ = [
     "MarketDataHealthMonitor",
     "MarketDataHealthPolicy",
     "MarketDataHealthSnapshot",
+    "MarketDataNormalizationError",
     "MarketDataStreamHealth",
     "MarketDataStreamKind",
     "MarketDataStreamStatus",
@@ -109,6 +123,7 @@ __all__ = [
     "NautilusActorActionTarget",
     "PlannedSubscription",
     "PlannedWarmup",
+    "PaperIbAcceptanceReport",
     "SubscriptionKind",
     "TickBarUpdate",
     "WarmupKind",
@@ -132,6 +147,7 @@ __all__ = [
     "parse_market_data_runtime_config",
     "run_smoke",
     "run_smoke_with_factory",
+    "run_paper_ib_acceptance",
     "require_historical_coverage",
     "start_live_node",
 ]

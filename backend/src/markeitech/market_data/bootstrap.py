@@ -103,6 +103,15 @@ def start_live_node(
     *,
     confirmation: str | None,
 ) -> Any:
+    validate_live_node_start(config, confirmation=confirmation)
+    return node.run()
+
+
+def validate_live_node_start(
+    config: MarketDataRuntimeConfig,
+    *,
+    confirmation: str | None,
+) -> None:
     if not config.run_live_node:
         raise RuntimeError("Nautilus LiveNode start is disabled by config")
     if not config.manual_live_node_start:
@@ -112,4 +121,3 @@ def start_live_node(
             "Nautilus LiveNode start requires explicit confirmation token "
             f"{LIVE_NODE_START_CONFIRMATION!r}"
         )
-    return node.run()

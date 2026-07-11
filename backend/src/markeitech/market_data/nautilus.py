@@ -2,15 +2,22 @@ from __future__ import annotations
 
 from nautilus_trader.adapters.interactive_brokers.config import (
     InteractiveBrokersDataClientConfig,
+    InteractiveBrokersInstrumentProviderConfig,
 )
 from nautilus_trader.live.config import TradingNodeConfig
-from nautilus_trader.model.identifiers import TraderId
+from nautilus_trader.model.identifiers import InstrumentId, TraderId
 
 from markeitech.market_data.config import MarketDataRuntimeConfig
 
 
 def build_trading_node_config(config: MarketDataRuntimeConfig) -> TradingNodeConfig:
+    load_ids = frozenset(
+        InstrumentId.from_str(runtime.contract.instrument_id)
+        for runtime in config.instrument_registry.instruments
+        if runtime.enabled
+    )
     ib_config = InteractiveBrokersDataClientConfig(
+        instrument_provider=InteractiveBrokersInstrumentProviderConfig(load_ids=load_ids),
         ibg_host=config.ib.host,
         ibg_port=config.ib.port,
         ibg_client_id=config.ib.client_id,

@@ -15,6 +15,7 @@ from markeitech.domain.market_data import (
 )
 from markeitech.market_data.bars import ActiveOneMinuteBarBuilder
 from markeitech.market_data.normalization import (
+    MarketDataNormalizationError,
     normalize_one_minute_bar,
     normalize_quote_tick,
     normalize_trade_tick,
@@ -38,6 +39,8 @@ class InstrumentMarketDataSnapshot(VersionedDomainModel):
     latest_bar: OneMinuteBar | None = None
     active_bar: OneMinuteBar | None = None
     tick_bar_update_count: int = Field(default=0, ge=0)
+    dropped_event_count: int = Field(default=0, ge=0)
+    last_drop_reason: str | None = None
 
 
 class LiveMarketDataRouter:
@@ -87,8 +90,12 @@ class LiveMarketDataRouter:
             update={"is_active": True, "active_bar": None}
         )
 
-    def handle_trade_tick(self, tick: Any) -> ClassifiedTrade:
-        trade = normalize_trade_tick(tick, source=self._source)
+    def handle_trade_tick(self, tick: Any) -> ClassifiedTrade | None:
+        try:
+            trade = normalize_trade_tick(tick, source=self._source)
+        except MarketDataNormalizationError as exc:
+            self._record_drop(str(tick.instrument_id), str(exc))
+            return None
         snapshot = self.snapshot(trade.instrument_id)
         classified = classify_trade(
             trade,
@@ -108,8 +115,12 @@ class LiveMarketDataRouter:
             self._update_active_bar(classified)
         return classified
 
-    def handle_quote_tick(self, tick: Any) -> CanonicalQuoteTick:
-        quote = normalize_quote_tick(tick, source=self._source)
+    def handle_quote_tick(self, tick: Any) -> CanonicalQuoteTick | None:
+        try:
+            quote = normalize_quote_tick(tick, source=self._source)
+        except MarketDataNormalizationError as exc:
+            self._record_drop(str(tick.instrument_id), str(exc))
+            return None
         snapshot = self.snapshot(quote.instrument_id)
         self._snapshots[quote.instrument_id] = snapshot.model_copy(
             update={
@@ -152,3 +163,12 @@ class LiveMarketDataRouter:
     def _require_instrument(self, instrument_id: str) -> None:
         if instrument_id not in self._instrument_ids:
             raise ValueError(f"received market data for unconfigured instrument {instrument_id!r}")
+
+    def _record_drop(self, instrument_id: str, reason: str) -> None:
+        snapshot = self.snapshot(instrument_id)
+        self._snapshots[instrument_id] = snapshot.model_copy(
+            update={
+                "dropped_event_count": snapshot.dropped_event_count + 1,
+                "last_drop_reason": reason,
+            }
+        )

@@ -131,6 +131,17 @@ Tenth implementation slice:
 - Inject session-open policy so closed markets can pause stale-data expectations.
 - Leave physical IB reconnect and transport retries to NautilusTrader; Markeitech owns observable degradation and recovery state.
 
+Eleventh implementation slice:
+
+- Add a guarded, duration-limited paper Interactive Brokers acceptance command.
+- Run the prepared LiveNode asynchronously and stop it gracefully after the requested duration.
+- Preserve the existing config flags and explicit confirmation-token startup boundary.
+- Grade warmup completion, active trade and quote ticks, completed bars for every enabled instrument, source health, read-only mode, and execution-disabled posture.
+- Emit a structured JSON pass/fail report after shutdown.
+- Keep automated coverage on fake actors and nodes.
+- Use an ignored local config for actual paper TWS/Gateway settings; keep checked-in examples offline-safe.
+- Start the first acceptance pass with NQ active and ES background, then expand entitlements and instruments independently.
+
 ## Stage 3: Persistence And Recovery
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.

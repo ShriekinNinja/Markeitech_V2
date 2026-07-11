@@ -155,3 +155,15 @@ Status: accepted
 Track role-based stream freshness and external-bar continuity inside Markeitech, while leaving the physical Interactive Brokers reconnect and retry lifecycle to NautilusTrader.
 
 Reason: The product needs explicit waiting, stale, gap, degraded, and recovered states for persistence and operator visibility. A second connection-recovery loop would compete with Nautilus and risk duplicate subscriptions. Session-open policy remains injectable so stale thresholds are evaluated only when data is expected.
+
+## DR-0020: Duration-Limited Paper IB Acceptance Gate
+
+Status: accepted
+
+Complete Stage 2 with a manually confirmed, duration-limited paper Interactive Brokers run which starts the real prepared LiveNode, captures observable runtime state, stops gracefully, and emits a structured acceptance report.
+
+Reason: Offline tests cannot prove contract resolution, entitlements, historical response behavior, live tick delivery, or IB bar timing. A bounded command is safer and more diagnosable than an indefinite smoke process, while the existing read-only, data-only, no-execution, and confirmation-token guards remain mandatory.
+
+The first paper connection revealed that the IB instrument provider must preload every enabled registry instrument. The TradingNode config therefore supplies those IDs through `InteractiveBrokersInstrumentProviderConfig.load_ids` before any actor warmup request is submitted.
+
+A closed-market paper run also revealed that IB can emit sentinel quote values such as `-1/-1` immediately after subscription. These values are recorded as dropped normalization events and do not enter canonical state, satisfy switch readiness, or escape into the Nautilus data queue as exceptions.

@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import pytest
 from markeitech.market_data import (
+    MarketDataNormalizationError,
     normalize_one_minute_bar,
     normalize_quote_tick,
     normalize_trade_tick,
@@ -104,3 +105,18 @@ def test_rejects_non_one_minute_bar() -> None:
 
     with pytest.raises(ValueError, match="expected a one-minute bar"):
         normalize_one_minute_bar(bar)
+
+
+def test_rejects_ib_closed_market_sentinel_quote() -> None:
+    tick = QuoteTick(
+        instrument_id=InstrumentId.from_str("NQU6.CME"),
+        bid_price=Price.from_str("-1"),
+        ask_price=Price.from_str("-1"),
+        bid_size=Quantity.from_str("0"),
+        ask_size=Quantity.from_str("0"),
+        ts_event=EVENT_NS,
+        ts_init=INIT_NS,
+    )
+
+    with pytest.raises(MarketDataNormalizationError, match="invalid quote tick values"):
+        normalize_quote_tick(tick)

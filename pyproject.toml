@@ -20,6 +20,7 @@ dependencies = [
 markeitech-api = "markeitech.api:main"
 markeitech-market-data-plan = "markeitech.market_data.cli:main"
 markeitech-market-data-smoke = "markeitech.market_data.smoke:main"
+markeitech-market-data-acceptance = "markeitech.market_data.acceptance:main"
 
 [dependency-groups]
 dev = [

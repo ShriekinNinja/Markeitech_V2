@@ -238,13 +238,15 @@ class MarkeitechMarketDataActor(Actor):
             self._warmup.record_historical_data(bar_type=str(bar_type), data=data)
 
     def on_trade_tick(self, tick: Any) -> None:
-        self._router.handle_trade_tick(tick)
+        if self._router.handle_trade_tick(tick) is None:
+            return
         event = self._switch.observe_trade_tick(str(tick.instrument_id))
         if event is not None:
             self._cancel_switch_timer()
 
     def on_quote_tick(self, tick: Any) -> None:
-        self._router.handle_quote_tick(tick)
+        if self._router.handle_quote_tick(tick) is None:
+            return
         event = self._switch.observe_quote_tick(str(tick.instrument_id))
         if event is not None:
             self._cancel_switch_timer()

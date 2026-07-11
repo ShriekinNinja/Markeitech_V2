@@ -197,6 +197,10 @@ def test_builds_nautilus_trading_node_config_without_execution_clients() -> None
 
     assert str(node_config.trader_id) == "MARK-001"
     assert set(node_config.data_clients) == {"IB"}
+    assert {
+        str(instrument_id)
+        for instrument_id in node_config.data_clients["IB"].instrument_provider.load_ids
+    } == {"NQU6.CME", "ESU6.CME", "^SPX.CBOE"}
     assert node_config.exec_clients == {}
     assert node_config.strategies == []
     assert node_config.actors == []
