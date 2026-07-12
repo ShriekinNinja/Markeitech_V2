@@ -29,6 +29,7 @@ def test_reported_event_identity_rejects_derivation_method() -> None:
             fidelity=DataFidelity.REPORTED,
             dedupe_key="trade:key",
             event_ts=NOW,
+            init_ts=NOW,
             derivation_method="quote_test",
         )
 
@@ -42,6 +43,7 @@ def test_inferred_event_identity_requires_derivation_method() -> None:
             fidelity=DataFidelity.INFERRED,
             dedupe_key="bar:key",
             event_ts=NOW,
+            init_ts=NOW,
         )
 
 

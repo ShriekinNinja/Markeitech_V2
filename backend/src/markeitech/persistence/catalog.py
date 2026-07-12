@@ -105,6 +105,8 @@ class NautilusParquetTimeSeriesStore:
                 ),
                 event_ts=event_ts,
                 event_ts_ns=event.ts_event,
+                init_ts=utc_datetime_from_unix_ns(event.ts_init),
+                init_ts_ns=event.ts_init,
             )
         if isinstance(event, QuoteTick):
             event_ts = utc_datetime_from_unix_ns(event.ts_event)
@@ -121,6 +123,8 @@ class NautilusParquetTimeSeriesStore:
                 ),
                 event_ts=event_ts,
                 event_ts_ns=event.ts_event,
+                init_ts=utc_datetime_from_unix_ns(event.ts_init),
+                init_ts_ns=event.ts_init,
             )
 
         fidelity = (
@@ -137,5 +141,11 @@ class NautilusParquetTimeSeriesStore:
             dedupe_key=event.dedupe_key,
             event_ts=event.event_ts,
             event_ts_ns=event.event_ts_ns,
+            init_ts=event.ts_init,
+            init_ts_ns=event.ts_init_ns,
             derivation_method=derivation_method,
         )
+
+    def identify(self, events: Sequence[object]) -> tuple[PersistenceEventIdentity, ...]:
+        validated = tuple(self._require_supported(event) for event in events)
+        return tuple(self._identity(event) for event in validated)

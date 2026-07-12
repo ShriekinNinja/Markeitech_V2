@@ -7,11 +7,18 @@ from markeitech.persistence.contracts import (
     DataFidelity,
     NotificationOutboxRecord,
     OutboxStatus,
+    PersistenceBatch,
+    PersistenceBatchStatus,
     PersistenceEventIdentity,
     PersistenceEventKind,
     RecoveryRecord,
     RecoveryStatus,
     StreamCheckpoint,
+)
+from markeitech.persistence.coordinator import (
+    IdempotentPersistenceCoordinator,
+    PersistenceFailurePoint,
+    PersistenceWriteResult,
 )
 from markeitech.persistence.ports import (
     NotificationOutboxStore,
@@ -22,14 +29,19 @@ from markeitech.persistence.sqlite import SQLiteMetadataStore
 
 __all__ = [
     "DataFidelity",
+    "IdempotentPersistenceCoordinator",
     "CanonicalOneMinuteBarRecord",
     "NotificationOutboxRecord",
     "NotificationOutboxStore",
     "OutboxStatus",
+    "PersistenceBatch",
+    "PersistenceBatchStatus",
     "NautilusParquetTimeSeriesStore",
     "PersistenceConfig",
+    "PersistenceFailurePoint",
     "PersistenceEventIdentity",
     "PersistenceEventKind",
+    "PersistenceWriteResult",
     "RecoveryMetadataStore",
     "RecoveryRecord",
     "RecoveryStatus",

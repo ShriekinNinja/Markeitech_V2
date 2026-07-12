@@ -16,13 +16,16 @@ from markeitech.persistence.config import PersistenceConfig
 from markeitech.persistence.contracts import (
     NotificationOutboxRecord,
     OutboxStatus,
+    PersistenceBatch,
+    PersistenceBatchStatus,
+    PersistenceEventIdentity,
     PersistenceEventKind,
     RecoveryRecord,
     RecoveryStatus,
     StreamCheckpoint,
 )
 
-LATEST_SCHEMA_VERSION = 1
+LATEST_SCHEMA_VERSION = 2
 
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (
@@ -91,6 +94,39 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
             ON notification_outbox(status, available_ts_ns, lease_expires_ts_ns, created_ts_ns);
         """,
     ),
+    (
+        2,
+        """
+        CREATE TABLE persistence_batches (
+            batch_id TEXT PRIMARY KEY,
+            schema_version TEXT NOT NULL,
+            instrument_id TEXT NOT NULL,
+            event_kind TEXT NOT NULL,
+            source TEXT NOT NULL,
+            bucket_start_ts_ns INTEGER NOT NULL,
+            bucket_end_ts_ns INTEGER NOT NULL,
+            expected_event_count INTEGER NOT NULL,
+            identity_hash TEXT NOT NULL,
+            status TEXT NOT NULL,
+            created_ts_ns INTEGER NOT NULL,
+            updated_ts_ns INTEGER NOT NULL,
+            catalog_written_ts_ns INTEGER,
+            committed_ts_ns INTEGER,
+            last_error TEXT
+        );
+        CREATE INDEX persistence_batches_status_idx
+            ON persistence_batches(status, bucket_start_ts_ns);
+        CREATE TABLE persisted_event_identities (
+            dedupe_key TEXT PRIMARY KEY,
+            batch_id TEXT NOT NULL,
+            identity_json TEXT NOT NULL,
+            committed_ts_ns INTEGER NOT NULL,
+            FOREIGN KEY(batch_id) REFERENCES persistence_batches(batch_id)
+        );
+        CREATE INDEX persisted_event_batch_idx
+            ON persisted_event_identities(batch_id);
+        """,
+    ),
 )
 
 
@@ -130,36 +166,8 @@ class SQLiteMetadataStore:
         return int(row[0])
 
     def save_checkpoint(self, checkpoint: StreamCheckpoint) -> None:
-        last_event_ts_ns = checkpoint.last_event_ts_ns or unix_ns_from_utc_datetime(
-            checkpoint.last_event_ts
-        )
         with self._transaction() as connection:
-            cursor = connection.execute(
-                """
-                INSERT INTO stream_checkpoints VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(stream_key) DO UPDATE SET
-                    schema_version=excluded.schema_version,
-                    instrument_id=excluded.instrument_id,
-                    event_kind=excluded.event_kind,
-                    source=excluded.source,
-                    last_event_ts_ns=excluded.last_event_ts_ns,
-                    last_dedupe_key=excluded.last_dedupe_key,
-                    committed_ts_ns=excluded.committed_ts_ns
-                WHERE excluded.last_event_ts_ns >= stream_checkpoints.last_event_ts_ns
-                """,
-                (
-                    checkpoint.stream_key,
-                    checkpoint.schema_version,
-                    checkpoint.instrument_id,
-                    checkpoint.event_kind.value,
-                    checkpoint.source,
-                    last_event_ts_ns,
-                    checkpoint.last_dedupe_key,
-                    unix_ns_from_utc_datetime(checkpoint.committed_ts),
-                ),
-            )
-            if cursor.rowcount != 1:
-                raise ValueError("checkpoint update cannot move stream progress backward")
+            self._upsert_checkpoint(connection, checkpoint, reject_regression=True)
 
     def load_checkpoint(self, stream_key: str) -> StreamCheckpoint | None:
         row = self._connection.execute(
@@ -360,6 +368,151 @@ class SQLiteMetadataStore:
         ).fetchone()
         return None if row is None else _row_to_outbox(row)
 
+    def prepare_batch(self, batch: PersistenceBatch) -> PersistenceBatch:
+        if batch.status != PersistenceBatchStatus.PREPARED:
+            raise ValueError("new persistence batch must be prepared")
+        with self._transaction() as connection:
+            row = connection.execute(
+                "SELECT * FROM persistence_batches WHERE batch_id=?",
+                (batch.batch_id,),
+            ).fetchone()
+            if row is not None:
+                existing = _row_to_batch(row)
+                _require_same_batch_identity(existing, batch)
+                return existing
+            connection.execute(
+                """
+                INSERT INTO persistence_batches
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                _batch_values(batch),
+            )
+            return batch
+
+    def mark_catalog_written(
+        self,
+        batch_id: str,
+        written_ts: datetime,
+    ) -> PersistenceBatch:
+        written_ns = unix_ns_from_utc_datetime(written_ts)
+        with self._transaction() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE persistence_batches
+                SET status='catalog_written', updated_ts_ns=?, catalog_written_ts_ns=?
+                WHERE batch_id=? AND status='prepared'
+                """,
+                (written_ns, written_ns, batch_id),
+            )
+            if cursor.rowcount == 0:
+                row = connection.execute(
+                    "SELECT * FROM persistence_batches WHERE batch_id=?",
+                    (batch_id,),
+                ).fetchone()
+                if row is None:
+                    raise KeyError(f"unknown persistence batch: {batch_id}")
+                existing = _row_to_batch(row)
+                if existing.status not in {
+                    PersistenceBatchStatus.CATALOG_WRITTEN,
+                    PersistenceBatchStatus.COMMITTED,
+                }:
+                    raise RuntimeError(f"batch cannot mark catalog written from {existing.status}")
+                return existing
+            row = connection.execute(
+                "SELECT * FROM persistence_batches WHERE batch_id=?",
+                (batch_id,),
+            ).fetchone()
+            return _row_to_batch(row)
+
+    def commit_batch(
+        self,
+        *,
+        batch_id: str,
+        identities: tuple[PersistenceEventIdentity, ...],
+        checkpoint: StreamCheckpoint,
+        committed_ts: datetime,
+    ) -> PersistenceBatch:
+        committed_ns = unix_ns_from_utc_datetime(committed_ts)
+        with self._transaction() as connection:
+            row = connection.execute(
+                "SELECT * FROM persistence_batches WHERE batch_id=?",
+                (batch_id,),
+            ).fetchone()
+            if row is None:
+                raise KeyError(f"unknown persistence batch: {batch_id}")
+            batch = _row_to_batch(row)
+            if batch.status == PersistenceBatchStatus.COMMITTED:
+                return batch
+            if batch.status != PersistenceBatchStatus.CATALOG_WRITTEN:
+                raise RuntimeError("batch must be catalog-written before commit")
+            if len(identities) != batch.expected_event_count:
+                raise ValueError("committed identity count does not match prepared batch")
+
+            for identity in identities:
+                identity_json = _identity_json(identity)
+                cursor = connection.execute(
+                    "INSERT OR IGNORE INTO persisted_event_identities VALUES (?, ?, ?, ?)",
+                    (identity.dedupe_key, batch_id, identity_json, committed_ns),
+                )
+                if cursor.rowcount == 0:
+                    existing = connection.execute(
+                        "SELECT identity_json FROM persisted_event_identities WHERE dedupe_key=?",
+                        (identity.dedupe_key,),
+                    ).fetchone()
+                    if existing["identity_json"] != identity_json:
+                        raise ValueError("dedupe key conflicts with a different event identity")
+
+            self._upsert_checkpoint(connection, checkpoint, reject_regression=False)
+            connection.execute(
+                """
+                UPDATE persistence_batches
+                SET status='committed', updated_ts_ns=?, committed_ts_ns=?
+                WHERE batch_id=?
+                """,
+                (committed_ns, committed_ns, batch_id),
+            )
+            row = connection.execute(
+                "SELECT * FROM persistence_batches WHERE batch_id=?",
+                (batch_id,),
+            ).fetchone()
+            return _row_to_batch(row)
+
+    def load_batch(self, batch_id: str) -> PersistenceBatch | None:
+        row = self._connection.execute(
+            "SELECT * FROM persistence_batches WHERE batch_id=?",
+            (batch_id,),
+        ).fetchone()
+        return None if row is None else _row_to_batch(row)
+
+    def incomplete_batches(self) -> tuple[PersistenceBatch, ...]:
+        rows = self._connection.execute("""
+            SELECT * FROM persistence_batches
+            WHERE status IN ('prepared', 'catalog_written')
+            ORDER BY bucket_start_ts_ns, batch_id
+            """).fetchall()
+        return tuple(_row_to_batch(row) for row in rows)
+
+    def committed_dedupe_keys(
+        self,
+        identities: tuple[PersistenceEventIdentity, ...],
+    ) -> frozenset[str]:
+        if not identities:
+            return frozenset()
+        by_key = {identity.dedupe_key: identity for identity in identities}
+        keys = tuple(by_key)
+        placeholders = ",".join("?" for _ in keys)
+        rows = self._connection.execute(
+            f"""
+            SELECT dedupe_key, identity_json FROM persisted_event_identities
+            WHERE dedupe_key IN ({placeholders})
+            """,
+            keys,
+        ).fetchall()
+        for row in rows:
+            if row["identity_json"] != _identity_json(by_key[row["dedupe_key"]]):
+                raise ValueError("dedupe key conflicts with a different event identity")
+        return frozenset(row["dedupe_key"] for row in rows)
+
     def _configure(self) -> None:
         self._connection.execute("PRAGMA foreign_keys = ON")
         self._connection.execute("PRAGMA journal_mode = WAL")
@@ -422,6 +575,43 @@ class SQLiteMetadataStore:
             (instrument_id,),
         ).fetchone()
         return None if row is None else str(row["payload_json"])
+
+    @staticmethod
+    def _upsert_checkpoint(
+        connection: sqlite3.Connection,
+        checkpoint: StreamCheckpoint,
+        *,
+        reject_regression: bool,
+    ) -> None:
+        last_event_ts_ns = checkpoint.last_event_ts_ns or unix_ns_from_utc_datetime(
+            checkpoint.last_event_ts
+        )
+        cursor = connection.execute(
+            """
+            INSERT INTO stream_checkpoints VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(stream_key) DO UPDATE SET
+                schema_version=excluded.schema_version,
+                instrument_id=excluded.instrument_id,
+                event_kind=excluded.event_kind,
+                source=excluded.source,
+                last_event_ts_ns=excluded.last_event_ts_ns,
+                last_dedupe_key=excluded.last_dedupe_key,
+                committed_ts_ns=excluded.committed_ts_ns
+            WHERE excluded.last_event_ts_ns >= stream_checkpoints.last_event_ts_ns
+            """,
+            (
+                checkpoint.stream_key,
+                checkpoint.schema_version,
+                checkpoint.instrument_id,
+                checkpoint.event_kind.value,
+                checkpoint.source,
+                last_event_ts_ns,
+                checkpoint.last_dedupe_key,
+                unix_ns_from_utc_datetime(checkpoint.committed_ts),
+            ),
+        )
+        if cursor.rowcount != 1 and reject_regression:
+            raise ValueError("checkpoint update cannot move stream progress backward")
 
     @contextmanager
     def _transaction(self) -> Iterator[sqlite3.Connection]:
@@ -509,4 +699,66 @@ def _row_to_outbox(row: sqlite3.Row) -> NotificationOutboxRecord:
         lease_expires_ts=_optional_datetime(row["lease_expires_ts_ns"]),
         delivered_ts=_optional_datetime(row["delivered_ts_ns"]),
         last_error=row["last_error"],
+    )
+
+
+def _batch_values(batch: PersistenceBatch) -> tuple[Any, ...]:
+    return (
+        batch.batch_id,
+        batch.schema_version,
+        batch.instrument_id,
+        batch.event_kind.value,
+        batch.source,
+        unix_ns_from_utc_datetime(batch.bucket_start_ts),
+        unix_ns_from_utc_datetime(batch.bucket_end_ts),
+        batch.expected_event_count,
+        batch.identity_hash,
+        batch.status.value,
+        unix_ns_from_utc_datetime(batch.created_ts),
+        unix_ns_from_utc_datetime(batch.updated_ts),
+        _optional_ns(batch.catalog_written_ts),
+        _optional_ns(batch.committed_ts),
+        batch.last_error,
+    )
+
+
+def _row_to_batch(row: sqlite3.Row) -> PersistenceBatch:
+    return PersistenceBatch(
+        schema_version=row["schema_version"],
+        batch_id=row["batch_id"],
+        instrument_id=row["instrument_id"],
+        event_kind=PersistenceEventKind(row["event_kind"]),
+        source=row["source"],
+        bucket_start_ts=utc_datetime_from_unix_ns(row["bucket_start_ts_ns"]),
+        bucket_end_ts=utc_datetime_from_unix_ns(row["bucket_end_ts_ns"]),
+        expected_event_count=row["expected_event_count"],
+        identity_hash=row["identity_hash"],
+        status=PersistenceBatchStatus(row["status"]),
+        created_ts=utc_datetime_from_unix_ns(row["created_ts_ns"]),
+        updated_ts=utc_datetime_from_unix_ns(row["updated_ts_ns"]),
+        catalog_written_ts=_optional_datetime(row["catalog_written_ts_ns"]),
+        committed_ts=_optional_datetime(row["committed_ts_ns"]),
+        last_error=row["last_error"],
+    )
+
+
+def _require_same_batch_identity(existing: PersistenceBatch, proposed: PersistenceBatch) -> None:
+    fields = (
+        "instrument_id",
+        "event_kind",
+        "source",
+        "bucket_start_ts",
+        "bucket_end_ts",
+        "expected_event_count",
+        "identity_hash",
+    )
+    if any(getattr(existing, field) != getattr(proposed, field) for field in fields):
+        raise ValueError("batch id conflicts with different immutable metadata")
+
+
+def _identity_json(identity: PersistenceEventIdentity) -> str:
+    return json.dumps(
+        identity.model_dump(mode="json"),
+        separators=(",", ":"),
+        sort_keys=True,
     )

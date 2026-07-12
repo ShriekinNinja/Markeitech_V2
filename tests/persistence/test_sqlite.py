@@ -24,6 +24,7 @@ from markeitech.persistence import (
     SQLiteMetadataStore,
     StreamCheckpoint,
 )
+from markeitech.persistence.sqlite import MIGRATIONS
 
 NOW = datetime(2026, 7, 12, 10, 0, tzinfo=UTC)
 EVENT_NS = 1_783_851_600_123_456_789
@@ -98,13 +99,13 @@ def outbox(
 def test_migrations_are_idempotent_and_auditable(tmp_path: Path) -> None:
     path = tmp_path / "metadata.sqlite3"
     with SQLiteMetadataStore(config(path)) as first:
-        assert first.schema_version == 1
+        assert first.schema_version == 2
     with SQLiteMetadataStore(config(path)) as second:
-        assert second.schema_version == 1
+        assert second.schema_version == 2
         row = second._connection.execute(  # noqa: SLF001
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [item["version"] for item in row] == [1]
+        assert [item["version"] for item in row] == [1, 2]
 
 
 def test_newer_unknown_schema_fails_clearly(tmp_path: Path) -> None:
@@ -115,6 +116,39 @@ def test_newer_unknown_schema_fails_clearly(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError, match="newer than supported"):
         SQLiteMetadataStore(config(path))
+
+
+def test_schema_one_upgrades_without_losing_checkpoint(tmp_path: Path) -> None:
+    path = tmp_path / "version-one.sqlite3"
+    expected = checkpoint()
+    connection = sqlite3.connect(path)
+    for statement in MIGRATIONS[0][1].split(";"):
+        if statement.strip():
+            connection.execute(statement)
+    connection.execute(
+        "INSERT INTO schema_migrations VALUES (?, ?)",
+        (1, EVENT_NS),
+    )
+    connection.execute(
+        "INSERT INTO stream_checkpoints VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            expected.stream_key,
+            expected.schema_version,
+            expected.instrument_id,
+            expected.event_kind.value,
+            expected.source,
+            expected.last_event_ts_ns,
+            expected.last_dedupe_key,
+            int(expected.committed_ts.timestamp() * 1_000_000_000),
+        ),
+    )
+    connection.execute("PRAGMA user_version = 1")
+    connection.commit()
+    connection.close()
+
+    with SQLiteMetadataStore(config(path)) as upgraded:
+        assert upgraded.schema_version == 2
+        assert upgraded.load_checkpoint(expected.stream_key) == expected
 
 
 def test_checkpoint_round_trip_preserves_nanoseconds_and_restart(tmp_path: Path) -> None:

@@ -14,6 +14,7 @@ class PersistenceConfig(VersionedDomainModel):
     bar_retention_sessions: int = Field(default=250, ge=5)
     catalog_writer_queue_size: int = Field(default=10_000, ge=1)
     catalog_batch_size: int = Field(default=1_000, ge=1)
+    persistence_batch_interval_seconds: int = Field(default=60, ge=1)
     outbox_lease_seconds: int = Field(default=30, ge=1)
     outbox_max_attempts: int = Field(default=8, ge=1)
     sqlite_busy_timeout_ms: int = Field(default=5_000, ge=1)

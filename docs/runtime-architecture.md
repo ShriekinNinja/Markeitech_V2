@@ -133,6 +133,10 @@ Raw valid trade and quote ticks retain Nautilus native catalog schemas. Complete
 
 One `NautilusParquetTimeSeriesStore` serializes catalog writes because `ParquetDataCatalog` is not thread-safe. It validates an entire bounded batch before writing, returns persistence identities only after the catalog call succeeds, and does not own checkpoints; Stage 3 metadata coordination will advance SQLite checkpoints only after successful catalog persistence.
 
+The idempotent coordinator accepts one closed fixed `ts_init` bucket for one stream at a time. It sorts identities deterministically, creates a content-addressed batch manifest, records preparation, writes the exact catalog batch, records catalog success, then atomically commits the compact identity ledger and checkpoint. Exact retries and historical/live overlap are filtered through full stored identities, while reuse of a dedupe key for different metadata fails as corruption.
+
+Explicit failure hooks prove every crash boundary. A prepared batch may have no catalog data or may represent the ambiguous window immediately after a physical write; replaying the exact deterministic batch is safe because Nautilus skips the same catalog file. A catalog-written batch can proceed directly to metadata commit. A committed batch is a no-op on retry. Delayed events with newer initialization time but older event time can still be recorded without moving the checkpoint backward.
+
 SQLite stores transactional metadata such as checkpoints, readiness, gap state, recovery state, and later signal metadata.
 
 SQLite does not govern or replace Parquet market data. Parquet answers which durable market events exist; SQLite answers which ranges have been verified and processed plus the current mutable operational state. Catalog writes must complete before checkpoints advance. A crash may leave a checkpoint behind already-written Parquet data, causing safe overlap on recovery, but a checkpoint must never lead durable catalog data.

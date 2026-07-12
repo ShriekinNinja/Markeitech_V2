@@ -183,6 +183,20 @@ Third implementation slice:
 - Roll back every transaction on failure and refuse database schemas newer than the application supports.
 - Keep Parquet/SQLite coordination, live actor wiring, gap calculation, Discord delivery, and Redis out of this slice.
 
+Fourth implementation slice:
+
+- Add deterministic, content-addressed persistence batches scoped to one instrument, source, event kind, and fixed `ts_init` bucket.
+- Extend persistence identities with exact initialization timestamps because Nautilus catalog file ownership is based on `ts_init`.
+- Add SQLite batch manifests with prepared, catalog-written, and committed states.
+- Add a compact committed-event identity ledger with unique dedupe keys and full-identity conflict detection.
+- Sort batch membership deterministically and hash the ordered identities before any catalog write.
+- Filter exact historical/live overlap before writing and treat exact retry as a no-op.
+- Write Parquet before atomically committing the identity ledger and stream checkpoint in SQLite.
+- Inject process failures after prepare, physical catalog write, catalog acknowledgement, and metadata commit.
+- Resume every incomplete crash window without duplicate catalog data or premature checkpoint progress.
+- Allow delayed events to commit without moving an already-newer stream checkpoint backward.
+- Keep live actor wiring, missing-interval calculation, targeted IB recovery, Redis, and notification delivery out of this slice.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

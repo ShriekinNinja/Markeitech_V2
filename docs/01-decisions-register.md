@@ -223,3 +223,13 @@ Parquet remains authoritative for market events. A catalog write must succeed be
 Outbox enqueue uses a unique dedupe key. Claims atomically lease pending, retryable, or expired work across separate connections, and only the active lease owner may mark success or failure. Migration history is auditable and idempotent, and databases with newer unknown schema versions fail closed.
 
 Reason: Mutable operational state needs transactions, uniqueness, conditional updates, and efficient point reads, while high-volume market history needs Nautilus-compatible columnar storage. The hybrid design accepts a recoverable at-least-once overlap window in exchange for keeping each data class in its natural storage engine.
+
+## DR-0027: Deterministic Batches And At-Least-Once Recovery
+
+Status: accepted
+
+Coordinate Parquet and SQLite through content-addressed persistence batches scoped to one instrument, source, event kind, and closed fixed initialization-time bucket. Sort event identities by `ts_init` and dedupe key, hash the ordered identity set, and persist a batch manifest through prepared, catalog-written, and committed states.
+
+Write the exact Parquet batch before atomically committing its full identity ledger and stream checkpoint in SQLite. On retry, compare complete stored identities rather than dedupe keys alone. Exact duplicates are ignored; a reused key with different identity metadata is corruption. Delayed events may commit to the ledger without moving a newer checkpoint backward.
+
+Reason: Parquet and SQLite cannot share an atomic transaction. Deterministic batch membership turns the ambiguous crash window after a catalog write into an exact retry, which Nautilus handles by skipping the same file. The identity ledger handles historical/live overlap and proves checkpoint membership without copying market payloads into SQLite. Failure injection at every boundary demonstrates at-least-once processing without duplicate durable events or false progress.

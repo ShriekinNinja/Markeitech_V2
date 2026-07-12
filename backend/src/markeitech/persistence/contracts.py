@@ -44,6 +44,13 @@ class OutboxStatus(StrEnum):
     FAILED = "failed"
 
 
+class PersistenceBatchStatus(StrEnum):
+    PREPARED = "prepared"
+    CATALOG_WRITTEN = "catalog_written"
+    COMMITTED = "committed"
+    FAILED = "failed"
+
+
 class PersistenceEventIdentity(VersionedDomainModel):
     event_kind: PersistenceEventKind
     instrument_id: str = Field(min_length=1)
@@ -52,9 +59,11 @@ class PersistenceEventIdentity(VersionedDomainModel):
     dedupe_key: str = Field(min_length=1)
     event_ts: datetime
     event_ts_ns: int | None = Field(default=None, ge=0)
+    init_ts: datetime
+    init_ts_ns: int | None = Field(default=None, ge=0)
     derivation_method: str | None = Field(default=None, min_length=1)
 
-    @field_validator("event_ts")
+    @field_validator("event_ts", "init_ts")
     @classmethod
     def _event_ts_must_be_utc(cls, value: datetime) -> datetime:
         return require_utc(value)
@@ -69,6 +78,55 @@ class PersistenceEventIdentity(VersionedDomainModel):
         if self.event_ts_ns is not None:
             if utc_datetime_from_unix_ns(self.event_ts_ns) != self.event_ts:
                 raise ValueError("event_ts_ns must match event_ts at microsecond precision")
+        if self.init_ts_ns is not None:
+            if utc_datetime_from_unix_ns(self.init_ts_ns) != self.init_ts:
+                raise ValueError("init_ts_ns must match init_ts at microsecond precision")
+        return self
+
+
+class PersistenceBatch(VersionedDomainModel):
+    batch_id: str = Field(min_length=64, max_length=64)
+    instrument_id: str = Field(min_length=1)
+    event_kind: PersistenceEventKind
+    source: str = Field(min_length=1)
+    bucket_start_ts: datetime
+    bucket_end_ts: datetime
+    expected_event_count: int = Field(ge=1)
+    identity_hash: str = Field(min_length=64, max_length=64)
+    status: PersistenceBatchStatus = PersistenceBatchStatus.PREPARED
+    created_ts: datetime
+    updated_ts: datetime
+    catalog_written_ts: datetime | None = None
+    committed_ts: datetime | None = None
+    last_error: str | None = Field(default=None, min_length=1)
+
+    @field_validator(
+        "bucket_start_ts",
+        "bucket_end_ts",
+        "created_ts",
+        "updated_ts",
+        "catalog_written_ts",
+        "committed_ts",
+    )
+    @classmethod
+    def _timestamps_must_be_utc(cls, value: datetime | None) -> datetime | None:
+        return None if value is None else require_utc(value)
+
+    @model_validator(mode="after")
+    def _batch_state_must_be_consistent(self) -> PersistenceBatch:
+        if self.bucket_end_ts <= self.bucket_start_ts:
+            raise ValueError("batch bucket end must be after start")
+        if self.status == PersistenceBatchStatus.PREPARED:
+            if self.catalog_written_ts is not None or self.committed_ts is not None:
+                raise ValueError("prepared batch cannot have completion timestamps")
+        if self.status == PersistenceBatchStatus.CATALOG_WRITTEN:
+            if self.catalog_written_ts is None or self.committed_ts is not None:
+                raise ValueError("catalog-written batch requires only catalog timestamp")
+        if self.status == PersistenceBatchStatus.COMMITTED:
+            if self.catalog_written_ts is None or self.committed_ts is None:
+                raise ValueError("committed batch requires catalog and commit timestamps")
+        if self.status == PersistenceBatchStatus.FAILED and self.last_error is None:
+            raise ValueError("failed batch requires last_error")
         return self
 
 
