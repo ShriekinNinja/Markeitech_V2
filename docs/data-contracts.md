@@ -146,3 +146,14 @@ Raw trade ticks, raw bid/ask quote ticks, and canonical one-minute bars should b
 SQLite metadata should carry recovery and checkpoint state.
 
 Writes must be idempotent and restart-safe.
+
+Stage 3 persistence contracts live under `markeitech.persistence`. They add source-scoped event identities, stream checkpoints, recovery lifecycle records, durable notification outbox records, bounded persistence configuration, and storage protocols without coupling the Stage 1 domain models to a specific database.
+
+Persistence fidelity is explicit:
+
+- `reported`: received from the provider without a derived methodology
+- `inferred`: calculated from provider data and accompanied by a derivation method
+- `partial`: calculated from incomplete inputs and accompanied by a derivation method
+- `unavailable`: the required evidence cannot be represented from current inputs
+
+Outbox records contain a non-secret destination key. Webhook URLs, tokens, and secrets are prohibited from payloads, including nested payload fields.

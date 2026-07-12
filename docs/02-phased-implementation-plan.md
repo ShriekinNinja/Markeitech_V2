@@ -146,7 +146,17 @@ Eleventh implementation slice:
 
 Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata and durable notification outbox, Redis hot runtime coordination, idempotent writes, restart recovery tests, and source/fidelity lineage for IB-first canonical data.
 
-Not started.
+First implementation slice:
+
+- Add source-scoped persistence event identities for trades, quotes, and one-minute bars.
+- Distinguish reported, inferred, partial, and unavailable data fidelity.
+- Require derivation metadata for inferred and partial evidence.
+- Define stream checkpoints and explicit recovery lifecycle records.
+- Define a durable notification outbox lifecycle with non-secret destination references.
+- Reject webhook credentials and other delivery secrets from nested outbox payloads.
+- Add bounded writer, batching, retention, lease, and retry configuration.
+- Keep Nautilus catalog, SQLite metadata, and outbox implementations behind narrow protocols.
+- Preserve a single serialized catalog-writer ownership boundary because the Nautilus Parquet catalog is not thread-safe.
 
 ## Stage 4: Analytics And Levels
 
