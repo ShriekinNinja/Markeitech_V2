@@ -144,47 +144,53 @@ Eleventh implementation slice:
 
 ## Stage 3: Persistence And Recovery
 
-Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata, Redis hot runtime coordination, idempotent writes, and restart recovery tests.
+Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata and durable notification outbox, Redis hot runtime coordination, idempotent writes, restart recovery tests, and source/fidelity lineage for IB-first canonical data.
 
 Not started.
 
-## Stage 4: WebSocket Gateway
+## Stage 4: Analytics And Levels
 
-Deliver snapshot-first WebSocket streaming, bounded client queues, resync behavior, readiness, health, and gap events.
-
-Not started.
-
-## Stage 5: Frontend Dashboard
-
-Deliver operational cockpit with active-instrument chart, session context, readiness, source health, gaps, active bar, completed bars, background signal dashboard, and reconnect behavior.
+Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.
 
 Not started.
 
-## Stage 6: Analytics And Levels
+## Stage 5: Signals
 
-Deliver deterministic derived analytics, levels, zones, and volume profile support.
-
-Not started.
-
-## Stage 7: Signals
-
-Deliver deterministic signal lifecycle, scoring, dedupe, persistence, and dashboard updates.
+Deliver deterministic signal lifecycle, scoring, dedupe, persistence, notification-ready domain events, and the first Direction-Location-Aggression setup family with explicit evidence fidelity. Optional ML inference may rank setups only after a deterministic baseline exists.
 
 Not started.
 
-## Stage 8: Strategy Runtime
+## Stage 6: Notifications And Reports
 
-Deliver isolated strategy worker topology, bounded queues, lag metrics, state restoration, and controlled lifecycle.
-
-Not started.
-
-## Stage 9: Backtesting And Replay
-
-Deliver NautilusTrader-based backtesting and reproducible replay datasets.
+Deliver one-way Discord webhook alerts and analysis reports through a durable, rate-limited, retryable notification pipeline. AI-generated narrative must remain grounded in persisted structured evidence. Do not build a Discord bot.
 
 Not started.
 
-## Stage 10: Execution And Risk Controls
+## Stage 7: Strategy Runtime
+
+Deliver isolated strategy worker topology, bounded queues, lag metrics, state restoration, controlled lifecycle, and shadow/paper evaluation for model-assisted strategies.
+
+Not started.
+
+## Stage 8: Backtesting And Replay
+
+Deliver NautilusTrader-based backtesting, reproducible replay datasets, and versioned ML training, calibration, and comparison workflows.
+
+Not started.
+
+## Stage 9: WebSocket Gateway
+
+Deliver snapshot-first WebSocket streaming, bounded client queues, resync behavior, readiness, health, gap, analytics, and signal events for future presentation clients.
+
+Not started.
+
+## Stage 10: Frontend Dashboard
+
+Deliver an operational cockpit with active-instrument chart, session context, readiness, source health, gaps, analytics, levels, background signals, and reconnect behavior.
+
+Not started.
+
+## Stage 11: Execution And Risk Controls
 
 Deliver explicitly configured paper/live execution with risk checks, auditability, and no accidental live orders.
 

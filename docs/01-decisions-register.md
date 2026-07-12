@@ -167,3 +167,37 @@ Reason: Offline tests cannot prove contract resolution, entitlements, historical
 The first paper connection revealed that the IB instrument provider must preload every enabled registry instrument. The TradingNode config therefore supplies those IDs through `InteractiveBrokersInstrumentProviderConfig.load_ids` before any actor warmup request is submitted.
 
 A closed-market paper run also revealed that IB can emit sentinel quote values such as `-1/-1` immediately after subscription. These values are recorded as dropped normalization events and do not enter canonical state, satisfy switch readiness, or escape into the Nautilus data queue as exceptions.
+
+## DR-0021: Discord Webhooks Before Frontend Presentation
+
+Status: accepted
+
+Prioritize persistence, analytics, signals, one-way Discord notifications, strategy runtime, and replay ahead of the WebSocket gateway and frontend dashboard. Use Discord incoming webhooks for initial signal alerts and analysis reports; do not build a Discord bot.
+
+Signal and analytics services emit transport-neutral versioned domain events. Stage 3 provides a durable notification outbox, and the notification stage owns routing policy, formatting, batching, deduplication, rate-limit handling, retries, and delivery state. Discord webhook URLs remain secret configuration and are never stored in outbox payloads or source control.
+
+Reason: One-way webhooks provide a useful human-facing operator surface without making UI delivery an early dependency. The durable outbox prevents Discord availability from affecting ingestion or losing signal transitions, while transport-neutral events preserve the future WebSocket and frontend architecture. A bot adds inbound command, authentication, and operational-authority concerns that are not currently required.
+
+## DR-0022: IB-First And Provider-Ready Data Fidelity
+
+Status: accepted
+
+Implement Interactive Brokers as the sole initial live provider while keeping canonical trades, quotes, bars, and future depth events provider-neutral. Preserve source identity, original timestamps, source identifiers, and derivation methodology. Distinguish reported, inferred, partial, and unavailable evidence in analytics and signals.
+
+Reason: The platform should extract the best defensible information from the available IB feed without delaying delivery for speculative provider integrations. A narrow canonical adapter boundary allows future providers to improve fidelity without forcing analytics, signals, persistence, or strategies into IB-specific contracts. Inferred aggressor side, delta, absorption, footprint, and depth evidence must never be presented as authoritative when the source cannot support that claim.
+
+## DR-0023: Deterministic Core Before ML Or AI Authority
+
+Status: accepted
+
+Build deterministic analytics and versioned feature snapshots before adding ML inference. ML models may classify regimes, detect anomalies, or rank setups through versioned inference events, but must pass offline evaluation, replay, and shadow operation before affecting signals or strategies. AI agents may explain persisted evidence and compose reports, but may not connect directly to IB, mutate durable truth, invent unavailable evidence, or control execution.
+
+Reason: Models and agents can add useful ranking and interpretation without becoming opaque owners of market state. Explicit model, feature-schema, input-lineage, output-semantics, and latency metadata make inference reproducible and auditable. Keeping generated narrative separate from deterministic facts preserves operator trust and allows models to be replaced safely.
+
+## DR-0024: Direction-Location-Aggression Decision Model
+
+Status: accepted
+
+Use Direction-Location-Aggression as the first formal auction-market decision-support model. Stage 4 establishes market condition or direction and identifies/refines locations using deterministic session, structure, and volume-profile evidence. Stage 5 adds aggression and follow-through evidence plus a versioned setup lifecycle. Begin as decision support rather than automated execution.
+
+Reason: The model composes naturally from planned analytics while enforcing patience: direction alone is not an entry, and location requires observed participation. The aggression step is experience-sensitive and depends on data fidelity, so IB-derived trade and top-of-book evidence must be labeled honestly, captured for replay, and validated before automation or ML ranking is trusted.

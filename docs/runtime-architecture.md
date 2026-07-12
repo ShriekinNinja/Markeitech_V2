@@ -19,7 +19,7 @@ NautilusTrader should be the primary system boundary for trading-domain runtime 
 - backtesting and replay
 - clocks and lifecycle
 
-Markeitech adds bounded services around NautilusTrader for product-specific contracts, storage metadata, WebSocket presentation, dashboard state, strategy-worker isolation, and operator controls.
+Markeitech adds bounded services around NautilusTrader for product-specific contracts, storage metadata, analytics, signals, outbound notifications, later WebSocket presentation and dashboard state, strategy-worker isolation, and operator controls.
 
 The market-data runtime is LiveNode-centered. Markeitech builds validated plans and configuration around NautilusTrader, then uses Nautilus `TradingNodeConfig` and the Interactive Brokers data client as the runtime container for live market data.
 
@@ -52,12 +52,12 @@ NautilusTrader LiveNode + IB data client
 Authoritative market-data runtime
       |
       +--> Parquet/catalog storage
-      +--> SQLite metadata
+      +--> SQLite metadata + durable notification outbox
       +--> Redis hot coordination
-      +--> WebSocket gateway
+      +--> Analytics + signals
                 |
-                v
-              Frontend
+                +--> Discord webhook delivery
+                +--> Future WebSocket gateway --> Frontend
 ```
 
 ## Instrument Runtime Model
@@ -90,7 +90,11 @@ Each configured instrument has an isolated runtime snapshot containing event cou
 
 Subscribed trades are classified against the latest valid same-instrument quote. The logical active instrument also builds a provisional 1-minute bar from classified ticks. That bar carries classified buy, sell, and unknown volume and becomes complete when the first trade in the next minute arrives. Nautilus/IB external bars are completed bars whose volume remains unknown-side unless a later reconciliation step can prove attribution.
 
-Normalized events flow through an injectable sink. Stage 2 does not persist or broadcast them yet; persistence and WebSocket delivery consume this boundary in later stages.
+Normalized events flow through an injectable sink. Stage 2 does not persist or broadcast them yet; persistence, analytics, notifications, and later WebSocket delivery consume this boundary in later stages.
+
+Interactive Brokers is the only implemented live provider initially. Canonical events remain provider-neutral and retain source identity, source-specific trade or sequence identifiers, original timestamps, and methodology metadata where values are derived. Future providers must enter through adapters at this canonical boundary rather than inherit IB-shaped contracts.
+
+Analytics distinguish reported, inferred, partial, and unavailable evidence. IB top-of-book trades and quotes may support inferred aggressor side, price-level volume, and best-effort delta, but the system must not describe inferred values as authoritative exchange aggressor data or fabricate depth, footprint, or order-flow evidence from bars.
 
 ## Live Health And Gaps
 
@@ -127,7 +131,23 @@ Parquet/catalog storage is the durable time-series store for raw ticks and bars.
 
 SQLite stores transactional metadata such as checkpoints, readiness, gap state, recovery state, and later signal metadata.
 
+SQLite also stores a durable notification outbox. Delivery transports consume outbox records idempotently; a Discord outage must not lose signals or block ingestion.
+
 Redis is only hot runtime coordination. Redis must never be the sole durable source.
+
+### Notification Boundary
+
+Signal and analytics code emit versioned domain events and never call Discord directly. Notification policy selects, batches, formats, and enqueues delivery records. A Discord incoming-webhook adapter performs one-way delivery with bounded retries, rate-limit handling, deduplication, and explicit sent or failed state.
+
+Discord webhook URLs are secrets and must remain outside source control and durable message payloads. Discord is an initial operator surface, not a source of truth or execution authority. No Discord bot is planned.
+
+### Analytics, ML, And Agent Boundary
+
+Deterministic analytics and versioned feature snapshots are the baseline. Optional ML providers consume those snapshots and emit versioned inference events containing model version, feature schema, input lineage, output semantics, latency, and degraded-input state. Models must pass offline evaluation, replay, and shadow operation before influencing signal ranking or strategy behavior.
+
+AI agents may explain persisted evidence, assist research, and compose operator reports. They do not calculate authoritative market state, invent missing evidence, connect directly to IB, mutate durable truth, or control execution. Generated narrative remains distinguishable from deterministic metrics and model inference.
+
+The first named decision-support model is Direction-Location-Aggression: determine auction direction or market condition, identify and refine a relevant location, then observe aggression and follow-through. Direction and location should be deterministic where possible. Aggression starts as evidence-assisted interpretation because its fidelity depends on available IB trades and quotes; automation must be earned through captured data and replay validation.
 
 ### Gateway Boundary
 
@@ -135,15 +155,17 @@ The WebSocket gateway builds snapshots and streams incremental updates from vers
 
 The dashboard never connects directly to IB, NautilusTrader internals, persistence, or strategies.
 
+The gateway and dashboard are intentionally deferred until after persistence, analytics, signals, notification delivery, strategy runtime, and replay are established. Their versioned event boundary remains part of the architecture so Discord-specific formatting cannot leak into domain models.
+
 ### Strategy Boundary
 
 Strategies eventually consume stable versioned domain interfaces and NautilusTrader strategy lifecycles where practical.
 
-Strategy worker failure must not interrupt ingestion, persistence, or dashboard updates.
+Strategy worker failure must not interrupt ingestion, persistence, notifications, or later presentation updates.
 
 ## Data-Only Default
 
-Stage 0 configures data-only mode. Execution is off by default and remains out of scope until Stage 10.
+Stage 0 configures data-only mode. Execution is off by default and remains out of scope until Stage 11.
 
 IB Gateway should be read-only during data phases.
 
@@ -161,3 +183,8 @@ IB Gateway should be read-only during data phases.
 - No duplicated subscriptions.
 - No unbounded queues in live data paths.
 - No frontend-owned market calculations.
+- No signal or analytics code coupled directly to Discord.
+- No Discord webhook secret in source control or persisted notification payloads.
+- No provider-specific payload leaking beyond the canonical adapter boundary.
+- No inferred order-flow metric represented as authoritative source data.
+- No ML model or AI agent with direct IB or execution access.

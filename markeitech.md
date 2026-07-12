@@ -222,6 +222,7 @@ Implement hybrid persistence:
    - readiness state
    - gap state
    - recovery metadata
+   - durable notification outbox and delivery state
    - later signals/levels/strategy metadata
 
 3. Redis only for hot runtime/cache coordination.
@@ -232,6 +233,11 @@ Rules:
 - Writes must be idempotent.
 - Partial writes must be recoverable.
 - Gaps must be explicit and observable.
+- Notification outbox writes must be transactional with their source metadata where required.
+- Pending notification intents must survive restart without storing delivery secrets.
+- Interactive Brokers is the only initial live provider, but canonical storage contracts must remain provider-neutral.
+- Preserve provider identity, source-specific identifiers, original timestamps, and derivation methodology.
+- Distinguish reported, inferred, partial, and unavailable evidence.
 - Retain raw ticks for at least five sessions initially.
 - Retain 1-minute bars longer.
 
@@ -242,98 +248,11 @@ Acceptance criteria:
 - Only missing intervals are requested.
 - Duplicate historical/live overlap is ignored.
 - Readiness reports degraded state when data requirements are not met.
+- Pending notification intents restore after restart without duplication.
 
 ---
 
-# Stage 4 - WebSocket Gateway
-
-Build a dedicated FastAPI/WebSocket gateway.
-
-The dashboard must never connect directly to IB, Nautilus internals, strategies, or persistence.
-
-Gateway requirements:
-
-- Subscribe to versioned backend domain events.
-- Build initial snapshots.
-- Stream incremental updates.
-- Expose readiness and health.
-- Use bounded client queues.
-- Drop or resync slow clients.
-- Support reconnect/resubscription.
-- Include schema versioning.
-- Prevent slow clients from blocking backend processing.
-
-Initial event types:
-
-- `snapshot`
-- `bar.active`
-- `bar.completed`
-- `readiness.update`
-- `health.update`
-- `gap.update`
-
-Later event types:
-
-- `level.upsert`
-- `zone.upsert`
-- `signal.upsert`
-- `signal.transition`
-- `strategy.state`
-- `order.execution`
-
-Acceptance criteria:
-
-- New WebSocket client receives snapshot first.
-- Live active-bar updates are incremental.
-- Completed bars are emitted once.
-- Slow client cannot block backend.
-- Reconnect restores current state.
-
----
-
-# Stage 5 - Frontend Dashboard
-
-Build a focused React cockpit.
-
-Initial frontend scope:
-
-- one active instrument
-- background monitored instruments and signal stream
-- one primary chart
-- latest two trading sessions visible
-- WebSocket connection state
-- readiness state
-- source health
-- gap state
-- active 1-minute bar
-- completed 1-minute bars
-
-Preferred stack:
-
-- Vite
-- React
-- TypeScript
-- Lightweight Charts
-- Zustand or equivalent small state store
-
-Rules:
-
-- Use incremental chart updates, not full-series replacement on every tick.
-- Do not include replay controls in normal live UI.
-- Do not connect directly to IB or backend internals.
-- UI should be operational, dense, and useful, not a marketing page.
-
-Acceptance criteria:
-
-- Chart loads from snapshot.
-- Active bar updates without full reset.
-- Completed bars append correctly.
-- Reconnect works.
-- Readiness/health are visible.
-
----
-
-# Stage 6 - Analytics And Levels
+# Stage 4 - Analytics And Levels
 
 Add derived analytics:
 
@@ -355,6 +274,12 @@ Indicators/structures:
 - POC/VAH/VAL
 - FVG on 1m, 5m, 15m
 
+Initial auction-market decision model:
+
+- Direction: determine balance, imbalance, directional pressure, and likely auction destination.
+- Location: identify and refine candidate reaction areas using structure, sessions, profiles, POC/VAH/VAL, VWAP, and low-volume nodes.
+- Emit versioned, provider-neutral feature snapshots for deterministic signals and later ML consumers.
+
 Sessions:
 
 - Full CME Globex coverage
@@ -375,11 +300,12 @@ Acceptance criteria:
 - Analytics rebuild deterministically after restart.
 - Derived bars are built from 1m bars.
 - Levels persist and restore.
-- Frontend renders active levels/zones.
+- Versioned analytics, level, and zone events are transport-neutral.
+- Direction and Location evidence can be reproduced from the same persisted dataset.
 
 ---
 
-# Stage 7 - Signals
+# Stage 5 - Signals
 
 Implement initial signals:
 
@@ -389,6 +315,16 @@ Implement initial signals:
 - large trade
 - abnormal trade-frequency burst
 - FVG-related signal
+- Direction-Location-Aggression qualified setup
+
+Direction-Location-Aggression rules:
+
+- Direction alone is context, not an entry signal.
+- Location must be explicit, versioned, and tied to supporting structures.
+- Aggression may use trade size, inferred aggressor side, price-level volume, trade frequency, quote response, and follow-through when available.
+- IB-derived aggression is best-effort evidence and must expose its fidelity and limitations.
+- Never fabricate footprint, delta, absorption, or depth evidence from candles.
+- Begin as decision support; automation requires captured-data replay and explicit acceptance.
 
 Signal lifecycle:
 
@@ -419,17 +355,59 @@ Rules:
 - Emit new alert only on creation or material strengthening.
 - Persist every transition.
 - Restore current and previous Globex-session signals on restart.
+- Signal detection must not call Discord, WebSockets, or frontend code directly.
+- Optional ML inference may rank or classify setups only after deterministic rules establish a baseline.
+- A model score must not silently replace required Direction, Location, or Aggression evidence.
 
 Acceptance criteria:
 
 - Deterministic fixture streams produce deterministic signals.
 - Signals do not duplicate after restart.
 - Signal lifecycle transitions persist.
-- WebSocket sidebar receives updates within normal 500 ms target.
+- Notification-ready domain events are emitted within the normal 500 ms target.
+- The same fixture and feature versions produce the same setup lifecycle before optional model ranking.
 
 ---
 
-# Stage 8 - Strategy Runtime
+# Stage 6 - Notifications And Reports
+
+Build a transport-neutral outbound notification pipeline with Discord incoming webhooks as the first delivery adapter.
+
+Initial outputs:
+
+- signal creation and material-strengthening alerts
+- signal resolved, invalidated, and expired updates
+- readiness, source-health, and gap alerts
+- scheduled session analysis reports and context digests
+- optional chart or report attachments later
+
+Requirements:
+
+- Consume versioned analytics, signal, readiness, health, and gap events.
+- Write notification intents to the durable Stage 3 outbox before delivery.
+- Keep Discord formatting and routing outside analytics and signal logic.
+- Support severity and purpose-based channel routing.
+- Batch or digest low-priority events to control noise.
+- Deduplicate deliveries across retries and restarts.
+- Respect Discord rate limits and use bounded retries with explicit terminal failure state.
+- Sanitize message content and disable unintended mentions by default.
+- Keep webhook URLs in secret configuration, never source control or outbox payloads.
+- Discord failure must not block ingestion, persistence, analytics, signals, or strategies.
+- Do not build a Discord bot or accept inbound Discord commands.
+
+Acceptance criteria:
+
+- A deterministic signal creates one durable notification and one Discord message.
+- Repeated processing and restart do not duplicate delivery.
+- Material strengthening updates or replaces the existing alert by policy.
+- A Discord outage leaves retryable outbox records and does not lose signal transitions.
+- Rate limiting delays delivery without unbounded queues or blocking upstream work.
+- Scheduled analysis reports can be generated from restored persisted state.
+- AI-generated narrative is grounded in persisted structured evidence and remains distinguishable from deterministic metrics and model inference.
+
+---
+
+# Stage 7 - Strategy Runtime
 
 Design strategy support as a primary architecture concern.
 
@@ -443,6 +421,7 @@ Requirements:
 - Strategy failure must not stop market-data ingestion.
 - Slow strategies must not block the market-data path.
 - Strategies declare subscriptions, timeframes, indicators, warm-up, and execution permissions.
+- Model-assisted strategies declare model and feature-schema versions and begin in shadow or paper mode.
 
 Preferred live topology:
 
@@ -467,14 +446,14 @@ Lifecycle states:
 
 Acceptance criteria:
 
-- A crashing strategy does not interrupt ingestion or dashboard.
+- A crashing strategy does not interrupt ingestion, persistence, or notifications.
 - A slow strategy becomes degraded/paused by policy.
 - Strategy state restores after worker restart.
 - Adding/removing a strategy does not rebuild unrelated pipelines.
 
 ---
 
-# Stage 9 - Backtesting And Replay
+# Stage 8 - Backtesting And Replay
 
 Backtesting is mandatory from the beginning, but implement after the data foundation is stable.
 
@@ -494,6 +473,7 @@ Every backtest must capture:
 - order-fill simulation rules
 - session model
 - result metadata
+- model version and feature-schema version when inference is used
 
 Data fidelity rules:
 
@@ -508,6 +488,7 @@ Support:
 - batch experiments
 - walk-forward testing
 - regression backtests
+- model training, calibration, shadow comparison, and drift evaluation
 - later distributed execution
 
 Acceptance criteria:
@@ -516,12 +497,101 @@ Acceptance criteria:
 - Backtests do not consume live-process resources.
 - Same strategy logic can run in backtest and paper/live where practical.
 - Results are persisted and comparable.
+- Model-assisted results remain reproducible from captured feature snapshots and inference metadata.
 
 ---
 
-# Stage 10 - Execution And Risk Controls
+# Stage 9 - WebSocket Gateway
 
-Execution is deferred until market data, persistence, dashboard, analytics, strategies, and backtesting are stable.
+Build a dedicated FastAPI/WebSocket gateway for future presentation clients.
+
+The dashboard must never connect directly to IB, Nautilus internals, strategies, or persistence.
+
+Gateway requirements:
+
+- Subscribe to versioned backend domain events.
+- Build initial snapshots.
+- Stream incremental updates.
+- Expose readiness, health, gaps, analytics, levels, zones, and signals.
+- Use bounded client queues.
+- Drop or resync slow clients.
+- Support reconnect/resubscription.
+- Include schema versioning.
+- Prevent slow clients from blocking backend processing.
+
+Initial event types:
+
+- `snapshot`
+- `bar.active`
+- `bar.completed`
+- `readiness.update`
+- `health.update`
+- `gap.update`
+- `level.upsert`
+- `zone.upsert`
+- `signal.upsert`
+- `signal.transition`
+- `strategy.state`
+
+Later event types:
+
+- `order.execution`
+
+Acceptance criteria:
+
+- New WebSocket client receives snapshot first.
+- Live active-bar updates are incremental.
+- Completed bars are emitted once.
+- Slow client cannot block backend.
+- Reconnect restores current state.
+
+---
+
+# Stage 10 - Frontend Dashboard
+
+Build a focused React cockpit after the backend, notification, strategy, and replay foundations are stable.
+
+Initial frontend scope:
+
+- one active instrument
+- background monitored instruments and signal stream
+- one primary chart
+- latest two trading sessions visible
+- WebSocket connection state
+- readiness state
+- source health
+- gap state
+- active and completed 1-minute bars
+- active analytics, levels, and zones
+
+Preferred stack:
+
+- Vite
+- React
+- TypeScript
+- Lightweight Charts
+- Zustand or equivalent small state store
+
+Rules:
+
+- Use incremental chart updates, not full-series replacement on every tick.
+- Do not include replay controls in normal live UI.
+- Do not connect directly to IB or backend internals.
+- UI should be operational, dense, and useful, not a marketing page.
+
+Acceptance criteria:
+
+- Chart and context load from a snapshot.
+- Active bar updates without full reset.
+- Completed bars append correctly.
+- Reconnect works.
+- Readiness, health, analytics, levels, zones, and signals are visible.
+
+---
+
+# Stage 11 - Execution And Risk Controls
+
+Execution is deferred until market data, persistence, analytics, signals, notifications, strategies, backtesting, gateway, and dashboard are stable.
 
 When enabled:
 
@@ -532,6 +602,8 @@ When enabled:
 - order/execution events persisted
 - dashboard exposes execution health
 - strategy permissions enforced
+- Discord has no direct order-submission authority
+- ML models and AI agents have no direct IB or order-submission authority
 
 Acceptance criteria:
 
@@ -561,12 +633,20 @@ Unacceptable:
 - dashboard-owned market calculations
 - Redis-only durable state
 - frontend direct IB access
+- Discord-coupled analytics or signal logic
+- Discord webhook secrets in source control or durable payloads
+- Discord commands with execution authority
+- provider-specific payloads leaking beyond canonical adapters
+- inferred order-flow evidence represented as authoritative source data
+- unversioned ML features or inference outputs
+- AI-generated narrative treated as durable market truth
 - strategy failure stopping ingestion
 - fabricated historical delta from histogram data
 
 Normal visible update target:
 
-- dashboard updates within 500 ms under healthy conditions
+- notification-ready domain updates within 500 ms under healthy conditions
+- later dashboard updates within 500 ms under healthy conditions
 
 Testing expectations:
 
