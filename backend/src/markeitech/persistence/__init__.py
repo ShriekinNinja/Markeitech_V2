@@ -1,5 +1,7 @@
 """Persistence contracts and storage boundaries."""
 
+from markeitech.persistence.catalog import NautilusParquetTimeSeriesStore
+from markeitech.persistence.catalog_data import CanonicalOneMinuteBarRecord
 from markeitech.persistence.config import PersistenceConfig
 from markeitech.persistence.contracts import (
     DataFidelity,
@@ -19,9 +21,11 @@ from markeitech.persistence.ports import (
 
 __all__ = [
     "DataFidelity",
+    "CanonicalOneMinuteBarRecord",
     "NotificationOutboxRecord",
     "NotificationOutboxStore",
     "OutboxStatus",
+    "NautilusParquetTimeSeriesStore",
     "PersistenceConfig",
     "PersistenceEventIdentity",
     "PersistenceEventKind",

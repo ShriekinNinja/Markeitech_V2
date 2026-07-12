@@ -158,6 +158,17 @@ First implementation slice:
 - Keep Nautilus catalog, SQLite metadata, and outbox implementations behind narrow protocols.
 - Preserve a single serialized catalog-writer ownership boundary because the Nautilus Parquet catalog is not thread-safe.
 
+Second implementation slice:
+
+- Add a concrete `ParquetDataCatalog` adapter behind the time-series storage protocol.
+- Store raw valid Nautilus `TradeTick` and `QuoteTick` objects using native catalog schemas.
+- Register a custom Arrow type for completed canonical one-minute bars so classified volume, source, revision, completion, schema, and dedupe fields are not lost.
+- Encode canonical decimal fields as strings for exact precision across Parquet round trips.
+- Partition native ticks and canonical bars by instrument identity through Nautilus catalog identifiers.
+- Reject unsupported objects, provisional bars, and oversized batches before writing.
+- Serialize concurrent catalog writes with one ownership lock and propagate catalog failures without returning successful identities.
+- Prove exact nanosecond, decimal, source, and instrument round trips with temporary catalogs and no IB connection.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

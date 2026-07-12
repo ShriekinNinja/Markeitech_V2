@@ -129,6 +129,10 @@ The backend must not duplicate NautilusTrader functionality unless a decision re
 
 Parquet/catalog storage is the durable time-series store for raw ticks and bars.
 
+Raw valid trade and quote ticks retain Nautilus native catalog schemas. Completed canonical one-minute bars use a registered custom Arrow record because the canonical contract includes classified volume, source, revision, completion, schema, and dedupe fields that a native OHLCV bar cannot preserve. Decimal fields are encoded as strings and reconstructed as immutable domain values to avoid floating-point precision loss.
+
+One `NautilusParquetTimeSeriesStore` serializes catalog writes because `ParquetDataCatalog` is not thread-safe. It validates an entire bounded batch before writing, returns persistence identities only after the catalog call succeeds, and does not own checkpoints; Stage 3 metadata coordination will advance SQLite checkpoints only after successful catalog persistence.
+
 SQLite stores transactional metadata such as checkpoints, readiness, gap state, recovery state, and later signal metadata.
 
 SQLite also stores a durable notification outbox. Delivery transports consume outbox records idempotently; a Discord outage must not lose signals or block ingestion.

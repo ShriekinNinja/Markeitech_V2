@@ -201,3 +201,13 @@ Status: accepted
 Use Direction-Location-Aggression as the first formal auction-market decision-support model. Stage 4 establishes market condition or direction and identifies/refines locations using deterministic session, structure, and volume-profile evidence. Stage 5 adds aggression and follow-through evidence plus a versioned setup lifecycle. Begin as decision support rather than automated execution.
 
 Reason: The model composes naturally from planned analytics while enforcing patience: direction alone is not an entry, and location requires observed participation. The aggression step is experience-sensitive and depends on data fidelity, so IB-derived trade and top-of-book evidence must be labeled honestly, captured for replay, and validated before automation or ML ranking is trusted.
+
+## DR-0025: Native Tick Catalog And Custom Canonical Bars
+
+Status: accepted
+
+Persist raw valid Nautilus `TradeTick` and `QuoteTick` objects through their native Parquet catalog schemas. Persist completed canonical one-minute bars through a registered custom Arrow record which preserves classified volumes, source, revision, completion, schema version, and dedupe identity. Encode canonical decimals as strings and reconstruct immutable domain bars on read.
+
+Serialize all calls into a catalog instance because Nautilus documents `ParquetDataCatalog` as not thread-safe. Validate bounded batches before writing and return persistence identities only after the catalog write succeeds. SQLite checkpoints remain a later metadata concern and must never advance after a failed catalog call.
+
+Reason: Native tick schemas maximize Nautilus replay compatibility, while flattening canonical bars into native OHLCV bars would silently discard Markeitech-specific evidence. Exact decimal and nanosecond round trips preserve analytical fidelity. A narrow serialized adapter contains Nautilus custom-data implementation details and leaves later queueing, idempotency, and checkpoint transactions outside the catalog itself.
