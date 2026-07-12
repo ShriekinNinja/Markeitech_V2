@@ -3,6 +3,7 @@ from datetime import date
 import pytest
 from markeitech.domain import (
     AnalysisProfile,
+    CryptoContractConfig,
     EquityLikeContractConfig,
     FuturesContractConfig,
     InstrumentDataMode,
@@ -47,6 +48,33 @@ def spx_contract() -> EquityLikeContractConfig:
         ib_exchange="CBOE",
         ib_security_type="IND",
     )
+
+
+def test_paxos_crypto_contract_uses_currency_pair_identity() -> None:
+    contract = CryptoContractConfig(
+        root_symbol="btc",
+        exchange="paxos",
+        instrument_id="BTC/USD.PAXOS",
+        ib_symbol="btc",
+        ib_exchange="paxos",
+        session_timezone="UTC",
+    )
+
+    assert contract.root_symbol == "BTC"
+    assert contract.quote_currency == "USD"
+    assert contract.security_type == SecurityType.CRYPTO
+
+
+def test_crypto_contract_rejects_non_pair_instrument_identity() -> None:
+    with pytest.raises(ValidationError, match="crypto instrument id must be BTC/USD.PAXOS"):
+        CryptoContractConfig(
+            root_symbol="BTC",
+            exchange="PAXOS",
+            instrument_id="BTC.PAXOS",
+            ib_symbol="BTC",
+            ib_exchange="PAXOS",
+            session_timezone="UTC",
+        )
 
 
 def active_runtime(contract: FuturesContractConfig) -> InstrumentRuntimeConfig:

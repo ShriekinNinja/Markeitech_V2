@@ -42,7 +42,7 @@ def normalize_quote_tick(tick: Any, *, source: str = "ib") -> CanonicalQuoteTick
     ask_price = tick.ask_price.as_decimal()
     bid_size = tick.bid_size.as_decimal()
     ask_size = tick.ask_size.as_decimal()
-    if bid_price <= 0 or ask_price <= 0 or bid_size < 0 or ask_size < 0:
+    if bid_price <= 0 or ask_price <= 0 or bid_price > ask_price or bid_size < 0 or ask_size < 0:
         raise MarketDataNormalizationError(
             f"invalid quote tick values for {tick.instrument_id}: "
             f"bid={bid_price}, ask={ask_price}, bid_size={bid_size}, ask_size={ask_size}"

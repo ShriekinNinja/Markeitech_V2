@@ -13,6 +13,7 @@ class SecurityType(StrEnum):
     INDEX = "IND"
     STOCK = "STK"
     ETF = "ETF"
+    CRYPTO = "CRYPTO"
 
 
 class InstrumentRole(StrEnum):
@@ -147,8 +148,31 @@ class EquityLikeContractConfig(InstrumentContractConfig):
         return value.upper()
 
 
+class CryptoContractConfig(InstrumentContractConfig):
+    security_type: SecurityType = Field(default=SecurityType.CRYPTO)
+    ib_security_type: str = Field(default="CRYPTO")
+    quote_currency: str = Field(default="USD", min_length=3, max_length=3)
+
+    @field_validator("quote_currency")
+    @classmethod
+    def _quote_currency_must_be_uppercase(cls, value: str) -> str:
+        return value.upper()
+
+    @model_validator(mode="after")
+    def _identity_must_be_currency_pair(self) -> CryptoContractConfig:
+        expected_id = f"{self.root_symbol}/{self.quote_currency}.{self.exchange}"
+        if self.instrument_id != expected_id:
+            raise ValueError(f"crypto instrument id must be {expected_id}")
+        return self
+
+
 class InstrumentRuntimeConfig(VersionedDomainModel):
-    contract: FuturesContractConfig | EquityLikeContractConfig | InstrumentContractConfig
+    contract: (
+        FuturesContractConfig
+        | EquityLikeContractConfig
+        | CryptoContractConfig
+        | InstrumentContractConfig
+    )
     role: InstrumentRole
     data_mode: InstrumentDataMode
     analysis_profile: AnalysisProfile

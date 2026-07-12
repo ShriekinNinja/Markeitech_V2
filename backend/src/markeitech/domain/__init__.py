@@ -10,6 +10,7 @@ from markeitech.domain.events import (
 )
 from markeitech.domain.instruments import (
     AnalysisProfile,
+    CryptoContractConfig,
     EquityLikeContractConfig,
     FuturesContractConfig,
     InstrumentContractConfig,
@@ -46,6 +47,7 @@ __all__ = [
     "CanonicalQuoteTick",
     "CanonicalTradeTick",
     "ClassifiedTrade",
+    "CryptoContractConfig",
     "EquityLikeContractConfig",
     "FuturesContractConfig",
     "GapSeverity",

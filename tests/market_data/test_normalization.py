@@ -120,3 +120,18 @@ def test_rejects_ib_closed_market_sentinel_quote() -> None:
 
     with pytest.raises(MarketDataNormalizationError, match="invalid quote tick values"):
         normalize_quote_tick(tick)
+
+
+def test_rejects_crossed_ib_quote() -> None:
+    tick = QuoteTick(
+        instrument_id=InstrumentId.from_str("BTC/USD.PAXOS"),
+        bid_price=Price.from_str("63695.50"),
+        ask_price=Price.from_str("63693.00"),
+        bid_size=Quantity.from_str("0"),
+        ask_size=Quantity.from_str("0"),
+        ts_event=EVENT_NS,
+        ts_init=INIT_NS,
+    )
+
+    with pytest.raises(MarketDataNormalizationError, match="invalid quote tick values"):
+        normalize_quote_tick(tick)

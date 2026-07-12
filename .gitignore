@@ -15,4 +15,4 @@ frontend/dist/
 frontend/.vite/
 .idea/misc.xml
 .idea/pyProjectModel.xml
-config/market-data.local.toml
+config/*.local.toml

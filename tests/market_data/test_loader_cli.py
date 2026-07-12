@@ -2,7 +2,12 @@ from datetime import date
 from pathlib import Path
 
 import pytest
-from markeitech.domain import InstrumentDataMode, InstrumentRole, WarmupTimeframe
+from markeitech.domain import (
+    CryptoContractConfig,
+    InstrumentDataMode,
+    InstrumentRole,
+    WarmupTimeframe,
+)
 from markeitech.market_data.cli import build_plan_summary
 from markeitech.market_data.loader import (
     load_market_data_runtime_config,
@@ -79,6 +84,35 @@ def test_parse_market_data_runtime_config() -> None:
     assert background.data_mode == InstrumentDataMode.LIVE_1M_BARS
     assert background.warmup is not None
     assert WarmupTimeframe.DAILY in background.warmup.timeframes
+
+
+def test_parse_crypto_market_data_runtime_config() -> None:
+    raw = raw_config()
+    raw["runtime"]["active_instrument_id"] = "BTC/USD.PAXOS"  # type: ignore[index]
+    raw["instruments"] = [  # type: ignore[index]
+        {
+            "role": "active",
+            "data_mode": "tick_by_tick",
+            "analysis_profile": "active_tick",
+            "contract": {
+                "root_symbol": "BTC",
+                "exchange": "PAXOS",
+                "instrument_id": "BTC/USD.PAXOS",
+                "security_type": "CRYPTO",
+                "ib_symbol": "BTC",
+                "ib_exchange": "PAXOS",
+                "ib_security_type": "CRYPTO",
+                "quote_currency": "USD",
+                "session_timezone": "UTC",
+            },
+            "warmup": {"lookback_sessions": 1, "timeframes": ["1m"]},
+        },
+    ]
+
+    config = parse_market_data_runtime_config(raw)
+
+    assert isinstance(config.instrument_registry.active_runtime.contract, CryptoContractConfig)
+    assert config.instrument_registry.active_instrument_id == "BTC/USD.PAXOS"
 
 
 def test_parse_rejects_runtime_that_would_start_livenode() -> None:

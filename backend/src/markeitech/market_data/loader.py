@@ -6,6 +6,7 @@ from typing import Any
 
 from markeitech.domain import (
     AnalysisProfile,
+    CryptoContractConfig,
     EquityLikeContractConfig,
     FuturesContractConfig,
     InstrumentContractConfig,
@@ -72,6 +73,8 @@ def _parse_contract(raw: dict[str, Any]) -> InstrumentContractConfig:
     security_type = SecurityType(raw["security_type"])
     if security_type == SecurityType.FUTURE:
         return FuturesContractConfig(**raw)
+    if security_type == SecurityType.CRYPTO:
+        return CryptoContractConfig(**raw)
     if security_type in {SecurityType.STOCK, SecurityType.ETF, SecurityType.INDEX}:
         return EquityLikeContractConfig(**raw)
     return InstrumentContractConfig(**raw)
