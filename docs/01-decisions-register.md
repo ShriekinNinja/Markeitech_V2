@@ -233,3 +233,13 @@ Coordinate Parquet and SQLite through content-addressed persistence batches scop
 Write the exact Parquet batch before atomically committing its full identity ledger and stream checkpoint in SQLite. On retry, compare complete stored identities rather than dedupe keys alone. Exact duplicates are ignored; a reused key with different identity metadata is corruption. Delayed events may commit to the ledger without moving a newer checkpoint backward.
 
 Reason: Parquet and SQLite cannot share an atomic transaction. Deterministic batch membership turns the ambiguous crash window after a catalog write into an exact retry, which Nautilus handles by skipping the same file. The identity ledger handles historical/live overlap and proves checkpoint membership without copying market payloads into SQLite. Failure injection at every boundary demonstrates at-least-once processing without duplicate durable events or false progress.
+
+## DR-0028: Capability-Driven Nautilus Ownership
+
+Status: accepted
+
+Use NautilusTrader where it provides mature trading-runtime capability that Markeitech would otherwise need to rebuild: instrument models, provider connectivity, subscription and reconnect lifecycle, clocks, replay and backtesting, strategy lifecycle, execution, portfolio, and account handling. Keep Markeitech ownership of product-specific canonical contracts, fidelity semantics, persistence coordination, analytics, signals, ML integration, notifications, and presentation boundaries.
+
+Evaluate each new boundary on capability and guarantees rather than framework consistency. Do not adopt a Nautilus abstraction when it would weaken source fidelity, recovery behavior, provider portability, deterministic testing, or clear ownership of product behavior.
+
+Reason: A signals-only application could be simpler without NautilusTrader, but the intended platform includes replay, strategies, execution, risk, and portfolio concerns where replacing a mature runtime would create substantial hidden work and operational risk. Explicit ownership limits preserve that leverage without forcing Markeitech-specific semantics into unsuitable framework abstractions.

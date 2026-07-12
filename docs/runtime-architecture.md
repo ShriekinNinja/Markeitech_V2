@@ -21,6 +21,8 @@ NautilusTrader should be the primary system boundary for trading-domain runtime 
 
 Markeitech adds bounded services around NautilusTrader for product-specific contracts, storage metadata, analytics, signals, outbound notifications, later WebSocket presentation and dashboard state, strategy-worker isolation, and operator controls.
 
+This boundary is capability-driven, not framework-driven. Prefer NautilusTrader when it avoids rebuilding mature trading infrastructure such as instrument models, provider connectivity, subscription lifecycle, clocks, replay, strategy lifecycle, execution, portfolio, and account handling. Markeitech retains ownership when behavior is product-specific or when adopting a Nautilus abstraction would weaken data fidelity, recovery guarantees, provider portability, or deterministic testing. New integrations should be judged against that rule rather than added merely for architectural consistency.
+
 The market-data runtime is LiveNode-centered. Markeitech builds validated plans and configuration around NautilusTrader, then uses Nautilus `TradingNodeConfig` and the Interactive Brokers data client as the runtime container for live market data.
 
 Before any live connection, Markeitech builds four deterministic layers:
