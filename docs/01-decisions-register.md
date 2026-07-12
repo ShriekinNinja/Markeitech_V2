@@ -211,3 +211,15 @@ Persist raw valid Nautilus `TradeTick` and `QuoteTick` objects through their nat
 Serialize all calls into a catalog instance because Nautilus documents `ParquetDataCatalog` as not thread-safe. Validate bounded batches before writing and return persistence identities only after the catalog write succeeds. SQLite checkpoints remain a later metadata concern and must never advance after a failed catalog call.
 
 Reason: Native tick schemas maximize Nautilus replay compatibility, while flattening canonical bars into native OHLCV bars would silently discard Markeitech-specific evidence. Exact decimal and nanosecond round trips preserve analytical fidelity. A narrow serialized adapter contains Nautilus custom-data implementation details and leaves later queueing, idempotency, and checkpoint transactions outside the catalog itself.
+
+## DR-0026: SQLite As Transactional Metadata Control Plane
+
+Status: accepted
+
+Use versioned local SQLite storage for stream checkpoints, recovery lifecycles, readiness, gap state, and durable notification outbox state. Store timestamps as integer UTC nanoseconds and structured payloads as deterministic JSON. Enable WAL, foreign keys, full synchronous durability, configurable busy timeout, monotonic state updates, and explicit immediate write transactions.
+
+Parquet remains authoritative for market events. A catalog write must succeed before SQLite progress advances. If a process stops after Parquet succeeds but before the checkpoint commits, recovery may safely revisit an overlap; later idempotency removes duplicates. The inverse ordering, where SQLite advances before durable market data exists, is prohibited.
+
+Outbox enqueue uses a unique dedupe key. Claims atomically lease pending, retryable, or expired work across separate connections, and only the active lease owner may mark success or failure. Migration history is auditable and idempotent, and databases with newer unknown schema versions fail closed.
+
+Reason: Mutable operational state needs transactions, uniqueness, conditional updates, and efficient point reads, while high-volume market history needs Nautilus-compatible columnar storage. The hybrid design accepts a recoverable at-least-once overlap window in exchange for keeping each data class in its natural storage engine.

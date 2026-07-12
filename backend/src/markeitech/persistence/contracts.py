@@ -158,6 +158,7 @@ class NotificationOutboxRecord(VersionedDomainModel):
     available_ts: datetime
     created_ts: datetime
     updated_ts: datetime
+    lease_owner: str | None = Field(default=None, min_length=1)
     lease_expires_ts: datetime | None = None
     delivered_ts: datetime | None = None
     last_error: str | None = Field(default=None, min_length=1)
@@ -177,10 +178,11 @@ class NotificationOutboxRecord(VersionedDomainModel):
     def _delivery_state_must_be_consistent(self) -> NotificationOutboxRecord:
         if _contains_forbidden_payload_key(self.payload):
             raise ValueError("outbox payload cannot contain delivery secrets")
-        if self.status == OutboxStatus.LEASED and self.lease_expires_ts is None:
-            raise ValueError("leased outbox record requires lease expiry")
-        if self.status != OutboxStatus.LEASED and self.lease_expires_ts is not None:
-            raise ValueError("only leased outbox records can define lease expiry")
+        if self.status == OutboxStatus.LEASED:
+            if self.lease_owner is None or self.lease_expires_ts is None:
+                raise ValueError("leased outbox record requires lease owner and expiry")
+        elif self.lease_owner is not None or self.lease_expires_ts is not None:
+            raise ValueError("only leased outbox records can define lease ownership")
         if self.status == OutboxStatus.DELIVERED and self.delivered_ts is None:
             raise ValueError("delivered outbox record requires delivered_ts")
         if self.status != OutboxStatus.DELIVERED and self.delivered_ts is not None:

@@ -169,6 +169,20 @@ Second implementation slice:
 - Serialize concurrent catalog writes with one ownership lock and propagate catalog failures without returning successful identities.
 - Prove exact nanosecond, decimal, source, and instrument round trips with temporary catalogs and no IB connection.
 
+Third implementation slice:
+
+- Add a versioned SQLite metadata store with idempotent, auditable migrations.
+- Enable foreign keys, WAL mode, full synchronous durability, and configurable busy timeout.
+- Persist source-scoped checkpoints without allowing stream progress to move backward.
+- Persist explicit recovery lifecycles, readiness state, and gap state with monotonic updates.
+- Store UTC timestamps as indexed integer nanoseconds and structured payloads as deterministic JSON.
+- Enqueue notification records idempotently through unique dedupe keys.
+- Atomically lease available or expired outbox records across independent worker connections.
+- Require lease ownership when marking delivery success or failure.
+- Preserve retry timing, attempt counts, errors, and delivered state across restart.
+- Roll back every transaction on failure and refuse database schemas newer than the application supports.
+- Keep Parquet/SQLite coordination, live actor wiring, gap calculation, Discord delivery, and Redis out of this slice.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

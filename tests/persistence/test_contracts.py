@@ -95,7 +95,7 @@ def test_outbox_delivery_state_is_explicit() -> None:
 
 
 def test_outbox_rejects_lease_without_expiry() -> None:
-    with pytest.raises(ValidationError, match="requires lease expiry"):
+    with pytest.raises(ValidationError, match="requires lease owner and expiry"):
         NotificationOutboxRecord(
             outbox_id=OUTBOX_ID,
             topic="signals.high",
@@ -135,6 +135,7 @@ def test_persistence_config_enforces_retention_and_bounded_batching() -> None:
     assert config.tick_retention_sessions == 5
     assert config.bar_retention_sessions > config.tick_retention_sessions
     assert config.catalog_batch_size <= config.catalog_writer_queue_size
+    assert config.sqlite_busy_timeout_ms == 5_000
 
     with pytest.raises(ValidationError, match="writer queue size"):
         PersistenceConfig(catalog_writer_queue_size=10, catalog_batch_size=11)

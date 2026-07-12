@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Protocol
+from uuid import UUID
 
 from markeitech.persistence.contracts import (
     NotificationOutboxRecord,
@@ -26,6 +28,28 @@ class RecoveryMetadataStore(Protocol):
 class NotificationOutboxStore(Protocol):
     def enqueue(self, record: NotificationOutboxRecord) -> bool: ...
 
-    def lease_pending(self, *, limit: int) -> tuple[NotificationOutboxRecord, ...]: ...
+    def lease_pending(
+        self,
+        *,
+        lease_owner: str,
+        now: datetime,
+        limit: int,
+    ) -> tuple[NotificationOutboxRecord, ...]: ...
 
-    def save(self, record: NotificationOutboxRecord) -> None: ...
+    def mark_delivered(
+        self,
+        *,
+        outbox_id: UUID,
+        lease_owner: str,
+        delivered_ts: datetime,
+    ) -> NotificationOutboxRecord: ...
+
+    def mark_failed(
+        self,
+        *,
+        outbox_id: UUID,
+        lease_owner: str,
+        failed_ts: datetime,
+        retry_ts: datetime,
+        error: str,
+    ) -> NotificationOutboxRecord: ...

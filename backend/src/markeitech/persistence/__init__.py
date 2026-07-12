@@ -18,6 +18,7 @@ from markeitech.persistence.ports import (
     RecoveryMetadataStore,
     TimeSeriesStore,
 )
+from markeitech.persistence.sqlite import SQLiteMetadataStore
 
 __all__ = [
     "DataFidelity",
@@ -32,6 +33,7 @@ __all__ = [
     "RecoveryMetadataStore",
     "RecoveryRecord",
     "RecoveryStatus",
+    "SQLiteMetadataStore",
     "StreamCheckpoint",
     "TimeSeriesStore",
 ]

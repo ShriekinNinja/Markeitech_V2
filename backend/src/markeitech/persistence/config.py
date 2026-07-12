@@ -16,6 +16,7 @@ class PersistenceConfig(VersionedDomainModel):
     catalog_batch_size: int = Field(default=1_000, ge=1)
     outbox_lease_seconds: int = Field(default=30, ge=1)
     outbox_max_attempts: int = Field(default=8, ge=1)
+    sqlite_busy_timeout_ms: int = Field(default=5_000, ge=1)
     redis_enabled: bool = False
 
     @model_validator(mode="after")

@@ -135,6 +135,10 @@ One `NautilusParquetTimeSeriesStore` serializes catalog writes because `ParquetD
 
 SQLite stores transactional metadata such as checkpoints, readiness, gap state, recovery state, and later signal metadata.
 
+SQLite does not govern or replace Parquet market data. Parquet answers which durable market events exist; SQLite answers which ranges have been verified and processed plus the current mutable operational state. Catalog writes must complete before checkpoints advance. A crash may leave a checkpoint behind already-written Parquet data, causing safe overlap on recovery, but a checkpoint must never lead durable catalog data.
+
+The metadata store uses versioned migrations, WAL mode, full synchronous durability, configurable lock timeout, integer nanosecond timestamps, deterministic JSON, and monotonic upserts. Separate worker connections claim outbox work inside `BEGIN IMMEDIATE` transactions, and only the recorded lease owner may finalize a delivery attempt.
+
 SQLite also stores a durable notification outbox. Delivery transports consume outbox records idempotently; a Discord outage must not lose signals or block ingestion.
 
 Redis is only hot runtime coordination. Redis must never be the sole durable source.
