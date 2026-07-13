@@ -327,3 +327,13 @@ Synchronize catalog-directory deletions before pruning compact event identities 
 Reason: Parquet and SQLite cannot share an atomic deletion transaction. Catalog-first ordering makes every interruption conservative: crashes may delay space recovery but cannot remove duplicate protection for retained market data. Whole-file eligibility avoids expensive and failure-prone Parquet rewrites, while completed-session cutoffs respect holidays, weekends, maintenance windows, and partial sessions. Explicit opt-in prevents a software upgrade from silently activating destructive maintenance.
 
 Constraint: Native Nautilus trade and quote files do not contain Markeitech's provider source. Stage 3 treats the catalog as single-source IB storage. A second native tick provider requires source-partitioned catalog ownership or durable source metadata before it may share this retention mechanism.
+
+## DR-0037: Audited Retention And Explicit Offline SQLite Compaction
+
+Status: accepted
+
+Persist one immutable audit row for every enabled retention attempt, including completed, no-op, unsafe-skipped, and failed runs. Record catalog bytes before and after, file deletions, identity and batch pruning, unmanaged instruments, reason codes, and bounded failure detail. Persist equivalent audit evidence for SQLite compaction with before/after page counts and reclaimed bytes.
+
+Never run `VACUUM` as part of LiveNode startup or shutdown. Expose it only through an offline command requiring the exact `I_UNDERSTAND_THIS_REWRITES_SQLITE` token. Refuse the rewrite when ingress WAL files or incomplete persistence batches exist, require SQLite checkpoint and exclusive-lock acquisition, and skip work below the configured reclaimable-byte threshold. The default threshold is 16 MiB.
+
+Reason: Ordinary retention frees logical SQLite pages but `VACUUM` rewrites the complete database and may need substantial time and temporary disk. Making that rewrite automatic would turn housekeeping into an unbounded market-data startup dependency. Durable reports preserve operational accountability, while a guarded manual command allows intentional space recovery when the benefit is measurable.

@@ -4,8 +4,9 @@ import hashlib
 import json
 from datetime import datetime
 from enum import StrEnum
+from pathlib import Path
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import Field, field_validator, model_validator
 
@@ -51,6 +52,64 @@ class PersistenceBatchStatus(StrEnum):
     CATALOG_WRITTEN = "catalog_written"
     COMMITTED = "committed"
     FAILED = "failed"
+
+
+class RetentionStatus(StrEnum):
+    DISABLED = "disabled"
+    SKIPPED_UNSAFE = "skipped_unsafe"
+    NOOP = "noop"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class SQLiteCompactionStatus(StrEnum):
+    SKIPPED_THRESHOLD = "skipped_threshold"
+    COMPLETED = "completed"
+
+
+class RetentionReport(VersionedDomainModel):
+    run_id: UUID = Field(default_factory=uuid4)
+    maintenance_ts: datetime
+    status: RetentionStatus
+    inspected_file_count: int = Field(default=0, ge=0)
+    catalog_bytes_before: int = Field(default=0, ge=0)
+    catalog_bytes_after: int = Field(default=0, ge=0)
+    deleted_file_count: int = Field(default=0, ge=0)
+    deleted_bytes: int = Field(default=0, ge=0)
+    pruned_identity_count: int = Field(default=0, ge=0)
+    pruned_batch_count: int = Field(default=0, ge=0)
+    unmanaged_instruments: tuple[str, ...] = ()
+    reason_codes: tuple[str, ...] = ()
+    error: str | None = Field(default=None, min_length=1, max_length=2_000)
+
+    @field_validator("maintenance_ts")
+    @classmethod
+    def _maintenance_timestamp_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+    @model_validator(mode="after")
+    def _error_must_match_status(self) -> RetentionReport:
+        if (self.status == RetentionStatus.FAILED) != (self.error is not None):
+            raise ValueError("only failed retention reports require an error")
+        return self
+
+
+class SQLiteCompactionReport(VersionedDomainModel):
+    run_id: UUID = Field(default_factory=uuid4)
+    maintenance_ts: datetime
+    status: SQLiteCompactionStatus
+    database_path: Path
+    page_size_bytes: int = Field(ge=1)
+    page_count_before: int = Field(ge=0)
+    free_page_count_before: int = Field(ge=0)
+    page_count_after: int = Field(ge=0)
+    free_page_count_after: int = Field(ge=0)
+    reclaimed_bytes: int = Field(ge=0)
+
+    @field_validator("maintenance_ts")
+    @classmethod
+    def _compaction_timestamp_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
 
 
 class PersistenceEventIdentity(VersionedDomainModel):

@@ -302,6 +302,16 @@ Eleventh implementation slice, part B:
 - Keep maintenance disabled by default until an operator explicitly enables deletion, and report inspected, deleted, and retained bytes without deleting recent evidence to meet an arbitrary disk quota.
 - Keep controlled SQLite file compaction and persisted maintenance history in the next reviewable part of this slice.
 
+Eleventh implementation slice, part C:
+
+- Persist immutable audit records for every enabled retention attempt, including completed, no-op, unsafe-skipped, and failed outcomes.
+- Persist manual SQLite compaction reports with before/after page counts, free pages, and reclaimed bytes.
+- Keep SQLite compaction outside LiveNode startup and require an explicit offline command and confirmation token.
+- Refuse compaction while ingress WAL files, incomplete persistence batches, or an active SQLite client prevent exclusive maintenance.
+- Skip the rewrite when reclaimable free pages remain below a configurable threshold, defaulting to 16 MiB.
+- Provide a checked-in PyCharm offline compaction runner and machine-readable JSON output.
+- Keep automatic scheduling of database rewrites out of the runtime; ordinary retention can create free pages without imposing an unbounded startup pause.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

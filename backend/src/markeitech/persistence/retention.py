@@ -4,7 +4,6 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
-from enum import StrEnum
 from pathlib import Path
 from typing import Protocol
 
@@ -12,7 +11,12 @@ import pyarrow.parquet as parquet
 
 from markeitech.domain.base import require_utc, unix_ns_from_utc_datetime
 from markeitech.persistence.config import PersistenceConfig
-from markeitech.persistence.contracts import PersistenceBatch, PersistenceEventKind
+from markeitech.persistence.contracts import (
+    PersistenceBatch,
+    PersistenceEventKind,
+    RetentionReport,
+    RetentionStatus,
+)
 
 _CATALOG_KINDS = {
     "trade_tick": PersistenceEventKind.TRADE_TICK,
@@ -21,27 +25,6 @@ _CATALOG_KINDS = {
 }
 
 RetentionStream = tuple[PersistenceEventKind, str, str]
-
-
-class RetentionStatus(StrEnum):
-    DISABLED = "disabled"
-    SKIPPED_UNSAFE = "skipped_unsafe"
-    NOOP = "noop"
-    COMPLETED = "completed"
-
-
-@dataclass(frozen=True)
-class RetentionReport:
-    status: RetentionStatus
-    inspected_file_count: int = 0
-    catalog_bytes_before: int = 0
-    catalog_bytes_after: int = 0
-    deleted_file_count: int = 0
-    deleted_bytes: int = 0
-    pruned_identity_count: int = 0
-    pruned_batch_count: int = 0
-    unmanaged_instruments: tuple[str, ...] = ()
-    reason_codes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -71,6 +54,8 @@ class RetentionMetadataStore(Protocol):
 
     def retention_streams(self) -> frozenset[RetentionStream]: ...
 
+    def save_retention_report(self, report: RetentionReport) -> None: ...
+
     def prune_committed_history(
         self,
         cutoffs: dict[RetentionStream, int],
@@ -96,14 +81,41 @@ class CatalogRetentionMaintenance:
     def run(self, as_of: datetime) -> RetentionReport:
         as_of = require_utc(as_of)
         if not self._config.retention_maintenance_enabled:
-            return RetentionReport(status=RetentionStatus.DISABLED)
+            return RetentionReport(
+                maintenance_ts=as_of,
+                status=RetentionStatus.DISABLED,
+            )
+        try:
+            report = self._run_enabled(as_of)
+        except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
+            failed = RetentionReport(
+                maintenance_ts=as_of,
+                status=RetentionStatus.FAILED,
+                reason_codes=("retention_maintenance_failed",),
+                error=error[:2_000],
+            )
+            try:
+                self._metadata.save_retention_report(failed)
+            except Exception as audit_exc:
+                exc.add_note(
+                    f"retention failure audit could not be saved: "
+                    f"{type(audit_exc).__name__}: {audit_exc}"
+                )
+            raise
+        self._metadata.save_retention_report(report)
+        return report
+
+    def _run_enabled(self, as_of: datetime) -> RetentionReport:
         if any(self._config.journal_path.glob("*.wal")):
             return RetentionReport(
+                maintenance_ts=as_of,
                 status=RetentionStatus.SKIPPED_UNSAFE,
                 reason_codes=("journal_replay_required",),
             )
         if self._metadata.incomplete_batches():
             return RetentionReport(
+                maintenance_ts=as_of,
                 status=RetentionStatus.SKIPPED_UNSAFE,
                 reason_codes=("incomplete_persistence_batches",),
             )
@@ -131,6 +143,7 @@ class CatalogRetentionMaintenance:
         identities, batches = self._metadata.prune_committed_history(safe_cutoffs)
         changed = bool(candidates or identities or batches)
         return RetentionReport(
+            maintenance_ts=as_of,
             status=RetentionStatus.COMPLETED if changed else RetentionStatus.NOOP,
             inspected_file_count=len(files),
             catalog_bytes_before=sum(item.size_bytes for item in files),

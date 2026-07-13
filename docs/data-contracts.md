@@ -149,6 +149,8 @@ Committed event idempotency is represented in SQLite by raw SHA-256 fingerprints
 
 Retention is defined in completed product sessions. A Parquet file is eligible only when its maximum typed `ts_event` is older than the stream cutoff. A retained mixed-age file protects all of its rows by lowering the metadata prune boundary to its minimum `ts_event`. Catalog deletion must be durable before compact identities and empty committed batch manifests may be pruned; WAL or incomplete batch state prohibits pruning.
 
+Retention and SQLite compaction reports are immutable operational evidence. They carry a unique run identity, UTC maintenance timestamp, terminal status, bounded reason or error data, and exact file, byte, identity, batch, or page counters appropriate to the operation.
+
 Writes must be idempotent and restart-safe.
 
 Stage 3 persistence contracts live under `markeitech.persistence`. They add source-scoped event identities, stream checkpoints, recovery lifecycle records, durable notification outbox records, bounded persistence configuration, and storage protocols without coupling the Stage 1 domain models to a specific database.

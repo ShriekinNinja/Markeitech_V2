@@ -161,6 +161,8 @@ Opt-in retention runs at startup before the writer accepts new events. Product c
 
 Native Nautilus trade and quote schemas do not encode Markeitech's provider source. The Stage 3 catalog is therefore a single-source IB catalog, and retention assigns native tick files to that same configured runtime source. Before a second native tick provider can share storage, catalog ownership must be partitioned by source or the source must become durable file metadata; changing the runtime source against an existing catalog is not supported.
 
+Every enabled retention attempt is stored as an immutable SQLite audit record, including unsafe skips and failures. Physical SQLite compaction remains an offline operator action: a separate command requires explicit confirmation, rejects ingress WAL or incomplete batches, checkpoints SQLite, obtains exclusive maintenance access, and rewrites only when free pages exceed the configured threshold. Its before/after page evidence is also durable. The LiveNode never runs `VACUUM` automatically.
+
 SQLite also stores a durable notification outbox. Delivery transports consume outbox records idempotently; a Discord outage must not lose signals or block ingestion.
 
 Redis is only hot runtime coordination. Redis must never be the sole durable source.

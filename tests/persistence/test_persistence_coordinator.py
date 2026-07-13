@@ -165,6 +165,8 @@ def test_metadata_pruning_refuses_incomplete_batches(
                 (PersistenceEventKind.TRADE_TICK, "NQU6.CME", "ib"): BASE_NS + 2_000,
             }
         )
+    with pytest.raises(RuntimeError, match="batches are incomplete"):
+        metadata.compact_database(0)
 
 
 def test_historical_live_overlap_writes_only_new_tail(

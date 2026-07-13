@@ -24,6 +24,7 @@ journal_path = "data/runtime/ingress-journal"
 retention_maintenance_enabled = false
 tick_retention_sessions = 5
 bar_retention_sessions = 250
+sqlite_compaction_min_reclaimable_bytes = 16777216
 catalog_writer_queue_size = 10000
 catalog_batch_size = 1000
 persistence_batch_interval_seconds = 60

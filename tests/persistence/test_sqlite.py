@@ -23,6 +23,9 @@ from markeitech.persistence import (
     PersistenceEventKind,
     RecoveryRecord,
     RecoveryStatus,
+    RetentionReport,
+    RetentionStatus,
+    SQLiteCompactionStatus,
     SQLiteMetadataStore,
     StreamCheckpoint,
 )
@@ -101,13 +104,13 @@ def outbox(
 def test_migrations_are_idempotent_and_auditable(tmp_path: Path) -> None:
     path = tmp_path / "metadata.sqlite3"
     with SQLiteMetadataStore(config(path)) as first:
-        assert first.schema_version == 4
+        assert first.schema_version == 5
     with SQLiteMetadataStore(config(path)) as second:
-        assert second.schema_version == 4
+        assert second.schema_version == 5
         row = second._connection.execute(  # noqa: SLF001
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [item["version"] for item in row] == [1, 2, 3, 4]
+        assert [item["version"] for item in row] == [1, 2, 3, 4, 5]
 
 
 def test_newer_unknown_schema_fails_clearly(tmp_path: Path) -> None:
@@ -149,7 +152,7 @@ def test_schema_one_upgrades_without_losing_checkpoint(tmp_path: Path) -> None:
     connection.close()
 
     with SQLiteMetadataStore(config(path)) as upgraded:
-        assert upgraded.schema_version == 4
+        assert upgraded.schema_version == 5
         assert upgraded.load_checkpoint(expected.stream_key) == expected
 
 
@@ -213,6 +216,72 @@ def test_schema_three_compacts_identity_without_losing_dedupe(tmp_path: Path) ->
     assert "dedupe_hash" in columns
     assert "identity_hash" in columns
     assert "identity_json" not in columns
+
+
+def test_retention_report_round_trip_is_immutable_audit_evidence(tmp_path: Path) -> None:
+    path = tmp_path / "metadata.sqlite3"
+    report = RetentionReport(
+        maintenance_ts=NOW,
+        status=RetentionStatus.COMPLETED,
+        inspected_file_count=12,
+        catalog_bytes_before=10_000,
+        catalog_bytes_after=8_000,
+        deleted_file_count=2,
+        deleted_bytes=2_000,
+        pruned_identity_count=20,
+        pruned_batch_count=2,
+        unmanaged_instruments=("OLD.CME",),
+        reason_codes=("unmanaged_instruments_retained",),
+    )
+
+    with SQLiteMetadataStore(config(path)) as metadata:
+        metadata.save_retention_report(report)
+        restored = metadata.load_retention_report(report.run_id)
+        with pytest.raises(sqlite3.IntegrityError):
+            metadata.save_retention_report(report)
+
+    assert restored == report
+
+
+def test_sqlite_compaction_is_thresholded_and_reports_reclaimed_pages(tmp_path: Path) -> None:
+    path = tmp_path / "metadata.sqlite3"
+    with SQLiteMetadataStore(config(path)) as metadata:
+        skipped = metadata.compact_database(2**63 - 1)
+        metadata._connection.execute(  # noqa: SLF001
+            "CREATE TABLE compaction_payload (payload BLOB NOT NULL)"
+        )
+        metadata._connection.executemany(  # noqa: SLF001
+            "INSERT INTO compaction_payload VALUES (?)",
+            [(b"x" * 4096,)] * 256,
+        )
+        metadata._connection.execute("DROP TABLE compaction_payload")  # noqa: SLF001
+        compacted = metadata.compact_database(0)
+        restored_skipped = metadata.load_compaction_report(skipped.run_id)
+        restored_compacted = metadata.load_compaction_report(compacted.run_id)
+
+    assert skipped.status == SQLiteCompactionStatus.SKIPPED_THRESHOLD
+    assert skipped.reclaimed_bytes == 0
+    assert compacted.status == SQLiteCompactionStatus.COMPLETED
+    assert compacted.free_page_count_before > 0
+    assert compacted.free_page_count_after == 0
+    assert compacted.page_count_after < compacted.page_count_before
+    assert compacted.reclaimed_bytes > 0
+    assert restored_skipped == skipped
+    assert restored_compacted == compacted
+
+
+def test_sqlite_compaction_refuses_pending_ingress_wal(tmp_path: Path) -> None:
+    path = tmp_path / "metadata.sqlite3"
+    persistence_config = config(
+        path,
+        journal_path=tmp_path / "journal",
+    )
+    persistence_config.journal_path.mkdir(parents=True)
+    (persistence_config.journal_path / "pending.wal").write_bytes(b"pending")
+
+    with SQLiteMetadataStore(persistence_config) as metadata:
+        with pytest.raises(RuntimeError, match="ingress WAL"):
+            metadata.compact_database(0)
 
 
 def test_checkpoint_round_trip_preserves_nanoseconds_and_restart(tmp_path: Path) -> None:

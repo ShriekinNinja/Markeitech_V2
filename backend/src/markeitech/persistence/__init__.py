@@ -17,6 +17,10 @@ from markeitech.persistence.contracts import (
     PersistenceEventKind,
     RecoveryRecord,
     RecoveryStatus,
+    RetentionReport,
+    RetentionStatus,
+    SQLiteCompactionReport,
+    SQLiteCompactionStatus,
     StreamCheckpoint,
 )
 from markeitech.persistence.coordinator import (
@@ -55,11 +59,7 @@ from markeitech.persistence.recovery import (
     SessionCalendar,
     SessionWindow,
 )
-from markeitech.persistence.retention import (
-    CatalogRetentionMaintenance,
-    RetentionReport,
-    RetentionStatus,
-)
+from markeitech.persistence.retention import CatalogRetentionMaintenance
 from markeitech.persistence.runtime import (
     LivePersistenceIngress,
     PersistenceIngressSnapshot,
@@ -122,6 +122,8 @@ __all__ = [
     "RecoveryStatus",
     "RetentionReport",
     "RetentionStatus",
+    "SQLiteCompactionReport",
+    "SQLiteCompactionStatus",
     "SQLiteMetadataStore",
     "SessionCalendar",
     "SessionWindow",

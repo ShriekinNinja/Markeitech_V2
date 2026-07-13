@@ -5,11 +5,13 @@ from pathlib import Path
 
 import pyarrow as arrow
 import pyarrow.parquet as parquet
+import pytest
 from markeitech.domain.base import unix_ns_from_utc_datetime
 from markeitech.persistence import (
     CatalogRetentionMaintenance,
     PersistenceConfig,
     PersistenceEventKind,
+    RetentionReport,
     RetentionStatus,
 )
 
@@ -42,12 +44,16 @@ class StubMetadata:
         self.incomplete = incomplete
         self.streams = streams
         self.cutoffs: dict[tuple[PersistenceEventKind, str, str], int] | None = None
+        self.reports: list[RetentionReport] = []
 
     def incomplete_batches(self) -> tuple[object, ...]:
         return (object(),) if self.incomplete else ()
 
     def retention_streams(self) -> frozenset[tuple[PersistenceEventKind, str, str]]:
         return self.streams
+
+    def save_retention_report(self, report: RetentionReport) -> None:
+        self.reports.append(report)
 
     def prune_committed_history(
         self,
@@ -139,6 +145,7 @@ def test_retention_deletes_wholly_expired_files_before_pruning_metadata(
     assert report.pruned_batch_count == 1
     assert report.unmanaged_instruments == ("UNKNOWN.CME",)
     assert report.reason_codes == ("unmanaged_instruments_retained",)
+    assert metadata.reports == [report]
     assert not old.exists()
     assert not bar.exists()
     assert mixed.exists()
@@ -185,6 +192,7 @@ def test_retention_skips_before_inspection_when_wal_or_incomplete_batches_exist(
     assert wal_report.reason_codes == ("journal_replay_required",)
     assert incomplete_report.status == RetentionStatus.SKIPPED_UNSAFE
     assert incomplete_report.reason_codes == ("incomplete_persistence_batches",)
+    assert metadata.reports == [wal_report, incomplete_report]
     assert old.exists()
     assert metadata.cutoffs is None
 
@@ -217,3 +225,25 @@ def test_retention_is_disabled_until_explicitly_configured(tmp_path: Path) -> No
 
     assert report.status == RetentionStatus.DISABLED
     assert metadata.cutoffs is None
+    assert metadata.reports == []
+
+
+def test_retention_records_failure_without_masking_original_error(tmp_path: Path) -> None:
+    persistence_config = config(tmp_path)
+    corrupt = (
+        persistence_config.catalog_path / "data" / "trade_tick" / "NQU6.CME" / "corrupt.parquet"
+    )
+    corrupt.parent.mkdir(parents=True)
+    corrupt.write_bytes(b"not parquet")
+    metadata = StubMetadata()
+
+    with pytest.raises(Exception, match="Parquet"):
+        CatalogRetentionMaintenance(
+            persistence_config,
+            StubCalendar(),
+            metadata,
+        ).run(NOW)
+
+    assert len(metadata.reports) == 1
+    assert metadata.reports[0].status == RetentionStatus.FAILED
+    assert metadata.reports[0].error is not None

@@ -22,13 +22,17 @@ from markeitech.persistence.contracts import (
     PersistenceEventKind,
     RecoveryRecord,
     RecoveryStatus,
+    RetentionReport,
+    RetentionStatus,
+    SQLiteCompactionReport,
+    SQLiteCompactionStatus,
     StreamCheckpoint,
     dedupe_key_fingerprint,
     logical_event_identity_fingerprint,
     same_logical_event_identity,
 )
 
-LATEST_SCHEMA_VERSION = 4
+LATEST_SCHEMA_VERSION = 5
 
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (
@@ -174,6 +178,44 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
             ON persisted_event_identities(batch_id);
         CREATE INDEX persisted_event_retention_idx
             ON persisted_event_identities(event_kind, instrument_id, source, event_ts_ns);
+        """,
+    ),
+    (
+        5,
+        """
+        CREATE TABLE retention_maintenance_runs (
+            run_id TEXT PRIMARY KEY,
+            schema_version TEXT NOT NULL,
+            maintenance_ts_ns INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            inspected_file_count INTEGER NOT NULL,
+            catalog_bytes_before INTEGER NOT NULL,
+            catalog_bytes_after INTEGER NOT NULL,
+            deleted_file_count INTEGER NOT NULL,
+            deleted_bytes INTEGER NOT NULL,
+            pruned_identity_count INTEGER NOT NULL,
+            pruned_batch_count INTEGER NOT NULL,
+            unmanaged_instruments_json TEXT NOT NULL,
+            reason_codes_json TEXT NOT NULL,
+            error TEXT
+        );
+        CREATE INDEX retention_maintenance_time_idx
+            ON retention_maintenance_runs(maintenance_ts_ns DESC);
+        CREATE TABLE metadata_compaction_runs (
+            run_id TEXT PRIMARY KEY,
+            schema_version TEXT NOT NULL,
+            maintenance_ts_ns INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            database_path TEXT NOT NULL,
+            page_size_bytes INTEGER NOT NULL,
+            page_count_before INTEGER NOT NULL,
+            free_page_count_before INTEGER NOT NULL,
+            page_count_after INTEGER NOT NULL,
+            free_page_count_after INTEGER NOT NULL,
+            reclaimed_bytes INTEGER NOT NULL
+        );
+        CREATE INDEX metadata_compaction_time_idx
+            ON metadata_compaction_runs(maintenance_ts_ns DESC);
         """,
     ),
 )
@@ -640,6 +682,130 @@ class SQLiteMetadataStore:
             for row in rows
         )
 
+    def save_retention_report(self, report: RetentionReport) -> None:
+        with self._transaction() as connection:
+            connection.execute(
+                """
+                INSERT INTO retention_maintenance_runs
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(report.run_id),
+                    report.schema_version,
+                    unix_ns_from_utc_datetime(report.maintenance_ts),
+                    report.status.value,
+                    report.inspected_file_count,
+                    report.catalog_bytes_before,
+                    report.catalog_bytes_after,
+                    report.deleted_file_count,
+                    report.deleted_bytes,
+                    report.pruned_identity_count,
+                    report.pruned_batch_count,
+                    json.dumps(list(report.unmanaged_instruments), separators=(",", ":")),
+                    json.dumps(list(report.reason_codes), separators=(",", ":")),
+                    report.error,
+                ),
+            )
+
+    def load_retention_report(self, run_id: UUID) -> RetentionReport | None:
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM retention_maintenance_runs WHERE run_id=?",
+                (str(run_id),),
+            ).fetchone()
+        return None if row is None else _row_to_retention_report(row)
+
+    def compact_database(self, minimum_reclaimable_bytes: int) -> SQLiteCompactionReport:
+        if minimum_reclaimable_bytes < 0:
+            raise ValueError("minimum reclaimable bytes cannot be negative")
+        if any(self._config.journal_path.glob("*.wal")):
+            raise RuntimeError("cannot compact metadata while ingress WAL files exist")
+        with self._lock:
+            incomplete = self._connection.execute("""
+                SELECT COUNT(*) FROM persistence_batches
+                WHERE status IN ('prepared', 'catalog_written')
+                """).fetchone()[0]
+            if incomplete:
+                raise RuntimeError(
+                    "cannot compact metadata while persistence batches are incomplete"
+                )
+            checkpoint = self._connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+            if checkpoint[0] != 0:
+                raise RuntimeError("cannot compact metadata while another SQLite client is active")
+            page_size, pages_before, free_before = self._database_pages()
+            reclaimable = page_size * free_before
+            if reclaimable < minimum_reclaimable_bytes:
+                report = SQLiteCompactionReport(
+                    maintenance_ts=datetime.now(UTC),
+                    status=SQLiteCompactionStatus.SKIPPED_THRESHOLD,
+                    database_path=self._path,
+                    page_size_bytes=page_size,
+                    page_count_before=pages_before,
+                    free_page_count_before=free_before,
+                    page_count_after=pages_before,
+                    free_page_count_after=free_before,
+                    reclaimed_bytes=0,
+                )
+                self._save_compaction_report(report)
+                return report
+
+            self._connection.execute("PRAGMA locking_mode=EXCLUSIVE")
+            try:
+                self._connection.execute("BEGIN EXCLUSIVE")
+                self._connection.execute("COMMIT")
+                self._connection.execute("VACUUM")
+            finally:
+                self._connection.execute("PRAGMA locking_mode=NORMAL")
+            _, pages_after, free_after = self._database_pages()
+            report = SQLiteCompactionReport(
+                maintenance_ts=datetime.now(UTC),
+                status=SQLiteCompactionStatus.COMPLETED,
+                database_path=self._path,
+                page_size_bytes=page_size,
+                page_count_before=pages_before,
+                free_page_count_before=free_before,
+                page_count_after=pages_after,
+                free_page_count_after=free_after,
+                reclaimed_bytes=max(0, (pages_before - pages_after) * page_size),
+            )
+            self._save_compaction_report(report)
+            return report
+
+    def load_compaction_report(self, run_id: UUID) -> SQLiteCompactionReport | None:
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM metadata_compaction_runs WHERE run_id=?",
+                (str(run_id),),
+            ).fetchone()
+        return None if row is None else _row_to_compaction_report(row)
+
+    def _save_compaction_report(self, report: SQLiteCompactionReport) -> None:
+        self._connection.execute(
+            """
+            INSERT INTO metadata_compaction_runs
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                str(report.run_id),
+                report.schema_version,
+                unix_ns_from_utc_datetime(report.maintenance_ts),
+                report.status.value,
+                str(report.database_path),
+                report.page_size_bytes,
+                report.page_count_before,
+                report.free_page_count_before,
+                report.page_count_after,
+                report.free_page_count_after,
+                report.reclaimed_bytes,
+            ),
+        )
+
+    def _database_pages(self) -> tuple[int, int, int]:
+        page_size = int(self._connection.execute("PRAGMA page_size").fetchone()[0])
+        page_count = int(self._connection.execute("PRAGMA page_count").fetchone()[0])
+        free_count = int(self._connection.execute("PRAGMA freelist_count").fetchone()[0])
+        return page_size, page_count, free_count
+
     def prune_committed_history(
         self,
         cutoffs: dict[tuple[PersistenceEventKind, str, str], int],
@@ -969,6 +1135,41 @@ def _row_to_batch(row: sqlite3.Row) -> PersistenceBatch:
         catalog_written_ts=_optional_datetime(row["catalog_written_ts_ns"]),
         committed_ts=_optional_datetime(row["committed_ts_ns"]),
         last_error=row["last_error"],
+    )
+
+
+def _row_to_retention_report(row: sqlite3.Row) -> RetentionReport:
+    return RetentionReport(
+        schema_version=row["schema_version"],
+        run_id=UUID(row["run_id"]),
+        maintenance_ts=utc_datetime_from_unix_ns(row["maintenance_ts_ns"]),
+        status=RetentionStatus(row["status"]),
+        inspected_file_count=row["inspected_file_count"],
+        catalog_bytes_before=row["catalog_bytes_before"],
+        catalog_bytes_after=row["catalog_bytes_after"],
+        deleted_file_count=row["deleted_file_count"],
+        deleted_bytes=row["deleted_bytes"],
+        pruned_identity_count=row["pruned_identity_count"],
+        pruned_batch_count=row["pruned_batch_count"],
+        unmanaged_instruments=tuple(json.loads(row["unmanaged_instruments_json"])),
+        reason_codes=tuple(json.loads(row["reason_codes_json"])),
+        error=row["error"],
+    )
+
+
+def _row_to_compaction_report(row: sqlite3.Row) -> SQLiteCompactionReport:
+    return SQLiteCompactionReport(
+        schema_version=row["schema_version"],
+        run_id=UUID(row["run_id"]),
+        maintenance_ts=utc_datetime_from_unix_ns(row["maintenance_ts_ns"]),
+        status=SQLiteCompactionStatus(row["status"]),
+        database_path=Path(row["database_path"]),
+        page_size_bytes=row["page_size_bytes"],
+        page_count_before=row["page_count_before"],
+        free_page_count_before=row["free_page_count_before"],
+        page_count_after=row["page_count_after"],
+        free_page_count_after=row["free_page_count_after"],
+        reclaimed_bytes=row["reclaimed_bytes"],
     )
 
 
