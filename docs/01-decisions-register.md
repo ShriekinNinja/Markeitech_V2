@@ -243,3 +243,13 @@ Use NautilusTrader where it provides mature trading-runtime capability that Mark
 Evaluate each new boundary on capability and guarantees rather than framework consistency. Do not adopt a Nautilus abstraction when it would weaken source fidelity, recovery behavior, provider portability, deterministic testing, or clear ownership of product behavior.
 
 Reason: A signals-only application could be simpler without NautilusTrader, but the intended platform includes replay, strategies, execution, risk, and portfolio concerns where replacing a mature runtime would create substantial hidden work and operational risk. Explicit ownership limits preserve that leverage without forcing Markeitech-specific semantics into unsuitable framework abstractions.
+
+## DR-0029: Non-Blocking Bounded Persistence Ingress
+
+Status: accepted
+
+Place one bounded asynchronous writer between live market-data callbacks and the blocking Parquet/SQLite coordinator. Submission never waits for storage and returns an explicit outcome. Queue capacity applies to all accepted but uncommitted events, including events already grouped into open buckets. A full or failed writer is observable and rejects new work; it must not silently discard an event or block the Nautilus callback thread.
+
+Group native Nautilus ticks and completed canonical bars by source, instrument, event kind, and fixed initialization-time bucket. Close buckets by their deterministic time boundary, sort by initialization timestamp and dedupe key, and split oversized buckets into stable configured-size chunks. Force open buckets to flush during graceful shutdown. A storage exception fails the writer closed and retains uncommitted in-memory work for diagnosis.
+
+Reason: Catalog and SQLite latency must not stall market-data handling, while an unbounded handoff would merely hide overload until memory exhaustion. Deterministic bucket membership preserves idempotent crash recovery, and explicit backpressure makes data-loss risk an operational state that later LiveNode wiring can degrade on immediately.

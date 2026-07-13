@@ -197,6 +197,19 @@ Fourth implementation slice:
 - Allow delayed events to commit without moving an already-newer stream checkpoint backward.
 - Keep live actor wiring, missing-interval calculation, targeted IB recovery, Redis, and notification delivery out of this slice.
 
+Fifth implementation slice:
+
+- Add one bounded asynchronous writer owner between market-data callbacks and blocking storage.
+- Accept native Nautilus trade and quote ticks plus completed canonical one-minute bars.
+- Reject unsupported and provisional events before they consume queue capacity.
+- Return explicit accepted, full, stopped, failed, unsupported, and provisional outcomes.
+- Group events by source, instrument, event kind, and fixed initialization-time bucket.
+- Sort closed buckets deterministically and split them into stable configured-size chunks.
+- Persist only through the idempotent coordinator and expose queue, write, duplicate, rejection, batch, and failure health.
+- Fail closed after a storage error without silently dropping pending events.
+- Force a bounded flush during graceful shutdown.
+- Keep real LiveNode wiring, restart-driven historical recovery, Redis, and notification delivery out of this slice.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

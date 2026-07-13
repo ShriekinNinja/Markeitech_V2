@@ -20,6 +20,12 @@ from markeitech.persistence.coordinator import (
     PersistenceFailurePoint,
     PersistenceWriteResult,
 )
+from markeitech.persistence.pipeline import (
+    BoundedPersistenceWriter,
+    PersistenceSubmissionStatus,
+    PersistenceWriterSnapshot,
+    PersistenceWriterStatus,
+)
 from markeitech.persistence.ports import (
     NotificationOutboxStore,
     RecoveryMetadataStore,
@@ -29,6 +35,7 @@ from markeitech.persistence.sqlite import SQLiteMetadataStore
 
 __all__ = [
     "DataFidelity",
+    "BoundedPersistenceWriter",
     "IdempotentPersistenceCoordinator",
     "CanonicalOneMinuteBarRecord",
     "NotificationOutboxRecord",
@@ -42,6 +49,9 @@ __all__ = [
     "PersistenceEventIdentity",
     "PersistenceEventKind",
     "PersistenceWriteResult",
+    "PersistenceSubmissionStatus",
+    "PersistenceWriterSnapshot",
+    "PersistenceWriterStatus",
     "RecoveryMetadataStore",
     "RecoveryRecord",
     "RecoveryStatus",
