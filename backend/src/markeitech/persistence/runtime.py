@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import StrEnum
 from threading import Lock
 from typing import Protocol
@@ -14,6 +15,11 @@ from markeitech.persistence.pipeline import (
     PersistenceSubmissionStatus,
     PersistenceWriterSnapshot,
     PersistenceWriterStatus,
+)
+from markeitech.persistence.retention import (
+    CatalogRetentionMaintenance,
+    RetentionCalendar,
+    RetentionReport,
 )
 from markeitech.persistence.sqlite import SQLiteMetadataStore
 
@@ -139,22 +145,37 @@ class PersistenceRuntime:
         catalog: NautilusParquetTimeSeriesStore,
         metadata: SQLiteMetadataStore,
         writer: BoundedPersistenceWriter,
+        maintenance: CatalogRetentionMaintenance | None = None,
     ) -> None:
         self.config = config
         self.catalog = catalog
         self.metadata = metadata
         self.writer = writer
+        self.maintenance = maintenance
         self.ingress = LivePersistenceIngress(writer)
+        self.retention_report: RetentionReport | None = None
         self._status = PersistenceRuntimeStatus.CREATED
         self._lock = Lock()
 
     @classmethod
-    def build(cls, config: PersistenceConfig) -> PersistenceRuntime:
+    def build(
+        cls,
+        config: PersistenceConfig,
+        *,
+        retention_calendar: RetentionCalendar | None = None,
+    ) -> PersistenceRuntime:
+        if config.retention_maintenance_enabled and retention_calendar is None:
+            raise ValueError("enabled retention maintenance requires a session calendar")
         catalog = NautilusParquetTimeSeriesStore(config)
         metadata = SQLiteMetadataStore(config)
         coordinator = IdempotentPersistenceCoordinator(config, catalog, metadata)
         writer = BoundedPersistenceWriter(config, coordinator, catalog)
-        return cls(config, catalog, metadata, writer)
+        maintenance = (
+            CatalogRetentionMaintenance(config, retention_calendar, metadata)
+            if retention_calendar is not None
+            else None
+        )
+        return cls(config, catalog, metadata, writer, maintenance)
 
     @property
     def status(self) -> PersistenceRuntimeStatus:
@@ -170,6 +191,8 @@ class PersistenceRuntime:
             if self._status != PersistenceRuntimeStatus.CREATED:
                 raise RuntimeError("persistence runtime can only start once")
         try:
+            if self.maintenance is not None:
+                self.retention_report = self.maintenance.run(datetime.now(UTC))
             self.writer.start()
             ready = self.writer.wait_until_ready(self.config.runtime_startup_timeout_seconds)
             if not ready:

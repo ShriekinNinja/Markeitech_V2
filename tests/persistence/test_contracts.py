@@ -136,6 +136,7 @@ def test_persistence_config_enforces_retention_and_bounded_batching() -> None:
 
     assert config.tick_retention_sessions == 5
     assert config.bar_retention_sessions > config.tick_retention_sessions
+    assert config.retention_maintenance_enabled is False
     assert config.catalog_batch_size <= config.catalog_writer_queue_size
     assert config.catalog_flush_poll_seconds == 0.25
     assert config.journal_max_bytes == 512 * 1024 * 1024

@@ -625,6 +625,55 @@ class SQLiteMetadataStore:
             """).fetchall()
         return tuple(_row_to_batch(row) for row in rows)
 
+    def retention_streams(self) -> frozenset[tuple[PersistenceEventKind, str, str]]:
+        with self._lock:
+            rows = self._connection.execute("""
+                SELECT DISTINCT event_kind, instrument_id, source
+                FROM persisted_event_identities
+                """).fetchall()
+        return frozenset(
+            (
+                PersistenceEventKind(row["event_kind"]),
+                str(row["instrument_id"]),
+                str(row["source"]),
+            )
+            for row in rows
+        )
+
+    def prune_committed_history(
+        self,
+        cutoffs: dict[tuple[PersistenceEventKind, str, str], int],
+    ) -> tuple[int, int]:
+        if not cutoffs:
+            return 0, 0
+        with self._transaction() as connection:
+            incomplete = connection.execute("""
+                SELECT COUNT(*) FROM persistence_batches
+                WHERE status IN ('prepared', 'catalog_written')
+                """).fetchone()[0]
+            if incomplete:
+                raise RuntimeError("cannot prune metadata while persistence batches are incomplete")
+
+            identity_count = 0
+            for (event_kind, instrument_id, source), cutoff_ns in cutoffs.items():
+                cursor = connection.execute(
+                    """
+                    DELETE FROM persisted_event_identities
+                    WHERE event_kind=? AND instrument_id=? AND source=? AND event_ts_ns < ?
+                    """,
+                    (event_kind.value, instrument_id, source, cutoff_ns),
+                )
+                identity_count += cursor.rowcount
+            batch_cursor = connection.execute("""
+                DELETE FROM persistence_batches
+                WHERE status='committed'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM persisted_event_identities identities
+                      WHERE identities.batch_id=persistence_batches.batch_id
+                  )
+                """)
+            return identity_count, batch_cursor.rowcount
+
     def committed_dedupe_keys(
         self,
         identities: tuple[PersistenceEventIdentity, ...],

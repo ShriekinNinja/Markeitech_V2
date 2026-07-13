@@ -55,6 +55,11 @@ from markeitech.persistence.recovery import (
     SessionCalendar,
     SessionWindow,
 )
+from markeitech.persistence.retention import (
+    CatalogRetentionMaintenance,
+    RetentionReport,
+    RetentionStatus,
+)
 from markeitech.persistence.runtime import (
     LivePersistenceIngress,
     PersistenceIngressSnapshot,
@@ -85,6 +90,7 @@ __all__ = [
     "JournalError",
     "LivePersistenceIngress",
     "CanonicalOneMinuteBarRecord",
+    "CatalogRetentionMaintenance",
     "NotificationOutboxRecord",
     "NotificationOutboxStore",
     "OutboxStatus",
@@ -114,6 +120,8 @@ __all__ = [
     "RecoveryPlanStatus",
     "RecoveryRecord",
     "RecoveryStatus",
+    "RetentionReport",
+    "RetentionStatus",
     "SQLiteMetadataStore",
     "SessionCalendar",
     "SessionWindow",

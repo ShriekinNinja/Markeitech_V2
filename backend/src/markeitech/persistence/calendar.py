@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from threading import Lock
 from typing import Any
 
@@ -57,6 +57,7 @@ class PandasMarketSessionCalendar:
         cls,
         registry: InstrumentRegistryConfig,
         *,
+        include_disabled: bool = False,
         maximum_query_days: int = 370,
         maximum_cached_schedules: int = 128,
     ) -> PandasMarketSessionCalendar:
@@ -68,7 +69,7 @@ class PandasMarketSessionCalendar:
                     session_profile=runtime.contract.session_profile,
                 )
                 for runtime in registry.instruments
-                if runtime.enabled
+                if runtime.enabled or include_disabled
             ),
             maximum_query_days=maximum_query_days,
             maximum_cached_schedules=maximum_cached_schedules,
@@ -86,12 +87,7 @@ class PandasMarketSessionCalendar:
             raise ValueError("calendar query end must be after start")
         if end_ts - start_ts > timedelta(days=self._maximum_query_days):
             raise RecoveryPlanningError("calendar query exceeds configured day limit")
-        try:
-            policy = self._policies[instrument_id]
-        except KeyError as exc:
-            raise RecoveryPlanningError(
-                f"session calendar is not configured for instrument {instrument_id!r}"
-            ) from exc
+        policy = self._policy(instrument_id)
 
         if policy.session_profile == SessionProfile.CONTINUOUS:
             return _minute_range(start_ts, end_ts)
@@ -110,6 +106,45 @@ class PandasMarketSessionCalendar:
                 expected.append(cursor)
                 cursor += _MINUTE
         return tuple(expected)
+
+    def retention_cutoff(
+        self,
+        instrument_id: str,
+        completed_sessions: int,
+        as_of: datetime,
+    ) -> datetime:
+        as_of = require_utc(as_of)
+        if completed_sessions < 1:
+            raise ValueError("completed session count must be positive")
+        policy = self._policy(instrument_id)
+        if policy.session_profile == SessionProfile.CONTINUOUS:
+            cutoff_date = as_of.date() - timedelta(days=completed_sessions)
+            return datetime.combine(cutoff_date, time.min, UTC)
+
+        calendar = _load_calendar(policy.calendar_id)
+        start_name, end_name = _market_time_range(calendar, policy.session_profile)
+        schedule = calendar.schedule(
+            start_date=(as_of - timedelta(days=self._maximum_query_days)).date(),
+            end_date=as_of.date(),
+            tz="UTC",
+            start=start_name,
+            end=end_name,
+            interruptions=True,
+        )
+        completed = [
+            (_utc_datetime(row[start_name]), _utc_datetime(row[end_name]))
+            for _, row in schedule.iterrows()
+            if _utc_datetime(row[end_name]) <= as_of
+        ]
+        if len(completed) < completed_sessions:
+            raise RecoveryPlanningError(
+                f"calendar cannot resolve {completed_sessions} completed sessions "
+                f"for instrument {instrument_id!r} within its query limit"
+            )
+        return completed[-completed_sessions][0]
+
+    def has_policy(self, instrument_id: str) -> bool:
+        return instrument_id in self._policies
 
     def _schedule_windows(
         self,
@@ -147,6 +182,14 @@ class PandasMarketSessionCalendar:
             while len(self._schedule_cache) > self._maximum_cached_schedules:
                 self._schedule_cache.popitem(last=False)
         return result
+
+    def _policy(self, instrument_id: str) -> InstrumentCalendarPolicy:
+        try:
+            return self._policies[instrument_id]
+        except KeyError as exc:
+            raise RecoveryPlanningError(
+                f"session calendar is not configured for instrument {instrument_id!r}"
+            ) from exc
 
     @staticmethod
     def _validate_policy(policy: InstrumentCalendarPolicy) -> None:

@@ -289,6 +289,19 @@ Eleventh implementation slice, part A:
 - Defer physical database compaction to explicit maintenance; schema migration must not introduce an unbounded startup `VACUUM`.
 - Keep session-aware catalog retirement, metadata pruning, maintenance scheduling, and storage-budget enforcement in the next reviewable part of this slice.
 
+Eleventh implementation slice, part B:
+
+- Add opt-in retention maintenance at the quiescent startup boundary before the persistence writer accepts new events.
+- Derive tick and bar cutoffs from completed product sessions rather than elapsed days; an in-progress session does not consume one retained session.
+- Inspect typed Parquet `ts_event` statistics and retire only whole files whose newest event is older than the applicable cutoff.
+- Keep mixed-age files intact and pin SQLite pruning to their oldest retained event so every retained row keeps its dedupe protection.
+- Delete and directory-sync catalog files before transactionally pruning compact identities and now-empty committed batch manifests.
+- Skip maintenance when ingress WAL files or incomplete persistence batches require recovery, and repeat safely on a later startup.
+- Reconstruct streams from both Parquet and SQLite so a restart can finish metadata pruning after a crash that deleted the final catalog file.
+- Retain unmanaged instruments and report them explicitly; expired rollover contracts must remain configured as disabled instruments until their data ages out.
+- Keep maintenance disabled by default until an operator explicitly enables deletion, and report inspected, deleted, and retained bytes without deleting recent evidence to meet an arbitrary disk quota.
+- Keep controlled SQLite file compaction and persisted maintenance history in the next reviewable part of this slice.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

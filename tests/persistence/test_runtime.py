@@ -1,11 +1,17 @@
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 
+import pytest
 from markeitech.domain import OneMinuteBar
 from markeitech.persistence import (
     LivePersistenceIngress,
+    PersistenceConfig,
     PersistenceIngressStatus,
+    PersistenceRuntime,
+    PersistenceRuntimeStatus,
     PersistenceSubmissionStatus,
+    RetentionStatus,
 )
 
 
@@ -17,6 +23,19 @@ class StubWriter:
     def submit(self, event: object) -> PersistenceSubmissionStatus:
         self.events.append(event)
         return self.result
+
+
+class StubRetentionCalendar:
+    def has_policy(self, instrument_id: str) -> bool:
+        return True
+
+    def retention_cutoff(
+        self,
+        instrument_id: str,
+        completed_sessions: int,
+        as_of: datetime,
+    ) -> datetime:
+        return as_of
 
 
 def bar(*, complete: bool = True) -> OneMinuteBar:
@@ -91,3 +110,35 @@ def test_ingress_fails_health_when_writer_is_not_running() -> None:
 
     assert ingress.snapshot.status == PersistenceIngressStatus.FAILED
     assert ingress.snapshot.reason_codes == ("persistence_not_running",)
+
+
+def test_runtime_runs_enabled_retention_before_accepting_work(tmp_path: Path) -> None:
+    config = PersistenceConfig(
+        catalog_path=tmp_path / "catalog",
+        metadata_path=tmp_path / "metadata.sqlite3",
+        journal_path=tmp_path / "journal",
+        retention_maintenance_enabled=True,
+    )
+    runtime = PersistenceRuntime.build(
+        config,
+        retention_calendar=StubRetentionCalendar(),
+    )
+
+    runtime.start()
+    try:
+        assert runtime.status == PersistenceRuntimeStatus.RUNNING
+        assert runtime.retention_report is not None
+        assert runtime.retention_report.status == RetentionStatus.NOOP
+    finally:
+        runtime.stop()
+
+
+def test_enabled_retention_requires_explicit_calendar(tmp_path: Path) -> None:
+    config = PersistenceConfig(
+        catalog_path=tmp_path / "catalog",
+        metadata_path=tmp_path / "metadata.sqlite3",
+        retention_maintenance_enabled=True,
+    )
+
+    with pytest.raises(ValueError, match="requires a session calendar"):
+        PersistenceRuntime.build(config)

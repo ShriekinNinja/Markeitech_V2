@@ -124,7 +124,15 @@ def build_prepared_market_data_live_node(
         data_client_name=config.data_client_name,
     )
     action_plan = build_livenode_action_plan(request_plan)
-    persistence = PersistenceRuntime.build(config.persistence) if config.persistence else None
+    session_calendar = PandasMarketSessionCalendar.from_registry(
+        config.instrument_registry,
+        include_disabled=True,
+    )
+    persistence = (
+        PersistenceRuntime.build(config.persistence, retention_calendar=session_calendar)
+        if config.persistence
+        else None
+    )
     actor_kwargs: dict[str, Any] = {"on_warmup_ready": on_warmup_ready}
     if persistence is not None:
         startup_recovery = StartupRecoveryService(
@@ -132,7 +140,7 @@ def build_prepared_market_data_live_node(
             config.instrument_registry,
             persistence.catalog,
             persistence.metadata,
-            PandasMarketSessionCalendar.from_registry(config.instrument_registry),
+            session_calendar,
             flush_pending=lambda: persistence.writer.flush(
                 config.persistence.runtime_startup_timeout_seconds
             ),

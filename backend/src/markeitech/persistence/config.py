@@ -11,6 +11,7 @@ class PersistenceConfig(VersionedDomainModel):
     catalog_path: Path = Path("data/catalog")
     metadata_path: Path = Path("data/runtime/markeitech.sqlite3")
     journal_path: Path = Path("data/runtime/ingress-journal")
+    retention_maintenance_enabled: bool = False
     tick_retention_sessions: int = Field(default=5, ge=5)
     bar_retention_sessions: int = Field(default=250, ge=5)
     catalog_writer_queue_size: int = Field(default=10_000, ge=1)

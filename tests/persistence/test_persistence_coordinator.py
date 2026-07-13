@@ -9,6 +9,7 @@ from markeitech.persistence import (
     NautilusParquetTimeSeriesStore,
     PersistenceBatchStatus,
     PersistenceConfig,
+    PersistenceEventKind,
     PersistenceFailurePoint,
     SQLiteMetadataStore,
 )
@@ -120,6 +121,50 @@ def test_exact_retry_is_a_noop(
     assert retried.persisted_count == 0
     assert retried.duplicate_count == 2
     assert len(catalog.query_trade_ticks("NQU6.CME")) == 2
+
+
+def test_metadata_pruning_removes_only_expired_identities_and_empty_batches(
+    persistence: tuple[PersistenceConfig, NautilusParquetTimeSeriesStore, SQLiteMetadataStore],
+) -> None:
+    _, catalog, metadata = persistence
+    old = trade_tick(1_000)
+    retained = trade_tick(2_000)
+    old_result = coordinator(persistence).persist_closed_batch([old])
+    retained_result = coordinator(persistence).persist_closed_batch([retained])
+
+    identity_count, batch_count = metadata.prune_committed_history(
+        {
+            (PersistenceEventKind.TRADE_TICK, "NQU6.CME", "ib"): BASE_NS + 1_500,
+        }
+    )
+
+    assert identity_count == 1
+    assert batch_count == 1
+    assert old_result.batch is not None
+    assert retained_result.batch is not None
+    assert metadata.load_batch(old_result.batch.batch_id) is None
+    assert metadata.load_batch(retained_result.batch.batch_id) is not None
+    identities = catalog.identify((old, retained))
+    assert metadata.committed_dedupe_keys(identities) == frozenset({identities[1].dedupe_key})
+
+
+def test_metadata_pruning_refuses_incomplete_batches(
+    persistence: tuple[PersistenceConfig, NautilusParquetTimeSeriesStore, SQLiteMetadataStore],
+) -> None:
+    _, _, metadata = persistence
+    crashing = coordinator(
+        persistence,
+        crash=CrashOnce(PersistenceFailurePoint.AFTER_PREPARE),
+    )
+    with pytest.raises(RuntimeError, match="crash at after_prepare"):
+        crashing.persist_closed_batch([trade_tick(1_000)])
+
+    with pytest.raises(RuntimeError, match="batches are incomplete"):
+        metadata.prune_committed_history(
+            {
+                (PersistenceEventKind.TRADE_TICK, "NQU6.CME", "ib"): BASE_NS + 2_000,
+            }
+        )
 
 
 def test_historical_live_overlap_writes_only_new_tail(

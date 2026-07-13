@@ -157,6 +157,10 @@ SQLite does not govern or replace Parquet market data. Parquet answers which dur
 
 The metadata store uses versioned migrations, WAL mode, full synchronous durability, configurable lock timeout, integer nanosecond timestamps, deterministic JSON, and monotonic upserts. Separate worker connections claim outbox work inside `BEGIN IMMEDIATE` transactions, and only the recorded lease owner may finalize a delivery attempt.
 
+Opt-in retention runs at startup before the writer accepts new events. Product calendars resolve cutoffs from completed sessions, then maintenance reads Parquet `ts_event` statistics and deletes only wholly expired files. Mixed-age files pin the metadata cutoff to their oldest event. Each deletion is synchronized to its parent directory before one SQLite transaction removes older compact identities and committed manifests that no longer own identities. WAL presence or incomplete batches suppress the run so recovery always wins. Catalog and identity-ledger stream discovery are combined, allowing a later startup to complete metadata pruning when a crash occurred after deleting the last file. Unmanaged instruments remain untouched and visible in the maintenance report.
+
+Native Nautilus trade and quote schemas do not encode Markeitech's provider source. The Stage 3 catalog is therefore a single-source IB catalog, and retention assigns native tick files to that same configured runtime source. Before a second native tick provider can share storage, catalog ownership must be partitioned by source or the source must become durable file metadata; changing the runtime source against an existing catalog is not supported.
+
 SQLite also stores a durable notification outbox. Delivery transports consume outbox records idempotently; a Discord outage must not lose signals or block ingestion.
 
 Redis is only hot runtime coordination. Redis must never be the sole durable source.

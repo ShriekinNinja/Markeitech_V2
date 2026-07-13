@@ -315,3 +315,15 @@ Store committed per-event dedupe keys and logical persistence identities as fixe
 Treat any matching dedupe fingerprint with a different logical identity fingerprint as corruption and fail closed. Continue to store full market payloads in Parquet; the SQLite fingerprint ledger proves idempotency and batch ownership but is not a second market-history store. Migrate populated schema-version-three ledgers transactionally, and leave file-level compaction to controlled maintenance rather than adding an unbounded startup pause.
 
 Reason: Full JSON identities caused SQLite metadata to grow at tick-data scale even though idempotency only requires stable identity evidence. Fixed-size fingerprints preserve duplicate and conflict detection while materially reducing durable metadata. Typed stream and event-time columns retain the information needed for conservative, session-aware retirement without restoring payload duplication.
+
+## DR-0036: Catalog-First Session-Aware Retention
+
+Status: accepted
+
+Run opt-in retention only at a quiescent startup boundary before the persistence writer accepts events. Count completed product sessions through the explicit instrument calendar: keep five completed sessions of native ticks and 250 completed sessions of canonical bars by default, with the current incomplete session retained in addition. Inspect Parquet `ts_event` metadata and delete only a whole file whose maximum event timestamp is older than its stream cutoff. A mixed-age file remains intact, and its minimum event timestamp lowers the corresponding SQLite prune boundary.
+
+Synchronize catalog-directory deletions before pruning compact event identities and empty committed batch manifests in one SQLite transaction. Never prune while ingress WAL files or prepared/catalog-written batches exist. If the process stops after catalog deletion but before metadata pruning, stale fingerprints remain harmless and a later run reconstructs the stream from SQLite to finish cleanup. If deletion fails partway, metadata is not pruned. Instruments without an available calendar policy are retained and reported rather than inferred from venue or symbol; rollover contracts should remain in configuration as disabled entries until their retained history expires.
+
+Reason: Parquet and SQLite cannot share an atomic deletion transaction. Catalog-first ordering makes every interruption conservative: crashes may delay space recovery but cannot remove duplicate protection for retained market data. Whole-file eligibility avoids expensive and failure-prone Parquet rewrites, while completed-session cutoffs respect holidays, weekends, maintenance windows, and partial sessions. Explicit opt-in prevents a software upgrade from silently activating destructive maintenance.
+
+Constraint: Native Nautilus trade and quote files do not contain Markeitech's provider source. Stage 3 treats the catalog as single-source IB storage. A second native tick provider requires source-partitioned catalog ownership or durable source metadata before it may share this retention mechanism.

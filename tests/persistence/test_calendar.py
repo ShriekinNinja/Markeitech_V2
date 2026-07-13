@@ -96,6 +96,16 @@ def test_continuous_calendar_includes_weekends_and_partial_minutes() -> None:
     )
 
 
+def test_retention_cutoff_counts_only_completed_product_sessions() -> None:
+    as_of = datetime(2026, 7, 13, 10, tzinfo=UTC)
+
+    futures_cutoff = calendar().retention_cutoff("NQU6.CME", 5, as_of)
+    continuous_cutoff = calendar().retention_cutoff("BTC/USD.PAXOS", 5, as_of)
+
+    assert futures_cutoff == datetime(2026, 7, 5, 22, tzinfo=UTC)
+    assert continuous_cutoff == datetime(2026, 7, 8, tzinfo=UTC)
+
+
 def test_registry_builds_explicit_instrument_calendar_policies() -> None:
     config = load_market_data_runtime_config(Path("config/market-data.example.toml"))
     session_calendar = PandasMarketSessionCalendar.from_registry(config.instrument_registry)
