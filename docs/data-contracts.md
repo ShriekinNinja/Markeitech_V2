@@ -145,6 +145,8 @@ Raw trade ticks, raw bid/ask quote ticks, and canonical one-minute bars should b
 
 SQLite metadata should carry recovery and checkpoint state.
 
+Committed event idempotency is represented in SQLite by raw SHA-256 fingerprints of the dedupe key and logical persistence identity, plus typed batch, instrument, event-kind, source, event-time, and commit-time columns. Local receipt timestamps are excluded from the logical fingerprint so a provider retransmission remains the same event. A matching dedupe fingerprint with different logical metadata is corruption and must fail closed. Full market payloads remain in Parquet rather than being duplicated into the metadata store.
+
 Writes must be idempotent and restart-safe.
 
 Stage 3 persistence contracts live under `markeitech.persistence`. They add source-scoped event identities, stream checkpoints, recovery lifecycle records, durable notification outbox records, bounded persistence configuration, and storage protocols without coupling the Stage 1 domain models to a specific database.

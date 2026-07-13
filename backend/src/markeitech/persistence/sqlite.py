@@ -23,10 +23,12 @@ from markeitech.persistence.contracts import (
     RecoveryRecord,
     RecoveryStatus,
     StreamCheckpoint,
+    dedupe_key_fingerprint,
+    logical_event_identity_fingerprint,
     same_logical_event_identity,
 )
 
-LATEST_SCHEMA_VERSION = 3
+LATEST_SCHEMA_VERSION = 4
 
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (
@@ -142,6 +144,36 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
         );
         CREATE INDEX provider_empty_range_idx
             ON provider_empty_intervals(instrument_id, source, open_ts_ns);
+        """,
+    ),
+    (
+        4,
+        """
+        CREATE TABLE compact_persisted_event_identities (
+            dedupe_hash BLOB PRIMARY KEY,
+            identity_hash BLOB NOT NULL,
+            batch_id TEXT NOT NULL,
+            instrument_id TEXT NOT NULL,
+            event_kind TEXT NOT NULL,
+            source TEXT NOT NULL,
+            event_ts_ns INTEGER NOT NULL,
+            committed_ts_ns INTEGER NOT NULL,
+            FOREIGN KEY(batch_id) REFERENCES persistence_batches(batch_id)
+        );
+        INSERT INTO compact_persisted_event_identities
+        SELECT sha256_blob(dedupe_key), logical_identity_hash(identity_json), batch_id,
+               json_extract(identity_json, '$.instrument_id'),
+               json_extract(identity_json, '$.event_kind'),
+               json_extract(identity_json, '$.source'),
+               json_extract(identity_json, '$.event_ts_ns'),
+               committed_ts_ns
+        FROM persisted_event_identities;
+        DROP TABLE persisted_event_identities;
+        ALTER TABLE compact_persisted_event_identities RENAME TO persisted_event_identities;
+        CREATE INDEX persisted_event_batch_idx
+            ON persisted_event_identities(batch_id);
+        CREATE INDEX persisted_event_retention_idx
+            ON persisted_event_identities(event_kind, instrument_id, source, event_ts_ns);
         """,
     ),
 )
@@ -536,20 +568,31 @@ class SQLiteMetadataStore:
                 raise ValueError("committed identity count does not match prepared batch")
 
             for identity in identities:
-                identity_json = _identity_json(identity)
+                dedupe_hash = dedupe_key_fingerprint(identity.dedupe_key)
+                identity_hash = logical_event_identity_fingerprint(identity)
+                event_ts_ns = identity.event_ts_ns or unix_ns_from_utc_datetime(identity.event_ts)
                 cursor = connection.execute(
-                    "INSERT OR IGNORE INTO persisted_event_identities VALUES (?, ?, ?, ?)",
-                    (identity.dedupe_key, batch_id, identity_json, committed_ns),
+                    """
+                    INSERT OR IGNORE INTO persisted_event_identities
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        dedupe_hash,
+                        identity_hash,
+                        batch_id,
+                        identity.instrument_id,
+                        identity.event_kind.value,
+                        identity.source,
+                        event_ts_ns,
+                        committed_ns,
+                    ),
                 )
                 if cursor.rowcount == 0:
                     existing = connection.execute(
-                        "SELECT identity_json FROM persisted_event_identities WHERE dedupe_key=?",
-                        (identity.dedupe_key,),
+                        "SELECT identity_hash FROM persisted_event_identities WHERE dedupe_hash=?",
+                        (dedupe_hash,),
                     ).fetchone()
-                    stored_identity = PersistenceEventIdentity.model_validate_json(
-                        existing["identity_json"]
-                    )
-                    if not same_logical_event_identity(stored_identity, identity):
+                    if bytes(existing["identity_hash"]) != identity_hash:
                         raise ValueError("dedupe key conflicts with a different event identity")
 
             self._upsert_checkpoint(connection, checkpoint, reject_regression=False)
@@ -588,26 +631,37 @@ class SQLiteMetadataStore:
     ) -> frozenset[str]:
         if not identities:
             return frozenset()
-        by_key = {identity.dedupe_key: identity for identity in identities}
-        keys = tuple(by_key)
-        placeholders = ",".join("?" for _ in keys)
+        by_hash: dict[bytes, PersistenceEventIdentity] = {}
+        for identity in identities:
+            dedupe_hash = dedupe_key_fingerprint(identity.dedupe_key)
+            existing = by_hash.get(dedupe_hash)
+            if existing is not None and not same_logical_event_identity(existing, identity):
+                raise ValueError("dedupe hash conflicts with a different event identity")
+            by_hash[dedupe_hash] = identity
+        hashes = tuple(by_hash)
+        placeholders = ",".join("?" for _ in hashes)
         rows = self._connection.execute(
             f"""
-            SELECT dedupe_key, identity_json FROM persisted_event_identities
-            WHERE dedupe_key IN ({placeholders})
+            SELECT dedupe_hash, identity_hash FROM persisted_event_identities
+            WHERE dedupe_hash IN ({placeholders})
             """,
-            keys,
+            hashes,
         ).fetchall()
         for row in rows:
-            stored_identity = PersistenceEventIdentity.model_validate_json(row["identity_json"])
-            if not same_logical_event_identity(
-                stored_identity,
-                by_key[row["dedupe_key"]],
-            ):
+            dedupe_hash = bytes(row["dedupe_hash"])
+            expected_hash = logical_event_identity_fingerprint(by_hash[dedupe_hash])
+            if bytes(row["identity_hash"]) != expected_hash:
                 raise ValueError("dedupe key conflicts with a different event identity")
-        return frozenset(row["dedupe_key"] for row in rows)
+        return frozenset(by_hash[bytes(row["dedupe_hash"])].dedupe_key for row in rows)
 
     def _configure(self) -> None:
+        self._connection.create_function("sha256_blob", 1, _sha256_blob, deterministic=True)
+        self._connection.create_function(
+            "logical_identity_hash",
+            1,
+            _logical_identity_hash,
+            deterministic=True,
+        )
         self._connection.execute("PRAGMA foreign_keys = ON")
         self._connection.execute("PRAGMA journal_mode = WAL")
         self._connection.execute("PRAGMA synchronous = FULL")
@@ -883,9 +937,10 @@ def _require_same_batch_identity(existing: PersistenceBatch, proposed: Persisten
         raise ValueError("batch id conflicts with different immutable metadata")
 
 
-def _identity_json(identity: PersistenceEventIdentity) -> str:
-    return json.dumps(
-        identity.model_dump(mode="json"),
-        separators=(",", ":"),
-        sort_keys=True,
-    )
+def _sha256_blob(value: str) -> bytes:
+    return dedupe_key_fingerprint(value)
+
+
+def _logical_identity_hash(payload: str) -> bytes:
+    identity = PersistenceEventIdentity.model_validate_json(payload)
+    return logical_event_identity_fingerprint(identity)

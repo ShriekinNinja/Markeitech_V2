@@ -278,6 +278,17 @@ Tenth implementation slice:
 - Cover CME futures, a US ETF, and a cash index through the same generic execution path.
 - Keep historical tick backfill, Redis, notification delivery, and provider-specific schedule overrides out of this slice.
 
+Eleventh implementation slice, part A:
+
+- Replace the unbounded per-event JSON identity ledger with fixed-size SHA-256 fingerprints stored as raw SQLite BLOBs.
+- Preserve the existing logical identity boundary: provider event metadata participates in the fingerprint, while local receipt timestamps do not make a retransmission distinct.
+- Retain exact instrument, event-kind, source, event timestamp, batch, and commit columns beside each fingerprint so later retention can prune metadata by durable stream and event time.
+- Fail closed when a dedupe fingerprint resolves to a different logical identity fingerprint.
+- Migrate populated schema-version-three databases transactionally without losing committed dedupe evidence.
+- Validate the migration against a copy of the Stage 3 live database before applying retention policy to production data.
+- Defer physical database compaction to explicit maintenance; schema migration must not introduce an unbounded startup `VACUUM`.
+- Keep session-aware catalog retirement, metadata pruning, maintenance scheduling, and storage-budget enforcement in the next reviewable part of this slice.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

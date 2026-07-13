@@ -305,3 +305,13 @@ Do not let one active instrument own recovery correctness for the watchlist. Eve
 Treat a returned request with no bar as ambiguous rather than immediate data loss or an invented flat bar. Count that exact interval durably in SQLite and classify it as confirmed provider-empty only after repeated configured observations. Confirmed empties satisfy continuity checks without entering Parquet as market data. Rejected or non-durable returned bars remain persistence damage and cannot be mislabeled provider-empty.
 
 Reason: A second historical requester would race warmup, duplicate IB traffic, and blur readiness ownership. Fair sequential repairs respect pacing across an equally important watchlist, while durable re-verification prevents request completion or in-memory acceptance from being mistaken for stored evidence. Repeated empty confirmation bounds retries without falsifying OHLC history.
+
+## DR-0035: Compact Durable Event Identity Fingerprints
+
+Status: accepted
+
+Store committed per-event dedupe keys and logical persistence identities as fixed-size SHA-256 BLOB fingerprints rather than repeating full dedupe strings and JSON identity documents in SQLite. Keep the owning batch, instrument, event kind, source, event timestamp, and commit timestamp as typed columns so operational inspection and later retention remain deterministic. Exclude local receipt-time metadata from the logical identity fingerprint, preserving the existing rule that a provider retransmission is the same event even when Markeitech receives it again at a different time.
+
+Treat any matching dedupe fingerprint with a different logical identity fingerprint as corruption and fail closed. Continue to store full market payloads in Parquet; the SQLite fingerprint ledger proves idempotency and batch ownership but is not a second market-history store. Migrate populated schema-version-three ledgers transactionally, and leave file-level compaction to controlled maintenance rather than adding an unbounded startup pause.
+
+Reason: Full JSON identities caused SQLite metadata to grow at tick-data scale even though idempotency only requires stable identity evidence. Fixed-size fingerprints preserve duplicate and conflict detection while materially reducing durable metadata. Typed stream and event-time columns retain the information needed for conservative, session-aware retirement without restoring payload duplication.

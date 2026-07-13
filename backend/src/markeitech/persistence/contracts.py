@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
@@ -89,8 +91,20 @@ def same_logical_event_identity(
     right: PersistenceEventIdentity,
 ) -> bool:
     """Compare provider event identity without local receipt-time metadata."""
-    excluded = {"init_ts", "init_ts_ns"}
-    return left.model_dump(exclude=excluded) == right.model_dump(exclude=excluded)
+    return logical_event_identity_fingerprint(left) == logical_event_identity_fingerprint(right)
+
+
+def dedupe_key_fingerprint(dedupe_key: str) -> bytes:
+    return hashlib.sha256(dedupe_key.encode()).digest()
+
+
+def logical_event_identity_fingerprint(identity: PersistenceEventIdentity) -> bytes:
+    payload = identity.model_dump(
+        mode="json",
+        exclude={"init_ts", "init_ts_ns"},
+    )
+    encoded = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+    return hashlib.sha256(encoded).digest()
 
 
 class PersistenceBatch(VersionedDomainModel):

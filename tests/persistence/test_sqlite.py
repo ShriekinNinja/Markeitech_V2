@@ -15,9 +15,11 @@ from markeitech.domain import (
 )
 from markeitech.domain.base import utc_datetime_from_unix_ns
 from markeitech.persistence import (
+    DataFidelity,
     NotificationOutboxRecord,
     OutboxStatus,
     PersistenceConfig,
+    PersistenceEventIdentity,
     PersistenceEventKind,
     RecoveryRecord,
     RecoveryStatus,
@@ -99,13 +101,13 @@ def outbox(
 def test_migrations_are_idempotent_and_auditable(tmp_path: Path) -> None:
     path = tmp_path / "metadata.sqlite3"
     with SQLiteMetadataStore(config(path)) as first:
-        assert first.schema_version == 3
+        assert first.schema_version == 4
     with SQLiteMetadataStore(config(path)) as second:
-        assert second.schema_version == 3
+        assert second.schema_version == 4
         row = second._connection.execute(  # noqa: SLF001
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [item["version"] for item in row] == [1, 2, 3]
+        assert [item["version"] for item in row] == [1, 2, 3, 4]
 
 
 def test_newer_unknown_schema_fails_clearly(tmp_path: Path) -> None:
@@ -147,8 +149,70 @@ def test_schema_one_upgrades_without_losing_checkpoint(tmp_path: Path) -> None:
     connection.close()
 
     with SQLiteMetadataStore(config(path)) as upgraded:
-        assert upgraded.schema_version == 3
+        assert upgraded.schema_version == 4
         assert upgraded.load_checkpoint(expected.stream_key) == expected
+
+
+def test_schema_three_compacts_identity_without_losing_dedupe(tmp_path: Path) -> None:
+    path = tmp_path / "version-three.sqlite3"
+    identity = PersistenceEventIdentity(
+        event_kind=PersistenceEventKind.TRADE_TICK,
+        instrument_id="NQU6.CME",
+        source="ib",
+        fidelity=DataFidelity.REPORTED,
+        dedupe_key="trade:NQU6.CME:legacy",
+        event_ts=utc_datetime_from_unix_ns(EVENT_NS),
+        event_ts_ns=EVENT_NS,
+        init_ts=utc_datetime_from_unix_ns(EVENT_NS + 100),
+        init_ts_ns=EVENT_NS + 100,
+    )
+    connection = sqlite3.connect(path)
+    for version, sql in MIGRATIONS[:3]:
+        for statement in sql.split(";"):
+            if statement.strip():
+                connection.execute(statement)
+        connection.execute("INSERT INTO schema_migrations VALUES (?, ?)", (version, EVENT_NS))
+    connection.execute(
+        "INSERT INTO persistence_batches VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "a" * 64,
+            "1.0",
+            "NQU6.CME",
+            "trade_tick",
+            "ib",
+            EVENT_NS,
+            EVENT_NS + 60_000_000_000,
+            1,
+            "b" * 64,
+            "committed",
+            EVENT_NS,
+            EVENT_NS,
+            EVENT_NS,
+            EVENT_NS,
+            None,
+        ),
+    )
+    connection.execute(
+        "INSERT INTO persisted_event_identities VALUES (?, ?, ?, ?)",
+        (identity.dedupe_key, "a" * 64, identity.model_dump_json(), EVENT_NS),
+    )
+    connection.execute("PRAGMA user_version = 3")
+    connection.commit()
+    connection.close()
+
+    with SQLiteMetadataStore(config(path)) as upgraded:
+        columns = {
+            row["name"]
+            for row in upgraded._connection.execute(  # noqa: SLF001
+                "PRAGMA table_info(persisted_event_identities)"
+            )
+        }
+        restored = upgraded.committed_dedupe_keys((identity,))
+
+    assert restored == frozenset({identity.dedupe_key})
+    assert "dedupe_hash" in columns
+    assert "identity_hash" in columns
+    assert "identity_json" not in columns
 
 
 def test_checkpoint_round_trip_preserves_nanoseconds_and_restart(tmp_path: Path) -> None:
