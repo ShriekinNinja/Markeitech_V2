@@ -327,7 +327,21 @@ In progress.
 - Update active and background instruments equally from completed live 1m bars, while the active instrument retains its tick-by-tick data path.
 - Expose structured context logs and include the latest snapshots in the duration-limited paper acceptance report.
 
-Stage 4A implementation is under review. Feature persistence, FVGs, volume profiles, complex zones, aggression, signals, ML, Discord delivery, and UI remain later slices.
+Stage 4A baseline implementation is complete. Feature persistence, aggression, signals, ML, Discord delivery, and UI remain later slices.
+
+### Stage 4D/4E Fast-Track Operator Context
+
+Implemented on the dedicated usable-context branch ahead of the normal persistence sequence:
+
+- Emit a clearly bounded warmup context block before live subscriptions, including configured 1h history.
+- Calculate previous product-session high/low from 1m history.
+- Calculate DST-aware London and New York developing ranges plus 15m and 30m opening ranges.
+- Detect confirmed, still-unfilled three-bar FVGs independently on each context timeframe.
+- Build current, prior, London, and New York 70% value-area profiles using per-instrument price bins.
+- Label candle-derived profiles as inferred with methodology `bar_typical_price_volume`; do not describe them as footprint or authoritative trade-at-price data.
+- Emit deterministic Direction/Location context from EMA trend, session VWAP, session quartile, profile location, nearby support/resistance, and active FVG location.
+
+This fast-track work remains subject to later persisted-data replay and value-integrity comparison before signals or automation depend on it.
 
 ## Stage 5: Signals
 

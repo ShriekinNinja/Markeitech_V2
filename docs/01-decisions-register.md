@@ -347,3 +347,13 @@ Build baseline market context for every enabled instrument immediately after the
 Use completed canonical 1m bars as the live analytical clock. Advance active-instrument context from tick-built bars and background context from provider bars; retain the active instrument's parallel provider bars for persistence and recovery without allowing them to compete for analytical ownership. Align configured 5m, 15m, 30m, and 1h bars to the product session open and aggregate only exact consecutive minute buckets; withhold an aggregate when any constituent minute is missing. Label each context input as provider-reported, tick-inferred, or mixed, and preserve the concrete source separately. Persist the completed canonical bar before advancing analytics. Emit versioned transport-neutral snapshots and structured operational logs; include the latest snapshots in acceptance evidence.
 
 Reason: One deterministic engine gives live operation and later replay the same baseline without making presentation or notification code authoritative. Refusing incomplete aggregates avoids silently smoothing known data damage. Explicit fidelity prevents active tick-built bars and background provider bars from appearing equally authoritative, while equal instrument treatment preserves the watchlist-first design.
+
+## DR-0039: Fast-Track Usable Direction And Location Context
+
+Status: accepted for operator evaluation
+
+Before the normal Stage 4 persistence sequence, expose immediate higher-timeframe warmup context, prior-session levels, DST-aware London and New York ranges and opening ranges, confirmed unfilled three-bar FVGs, and current/prior/named-session volume profiles. Use per-instrument profile bins and a contiguous 70% value-area expansion around POC. Combine trend, VWAP relation, session quartile, profile location, nearby support/resistance, and active FVG location into a deterministic Direction/Location score with reason codes.
+
+Treat every profile produced by the context engine as inferred because completed OHLCV bars do not preserve historical trade-at-price distribution. Record methodology `bar_typical_price_volume`; do not represent these values as footprint, depth, exchange aggressor data, or exact tick profiles. Prevent higher-timeframe warmup snapshots from reading 1m evidence newer than their own `as_of`. Require later persisted-data replay and integrity comparison before these fast-track features can qualify signals or automation.
+
+Reason: These structures provide immediate discretionary value during the operator-evaluation week without weakening evidence semantics or silently introducing look-ahead. A dedicated branch preserves the option to revise or discard the fast track when the normal staged plan resumes.

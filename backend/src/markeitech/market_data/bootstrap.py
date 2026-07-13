@@ -136,7 +136,14 @@ def build_prepared_market_data_live_node(
     )
     actor_kwargs: dict[str, Any] = {
         "on_warmup_ready": on_warmup_ready,
-        "market_context_engine": MarketContextEngine(session_calendar),
+        "market_context_engine": MarketContextEngine(
+            session_calendar,
+            profile_bin_sizes={
+                runtime.contract.instrument_id: runtime.warmup.volume_profile_bin_size
+                for runtime in config.instrument_registry.instruments
+                if runtime.enabled and runtime.warmup is not None
+            },
+        ),
     }
     if persistence is not None:
         startup_recovery = StartupRecoveryService(

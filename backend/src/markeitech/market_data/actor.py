@@ -413,17 +413,21 @@ class MarkeitechMarketDataActor(Actor):
             )
         ):
             for snapshot in self._market_context.update_one_minute(event):
-                self._emit_market_context(snapshot)
+                self._emit_market_context(snapshot, phase="live")
 
     def _analyze_warmup(self, snapshot: Any) -> None:
         self._on_warmup_ready(snapshot)
         if self._market_context is None:
             return
-        for context in self._market_context.initialize(snapshot.data_by_bar_type):
-            self._emit_market_context(context)
+        contexts = self._market_context.initialize(snapshot.data_by_bar_type)
+        self.log.info(f"MARKET_CONTEXT_WARMUP_BEGIN | snapshots={len(contexts)}")
+        for context in contexts:
+            self._emit_market_context(context, phase="warmup")
+        self.log.info("MARKET_CONTEXT_WARMUP_COMPLETE | live_subscriptions=next")
 
-    def _emit_market_context(self, snapshot: MarketContextSnapshot) -> None:
-        self.log.info(format_market_context(snapshot))
+    def _emit_market_context(self, snapshot: MarketContextSnapshot, *, phase: str) -> None:
+        self.log.info(format_market_context(snapshot, phase=phase))
+        self.log.info(format_market_structure(snapshot, phase=phase))
         if self._on_market_context is not None:
             self._on_market_context(snapshot)
 
@@ -449,7 +453,13 @@ def should_update_market_context(
     return bar.source == "classified_ticks"
 
 
-def format_market_context(snapshot: MarketContextSnapshot) -> str:
+def format_market_context(
+    snapshot: MarketContextSnapshot,
+    *,
+    phase: str = "live",
+) -> str:
+    if phase not in {"warmup", "live"}:
+        raise ValueError(f"unsupported market context phase {phase!r}")
     vwap = _display_value(snapshot.session_vwap)
     ema_20 = _display_value(snapshot.ema_20)
     ema_50 = _display_value(snapshot.ema_50)
@@ -463,16 +473,80 @@ def format_market_context(snapshot: MarketContextSnapshot) -> str:
     )
     session_position = f"{snapshot.session_range_position * 100:.1f}%"
     return (
-        f"MARKET_CONTEXT | {snapshot.instrument_id} {snapshot.timeframe.value} "
+        f"MARKET_CONTEXT | phase={phase.upper()} | {snapshot.instrument_id} "
+        f"{snapshot.timeframe.value} "
         f"| trend={snapshot.trend.value.upper()} | price={snapshot.close} "
         f"| EMA[20={ema_20} 50={ema_50} 200={ema_200}] "
         f"| VWAP[{vwap} {snapshot.vwap_position.value}] | ATR14={atr_14} "
         f"| SESSION[low={snapshot.session_low} high={snapshot.session_high} "
         f"position={session_position}] | LEVELS[support={support} resistance={resistance}] "
+        f"| D/L[score={snapshot.direction_score} location={snapshot.profile_location.value} "
+        f"active_fvgs={len(snapshot.fair_value_gaps)}] "
         f"| input={snapshot.input_fidelity.value}:{snapshot.source} "
+        f"| as_of={snapshot.as_of.isoformat()}"
+    )
+
+
+def format_market_structure(
+    snapshot: MarketContextSnapshot,
+    *,
+    phase: str = "live",
+) -> str:
+    if phase not in {"warmup", "live"}:
+        raise ValueError(f"unsupported market context phase {phase!r}")
+    prior = _display_price_pair(snapshot.prior_session_low, snapshot.prior_session_high)
+    london = _display_context_range(snapshot.london_range)
+    new_york = _display_context_range(snapshot.new_york_range)
+    opening_ranges = " ".join(
+        (
+            f"L15={_display_context_range(snapshot.london_opening_range_15)}",
+            f"L30={_display_context_range(snapshot.london_opening_range_30)}",
+            f"NY15={_display_context_range(snapshot.new_york_opening_range_15)}",
+            f"NY30={_display_context_range(snapshot.new_york_opening_range_30)}",
+        )
+    )
+    return (
+        f"MARKET_STRUCTURE | phase={phase.upper()} | {snapshot.instrument_id} "
+        f"{snapshot.timeframe.value} | RANGES[prior={prior} london={london} "
+        f"new_york={new_york}] | OR[{opening_ranges}] "
+        f"| PROFILE[current={_display_profile(snapshot.volume_profile)} "
+        f"prior={_display_profile(snapshot.prior_volume_profile)} "
+        f"london={_display_profile(snapshot.london_volume_profile)} "
+        f"new_york={_display_profile(snapshot.new_york_volume_profile)}] "
+        f"| D/L[score={snapshot.direction_score} "
+        f"reasons={','.join(snapshot.direction_location_reason_codes)}] "
+        f"| FVG[active={_display_fvgs(snapshot.fair_value_gaps)}] "
         f"| as_of={snapshot.as_of.isoformat()}"
     )
 
 
 def _display_value(value: Any | None) -> str:
     return "n/a" if value is None else str(value)
+
+
+def _display_price_pair(low: Any | None, high: Any | None) -> str:
+    if low is None or high is None:
+        return "n/a"
+    return f"{low}/{high}"
+
+
+def _display_context_range(value: Any | None) -> str:
+    if value is None:
+        return "n/a"
+    state = "complete" if value.is_complete else "developing"
+    return f"{value.low}/{value.high}:{state}"
+
+
+def _display_profile(value: Any | None) -> str:
+    if value is None:
+        return "n/a"
+    return (
+        f"{value.value_area_low}/{value.poc}/{value.value_area_high}:"
+        f"{value.input_fidelity.value}"
+    )
+
+
+def _display_fvgs(values: Any) -> str:
+    if not values:
+        return "none"
+    return ",".join(f"{gap.direction.value}:{gap.lower}-{gap.upper}" for gap in values[-3:])

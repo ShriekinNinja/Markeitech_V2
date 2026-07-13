@@ -63,6 +63,20 @@ class LevelKind(StrEnum):
     SESSION_HIGH = "session_high"
 
 
+class FairValueGapDirection(StrEnum):
+    BULLISH = "bullish"
+    BEARISH = "bearish"
+
+
+class ProfileLocation(StrEnum):
+    UNAVAILABLE = "unavailable"
+    BELOW_VALUE = "below_value"
+    LOWER_VALUE = "lower_value"
+    AT_POC = "at_poc"
+    UPPER_VALUE = "upper_value"
+    ABOVE_VALUE = "above_value"
+
+
 class AnalysisBar(VersionedDomainModel):
     instrument_id: str = Field(min_length=1)
     timeframe: AnalyticsTimeframe
@@ -104,6 +118,65 @@ class ContextLevel(VersionedDomainModel):
         return require_utc(value)
 
 
+class ContextRange(VersionedDomainModel):
+    label: str = Field(min_length=1)
+    start_ts: datetime
+    end_ts: datetime
+    high: Decimal = Field(gt=0)
+    low: Decimal = Field(gt=0)
+    is_complete: bool
+
+    @field_validator("start_ts", "end_ts")
+    @classmethod
+    def _timestamps_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+    @model_validator(mode="after")
+    def _range_must_be_consistent(self) -> ContextRange:
+        if self.end_ts <= self.start_ts:
+            raise ValueError("context range end must be after start")
+        if self.low > self.high:
+            raise ValueError("context range low cannot exceed high")
+        return self
+
+
+class FairValueGap(VersionedDomainModel):
+    direction: FairValueGapDirection
+    timeframe: AnalyticsTimeframe
+    lower: Decimal = Field(gt=0)
+    upper: Decimal = Field(gt=0)
+    detected_ts: datetime
+    is_filled: bool = False
+
+    @field_validator("detected_ts")
+    @classmethod
+    def _timestamp_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+    @model_validator(mode="after")
+    def _gap_must_be_consistent(self) -> FairValueGap:
+        if self.lower >= self.upper:
+            raise ValueError("fair value gap lower bound must be below upper bound")
+        return self
+
+
+class VolumeProfileSnapshot(VersionedDomainModel):
+    bin_size: Decimal = Field(gt=0)
+    value_area_fraction: Decimal = Field(gt=0, le=1)
+    poc: Decimal = Field(gt=0)
+    value_area_low: Decimal = Field(gt=0)
+    value_area_high: Decimal = Field(gt=0)
+    total_volume: Decimal = Field(gt=0)
+    input_fidelity: AnalyticsInputFidelity
+    methodology: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _profile_must_be_consistent(self) -> VolumeProfileSnapshot:
+        if not self.value_area_low <= self.poc <= self.value_area_high:
+            raise ValueError("profile POC must be inside its value area")
+        return self
+
+
 class MarketContextSnapshot(VersionedDomainModel):
     instrument_id: str = Field(min_length=1)
     timeframe: AnalyticsTimeframe
@@ -126,6 +199,23 @@ class MarketContextSnapshot(VersionedDomainModel):
     trend_reason_codes: tuple[str, ...] = Field(min_length=1)
     nearest_support: ContextLevel | None = None
     nearest_resistance: ContextLevel | None = None
+    prior_session_high: Decimal | None = Field(default=None, gt=0)
+    prior_session_low: Decimal | None = Field(default=None, gt=0)
+    london_range: ContextRange | None = None
+    new_york_range: ContextRange | None = None
+    london_opening_range_15: ContextRange | None = None
+    london_opening_range_30: ContextRange | None = None
+    new_york_opening_range_15: ContextRange | None = None
+    new_york_opening_range_30: ContextRange | None = None
+    fair_value_gaps: tuple[FairValueGap, ...] = Field(default_factory=tuple)
+    volume_profile: VolumeProfileSnapshot | None = None
+    prior_volume_profile: VolumeProfileSnapshot | None = None
+    london_volume_profile: VolumeProfileSnapshot | None = None
+    new_york_volume_profile: VolumeProfileSnapshot | None = None
+    profile_location: ProfileLocation = ProfileLocation.UNAVAILABLE
+    location_reason_codes: tuple[str, ...] = Field(default_factory=tuple)
+    direction_score: int = Field(default=0, ge=-2, le=2)
+    direction_location_reason_codes: tuple[str, ...] = Field(default_factory=tuple)
 
     @field_validator("as_of")
     @classmethod
@@ -140,4 +230,10 @@ class MarketContextSnapshot(VersionedDomainModel):
             raise ValueError("nearest support cannot be above close")
         if self.nearest_resistance is not None and self.nearest_resistance.price < self.close:
             raise ValueError("nearest resistance cannot be below close")
+        if (
+            self.prior_session_low is not None
+            and self.prior_session_high is not None
+            and self.prior_session_low > self.prior_session_high
+        ):
+            raise ValueError("prior session low cannot exceed high")
         return self

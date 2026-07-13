@@ -7,7 +7,9 @@ from markeitech.analytics import (
     AnalysisBar,
     AnalyticsInputFidelity,
     AnalyticsTimeframe,
+    FairValueGapDirection,
     MarketContextEngine,
+    ProfileLocation,
     TrendState,
     VwapPosition,
 )
@@ -136,6 +138,8 @@ def test_session_vwap_uses_only_latest_resolved_session() -> None:
 
     assert snapshot.session_open == Decimal("199.75")
     assert snapshot.session_vwap == Decimal("200")
+    assert snapshot.prior_session_high == Decimal("100.5")
+    assert snapshot.prior_session_low == Decimal("99.5")
 
 
 def test_daily_context_treats_daily_bar_as_session_summary() -> None:
@@ -153,6 +157,83 @@ def test_daily_context_treats_daily_bar_as_session_summary() -> None:
     assert snapshot.timeframe == AnalyticsTimeframe.DAILY
     assert snapshot.session_open == Decimal("99.75")
     assert snapshot.session_vwap == Decimal("100")
+
+
+def test_named_session_and_opening_ranges_use_timezone_aware_windows() -> None:
+    new_york_open = datetime(2026, 7, 13, 13, 30, tzinfo=UTC)
+    snapshot = MarketContextEngine(DailySessions()).initialize_bars(
+        tuple(analysis_bar(index, start=new_york_open) for index in range(31))
+    )[0]
+
+    assert snapshot.new_york_range is not None
+    assert snapshot.new_york_range.is_complete is False
+    assert snapshot.new_york_opening_range_15 is not None
+    assert snapshot.new_york_opening_range_15.is_complete is True
+    assert snapshot.new_york_opening_range_30 is not None
+    assert snapshot.new_york_opening_range_30.is_complete is True
+    assert snapshot.new_york_opening_range_30.start_ts == new_york_open
+    assert snapshot.new_york_opening_range_30.end_ts == new_york_open + timedelta(minutes=30)
+
+
+def test_confirmed_unfilled_fair_value_gap_is_exposed() -> None:
+    bars = (
+        analysis_bar(0, close=Decimal("100")),
+        analysis_bar(1, close=Decimal("101")),
+        analysis_bar(2, close=Decimal("103")),
+    )
+
+    snapshot = MarketContextEngine(DailySessions()).initialize_bars(bars)[0]
+
+    assert len(snapshot.fair_value_gaps) == 1
+    gap = snapshot.fair_value_gaps[0]
+    assert gap.direction == FairValueGapDirection.BULLISH
+    assert gap.lower == Decimal("100.5")
+    assert gap.upper == Decimal("102.5")
+    assert gap.is_filled is False
+
+
+def test_inferred_volume_profile_uses_configured_bins_and_classifies_location() -> None:
+    bars = (
+        analysis_bar(0, close=Decimal("100"), volume=Decimal("10")),
+        analysis_bar(1, close=Decimal("105"), volume=Decimal("100")),
+        analysis_bar(2, close=Decimal("110"), volume=Decimal("10")),
+    )
+    engine = MarketContextEngine(
+        DailySessions(),
+        profile_bin_sizes={"NQU6.CME": Decimal("5")},
+    )
+
+    snapshot = engine.initialize_bars(bars)[0]
+
+    assert snapshot.volume_profile is not None
+    assert snapshot.volume_profile.bin_size == Decimal("5")
+    assert snapshot.volume_profile.poc == Decimal("105")
+    assert snapshot.volume_profile.value_area_low == Decimal("105")
+    assert snapshot.volume_profile.value_area_high == Decimal("105")
+    assert snapshot.volume_profile.input_fidelity == AnalyticsInputFidelity.INFERRED
+    assert snapshot.profile_location == ProfileLocation.ABOVE_VALUE
+    assert snapshot.location_reason_codes == ("close_above_value_area",)
+    assert snapshot.direction_score == 1
+    assert "above_session_vwap" in snapshot.direction_location_reason_codes
+
+
+def test_higher_timeframe_profile_does_not_look_ahead_into_newer_minute_bars() -> None:
+    bars = (
+        *tuple(analysis_bar(index, volume=Decimal("10")) for index in range(10)),
+        analysis_bar(
+            0,
+            timeframe=AnalyticsTimeframe.FIVE_MINUTES,
+            volume=Decimal("50"),
+        ),
+    )
+
+    snapshots = MarketContextEngine(DailySessions()).initialize_bars(bars)
+    five_minute = next(
+        snapshot for snapshot in snapshots if snapshot.timeframe == AnalyticsTimeframe.FIVE_MINUTES
+    )
+
+    assert five_minute.volume_profile is not None
+    assert five_minute.volume_profile.total_volume == Decimal("50")
 
 
 def test_live_one_minute_bars_update_context_and_complete_configured_aggregates() -> None:

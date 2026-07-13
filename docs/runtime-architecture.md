@@ -179,11 +179,15 @@ Deterministic analytics and versioned feature snapshots are the baseline. Option
 
 The first live baseline is owned by one in-process market-context engine attached to the market-data actor. Warmup coverage and analysis must both succeed before live subscriptions begin. Every enabled instrument receives the same per-timeframe calculations; active status changes data acquisition fidelity, not analytical importance.
 
+Warmup logs are bracketed and phase-labeled so the operator receives one latest context snapshot for every requested instrument/timeframe before subscriptions. The default NQ and ES operational configuration includes 1h warmup; it does not wait for live hourly construction before exposing hourly levels.
+
 Completed canonical 1m bars are the only live analytics clock. The active instrument advances from its tick-built bars while background instruments advance from provider bars; the active instrument's parallel provider-bar stream remains available for persistence and recovery without producing a competing context snapshot. Configured higher timeframes align to the product session open, aggregate exact consecutive minute buckets, and are withheld when a minute is missing. Context snapshots identify their source and whether the input was provider-reported, tick-inferred, or mixed. Persistence receives each completed canonical bar before analytics runs, so an analytics failure cannot hide an accepted bar from durable recovery.
 
 AI agents may explain persisted evidence, assist research, and compose operator reports. They do not calculate authoritative market state, invent missing evidence, connect directly to IB, mutate durable truth, or control execution. Generated narrative remains distinguishable from deterministic metrics and model inference.
 
 The first named decision-support model is Direction-Location-Aggression: determine auction direction or market condition, identify and refine a relevant location, then observe aggression and follow-through. Direction and location should be deterministic where possible. Aggression starts as evidence-assisted interpretation because its fidelity depends on available IB trades and quotes; automation must be earned through captured data and replay validation.
+
+The fast-track Direction/Location view combines deterministic trend, VWAP relation, session quartile, profile location, nearby levels, and active FVG location. Current, prior, London, and New York candle-derived profiles use configured price bins and are explicitly inferred. Exact tick-price profiles require a separate tick-at-price accumulator and are not claimed by this implementation.
 
 ### Gateway Boundary
 

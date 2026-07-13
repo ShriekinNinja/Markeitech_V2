@@ -9,6 +9,7 @@ from markeitech.domain import (
     InstrumentRegistryConfig,
     InstrumentRole,
     InstrumentRuntimeConfig,
+    InstrumentWarmupConfig,
     NQContractConfig,
     SecurityType,
     WarmupTimeframe,
@@ -24,6 +25,7 @@ from markeitech.market_data import (
     build_trading_node_config,
 )
 from markeitech.market_data.planner import MarketDataRuntimePlan
+from nautilus_trader.model.data import BarType
 from pydantic import ValidationError
 
 
@@ -154,6 +156,27 @@ def test_nautilus_request_plan_maps_warmups_and_subscriptions() -> None:
         NautilusIntentKind.SUBSCRIBE_BARS,
         "ESU6.CME-1-MINUTE-LAST-EXTERNAL",
     ) in subscriptions
+
+
+def test_every_supported_warmup_timeframe_builds_a_valid_nautilus_bar_type() -> None:
+    runtimes = list(registry().instruments)
+    runtimes[0] = runtimes[0].model_copy(
+        update={"warmup": InstrumentWarmupConfig(timeframes=tuple(WarmupTimeframe))}
+    )
+    configured = InstrumentRegistryConfig(
+        active_instrument_id="NQU6.CME",
+        instruments=tuple(runtimes),
+    )
+
+    request_plan = build_nautilus_request_plan(
+        build_market_data_plan(configured),
+        data_client_name="IB",
+    )
+    bar_types = request_plan.warmups[0].bar_types
+
+    assert "NQU6.CME-1-HOUR-LAST-EXTERNAL" in bar_types
+    assert "NQU6.CME-1-DAY-LAST-EXTERNAL" in bar_types
+    assert all(str(BarType.from_str(value)) == value for value in bar_types)
 
 
 def test_market_data_plan_rejects_duplicate_stream_ownership() -> None:

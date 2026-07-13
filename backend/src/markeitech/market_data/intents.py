@@ -27,6 +27,7 @@ class NautilusBarPriceType(StrEnum):
 
 class NautilusBarAggregation(StrEnum):
     MINUTE = "MINUTE"
+    HOUR = "HOUR"
     DAY = "DAY"
 
 
@@ -127,14 +128,12 @@ def _subscription_intent(
 
 
 def _bar_type(instrument_id: str, timeframe: WarmupTimeframe) -> str:
-    if timeframe == WarmupTimeframe.DAILY:
-        return f"{instrument_id}-1-DAY-{NautilusBarPriceType.LAST}-EXTERNAL"
-    amount = timeframe.value.removesuffix("m").removesuffix("h")
-    aggregation = (
-        NautilusBarAggregation.MINUTE
-        if timeframe.value.endswith("m")
-        else NautilusBarAggregation.MINUTE
-    )
-    if timeframe.value.endswith("h"):
-        amount = str(int(amount) * 60)
+    amount, aggregation = {
+        WarmupTimeframe.ONE_MINUTE: (1, NautilusBarAggregation.MINUTE),
+        WarmupTimeframe.FIVE_MINUTE: (5, NautilusBarAggregation.MINUTE),
+        WarmupTimeframe.FIFTEEN_MINUTE: (15, NautilusBarAggregation.MINUTE),
+        WarmupTimeframe.THIRTY_MINUTE: (30, NautilusBarAggregation.MINUTE),
+        WarmupTimeframe.ONE_HOUR: (1, NautilusBarAggregation.HOUR),
+        WarmupTimeframe.DAILY: (1, NautilusBarAggregation.DAY),
+    }[timeframe]
     return f"{instrument_id}-{amount}-{aggregation}-{NautilusBarPriceType.LAST}-EXTERNAL"

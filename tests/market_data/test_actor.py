@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
+import pytest
 from markeitech.analytics import (
     AnalyticsInputFidelity,
     AnalyticsTimeframe,
@@ -16,6 +17,7 @@ from markeitech.market_data import NautilusActorActionTarget, conservative_warmu
 from markeitech.market_data.actor import (
     ActorStartupRecoveryHook,
     format_market_context,
+    format_market_structure,
     should_update_market_context,
 )
 
@@ -144,14 +146,46 @@ def test_market_context_log_is_compact_and_human_scannable() -> None:
         trend_reason_codes=("close_above_ema_stack", "ema20_rising"),
     )
 
-    message = format_market_context(snapshot)
+    message = format_market_context(snapshot, phase="warmup")
 
-    assert message.startswith("MARKET_CONTEXT | NQU6.CME 5m | trend=BULLISH")
+    assert message.startswith("MARKET_CONTEXT | phase=WARMUP | NQU6.CME 5m | trend=BULLISH")
     assert "EMA[20=25000.5 50=24980.25 200=24800]" in message
     assert "VWAP[24975.5 above] | ATR14=18.75" in message
     assert "position=80.1%" in message
+    assert "D/L[score=0 location=unavailable active_fvgs=0]" in message
     assert "input=inferred:classified_ticks" in message
     assert "\n" not in message
+
+    structure = format_market_structure(snapshot, phase="warmup")
+    assert structure.startswith("MARKET_STRUCTURE | phase=WARMUP | NQU6.CME 5m")
+    assert "RANGES[prior=n/a london=n/a new_york=n/a]" in structure
+    assert "OR[L15=n/a L30=n/a NY15=n/a NY30=n/a]" in structure
+    assert "PROFILE[current=n/a prior=n/a london=n/a new_york=n/a]" in structure
+    assert "D/L[score=0 reasons=]" in structure
+    assert "FVG[active=none]" in structure
+    assert "\n" not in structure
+
+
+def test_market_context_log_rejects_unknown_phase() -> None:
+    open_ts = datetime(2026, 7, 13, 12, tzinfo=UTC)
+    bar = OneMinuteBar(
+        instrument_id="NQU6.CME",
+        event_ts=open_ts + timedelta(minutes=1),
+        ts_init=open_ts + timedelta(minutes=1),
+        open_ts=open_ts,
+        close_ts=open_ts + timedelta(minutes=1),
+        open=Decimal("20000"),
+        high=Decimal("20001"),
+        low=Decimal("19999"),
+        close=Decimal("20000.25"),
+        volume=Decimal("1"),
+        buy_volume=Decimal("0"),
+        sell_volume=Decimal("0"),
+        unknown_volume=Decimal("1"),
+    )
+
+    with pytest.raises(ValueError, match="unsupported market context phase"):
+        format_market_context(bar, phase="replay")  # type: ignore[arg-type]
 
 
 def test_actor_target_uses_exact_recovery_range() -> None:

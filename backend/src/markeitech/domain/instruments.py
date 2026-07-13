@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import Field, field_validator, model_validator
@@ -66,6 +67,7 @@ class InstrumentWarmupConfig(VersionedDomainModel):
     annotate_trend: bool = True
     annotate_vwap: bool = True
     annotate_fvgs: bool = True
+    volume_profile_bin_size: Decimal = Field(default=Decimal("1"), gt=0)
 
 
 class InstrumentContractConfig(VersionedDomainModel):

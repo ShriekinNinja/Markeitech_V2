@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta
-from decimal import Decimal
+from datetime import UTC, datetime, time, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Protocol
+from zoneinfo import ZoneInfo
 
 from nautilus_trader.indicators import AverageTrueRange, ExponentialMovingAverage
 
@@ -13,9 +14,14 @@ from markeitech.analytics.contracts import (
     AnalyticsInputFidelity,
     AnalyticsTimeframe,
     ContextLevel,
+    ContextRange,
+    FairValueGap,
+    FairValueGapDirection,
     LevelKind,
     MarketContextSnapshot,
+    ProfileLocation,
     TrendState,
+    VolumeProfileSnapshot,
     VwapPosition,
 )
 from markeitech.analytics.normalization import (
@@ -44,11 +50,15 @@ class MarketContextEngine:
         session_windows: SessionWindowResolver,
         *,
         maximum_bars_per_timeframe: int = 10_000,
+        profile_bin_sizes: Mapping[str, Decimal] | None = None,
     ) -> None:
         if maximum_bars_per_timeframe < 200:
             raise ValueError("analytics history must retain at least 200 bars")
         self._session_windows = session_windows
         self._maximum_bars = maximum_bars_per_timeframe
+        self._profile_bin_sizes = dict(profile_bin_sizes or {})
+        if any(value <= 0 for value in self._profile_bin_sizes.values()):
+            raise ValueError("volume profile bin sizes must be positive")
         self._bars: dict[tuple[str, AnalyticsTimeframe], list[AnalysisBar]] = defaultdict(list)
         self._configured: dict[str, set[AnalyticsTimeframe]] = defaultdict(set)
         self._aggregators: dict[tuple[str, AnalyticsTimeframe], _BarAggregator] = {}
@@ -170,6 +180,56 @@ class MarketContextEngine:
             else min(Decimal("1"), max(Decimal("0"), (latest.close - session_low) / session_span))
         )
         support, resistance = _nearest_levels(bars, session_bars, latest.close)
+        structure_bars = self._bars.get(
+            (latest.instrument_id, AnalyticsTimeframe.ONE_MINUTE),
+            bars,
+        )
+        structure_reference = _latest_bar_at_or_before(structure_bars, latest.close_ts)
+        structure_session_bars = _resolved_session_bars(
+            structure_bars,
+            structure_reference,
+            self._session_windows,
+            as_of=latest.close_ts,
+        )
+        prior_session_bars = _prior_session_bars(
+            structure_bars,
+            structure_session_bars[0].open_ts,
+            self._session_windows,
+        )
+        prior_high = max(bar.high for bar in prior_session_bars) if prior_session_bars else None
+        prior_low = min(bar.low for bar in prior_session_bars) if prior_session_bars else None
+        named_ranges = _named_session_ranges(structure_bars, latest.close_ts)
+        bin_size = self._profile_bin_sizes.get(latest.instrument_id, Decimal("1"))
+        profile = _volume_profile(
+            structure_session_bars,
+            bin_size,
+        )
+        prior_profile = _volume_profile(prior_session_bars, bin_size)
+        london_profile = _range_volume_profile(
+            structure_bars,
+            named_ranges["london"],
+            latest.close_ts,
+            bin_size,
+        )
+        new_york_profile = _range_volume_profile(
+            structure_bars,
+            named_ranges["new_york"],
+            latest.close_ts,
+            bin_size,
+        )
+        profile_location, location_reasons = _profile_location(latest.close, profile)
+        gaps = _fair_value_gaps(bars[-500:])
+        direction_score, direction_location_reasons = _direction_location_summary(
+            trend=trend,
+            vwap_position=_vwap_position(latest.close, session_vwap),
+            session_range_position=range_position,
+            profile_location=profile_location,
+            close=latest.close,
+            atr=atr_14,
+            support=support,
+            resistance=resistance,
+            gaps=gaps,
+        )
         return MarketContextSnapshot(
             instrument_id=latest.instrument_id,
             timeframe=latest.timeframe,
@@ -192,6 +252,23 @@ class MarketContextEngine:
             trend_reason_codes=reasons,
             nearest_support=support,
             nearest_resistance=resistance,
+            prior_session_high=prior_high,
+            prior_session_low=prior_low,
+            london_range=named_ranges["london"],
+            new_york_range=named_ranges["new_york"],
+            london_opening_range_15=named_ranges["london_or_15"],
+            london_opening_range_30=named_ranges["london_or_30"],
+            new_york_opening_range_15=named_ranges["new_york_or_15"],
+            new_york_opening_range_30=named_ranges["new_york_or_30"],
+            fair_value_gaps=gaps,
+            volume_profile=profile,
+            prior_volume_profile=prior_profile,
+            london_volume_profile=london_profile,
+            new_york_volume_profile=new_york_profile,
+            profile_location=profile_location,
+            location_reason_codes=location_reasons,
+            direction_score=direction_score,
+            direction_location_reason_codes=direction_location_reasons,
         )
 
 
@@ -286,6 +363,265 @@ def _vwap_position(close: Decimal, vwap: Decimal | None) -> VwapPosition:
     if close < vwap:
         return VwapPosition.BELOW
     return VwapPosition.AT
+
+
+def _latest_bar_at_or_before(
+    bars: Sequence[AnalysisBar],
+    timestamp: datetime,
+) -> AnalysisBar:
+    eligible = [bar for bar in bars if bar.open_ts < timestamp]
+    if not eligible:
+        raise RuntimeError("no structure bar exists at or before context timestamp")
+    return eligible[-1]
+
+
+def _resolved_session_bars(
+    bars: Sequence[AnalysisBar],
+    reference: AnalysisBar,
+    session_windows: SessionWindowResolver,
+    *,
+    as_of: datetime | None = None,
+) -> list[AnalysisBar]:
+    if reference.timeframe == AnalyticsTimeframe.DAILY:
+        return [reference]
+    open_ts, close_ts = session_windows.session_window(
+        reference.instrument_id,
+        reference.open_ts,
+    )
+    resolved = [
+        bar
+        for bar in bars
+        if open_ts <= bar.open_ts < close_ts and (as_of is None or bar.close_ts <= as_of)
+    ]
+    if not resolved:
+        raise RuntimeError("no structure bars belong to the current resolved session")
+    return resolved
+
+
+def _prior_session_bars(
+    bars: Sequence[AnalysisBar],
+    current_session_open: datetime,
+    session_windows: SessionWindowResolver,
+) -> list[AnalysisBar]:
+    prior = [bar for bar in bars if bar.open_ts < current_session_open]
+    if not prior:
+        return []
+    reference = prior[-1]
+    try:
+        return _resolved_session_bars(bars, reference, session_windows)
+    except RuntimeError:
+        return []
+
+
+def _named_session_ranges(
+    bars: Sequence[AnalysisBar],
+    as_of: datetime,
+) -> dict[str, ContextRange | None]:
+    definitions = (
+        ("london", "Europe/London", time(8), time(11, 30)),
+        ("new_york", "America/New_York", time(9, 30), time(16)),
+    )
+    result: dict[str, ContextRange | None] = {}
+    for label, timezone_name, start_time, end_time in definitions:
+        zone = ZoneInfo(timezone_name)
+        local_date = as_of.astimezone(zone).date()
+        start = datetime.combine(local_date, start_time, zone).astimezone(UTC)
+        end = datetime.combine(local_date, end_time, zone).astimezone(UTC)
+        result[label] = _context_range(label, bars, start, end, as_of)
+        for minutes in (15, 30):
+            opening_end = start + timedelta(minutes=minutes)
+            result[f"{label}_or_{minutes}"] = _context_range(
+                f"{label}_or_{minutes}",
+                bars,
+                start,
+                opening_end,
+                as_of,
+            )
+    return result
+
+
+def _context_range(
+    label: str,
+    bars: Sequence[AnalysisBar],
+    start: datetime,
+    end: datetime,
+    as_of: datetime,
+) -> ContextRange | None:
+    observed_end = min(end, as_of)
+    selected = [bar for bar in bars if start <= bar.open_ts < observed_end]
+    if not selected:
+        return None
+    return ContextRange(
+        label=label,
+        start_ts=start,
+        end_ts=end,
+        high=max(bar.high for bar in selected),
+        low=min(bar.low for bar in selected),
+        is_complete=as_of >= end,
+    )
+
+
+def _fair_value_gaps(bars: Sequence[AnalysisBar]) -> tuple[FairValueGap, ...]:
+    detected: list[tuple[int, FairValueGap]] = []
+    for index in range(2, len(bars)):
+        first = bars[index - 2]
+        third = bars[index]
+        if third.low > first.high:
+            detected.append(
+                (
+                    index,
+                    FairValueGap(
+                        direction=FairValueGapDirection.BULLISH,
+                        timeframe=third.timeframe,
+                        lower=first.high,
+                        upper=third.low,
+                        detected_ts=third.close_ts,
+                    ),
+                )
+            )
+        if third.high < first.low:
+            detected.append(
+                (
+                    index,
+                    FairValueGap(
+                        direction=FairValueGapDirection.BEARISH,
+                        timeframe=third.timeframe,
+                        lower=third.high,
+                        upper=first.low,
+                        detected_ts=third.close_ts,
+                    ),
+                )
+            )
+    active: list[FairValueGap] = []
+    for index, gap in detected:
+        subsequent = bars[index + 1 :]
+        filled = (
+            any(bar.low <= gap.lower for bar in subsequent)
+            if gap.direction == FairValueGapDirection.BULLISH
+            else any(bar.high >= gap.upper for bar in subsequent)
+        )
+        if not filled:
+            active.append(gap)
+    return tuple(active[-10:])
+
+
+def _volume_profile(
+    bars: Sequence[AnalysisBar],
+    bin_size: Decimal,
+) -> VolumeProfileSnapshot | None:
+    volumes: dict[Decimal, Decimal] = defaultdict(lambda: Decimal("0"))
+    for bar in bars:
+        if bar.volume <= 0:
+            continue
+        typical = (bar.high + bar.low + bar.close) / Decimal("3")
+        price_bin = (typical / bin_size).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        volumes[price_bin * bin_size] += bar.volume
+    total = sum(volumes.values(), Decimal("0"))
+    if total <= 0:
+        return None
+    prices = sorted(volumes)
+    poc = max(prices, key=lambda price: (volumes[price], price))
+    left = right = prices.index(poc)
+    included = volumes[poc]
+    target = total * Decimal("0.70")
+    while included < target and (left > 0 or right < len(prices) - 1):
+        left_volume = volumes[prices[left - 1]] if left > 0 else Decimal("-1")
+        right_volume = volumes[prices[right + 1]] if right < len(prices) - 1 else Decimal("-1")
+        if right_volume > left_volume:
+            right += 1
+            included += volumes[prices[right]]
+        else:
+            left -= 1
+            included += volumes[prices[left]]
+    return VolumeProfileSnapshot(
+        bin_size=bin_size,
+        value_area_fraction=Decimal("0.70"),
+        poc=poc,
+        value_area_low=prices[left],
+        value_area_high=prices[right],
+        total_volume=total,
+        input_fidelity=AnalyticsInputFidelity.INFERRED,
+        methodology="bar_typical_price_volume",
+    )
+
+
+def _range_volume_profile(
+    bars: Sequence[AnalysisBar],
+    context_range: ContextRange | None,
+    as_of: datetime,
+    bin_size: Decimal,
+) -> VolumeProfileSnapshot | None:
+    if context_range is None:
+        return None
+    end = min(context_range.end_ts, as_of)
+    selected = [bar for bar in bars if context_range.start_ts <= bar.open_ts < end]
+    return _volume_profile(selected, bin_size)
+
+
+def _profile_location(
+    close: Decimal,
+    profile: VolumeProfileSnapshot | None,
+) -> tuple[ProfileLocation, tuple[str, ...]]:
+    if profile is None:
+        return ProfileLocation.UNAVAILABLE, ("volume_profile_unavailable",)
+    if close < profile.value_area_low:
+        return ProfileLocation.BELOW_VALUE, ("close_below_value_area",)
+    if close > profile.value_area_high:
+        return ProfileLocation.ABOVE_VALUE, ("close_above_value_area",)
+    half_bin = profile.bin_size / Decimal("2")
+    if abs(close - profile.poc) <= half_bin:
+        return ProfileLocation.AT_POC, ("close_at_poc",)
+    if close < profile.poc:
+        return ProfileLocation.LOWER_VALUE, ("close_in_lower_value",)
+    return ProfileLocation.UPPER_VALUE, ("close_in_upper_value",)
+
+
+def _direction_location_summary(
+    *,
+    trend: TrendState,
+    vwap_position: VwapPosition,
+    session_range_position: Decimal,
+    profile_location: ProfileLocation,
+    close: Decimal,
+    atr: Decimal | None,
+    support: ContextLevel | None,
+    resistance: ContextLevel | None,
+    gaps: Sequence[FairValueGap],
+) -> tuple[int, tuple[str, ...]]:
+    score = 0
+    reasons: list[str] = []
+    if trend == TrendState.BULLISH:
+        score += 1
+        reasons.append("bullish_ema_context")
+    elif trend == TrendState.BEARISH:
+        score -= 1
+        reasons.append("bearish_ema_context")
+    else:
+        reasons.append(f"trend_{trend.value}")
+    if vwap_position == VwapPosition.ABOVE:
+        score += 1
+        reasons.append("above_session_vwap")
+    elif vwap_position == VwapPosition.BELOW:
+        score -= 1
+        reasons.append("below_session_vwap")
+    else:
+        reasons.append(f"vwap_{vwap_position.value}")
+    reasons.append(f"profile_{profile_location.value}")
+    if session_range_position >= Decimal("0.75"):
+        reasons.append("upper_session_quartile")
+    elif session_range_position <= Decimal("0.25"):
+        reasons.append("lower_session_quartile")
+    else:
+        reasons.append("middle_session_range")
+    if atr is not None and atr > 0:
+        proximity = atr / Decimal("4")
+        if support is not None and close - support.price <= proximity:
+            reasons.append("near_support")
+        if resistance is not None and resistance.price - close <= proximity:
+            reasons.append("near_resistance")
+    if any(gap.lower <= close <= gap.upper for gap in gaps):
+        reasons.append("inside_active_fvg")
+    return score, tuple(reasons)
 
 
 def _nearest_levels(
