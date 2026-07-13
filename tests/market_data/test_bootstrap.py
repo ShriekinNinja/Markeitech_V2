@@ -63,6 +63,8 @@ def nq_contract() -> NQContractConfig:
         expiry=date(2026, 9, 18),
         instrument_id="NQU6.CME",
         ib_last_trade_date_or_contract_month="20260918",
+        calendar_id="CME_Equity",
+        session_profile="full",
     )
 
 

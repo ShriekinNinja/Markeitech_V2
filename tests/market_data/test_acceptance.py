@@ -100,6 +100,8 @@ ib_exchange = "CME"
 ib_security_type = "FUT"
 expiry = 2026-09-18
 ib_last_trade_date_or_contract_month = "20260918"
+calendar_id = "CME_Equity"
+session_profile = "full"
 
 [instruments.warmup]
 lookback_sessions = 5

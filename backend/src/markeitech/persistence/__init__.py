@@ -1,5 +1,9 @@
 """Persistence contracts and storage boundaries."""
 
+from markeitech.persistence.calendar import (
+    InstrumentCalendarPolicy,
+    PandasMarketSessionCalendar,
+)
 from markeitech.persistence.catalog import NautilusParquetTimeSeriesStore
 from markeitech.persistence.catalog_data import CanonicalOneMinuteBarRecord
 from markeitech.persistence.config import PersistenceConfig
@@ -67,6 +71,7 @@ __all__ = [
     "ExplicitSessionCalendar",
     "HistoricalRecoveryRequest",
     "IdempotentPersistenceCoordinator",
+    "InstrumentCalendarPolicy",
     "JournalCapacityError",
     "JournalCorruptionError",
     "JournalEntry",
@@ -91,6 +96,7 @@ __all__ = [
     "PersistenceWriterStatus",
     "PersistenceRuntime",
     "PersistenceRuntimeStatus",
+    "PandasMarketSessionCalendar",
     "RecoveryMetadataStore",
     "RecoveryInterval",
     "RecoveryLifecycleTracker",

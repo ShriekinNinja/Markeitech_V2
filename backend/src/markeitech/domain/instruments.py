@@ -35,6 +35,12 @@ class AnalysisProfile(StrEnum):
     SIGNALS_ONLY = "signals_only"
 
 
+class SessionProfile(StrEnum):
+    FULL = "full"
+    REGULAR = "regular"
+    CONTINUOUS = "continuous"
+
+
 class WarmupTimeframe(StrEnum):
     ONE_MINUTE = "1m"
     FIVE_MINUTE = "5m"
@@ -71,6 +77,8 @@ class InstrumentContractConfig(VersionedDomainModel):
     ib_exchange: str = Field(min_length=1)
     ib_security_type: str = Field(min_length=2)
     session_timezone: str = Field(default="America/New_York")
+    calendar_id: str = Field(min_length=1)
+    session_profile: SessionProfile
 
     @field_validator("root_symbol", "exchange", "ib_symbol", "ib_exchange", "ib_security_type")
     @classmethod
@@ -82,6 +90,13 @@ class InstrumentContractConfig(VersionedDomainModel):
     def _session_timezone_must_be_iana(cls, value: str) -> str:
         return require_iana_timezone(value)
 
+    @field_validator("calendar_id")
+    @classmethod
+    def _calendar_id_must_be_trimmed(cls, value: str) -> str:
+        if value != value.strip():
+            raise ValueError("calendar id must not contain surrounding whitespace")
+        return value
+
     @model_validator(mode="after")
     def _identity_fields_must_be_consistent(self) -> InstrumentContractConfig:
         if self.ib_symbol != self.root_symbol:
@@ -90,6 +105,8 @@ class InstrumentContractConfig(VersionedDomainModel):
             raise ValueError("IB exchange must match contract exchange")
         if self.ib_security_type != self.security_type.value:
             raise ValueError("IB security type must match contract security type")
+        if (self.calendar_id == "24/7") != (self.session_profile == SessionProfile.CONTINUOUS):
+            raise ValueError("24/7 calendar and continuous session profile must be used together")
         return self
 
     @property

@@ -46,6 +46,8 @@ ib_security_type = "FUT"
 expiry = 2026-09-18
 ib_last_trade_date_or_contract_month = "20260918"
 session_timezone = "America/New_York"
+calendar_id = "CME_Equity"
+session_profile = "full"
 
 [instruments.warmup]
 lookback_sessions = 5
@@ -74,6 +76,8 @@ ib_security_type = "FUT"
 expiry = 2026-09-18
 ib_last_trade_date_or_contract_month = "20260918"
 session_timezone = "America/New_York"
+calendar_id = "CME_Equity"
+session_profile = "full"
 
 [instruments.warmup]
 lookback_sessions = 5
@@ -100,6 +104,8 @@ ib_symbol = "SPX"
 ib_exchange = "CBOE"
 ib_security_type = "IND"
 session_timezone = "America/New_York"
+calendar_id = "NYSE"
+session_profile = "regular"
 
 [instruments.warmup]
 lookback_sessions = 5

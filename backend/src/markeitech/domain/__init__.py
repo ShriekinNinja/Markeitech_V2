@@ -21,6 +21,7 @@ from markeitech.domain.instruments import (
     InstrumentWarmupConfig,
     NQContractConfig,
     SecurityType,
+    SessionProfile,
     WarmupTimeframe,
 )
 from markeitech.domain.market_data import (
@@ -65,6 +66,7 @@ __all__ = [
     "ReadinessState",
     "ReadinessStatus",
     "SecurityType",
+    "SessionProfile",
     "SourceHealth",
     "SourceStatus",
     "StrategyState",

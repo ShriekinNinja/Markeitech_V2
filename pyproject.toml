@@ -11,6 +11,7 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
   "fastapi[standard]>=0.115",
   "nautilus_trader[ib,docker]",
+  "pandas-market-calendars==5.4.0",
   "pydantic>=2.8",
   "pyarrow>=16",
   "redis>=5",

@@ -283,3 +283,13 @@ When persistence is configured, wrap the prepared LiveNode with one persistence 
 Actor callbacks remain non-blocking. Rejected ticks become explicit fidelity gaps; rejected completed bars become historical-recovery obligations. Neither condition may be hidden as successful persistence. Scope canonical bar dedupe keys by source so an external reported bar and a classified-tick bar can coexist for the same instrument and minute.
 
 Reason: Startup ordering prevents new live traffic from overtaking exact journal recovery, and shutdown ordering prevents producers from racing a closing store. A narrow ingress preserves Nautilus-native tick fidelity while keeping Markeitech's canonical event stream extensible. Explicit damage counters let later health and recovery stages distinguish tolerable tick loss from repairable bar continuity without stalling market-data handling.
+
+## DR-0033: Explicit Product Calendars Behind A Provider-Neutral Boundary
+
+Status: accepted
+
+Use pinned `pandas-market-calendars` schedule rules behind Markeitech's `SessionCalendar` protocol. Require each enabled instrument contract to identify its product calendar and choose a full, regular, or continuous session profile. Never infer the calendar solely from exchange, asset class, or a related instrument. Use a native UTC 24/7 calendar for continuous products instead of approximating them with an exchange schedule.
+
+For full equity profiles, include published premarket through postmarket hours when available. For regular profiles, use market open through market close. Split session windows around published breaks and interruptions before generating expected one-minute opens. Normalize output to UTC, bound query ranges and per-runtime schedule caching, and fail closed on unknown policy. Pin the package version because its calendars are shipped rules, not live exchange data; validate upgrades against golden holiday, early-close, maintenance, and DST cases and later reconcile representative schedules with observed IB history.
+
+Reason: Recovery correctness depends on knowing whether a missing minute was actually expected. Explicit product policy handles CME futures, cash indices, equities, and crypto without pretending venue names imply identical sessions. The adapter preserves provider portability, while golden tests and a version pin contain the operational risk of calendar-rule corrections.

@@ -249,6 +249,19 @@ Eighth implementation slice:
 - Scope one-minute-bar dedupe identity by source so reported and tick-built bars for the same instrument and minute can coexist.
 - Keep provider calendar selection, actual historical recovery requests, Redis, and notification delivery out of this slice.
 
+Ninth implementation slice:
+
+- Pin `pandas-market-calendars` behind the existing provider-neutral session-calendar protocol.
+- Require every instrument contract to declare an explicit calendar identifier and session profile rather than inferring hours from exchange or security type.
+- Support full, regular, and continuous session profiles; use a native 24/7 calendar for continuous instruments.
+- Interpret full equity sessions as published premarket through postmarket hours and regular sessions as market open through market close.
+- Split expected minute windows around published breaks and interruptions.
+- Normalize all generated expectations to UTC while preserving exchange DST, holidays, and early closes.
+- Bound query ranges and maintain a thread-safe, per-runtime LRU of generated schedules.
+- Map NQ and ES to `CME_Equity`, SPX to the US regular cash session, and BTC to native 24/7 behavior in checked-in configuration.
+- Add golden tests for CME halts and early closes, NYSE holidays and DST transitions, equity extended hours, and weekend crypto operation.
+- Keep actual IB historical recovery requests, provider schedule reconciliation, Redis, and notification delivery out of this slice.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

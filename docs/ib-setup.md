@@ -93,7 +93,7 @@ uv run markeitech-market-data-smoke config/market-data.example.toml --confirm I_
 
 The command prints the same plan summary as the dry run and refuses to start unless both config flags and the confirmation token are present. After startup, the actor requests every configured historical warmup, waits for all asynchronous completions, validates historical coverage, and only then submits active and background live subscriptions. Automated tests use fake actors and nodes; they do not connect to IB.
 
-The runtime monitors required-stream freshness and external 1-minute bar continuity. Session-open policy must be configured with the eventual exchange calendar before stale alerts are treated as production-grade outside the initial paper smoke environment. NautilusTrader remains responsible for physical IB reconnect and transport retry behavior.
+The runtime monitors required-stream freshness and external 1-minute bar continuity. Every instrument contract must declare `calendar_id` and `session_profile`; recovery uses the pinned product-calendar adapter to exclude holidays, early closes, breaks, and other expected closures. Use `full` when IB bars are expected across published extended hours, `regular` for market-open through market-close expectations, and `continuous` only with the native `24/7` calendar. These package-shipped rules are not a live exchange-hours feed, so representative schedules must be reconciled with observed IB bars before production use. NautilusTrader remains responsible for physical IB reconnect and transport retry behavior.
 
 Dry-run output also includes ordered LiveNode actions. The manual smoke path maps those actions to real Nautilus actor calls after the startup guards pass.
 

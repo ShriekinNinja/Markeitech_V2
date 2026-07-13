@@ -23,6 +23,8 @@ def nq_contract() -> NQContractConfig:
         expiry=date(2026, 9, 18),
         instrument_id="NQU6.CME",
         ib_last_trade_date_or_contract_month="20260918",
+        calendar_id="CME_Equity",
+        session_profile="full",
     )
 
 
@@ -35,6 +37,8 @@ def es_contract() -> FuturesContractConfig:
         ib_symbol="ES",
         ib_exchange="CME",
         ib_last_trade_date_or_contract_month="20260918",
+        calendar_id="CME_Equity",
+        session_profile="full",
     )
 
 
@@ -47,6 +51,8 @@ def spx_contract() -> EquityLikeContractConfig:
         ib_symbol="SPX",
         ib_exchange="CBOE",
         ib_security_type="IND",
+        calendar_id="NYSE",
+        session_profile="regular",
     )
 
 
@@ -58,6 +64,8 @@ def test_paxos_crypto_contract_uses_currency_pair_identity() -> None:
         ib_symbol="btc",
         ib_exchange="paxos",
         session_timezone="UTC",
+        calendar_id="24/7",
+        session_profile="continuous",
     )
 
     assert contract.root_symbol == "BTC"
@@ -74,6 +82,22 @@ def test_crypto_contract_rejects_non_pair_instrument_identity() -> None:
             ib_symbol="BTC",
             ib_exchange="PAXOS",
             session_timezone="UTC",
+            calendar_id="24/7",
+            session_profile="continuous",
+        )
+
+
+def test_continuous_profile_requires_native_24_7_calendar() -> None:
+    with pytest.raises(ValidationError, match="used together"):
+        CryptoContractConfig(
+            root_symbol="BTC",
+            exchange="PAXOS",
+            instrument_id="BTC/USD.PAXOS",
+            ib_symbol="BTC",
+            ib_exchange="PAXOS",
+            session_timezone="UTC",
+            calendar_id="NYSE",
+            session_profile="continuous",
         )
 
 
@@ -121,6 +145,8 @@ def test_rejects_continuous_front_month_identity_for_any_future_root() -> None:
             ib_symbol="ES",
             ib_exchange="CME",
             ib_last_trade_date_or_contract_month="20260918",
+            calendar_id="CME_Equity",
+            session_profile="full",
         )
 
 
@@ -131,6 +157,8 @@ def test_rejects_fixed_offset_session_timezone() -> None:
             instrument_id="NQU6.CME",
             ib_last_trade_date_or_contract_month="20260918",
             session_timezone="UTC-04:00",
+            calendar_id="CME_Equity",
+            session_profile="full",
         )
 
 
@@ -140,6 +168,8 @@ def test_rejects_mismatched_ib_expiry() -> None:
             expiry=date(2026, 9, 18),
             instrument_id="NQU6.CME",
             ib_last_trade_date_or_contract_month="20261218",
+            calendar_id="CME_Equity",
+            session_profile="full",
         )
 
 

@@ -32,6 +32,8 @@ def nq_contract() -> NQContractConfig:
         expiry=date(2026, 9, 18),
         instrument_id="NQU6.CME",
         ib_last_trade_date_or_contract_month="20260918",
+        calendar_id="CME_Equity",
+        session_profile="full",
     )
 
 
@@ -44,6 +46,8 @@ def es_contract() -> FuturesContractConfig:
         ib_symbol="ES",
         ib_exchange="CME",
         ib_last_trade_date_or_contract_month="20260918",
+        calendar_id="CME_Equity",
+        session_profile="full",
     )
 
 
@@ -56,6 +60,8 @@ def spx_contract() -> EquityLikeContractConfig:
         ib_symbol="SPX",
         ib_exchange="CBOE",
         ib_security_type="IND",
+        calendar_id="NYSE",
+        session_profile="regular",
     )
 
 

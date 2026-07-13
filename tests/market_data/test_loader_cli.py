@@ -43,6 +43,8 @@ def raw_config() -> dict[str, object]:
                     "ib_symbol": "NQ",
                     "ib_exchange": "CME",
                     "ib_security_type": "FUT",
+                    "calendar_id": "CME_Equity",
+                    "session_profile": "full",
                     "expiry": date(2026, 9, 18),
                     "ib_last_trade_date_or_contract_month": "20260918",
                 },
@@ -63,6 +65,8 @@ def raw_config() -> dict[str, object]:
                     "ib_symbol": "SPX",
                     "ib_exchange": "CBOE",
                     "ib_security_type": "IND",
+                    "calendar_id": "NYSE",
+                    "session_profile": "regular",
                 },
                 "warmup": {
                     "lookback_sessions": 10,
@@ -80,6 +84,8 @@ def test_parse_market_data_runtime_config() -> None:
     assert config.ib.client_id == 3
     assert config.instrument_registry.active_instrument_id == "NQU6.CME"
     assert config.instrument_registry.active_runtime.role == InstrumentRole.ACTIVE
+    assert config.instrument_registry.active_runtime.contract.calendar_id == "CME_Equity"
+    assert config.instrument_registry.active_runtime.contract.session_profile.value == "full"
     background = config.instrument_registry.instruments[1]
     assert background.data_mode == InstrumentDataMode.LIVE_1M_BARS
     assert background.warmup is not None
@@ -122,6 +128,8 @@ def test_parse_crypto_market_data_runtime_config() -> None:
                 "ib_security_type": "CRYPTO",
                 "quote_currency": "USD",
                 "session_timezone": "UTC",
+                "calendar_id": "24/7",
+                "session_profile": "continuous",
             },
             "warmup": {"lookback_sessions": 1, "timeframes": ["1m"]},
         },
