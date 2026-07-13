@@ -337,3 +337,13 @@ Persist one immutable audit row for every enabled retention attempt, including c
 Never run `VACUUM` as part of LiveNode startup or shutdown. Expose it only through an offline command requiring the exact `I_UNDERSTAND_THIS_REWRITES_SQLITE` token. Refuse the rewrite when ingress WAL files or incomplete persistence batches exist, require SQLite checkpoint and exclusive-lock acquisition, and skip work below the configured reclaimable-byte threshold. The default threshold is 16 MiB.
 
 Reason: Ordinary retention frees logical SQLite pages but `VACUUM` rewrites the complete database and may need substantial time and temporary disk. Making that rewrite automatic would turn housekeeping into an unbounded market-data startup dependency. Durable reports preserve operational accountability, while a guarded manual command allows intentional space recovery when the benefit is measurable.
+
+## DR-0038: Deterministic And Fidelity-Honest Baseline Market Context
+
+Status: accepted
+
+Build baseline market context for every enabled instrument immediately after the all-instrument warmup gate. Calculate EMA 20/50/200 and ATR 14 with Nautilus indicators, and calculate session VWAP, session range position, confirmed swing support/resistance, and deterministic bullish, bearish, range, or insufficient-data trend state in Markeitech. Active and background instruments have equal analytical importance even though only the active instrument receives tick-by-tick data.
+
+Use completed canonical 1m bars as the live analytical clock. Advance active-instrument context from tick-built bars and background context from provider bars; retain the active instrument's parallel provider bars for persistence and recovery without allowing them to compete for analytical ownership. Align configured 5m, 15m, 30m, and 1h bars to the product session open and aggregate only exact consecutive minute buckets; withhold an aggregate when any constituent minute is missing. Label each context input as provider-reported, tick-inferred, or mixed, and preserve the concrete source separately. Persist the completed canonical bar before advancing analytics. Emit versioned transport-neutral snapshots and structured operational logs; include the latest snapshots in acceptance evidence.
+
+Reason: One deterministic engine gives live operation and later replay the same baseline without making presentation or notification code authoritative. Refusing incomplete aggregates avoids silently smoothing known data damage. Explicit fidelity prevents active tick-built bars and background provider bars from appearing equally authoritative, while equal instrument treatment preserves the watchlist-first design.

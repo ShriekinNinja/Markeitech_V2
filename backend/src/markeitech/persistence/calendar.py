@@ -44,6 +44,9 @@ class PandasMarketSessionCalendar:
         self._schedule_cache: OrderedDict[
             tuple[str, SessionProfile, date, date], tuple[SessionWindow, ...]
         ] = OrderedDict()
+        self._session_cache: OrderedDict[
+            tuple[str, SessionProfile, date, date], tuple[SessionWindow, ...]
+        ] = OrderedDict()
         self._cache_lock = Lock()
         self._policies: dict[str, InstrumentCalendarPolicy] = {}
         for policy in policies:
@@ -146,6 +149,30 @@ class PandasMarketSessionCalendar:
     def has_policy(self, instrument_id: str) -> bool:
         return instrument_id in self._policies
 
+    def session_window(
+        self,
+        instrument_id: str,
+        timestamp: datetime,
+    ) -> tuple[datetime, datetime]:
+        timestamp = require_utc(timestamp)
+        policy = self._policy(instrument_id)
+        if policy.session_profile == SessionProfile.CONTINUOUS:
+            open_ts = datetime.combine(timestamp.date(), time.min, UTC)
+            return open_ts, open_ts + timedelta(days=1)
+        windows = self._session_bounds(
+            policy.calendar_id,
+            policy.session_profile,
+            (timestamp - _SCHEDULE_PADDING).date(),
+            (timestamp + _SCHEDULE_PADDING).date(),
+        )
+        for window in windows:
+            if window.open_ts <= timestamp < window.close_ts:
+                return window.open_ts, window.close_ts
+        raise RecoveryPlanningError(
+            f"timestamp {timestamp.isoformat()} is outside a configured session "
+            f"for instrument {instrument_id!r}"
+        )
+
     def _schedule_windows(
         self,
         calendar_id: str,
@@ -181,6 +208,43 @@ class PandasMarketSessionCalendar:
             self._schedule_cache.move_to_end(key)
             while len(self._schedule_cache) > self._maximum_cached_schedules:
                 self._schedule_cache.popitem(last=False)
+        return result
+
+    def _session_bounds(
+        self,
+        calendar_id: str,
+        session_profile: SessionProfile,
+        start_date: date,
+        end_date: date,
+    ) -> tuple[SessionWindow, ...]:
+        key = (calendar_id, session_profile, start_date, end_date)
+        with self._cache_lock:
+            cached = self._session_cache.get(key)
+            if cached is not None:
+                self._session_cache.move_to_end(key)
+                return cached
+        calendar = _load_calendar(calendar_id)
+        start_name, end_name = _market_time_range(calendar, session_profile)
+        schedule = calendar.schedule(
+            start_date=start_date,
+            end_date=end_date,
+            tz="UTC",
+            start=start_name,
+            end=end_name,
+            interruptions=True,
+        )
+        result = tuple(
+            SessionWindow(
+                open_ts=_utc_datetime(row[start_name]),
+                close_ts=_utc_datetime(row[end_name]),
+            )
+            for _, row in schedule.iterrows()
+        )
+        with self._cache_lock:
+            self._session_cache[key] = result
+            self._session_cache.move_to_end(key)
+            while len(self._session_cache) > self._maximum_cached_schedules:
+                self._session_cache.popitem(last=False)
         return result
 
     def _policy(self, instrument_id: str) -> InstrumentCalendarPolicy:

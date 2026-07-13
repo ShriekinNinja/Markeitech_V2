@@ -158,10 +158,15 @@ def test_build_live_node_uses_node_factory_without_starting() -> None:
 
 
 def test_build_prepared_live_node_attaches_actor_and_builds_clients() -> None:
-    actors: list[tuple[Any, Any]] = []
+    actors: list[tuple[Any, Any, Any]] = []
 
-    def actor_factory(action_plan: Any, *, on_warmup_ready: Any) -> object:
-        actors.append((action_plan, on_warmup_ready))
+    def actor_factory(
+        action_plan: Any,
+        *,
+        on_warmup_ready: Any,
+        market_context_engine: Any,
+    ) -> object:
+        actors.append((action_plan, on_warmup_ready, market_context_engine))
         return object()
 
     node = build_prepared_market_data_live_node(
@@ -176,6 +181,7 @@ def test_build_prepared_live_node_attaches_actor_and_builds_clients() -> None:
     assert node.actors and node.actors[0] is not None
     assert node.data_client_factories.keys() == {"IB"}
     assert actors[0][0].active_instrument_id == "NQU6.CME"
+    assert actors[0][2] is not None
 
 
 def test_build_live_node_refuses_when_disabled_by_config() -> None:

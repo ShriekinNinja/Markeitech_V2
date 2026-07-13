@@ -106,6 +106,29 @@ def test_retention_cutoff_counts_only_completed_product_sessions() -> None:
     assert continuous_cutoff == datetime(2026, 7, 8, tzinfo=UTC)
 
 
+def test_session_window_keeps_one_cme_session_across_intraday_halt() -> None:
+    session_calendar = calendar()
+
+    before = session_calendar.session_window(
+        "NQU6.CME",
+        datetime(2026, 7, 2, 20, 14, tzinfo=UTC),
+    )
+    during_halt = session_calendar.session_window(
+        "NQU6.CME",
+        datetime(2026, 7, 2, 20, 20, tzinfo=UTC),
+    )
+    after = session_calendar.session_window(
+        "NQU6.CME",
+        datetime(2026, 7, 2, 20, 30, tzinfo=UTC),
+    )
+
+    assert before == during_halt == after
+    assert before == (
+        datetime(2026, 7, 1, 22, tzinfo=UTC),
+        datetime(2026, 7, 2, 21, tzinfo=UTC),
+    )
+
+
 def test_registry_builds_explicit_instrument_calendar_policies() -> None:
     config = load_market_data_runtime_config(Path("config/market-data.example.toml"))
     session_calendar = PandasMarketSessionCalendar.from_registry(config.instrument_registry)

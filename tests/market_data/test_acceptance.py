@@ -2,10 +2,18 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 import pytest
+from markeitech.analytics import (
+    AnalyticsInputFidelity,
+    AnalyticsTimeframe,
+    MarketContextSnapshot,
+    TrendState,
+    VwapPosition,
+)
 from markeitech.domain import SourceHealth, SourceStatus
 from markeitech.market_data import (
     LIVE_NODE_START_CONFIRMATION,
@@ -59,6 +67,28 @@ class FakeAcceptanceActor:
                 quote_tick_count=4 if instrument_id == action_plan.active_instrument_id else 0,
                 bar_count=1,
                 dropped_event_count=0,
+            )
+            for instrument_id in instrument_ids
+        )
+        self.market_context_snapshots = tuple(
+            MarketContextSnapshot(
+                instrument_id=instrument_id,
+                timeframe=AnalyticsTimeframe.ONE_MINUTE,
+                as_of=datetime(2026, 7, 13, 12, 1, tzinfo=UTC),
+                source="ib",
+                input_fidelity=AnalyticsInputFidelity.REPORTED,
+                bar_count=60,
+                close=Decimal("20000"),
+                ema_20=Decimal("19990"),
+                ema_50=Decimal("19980"),
+                session_open=Decimal("19900"),
+                session_high=Decimal("20010"),
+                session_low=Decimal("19890"),
+                session_vwap=Decimal("19950"),
+                session_range_position=Decimal("0.9166666667"),
+                vwap_position=VwapPosition.ABOVE,
+                trend=TrendState.BULLISH,
+                trend_reason_codes=("close_above_ema_stack", "ema20_rising"),
             )
             for instrument_id in instrument_ids
         )
@@ -163,6 +193,8 @@ async def test_acceptance_runs_for_duration_stops_and_reports_pass(tmp_path: Pat
     assert report.source_status == SourceStatus.HEALTHY
     assert report.instruments[0].trade_ticks == 3
     assert report.instruments[0].dropped_events == 0
+    assert report.market_contexts[0].trend == TrendState.BULLISH
+    assert any(check.name == "NQU6.CME:market_context" for check in report.checks)
     assert all(check.status.value == "pass" for check in report.checks)
 
 

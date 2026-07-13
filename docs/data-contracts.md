@@ -163,3 +163,15 @@ Persistence fidelity is explicit:
 - `unavailable`: the required evidence cannot be represented from current inputs
 
 Outbox records contain a non-secret destination key. Webhook URLs, tokens, and secrets are prohibited from payloads, including nested payload fields.
+
+## Baseline Analytics Contracts
+
+Stage 4 analytics contracts live under `markeitech.analytics`. `AnalysisBar` normalizes native warmup bars and completed canonical 1m bars with an explicit timeframe, source, and input fidelity. `MarketContextSnapshot` is a versioned, provider-neutral point-in-time view containing indicator values, session location, trend state with reason codes, and nearest confirmed support and resistance.
+
+Analytics input fidelity is explicit:
+
+- `reported`: the context's latest bar was reported by the provider
+- `inferred`: the context's latest bar was constructed from classified live ticks
+- `mixed`: a derived bar combines inputs with different fidelity
+
+An absent indicator remains `null`; insufficient history is represented as `insufficient_data` with reason codes. A missing minute prevents publication of the affected higher-timeframe bar. These contracts do not contain Discord formatting, model inference, or UI state.

@@ -8,6 +8,7 @@ from nautilus_trader.common.actor import Actor
 from nautilus_trader.model.data import BarType
 from nautilus_trader.model.identifiers import ClientId, InstrumentId
 
+from markeitech.analytics import MarketContextSnapshot
 from markeitech.domain.events import ActiveInstrumentChangedEvent
 from markeitech.domain.market_data import OneMinuteBar
 from markeitech.market_data.actions import (
@@ -57,6 +58,19 @@ class NautilusActorApi(Protocol):
 WarmupStartResolver = Callable[[int, datetime], datetime]
 NativeMarketDataSink = Callable[[object], None]
 HistoricalBarSink = Callable[[OneMinuteBar], bool]
+MarketContextSink = Callable[[MarketContextSnapshot], None]
+
+
+class MarketContextEngineLike(Protocol):
+    @property
+    def snapshots(self) -> tuple[MarketContextSnapshot, ...]: ...
+
+    def initialize(
+        self,
+        data_by_bar_type: dict[str, tuple[Any, ...]],
+    ) -> tuple[MarketContextSnapshot, ...]: ...
+
+    def update_one_minute(self, bar: OneMinuteBar) -> tuple[MarketContextSnapshot, ...]: ...
 
 
 class StartupRecoveryServiceLike(Protocol):
@@ -207,6 +221,8 @@ class MarkeitechMarketDataActor(Actor):
         on_market_data_event: MarketDataEventSink | None = None,
         on_native_market_data_event: NativeMarketDataSink | None = None,
         on_historical_bar: HistoricalBarSink | None = None,
+        market_context_engine: MarketContextEngineLike | None = None,
+        on_market_context: MarketContextSink | None = None,
         startup_recovery: StartupRecoveryServiceLike | None = None,
         on_market_data_health: MarketDataHealthSink | None = None,
         is_session_open: SessionOpenResolver | None = None,
@@ -236,7 +252,7 @@ class MarkeitechMarketDataActor(Actor):
         self._warmup = WarmupCoordinator(
             action_plan,
             target,
-            on_warmup_ready=on_warmup_ready,
+            on_warmup_ready=self._analyze_warmup,
             startup_recovery=recovery_hook,
         )
         enabled_instrument_ids = {
@@ -260,6 +276,9 @@ class MarkeitechMarketDataActor(Actor):
         self._native_market_data_sink = on_native_market_data_event
         self._historical_bar_sink = on_historical_bar
         self._startup_recovery = startup_recovery
+        self._market_context = market_context_engine
+        self._on_market_context = on_market_context
+        self._on_warmup_ready = on_warmup_ready
         self._health = MarketDataHealthMonitor(
             instrument_ids=enabled_instrument_ids,
             active_instrument_id=lambda: self._switch.snapshot.active_instrument_id,
@@ -297,6 +316,10 @@ class MarkeitechMarketDataActor(Actor):
     @property
     def startup_recovery_snapshot(self) -> Any | None:
         return None if self._startup_recovery is None else self._startup_recovery.snapshot
+
+    @property
+    def market_context_snapshots(self) -> tuple[MarketContextSnapshot, ...]:
+        return () if self._market_context is None else self._market_context.snapshots
 
     def on_start(self) -> None:
         self._warmup.start()
@@ -380,6 +403,29 @@ class MarkeitechMarketDataActor(Actor):
         self._health.observe(event)
         if self._external_market_data_sink is not None:
             self._external_market_data_sink(event)
+        if (
+            self._market_context is not None
+            and isinstance(event, OneMinuteBar)
+            and event.is_complete
+            and should_update_market_context(
+                event,
+                active_instrument_id=self._switch.snapshot.active_instrument_id,
+            )
+        ):
+            for snapshot in self._market_context.update_one_minute(event):
+                self._emit_market_context(snapshot)
+
+    def _analyze_warmup(self, snapshot: Any) -> None:
+        self._on_warmup_ready(snapshot)
+        if self._market_context is None:
+            return
+        for context in self._market_context.initialize(snapshot.data_by_bar_type):
+            self._emit_market_context(context)
+
+    def _emit_market_context(self, snapshot: MarketContextSnapshot) -> None:
+        self.log.info(format_market_context(snapshot))
+        if self._on_market_context is not None:
+            self._on_market_context(snapshot)
 
     def _cancel_switch_timer(self) -> None:
         if self._switch_timer_name is not None:
@@ -391,3 +437,31 @@ def conservative_warmup_start(lookback_sessions: int, end: datetime) -> datetime
     # Over-fetch calendar days so weekends and common holiday closures do not reduce coverage.
     calendar_days = max(lookback_sessions * 2, lookback_sessions + 4)
     return end - timedelta(days=calendar_days)
+
+
+def should_update_market_context(
+    bar: OneMinuteBar,
+    *,
+    active_instrument_id: str,
+) -> bool:
+    if bar.instrument_id != active_instrument_id:
+        return True
+    return bar.source == "classified_ticks"
+
+
+def format_market_context(snapshot: MarketContextSnapshot) -> str:
+    vwap = "n/a" if snapshot.session_vwap is None else str(snapshot.session_vwap)
+    ema_20 = "n/a" if snapshot.ema_20 is None else str(snapshot.ema_20)
+    ema_50 = "n/a" if snapshot.ema_50 is None else str(snapshot.ema_50)
+    support = "n/a" if snapshot.nearest_support is None else str(snapshot.nearest_support.price)
+    resistance = (
+        "n/a" if snapshot.nearest_resistance is None else str(snapshot.nearest_resistance.price)
+    )
+    return (
+        f"MARKET_CONTEXT instrument={snapshot.instrument_id} timeframe={snapshot.timeframe.value} "
+        f"source={snapshot.source} fidelity={snapshot.input_fidelity.value} "
+        f"trend={snapshot.trend.value} close={snapshot.close} vwap={vwap} "
+        f"vwap_position={snapshot.vwap_position.value} ema20={ema_20} ema50={ema_50} "
+        f"session_position={snapshot.session_range_position} support={support} "
+        f"resistance={resistance} as_of={snapshot.as_of.isoformat()}"
+    )

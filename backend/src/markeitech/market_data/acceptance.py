@@ -11,6 +11,7 @@ from typing import Any, Protocol
 
 from pydantic import Field, field_validator
 
+from markeitech.analytics import MarketContextSnapshot
 from markeitech.domain.base import VersionedDomainModel
 from markeitech.domain.state import SourceStatus
 from markeitech.market_data.actor import MarkeitechMarketDataActor
@@ -78,6 +79,7 @@ class PaperIbAcceptanceReport(VersionedDomainModel):
     source_status: SourceStatus | None = None
     recovery_status: StartupRecoveryStatus | None = None
     recoveries: tuple[AcceptanceRecoveryResult, ...] = Field(default_factory=tuple)
+    market_contexts: tuple[MarketContextSnapshot, ...] = Field(default_factory=tuple)
     error: str | None = None
 
     @field_validator("started_ts", "ended_ts")
@@ -106,6 +108,9 @@ class AcceptanceActor(Protocol):
 
     @property
     def startup_recovery_snapshot(self) -> StartupRecoverySnapshot | None: ...
+
+    @property
+    def market_context_snapshots(self) -> tuple[MarketContextSnapshot, ...]: ...
 
 
 def main() -> None:
@@ -232,6 +237,7 @@ def _build_report(
     stopped_early: bool,
 ) -> PaperIbAcceptanceReport:
     snapshots = actor.market_data_snapshots
+    market_contexts = actor.market_context_snapshots
     health = actor.market_data_health
     recovery = getattr(actor, "startup_recovery_snapshot", None)
     checks = [
@@ -269,6 +275,18 @@ def _build_report(
                 f"{snapshot.instrument_id}:bars",
                 snapshot.bar_count > 0,
                 f"observed {snapshot.bar_count} completed external bars",
+            )
+        )
+        instrument_contexts = tuple(
+            context
+            for context in market_contexts
+            if context.instrument_id == snapshot.instrument_id
+        )
+        checks.append(
+            _check(
+                f"{snapshot.instrument_id}:market_context",
+                bool(instrument_contexts),
+                f"observed {len(instrument_contexts)} market context snapshots",
             )
         )
     checks.append(
@@ -334,6 +352,7 @@ def _build_report(
                 for item in recovery.instruments
             )
         ),
+        market_contexts=market_contexts,
         error=runtime_error,
     )
 

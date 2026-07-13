@@ -9,6 +9,7 @@ from nautilus_trader.adapters.interactive_brokers.factories import (
 from nautilus_trader.live.node import TradingNode
 from pydantic import Field
 
+from markeitech.analytics import MarketContextEngine
 from markeitech.domain.base import VersionedDomainModel
 from markeitech.market_data.actions import build_livenode_action_plan
 from markeitech.market_data.actor import MarkeitechMarketDataActor
@@ -133,7 +134,10 @@ def build_prepared_market_data_live_node(
         if config.persistence
         else None
     )
-    actor_kwargs: dict[str, Any] = {"on_warmup_ready": on_warmup_ready}
+    actor_kwargs: dict[str, Any] = {
+        "on_warmup_ready": on_warmup_ready,
+        "market_context_engine": MarketContextEngine(session_calendar),
+    }
     if persistence is not None:
         startup_recovery = StartupRecoveryService(
             config.persistence,

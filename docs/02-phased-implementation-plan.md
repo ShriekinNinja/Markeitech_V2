@@ -316,7 +316,18 @@ Eleventh implementation slice, part C:
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.
 
-Not started.
+In progress.
+
+### Stage 4A: Baseline Live Market Context
+
+- Build versioned per-instrument, per-timeframe context after the all-instrument warmup gate.
+- Calculate EMA 20/50/200 and ATR 14 with Nautilus indicators, plus session VWAP, session range position, confirmed swing support/resistance, and an explicit trend state.
+- Aggregate configured 5m, 15m, 30m, and 1h contexts only from complete consecutive canonical 1m bars; never fabricate a higher-timeframe bar across a missing minute.
+- Label provider-reported, tick-inferred, and mixed analytics inputs explicitly.
+- Update active and background instruments equally from completed live 1m bars, while the active instrument retains its tick-by-tick data path.
+- Expose structured context logs and include the latest snapshots in the duration-limited paper acceptance report.
+
+Stage 4A implementation is under review. Feature persistence, FVGs, volume profiles, complex zones, aggression, signals, ML, Discord delivery, and UI remain later slices.
 
 ## Stage 5: Signals
 
