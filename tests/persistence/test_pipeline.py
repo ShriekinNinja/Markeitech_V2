@@ -105,6 +105,7 @@ def test_force_flush_sorts_bucket_and_splits_stable_chunks(tmp_path: Path) -> No
     config = PersistenceConfig(
         catalog_path=tmp_path / "catalog",
         metadata_path=tmp_path / "metadata.sqlite3",
+        journal_path=tmp_path / "journal",
         catalog_batch_size=2,
     )
     coordinator = RecordingCoordinator()
@@ -134,6 +135,7 @@ def test_total_pending_capacity_returns_explicit_backpressure(tmp_path: Path) ->
     config = PersistenceConfig(
         catalog_path=tmp_path / "catalog",
         metadata_path=tmp_path / "metadata.sqlite3",
+        journal_path=tmp_path / "journal",
         catalog_writer_queue_size=2,
         catalog_batch_size=2,
         catalog_flush_poll_seconds=0.01,
@@ -163,6 +165,7 @@ def test_storage_failure_fails_closed_and_preserves_pending_count(tmp_path: Path
     config = PersistenceConfig(
         catalog_path=tmp_path / "catalog",
         metadata_path=tmp_path / "metadata.sqlite3",
+        journal_path=tmp_path / "journal",
         catalog_flush_poll_seconds=0.01,
     )
     coordinator = BlockingCoordinator(fail=True)
@@ -190,6 +193,7 @@ def test_invalid_events_are_rejected_before_queue_capacity(tmp_path: Path) -> No
     config = PersistenceConfig(
         catalog_path=tmp_path / "catalog",
         metadata_path=tmp_path / "metadata.sqlite3",
+        journal_path=tmp_path / "journal",
     )
     writer = BoundedPersistenceWriter(
         config,
@@ -207,6 +211,7 @@ def test_graceful_stop_flushes_through_real_coordinator(tmp_path: Path) -> None:
     config = PersistenceConfig(
         catalog_path=tmp_path / "catalog",
         metadata_path=tmp_path / "metadata.sqlite3",
+        journal_path=tmp_path / "journal",
         catalog_batch_size=10,
     )
     time_series = catalog(tmp_path, config)

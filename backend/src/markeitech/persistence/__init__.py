@@ -20,6 +20,13 @@ from markeitech.persistence.coordinator import (
     PersistenceFailurePoint,
     PersistenceWriteResult,
 )
+from markeitech.persistence.journal import (
+    DurableIngressJournal,
+    JournalCapacityError,
+    JournalCorruptionError,
+    JournalEntry,
+    JournalError,
+)
 from markeitech.persistence.pipeline import (
     BoundedPersistenceWriter,
     PersistenceSubmissionStatus,
@@ -36,7 +43,12 @@ from markeitech.persistence.sqlite import SQLiteMetadataStore
 __all__ = [
     "DataFidelity",
     "BoundedPersistenceWriter",
+    "DurableIngressJournal",
     "IdempotentPersistenceCoordinator",
+    "JournalCapacityError",
+    "JournalCorruptionError",
+    "JournalEntry",
+    "JournalError",
     "CanonicalOneMinuteBarRecord",
     "NotificationOutboxRecord",
     "NotificationOutboxStore",

@@ -253,3 +253,13 @@ Place one bounded asynchronous writer between live market-data callbacks and the
 Group native Nautilus ticks and completed canonical bars by source, instrument, event kind, and fixed initialization-time bucket. Close buckets by their deterministic time boundary, sort by initialization timestamp and dedupe key, and split oversized buckets into stable configured-size chunks. Force open buckets to flush during graceful shutdown. A storage exception fails the writer closed and retains uncommitted in-memory work for diagnosis.
 
 Reason: Catalog and SQLite latency must not stall market-data handling, while an unbounded handoff would merely hide overload until memory exhaustion. Deterministic bucket membership preserves idempotent crash recovery, and explicit backpressure makes data-loss risk an operational state that later LiveNode wiring can degrade on immediately.
+
+## DR-0030: Durable Bucket Journal Before Catalog Persistence
+
+Status: accepted
+
+Persist accepted native ticks and completed canonical bars to a local versioned, append-only, checksummed WAL before adding them to open persistence buckets. Scope WAL files to the same source, instrument, event-kind, and fixed initialization-time bucket used by the idempotent coordinator. Serialize native ticks with Nautilus `MsgSpecSerializer`; serialize canonical bars from declared versioned fields without computed properties.
+
+Flush and `fsync` WAL payloads before reporting them journaled. Synchronize the containing directory when WAL files are created or removed. On restart, replay WAL buckets before accepting live submissions and remove a WAL only after every deterministic catalog and metadata chunk commits. Repair an incomplete final write by truncating to the last valid record, but fail closed on a complete checksum mismatch, unknown event type, invalid payload, oversized record, or exhausted configured capacity.
+
+Reason: IB cannot reproduce every live quote or trade tick after a process crash, and an in-memory open bucket is therefore not a sufficient recovery source. Per-bucket WAL files preserve the exact payload and batch membership needed to resolve prepared, physically-written, catalog-acknowledged, and metadata-committed crash windows without turning SQLite into a second market-history store. The callback remains non-blocking; accepted and journaled are intentionally distinct operational states.

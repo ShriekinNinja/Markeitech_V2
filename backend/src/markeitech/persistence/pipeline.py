@@ -5,6 +5,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
+from pathlib import Path
 from threading import Condition, Thread
 from time import monotonic
 from typing import Protocol
@@ -16,6 +17,11 @@ from markeitech.domain.market_data import OneMinuteBar
 from markeitech.persistence.config import PersistenceConfig
 from markeitech.persistence.contracts import PersistenceEventIdentity
 from markeitech.persistence.coordinator import PersistenceWriteResult
+from markeitech.persistence.journal import (
+    DurableIngressJournal,
+    JournalCorruptionError,
+    JournalEntry,
+)
 
 
 class PersistenceBatchWriter(Protocol):
@@ -28,6 +34,7 @@ class PersistenceIdentityResolver(Protocol):
 
 class PersistenceWriterStatus(StrEnum):
     STOPPED = "stopped"
+    RECOVERING = "recovering"
     RUNNING = "running"
     STOPPING = "stopping"
     FAILED = "failed"
@@ -47,11 +54,14 @@ class PersistenceWriterSnapshot:
     status: PersistenceWriterStatus
     pending_count: int
     accepted_count: int
+    journaled_count: int
+    recovered_count: int
     persisted_count: int
     duplicate_count: int
     committed_batch_count: int
     rejected_full_count: int
     rejected_invalid_count: int
+    journal_bytes: int
     last_error: str | None
 
 
@@ -59,6 +69,7 @@ class PersistenceWriterSnapshot:
 class _BufferedEvent:
     event: object
     identity: PersistenceEventIdentity
+    journal_path: Path
 
 
 class BoundedPersistenceWriter:
@@ -70,22 +81,27 @@ class BoundedPersistenceWriter:
         coordinator: PersistenceBatchWriter,
         catalog: PersistenceIdentityResolver,
         *,
+        journal: DurableIngressJournal | None = None,
         clock: Callable[[], datetime] | None = None,
         on_health_change: Callable[[PersistenceWriterSnapshot], None] | None = None,
     ) -> None:
         self._config = config
         self._coordinator = coordinator
         self._catalog = catalog
+        self._journal = journal or DurableIngressJournal(config)
         self._clock = clock or (lambda: datetime.now(UTC))
         self._on_health_change = on_health_change
         self._condition = Condition()
         self._ingress: deque[object] = deque()
+        self._recovery: deque[JournalEntry] = deque()
         self._buckets: dict[tuple[str, str, str, int], list[_BufferedEvent]] = {}
         self._status = PersistenceWriterStatus.STOPPED
         self._thread: Thread | None = None
         self._force_flush = False
         self._pending_count = 0
         self._accepted_count = 0
+        self._journaled_count = 0
+        self._recovered_count = 0
         self._persisted_count = 0
         self._duplicate_count = 0
         self._committed_batch_count = 0
@@ -104,7 +120,24 @@ class BoundedPersistenceWriter:
                 raise RuntimeError("persistence writer can only start from stopped state")
             if self._pending_count != 0:
                 raise RuntimeError("stopped persistence writer has pending events")
-            self._status = PersistenceWriterStatus.RUNNING
+        try:
+            recovered = self._journal.recover()
+        except Exception as exc:
+            with self._condition:
+                self._status = PersistenceWriterStatus.FAILED
+                self._last_error = f"{type(exc).__name__}: {exc}"
+                snapshot = self._snapshot_unlocked()
+            self._publish(snapshot)
+            raise
+        with self._condition:
+            if self._status != PersistenceWriterStatus.STOPPED:
+                raise RuntimeError("persistence writer start raced with another lifecycle call")
+            self._recovery.extend(recovered)
+            self._pending_count = len(recovered)
+            self._recovered_count += len(recovered)
+            self._status = (
+                PersistenceWriterStatus.RECOVERING if recovered else PersistenceWriterStatus.RUNNING
+            )
             self._last_error = None
             self._thread = Thread(
                 target=self._run,
@@ -149,6 +182,7 @@ class BoundedPersistenceWriter:
             if self._status == PersistenceWriterStatus.FAILED:
                 return False
             if self._status not in {
+                PersistenceWriterStatus.RECOVERING,
                 PersistenceWriterStatus.RUNNING,
                 PersistenceWriterStatus.STOPPING,
             }:
@@ -182,7 +216,25 @@ class BoundedPersistenceWriter:
         return thread is None or not thread.is_alive()
 
     def _run(self) -> None:
+        inflight_events: tuple[object, ...] = ()
         try:
+            if self._recovery:
+                recovered = tuple(self._recovery)
+                self._recovery.clear()
+                for entry in recovered:
+                    identity = self._catalog.identify([entry.event])[0]
+                    if self._journal.path_for(identity) != entry.path:
+                        raise JournalCorruptionError(
+                            f"journal payload does not match bucket path: {entry.path.name}"
+                        )
+                    self._buffer(entry.event, identity, entry.path)
+                self._flush_ready(force=True)
+                with self._condition:
+                    if self._status == PersistenceWriterStatus.RECOVERING:
+                        self._status = PersistenceWriterStatus.RUNNING
+                    self._condition.notify_all()
+                    snapshot = self._snapshot_unlocked()
+                self._publish(snapshot)
             while True:
                 with self._condition:
                     if not self._ingress and not self._force_flush:
@@ -195,8 +247,17 @@ class BoundedPersistenceWriter:
                     force_flush = self._force_flush
                     self._force_flush = False
 
-                for event in events:
-                    self._buffer(event)
+                if events:
+                    inflight_events = events
+                    identities = self._catalog.identify(events)
+                    entries = self._journal.append(tuple(zip(events, identities, strict=True)))
+                    with self._condition:
+                        self._journaled_count += len(entries)
+                        snapshot = self._snapshot_unlocked()
+                    self._publish(snapshot)
+                    for entry, identity in zip(entries, identities, strict=True):
+                        self._buffer(entry.event, identity, entry.path)
+                    inflight_events = ()
                 self._flush_ready(force=force_flush)
 
                 with self._condition:
@@ -212,6 +273,7 @@ class BoundedPersistenceWriter:
             self._publish(snapshot)
         except Exception as exc:
             with self._condition:
+                self._ingress.extendleft(reversed(inflight_events))
                 self._status = PersistenceWriterStatus.FAILED
                 self._last_error = f"{type(exc).__name__}: {exc}"
                 self._thread = None
@@ -219,15 +281,19 @@ class BoundedPersistenceWriter:
                 snapshot = self._snapshot_unlocked()
             self._publish(snapshot)
 
-    def _buffer(self, event: object) -> None:
-        identity = self._catalog.identify([event])[0]
+    def _buffer(
+        self,
+        event: object,
+        identity: PersistenceEventIdentity,
+        journal_path: Path,
+    ) -> None:
         init_ns = identity.init_ts_ns
         if init_ns is None:
             raise ValueError("persistence event requires nanosecond initialization time")
         interval_ns = self._config.persistence_batch_interval_seconds * 1_000_000_000
         bucket = init_ns // interval_ns
         key = (identity.source, identity.instrument_id, identity.event_kind.value, bucket)
-        self._buckets.setdefault(key, []).append(_BufferedEvent(event, identity))
+        self._buckets.setdefault(key, []).append(_BufferedEvent(event, identity, journal_path))
 
     def _flush_ready(self, *, force: bool) -> None:
         interval_ns = self._config.persistence_batch_interval_seconds * 1_000_000_000
@@ -237,6 +303,7 @@ class BoundedPersistenceWriter:
         ]
         for key in sorted(ready_keys):
             buffered = self._buckets.pop(key)
+            journal_paths = {item.journal_path for item in buffered}
             buffered.sort(key=lambda item: (item.identity.init_ts_ns, item.identity.dedupe_key))
             for offset in range(0, len(buffered), self._config.catalog_batch_size):
                 chunk = buffered[offset : offset + self._config.catalog_batch_size]
@@ -254,6 +321,11 @@ class BoundedPersistenceWriter:
                     self._condition.notify_all()
                     snapshot = self._snapshot_unlocked()
                 self._publish(snapshot)
+            for path in journal_paths:
+                self._journal.acknowledge(path)
+            with self._condition:
+                snapshot = self._snapshot_unlocked()
+            self._publish(snapshot)
 
     @staticmethod
     def _invalid_submission(event: object) -> PersistenceSubmissionStatus | None:
@@ -268,11 +340,14 @@ class BoundedPersistenceWriter:
             status=self._status,
             pending_count=self._pending_count,
             accepted_count=self._accepted_count,
+            journaled_count=self._journaled_count,
+            recovered_count=self._recovered_count,
             persisted_count=self._persisted_count,
             duplicate_count=self._duplicate_count,
             committed_batch_count=self._committed_batch_count,
             rejected_full_count=self._rejected_full_count,
             rejected_invalid_count=self._rejected_invalid_count,
+            journal_bytes=self._journal.total_bytes,
             last_error=self._last_error,
         )
 

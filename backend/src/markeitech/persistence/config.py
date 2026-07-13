@@ -10,12 +10,16 @@ from markeitech.domain.base import VersionedDomainModel
 class PersistenceConfig(VersionedDomainModel):
     catalog_path: Path = Path("data/catalog")
     metadata_path: Path = Path("data/runtime/markeitech.sqlite3")
+    journal_path: Path = Path("data/runtime/ingress-journal")
     tick_retention_sessions: int = Field(default=5, ge=5)
     bar_retention_sessions: int = Field(default=250, ge=5)
     catalog_writer_queue_size: int = Field(default=10_000, ge=1)
     catalog_batch_size: int = Field(default=1_000, ge=1)
     persistence_batch_interval_seconds: int = Field(default=60, ge=1)
     catalog_flush_poll_seconds: float = Field(default=0.25, gt=0, le=5)
+    journal_max_bytes: int = Field(default=512 * 1024 * 1024, ge=1)
+    journal_max_record_bytes: int = Field(default=1024 * 1024, ge=1)
+    journal_fsync: bool = True
     outbox_lease_seconds: int = Field(default=30, ge=1)
     outbox_max_attempts: int = Field(default=8, ge=1)
     sqlite_busy_timeout_ms: int = Field(default=5_000, ge=1)

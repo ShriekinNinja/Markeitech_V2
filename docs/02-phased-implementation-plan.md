@@ -210,6 +210,19 @@ Fifth implementation slice:
 - Force a bounded flush during graceful shutdown.
 - Keep real LiveNode wiring, restart-driven historical recovery, Redis, and notification delivery out of this slice.
 
+Sixth implementation slice:
+
+- Add a versioned, append-only ingress write-ahead journal scoped to deterministic stream buckets.
+- Serialize native Nautilus trade and quote ticks with Nautilus `MsgSpecSerializer` and canonical bars from declared versioned fields.
+- Checksum every record, bound record and total journal sizes, and fail closed on confirmed corruption or exhausted capacity.
+- Repair only a torn final write; never reinterpret a complete record with a checksum mismatch.
+- Flush and `fsync` journal payloads and directory entries before events enter open persistence buckets.
+- Distinguish accepted, journaled, recovered, and committed writer counts.
+- Replay WAL buckets before accepting new live events after restart.
+- Retain each WAL file until every deterministic chunk has committed through Parquet and SQLite.
+- Prove exact replay across every coordinator crash boundary without duplicate durable events.
+- Keep missing-interval planning, targeted IB recovery, LiveNode wiring, Redis, and notification delivery out of this slice.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.
