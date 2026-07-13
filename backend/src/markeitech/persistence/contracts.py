@@ -187,6 +187,10 @@ class RecoveryRecord(VersionedDomainModel):
     def _recovery_state_must_be_consistent(self) -> RecoveryRecord:
         if self.requested_end_ts <= self.requested_start_ts:
             raise ValueError("recovery end must be after start")
+        if self.updated_ts < self.started_ts:
+            raise ValueError("recovery update cannot precede start")
+        if self.completed_ts is not None and self.completed_ts < self.started_ts:
+            raise ValueError("recovery completion cannot precede start")
         terminal = self.status in {
             RecoveryStatus.COMPLETE,
             RecoveryStatus.DEGRADED,

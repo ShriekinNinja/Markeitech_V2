@@ -140,6 +140,9 @@ def test_persistence_config_enforces_retention_and_bounded_batching() -> None:
     assert config.catalog_flush_poll_seconds == 0.25
     assert config.journal_max_bytes == 512 * 1024 * 1024
     assert config.journal_fsync is True
+    assert config.recovery_max_lookback_days == 30
+    assert config.recovery_max_intervals_per_request == 1_000
+    assert config.recovery_max_requests_per_plan == 64
     assert config.sqlite_busy_timeout_ms == 5_000
 
     with pytest.raises(ValidationError, match="writer queue size"):
@@ -150,6 +153,9 @@ def test_persistence_config_enforces_retention_and_bounded_batching() -> None:
 
     with pytest.raises(ValidationError):
         PersistenceConfig(journal_max_bytes=0)
+
+    with pytest.raises(ValidationError):
+        PersistenceConfig(recovery_max_requests_per_plan=0)
 
 
 def test_persistence_contracts_reject_non_utc_timestamps() -> None:

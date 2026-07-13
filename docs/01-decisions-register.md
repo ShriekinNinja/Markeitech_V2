@@ -263,3 +263,13 @@ Persist accepted native ticks and completed canonical bars to a local versioned,
 Flush and `fsync` WAL payloads before reporting them journaled. Synchronize the containing directory when WAL files are created or removed. On restart, replay WAL buckets before accepting live submissions and remove a WAL only after every deterministic catalog and metadata chunk commits. Repair an incomplete final write by truncating to the last valid record, but fail closed on a complete checksum mismatch, unknown event type, invalid payload, oversized record, or exhausted configured capacity.
 
 Reason: IB cannot reproduce every live quote or trade tick after a process crash, and an in-memory open bucket is therefore not a sufficient recovery source. Per-bucket WAL files preserve the exact payload and batch membership needed to resolve prepared, physically-written, catalog-acknowledged, and metadata-committed crash windows without turning SQLite into a second market-history store. The callback remains non-blocking; accepted and journaled are intentionally distinct operational states.
+
+## DR-0031: Session-Aware And Fidelity-Honest Recovery
+
+Status: accepted
+
+Calculate missing one-minute bars only from a provider-neutral calendar of expected session opens. Exclude weekends, holidays, and maintenance breaks before merging contiguous gaps. Bound provider lookback, intervals per request, and requests per plan. Preserve expected gaps outside provider lookback as unavailable rather than silently clipping them.
+
+Classify journaled tick replay as exact reported evidence. Historical bar backfill may restore reported bar continuity once every expected interval is verified. Any provider-supported historical tick request remains best effort and partial; an unjournaled tick gap with no defensible backfill is unavailable. Tick damage degrades tick-derived aggression, delta, absorption, and similar evidence without invalidating otherwise complete bar-based context. Recovery lifecycle state is durable and terminal states cannot regress.
+
+Reason: Markeitech is a decision-support and later controlled-automation platform, not an HFT recorder. Honest fidelity and reproducible gaps matter more than pretending IB can reconstruct every quote or trade. Session-aware bar repair preserves the analytical history that materially affects the product while allowing isolated tick damage to reduce confidence instead of stopping the system.

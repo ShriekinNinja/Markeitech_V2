@@ -20,6 +20,9 @@ class PersistenceConfig(VersionedDomainModel):
     journal_max_bytes: int = Field(default=512 * 1024 * 1024, ge=1)
     journal_max_record_bytes: int = Field(default=1024 * 1024, ge=1)
     journal_fsync: bool = True
+    recovery_max_lookback_days: int = Field(default=30, ge=1)
+    recovery_max_intervals_per_request: int = Field(default=1_000, ge=1)
+    recovery_max_requests_per_plan: int = Field(default=64, ge=1)
     outbox_lease_seconds: int = Field(default=30, ge=1)
     outbox_max_attempts: int = Field(default=8, ge=1)
     sqlite_busy_timeout_ms: int = Field(default=5_000, ge=1)

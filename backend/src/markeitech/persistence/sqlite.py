@@ -189,6 +189,16 @@ class SQLiteMetadataStore:
 
     def save_recovery(self, recovery: RecoveryRecord) -> None:
         with self._transaction() as connection:
+            existing = connection.execute(
+                "SELECT status, updated_ts_ns FROM recovery_records WHERE recovery_id=?",
+                (str(recovery.recovery_id),),
+            ).fetchone()
+            if existing is not None:
+                _require_recovery_transition(
+                    RecoveryStatus(existing["status"]),
+                    existing["updated_ts_ns"],
+                    recovery,
+                )
             cursor = connection.execute(
                 """
                 INSERT INTO recovery_records VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -636,6 +646,39 @@ def _optional_ns(value: datetime | None) -> int | None:
 
 def _optional_datetime(value: int | None) -> datetime | None:
     return None if value is None else utc_datetime_from_unix_ns(value)
+
+
+def _require_recovery_transition(
+    current_status: RecoveryStatus,
+    current_updated_ns: int,
+    recovery: RecoveryRecord,
+) -> None:
+    updated_ns = unix_ns_from_utc_datetime(recovery.updated_ts)
+    if updated_ns < current_updated_ns:
+        raise ValueError("recovery update cannot move state backward")
+    allowed = {
+        RecoveryStatus.PENDING: {
+            RecoveryStatus.PENDING,
+            RecoveryStatus.RECOVERING,
+            RecoveryStatus.COMPLETE,
+            RecoveryStatus.DEGRADED,
+            RecoveryStatus.FAILED,
+        },
+        RecoveryStatus.RECOVERING: {
+            RecoveryStatus.RECOVERING,
+            RecoveryStatus.COMPLETE,
+            RecoveryStatus.DEGRADED,
+            RecoveryStatus.FAILED,
+        },
+        RecoveryStatus.COMPLETE: {RecoveryStatus.COMPLETE},
+        RecoveryStatus.DEGRADED: {RecoveryStatus.DEGRADED},
+        RecoveryStatus.FAILED: {RecoveryStatus.FAILED},
+    }
+    if recovery.status not in allowed[current_status]:
+        raise ValueError(
+            f"recovery status cannot move from {current_status.value} "
+            f"to {recovery.status.value}"
+        )
 
 
 def _row_to_recovery(row: sqlite3.Row) -> RecoveryRecord:

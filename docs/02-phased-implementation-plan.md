@@ -223,6 +223,19 @@ Sixth implementation slice:
 - Prove exact replay across every coordinator crash boundary without duplicate durable events.
 - Keep missing-interval planning, targeted IB recovery, LiveNode wiring, Redis, and notification delivery out of this slice.
 
+Seventh implementation slice:
+
+- Add a provider-neutral session-calendar protocol which returns expected one-minute opens.
+- Provide an explicit session-window implementation for deterministic tests and later calendar adapters.
+- Exclude weekends, holidays, and maintenance breaks before classifying missing bar intervals.
+- Normalize and merge only contiguous expected missing minutes.
+- Bound recovery lookback, intervals per request, and requests per plan.
+- Split deterministic historical bar requests without spanning expected session closures.
+- Classify journal replay as exact, historical bar repair as reported, optional historical tick repair as partial, and unavailable tick gaps honestly.
+- Preserve out-of-lookback bar damage as unavailable rather than silently clipping it.
+- Persist pending, recovering, complete, and degraded recovery lifecycles without terminal-state regression.
+- Keep provider calendar selection, actual IB requests, LiveNode wiring, Redis, and notification delivery out of this slice.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

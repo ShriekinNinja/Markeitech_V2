@@ -38,12 +38,27 @@ from markeitech.persistence.ports import (
     RecoveryMetadataStore,
     TimeSeriesStore,
 )
+from markeitech.persistence.recovery import (
+    ExplicitSessionCalendar,
+    HistoricalRecoveryRequest,
+    RecoveryInterval,
+    RecoveryLifecycleTracker,
+    RecoveryMethod,
+    RecoveryPlan,
+    RecoveryPlanner,
+    RecoveryPlanningError,
+    RecoveryPlanStatus,
+    SessionCalendar,
+    SessionWindow,
+)
 from markeitech.persistence.sqlite import SQLiteMetadataStore
 
 __all__ = [
     "DataFidelity",
     "BoundedPersistenceWriter",
     "DurableIngressJournal",
+    "ExplicitSessionCalendar",
+    "HistoricalRecoveryRequest",
     "IdempotentPersistenceCoordinator",
     "JournalCapacityError",
     "JournalCorruptionError",
@@ -65,9 +80,18 @@ __all__ = [
     "PersistenceWriterSnapshot",
     "PersistenceWriterStatus",
     "RecoveryMetadataStore",
+    "RecoveryInterval",
+    "RecoveryLifecycleTracker",
+    "RecoveryMethod",
+    "RecoveryPlan",
+    "RecoveryPlanner",
+    "RecoveryPlanningError",
+    "RecoveryPlanStatus",
     "RecoveryRecord",
     "RecoveryStatus",
     "SQLiteMetadataStore",
+    "SessionCalendar",
+    "SessionWindow",
     "StreamCheckpoint",
     "TimeSeriesStore",
 ]
