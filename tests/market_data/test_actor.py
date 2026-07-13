@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from markeitech.market_data import NautilusActorActionTarget, conservative_warmup_start
+from markeitech.market_data.actor import ActorStartupRecoveryHook
 
 
 class FakeActorApi:
@@ -70,3 +71,54 @@ def test_default_warmup_window_overfetches_calendar_days() -> None:
     end = datetime(2026, 7, 10, 12, tzinfo=UTC)
 
     assert conservative_warmup_start(5, end) == end - timedelta(days=10)
+
+
+def test_actor_target_uses_exact_recovery_range() -> None:
+    actor = FakeActorApi()
+    now = datetime(2026, 7, 13, 12, tzinfo=UTC)
+    start = now - timedelta(minutes=3)
+    target = NautilusActorActionTarget(actor, now=lambda: now)
+
+    target.request_historical_bars(
+        instrument_id="NQU6.CME",
+        bar_type="NQU6.CME-1-MINUTE-LAST-EXTERNAL",
+        lookback_sessions=None,
+        request_start_ts=start,
+        request_end_ts=now,
+        data_client_name="IB",
+    )
+
+    assert actor.calls[0][2]["start"] == start
+    assert actor.calls[0][2]["end"] == now
+
+
+def test_actor_recovery_hook_maps_provider_requests_to_exact_actions() -> None:
+    now = datetime(2026, 7, 13, 12, tzinfo=UTC)
+
+    class Request:
+        instrument_id = "SPY.ARCA"
+        start_ts = now - timedelta(minutes=2)
+        end_ts = now
+        request_id = "request-id"
+
+    class Service:
+        snapshot = None
+
+        def observe_bar(self, bar: Any, *, accepted: bool) -> None:
+            del bar, accepted
+
+        def prepare(self, requested_now: datetime) -> tuple[Request, ...]:
+            assert requested_now == now
+            return (Request(),)
+
+        def finish(self, requested_now: datetime) -> None:
+            assert requested_now == now
+
+    hook = ActorStartupRecoveryHook(Service(), data_client_name="IB", now=lambda: now)
+
+    action = hook.prepare()[0]
+    assert action.instrument_id == "SPY.ARCA"
+    assert action.request_start_ts == Request.start_ts
+    assert action.request_end_ts == now
+    assert action.recovery_request_id == "request-id"
+    hook.finish()

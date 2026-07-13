@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime
 from enum import StrEnum
 from typing import Any, Protocol
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
-from markeitech.domain.base import VersionedDomainModel
+from markeitech.domain.base import VersionedDomainModel, require_utc
 from markeitech.market_data.intents import (
     NautilusIntentKind,
     NautilusRequestPlan,
@@ -34,6 +35,14 @@ class LiveNodeAction(VersionedDomainModel):
     data_client_name: str = Field(default="IB", min_length=1)
     bar_type: str | None = None
     lookback_sessions: int | None = Field(default=None, ge=1)
+    request_start_ts: datetime | None = None
+    request_end_ts: datetime | None = None
+    recovery_request_id: str | None = Field(default=None, min_length=1)
+
+    @field_validator("request_start_ts", "request_end_ts")
+    @classmethod
+    def _request_timestamps_must_be_utc(cls, value: datetime | None) -> datetime | None:
+        return None if value is None else require_utc(value)
 
     @model_validator(mode="after")
     def _action_shape_must_match_kind(self) -> LiveNodeAction:
@@ -49,13 +58,29 @@ class LiveNodeAction(VersionedDomainModel):
         if self.kind == LiveNodeActionKind.REQUEST_HISTORICAL_BARS:
             if self.phase != LiveNodeActionPhase.WARMUP:
                 raise ValueError("historical bar requests must be warmup actions")
-            if self.lookback_sessions is None:
-                raise ValueError("historical bar requests require lookback_sessions")
-        if (
-            self.kind != LiveNodeActionKind.REQUEST_HISTORICAL_BARS
-            and self.lookback_sessions is not None
+            has_lookback = self.lookback_sessions is not None
+            has_range = self.request_start_ts is not None and self.request_end_ts is not None
+            if has_lookback == has_range:
+                raise ValueError("historical bar requests require one lookback or exact range")
+            if (
+                has_range
+                and self.request_start_ts is not None
+                and self.request_end_ts is not None
+                and self.request_end_ts <= self.request_start_ts
+            ):
+                raise ValueError("historical bar request range must be positive")
+            if has_range != (self.recovery_request_id is not None):
+                raise ValueError("exact historical range requires recovery request id")
+        if self.kind != LiveNodeActionKind.REQUEST_HISTORICAL_BARS and any(
+            value is not None
+            for value in (
+                self.lookback_sessions,
+                self.request_start_ts,
+                self.request_end_ts,
+                self.recovery_request_id,
+            )
         ):
-            raise ValueError("live subscription actions must not include lookback_sessions")
+            raise ValueError("live subscription actions must not include request range")
         return self
 
 
@@ -67,6 +92,11 @@ class LiveNodeActionPlan(VersionedDomainModel):
     def _action_plan_must_not_duplicate_actions(self) -> LiveNodeActionPlan:
         keys = [
             (action.instrument_id, action.kind, action.bar_type, action.phase)
+            + (
+                action.request_start_ts,
+                action.request_end_ts,
+                action.recovery_request_id,
+            )
             for action in self.actions
         ]
         if len(keys) != len(set(keys)):
@@ -80,7 +110,9 @@ class LiveNodeActionTarget(Protocol):
         *,
         instrument_id: str,
         bar_type: str,
-        lookback_sessions: int,
+        lookback_sessions: int | None,
+        request_start_ts: datetime | None = None,
+        request_end_ts: datetime | None = None,
         data_client_name: str,
         callback: Callable[[Any], None] | None = None,
     ) -> Any: ...
@@ -185,15 +217,19 @@ def _execute_action(
     callback: Callable[[Any], None] | None = None,
 ) -> Any:
     if action.kind == LiveNodeActionKind.REQUEST_HISTORICAL_BARS:
-        if action.bar_type is None or action.lookback_sessions is None:
+        if action.bar_type is None:
             raise RuntimeError("historical bar action missing required fields")
-        return target.request_historical_bars(
+        request_kwargs: dict[str, Any] = dict(
             instrument_id=action.instrument_id,
             bar_type=action.bar_type,
             lookback_sessions=action.lookback_sessions,
             data_client_name=action.data_client_name,
             callback=callback,
         )
+        if action.request_start_ts is not None:
+            request_kwargs["request_start_ts"] = action.request_start_ts
+            request_kwargs["request_end_ts"] = action.request_end_ts
+        return target.request_historical_bars(**request_kwargs)
     if action.kind == LiveNodeActionKind.SUBSCRIBE_TRADE_TICKS:
         return target.subscribe_trade_ticks(
             instrument_id=action.instrument_id,

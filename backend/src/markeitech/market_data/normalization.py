@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
-from markeitech.domain.base import utc_datetime_from_unix_ns
+from markeitech.domain.base import require_utc, unix_ns_from_utc_datetime, utc_datetime_from_unix_ns
 from markeitech.domain.market_data import (
     CanonicalQuoteTick,
     CanonicalTradeTick,
@@ -61,20 +61,28 @@ def normalize_quote_tick(tick: Any, *, source: str = "ib") -> CanonicalQuoteTick
     )
 
 
-def normalize_one_minute_bar(bar: Any, *, source: str = "ib") -> OneMinuteBar:
+def normalize_one_minute_bar(
+    bar: Any,
+    *,
+    source: str = "ib",
+    received_ts: datetime | None = None,
+) -> OneMinuteBar:
     duration = bar.bar_type.spec.timedelta
     if duration != timedelta(minutes=1):
         raise ValueError(f"expected a one-minute bar, received {bar.bar_type}")
 
     open_ts_ns = bar.ts_event
     close_ts_ns = open_ts_ns + ONE_MINUTE_NS
+    init_ts_ns = (
+        bar.ts_init if received_ts is None else unix_ns_from_utc_datetime(require_utc(received_ts))
+    )
     volume = bar.volume.as_decimal()
     return OneMinuteBar(
         instrument_id=str(bar.bar_type.instrument_id),
         event_ts=utc_datetime_from_unix_ns(close_ts_ns),
-        ts_init=utc_datetime_from_unix_ns(bar.ts_init),
+        ts_init=utc_datetime_from_unix_ns(init_ts_ns),
         event_ts_ns=close_ts_ns,
-        ts_init_ns=bar.ts_init,
+        ts_init_ns=init_ts_ns,
         open_ts=utc_datetime_from_unix_ns(open_ts_ns),
         close_ts=utc_datetime_from_unix_ns(close_ts_ns),
         open=bar.open.as_decimal(),

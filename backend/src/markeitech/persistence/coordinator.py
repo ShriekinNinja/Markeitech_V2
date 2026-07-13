@@ -15,6 +15,7 @@ from markeitech.persistence.contracts import (
     PersistenceBatchStatus,
     PersistenceEventIdentity,
     StreamCheckpoint,
+    same_logical_event_identity,
 )
 from markeitech.persistence.sqlite import SQLiteMetadataStore
 
@@ -147,9 +148,10 @@ class IdempotentPersistenceCoordinator:
         for pair in pairs:
             identity = pair[1]
             existing = unique.get(identity.dedupe_key)
-            if existing is not None and existing[1] != identity:
+            if existing is not None and not same_logical_event_identity(existing[1], identity):
                 raise ValueError("input dedupe key conflicts with a different event identity")
-            unique[identity.dedupe_key] = pair
+            if existing is None or _init_ns(identity) < _init_ns(existing[1]):
+                unique[identity.dedupe_key] = pair
         return tuple(unique.values())
 
     def _require_one_closed_bucket(

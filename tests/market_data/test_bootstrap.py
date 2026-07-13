@@ -23,7 +23,11 @@ from markeitech.market_data import (
     build_prepared_market_data_live_node,
     start_live_node,
 )
-from markeitech.persistence import PersistenceConfig, PersistenceRuntimeStatus
+from markeitech.persistence import (
+    PersistenceConfig,
+    PersistenceRuntimeStatus,
+    StartupRecoveryService,
+)
 from nautilus_trader.model.data import TradeTick
 from nautilus_trader.model.enums import AggressorSide
 from nautilus_trader.model.identifiers import InstrumentId, TradeId
@@ -233,6 +237,8 @@ def test_prepared_node_wires_and_flushes_persistence_runtime(tmp_path: Path) -> 
     )
 
     assert isinstance(node, PersistenceManagedLiveNode)
+    assert isinstance(captured["startup_recovery"], StartupRecoveryService)
+    assert callable(captured["on_historical_bar"])
     assert node.persistence.status == PersistenceRuntimeStatus.CREATED
     assert node.run() == "started"
     assert node.persistence.status == PersistenceRuntimeStatus.STOPPED

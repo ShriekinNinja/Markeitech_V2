@@ -23,9 +23,10 @@ from markeitech.persistence.contracts import (
     RecoveryRecord,
     RecoveryStatus,
     StreamCheckpoint,
+    same_logical_event_identity,
 )
 
-LATEST_SCHEMA_VERSION = 2
+LATEST_SCHEMA_VERSION = 3
 
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (
@@ -127,6 +128,22 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
             ON persisted_event_identities(batch_id);
         """,
     ),
+    (
+        3,
+        """
+        CREATE TABLE provider_empty_intervals (
+            instrument_id TEXT NOT NULL,
+            source TEXT NOT NULL,
+            open_ts_ns INTEGER NOT NULL,
+            attempts INTEGER NOT NULL,
+            first_observed_ts_ns INTEGER NOT NULL,
+            last_observed_ts_ns INTEGER NOT NULL,
+            PRIMARY KEY(instrument_id, source, open_ts_ns)
+        );
+        CREATE INDEX provider_empty_range_idx
+            ON provider_empty_intervals(instrument_id, source, open_ts_ns);
+        """,
+    ),
 )
 
 
@@ -170,10 +187,11 @@ class SQLiteMetadataStore:
             self._upsert_checkpoint(connection, checkpoint, reject_regression=True)
 
     def load_checkpoint(self, stream_key: str) -> StreamCheckpoint | None:
-        row = self._connection.execute(
-            "SELECT * FROM stream_checkpoints WHERE stream_key = ?",
-            (stream_key,),
-        ).fetchone()
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM stream_checkpoints WHERE stream_key = ?",
+                (stream_key,),
+            ).fetchone()
         if row is None:
             return None
         return StreamCheckpoint(
@@ -230,11 +248,70 @@ class SQLiteMetadataStore:
                 raise ValueError("recovery update cannot move state backward")
 
     def load_recovery(self, recovery_id: UUID) -> RecoveryRecord | None:
-        row = self._connection.execute(
-            "SELECT * FROM recovery_records WHERE recovery_id = ?",
-            (str(recovery_id),),
-        ).fetchone()
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM recovery_records WHERE recovery_id = ?",
+                (str(recovery_id),),
+            ).fetchone()
         return None if row is None else _row_to_recovery(row)
+
+    def record_provider_empty_interval(
+        self,
+        *,
+        instrument_id: str,
+        source: str,
+        open_ts: datetime,
+        observed_ts: datetime,
+    ) -> int:
+        open_ns = unix_ns_from_utc_datetime(open_ts)
+        observed_ns = unix_ns_from_utc_datetime(observed_ts)
+        with self._transaction() as connection:
+            connection.execute(
+                """
+                INSERT INTO provider_empty_intervals VALUES (?, ?, ?, 1, ?, ?)
+                ON CONFLICT(instrument_id, source, open_ts_ns) DO UPDATE SET
+                    attempts=provider_empty_intervals.attempts + 1,
+                    last_observed_ts_ns=excluded.last_observed_ts_ns
+                """,
+                (instrument_id, source, open_ns, observed_ns, observed_ns),
+            )
+            row = connection.execute(
+                """
+                SELECT attempts FROM provider_empty_intervals
+                WHERE instrument_id=? AND source=? AND open_ts_ns=?
+                """,
+                (instrument_id, source, open_ns),
+            ).fetchone()
+        if row is None:
+            raise RuntimeError("provider-empty interval write did not return a row")
+        return int(row["attempts"])
+
+    def load_confirmed_provider_empty_opens(
+        self,
+        *,
+        instrument_id: str,
+        source: str,
+        start_ts: datetime,
+        end_ts: datetime,
+        minimum_attempts: int,
+    ) -> tuple[datetime, ...]:
+        with self._lock:
+            rows = self._connection.execute(
+                """
+                SELECT open_ts_ns FROM provider_empty_intervals
+                WHERE instrument_id=? AND source=?
+                  AND open_ts_ns>=? AND open_ts_ns<? AND attempts>=?
+                ORDER BY open_ts_ns
+                """,
+                (
+                    instrument_id,
+                    source,
+                    unix_ns_from_utc_datetime(start_ts),
+                    unix_ns_from_utc_datetime(end_ts),
+                    minimum_attempts,
+                ),
+            ).fetchall()
+        return tuple(utc_datetime_from_unix_ns(row["open_ts_ns"]) for row in rows)
 
     def save_readiness(self, state: ReadinessState) -> None:
         self._save_state("readiness_states", state.instrument_id, state, state.updated_ts)
@@ -469,7 +546,10 @@ class SQLiteMetadataStore:
                         "SELECT identity_json FROM persisted_event_identities WHERE dedupe_key=?",
                         (identity.dedupe_key,),
                     ).fetchone()
-                    if existing["identity_json"] != identity_json:
+                    stored_identity = PersistenceEventIdentity.model_validate_json(
+                        existing["identity_json"]
+                    )
+                    if not same_logical_event_identity(stored_identity, identity):
                         raise ValueError("dedupe key conflicts with a different event identity")
 
             self._upsert_checkpoint(connection, checkpoint, reject_regression=False)
@@ -519,7 +599,11 @@ class SQLiteMetadataStore:
             keys,
         ).fetchall()
         for row in rows:
-            if row["identity_json"] != _identity_json(by_key[row["dedupe_key"]]):
+            stored_identity = PersistenceEventIdentity.model_validate_json(row["identity_json"])
+            if not same_logical_event_identity(
+                stored_identity,
+                by_key[row["dedupe_key"]],
+            ):
                 raise ValueError("dedupe key conflicts with a different event identity")
         return frozenset(row["dedupe_key"] for row in rows)
 

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import defaultdict, deque
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, Protocol
 
 from markeitech.market_data.actions import (
     LiveNodeAction,
@@ -19,6 +19,7 @@ class WarmupState(StrEnum):
     IDLE = "idle"
     REQUESTING = "requesting"
     ANALYZING = "analyzing"
+    RECOVERING = "recovering"
     SUBSCRIBING = "subscribing"
     LIVE = "live"
     FAILED = "failed"
@@ -34,6 +35,12 @@ class WarmupSnapshot:
 WarmupReadyHandler = Callable[[WarmupSnapshot], None]
 
 
+class StartupRecoveryHook(Protocol):
+    def prepare(self) -> tuple[LiveNodeAction, ...]: ...
+
+    def finish(self) -> None: ...
+
+
 class WarmupCoordinator:
     def __init__(
         self,
@@ -41,13 +48,17 @@ class WarmupCoordinator:
         target: LiveNodeActionTarget,
         *,
         on_warmup_ready: WarmupReadyHandler,
+        startup_recovery: StartupRecoveryHook | None = None,
     ) -> None:
         self._action_plan = action_plan
         self._target = target
         self._on_warmup_ready = on_warmup_ready
+        self._startup_recovery = startup_recovery
         self._state = WarmupState.IDLE
         self._pending: set[tuple[str, str]] = set()
         self._historical_data: dict[str, list[Any]] = defaultdict(list)
+        self._recovery_actions: deque[LiveNodeAction] = deque()
+        self._issuing_initial = False
 
     @property
     def state(self) -> WarmupState:
@@ -62,20 +73,27 @@ class WarmupCoordinator:
         self._state = WarmupState.REQUESTING
 
         try:
+            self._issuing_initial = True
             for action in warmups:
                 execute_livenode_action(
                     action,
                     self._target,
                     callback=lambda _request_id, completed=action: self._complete(completed),
                 )
+            self._issuing_initial = False
             if not self._pending:
-                self._finish_warmup()
+                self._start_recovery()
         except Exception:
+            self._issuing_initial = False
             self._state = WarmupState.FAILED
             raise
 
     def record_historical_data(self, *, bar_type: str, data: Any) -> None:
-        if self._state not in {WarmupState.REQUESTING, WarmupState.ANALYZING}:
+        if self._state not in {
+            WarmupState.REQUESTING,
+            WarmupState.RECOVERING,
+            WarmupState.ANALYZING,
+        }:
             return
         self._historical_data[bar_type].append(data)
 
@@ -83,8 +101,44 @@ class WarmupCoordinator:
         if self._state != WarmupState.REQUESTING:
             return
         self._pending.discard(_warmup_key(action))
-        if not self._pending:
+        if not self._pending and not self._issuing_initial:
+            self._start_recovery()
+
+    def _start_recovery(self) -> None:
+        if self._state != WarmupState.REQUESTING:
+            return
+        if self._startup_recovery is None:
             self._finish_warmup()
+            return
+        try:
+            self._recovery_actions.extend(self._startup_recovery.prepare())
+            if not self._recovery_actions:
+                self._startup_recovery.finish()
+                self._finish_warmup()
+                return
+            self._state = WarmupState.RECOVERING
+            self._execute_next_recovery()
+        except Exception:
+            self._state = WarmupState.FAILED
+            raise
+
+    def _execute_next_recovery(self) -> None:
+        if not self._recovery_actions:
+            try:
+                if self._startup_recovery is not None:
+                    self._startup_recovery.finish()
+                self._state = WarmupState.REQUESTING
+                self._finish_warmup()
+            except Exception:
+                self._state = WarmupState.FAILED
+                raise
+            return
+        action = self._recovery_actions.popleft()
+        execute_livenode_action(
+            action,
+            self._target,
+            callback=lambda _request_id: self._execute_next_recovery(),
+        )
 
     def _finish_warmup(self) -> None:
         if self._state != WarmupState.REQUESTING:

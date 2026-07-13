@@ -26,6 +26,25 @@ class RecoveryMetadataStore(Protocol):
 
     def load_recovery(self, recovery_id: UUID) -> RecoveryRecord | None: ...
 
+    def record_provider_empty_interval(
+        self,
+        *,
+        instrument_id: str,
+        source: str,
+        open_ts: datetime,
+        observed_ts: datetime,
+    ) -> int: ...
+
+    def load_confirmed_provider_empty_opens(
+        self,
+        *,
+        instrument_id: str,
+        source: str,
+        start_ts: datetime,
+        end_ts: datetime,
+        minimum_attempts: int,
+    ) -> tuple[datetime, ...]: ...
+
 
 class NotificationOutboxStore(Protocol):
     def enqueue(self, record: NotificationOutboxRecord) -> bool: ...

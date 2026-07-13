@@ -293,3 +293,15 @@ Use pinned `pandas-market-calendars` schedule rules behind Markeitech's `Session
 For full equity profiles, include published premarket through postmarket hours when available. For regular profiles, use market open through market close. Split session windows around published breaks and interruptions before generating expected one-minute opens. Normalize output to UTC, bound query ranges and per-runtime schedule caching, and fail closed on unknown policy. Pin the package version because its calendars are shipped rules, not live exchange data; validate upgrades against golden holiday, early-close, maintenance, and DST cases and later reconcile representative schedules with observed IB history.
 
 Reason: Recovery correctness depends on knowing whether a missing minute was actually expected. Explicit product policy handles CME futures, cash indices, equities, and crypto without pretending venue names imply identical sessions. The adapter preserves provider portability, while golden tests and a version pin contain the operational risk of calendar-rule corrections.
+
+## DR-0034: One Fair And Durably Verified Startup Recovery Owner
+
+Status: accepted
+
+Keep ordinary warmup and targeted repair under one actor-side historical coordinator. Treat the existing multi-timeframe warmup as the first recovery evidence wave for every enabled non-crypto instrument. Persist its one-minute bars, force a bounded writer flush, and plan only gaps that remain in Parquet. Convert provider-neutral recovery requests into exact Nautilus historical ranges, interleave them round-robin across instruments, and issue one at a time. Flush and re-query durable bars before completing each instrument's recovery lifecycle.
+
+Do not let one active instrument own recovery correctness for the watchlist. Every configured futures, cash-index, equity, or ETF instrument receives an independent plan and terminal result. A degraded historical result remains explicit but may continue through the existing minimum warmup and analysis gate. Fail startup closed when persistence cannot flush or recovery exceeds bounded request limits.
+
+Treat a returned request with no bar as ambiguous rather than immediate data loss or an invented flat bar. Count that exact interval durably in SQLite and classify it as confirmed provider-empty only after repeated configured observations. Confirmed empties satisfy continuity checks without entering Parquet as market data. Rejected or non-durable returned bars remain persistence damage and cannot be mislabeled provider-empty.
+
+Reason: A second historical requester would race warmup, duplicate IB traffic, and blur readiness ownership. Fair sequential repairs respect pacing across an equally important watchlist, while durable re-verification prevents request completion or in-memory acceptance from being mistaken for stored evidence. Repeated empty confirmation bounds retries without falsifying OHLC history.

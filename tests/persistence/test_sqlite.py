@@ -99,13 +99,13 @@ def outbox(
 def test_migrations_are_idempotent_and_auditable(tmp_path: Path) -> None:
     path = tmp_path / "metadata.sqlite3"
     with SQLiteMetadataStore(config(path)) as first:
-        assert first.schema_version == 2
+        assert first.schema_version == 3
     with SQLiteMetadataStore(config(path)) as second:
-        assert second.schema_version == 2
+        assert second.schema_version == 3
         row = second._connection.execute(  # noqa: SLF001
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [item["version"] for item in row] == [1, 2]
+        assert [item["version"] for item in row] == [1, 2, 3]
 
 
 def test_newer_unknown_schema_fails_clearly(tmp_path: Path) -> None:
@@ -147,7 +147,7 @@ def test_schema_one_upgrades_without_losing_checkpoint(tmp_path: Path) -> None:
     connection.close()
 
     with SQLiteMetadataStore(config(path)) as upgraded:
-        assert upgraded.schema_version == 2
+        assert upgraded.schema_version == 3
         assert upgraded.load_checkpoint(expected.stream_key) == expected
 
 
@@ -181,6 +181,49 @@ def test_checkpoint_cannot_move_stream_progress_backward(tmp_path: Path) -> None
             store.save_checkpoint(older)
 
         assert store.load_checkpoint(current.stream_key) == current
+
+
+def test_provider_empty_intervals_require_repeated_durable_observations(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "metadata.sqlite3"
+    open_ts = datetime(2026, 7, 13, 12, 4, tzinfo=UTC)
+    with SQLiteMetadataStore(config(path)) as store:
+        assert (
+            store.record_provider_empty_interval(
+                instrument_id="SPY.ARCA",
+                source="ib",
+                open_ts=open_ts,
+                observed_ts=NOW,
+            )
+            == 1
+        )
+        assert (
+            store.load_confirmed_provider_empty_opens(
+                instrument_id="SPY.ARCA",
+                source="ib",
+                start_ts=open_ts - timedelta(minutes=1),
+                end_ts=open_ts + timedelta(minutes=1),
+                minimum_attempts=2,
+            )
+            == ()
+        )
+        assert (
+            store.record_provider_empty_interval(
+                instrument_id="SPY.ARCA",
+                source="ib",
+                open_ts=open_ts,
+                observed_ts=NOW + timedelta(seconds=1),
+            )
+            == 2
+        )
+        assert store.load_confirmed_provider_empty_opens(
+            instrument_id="SPY.ARCA",
+            source="ib",
+            start_ts=open_ts - timedelta(minutes=1),
+            end_ts=open_ts + timedelta(minutes=1),
+            minimum_attempts=2,
+        ) == (open_ts,)
 
 
 def test_recovery_lifecycle_round_trip(tmp_path: Path) -> None:

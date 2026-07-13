@@ -63,6 +63,12 @@ from markeitech.persistence.runtime import (
     PersistenceRuntimeStatus,
 )
 from markeitech.persistence.sqlite import SQLiteMetadataStore
+from markeitech.persistence.startup_recovery import (
+    InstrumentStartupRecoverySnapshot,
+    StartupRecoveryService,
+    StartupRecoverySnapshot,
+    StartupRecoveryStatus,
+)
 
 __all__ = [
     "DataFidelity",
@@ -72,6 +78,7 @@ __all__ = [
     "HistoricalRecoveryRequest",
     "IdempotentPersistenceCoordinator",
     "InstrumentCalendarPolicy",
+    "InstrumentStartupRecoverySnapshot",
     "JournalCapacityError",
     "JournalCorruptionError",
     "JournalEntry",
@@ -111,5 +118,8 @@ __all__ = [
     "SessionCalendar",
     "SessionWindow",
     "StreamCheckpoint",
+    "StartupRecoveryService",
+    "StartupRecoverySnapshot",
+    "StartupRecoveryStatus",
     "TimeSeriesStore",
 ]

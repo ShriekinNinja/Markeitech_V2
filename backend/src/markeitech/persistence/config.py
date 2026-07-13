@@ -23,6 +23,8 @@ class PersistenceConfig(VersionedDomainModel):
     recovery_max_lookback_days: int = Field(default=30, ge=1)
     recovery_max_intervals_per_request: int = Field(default=1_000, ge=1)
     recovery_max_requests_per_plan: int = Field(default=64, ge=1)
+    recovery_max_total_requests: int = Field(default=256, ge=1)
+    recovery_provider_empty_confirmation_attempts: int = Field(default=2, ge=1)
     runtime_startup_timeout_seconds: float = Field(default=30, gt=0)
     runtime_shutdown_timeout_seconds: float = Field(default=30, gt=0)
     outbox_lease_seconds: int = Field(default=30, ge=1)

@@ -91,6 +91,16 @@ def test_normalizes_external_bar_from_open_timestamp_to_explicit_interval() -> N
     assert normalized.unknown_volume == Decimal("20")
 
 
+def test_historical_bar_can_use_local_receipt_time_for_persistence_batching() -> None:
+    received_ts = datetime(2026, 8, 10, 12, 30, 45, 123456, tzinfo=UTC)
+
+    normalized = normalize_one_minute_bar(one_minute_bar(), received_ts=received_ts)
+
+    assert normalized.ts_init == received_ts
+    assert normalized.ts_init_ns == 1_786_365_045_123_456_000
+    assert normalized.open_ts == datetime(2026, 8, 10, 11, 8, 43, 456789, tzinfo=UTC)
+
+
 def test_rejects_non_one_minute_bar() -> None:
     bar = Bar(
         bar_type=BarType.from_str("ESU6.CME-5-MINUTE-LAST-EXTERNAL"),

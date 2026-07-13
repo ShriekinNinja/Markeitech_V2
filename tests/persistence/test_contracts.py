@@ -143,6 +143,8 @@ def test_persistence_config_enforces_retention_and_bounded_batching() -> None:
     assert config.recovery_max_lookback_days == 30
     assert config.recovery_max_intervals_per_request == 1_000
     assert config.recovery_max_requests_per_plan == 64
+    assert config.recovery_max_total_requests == 256
+    assert config.recovery_provider_empty_confirmation_attempts == 2
     assert config.sqlite_busy_timeout_ms == 5_000
 
     with pytest.raises(ValidationError, match="writer queue size"):

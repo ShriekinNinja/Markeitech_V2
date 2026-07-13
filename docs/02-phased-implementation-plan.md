@@ -262,6 +262,22 @@ Ninth implementation slice:
 - Add golden tests for CME halts and early closes, NYSE holidays and DST transitions, equity extended hours, and weekend crypto operation.
 - Keep actual IB historical recovery requests, provider schedule reconciliation, Redis, and notification delivery out of this slice.
 
+Tenth implementation slice:
+
+- Use the ordinary multi-timeframe historical warmup as the first recovery evidence wave for every enabled non-crypto instrument.
+- Normalize and durably persist returned one-minute warmup bars without routing them into live counters.
+- Force a bounded writer flush before recovery planning and verify observed opens from Parquet rather than trusting accepted queue submissions.
+- Plan only unresolved calendar-aware one-minute gaps after the coarse warmup response.
+- Map deterministic recovery requests to exact Nautilus historical bar ranges.
+- Interleave requests fairly across instruments and execute one repair at a time so one instrument cannot consume the recovery queue.
+- Flush again after targeted responses, re-query durable bars, and persist independent complete or degraded recovery outcomes per instrument.
+- Keep unrepaired historical gaps explicit without blocking otherwise valid minimum warmup analysis or live subscriptions.
+- Persist repeated provider-empty evidence and stop retrying an interval only after the configured confirmation threshold; never synthesize an OHLC bar.
+- Bound both per-instrument and aggregate request counts and fail closed when startup persistence cannot flush or verify.
+- Include per-instrument recovery requests, before/after damage, provider-empty confirmations, and reason codes in paper acceptance reports.
+- Cover CME futures, a US ETF, and a cash index through the same generic execution path.
+- Keep historical tick backfill, Redis, notification delivery, and provider-specific schedule overrides out of this slice.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

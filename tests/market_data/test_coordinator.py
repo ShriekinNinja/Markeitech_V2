@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -137,3 +138,89 @@ def test_coordinator_rejects_second_start() -> None:
 
     with pytest.raises(RuntimeError, match="cannot start"):
         coordinator.start()
+
+
+def test_recovery_requests_run_sequentially_before_analysis_and_subscriptions() -> None:
+    class SequentialTarget(DeferredTarget):
+        def __init__(self) -> None:
+            super().__init__()
+            self.recovery_callbacks: list[Callable[[str], None]] = []
+
+        def request_historical_bars(
+            self,
+            *,
+            instrument_id: str,
+            bar_type: str,
+            lookback_sessions: int | None,
+            data_client_name: str,
+            callback: Callable[[str], None] | None = None,
+            request_start_ts: datetime | None = None,
+            request_end_ts: datetime | None = None,
+        ) -> str:
+            if request_start_ts is None:
+                assert lookback_sessions is not None
+                return super().request_historical_bars(
+                    instrument_id=instrument_id,
+                    bar_type=bar_type,
+                    lookback_sessions=lookback_sessions,
+                    data_client_name=data_client_name,
+                    callback=callback,
+                )
+            assert request_end_ts is not None
+            assert callback is not None
+            self.calls.append(f"recover:{instrument_id}:{request_start_ts.minute}")
+            self.recovery_callbacks.append(callback)
+            return f"recovery-{instrument_id}"
+
+    class RecoveryHook:
+        def __init__(self) -> None:
+            self.finished = False
+
+        def prepare(self) -> tuple[LiveNodeAction, ...]:
+            return tuple(
+                LiveNodeAction(
+                    instrument_id=instrument_id,
+                    kind=LiveNodeActionKind.REQUEST_HISTORICAL_BARS,
+                    phase=LiveNodeActionPhase.WARMUP,
+                    bar_type=f"{instrument_id}-1-MINUTE-LAST-EXTERNAL",
+                    request_start_ts=datetime(2026, 7, 13, 12, minute, tzinfo=UTC),
+                    request_end_ts=datetime(2026, 7, 13, 12, minute, tzinfo=UTC)
+                    + timedelta(minutes=1),
+                    recovery_request_id=f"recovery-{instrument_id}",
+                )
+                for instrument_id, minute in (("NQU6.CME", 1), ("ESU6.CME", 2))
+            )
+
+        def finish(self) -> None:
+            self.finished = True
+
+    target = SequentialTarget()
+    recovery = RecoveryHook()
+    analyzed: list[bool] = []
+    coordinator = WarmupCoordinator(
+        action_plan(),
+        target,
+        on_warmup_ready=lambda _snapshot: analyzed.append(recovery.finished),
+        startup_recovery=recovery,
+    )
+    coordinator.start()
+    for bar_type, callback in tuple(target.callbacks.items()):
+        coordinator.record_historical_data(bar_type=bar_type, data=f"bar:{bar_type}")
+        callback(f"request-{bar_type}")
+
+    assert coordinator.state == WarmupState.RECOVERING
+    assert target.calls[-1] == "recover:NQU6.CME:1"
+    assert len(target.recovery_callbacks) == 1
+
+    target.recovery_callbacks[0]("recovery-NQ")
+    assert target.calls[-1] == "recover:ESU6.CME:2"
+    assert len(target.recovery_callbacks) == 2
+    assert analyzed == []
+
+    target.recovery_callbacks[1]("recovery-ES")
+    assert coordinator.state == WarmupState.LIVE
+    assert analyzed == [True]
+    assert target.calls[-2:] == [
+        "trades:NQU6.CME",
+        "bars:ESU6.CME:ESU6.CME-1-MINUTE-LAST-EXTERNAL",
+    ]

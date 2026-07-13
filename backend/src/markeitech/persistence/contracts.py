@@ -84,6 +84,15 @@ class PersistenceEventIdentity(VersionedDomainModel):
         return self
 
 
+def same_logical_event_identity(
+    left: PersistenceEventIdentity,
+    right: PersistenceEventIdentity,
+) -> bool:
+    """Compare provider event identity without local receipt-time metadata."""
+    excluded = {"init_ts", "init_ts_ns"}
+    return left.model_dump(exclude=excluded) == right.model_dump(exclude=excluded)
+
+
 class PersistenceBatch(VersionedDomainModel):
     batch_id: str = Field(min_length=64, max_length=64)
     instrument_id: str = Field(min_length=1)

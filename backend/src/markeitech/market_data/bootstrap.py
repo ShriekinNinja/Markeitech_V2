@@ -20,7 +20,10 @@ from markeitech.market_data.coordinator import (
 from markeitech.market_data.intents import build_nautilus_request_plan
 from markeitech.market_data.nautilus import build_trading_node_config
 from markeitech.market_data.planner import build_market_data_plan
+from markeitech.persistence.calendar import PandasMarketSessionCalendar
+from markeitech.persistence.pipeline import PersistenceSubmissionStatus
 from markeitech.persistence.runtime import PersistenceRuntime
+from markeitech.persistence.startup_recovery import StartupRecoveryService
 
 LIVE_NODE_START_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_IB"
 
@@ -124,9 +127,22 @@ def build_prepared_market_data_live_node(
     persistence = PersistenceRuntime.build(config.persistence) if config.persistence else None
     actor_kwargs: dict[str, Any] = {"on_warmup_ready": on_warmup_ready}
     if persistence is not None:
+        startup_recovery = StartupRecoveryService(
+            config.persistence,
+            config.instrument_registry,
+            persistence.catalog,
+            persistence.metadata,
+            PandasMarketSessionCalendar.from_registry(config.instrument_registry),
+            flush_pending=lambda: persistence.writer.flush(
+                config.persistence.runtime_startup_timeout_seconds
+            ),
+        )
         actor_kwargs.update(
             on_native_market_data_event=persistence.ingress.submit_native,
             on_market_data_event=persistence.ingress.submit_canonical,
+            on_historical_bar=lambda bar: persistence.ingress.submit_canonical(bar)
+            == PersistenceSubmissionStatus.ACCEPTED,
+            startup_recovery=startup_recovery,
         )
     try:
         actor = actor_factory(action_plan, **actor_kwargs)

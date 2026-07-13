@@ -173,7 +173,13 @@ class PersistenceRuntime:
             self.writer.start()
             ready = self.writer.wait_until_ready(self.config.runtime_startup_timeout_seconds)
             if not ready:
-                raise RuntimeError("persistence writer failed or timed out during startup recovery")
+                snapshot = self.writer.snapshot
+                if snapshot.status == PersistenceWriterStatus.FAILED:
+                    detail = snapshot.last_error or "unknown writer failure"
+                    raise RuntimeError(
+                        f"persistence writer failed during startup recovery: {detail}"
+                    )
+                raise RuntimeError("persistence writer timed out during startup recovery")
         except Exception:
             with self._lock:
                 self._status = PersistenceRuntimeStatus.FAILED

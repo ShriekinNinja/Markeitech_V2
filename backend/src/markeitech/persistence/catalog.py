@@ -68,16 +68,19 @@ class NautilusParquetTimeSeriesStore:
         return identities
 
     def query_trade_ticks(self, instrument_id: str) -> tuple[TradeTick, ...]:
-        return tuple(self._catalog.query(data_cls=TradeTick, identifiers=[instrument_id]))
+        with self._write_lock:
+            return tuple(self._catalog.query(data_cls=TradeTick, identifiers=[instrument_id]))
 
     def query_quote_ticks(self, instrument_id: str) -> tuple[QuoteTick, ...]:
-        return tuple(self._catalog.query(data_cls=QuoteTick, identifiers=[instrument_id]))
+        with self._write_lock:
+            return tuple(self._catalog.query(data_cls=QuoteTick, identifiers=[instrument_id]))
 
     def query_one_minute_bars(self, instrument_id: str) -> tuple[OneMinuteBar, ...]:
-        stored = self._catalog.query(
-            data_cls=CanonicalOneMinuteBarRecord,
-            identifiers=[instrument_id],
-        )
+        with self._write_lock:
+            stored = self._catalog.query(
+                data_cls=CanonicalOneMinuteBarRecord,
+                identifiers=[instrument_id],
+            )
         records = [item.data if isinstance(item, CustomData) else item for item in stored]
         return tuple(record_to_canonical_bar(record) for record in records)
 

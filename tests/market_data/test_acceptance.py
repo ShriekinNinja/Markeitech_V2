@@ -15,6 +15,12 @@ from markeitech.market_data import (
     WarmupState,
 )
 from markeitech.market_data.acceptance import run_paper_ib_acceptance_with_factories
+from markeitech.persistence import (
+    InstrumentStartupRecoverySnapshot,
+    RecoveryStatus,
+    StartupRecoverySnapshot,
+    StartupRecoveryStatus,
+)
 
 
 class FakeNode:
@@ -43,7 +49,6 @@ class FakeNode:
 
 class FakeAcceptanceActor:
     def __init__(self, action_plan: Any, **kwargs: Any) -> None:
-        del kwargs
         instrument_ids = sorted({action.instrument_id for action in action_plan.actions})
         self.warmup_state = WarmupState.LIVE
         self.market_data_snapshots = tuple(
@@ -65,9 +70,39 @@ class FakeAcceptanceActor:
             ),
             instruments=(),
         )
+        self.startup_recovery_snapshot = (
+            StartupRecoverySnapshot(
+                status=StartupRecoveryStatus.COMPLETE,
+                instruments=tuple(
+                    InstrumentStartupRecoverySnapshot(
+                        instrument_id=instrument_id,
+                        status=RecoveryStatus.COMPLETE,
+                        requested_start_ts=datetime(2026, 7, 13, 10, tzinfo=UTC),
+                        requested_end_ts=datetime(2026, 7, 13, 12, tzinfo=UTC),
+                        missing_before=2,
+                        missing_after=0,
+                        request_count=1,
+                    )
+                    for instrument_id in instrument_ids
+                ),
+                total_request_count=len(instrument_ids),
+            )
+            if "startup_recovery" in kwargs
+            else None
+        )
 
 
-def write_config(path: Path, *, enabled: bool) -> None:
+def write_config(path: Path, *, enabled: bool, persistence: bool = False) -> None:
+    persistence_block = (
+        f"""
+[persistence]
+catalog_path = "{path.parent / 'catalog'}"
+metadata_path = "{path.parent / 'metadata.sqlite3'}"
+journal_path = "{path.parent / 'journal'}"
+"""
+        if persistence
+        else ""
+    )
     path.write_text(f"""
 [runtime]
 active_instrument_id = "NQU6.CME"
@@ -83,6 +118,8 @@ host = "127.0.0.1"
 port = 4002
 client_id = 1
 read_only = true
+
+{persistence_block}
 
 [[instruments]]
 role = "active"
@@ -161,3 +198,27 @@ async def test_acceptance_refuses_invalid_confirmation(tmp_path: Path) -> None:
 
     assert report.status == AcceptanceStatus.REFUSED
     assert "confirmation token" in report.error
+
+
+@pytest.mark.asyncio
+async def test_acceptance_reports_terminal_recovery_for_every_instrument(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "market-data.toml"
+    write_config(config_path, enabled=True, persistence=True)
+
+    report = await run_paper_ib_acceptance_with_factories(
+        config_path,
+        duration_seconds=1,
+        confirmation=LIVE_NODE_START_CONFIRMATION,
+        node_factory=FakeNode,
+        actor_factory=FakeAcceptanceActor,
+    )
+
+    assert report.status == AcceptanceStatus.PASSED
+    assert report.recovery_status == StartupRecoveryStatus.COMPLETE
+    recovered = [
+        (item.instrument_id, item.missing_before, item.missing_after) for item in report.recoveries
+    ]
+    assert recovered == [("NQU6.CME", 2, 0)]
+    assert any(check.name == "startup_recovery_terminal" for check in report.checks)

@@ -27,6 +27,8 @@ persistence_batch_interval_seconds = 60
 journal_max_bytes = 536870912
 runtime_startup_timeout_seconds = 30
 runtime_shutdown_timeout_seconds = 30
+recovery_max_total_requests = 256
+recovery_provider_empty_confirmation_attempts = 2
 
 [[instruments]]
 role = "active"

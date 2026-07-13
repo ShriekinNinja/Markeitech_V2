@@ -9,7 +9,13 @@ from nautilus_trader.model.data import BarType
 from nautilus_trader.model.identifiers import ClientId, InstrumentId
 
 from markeitech.domain.events import ActiveInstrumentChangedEvent
-from markeitech.market_data.actions import LiveNodeActionPhase, LiveNodeActionPlan
+from markeitech.domain.market_data import OneMinuteBar
+from markeitech.market_data.actions import (
+    LiveNodeAction,
+    LiveNodeActionKind,
+    LiveNodeActionPhase,
+    LiveNodeActionPlan,
+)
 from markeitech.market_data.coordinator import (
     WarmupCoordinator,
     WarmupReadyHandler,
@@ -21,6 +27,7 @@ from markeitech.market_data.health import (
     MarketDataHealthSnapshot,
     SessionOpenResolver,
 )
+from markeitech.market_data.normalization import normalize_one_minute_bar
 from markeitech.market_data.routing import (
     InstrumentMarketDataSnapshot,
     LiveMarketDataRouter,
@@ -49,6 +56,49 @@ class NautilusActorApi(Protocol):
 
 WarmupStartResolver = Callable[[int, datetime], datetime]
 NativeMarketDataSink = Callable[[object], None]
+HistoricalBarSink = Callable[[OneMinuteBar], bool]
+
+
+class StartupRecoveryServiceLike(Protocol):
+    @property
+    def snapshot(self) -> Any: ...
+
+    def observe_bar(self, bar: OneMinuteBar, *, accepted: bool) -> None: ...
+
+    def prepare(self, now: datetime) -> tuple[Any, ...]: ...
+
+    def finish(self, now: datetime) -> Any: ...
+
+
+class ActorStartupRecoveryHook:
+    def __init__(
+        self,
+        service: StartupRecoveryServiceLike,
+        *,
+        data_client_name: str,
+        now: Callable[[], datetime],
+    ) -> None:
+        self._service = service
+        self._data_client_name = data_client_name
+        self._now = now
+
+    def prepare(self) -> tuple[LiveNodeAction, ...]:
+        return tuple(
+            LiveNodeAction(
+                instrument_id=request.instrument_id,
+                kind=LiveNodeActionKind.REQUEST_HISTORICAL_BARS,
+                phase=LiveNodeActionPhase.WARMUP,
+                data_client_name=self._data_client_name,
+                bar_type=f"{request.instrument_id}-1-MINUTE-LAST-EXTERNAL",
+                request_start_ts=request.start_ts,
+                request_end_ts=request.end_ts,
+                recovery_request_id=request.request_id,
+            )
+            for request in self._service.prepare(self._now())
+        )
+
+    def finish(self) -> None:
+        self._service.finish(self._now())
 
 
 class NautilusActorActionTarget:
@@ -68,15 +118,22 @@ class NautilusActorActionTarget:
         *,
         instrument_id: str,
         bar_type: str,
-        lookback_sessions: int,
+        lookback_sessions: int | None,
+        request_start_ts: datetime | None = None,
+        request_end_ts: datetime | None = None,
         data_client_name: str,
         callback: Callable[[Any], None] | None = None,
     ) -> Any:
         del instrument_id
-        end = self._now()
+        end = request_end_ts or self._now()
+        start = request_start_ts
+        if start is None:
+            if lookback_sessions is None:
+                raise ValueError("historical request requires lookback sessions or exact range")
+            start = self._resolve_warmup_start(lookback_sessions, end)
         return self._actor.request_bars(
             BarType.from_str(bar_type),
-            start=self._resolve_warmup_start(lookback_sessions, end),
+            start=start,
             end=end,
             client_id=ClientId(data_client_name),
             callback=callback,
@@ -149,6 +206,8 @@ class MarkeitechMarketDataActor(Actor):
         on_active_instrument_changed: Callable[[ActiveInstrumentChangedEvent], None] | None = None,
         on_market_data_event: MarketDataEventSink | None = None,
         on_native_market_data_event: NativeMarketDataSink | None = None,
+        on_historical_bar: HistoricalBarSink | None = None,
+        startup_recovery: StartupRecoveryServiceLike | None = None,
         on_market_data_health: MarketDataHealthSink | None = None,
         is_session_open: SessionOpenResolver | None = None,
         resolve_warmup_start: WarmupStartResolver | None = None,
@@ -159,26 +218,39 @@ class MarkeitechMarketDataActor(Actor):
             now=lambda: self.clock.utc_now(),
             resolve_warmup_start=resolve_warmup_start,
         )
+        if startup_recovery is not None and on_historical_bar is None:
+            raise ValueError("startup recovery requires a historical bar persistence sink")
+        data_client_names = {action.data_client_name for action in action_plan.actions}
+        if len(data_client_names) != 1:
+            raise ValueError("market-data actor requires exactly one data client")
+        data_client_name = next(iter(data_client_names))
+        recovery_hook = (
+            ActorStartupRecoveryHook(
+                startup_recovery,
+                data_client_name=data_client_name,
+                now=lambda: self.clock.utc_now(),
+            )
+            if startup_recovery is not None
+            else None
+        )
         self._warmup = WarmupCoordinator(
             action_plan,
             target,
             on_warmup_ready=on_warmup_ready,
+            startup_recovery=recovery_hook,
         )
         enabled_instrument_ids = {
             action.instrument_id
             for action in action_plan.actions
             if action.phase == LiveNodeActionPhase.WARMUP
         }
-        data_client_names = {action.data_client_name for action in action_plan.actions}
-        if len(data_client_names) != 1:
-            raise ValueError("market-data actor requires exactly one data client")
         self._switch_timer_name: str | None = None
         self._last_active_instrument_changed_event: ActiveInstrumentChangedEvent | None = None
         self._on_active_instrument_changed = on_active_instrument_changed
         self._switch = ActiveInstrumentSwitchCoordinator(
             active_instrument_id=action_plan.active_instrument_id,
             enabled_instrument_ids=enabled_instrument_ids,
-            data_client_name=next(iter(data_client_names)),
+            data_client_name=data_client_name,
             target=target,
             now=lambda: self.clock.utc_now(),
             runtime_ready=lambda: self._warmup.state == WarmupState.LIVE,
@@ -186,6 +258,8 @@ class MarkeitechMarketDataActor(Actor):
         )
         self._external_market_data_sink = on_market_data_event
         self._native_market_data_sink = on_native_market_data_event
+        self._historical_bar_sink = on_historical_bar
+        self._startup_recovery = startup_recovery
         self._health = MarketDataHealthMonitor(
             instrument_ids=enabled_instrument_ids,
             active_instrument_id=lambda: self._switch.snapshot.active_instrument_id,
@@ -220,6 +294,10 @@ class MarkeitechMarketDataActor(Actor):
     def market_data_health(self) -> MarketDataHealthSnapshot:
         return self._health.current
 
+    @property
+    def startup_recovery_snapshot(self) -> Any | None:
+        return None if self._startup_recovery is None else self._startup_recovery.snapshot
+
     def on_start(self) -> None:
         self._warmup.start()
         self.clock.set_timer(
@@ -239,6 +317,16 @@ class MarkeitechMarketDataActor(Actor):
         bar_type = getattr(data, "bar_type", None)
         if bar_type is not None:
             self._warmup.record_historical_data(bar_type=str(bar_type), data=data)
+            if self._startup_recovery is not None and data.bar_type.spec.timedelta == timedelta(
+                minutes=1
+            ):
+                normalized = normalize_one_minute_bar(
+                    data,
+                    source="ib",
+                    received_ts=self.clock.utc_now(),
+                )
+                accepted = self._historical_bar_sink(normalized)
+                self._startup_recovery.observe_bar(normalized, accepted=accepted)
 
     def on_trade_tick(self, tick: Any) -> None:
         if self._router.handle_trade_tick(tick) is None:

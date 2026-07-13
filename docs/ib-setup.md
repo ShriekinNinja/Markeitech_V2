@@ -95,6 +95,8 @@ The command prints the same plan summary as the dry run and refuses to start unl
 
 The runtime monitors required-stream freshness and external 1-minute bar continuity. Every instrument contract must declare `calendar_id` and `session_profile`; recovery uses the pinned product-calendar adapter to exclude holidays, early closes, breaks, and other expected closures. Use `full` when IB bars are expected across published extended hours, `regular` for market-open through market-close expectations, and `continuous` only with the native `24/7` calendar. These package-shipped rules are not a live exchange-hours feed, so representative schedules must be reconciled with observed IB bars before production use. NautilusTrader remains responsible for physical IB reconnect and transport retry behavior.
 
+With persistence enabled, the initial warmup bars are flushed before exact one-minute repair requests begin. Repairs are issued sequentially and fairly across configured non-crypto instruments. The acceptance report records each instrument's recovery request count, missing intervals before and after repair, confirmed provider-empty intervals, and remaining reason codes. A degraded recovery is observable but does not by itself invalidate otherwise sufficient warmup analysis; storage failure or an unbounded recovery plan does fail startup.
+
 Dry-run output also includes ordered LiveNode actions. The manual smoke path maps those actions to real Nautilus actor calls after the startup guards pass.
 
 ## Duration-Limited Paper Acceptance

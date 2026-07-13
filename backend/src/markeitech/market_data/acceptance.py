@@ -24,6 +24,10 @@ from markeitech.market_data.coordinator import WarmupState
 from markeitech.market_data.health import MarketDataHealthSnapshot
 from markeitech.market_data.loader import load_market_data_runtime_config
 from markeitech.market_data.routing import InstrumentMarketDataSnapshot
+from markeitech.persistence.startup_recovery import (
+    StartupRecoverySnapshot,
+    StartupRecoveryStatus,
+)
 
 
 class AcceptanceStatus(StrEnum):
@@ -53,6 +57,16 @@ class AcceptanceInstrumentResult(VersionedDomainModel):
     dropped_events: int = Field(ge=0)
 
 
+class AcceptanceRecoveryResult(VersionedDomainModel):
+    instrument_id: str = Field(min_length=1)
+    status: str = Field(min_length=1)
+    missing_before: int = Field(ge=0)
+    missing_after: int = Field(ge=0)
+    request_count: int = Field(ge=0)
+    confirmed_provider_empty_count: int = Field(ge=0)
+    reason_codes: tuple[str, ...] = Field(default_factory=tuple)
+
+
 class PaperIbAcceptanceReport(VersionedDomainModel):
     status: AcceptanceStatus
     started_ts: datetime
@@ -62,6 +76,8 @@ class PaperIbAcceptanceReport(VersionedDomainModel):
     instruments: tuple[AcceptanceInstrumentResult, ...] = Field(default_factory=tuple)
     checks: tuple[AcceptanceCheck, ...] = Field(default_factory=tuple)
     source_status: SourceStatus | None = None
+    recovery_status: StartupRecoveryStatus | None = None
+    recoveries: tuple[AcceptanceRecoveryResult, ...] = Field(default_factory=tuple)
     error: str | None = None
 
     @field_validator("started_ts", "ended_ts")
@@ -87,6 +103,9 @@ class AcceptanceActor(Protocol):
 
     @property
     def market_data_health(self) -> MarketDataHealthSnapshot: ...
+
+    @property
+    def startup_recovery_snapshot(self) -> StartupRecoverySnapshot | None: ...
 
 
 def main() -> None:
@@ -214,6 +233,7 @@ def _build_report(
 ) -> PaperIbAcceptanceReport:
     snapshots = actor.market_data_snapshots
     health = actor.market_data_health
+    recovery = getattr(actor, "startup_recovery_snapshot", None)
     checks = [
         _check("read_only_ib", config.ib.read_only, "IB connection is read-only"),
         _check("execution_disabled", config.data_only, "runtime is data-only"),
@@ -258,6 +278,22 @@ def _build_report(
             f"IB source status is {health.source.status}",
         )
     )
+    if config.persistence is not None:
+        recovery_terminal = recovery is not None and recovery.status in {
+            StartupRecoveryStatus.COMPLETE,
+            StartupRecoveryStatus.DEGRADED,
+        }
+        checks.append(
+            _check(
+                "startup_recovery_terminal",
+                recovery_terminal,
+                (
+                    "startup recovery snapshot is unavailable"
+                    if recovery is None
+                    else f"startup recovery status is {recovery.status}"
+                ),
+            )
+        )
     if runtime_error is not None:
         checks.append(_check("runtime_error", False, runtime_error))
 
@@ -281,6 +317,23 @@ def _build_report(
         ),
         checks=tuple(checks),
         source_status=health.source.status,
+        recovery_status=None if recovery is None else recovery.status,
+        recoveries=(
+            ()
+            if recovery is None
+            else tuple(
+                AcceptanceRecoveryResult(
+                    instrument_id=item.instrument_id,
+                    status=item.status.value,
+                    missing_before=item.missing_before,
+                    missing_after=item.missing_after,
+                    request_count=item.request_count,
+                    confirmed_provider_empty_count=item.confirmed_provider_empty_count,
+                    reason_codes=item.reason_codes,
+                )
+                for item in recovery.instruments
+            )
+        ),
         error=runtime_error,
     )
 

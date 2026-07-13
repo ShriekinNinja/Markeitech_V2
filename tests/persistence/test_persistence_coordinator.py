@@ -182,15 +182,50 @@ def test_restart_recovers_every_crash_window(
         assert result.batch.status == PersistenceBatchStatus.COMMITTED
 
 
-def test_same_dedupe_key_with_different_identity_fails(
+def test_retransmitted_event_with_later_receipt_time_is_duplicate(
     persistence: tuple[PersistenceConfig, NautilusParquetTimeSeriesStore, SQLiteMetadataStore],
 ) -> None:
     original = trade_tick(1_000, init_offset_ns=1_100)
-    conflict = trade_tick(1_000, init_offset_ns=1_200)
+    retransmission = trade_tick(1_000, init_offset_ns=1_200)
     coordinator(persistence).persist_closed_batch([original])
 
+    result = coordinator(persistence).persist_closed_batch([retransmission])
+
+    assert result.persisted_count == 0
+    assert result.duplicate_count == 1
+    assert len(persistence[1].query_trade_ticks("NQU6.CME")) == 1
+
+
+def test_same_batch_retransmission_keeps_earliest_receipt(
+    persistence: tuple[PersistenceConfig, NautilusParquetTimeSeriesStore, SQLiteMetadataStore],
+) -> None:
+    later = trade_tick(1_000, init_offset_ns=1_200)
+    earlier = trade_tick(1_000, init_offset_ns=1_100)
+
+    result = coordinator(persistence).persist_closed_batch([later, earlier])
+
+    assert result.persisted_count == 1
+    assert result.duplicate_count == 1
+    stored = persistence[1].query_trade_ticks("NQU6.CME")
+    assert len(stored) == 1
+    assert stored[0].ts_init == earlier.ts_init
+
+
+def test_same_dedupe_key_with_different_logical_identity_fails(
+    persistence: tuple[PersistenceConfig, NautilusParquetTimeSeriesStore, SQLiteMetadataStore],
+) -> None:
+    event = trade_tick(1_000)
+    coordinator(persistence).persist_closed_batch([event])
+    identity = persistence[1].identify([event])[0]
+    conflict = identity.model_copy(
+        update={
+            "event_ts": identity.event_ts + timedelta(microseconds=1),
+            "event_ts_ns": identity.event_ts_ns + 1_000,
+        }
+    )
+
     with pytest.raises(ValueError, match="conflicts with a different event identity"):
-        coordinator(persistence).persist_closed_batch([conflict])
+        persistence[2].committed_dedupe_keys((conflict,))
 
 
 def test_mixed_stream_and_bucket_batches_are_rejected(
