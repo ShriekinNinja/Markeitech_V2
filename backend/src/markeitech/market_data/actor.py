@@ -450,18 +450,29 @@ def should_update_market_context(
 
 
 def format_market_context(snapshot: MarketContextSnapshot) -> str:
-    vwap = "n/a" if snapshot.session_vwap is None else str(snapshot.session_vwap)
-    ema_20 = "n/a" if snapshot.ema_20 is None else str(snapshot.ema_20)
-    ema_50 = "n/a" if snapshot.ema_50 is None else str(snapshot.ema_50)
-    support = "n/a" if snapshot.nearest_support is None else str(snapshot.nearest_support.price)
-    resistance = (
-        "n/a" if snapshot.nearest_resistance is None else str(snapshot.nearest_resistance.price)
+    vwap = _display_value(snapshot.session_vwap)
+    ema_20 = _display_value(snapshot.ema_20)
+    ema_50 = _display_value(snapshot.ema_50)
+    ema_200 = _display_value(snapshot.ema_200)
+    atr_14 = _display_value(snapshot.atr_14)
+    support = _display_value(
+        None if snapshot.nearest_support is None else snapshot.nearest_support.price
     )
+    resistance = _display_value(
+        None if snapshot.nearest_resistance is None else snapshot.nearest_resistance.price
+    )
+    session_position = f"{snapshot.session_range_position * 100:.1f}%"
     return (
-        f"MARKET_CONTEXT instrument={snapshot.instrument_id} timeframe={snapshot.timeframe.value} "
-        f"source={snapshot.source} fidelity={snapshot.input_fidelity.value} "
-        f"trend={snapshot.trend.value} close={snapshot.close} vwap={vwap} "
-        f"vwap_position={snapshot.vwap_position.value} ema20={ema_20} ema50={ema_50} "
-        f"session_position={snapshot.session_range_position} support={support} "
-        f"resistance={resistance} as_of={snapshot.as_of.isoformat()}"
+        f"MARKET_CONTEXT | {snapshot.instrument_id} {snapshot.timeframe.value} "
+        f"| trend={snapshot.trend.value.upper()} | price={snapshot.close} "
+        f"| EMA[20={ema_20} 50={ema_50} 200={ema_200}] "
+        f"| VWAP[{vwap} {snapshot.vwap_position.value}] | ATR14={atr_14} "
+        f"| SESSION[low={snapshot.session_low} high={snapshot.session_high} "
+        f"position={session_position}] | LEVELS[support={support} resistance={resistance}] "
+        f"| input={snapshot.input_fidelity.value}:{snapshot.source} "
+        f"| as_of={snapshot.as_of.isoformat()}"
     )
+
+
+def _display_value(value: Any | None) -> str:
+    return "n/a" if value is None else str(value)

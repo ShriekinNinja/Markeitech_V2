@@ -4,10 +4,18 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
+from markeitech.analytics import (
+    AnalyticsInputFidelity,
+    AnalyticsTimeframe,
+    MarketContextSnapshot,
+    TrendState,
+    VwapPosition,
+)
 from markeitech.domain import OneMinuteBar
 from markeitech.market_data import NautilusActorActionTarget, conservative_warmup_start
 from markeitech.market_data.actor import (
     ActorStartupRecoveryHook,
+    format_market_context,
     should_update_market_context,
 )
 
@@ -111,6 +119,39 @@ def test_context_uses_tick_bars_for_active_and_provider_bars_for_background() ->
         background_bar,
         active_instrument_id="NQU6.CME",
     )
+
+
+def test_market_context_log_is_compact_and_human_scannable() -> None:
+    snapshot = MarketContextSnapshot(
+        instrument_id="NQU6.CME",
+        timeframe=AnalyticsTimeframe.FIVE_MINUTES,
+        as_of=datetime(2026, 7, 13, 12, 5, tzinfo=UTC),
+        source="classified_ticks",
+        input_fidelity=AnalyticsInputFidelity.INFERRED,
+        bar_count=220,
+        close=Decimal("25010.25"),
+        ema_20=Decimal("25000.5"),
+        ema_50=Decimal("24980.25"),
+        ema_200=Decimal("24800"),
+        atr_14=Decimal("18.75"),
+        session_open=Decimal("24900"),
+        session_high=Decimal("25050"),
+        session_low=Decimal("24850"),
+        session_vwap=Decimal("24975.5"),
+        session_range_position=Decimal("0.80125"),
+        vwap_position=VwapPosition.ABOVE,
+        trend=TrendState.BULLISH,
+        trend_reason_codes=("close_above_ema_stack", "ema20_rising"),
+    )
+
+    message = format_market_context(snapshot)
+
+    assert message.startswith("MARKET_CONTEXT | NQU6.CME 5m | trend=BULLISH")
+    assert "EMA[20=25000.5 50=24980.25 200=24800]" in message
+    assert "VWAP[24975.5 above] | ATR14=18.75" in message
+    assert "position=80.1%" in message
+    assert "input=inferred:classified_ticks" in message
+    assert "\n" not in message
 
 
 def test_actor_target_uses_exact_recovery_range() -> None:
