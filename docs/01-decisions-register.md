@@ -273,3 +273,13 @@ Calculate missing one-minute bars only from a provider-neutral calendar of expec
 Classify journaled tick replay as exact reported evidence. Historical bar backfill may restore reported bar continuity once every expected interval is verified. Any provider-supported historical tick request remains best effort and partial; an unjournaled tick gap with no defensible backfill is unavailable. Tick damage degrades tick-derived aggression, delta, absorption, and similar evidence without invalidating otherwise complete bar-based context. Recovery lifecycle state is durable and terminal states cannot regress.
 
 Reason: Markeitech is a decision-support and later controlled-automation platform, not an HFT recorder. Honest fidelity and reproducible gaps matter more than pretending IB can reconstruct every quote or trade. Session-aware bar repair preserves the analytical history that materially affects the product while allowing isolated tick damage to reduce confidence instead of stopping the system.
+
+## DR-0032: Persistence Owns The LiveNode Lifecycle Boundary
+
+Status: accepted
+
+When persistence is configured, wrap the prepared LiveNode with one persistence runtime. Start the durable writer and complete WAL replay before starting the node, actors, or subscriptions. Stop the node before forcing the writer's bounded final flush and closing SQLite. Send validated native Nautilus trade and quote ticks directly to the writer, and send only completed canonical one-minute bars through the canonical event sink.
+
+Actor callbacks remain non-blocking. Rejected ticks become explicit fidelity gaps; rejected completed bars become historical-recovery obligations. Neither condition may be hidden as successful persistence. Scope canonical bar dedupe keys by source so an external reported bar and a classified-tick bar can coexist for the same instrument and minute.
+
+Reason: Startup ordering prevents new live traffic from overtaking exact journal recovery, and shutdown ordering prevents producers from racing a closing store. A narrow ingress preserves Nautilus-native tick fidelity while keeping Markeitech's canonical event stream extensible. Explicit damage counters let later health and recovery stages distinguish tolerable tick loss from repairable bar continuity without stalling market-data handling.

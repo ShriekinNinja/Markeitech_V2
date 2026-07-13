@@ -26,6 +26,7 @@ from markeitech.market_data.bars import ActiveOneMinuteBarBuilder, TickBarUpdate
 from markeitech.market_data.bootstrap import (
     LIVE_NODE_START_CONFIRMATION,
     LiveNodeBootstrapSummary,
+    PersistenceManagedLiveNode,
     build_live_node,
     build_livenode_bootstrap_summary,
     build_prepared_market_data_live_node,
@@ -124,6 +125,7 @@ __all__ = [
     "PlannedSubscription",
     "PlannedWarmup",
     "PaperIbAcceptanceReport",
+    "PersistenceManagedLiveNode",
     "SubscriptionKind",
     "TickBarUpdate",
     "WarmupKind",

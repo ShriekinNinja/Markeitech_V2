@@ -159,4 +159,6 @@ class OneMinuteBar(InstrumentEvent):
     @computed_field
     @property
     def dedupe_key(self) -> str:
-        return f"bar:{self.instrument_id}:{self.interval}:{self.open_ts.isoformat()}"
+        return (
+            f"bar:{self.instrument_id}:{self.interval}:" f"{self.open_ts.isoformat()}:{self.source}"
+        )

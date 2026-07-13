@@ -51,6 +51,13 @@ from markeitech.persistence.recovery import (
     SessionCalendar,
     SessionWindow,
 )
+from markeitech.persistence.runtime import (
+    LivePersistenceIngress,
+    PersistenceIngressSnapshot,
+    PersistenceIngressStatus,
+    PersistenceRuntime,
+    PersistenceRuntimeStatus,
+)
 from markeitech.persistence.sqlite import SQLiteMetadataStore
 
 __all__ = [
@@ -64,6 +71,7 @@ __all__ = [
     "JournalCorruptionError",
     "JournalEntry",
     "JournalError",
+    "LivePersistenceIngress",
     "CanonicalOneMinuteBarRecord",
     "NotificationOutboxRecord",
     "NotificationOutboxStore",
@@ -73,12 +81,16 @@ __all__ = [
     "NautilusParquetTimeSeriesStore",
     "PersistenceConfig",
     "PersistenceFailurePoint",
+    "PersistenceIngressSnapshot",
+    "PersistenceIngressStatus",
     "PersistenceEventIdentity",
     "PersistenceEventKind",
     "PersistenceWriteResult",
     "PersistenceSubmissionStatus",
     "PersistenceWriterSnapshot",
     "PersistenceWriterStatus",
+    "PersistenceRuntime",
+    "PersistenceRuntimeStatus",
     "RecoveryMetadataStore",
     "RecoveryInterval",
     "RecoveryLifecycleTracker",

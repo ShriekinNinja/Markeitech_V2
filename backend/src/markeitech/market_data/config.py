@@ -4,6 +4,7 @@ from pydantic import Field, model_validator
 
 from markeitech.domain.base import VersionedDomainModel
 from markeitech.domain.instruments import InstrumentRegistryConfig
+from markeitech.persistence.config import PersistenceConfig
 
 
 class InteractiveBrokersConnectionConfig(VersionedDomainModel):
@@ -28,6 +29,7 @@ class MarketDataRuntimeConfig(VersionedDomainModel):
     build_nautilus_node: bool = True
     manual_live_node_start: bool = False
     run_live_node: bool = False
+    persistence: PersistenceConfig | None = None
 
     @model_validator(mode="after")
     def _runtime_must_remain_data_only_for_stage_2(self) -> MarketDataRuntimeConfig:

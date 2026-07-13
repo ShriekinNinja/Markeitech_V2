@@ -236,6 +236,19 @@ Seventh implementation slice:
 - Persist pending, recovering, complete, and degraded recovery lifecycles without terminal-state regression.
 - Keep provider calendar selection, actual IB requests, LiveNode wiring, Redis, and notification delivery out of this slice.
 
+Eighth implementation slice:
+
+- Add an optional persistence section to the market-data runtime configuration.
+- Compose the Parquet catalog, SQLite metadata store, idempotent coordinator, durable journal, bounded writer, and actor-facing ingress as one persistence runtime.
+- Start the persistence writer and finish exact journal replay before the LiveNode starts actors or subscriptions.
+- Route validated native Nautilus trade and quote ticks to persistence without converting away their native schemas.
+- Route only completed canonical one-minute bars to persistence; ignore provisional tick-built bars and unrelated canonical events.
+- Keep market-data callbacks non-blocking and expose accepted, rejected, tick-gap, and bar-recovery-required ingress health.
+- Treat rejected ticks as known fidelity damage and rejected completed bars as historical-recovery obligations.
+- Stop the LiveNode before forcing the bounded persistence flush and closing SQLite metadata.
+- Scope one-minute-bar dedupe identity by source so reported and tick-built bars for the same instrument and minute can coexist.
+- Keep provider calendar selection, actual historical recovery requests, Redis, and notification delivery out of this slice.
+
 ## Stage 4: Analytics And Levels
 
 Deliver deterministic derived analytics, levels, zones, volume profile support, provider-neutral feature snapshots, and the Direction and Location portions of the initial auction-market decision model.

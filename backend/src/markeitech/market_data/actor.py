@@ -48,6 +48,7 @@ class NautilusActorApi(Protocol):
 
 
 WarmupStartResolver = Callable[[int, datetime], datetime]
+NativeMarketDataSink = Callable[[object], None]
 
 
 class NautilusActorActionTarget:
@@ -147,6 +148,7 @@ class MarkeitechMarketDataActor(Actor):
         on_warmup_ready: WarmupReadyHandler,
         on_active_instrument_changed: Callable[[ActiveInstrumentChangedEvent], None] | None = None,
         on_market_data_event: MarketDataEventSink | None = None,
+        on_native_market_data_event: NativeMarketDataSink | None = None,
         on_market_data_health: MarketDataHealthSink | None = None,
         is_session_open: SessionOpenResolver | None = None,
         resolve_warmup_start: WarmupStartResolver | None = None,
@@ -183,6 +185,7 @@ class MarkeitechMarketDataActor(Actor):
             on_changed=self._handle_active_instrument_changed,
         )
         self._external_market_data_sink = on_market_data_event
+        self._native_market_data_sink = on_native_market_data_event
         self._health = MarketDataHealthMonitor(
             instrument_ids=enabled_instrument_ids,
             active_instrument_id=lambda: self._switch.snapshot.active_instrument_id,
@@ -240,6 +243,8 @@ class MarkeitechMarketDataActor(Actor):
     def on_trade_tick(self, tick: Any) -> None:
         if self._router.handle_trade_tick(tick) is None:
             return
+        if self._native_market_data_sink is not None:
+            self._native_market_data_sink(tick)
         event = self._switch.observe_trade_tick(str(tick.instrument_id))
         if event is not None:
             self._cancel_switch_timer()
@@ -247,6 +252,8 @@ class MarkeitechMarketDataActor(Actor):
     def on_quote_tick(self, tick: Any) -> None:
         if self._router.handle_quote_tick(tick) is None:
             return
+        if self._native_market_data_sink is not None:
+            self._native_market_data_sink(tick)
         event = self._switch.observe_quote_tick(str(tick.instrument_id))
         if event is not None:
             self._cancel_switch_timer()

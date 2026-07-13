@@ -84,6 +84,24 @@ def test_parse_market_data_runtime_config() -> None:
     assert background.data_mode == InstrumentDataMode.LIVE_1M_BARS
     assert background.warmup is not None
     assert WarmupTimeframe.DAILY in background.warmup.timeframes
+    assert config.persistence is None
+
+
+def test_parse_optional_persistence_runtime_config(tmp_path: Path) -> None:
+    raw = raw_config()
+    raw["persistence"] = {
+        "catalog_path": tmp_path / "catalog",
+        "metadata_path": tmp_path / "metadata.sqlite3",
+        "journal_path": tmp_path / "journal",
+        "catalog_writer_queue_size": 25,
+        "catalog_batch_size": 10,
+    }
+
+    config = parse_market_data_runtime_config(raw)
+
+    assert config.persistence is not None
+    assert config.persistence.catalog_path == tmp_path / "catalog"
+    assert config.persistence.catalog_writer_queue_size == 25
 
 
 def test_parse_crypto_market_data_runtime_config() -> None:
@@ -128,6 +146,7 @@ def test_loads_checked_in_example_config() -> None:
 
     assert config.instrument_registry.active_instrument_id == "NQU6.CME"
     assert len(config.instrument_registry.instruments) == 3
+    assert config.persistence is not None
 
 
 def test_cli_plan_summary_for_checked_in_example() -> None:
@@ -145,6 +164,7 @@ def test_cli_plan_summary_for_checked_in_example() -> None:
         "read_only_ib": True,
         "execution_clients_enabled": False,
         "data_client_name": "IB",
+        "persistence_enabled": True,
     }
     assert len(summary["planned_warmups"]) == 3
     assert {"instrument_id": "NQU6.CME", "kind": "tick_last", "source": "nautilus_ib"} in summary[

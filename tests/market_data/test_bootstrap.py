@@ -1,4 +1,6 @@
-from datetime import date
+from datetime import UTC, date, datetime
+from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -9,16 +11,23 @@ from markeitech.domain import (
     InstrumentRole,
     InstrumentRuntimeConfig,
     NQContractConfig,
+    OneMinuteBar,
 )
 from markeitech.market_data import (
     LIVE_NODE_START_CONFIRMATION,
     InteractiveBrokersConnectionConfig,
     MarketDataRuntimeConfig,
+    PersistenceManagedLiveNode,
     build_live_node,
     build_livenode_bootstrap_summary,
     build_prepared_market_data_live_node,
     start_live_node,
 )
+from markeitech.persistence import PersistenceConfig, PersistenceRuntimeStatus
+from nautilus_trader.model.data import TradeTick
+from nautilus_trader.model.enums import AggressorSide
+from nautilus_trader.model.identifiers import InstrumentId, TradeId
+from nautilus_trader.model.objects import Price, Quantity
 from pydantic import ValidationError
 
 
@@ -42,6 +51,10 @@ class FakeNode:
 
     def run(self) -> str:
         self.started = True
+        for actor in self.actors:
+            emit = getattr(actor, "emit", None)
+            if emit is not None:
+                emit()
         return "started"
 
 
@@ -75,6 +88,48 @@ def runtime_config(**overrides: object) -> MarketDataRuntimeConfig:
     }
     values.update(overrides)
     return MarketDataRuntimeConfig(**values)
+
+
+def persistence_config(tmp_path: Path) -> PersistenceConfig:
+    return PersistenceConfig(
+        catalog_path=tmp_path / "catalog",
+        metadata_path=tmp_path / "metadata.sqlite3",
+        journal_path=tmp_path / "journal",
+        catalog_batch_size=10,
+    )
+
+
+def native_trade() -> TradeTick:
+    return TradeTick(
+        instrument_id=InstrumentId.from_str("NQU6.CME"),
+        price=Price.from_str("20000.25"),
+        size=Quantity.from_str("1"),
+        aggressor_side=AggressorSide.BUYER,
+        trade_id=TradeId("runtime-trade"),
+        ts_event=1_786_360_120_000_000_000,
+        ts_init=1_786_360_120_000_000_100,
+    )
+
+
+def completed_bar() -> OneMinuteBar:
+    return OneMinuteBar(
+        instrument_id="NQU6.CME",
+        event_ts=datetime(2026, 8, 10, 11, 9, tzinfo=UTC),
+        ts_init=datetime(2026, 8, 10, 11, 9, 0, 123456, tzinfo=UTC),
+        event_ts_ns=1_786_360_140_000_000_000,
+        ts_init_ns=1_786_360_140_123_456_789,
+        open_ts=datetime(2026, 8, 10, 11, 8, tzinfo=UTC),
+        close_ts=datetime(2026, 8, 10, 11, 9, tzinfo=UTC),
+        open=Decimal("20000"),
+        high=Decimal("20001"),
+        low=Decimal("19999"),
+        close=Decimal("20000.25"),
+        volume=Decimal("1"),
+        buy_volume=Decimal("0"),
+        sell_volume=Decimal("0"),
+        unknown_volume=Decimal("1"),
+        source="ib",
+    )
 
 
 def test_bootstrap_summary_is_data_only_and_not_starting_by_default() -> None:
@@ -154,3 +209,32 @@ def test_start_live_node_calls_run_only_with_manual_confirmation() -> None:
 
     assert result == "started"
     assert node.started is True
+
+
+def test_prepared_node_wires_and_flushes_persistence_runtime(tmp_path: Path) -> None:
+    captured: dict[str, Any] = {}
+
+    class EmittingActor:
+        def __init__(self, action_plan: Any, **kwargs: Any) -> None:
+            del action_plan
+            captured.update(kwargs)
+
+        def emit(self) -> None:
+            captured["on_native_market_data_event"](native_trade())
+            captured["on_market_data_event"](completed_bar())
+
+    node = build_prepared_market_data_live_node(
+        runtime_config(persistence=persistence_config(tmp_path)),
+        node_factory=FakeNode,
+        actor_factory=EmittingActor,
+        data_client_factory=type("FakeDataClientFactory", (), {}),
+    )
+
+    assert isinstance(node, PersistenceManagedLiveNode)
+    assert node.persistence.status == PersistenceRuntimeStatus.CREATED
+    assert node.run() == "started"
+    assert node.persistence.status == PersistenceRuntimeStatus.STOPPED
+    assert len(node.persistence.catalog.query_trade_ticks("NQU6.CME")) == 1
+    assert len(node.persistence.catalog.query_one_minute_bars("NQU6.CME")) == 1
+    assert node.persistence.ingress.snapshot.accepted_native_count == 1
+    assert node.persistence.ingress.snapshot.accepted_bar_count == 1

@@ -17,6 +17,17 @@ connection_timeout_seconds = 300
 request_timeout_seconds = 60
 read_only = true
 
+[persistence]
+catalog_path = "data/catalog"
+metadata_path = "data/runtime/markeitech.sqlite3"
+journal_path = "data/runtime/ingress-journal"
+catalog_writer_queue_size = 10000
+catalog_batch_size = 1000
+persistence_batch_interval_seconds = 60
+journal_max_bytes = 536870912
+runtime_startup_timeout_seconds = 30
+runtime_shutdown_timeout_seconds = 30
+
 [[instruments]]
 role = "active"
 data_mode = "tick_by_tick"

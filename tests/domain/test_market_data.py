@@ -90,7 +90,10 @@ def test_one_minute_bar_volume_and_delta() -> None:
 
     assert bar.delta == Decimal("3")
     assert bar.classified_volume_ratio == Decimal("0.9")
-    assert bar.dedupe_key == "bar:NQU6.CME:1m:2026-07-09T12:00:00+00:00"
+    assert bar.dedupe_key == "bar:NQU6.CME:1m:2026-07-09T12:00:00+00:00:ib"
+
+    tick_built = bar.model_copy(update={"source": "classified_ticks"})
+    assert tick_built.dedupe_key != bar.dedupe_key
 
 
 def test_bar_rejects_volume_mismatch() -> None:

@@ -198,6 +198,16 @@ class BoundedPersistenceWriter:
                 self._condition.wait(remaining)
             return True
 
+    def wait_until_ready(self, timeout: float | None = None) -> bool:
+        deadline = None if timeout is None else monotonic() + timeout
+        with self._condition:
+            while self._status == PersistenceWriterStatus.RECOVERING:
+                remaining = None if deadline is None else deadline - monotonic()
+                if remaining is not None and remaining <= 0:
+                    return False
+                self._condition.wait(remaining)
+            return self._status == PersistenceWriterStatus.RUNNING
+
     def stop(self, timeout: float | None = None) -> bool:
         with self._condition:
             if self._status == PersistenceWriterStatus.STOPPED:

@@ -20,6 +20,7 @@ from markeitech.market_data.coordinator import (
 from markeitech.market_data.intents import build_nautilus_request_plan
 from markeitech.market_data.nautilus import build_trading_node_config
 from markeitech.market_data.planner import build_market_data_plan
+from markeitech.persistence.runtime import PersistenceRuntime
 
 LIVE_NODE_START_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_IB"
 
@@ -47,6 +48,36 @@ class LiveNodeBootstrapSummary(VersionedDomainModel):
     read_only_ib: bool
     execution_clients_enabled: bool
     data_client_name: str = Field(min_length=1)
+    persistence_enabled: bool
+
+
+class PersistenceManagedLiveNode:
+    def __init__(self, node: ConfigurableLiveNodeLike, persistence: PersistenceRuntime) -> None:
+        self._node = node
+        self.persistence = persistence
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._node, name)
+
+    def run(self) -> Any:
+        self.persistence.start()
+        try:
+            return self._node.run()
+        finally:
+            self.persistence.stop()
+
+    async def run_async(self) -> None:
+        self.persistence.start()
+        try:
+            await self._node.run_async()
+        finally:
+            self.persistence.stop()
+
+    async def stop_async(self) -> None:
+        try:
+            await self._node.stop_async()
+        finally:
+            self.persistence.stop()
 
 
 def build_livenode_bootstrap_summary(
@@ -60,6 +91,7 @@ def build_livenode_bootstrap_summary(
         read_only_ib=config.ib.read_only,
         execution_clients_enabled=bool(node_config.exec_clients),
         data_client_name=config.data_client_name,
+        persistence_enabled=config.persistence is not None,
     )
 
 
@@ -81,7 +113,7 @@ def build_prepared_market_data_live_node(
     actor_factory: Callable[..., Any] = MarkeitechMarketDataActor,
     on_warmup_ready: WarmupReadyHandler = require_historical_coverage,
     data_client_factory: type[Any] = InteractiveBrokersLiveDataClientFactory,
-) -> ConfigurableLiveNodeLike:
+) -> ConfigurableLiveNodeLike | PersistenceManagedLiveNode:
     node = build_live_node(config, node_factory=node_factory)
     runtime_plan = build_market_data_plan(config.instrument_registry)
     request_plan = build_nautilus_request_plan(
@@ -89,12 +121,25 @@ def build_prepared_market_data_live_node(
         data_client_name=config.data_client_name,
     )
     action_plan = build_livenode_action_plan(request_plan)
-    actor = actor_factory(action_plan, on_warmup_ready=on_warmup_ready)
-
-    node.trader.add_actor(actor)
-    node.add_data_client_factory(config.data_client_name, data_client_factory)
-    node.build()
-    return node
+    persistence = PersistenceRuntime.build(config.persistence) if config.persistence else None
+    actor_kwargs: dict[str, Any] = {"on_warmup_ready": on_warmup_ready}
+    if persistence is not None:
+        actor_kwargs.update(
+            on_native_market_data_event=persistence.ingress.submit_native,
+            on_market_data_event=persistence.ingress.submit_canonical,
+        )
+    try:
+        actor = actor_factory(action_plan, **actor_kwargs)
+        node.trader.add_actor(actor)
+        node.add_data_client_factory(config.data_client_name, data_client_factory)
+        node.build()
+    except Exception:
+        if persistence is not None:
+            persistence.stop()
+        raise
+    if persistence is None:
+        return node
+    return PersistenceManagedLiveNode(node, persistence)
 
 
 def start_live_node(
