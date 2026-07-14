@@ -242,6 +242,16 @@ Direction qualification fails closed when primary evidence is missing, neutral, 
 
 `DirectionRegimeTracker` emits at most one candidate while a definition/instrument remains in the same qualified direction. Its setup anchor is the UTC timestamp when that qualified regime began, not each subsequent 1m update. Neutral or conflicting evidence ends the regime; missing evidence preserves it because a temporary data gap is not market invalidation. An opposite qualified direction ends the old regime and starts a distinct candidate. Restart seeds open regimes from verified persisted signals and rejects setup keys inconsistent with their creation timestamp.
 
+### Location Zone Contracts
+
+Direction is long-lived context; a DLA trade setup is a repeatable entry into a direction-aligned location. `LocationPolicyConfig` declares accepted source kinds, their analytical timeframes, ATR-relative proximity tolerance, and the minimum number of distinct source kinds required. The initial intraday policy includes 15m/5m structural levels and FVGs plus 1m session value-area edges and VWAP. These defaults are versioned signal configuration and may be calibrated without embedding thresholds in evaluator code.
+
+`SignalLocationZone` separates semantic zone identity from its latest observation. Its `zone_id` binds schema, instrument, direction, source and zone kinds, timeframe, and a deterministic origin anchor. Exact feature id, observation timestamp, bounds, fidelity, and reasons remain payload evidence but do not change identity. A developing session VWAP or value edge can therefore move while remaining the same zone; a new swing, FVG, or product session must receive a new origin anchor.
+
+Direction alignment is fail-closed: long zones may be support, bullish FVG, value-area low, or session VWAP; short zones may be resistance, bearish FVG, value-area high, or session VWAP. A zone rejects mismatched source/type pairs, inverted bounds, untrimmed anchors, naive timestamps, and incompatible direction.
+
+`SignalLocationMatch` binds one semantic zone to the exact evaluation feature, observed price and timestamp, calculated distance, applied tolerance, and reason codes. A match cannot predate its zone evidence or exceed tolerance. Zone derivation, edge-triggered entry/exit episodes, and attachment to Armed signal state remain subsequent 5C.2 slices.
+
 ### Durable Signal State
 
 SQLite stores one current `SignalSnapshot` per signal id plus its immutable initial-candidate content hash. Every accepted `SignalTransitionEvent` is append-only and receives a contiguous per-signal sequence number independent of market timestamps. Restart restoration validates typed row metadata, candidate identity, transition identity, the complete previous-to-current content-hash chain, and agreement between the final transition and current snapshot.

@@ -439,3 +439,15 @@ Evaluate only point-in-time bundles of durably committed market-context feature 
 Anchor candidate identity to the start of a continuous qualified Direction regime. Emit once while the direction remains qualified, end the regime on neutral or conflicting evidence, preserve it across temporary missing evidence, and replace it when the opposite direction qualifies. Seed open regimes from verified persisted signals on restart and reject inconsistent setup identity.
 
 Reason: A fixed 1h+15m rule would make future shorter-horizon setups either accidental duplicates or invasive rewrites. Named definitions preserve one coherent DLA lifecycle while keeping cadence, evidence, and configuration identity explicit. Regime anchors stop each 1m recalculation from becoming a new alert, and preserving state across data gaps avoids false invalidation and duplicate recovery signals.
+
+## DR-0047: Repeatable Semantic Location Episodes
+
+Status: accepted for implementation
+
+Treat Direction as long-lived market context and each distinct entry into a direction-aligned location as a repeatable DLA setup opportunity. Configure accepted location source kinds, analytical timeframes, ATR-relative proximity tolerances, and minimum distinct-source confluence per named signal definition. Begin with structural support/resistance, aligned active FVGs, session value-area edges, and session VWAP.
+
+Give each location zone a semantic identity derived from instrument, direction, source/type, timeframe, and a deterministic origin anchor. Keep the exact feature revision, observation timestamp, bounds, fidelity, and reasons outside that identity. Bind every qualified match to both its semantic zone and exact evaluation feature. Reject source/type mismatch, direction mismatch, future ordering, and distance beyond applied tolerance.
+
+Suppress duplicate setups while price remains in the same semantic zone. A later exit followed by re-entry may begin a new location episode even when the higher-timeframe Direction regime has not changed. Derivation and episode tracking must use committed point-in-time evidence and remain identical for active and background instruments.
+
+Reason: One setup per 1h/15m Direction regime would miss later pullbacks during a trend that may persist for hours or days. Including every developing bound or feature id in zone identity would create the opposite failure: a new setup every minute. Semantic origin identity plus edge-triggered episodes preserves both repeatability and dedupe while retaining exact evidence for audit and calibration.

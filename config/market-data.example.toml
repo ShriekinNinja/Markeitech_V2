@@ -61,6 +61,29 @@ context_timeframes = ["1d"]
 opposing_context_policy = "degrade"
 minimum_direction_score = 1
 
+[signals.definitions.location_policy]
+minimum_distinct_sources = 1
+
+[[signals.definitions.location_policy.sources]]
+source_kind = "structural_level"
+timeframes = ["15m", "5m"]
+proximity_atr_fraction = 0.15
+
+[[signals.definitions.location_policy.sources]]
+source_kind = "fair_value_gap"
+timeframes = ["15m", "5m"]
+proximity_atr_fraction = 0
+
+[[signals.definitions.location_policy.sources]]
+source_kind = "value_area_edge"
+timeframes = ["1m"]
+proximity_atr_fraction = 0.10
+
+[[signals.definitions.location_policy.sources]]
+source_kind = "session_vwap"
+timeframes = ["1m"]
+proximity_atr_fraction = 0.10
+
 [[instruments]]
 role = "active"
 data_mode = "tick_by_tick"

@@ -80,6 +80,11 @@ class MarketDataRuntimeConfig(VersionedDomainModel):
                         definition.evaluation_timeframe.value,
                         *(timeframe.value for timeframe in definition.primary_direction_timeframes),
                     }
+                    if definition.location_policy is not None:
+                        mandatory.update(
+                            timeframe.value
+                            for timeframe in definition.location_policy.timeframes
+                        )
                     missing = mandatory - configured
                     if missing:
                         raise ValueError(

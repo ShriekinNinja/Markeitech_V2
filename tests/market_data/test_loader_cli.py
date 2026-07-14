@@ -195,6 +195,33 @@ def test_enabled_signals_require_persistence_and_matching_warmup() -> None:
         parse_market_data_runtime_config(raw)
 
 
+def test_enabled_location_policy_requires_its_configured_timeframes() -> None:
+    raw = raw_config()
+    raw["persistence"] = {}
+    raw["signals"] = {
+        "definitions": [
+            {
+                "definition_id": "intraday_context",
+                "primary_direction_timeframes": ["15m"],
+                "location_policy": {
+                    "sources": [
+                        {
+                            "source_kind": "structural_level",
+                            "timeframes": ["30m"],
+                        }
+                    ]
+                },
+            }
+        ],
+        "enabled_definition_ids_by_instrument": {
+            "NQU6.CME": ["intraday_context"],
+        },
+    }
+
+    with pytest.raises(ValidationError, match="requires warmup timeframes.*30m"):
+        parse_market_data_runtime_config(raw)
+
+
 def test_parse_crypto_market_data_runtime_config() -> None:
     raw = raw_config()
     raw["runtime"]["active_instrument_id"] = "BTC/USD.PAXOS"  # type: ignore[index]

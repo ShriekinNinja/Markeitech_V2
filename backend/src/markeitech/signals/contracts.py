@@ -3,11 +3,13 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import datetime
+from decimal import Decimal
 from enum import StrEnum
 from typing import Any
 
 from pydantic import Field, field_validator, model_validator
 
+from markeitech.analytics import AnalyticsTimeframe
 from markeitech.domain.base import VersionedDomainModel, require_utc
 
 _SHA256_PATTERN = r"^[0-9a-f]{64}$"
@@ -60,6 +62,143 @@ class SignalEvidenceFidelity(StrEnum):
     INFERRED = "inferred"
     PARTIAL = "partial"
     UNAVAILABLE = "unavailable"
+
+
+class LocationSourceKind(StrEnum):
+    STRUCTURAL_LEVEL = "structural_level"
+    FAIR_VALUE_GAP = "fair_value_gap"
+    VALUE_AREA_EDGE = "value_area_edge"
+    SESSION_VWAP = "session_vwap"
+
+
+class SignalLocationZoneKind(StrEnum):
+    SUPPORT = "support"
+    RESISTANCE = "resistance"
+    BULLISH_FVG = "bullish_fvg"
+    BEARISH_FVG = "bearish_fvg"
+    VALUE_AREA_LOW = "value_area_low"
+    VALUE_AREA_HIGH = "value_area_high"
+    SESSION_VWAP = "session_vwap"
+
+
+class LocationQualificationStatus(StrEnum):
+    QUALIFIED = "qualified"
+    NOT_AT_LOCATION = "not_at_location"
+    MISSING_EVIDENCE = "missing_evidence"
+    INSUFFICIENT_CONFLUENCE = "insufficient_confluence"
+
+
+_ZONE_SOURCE_KINDS = {
+    SignalLocationZoneKind.SUPPORT: LocationSourceKind.STRUCTURAL_LEVEL,
+    SignalLocationZoneKind.RESISTANCE: LocationSourceKind.STRUCTURAL_LEVEL,
+    SignalLocationZoneKind.BULLISH_FVG: LocationSourceKind.FAIR_VALUE_GAP,
+    SignalLocationZoneKind.BEARISH_FVG: LocationSourceKind.FAIR_VALUE_GAP,
+    SignalLocationZoneKind.VALUE_AREA_LOW: LocationSourceKind.VALUE_AREA_EDGE,
+    SignalLocationZoneKind.VALUE_AREA_HIGH: LocationSourceKind.VALUE_AREA_EDGE,
+    SignalLocationZoneKind.SESSION_VWAP: LocationSourceKind.SESSION_VWAP,
+}
+
+_LONG_LOCATION_KINDS = {
+    SignalLocationZoneKind.SUPPORT,
+    SignalLocationZoneKind.BULLISH_FVG,
+    SignalLocationZoneKind.VALUE_AREA_LOW,
+    SignalLocationZoneKind.SESSION_VWAP,
+}
+
+
+class SignalLocationZone(VersionedDomainModel):
+    instrument_id: str = Field(min_length=1)
+    direction: SignalDirection
+    source_kind: LocationSourceKind
+    zone_kind: SignalLocationZoneKind
+    timeframe: AnalyticsTimeframe
+    zone_anchor: str = Field(min_length=1)
+    source_feature_id: str = Field(pattern=_SHA256_PATTERN)
+    observed_ts: datetime
+    lower_price: Decimal = Field(gt=0)
+    upper_price: Decimal = Field(gt=0)
+    fidelity: SignalEvidenceFidelity
+    reason_codes: tuple[str, ...] = Field(min_length=1)
+
+    @field_validator("observed_ts")
+    @classmethod
+    def _timestamp_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+    @model_validator(mode="after")
+    def _zone_must_be_semantically_consistent(self) -> SignalLocationZone:
+        if self.zone_anchor != self.zone_anchor.strip():
+            raise ValueError("location zone anchor must be trimmed")
+        if self.lower_price > self.upper_price:
+            raise ValueError("location zone lower price cannot exceed upper price")
+        if _ZONE_SOURCE_KINDS[self.zone_kind] != self.source_kind:
+            raise ValueError("location zone kind must match source kind")
+        if self.fidelity == SignalEvidenceFidelity.UNAVAILABLE:
+            raise ValueError("location zone requires available evidence")
+        long_aligned = self.zone_kind in _LONG_LOCATION_KINDS
+        if self.zone_kind != SignalLocationZoneKind.SESSION_VWAP and (
+            long_aligned != (self.direction == SignalDirection.LONG)
+        ):
+            raise ValueError("location zone kind must align with signal direction")
+        return self
+
+    @property
+    def zone_id(self) -> str:
+        return _canonical_hash(
+            {
+                "schema_version": self.schema_version,
+                "instrument_id": self.instrument_id,
+                "direction": self.direction.value,
+                "source_kind": self.source_kind.value,
+                "zone_kind": self.zone_kind.value,
+                "timeframe": self.timeframe.value,
+                "zone_anchor": self.zone_anchor,
+            }
+        )
+
+
+class SignalLocationMatch(VersionedDomainModel):
+    zone: SignalLocationZone
+    evaluation_feature_id: str = Field(pattern=_SHA256_PATTERN)
+    observed_ts: datetime
+    observed_price: Decimal = Field(gt=0)
+    distance: Decimal = Field(ge=0)
+    tolerance: Decimal = Field(ge=0)
+    fidelity: SignalEvidenceFidelity
+    reason_codes: tuple[str, ...] = Field(min_length=1)
+
+    @field_validator("observed_ts")
+    @classmethod
+    def _timestamp_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+    @model_validator(mode="after")
+    def _match_must_touch_the_zone(self) -> SignalLocationMatch:
+        if self.observed_ts < self.zone.observed_ts:
+            raise ValueError("location match cannot precede zone evidence")
+        if self.distance > self.tolerance:
+            raise ValueError("location match distance cannot exceed tolerance")
+        if self.fidelity == SignalEvidenceFidelity.UNAVAILABLE:
+            raise ValueError("location match requires available evidence")
+        return self
+
+
+class LocationQualification(VersionedDomainModel):
+    status: LocationQualificationStatus
+    matches: tuple[SignalLocationMatch, ...] = ()
+    is_degraded: bool = False
+    reason_codes: tuple[str, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _status_must_match_evidence(self) -> LocationQualification:
+        if self.status == LocationQualificationStatus.QUALIFIED and not self.matches:
+            raise ValueError("qualified location requires at least one match")
+        if self.status == LocationQualificationStatus.NOT_AT_LOCATION and self.matches:
+            raise ValueError("not-at-location result cannot contain matches")
+        zone_ids = [item.zone.zone_id for item in self.matches]
+        if len(zone_ids) != len(set(zone_ids)):
+            raise ValueError("location qualification cannot repeat a semantic zone")
+        return self
 
 
 class SignalEvidenceReference(VersionedDomainModel):

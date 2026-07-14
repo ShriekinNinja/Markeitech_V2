@@ -413,6 +413,15 @@ Stage 5C is divided further so market semantics remain reviewable:
 
 Stage 5C.1 is implemented pending review. It is a pure decision boundary and does not yet emit live signals; 5C.3 owns actor/runtime wiring.
 
+Stage 5C.2 uses repeatable location episodes rather than one trade setup for an entire Direction regime:
+
+- **5C.2a - Location contracts and policy:** canonical zone identity, exact feature revisions, structured price matches, and source-specific timeframe/tolerance configuration.
+- **5C.2b - Zone derivation and matching:** derive direction-aligned structural, FVG, value-edge, and VWAP zones from committed features and match price without look-ahead.
+- **5C.2c - Repeatable episodes:** suppress duplicates while price remains in one semantic zone and allow a new setup only after exit and re-entry.
+- **5C.2d - Armed lifecycle:** persist Candidate and Candidate-to-Armed progression, invalidation, expiry, and restart restoration.
+
+Stage 5C.2a is implemented pending review. It does not yet derive zones or change signal lifecycle state.
+
 ## Stage 6: Notifications And Reports
 
 Deliver one-way Discord webhook alerts and analysis reports through a durable, rate-limited, retryable notification pipeline. AI-generated narrative must remain grounded in persisted structured evidence. Do not build a Discord bot.

@@ -2,19 +2,52 @@ from __future__ import annotations
 
 import hashlib
 import json
+from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import Field, model_validator
 
 from markeitech.analytics import AnalyticsTimeframe
 from markeitech.domain.base import VersionedDomainModel
-from markeitech.signals.contracts import SignalFamily
+from markeitech.signals.contracts import LocationSourceKind, SignalFamily
 
 
 class OpposingContextPolicy(StrEnum):
     IGNORE = "ignore"
     DEGRADE = "degrade"
     VETO = "veto"
+
+
+class LocationSourcePolicyConfig(VersionedDomainModel):
+    source_kind: LocationSourceKind
+    timeframes: tuple[AnalyticsTimeframe, ...] = Field(min_length=1)
+    proximity_atr_fraction: Decimal = Field(default=Decimal("0.15"), ge=0, le=2)
+
+    @model_validator(mode="after")
+    def _timeframes_must_be_unique(self) -> LocationSourcePolicyConfig:
+        if len(self.timeframes) != len(set(self.timeframes)):
+            raise ValueError("location source timeframes must be unique")
+        return self
+
+
+class LocationPolicyConfig(VersionedDomainModel):
+    sources: tuple[LocationSourcePolicyConfig, ...] = Field(min_length=1)
+    minimum_distinct_sources: int = Field(default=1, ge=1)
+
+    @model_validator(mode="after")
+    def _sources_must_be_consistent(self) -> LocationPolicyConfig:
+        source_kinds = [item.source_kind for item in self.sources]
+        if len(source_kinds) != len(set(source_kinds)):
+            raise ValueError("location policy source kinds must be unique")
+        if self.minimum_distinct_sources > len(self.sources):
+            raise ValueError("minimum location sources cannot exceed configured sources")
+        return self
+
+    @property
+    def timeframes(self) -> frozenset[AnalyticsTimeframe]:
+        return frozenset(
+            timeframe for source in self.sources for timeframe in source.timeframes
+        )
 
 
 class SignalDefinitionConfig(VersionedDomainModel):
@@ -28,6 +61,7 @@ class SignalDefinitionConfig(VersionedDomainModel):
     context_timeframes: tuple[AnalyticsTimeframe, ...] = ()
     opposing_context_policy: OpposingContextPolicy = OpposingContextPolicy.DEGRADE
     minimum_direction_score: int = Field(default=1, ge=1, le=2)
+    location_policy: LocationPolicyConfig | None = None
 
     @model_validator(mode="after")
     def _timeframe_roles_must_be_consistent(self) -> SignalDefinitionConfig:
@@ -62,6 +96,7 @@ class SignalDefinitionConfig(VersionedDomainModel):
                 *self.primary_direction_timeframes,
                 *self.confirmation_timeframes,
                 *self.context_timeframes,
+                *(() if self.location_policy is None else self.location_policy.timeframes),
             )
         )
 
@@ -108,4 +143,35 @@ def intraday_context_definition() -> SignalDefinitionConfig:
         context_timeframes=(AnalyticsTimeframe.DAILY,),
         opposing_context_policy=OpposingContextPolicy.DEGRADE,
         minimum_direction_score=1,
+        location_policy=LocationPolicyConfig(
+            sources=(
+                LocationSourcePolicyConfig(
+                    source_kind=LocationSourceKind.STRUCTURAL_LEVEL,
+                    timeframes=(
+                        AnalyticsTimeframe.FIFTEEN_MINUTES,
+                        AnalyticsTimeframe.FIVE_MINUTES,
+                    ),
+                    proximity_atr_fraction=Decimal("0.15"),
+                ),
+                LocationSourcePolicyConfig(
+                    source_kind=LocationSourceKind.FAIR_VALUE_GAP,
+                    timeframes=(
+                        AnalyticsTimeframe.FIFTEEN_MINUTES,
+                        AnalyticsTimeframe.FIVE_MINUTES,
+                    ),
+                    proximity_atr_fraction=Decimal("0"),
+                ),
+                LocationSourcePolicyConfig(
+                    source_kind=LocationSourceKind.VALUE_AREA_EDGE,
+                    timeframes=(AnalyticsTimeframe.ONE_MINUTE,),
+                    proximity_atr_fraction=Decimal("0.10"),
+                ),
+                LocationSourcePolicyConfig(
+                    source_kind=LocationSourceKind.SESSION_VWAP,
+                    timeframes=(AnalyticsTimeframe.ONE_MINUTE,),
+                    proximity_atr_fraction=Decimal("0.10"),
+                ),
+            ),
+            minimum_distinct_sources=1,
+        ),
     )
