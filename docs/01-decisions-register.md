@@ -379,3 +379,15 @@ Treat canonical bars plus versioned analytics configuration as authoritative res
 When an active instrument crosses from provider-reported warmup bars to tick-built live bars inside one aggregate bucket, mark the completed aggregate source and input fidelity as mixed. Background aggregates remain provider-reported when all constituent bars are provider-reported. Emit the boundary aggregate once; historical higher-timeframe evidence owns completed pre-live buckets.
 
 Reason: Persisting mutable indicator internals would couple recovery to library implementation details and create competing derived truth. Rebuilding from canonical evidence is deterministic. Narrow forming-bucket seeding preserves continuity across restart without fabricating gaps, duplicating completed warmup bars, or delaying the first valid post-restart hourly update by an extra hour.
+
+## DR-0042: Lineage-Identified Feature Parquet Outside The Raw-Market Catalog
+
+Status: accepted for implementation
+
+Persist deterministic market-context output in a versioned feature envelope containing the complete provider-neutral snapshot, calculation version, configuration fingerprint, and exact input-stream lineage fingerprints. Derive a stable feature id from calculation/configuration identity, instrument, timeframe, `as_of`, source/fidelity, and canonically sorted lineage. Hash the output payload separately. Retain a corrected-input variant under a new feature id even when its instrument/timeframe/`as_of` matches an earlier calculation; reject the same feature id with different output content as nondeterminism or corruption.
+
+Store immutable feature payloads in a Markeitech-owned PyArrow Parquet catalog partitioned by feature set, instrument, timeframe, and UTC date. Use deterministic batch names, synchronize file and directory data, and atomically create files without replacing existing batches. Collapse exact retries and return every latest-as-of variant rather than choosing a revision by hash order. Keep SQLite as the later commit-manifest, checkpoint, and lookup-acceleration layer; it must not duplicate the feature payload.
+
+Do not force features through Nautilus raw-market custom-data file identity. That catalog uses initialization timestamps as physical file identity and can silently skip a second legitimate feature variant at the same timestamp. Inventing a fake timestamp would corrupt timestamp semantics. Nautilus remains the runtime and native market-data catalog owner; Markeitech owns product-specific feature identity, lineage, and persistence.
+
+Reason: Signals, reports, replay comparison, and ML datasets need reproducible evidence rather than transient callbacks or DEBUG logs. Separate identity and content hashes make revisions auditable and nondeterminism visible. The dedicated feature boundary preserves Nautilus's value without inheriting a physical identity model that cannot represent Markeitech's analytical revision semantics.

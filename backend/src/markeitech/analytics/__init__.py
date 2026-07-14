@@ -15,6 +15,13 @@ from markeitech.analytics.contracts import (
     VwapPosition,
 )
 from markeitech.analytics.engine import MarketContextEngine, SessionWindowResolver
+from markeitech.analytics.features import (
+    MARKET_CONTEXT_CALCULATION_VERSION,
+    MARKET_CONTEXT_FEATURE_SET,
+    FeatureInputLineage,
+    MarketContextFeatureSnapshot,
+    configuration_fingerprint,
+)
 from markeitech.analytics.readiness import (
     AnalyticsDepthStatus,
     AnalyticsFreshnessStatus,
@@ -39,14 +46,19 @@ __all__ = [
     "ContextRange",
     "FairValueGap",
     "FairValueGapDirection",
+    "FeatureInputLineage",
     "LevelKind",
     "InstrumentAnalyticsReadiness",
     "MarketContextSnapshot",
+    "MarketContextFeatureSnapshot",
     "MarketContextEngine",
+    "MARKET_CONTEXT_CALCULATION_VERSION",
+    "MARKET_CONTEXT_FEATURE_SET",
     "ProfileLocation",
     "SessionWindowResolver",
     "TrendState",
     "TimeframeAnalyticsReadiness",
     "VolumeProfileSnapshot",
     "VwapPosition",
+    "configuration_fingerprint",
 ]

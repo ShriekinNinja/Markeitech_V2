@@ -202,3 +202,18 @@ Warmup history requirements are configured per timeframe. The legacy instrument-
 The currently forming interval is never required. Unavailable required history or non-current 1m evidence blocks subscriptions. Stale higher timeframes and incomplete indicator depth are degraded evidence and do not prevent live operation.
 
 On restart, completed canonical 1m warmup bars seed only the currently forming session-aligned 5m, 15m, 30m, and 1h buckets. A seeded bucket must still contain every exact minute before it can emit. A bucket complete at the warmup cutoff is not seeded because historical higher-timeframe evidence already owns it. Aggregates spanning provider warmup and tick-built live inputs carry source `mixed` and fidelity `mixed`.
+
+### Durable Feature Contracts
+
+`FeatureInputLineage` identifies each exact input stream used by a feature calculation with instrument, timeframe, source, fidelity, observed UTC window, event count, and a SHA-256 identity fingerprint. A lineage window cannot extend beyond the resulting snapshot, must include the snapshot's own timeframe, and cannot cross instruments.
+
+`MarketContextFeatureSnapshot` wraps one complete `MarketContextSnapshot` with a feature-set name, calculation version, SHA-256 configuration fingerprint, and one or more input-lineage entries. Its deterministic `feature_id` includes the envelope schema, algorithm/configuration identity, instrument, timeframe, `as_of`, output source/fidelity, and canonically sorted input lineage. Its independent `content_hash` covers the complete context payload.
+
+The separation is intentional:
+
+- A retry from the same inputs, calculation, and configuration has the same feature id and content hash and is a duplicate.
+- A corrected input fingerprint produces a new feature id even at the same instrument/timeframe/`as_of`; both variants remain auditable.
+- The same feature id with a different content hash indicates nondeterministic calculation or corruption and fails closed.
+- Lineage order does not change identity.
+
+Feature payloads are immutable Parquet records partitioned by feature set, instrument, timeframe, and UTC date. Query APIs return all latest-as-of variants instead of choosing an arbitrary revision. Human-readable operator logs are projections of context and are never feature persistence.

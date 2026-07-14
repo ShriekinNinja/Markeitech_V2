@@ -363,6 +363,22 @@ Implemented slices:
 
 Canonical bars and versioned configuration own restart truth; mutable derived internals are rebuilt rather than restored. All candle-derived profiles remain inferred. Persisted feature audit history and later live-versus-replay comparison remain before signals can depend on composites.
 
+### Stage 4C: Durable Feature Snapshots
+
+Persist deterministic analytics independently from human-readable logs before signals depend on them.
+
+First implementation slice:
+
+- Add a versioned market-context feature envelope containing calculation version, configuration fingerprint, exact input-stream lineage, and the complete provider-neutral context snapshot.
+- Derive feature identity from calculation/configuration identity plus sorted input-lineage fingerprints, instrument, timeframe, `as_of`, source, and fidelity.
+- Hash output content independently so the same deterministic identity producing different values fails as nondeterminism instead of silently overwriting history.
+- Store immutable feature payloads in Markeitech-owned PyArrow Parquet partitions by feature set, instrument, timeframe, and UTC date.
+- Use deterministic batch files, `fsync`, and atomic creation; collapse exact retries while retaining legitimate revised-input variants at the same `as_of`.
+- Query ordered feature history and every latest-as-of variant without selecting an arbitrary revision.
+- Keep SQLite feature commit manifests, bounded asynchronous actor wiring, operational counters, and live acceptance evidence in the next reviewable slice.
+
+Feature Parquet is separate from the Nautilus raw-market catalog. SQLite will later prove feature commit/checkpoint state and accelerate identity lookup, but Parquet remains the feature payload truth. Signals remain out of scope until the live feature writer and restart audit path are complete.
+
 ## Stage 5: Signals
 
 Deliver deterministic signal lifecycle, scoring, dedupe, persistence, notification-ready domain events, and the first Direction-Location-Aggression setup family with explicit evidence fidelity. Optional ML inference may rank setups only after a deterministic baseline exists.

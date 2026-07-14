@@ -28,6 +28,11 @@ from markeitech.persistence.coordinator import (
     PersistenceFailurePoint,
     PersistenceWriteResult,
 )
+from markeitech.persistence.feature_catalog import (
+    FeatureCatalogWriteResult,
+    MarketContextFeatureRecord,
+    ParquetFeatureStore,
+)
 from markeitech.persistence.journal import (
     DurableIngressJournal,
     JournalCapacityError,
@@ -80,6 +85,7 @@ __all__ = [
     "BoundedPersistenceWriter",
     "DurableIngressJournal",
     "ExplicitSessionCalendar",
+    "FeatureCatalogWriteResult",
     "HistoricalRecoveryRequest",
     "IdempotentPersistenceCoordinator",
     "InstrumentCalendarPolicy",
@@ -89,6 +95,7 @@ __all__ = [
     "JournalEntry",
     "JournalError",
     "LivePersistenceIngress",
+    "MarketContextFeatureRecord",
     "CanonicalOneMinuteBarRecord",
     "CatalogRetentionMaintenance",
     "NotificationOutboxRecord",
@@ -97,6 +104,7 @@ __all__ = [
     "PersistenceBatch",
     "PersistenceBatchStatus",
     "NautilusParquetTimeSeriesStore",
+    "ParquetFeatureStore",
     "PersistenceConfig",
     "PersistenceFailurePoint",
     "PersistenceIngressSnapshot",
