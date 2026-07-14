@@ -299,6 +299,11 @@ def test_definition_identity_configuration_and_instrument_enablement_are_explici
                 INSTRUMENT_ID: ("intraday_context", "intraday_context")
             },
         )
+    with pytest.raises(ValidationError, match="batch cannot exceed handoff queue"):
+        SignalRuntimeConfig(
+            feature_handoff_queue_size=1,
+            evaluation_batch_size=2,
+        )
 
 
 def test_same_market_regime_has_distinct_identity_for_each_definition() -> None:

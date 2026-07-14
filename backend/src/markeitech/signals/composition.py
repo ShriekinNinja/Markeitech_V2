@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from enum import StrEnum
-from threading import Lock
+from threading import Condition
 
 from markeitech.analytics import AnalyticsTimeframe
 from markeitech.persistence.feature_pipeline import CommittedFeatureRevision
@@ -33,7 +33,7 @@ class BoundedFeatureCommitHandoff:
         if capacity < 1:
             raise ValueError("feature commit handoff capacity must be positive")
         self._capacity = capacity
-        self._lock = Lock()
+        self._condition = Condition()
         self._queue: deque[CommittedFeatureRevision] = deque()
         self._accepted_count = 0
         self._drained_count = 0
@@ -42,7 +42,7 @@ class BoundedFeatureCommitHandoff:
 
     @property
     def snapshot(self) -> FeatureHandoffSnapshot:
-        with self._lock:
+        with self._condition:
             return FeatureHandoffSnapshot(
                 pending_count=len(self._queue),
                 accepted_count=self._accepted_count,
@@ -55,7 +55,7 @@ class BoundedFeatureCommitHandoff:
         self,
         revisions: tuple[CommittedFeatureRevision, ...],
     ) -> FeatureHandoffStatus:
-        with self._lock:
+        with self._condition:
             if self._closed:
                 self._rejected_count += len(revisions)
                 return FeatureHandoffStatus.CLOSED
@@ -64,6 +64,7 @@ class BoundedFeatureCommitHandoff:
                 return FeatureHandoffStatus.QUEUE_FULL
             self._queue.extend(revisions)
             self._accepted_count += len(revisions)
+            self._condition.notify_all()
             return FeatureHandoffStatus.ACCEPTED
 
     def offer(self, revisions: tuple[CommittedFeatureRevision, ...]) -> bool:
@@ -72,14 +73,42 @@ class BoundedFeatureCommitHandoff:
     def drain(self, limit: int) -> tuple[CommittedFeatureRevision, ...]:
         if limit < 1:
             raise ValueError("feature commit handoff drain limit must be positive")
-        with self._lock:
-            values = tuple(self._queue.popleft() for _ in range(min(limit, len(self._queue))))
-            self._drained_count += len(values)
-            return values
+        with self._condition:
+            return self._drain_unlocked(limit)
+
+    def wait_and_drain(
+        self,
+        limit: int,
+        timeout: float,
+    ) -> tuple[CommittedFeatureRevision, ...]:
+        if limit < 1:
+            raise ValueError("feature commit handoff drain limit must be positive")
+        if timeout <= 0:
+            raise ValueError("feature commit handoff wait timeout must be positive")
+        with self._condition:
+            if not self._queue and not self._closed:
+                self._condition.wait(timeout)
+            return self._drain_unlocked(limit)
 
     def close(self) -> None:
-        with self._lock:
+        with self._condition:
             self._closed = True
+            self._condition.notify_all()
+
+    def requeue_front(self, revisions: tuple[CommittedFeatureRevision, ...]) -> None:
+        with self._condition:
+            if len(revisions) > self._drained_count:
+                raise RuntimeError("feature commit handoff cannot requeue undrained revisions")
+            if len(self._queue) + len(revisions) > self._capacity:
+                raise RuntimeError("feature commit handoff cannot restore drained batch")
+            self._queue.extendleft(reversed(revisions))
+            self._drained_count -= len(revisions)
+            self._condition.notify_all()
+
+    def _drain_unlocked(self, limit: int) -> tuple[CommittedFeatureRevision, ...]:
+        values = tuple(self._queue.popleft() for _ in range(min(limit, len(self._queue))))
+        self._drained_count += len(values)
+        return values
 
 
 class CommittedFeatureState:

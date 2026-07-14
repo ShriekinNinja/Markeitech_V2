@@ -107,10 +107,15 @@ class SignalRuntimeConfig(VersionedDomainModel):
     enabled_definition_ids_by_instrument: dict[str, tuple[str, ...]] = Field(
         default_factory=dict
     )
+    feature_handoff_queue_size: int = Field(default=2_048, ge=1)
+    evaluation_batch_size: int = Field(default=128, ge=1)
+    evaluation_poll_seconds: float = Field(default=0.05, gt=0, le=5)
 
     @model_validator(mode="after")
     def _references_must_be_consistent(self) -> SignalRuntimeConfig:
         definitions = {item.definition_id: item for item in self.definitions}
+        if self.evaluation_batch_size > self.feature_handoff_queue_size:
+            raise ValueError("signal evaluation batch cannot exceed handoff queue size")
         if len(definitions) != len(self.definitions):
             raise ValueError("signal definition ids must be unique")
         for instrument_id, definition_ids in self.enabled_definition_ids_by_instrument.items():

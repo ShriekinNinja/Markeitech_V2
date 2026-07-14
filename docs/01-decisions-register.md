@@ -479,3 +479,15 @@ Publish only the exact revisions re-verified after Parquet and SQLite commit. Ad
 Maintain independent latest state per instrument and timeframe. Ignore stale or exact duplicate deliveries, reject conflicting feature/sequence evidence, exclude future evidence from point-in-time bundles, and compose only when a new evaluation-timeframe revision advances state. Keep this handoff dormant until the live signal consumer owns its lifecycle.
 
 Reason: Actor submission proves neither Parquet durability nor SQLite agreement. Commit timestamps can collide inside one batch, and feature hashes are identities rather than revision priority. A durable sequence and bounded post-commit boundary make correction choice, restart recovery, backpressure, and active/background parity explicit before evaluators gain live side effects.
+
+## DR-0050: Watermarked Live Signal Runtime
+
+Status: accepted for implementation
+
+Run committed-feature consumption on one bounded signal thread owned by the managed LiveNode. Start persistence first, restore current-definition open signals through verified SQLite history, then start Nautilus. On shutdown, stop and flush feature production, drain signal evaluation while metadata remains open, and only then close persistence.
+
+Use runtime start time as the live-decision watermark. Apply older committed warmup revisions to rebuild the latest multi-timeframe feature state, but prohibit them from creating or changing signal lifecycle. Evaluate each newer evaluation-timeframe revision independently for every enabled definition and identically for active and background instruments. Resolve product-session identity through the configured calendar rather than UTC date inference.
+
+Persist Location entry as atomic Candidate-plus-Armed state, replacement as atomic old invalidation plus new Candidate/Armed state, and confirmed exit as one terminal transition. Restore only Armed or Triggered signals matching current algorithm and configuration identity. Preserve open episodes through missing Direction evidence, end them on observed neutral/conflicted/vetoed Direction, and retain unprocessed committed revisions when evaluation fails.
+
+Reason: Replaying warmup through live evaluators would generate stale alerts and can move a restored episode backward in time. Closing SQLite before the consumer drains would lose the ability to commit already-durable evidence. Explicit watermark and lifecycle ordering let warmup rebuild context without becoming market action, while one consumer thread keeps tracker mutation and durable signal progression sequential and auditable.

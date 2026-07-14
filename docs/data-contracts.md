@@ -226,6 +226,10 @@ The post-commit handoff carries the exact feature payload together with its auth
 
 Live composition keeps the newest committed revision per instrument and timeframe ordered by market `as_of` and then durable commit sequence. A corrected variant at the same market timestamp supersedes the earlier revision; an older delayed revision cannot regress state. Only a newly accepted evaluation-timeframe revision creates a point-in-time bundle, and evidence newer than that evaluation timestamp is excluded. Active and background instruments use independent keys and identical rules.
 
+The live signal runtime starts with a UTC watermark and restores only verified open Armed or Triggered signals matching an enabled definition's current algorithm and configuration identity. Committed warmup revisions at or before that watermark rebuild multi-timeframe state but cannot create, replace, or invalidate a signal. Each later evaluation-timeframe revision is applied once and may be composed independently for every enabled definition.
+
+Location episode entry persists Candidate plus Armed transition atomically. A disjoint replacement atomically invalidates the old signal and creates plus arms the new one; confirmed exit applies one terminal transition. Missing Direction evidence preserves an open episode, while neutral, conflicted, or vetoed Direction ends it. A processing failure retains the unprocessed tail of the drained committed-feature batch and marks the runtime failed instead of silently advancing.
+
 ### Signal Contracts
 
 `SignalSnapshot` is the immutable current state of one deterministic setup. Its stable `signal_id` binds schema, setup family, named definition id, algorithm version, configuration hash, setup key, instrument, and direction; lifecycle status, timestamps, evidence, and reasons live under a separate content hash. Recalculating the same setup therefore deduplicates while a definition, algorithm, or configuration revision creates a distinct signal identity.

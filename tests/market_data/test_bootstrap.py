@@ -29,6 +29,14 @@ from markeitech.persistence import (
     PersistenceRuntimeStatus,
     StartupRecoveryService,
 )
+from markeitech.signals import (
+    LiveSignalRuntimeStatus,
+    LocationPolicyConfig,
+    LocationSourceKind,
+    LocationSourcePolicyConfig,
+    SignalDefinitionConfig,
+    SignalRuntimeConfig,
+)
 from nautilus_trader.model.data import TradeTick
 from nautilus_trader.model.enums import AggressorSide
 from nautilus_trader.model.identifiers import InstrumentId, TradeId
@@ -288,3 +296,41 @@ def test_prepared_node_wires_and_flushes_persistence_runtime(tmp_path: Path) -> 
     assert node.persistence.ingress.snapshot.accepted_bar_count == 1
     assert node.persistence.feature_writer_snapshot is not None
     assert node.persistence.feature_writer_snapshot.committed_count == 1
+
+
+def test_prepared_node_owns_signal_runtime_lifecycle(tmp_path: Path) -> None:
+    definition = SignalDefinitionConfig(
+        definition_id="bootstrap_context",
+        evaluation_timeframe=AnalyticsTimeframe.ONE_MINUTE,
+        primary_direction_timeframes=(AnalyticsTimeframe.FIVE_MINUTES,),
+        location_policy=LocationPolicyConfig(
+            sources=(
+                LocationSourcePolicyConfig(
+                    source_kind=LocationSourceKind.STRUCTURAL_LEVEL,
+                    timeframes=(AnalyticsTimeframe.FIFTEEN_MINUTES,),
+                ),
+            ),
+        ),
+    )
+    signals = SignalRuntimeConfig(
+        definitions=(definition,),
+        enabled_definition_ids_by_instrument={
+            "NQU6.CME": ("bootstrap_context",),
+        },
+        evaluation_poll_seconds=0.01,
+    )
+    node = build_prepared_market_data_live_node(
+        runtime_config(
+            persistence=persistence_config(tmp_path),
+            signals=signals,
+        ),
+        node_factory=FakeNode,
+        actor_factory=lambda *args, **kwargs: object(),
+        data_client_factory=type("FakeDataClientFactory", (), {}),
+    )
+
+    assert isinstance(node, PersistenceManagedLiveNode)
+    assert node.signal_runtime is not None
+    assert node.run() == "started"
+    assert node.signal_runtime.snapshot.status == LiveSignalRuntimeStatus.STOPPED
+    assert node.persistence.status == PersistenceRuntimeStatus.STOPPED

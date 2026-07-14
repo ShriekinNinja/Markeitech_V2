@@ -32,6 +32,7 @@ from markeitech.persistence.feature_pipeline import FeatureSubmissionStatus
 from markeitech.persistence.pipeline import PersistenceSubmissionStatus
 from markeitech.persistence.runtime import PersistenceRuntime
 from markeitech.persistence.startup_recovery import StartupRecoveryService
+from markeitech.signals import BoundedFeatureCommitHandoff, LiveSignalRuntime
 
 LIVE_NODE_START_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_IB"
 
@@ -63,32 +64,75 @@ class LiveNodeBootstrapSummary(VersionedDomainModel):
 
 
 class PersistenceManagedLiveNode:
-    def __init__(self, node: ConfigurableLiveNodeLike, persistence: PersistenceRuntime) -> None:
+    def __init__(
+        self,
+        node: ConfigurableLiveNodeLike,
+        persistence: PersistenceRuntime,
+        signal_runtime: LiveSignalRuntime | None = None,
+    ) -> None:
         self._node = node
         self.persistence = persistence
+        self.signal_runtime = signal_runtime
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._node, name)
 
     def run(self) -> Any:
-        self.persistence.start()
+        self._start_runtimes()
         try:
             return self._node.run()
         finally:
-            self.persistence.stop()
+            self._stop_runtimes()
 
     async def run_async(self) -> None:
-        self.persistence.start()
+        self._start_runtimes()
         try:
             await self._node.run_async()
         finally:
-            self.persistence.stop()
+            self._stop_runtimes()
 
     async def stop_async(self) -> None:
         try:
             await self._node.stop_async()
         finally:
+            self._stop_runtimes()
+
+    def _start_runtimes(self) -> None:
+        self.persistence.start()
+        if self.signal_runtime is not None:
+            try:
+                self.signal_runtime.start()
+            except Exception:
+                self.signal_runtime.stop(
+                    self.persistence.config.runtime_shutdown_timeout_seconds
+                )
+                self.persistence.stop()
+                raise
+
+    def _stop_runtimes(self) -> None:
+        shutdown_error: RuntimeError | None = None
+        if self.signal_runtime is not None:
+            feature_writer = self.persistence.feature_writer
+            if feature_writer is None:
+                shutdown_error = RuntimeError("signal runtime requires feature writer")
+            else:
+                timeout = self.persistence.config.runtime_shutdown_timeout_seconds
+                if not feature_writer.stop(timeout):
+                    shutdown_error = RuntimeError(
+                        "feature writer did not stop before signal drain"
+                    )
+                if not self.signal_runtime.stop(timeout) and shutdown_error is None:
+                    shutdown_error = RuntimeError(
+                        "signal runtime did not drain within shutdown timeout"
+                    )
+        try:
             self.persistence.stop()
+        except Exception as exc:
+            if shutdown_error is None:
+                raise
+            raise shutdown_error from exc
+        if shutdown_error is not None:
+            raise shutdown_error
 
 
 def build_livenode_bootstrap_summary(
@@ -136,9 +180,30 @@ def build_prepared_market_data_live_node(
         config.instrument_registry,
         include_disabled=True,
     )
+    signal_handoff = None
+    if config.signals is not None and config.signals.enabled_definition_ids_by_instrument:
+        signal_handoff = BoundedFeatureCommitHandoff(
+            config.signals.feature_handoff_queue_size
+        )
     persistence = (
-        PersistenceRuntime.build(config.persistence, retention_calendar=session_calendar)
+        PersistenceRuntime.build(
+            config.persistence,
+            retention_calendar=session_calendar,
+            feature_commit_sink=None if signal_handoff is None else signal_handoff.offer,
+        )
         if config.persistence
+        else None
+    )
+    signal_runtime = (
+        LiveSignalRuntime(
+            config.signals,
+            persistence.metadata,
+            session_calendar,
+            signal_handoff,
+        )
+        if config.signals is not None
+        and persistence is not None
+        and signal_handoff is not None
         else None
     )
     profile_bin_sizes = {
@@ -227,7 +292,7 @@ def build_prepared_market_data_live_node(
         raise
     if persistence is None:
         return node
-    return PersistenceManagedLiveNode(node, persistence)
+    return PersistenceManagedLiveNode(node, persistence, signal_runtime)
 
 
 def start_live_node(

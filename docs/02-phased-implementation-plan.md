@@ -417,6 +417,8 @@ Stage 5C.3 is split at the asynchronous durability boundary:
 - **5C.3b - Live signal runtime:** consume committed revisions, restore open Direction/Location state, evaluate enabled definitions, and persist episode/arming decisions for active and background instruments.
 - **5C.3c - Console projection:** expose change-aware human-readable signal and runtime-health logs without making presentation output a source of truth.
 
+Stage 5C.3a is complete. Stage 5C.3b now owns a bounded consumer thread under the managed LiveNode lifecycle. It restores verified open Armed/Triggered episodes, rebuilds point-in-time state from committed warmup revisions without emitting historical setups, evaluates every enabled definition from the first post-start evaluation bar, and atomically persists episode entry, replacement, and exit. Stage 5C.3c remains presentation-only console projection and operational acceptance evidence.
+
 Stage 5C.1 is complete. It is a pure decision boundary and does not yet emit live signals; 5C.3 owns actor/runtime wiring.
 
 Stage 5C.2 uses repeatable location episodes rather than one trade setup for an entire Direction regime:

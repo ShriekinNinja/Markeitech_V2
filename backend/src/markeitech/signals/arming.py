@@ -117,8 +117,8 @@ def invalidate_ended_location_signal(
     occurred_ts: datetime,
     reason_codes: Sequence[str] = (),
 ) -> SignalTransitionEvent:
-    if signal.status != SignalStatus.ARMED:
-        raise ValueError("only Armed location signals can be invalidated by episode exit")
+    if signal.status not in {SignalStatus.ARMED, SignalStatus.TRIGGERED}:
+        raise ValueError("only open location signals can be invalidated by episode exit")
     if decision.event_type not in {
         LocationEpisodeEventType.EXITED,
         LocationEpisodeEventType.REPLACED,

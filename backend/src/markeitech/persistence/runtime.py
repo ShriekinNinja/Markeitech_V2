@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -13,6 +14,7 @@ from markeitech.persistence.coordinator import IdempotentPersistenceCoordinator
 from markeitech.persistence.feature_catalog import ParquetFeatureStore
 from markeitech.persistence.feature_pipeline import (
     BoundedFeatureWriter,
+    CommittedFeatureRevision,
     FeaturePersistenceCoordinator,
     FeatureWriterSnapshot,
     FeatureWriterStatus,
@@ -174,6 +176,10 @@ class PersistenceRuntime:
         config: PersistenceConfig,
         *,
         retention_calendar: RetentionCalendar | None = None,
+        feature_commit_sink: Callable[
+            [tuple[CommittedFeatureRevision, ...]], bool
+        ]
+        | None = None,
     ) -> PersistenceRuntime:
         if config.retention_maintenance_enabled and retention_calendar is None:
             raise ValueError("enabled retention maintenance requires a session calendar")
@@ -188,6 +194,7 @@ class PersistenceRuntime:
             queue_size=config.feature_writer_queue_size,
             batch_size=config.feature_batch_size,
             poll_seconds=config.feature_flush_poll_seconds,
+            commit_sink=feature_commit_sink,
         )
         maintenance = (
             CatalogRetentionMaintenance(config, retention_calendar, metadata)
