@@ -26,6 +26,10 @@ file_name = "markeitech-live"
 max_file_size_bytes = 26214400
 max_backup_count = 10
 
+[operator_context]
+enabled = true
+interval_seconds = 60
+
 [persistence]
 catalog_path = "data/catalog"
 metadata_path = "data/runtime/markeitech.sqlite3"

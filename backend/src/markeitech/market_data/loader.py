@@ -21,6 +21,7 @@ from markeitech.domain import (
 from markeitech.market_data.config import (
     InteractiveBrokersConnectionConfig,
     MarketDataRuntimeConfig,
+    OperatorContextConfig,
     RuntimeLoggingConfig,
 )
 from markeitech.persistence.config import PersistenceConfig
@@ -38,6 +39,7 @@ def parse_market_data_runtime_config(raw: dict[str, Any]) -> MarketDataRuntimeCo
     runtime_raw = raw.get("runtime", {})
     persistence_raw = raw.get("persistence")
     logging_raw = raw.get("logging", {})
+    operator_context_raw = raw.get("operator_context", {})
     instruments_raw = raw.get("instruments", [])
     if not isinstance(instruments_raw, list):
         raise ValueError("market-data config requires an instruments array")
@@ -58,6 +60,7 @@ def parse_market_data_runtime_config(raw: dict[str, Any]) -> MarketDataRuntimeCo
         run_live_node=runtime_raw.get("run_live_node", False),
         persistence=(PersistenceConfig(**persistence_raw) if persistence_raw is not None else None),
         logging=RuntimeLoggingConfig(**logging_raw),
+        operator_context=OperatorContextConfig(**operator_context_raw),
     )
 
 

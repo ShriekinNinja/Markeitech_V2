@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import timedelta
 from typing import Any, Protocol
 
 from nautilus_trader.adapters.interactive_brokers.factories import (
@@ -158,6 +159,11 @@ def build_prepared_market_data_live_node(
                 for runtime in config.instrument_registry.instruments
                 if runtime.enabled and runtime.warmup is not None
             },
+        ),
+        "operator_context_report_interval": (
+            timedelta(seconds=config.operator_context.interval_seconds)
+            if config.operator_context.enabled
+            else None
         ),
     }
     if persistence is not None:

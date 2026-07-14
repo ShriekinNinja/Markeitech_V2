@@ -30,6 +30,11 @@ class RuntimeLoggingConfig(VersionedDomainModel):
     max_backup_count: int = Field(default=10, ge=0)
 
 
+class OperatorContextConfig(VersionedDomainModel):
+    enabled: bool = True
+    interval_seconds: int = Field(default=60, ge=10)
+
+
 class MarketDataRuntimeConfig(VersionedDomainModel):
     instrument_registry: InstrumentRegistryConfig
     ib: InteractiveBrokersConnectionConfig = Field(
@@ -43,6 +48,7 @@ class MarketDataRuntimeConfig(VersionedDomainModel):
     run_live_node: bool = False
     persistence: PersistenceConfig | None = None
     logging: RuntimeLoggingConfig = Field(default_factory=RuntimeLoggingConfig)
+    operator_context: OperatorContextConfig = Field(default_factory=OperatorContextConfig)
 
     @model_validator(mode="after")
     def _runtime_must_remain_data_only_for_stage_2(self) -> MarketDataRuntimeConfig:

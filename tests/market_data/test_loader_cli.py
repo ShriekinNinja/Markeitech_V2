@@ -129,6 +129,16 @@ def test_parse_optional_runtime_file_logging_config(tmp_path: Path) -> None:
     assert config.logging.max_backup_count == 2
 
 
+def test_parse_operator_context_config() -> None:
+    raw = raw_config()
+    raw["operator_context"] = {"enabled": False, "interval_seconds": 90}
+
+    config = parse_market_data_runtime_config(raw)
+
+    assert config.operator_context.enabled is False
+    assert config.operator_context.interval_seconds == 90
+
+
 def test_parse_crypto_market_data_runtime_config() -> None:
     raw = raw_config()
     raw["runtime"]["active_instrument_id"] = "BTC/USD.PAXOS"  # type: ignore[index]

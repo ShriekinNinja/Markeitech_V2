@@ -158,7 +158,7 @@ def test_build_live_node_uses_node_factory_without_starting() -> None:
 
 
 def test_build_prepared_live_node_attaches_actor_and_builds_clients() -> None:
-    actors: list[tuple[Any, Any, Any, Any]] = []
+    actors: list[tuple[Any, Any, Any, Any, Any]] = []
 
     def actor_factory(
         action_plan: Any,
@@ -166,6 +166,7 @@ def test_build_prepared_live_node_attaches_actor_and_builds_clients() -> None:
         on_warmup_ready: Any,
         market_context_engine: Any,
         analytics_readiness_evaluator: Any,
+        operator_context_report_interval: Any,
     ) -> object:
         actors.append(
             (
@@ -173,6 +174,7 @@ def test_build_prepared_live_node_attaches_actor_and_builds_clients() -> None:
                 on_warmup_ready,
                 market_context_engine,
                 analytics_readiness_evaluator,
+                operator_context_report_interval,
             )
         )
         return object()
@@ -191,6 +193,7 @@ def test_build_prepared_live_node_attaches_actor_and_builds_clients() -> None:
     assert actors[0][0].active_instrument_id == "NQU6.CME"
     assert actors[0][2] is not None
     assert actors[0][3] is not None
+    assert actors[0][4].total_seconds() == 60
 
 
 def test_build_live_node_refuses_when_disabled_by_config() -> None:

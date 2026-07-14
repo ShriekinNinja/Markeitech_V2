@@ -8,4 +8,4 @@ Observations captured during live trading and carried into development review.
 - Volume profile should be more refined. Session-wise is great but needs more granularity and combination.
 - TickStrike/aggression indicator.
 - Big trades indicator.
-- Logs are not usable for humans.
+- Logs were not usable for humans. Stage 4B now emits an active-first warmup briefing and bounded change-aware live reports; confirm the density during trading before closing this observation.

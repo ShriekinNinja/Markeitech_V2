@@ -354,7 +354,12 @@ Proceed live-first. Keep contracts, timestamps, lineage, fidelity, and determini
 - Define restart restoration and derived-state ownership for the continuous LiveNode path.
 - Preserve stable replay inputs and pure deterministic calculation boundaries for the later replay stage.
 
-First slice implemented and under live review: timeframe-specific history requirements, daily-first warmup context, session-aware freshness, independent indicator-depth classification, bounded readiness logs, subscription gating, and acceptance evidence.
+Implemented slices:
+
+- Timeframe-specific history requirements, daily-first warmup context, session-aware freshness, independent indicator-depth classification, bounded readiness logs, subscription gating, and acceptance evidence.
+- Restart-safe sequential IB warmup with bounded retries, followed by an active-first operator briefing and change-aware periodic context reports capped at three lines per changed instrument. Full context snapshots continue through the structured callback boundary and DEBUG JSONL evidence path.
+
+Profile granularity and composite definitions remain an explicit analytics decision. Do not silently reinterpret candle-derived session profiles while improving their presentation.
 
 ## Stage 5: Signals
 

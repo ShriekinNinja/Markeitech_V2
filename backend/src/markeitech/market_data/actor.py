@@ -33,6 +33,7 @@ from markeitech.market_data.health import (
     SessionOpenResolver,
 )
 from markeitech.market_data.normalization import normalize_one_minute_bar
+from markeitech.market_data.operator_context import OperatorContextReporter
 from markeitech.market_data.routing import (
     InstrumentMarketDataSnapshot,
     LiveMarketDataRouter,
@@ -241,8 +242,14 @@ class MarkeitechMarketDataActor(Actor):
         on_market_data_health: MarketDataHealthSink | None = None,
         is_session_open: SessionOpenResolver | None = None,
         resolve_warmup_start: WarmupStartResolver | None = None,
+        operator_context_report_interval: timedelta | None = timedelta(minutes=1),
     ) -> None:
         super().__init__()
+        if (
+            operator_context_report_interval is not None
+            and operator_context_report_interval <= timedelta(0)
+        ):
+            raise ValueError("operator context report interval must be positive")
         target = NautilusActorActionTarget(
             self,
             now=lambda: self.clock.utc_now(),
@@ -298,6 +305,9 @@ class MarkeitechMarketDataActor(Actor):
         self._analytics_readiness_evaluator = analytics_readiness_evaluator
         self._analytics_readiness_snapshot: AnalyticsReadinessSnapshot | None = None
         self._on_market_context = on_market_context
+        self._operator_context = OperatorContextReporter()
+        self._operator_context_report_interval = operator_context_report_interval
+        self._operator_context_timer_started = False
         self._on_warmup_ready = on_warmup_ready
         self._health = MarketDataHealthMonitor(
             instrument_ids=enabled_instrument_ids,
@@ -358,6 +368,9 @@ class MarkeitechMarketDataActor(Actor):
         if self._health_timer_started:
             self.clock.cancel_timer("market-data-health")
             self._health_timer_started = False
+        if self._operator_context_timer_started:
+            self.clock.cancel_timer("operator-context-report")
+            self._operator_context_timer_started = False
         self._cancel_switch_timer()
 
     def on_historical_data(self, data: Any) -> None:
@@ -456,16 +469,45 @@ class MarkeitechMarketDataActor(Actor):
         if self._market_context is None:
             return
         contexts = self._market_context.initialize(snapshot.data_by_bar_type)
-        self.log.info(f"MARKET_CONTEXT_WARMUP_BEGIN | snapshots={len(contexts)}")
         for context in contexts:
             self._emit_market_context(context, phase="warmup")
-        self.log.info("MARKET_CONTEXT_WARMUP_COMPLETE | live_subscriptions=next")
+        self._emit_operator_context(phase="warmup", force=True)
+        self._start_operator_context_timer()
 
     def _emit_market_context(self, snapshot: MarketContextSnapshot, *, phase: str) -> None:
-        self.log.info(format_market_context(snapshot, phase=phase))
-        self.log.info(format_market_structure(snapshot, phase=phase))
+        self.log.debug(
+            f"MARKET_CONTEXT_EVENT | phase={phase.upper()} | {snapshot.model_dump_json()}"
+        )
         if self._on_market_context is not None:
             self._on_market_context(snapshot)
+
+    def _start_operator_context_timer(self) -> None:
+        if self._operator_context_report_interval is None or self._operator_context_timer_started:
+            return
+        self.clock.set_timer(
+            name="operator-context-report",
+            interval=self._operator_context_report_interval,
+            callback=lambda _event: self._emit_operator_context(phase="live"),
+        )
+        self._operator_context_timer_started = True
+
+    def _emit_operator_context(self, *, phase: str, force: bool = False) -> None:
+        if self._market_context is None:
+            return
+        lines = self._operator_context.render(
+            self._market_context.snapshots,
+            active_instrument_id=self._switch.snapshot.active_instrument_id,
+            phase=phase,
+            force=force,
+        )
+        if not lines:
+            return
+        self.log.info(
+            f"OPERATOR_CONTEXT_BEGIN | phase={phase.upper()} " f"| instruments={len(lines) // 3}"
+        )
+        for line in lines:
+            self.log.info(line)
+        self.log.info(f"OPERATOR_CONTEXT_COMPLETE | phase={phase.upper()}")
 
     def _cancel_switch_timer(self) -> None:
         if self._switch_timer_name is not None:

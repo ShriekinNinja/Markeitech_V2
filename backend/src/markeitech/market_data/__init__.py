@@ -36,6 +36,7 @@ from markeitech.market_data.bootstrap import (
 from markeitech.market_data.config import (
     InteractiveBrokersConnectionConfig,
     MarketDataRuntimeConfig,
+    OperatorContextConfig,
     RuntimeLoggingConfig,
 )
 from markeitech.market_data.coordinator import (
@@ -113,6 +114,7 @@ __all__ = [
     "LiveMarketDataRouter",
     "MarkeitechMarketDataActor",
     "MarketDataRuntimeConfig",
+    "OperatorContextConfig",
     "RuntimeLoggingConfig",
     "MarketDataHealthMonitor",
     "MarketDataHealthPolicy",
