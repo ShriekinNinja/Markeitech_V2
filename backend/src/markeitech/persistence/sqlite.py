@@ -10,6 +10,7 @@ from threading import Lock
 from typing import Any
 from uuid import UUID
 
+from markeitech.analytics.features import MarketContextFeatureSnapshot
 from markeitech.domain.base import unix_ns_from_utc_datetime, utc_datetime_from_unix_ns
 from markeitech.domain.state import GapState, ReadinessState
 from markeitech.persistence.config import PersistenceConfig
@@ -32,7 +33,7 @@ from markeitech.persistence.contracts import (
     same_logical_event_identity,
 )
 
-LATEST_SCHEMA_VERSION = 5
+LATEST_SCHEMA_VERSION = 6
 
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (
@@ -218,6 +219,24 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
             ON metadata_compaction_runs(maintenance_ts_ns DESC);
         """,
     ),
+    (
+        6,
+        """
+        CREATE TABLE feature_snapshot_commits (
+            feature_id BLOB PRIMARY KEY,
+            content_hash BLOB NOT NULL,
+            instrument_id TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            as_of_ts_ns INTEGER NOT NULL,
+            feature_set TEXT NOT NULL,
+            calculation_version TEXT NOT NULL,
+            configuration_hash BLOB NOT NULL,
+            committed_ts_ns INTEGER NOT NULL
+        );
+        CREATE INDEX feature_snapshot_lookup_idx
+            ON feature_snapshot_commits(instrument_id, timeframe, as_of_ts_ns DESC);
+        """,
+    ),
 )
 
 
@@ -278,6 +297,74 @@ class SQLiteMetadataStore:
             last_dedupe_key=row["last_dedupe_key"],
             committed_ts=utc_datetime_from_unix_ns(row["committed_ts_ns"]),
         )
+
+    def committed_feature_ids(
+        self,
+        features: tuple[MarketContextFeatureSnapshot, ...],
+    ) -> frozenset[str]:
+        if not features:
+            return frozenset()
+        by_id: dict[bytes, MarketContextFeatureSnapshot] = {}
+        for feature in features:
+            feature_id = bytes.fromhex(feature.feature_id)
+            existing = by_id.get(feature_id)
+            if existing is not None and existing != feature:
+                raise ValueError("feature id conflicts within metadata lookup")
+            by_id[feature_id] = feature
+        placeholders = ",".join("?" for _ in by_id)
+        rows = self._connection.execute(
+            f"""
+            SELECT feature_id, content_hash FROM feature_snapshot_commits
+            WHERE feature_id IN ({placeholders})
+            """,
+            tuple(by_id),
+        ).fetchall()
+        committed: set[str] = set()
+        for row in rows:
+            feature_id = bytes(row["feature_id"])
+            feature = by_id[feature_id]
+            if bytes(row["content_hash"]) != bytes.fromhex(feature.content_hash):
+                raise ValueError("feature id conflicts with different committed content")
+            committed.add(feature.feature_id)
+        return frozenset(committed)
+
+    def commit_feature_snapshots(
+        self,
+        features: tuple[MarketContextFeatureSnapshot, ...],
+        *,
+        committed_ts: datetime,
+    ) -> None:
+        committed_ts_ns = unix_ns_from_utc_datetime(committed_ts)
+        with self._transaction() as connection:
+            for feature in features:
+                values = (
+                    bytes.fromhex(feature.feature_id),
+                    bytes.fromhex(feature.content_hash),
+                    feature.snapshot.instrument_id,
+                    feature.snapshot.timeframe.value,
+                    unix_ns_from_utc_datetime(feature.snapshot.as_of),
+                    feature.feature_set,
+                    feature.calculation_version,
+                    bytes.fromhex(feature.configuration_hash),
+                    committed_ts_ns,
+                )
+                cursor = connection.execute(
+                    """
+                    INSERT INTO feature_snapshot_commits VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(feature_id) DO NOTHING
+                    """,
+                    values,
+                )
+                if cursor.rowcount == 0:
+                    row = connection.execute(
+                        """
+                        SELECT content_hash FROM feature_snapshot_commits
+                        WHERE feature_id = ?
+                        """,
+                        (values[0],),
+                    ).fetchone()
+                    if bytes(row["content_hash"]) != values[1]:
+                        raise ValueError("feature id conflicts with different committed content")
 
     def save_recovery(self, recovery: RecoveryRecord) -> None:
         with self._transaction() as connection:
@@ -1029,8 +1116,7 @@ def _require_recovery_transition(
     }
     if recovery.status not in allowed[current_status]:
         raise ValueError(
-            f"recovery status cannot move from {current_status.value} "
-            f"to {recovery.status.value}"
+            f"recovery status cannot move from {current_status.value} to {recovery.status.value}"
         )
 
 

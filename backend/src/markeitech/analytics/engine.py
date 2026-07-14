@@ -25,6 +25,11 @@ from markeitech.analytics.contracts import (
     VolumeProfileSnapshot,
     VwapPosition,
 )
+from markeitech.analytics.features import (
+    MarketContextCalculationConfig,
+    MarketContextFeatureSnapshot,
+    analysis_bar_lineages,
+)
 from markeitech.analytics.normalization import (
     analysis_bar_from_nautilus,
     analysis_bar_from_one_minute,
@@ -62,6 +67,7 @@ class MarketContextEngine:
         maximum_bars_per_timeframe: int = 10_000,
         profile_bin_sizes: Mapping[str, Decimal] | None = None,
         profile_composite_sessions: Mapping[str, Sequence[int]] | None = None,
+        calculation_config: MarketContextCalculationConfig | None = None,
     ) -> None:
         if maximum_bars_per_timeframe < 200:
             raise ValueError("analytics history must retain at least 200 bars")
@@ -88,6 +94,21 @@ class MarketContextEngine:
         self._configured: dict[str, set[AnalyticsTimeframe]] = defaultdict(set)
         self._aggregators: dict[tuple[str, AnalyticsTimeframe], _BarAggregator] = {}
         self._snapshots: dict[tuple[str, AnalyticsTimeframe], MarketContextSnapshot] = {}
+        self._features: dict[
+            tuple[str, AnalyticsTimeframe],
+            MarketContextFeatureSnapshot,
+        ] = {}
+        self._calculation_config = calculation_config or MarketContextCalculationConfig(
+            maximum_bars_per_timeframe=maximum_bars_per_timeframe,
+            profile_bin_sizes=self._profile_bin_sizes,
+            profile_composite_sessions=self._profile_composite_sessions,
+        )
+        if self._calculation_config.maximum_bars_per_timeframe != maximum_bars_per_timeframe:
+            raise ValueError("calculation config maximum bars does not match engine")
+        if self._calculation_config.profile_bin_sizes != self._profile_bin_sizes:
+            raise ValueError("calculation config profile bins do not match engine")
+        if self._calculation_config.profile_composite_sessions != self._profile_composite_sessions:
+            raise ValueError("calculation config composite sessions do not match engine")
 
     @property
     def snapshots(self) -> tuple[MarketContextSnapshot, ...]:
@@ -95,6 +116,20 @@ class MarketContextEngine:
             self._snapshots[key]
             for key in sorted(self._snapshots, key=lambda item: (item[0], item[1].duration))
         )
+
+    @property
+    def feature_snapshots(self) -> tuple[MarketContextFeatureSnapshot, ...]:
+        return tuple(
+            self._features[key]
+            for key in sorted(self._features, key=lambda item: (item[0], item[1].duration))
+        )
+
+    def feature_for(self, snapshot: MarketContextSnapshot) -> MarketContextFeatureSnapshot:
+        key = (snapshot.instrument_id, snapshot.timeframe)
+        feature = self._features.get(key)
+        if feature is None or feature.snapshot != snapshot:
+            raise KeyError("market context feature is not available for snapshot")
+        return feature
 
     def initialize(
         self,
@@ -138,6 +173,7 @@ class MarketContextEngine:
         ):
             snapshot = self._calculate(key)
             self._snapshots[key] = snapshot
+            self._features[key] = self._build_feature(key, snapshot)
             initialized.append(snapshot)
         return tuple(initialized)
 
@@ -166,8 +202,26 @@ class MarketContextEngine:
         for key in updated_keys:
             snapshot = self._calculate(key)
             self._snapshots[key] = snapshot
+            self._features[key] = self._build_feature(key, snapshot)
             updates.append(snapshot)
         return tuple(updates)
+
+    def _build_feature(
+        self,
+        key: tuple[str, AnalyticsTimeframe],
+        snapshot: MarketContextSnapshot,
+    ) -> MarketContextFeatureSnapshot:
+        consumed = [bar for bar in self._bars[key] if bar.close_ts <= snapshot.as_of]
+        structure_key = (snapshot.instrument_id, AnalyticsTimeframe.ONE_MINUTE)
+        if structure_key != key:
+            consumed.extend(
+                bar for bar in self._bars.get(structure_key, ()) if bar.close_ts <= snapshot.as_of
+            )
+        return MarketContextFeatureSnapshot(
+            configuration_hash=self._calculation_config.configuration_hash,
+            input_lineage=analysis_bar_lineages(consumed),
+            snapshot=snapshot,
+        )
 
     def _append(self, bar: AnalysisBar) -> None:
         key = (bar.instrument_id, bar.timeframe)

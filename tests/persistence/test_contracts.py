@@ -151,6 +151,9 @@ def test_persistence_config_enforces_retention_and_bounded_batching() -> None:
     with pytest.raises(ValidationError, match="writer queue size"):
         PersistenceConfig(catalog_writer_queue_size=10, catalog_batch_size=11)
 
+    with pytest.raises(ValidationError, match="feature writer queue size"):
+        PersistenceConfig(feature_writer_queue_size=10, feature_batch_size=11)
+
     with pytest.raises(ValidationError):
         PersistenceConfig(catalog_flush_poll_seconds=0)
 

@@ -105,13 +105,13 @@ def outbox(
 def test_migrations_are_idempotent_and_auditable(tmp_path: Path) -> None:
     path = tmp_path / "metadata.sqlite3"
     with SQLiteMetadataStore(config(path)) as first:
-        assert first.schema_version == 5
+        assert first.schema_version == 6
     with SQLiteMetadataStore(config(path)) as second:
-        assert second.schema_version == 5
+        assert second.schema_version == 6
         row = second._connection.execute(  # noqa: SLF001
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [item["version"] for item in row] == [1, 2, 3, 4, 5]
+        assert [item["version"] for item in row] == [1, 2, 3, 4, 5, 6]
 
 
 def test_newer_unknown_schema_fails_clearly(tmp_path: Path) -> None:
@@ -153,7 +153,7 @@ def test_schema_one_upgrades_without_losing_checkpoint(tmp_path: Path) -> None:
     connection.close()
 
     with SQLiteMetadataStore(config(path)) as upgraded:
-        assert upgraded.schema_version == 5
+        assert upgraded.schema_version == 6
         assert upgraded.load_checkpoint(expected.stream_key) == expected
 
 

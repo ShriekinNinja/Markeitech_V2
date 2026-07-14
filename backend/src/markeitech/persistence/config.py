@@ -18,6 +18,9 @@ class PersistenceConfig(VersionedDomainModel):
     catalog_batch_size: int = Field(default=1_000, ge=1)
     persistence_batch_interval_seconds: int = Field(default=60, ge=1)
     catalog_flush_poll_seconds: float = Field(default=0.25, gt=0, le=5)
+    feature_writer_queue_size: int = Field(default=2_048, ge=1)
+    feature_batch_size: int = Field(default=128, ge=1)
+    feature_flush_poll_seconds: float = Field(default=0.25, gt=0, le=5)
     journal_max_bytes: int = Field(default=512 * 1024 * 1024, ge=1)
     journal_max_record_bytes: int = Field(default=1024 * 1024, ge=1)
     journal_fsync: bool = True
@@ -40,4 +43,6 @@ class PersistenceConfig(VersionedDomainModel):
             raise ValueError("bar retention cannot be shorter than tick retention")
         if self.catalog_batch_size > self.catalog_writer_queue_size:
             raise ValueError("catalog batch size cannot exceed writer queue size")
+        if self.feature_batch_size > self.feature_writer_queue_size:
+            raise ValueError("feature batch size cannot exceed feature writer queue size")
         return self

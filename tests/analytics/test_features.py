@@ -6,6 +6,7 @@ from markeitech.analytics import (
     AnalyticsInputFidelity,
     AnalyticsTimeframe,
     FeatureInputLineage,
+    MarketContextCalculationConfig,
     MarketContextFeatureSnapshot,
     MarketContextSnapshot,
     TrendState,
@@ -133,3 +134,14 @@ def test_configuration_fingerprint_uses_canonical_model_content() -> None:
 
     assert configuration_fingerprint(first) == configuration_fingerprint(same)
     assert configuration_fingerprint(first) != configuration_fingerprint(changed)
+
+
+def test_market_context_configuration_fingerprint_includes_session_policy() -> None:
+    regular = MarketContextCalculationConfig(
+        session_policies={"NQU6.CME": "CME_Equity|regular|America/New_York"},
+    )
+    full = MarketContextCalculationConfig(
+        session_policies={"NQU6.CME": "CME_Equity|full|America/New_York"},
+    )
+
+    assert regular.configuration_hash != full.configuration_hash

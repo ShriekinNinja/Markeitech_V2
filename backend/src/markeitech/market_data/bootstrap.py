@@ -13,6 +13,7 @@ from pydantic import Field
 from markeitech.analytics import (
     AnalyticsReadinessEvaluator,
     AnalyticsTimeframe,
+    MarketContextCalculationConfig,
     MarketContextEngine,
 )
 from markeitech.domain.base import VersionedDomainModel
@@ -27,6 +28,7 @@ from markeitech.market_data.intents import build_nautilus_request_plan
 from markeitech.market_data.nautilus import build_trading_node_config
 from markeitech.market_data.planner import build_market_data_plan
 from markeitech.persistence.calendar import PandasMarketSessionCalendar
+from markeitech.persistence.feature_pipeline import FeatureSubmissionStatus
 from markeitech.persistence.pipeline import PersistenceSubmissionStatus
 from markeitech.persistence.runtime import PersistenceRuntime
 from markeitech.persistence.startup_recovery import StartupRecoveryService
@@ -139,21 +141,40 @@ def build_prepared_market_data_live_node(
         if config.persistence
         else None
     )
+    profile_bin_sizes = {
+        runtime.contract.instrument_id: runtime.warmup.volume_profile_bin_size
+        for runtime in config.instrument_registry.instruments
+        if runtime.enabled and runtime.warmup is not None
+    }
+    profile_composite_sessions = {
+        runtime.contract.instrument_id: runtime.warmup.volume_profile_composite_sessions
+        for runtime in config.instrument_registry.instruments
+        if runtime.enabled and runtime.warmup is not None
+    }
+    calculation_config = MarketContextCalculationConfig(
+        profile_bin_sizes=profile_bin_sizes,
+        profile_composite_sessions=profile_composite_sessions,
+        session_policies={
+            runtime.contract.instrument_id: "|".join(
+                (
+                    runtime.contract.calendar_id,
+                    runtime.contract.session_profile.value,
+                    runtime.contract.session_timezone,
+                )
+            )
+            for runtime in config.instrument_registry.instruments
+            if runtime.enabled
+        },
+    )
+    market_context_engine = MarketContextEngine(
+        session_calendar,
+        profile_bin_sizes=profile_bin_sizes,
+        profile_composite_sessions=profile_composite_sessions,
+        calculation_config=calculation_config,
+    )
     actor_kwargs: dict[str, Any] = {
         "on_warmup_ready": on_warmup_ready,
-        "market_context_engine": MarketContextEngine(
-            session_calendar,
-            profile_bin_sizes={
-                runtime.contract.instrument_id: runtime.warmup.volume_profile_bin_size
-                for runtime in config.instrument_registry.instruments
-                if runtime.enabled and runtime.warmup is not None
-            },
-            profile_composite_sessions={
-                runtime.contract.instrument_id: (runtime.warmup.volume_profile_composite_sessions)
-                for runtime in config.instrument_registry.instruments
-                if runtime.enabled and runtime.warmup is not None
-            },
-        ),
+        "market_context_engine": market_context_engine,
         "analytics_readiness_evaluator": AnalyticsReadinessEvaluator(
             session_calendar,
             {
@@ -172,6 +193,8 @@ def build_prepared_market_data_live_node(
         ),
     }
     if persistence is not None:
+        if persistence.feature_writer is None:
+            raise RuntimeError("persistence runtime did not build a feature writer")
         startup_recovery = StartupRecoveryService(
             config.persistence,
             config.instrument_registry,
@@ -188,6 +211,10 @@ def build_prepared_market_data_live_node(
             on_historical_bar=lambda bar: persistence.ingress.submit_canonical(bar)
             == PersistenceSubmissionStatus.ACCEPTED,
             startup_recovery=startup_recovery,
+            on_market_context=lambda snapshot: persistence.feature_writer.submit(
+                market_context_engine.feature_for(snapshot)
+            )
+            == FeatureSubmissionStatus.ACCEPTED,
         )
     try:
         actor = actor_factory(action_plan, **actor_kwargs)

@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections import defaultdict
+from collections.abc import Sequence
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from markeitech.analytics.contracts import (
+    AnalysisBar,
     AnalyticsInputFidelity,
     AnalyticsTimeframe,
     MarketContextSnapshot,
@@ -17,6 +21,33 @@ from markeitech.domain.base import VersionedDomainModel, require_utc
 MARKET_CONTEXT_FEATURE_SET = "market_context"
 MARKET_CONTEXT_CALCULATION_VERSION = "1.0"
 _SHA256_PATTERN = r"^[0-9a-f]{64}$"
+
+
+class MarketContextCalculationConfig(VersionedDomainModel):
+    maximum_bars_per_timeframe: int = Field(default=10_000, ge=200)
+    profile_bin_sizes: dict[str, Decimal] = Field(default_factory=dict)
+    profile_composite_sessions: dict[str, tuple[int, ...]] = Field(default_factory=dict)
+    session_policies: dict[str, str] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _settings_must_be_consistent(self) -> MarketContextCalculationConfig:
+        if any(value <= 0 for value in self.profile_bin_sizes.values()):
+            raise ValueError("volume profile bin sizes must be positive")
+        if any(
+            sessions < 2 or sessions > 20
+            for values in self.profile_composite_sessions.values()
+            for sessions in values
+        ):
+            raise ValueError("composite volume profiles require between 2 and 20 sessions")
+        if any(
+            len(values) != len(set(values)) for values in self.profile_composite_sessions.values()
+        ):
+            raise ValueError("composite volume profile session counts must be unique")
+        return self
+
+    @property
+    def configuration_hash(self) -> str:
+        return configuration_fingerprint(self)
 
 
 class FeatureInputLineage(VersionedDomainModel):
@@ -124,6 +155,46 @@ def configuration_fingerprint(configuration: BaseModel) -> str:
     """Hash a versioned calculation configuration without object repr leakage."""
 
     return _canonical_hash(configuration.model_dump(mode="json"))
+
+
+def analysis_bar_lineages(bars: Sequence[AnalysisBar]) -> tuple[FeatureInputLineage, ...]:
+    grouped: dict[
+        tuple[str, AnalyticsTimeframe, str, AnalyticsInputFidelity],
+        list[AnalysisBar],
+    ] = defaultdict(list)
+    for bar in bars:
+        grouped[
+            (
+                bar.instrument_id,
+                bar.timeframe,
+                bar.source,
+                bar.input_fidelity,
+            )
+        ].append(bar)
+    lineages: list[FeatureInputLineage] = []
+    for (instrument_id, timeframe, source, fidelity), values in sorted(
+        grouped.items(),
+        key=lambda item: (
+            item[0][0],
+            item[0][1].duration,
+            item[0][2],
+            item[0][3].value,
+        ),
+    ):
+        ordered = sorted(values, key=lambda value: (value.open_ts, value.close_ts))
+        lineages.append(
+            FeatureInputLineage(
+                instrument_id=instrument_id,
+                timeframe=timeframe,
+                source=source,
+                input_fidelity=fidelity,
+                start_ts=ordered[0].open_ts,
+                end_ts=ordered[-1].close_ts,
+                event_count=len(ordered),
+                identity_hash=_canonical_hash([value.model_dump(mode="json") for value in ordered]),
+            )
+        )
+    return tuple(lineages)
 
 
 def _canonical_hash(value: Any) -> str:

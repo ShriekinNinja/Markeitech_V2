@@ -301,6 +301,14 @@ def test_composite_profile_does_not_include_structure_bars_after_snapshot() -> N
 
     assert len(five_minute.composite_volume_profiles) == 1
     assert five_minute.composite_volume_profiles[0].profile.total_volume == Decimal("20")
+    feature = engine.feature_for(five_minute)
+    one_minute_lineage = next(
+        item
+        for item in feature.input_lineage
+        if item.timeframe == AnalyticsTimeframe.ONE_MINUTE
+    )
+    assert one_minute_lineage.event_count == 2
+    assert one_minute_lineage.end_ts <= five_minute.as_of
 
 
 def test_warmup_context_is_emitted_in_top_down_analysis_order() -> None:

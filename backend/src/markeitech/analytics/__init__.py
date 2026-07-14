@@ -19,7 +19,9 @@ from markeitech.analytics.features import (
     MARKET_CONTEXT_CALCULATION_VERSION,
     MARKET_CONTEXT_FEATURE_SET,
     FeatureInputLineage,
+    MarketContextCalculationConfig,
     MarketContextFeatureSnapshot,
+    analysis_bar_lineages,
     configuration_fingerprint,
 )
 from markeitech.analytics.readiness import (
@@ -50,6 +52,7 @@ __all__ = [
     "LevelKind",
     "InstrumentAnalyticsReadiness",
     "MarketContextSnapshot",
+    "MarketContextCalculationConfig",
     "MarketContextFeatureSnapshot",
     "MarketContextEngine",
     "MARKET_CONTEXT_CALCULATION_VERSION",
@@ -60,5 +63,6 @@ __all__ = [
     "TimeframeAnalyticsReadiness",
     "VolumeProfileSnapshot",
     "VwapPosition",
+    "analysis_bar_lineages",
     "configuration_fingerprint",
 ]

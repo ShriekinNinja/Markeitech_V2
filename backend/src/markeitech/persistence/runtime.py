@@ -10,6 +10,13 @@ from markeitech.domain.market_data import OneMinuteBar
 from markeitech.persistence.catalog import NautilusParquetTimeSeriesStore
 from markeitech.persistence.config import PersistenceConfig
 from markeitech.persistence.coordinator import IdempotentPersistenceCoordinator
+from markeitech.persistence.feature_catalog import ParquetFeatureStore
+from markeitech.persistence.feature_pipeline import (
+    BoundedFeatureWriter,
+    FeaturePersistenceCoordinator,
+    FeatureWriterSnapshot,
+    FeatureWriterStatus,
+)
 from markeitech.persistence.pipeline import (
     BoundedPersistenceWriter,
     PersistenceSubmissionStatus,
@@ -146,12 +153,16 @@ class PersistenceRuntime:
         metadata: SQLiteMetadataStore,
         writer: BoundedPersistenceWriter,
         maintenance: CatalogRetentionMaintenance | None = None,
+        feature_catalog: ParquetFeatureStore | None = None,
+        feature_writer: BoundedFeatureWriter | None = None,
     ) -> None:
         self.config = config
         self.catalog = catalog
         self.metadata = metadata
         self.writer = writer
         self.maintenance = maintenance
+        self.feature_catalog = feature_catalog
+        self.feature_writer = feature_writer
         self.ingress = LivePersistenceIngress(writer)
         self.retention_report: RetentionReport | None = None
         self._status = PersistenceRuntimeStatus.CREATED
@@ -170,12 +181,28 @@ class PersistenceRuntime:
         metadata = SQLiteMetadataStore(config)
         coordinator = IdempotentPersistenceCoordinator(config, catalog, metadata)
         writer = BoundedPersistenceWriter(config, coordinator, catalog)
+        feature_catalog = ParquetFeatureStore(config)
+        feature_coordinator = FeaturePersistenceCoordinator(feature_catalog, metadata)
+        feature_writer = BoundedFeatureWriter(
+            feature_coordinator,
+            queue_size=config.feature_writer_queue_size,
+            batch_size=config.feature_batch_size,
+            poll_seconds=config.feature_flush_poll_seconds,
+        )
         maintenance = (
             CatalogRetentionMaintenance(config, retention_calendar, metadata)
             if retention_calendar is not None
             else None
         )
-        return cls(config, catalog, metadata, writer, maintenance)
+        return cls(
+            config,
+            catalog,
+            metadata,
+            writer,
+            maintenance,
+            feature_catalog,
+            feature_writer,
+        )
 
     @property
     def status(self) -> PersistenceRuntimeStatus:
@@ -185,6 +212,10 @@ class PersistenceRuntime:
     @property
     def writer_snapshot(self) -> PersistenceWriterSnapshot:
         return self.writer.snapshot
+
+    @property
+    def feature_writer_snapshot(self) -> FeatureWriterSnapshot | None:
+        return None if self.feature_writer is None else self.feature_writer.snapshot
 
     def start(self) -> None:
         with self._lock:
@@ -203,10 +234,14 @@ class PersistenceRuntime:
                         f"persistence writer failed during startup recovery: {detail}"
                     )
                 raise RuntimeError("persistence writer timed out during startup recovery")
+            if self.feature_writer is not None:
+                self.feature_writer.start()
         except Exception:
             with self._lock:
                 self._status = PersistenceRuntimeStatus.FAILED
             stopped = self.writer.stop(self.config.runtime_shutdown_timeout_seconds)
+            if self.feature_writer is not None:
+                self.feature_writer.stop(self.config.runtime_shutdown_timeout_seconds)
             if stopped:
                 self.metadata.close()
             raise
@@ -222,11 +257,13 @@ class PersistenceRuntime:
             status = self._status
             self._status = PersistenceRuntimeStatus.STOPPING
         if status == PersistenceRuntimeStatus.RUNNING:
+            feature_stopped = self._stop_feature_writer()
             stopped = self.writer.stop(self.config.runtime_shutdown_timeout_seconds)
-            if not stopped:
+            if not stopped or not feature_stopped:
                 with self._lock:
                     self._status = PersistenceRuntimeStatus.FAILED
-                raise RuntimeError("persistence writer did not stop within timeout")
+                self.metadata.close()
+                raise RuntimeError("persistence writers did not stop cleanly within timeout")
         elif self.writer.snapshot.status not in {
             PersistenceWriterStatus.STOPPED,
             PersistenceWriterStatus.FAILED,
@@ -235,3 +272,11 @@ class PersistenceRuntime:
         self.metadata.close()
         with self._lock:
             self._status = PersistenceRuntimeStatus.STOPPED
+
+    def _stop_feature_writer(self) -> bool:
+        if self.feature_writer is None:
+            return True
+        snapshot = self.feature_writer.snapshot
+        if snapshot.status in {FeatureWriterStatus.STOPPED, FeatureWriterStatus.FAILED}:
+            return snapshot.status == FeatureWriterStatus.STOPPED
+        return self.feature_writer.stop(self.config.runtime_shutdown_timeout_seconds)

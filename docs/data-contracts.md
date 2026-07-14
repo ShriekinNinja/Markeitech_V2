@@ -217,3 +217,7 @@ The separation is intentional:
 - Lineage order does not change identity.
 
 Feature payloads are immutable Parquet records partitioned by feature set, instrument, timeframe, and UTC date. Query APIs return all latest-as-of variants instead of choosing an arbitrary revision. Human-readable operator logs are projections of context and are never feature persistence.
+
+SQLite stores only the durable commit manifest for each `feature_id`: content hash, instrument, timeframe, `as_of`, feature set, calculation version, configuration hash, and commit time. Payload and manifest follow catalog-first ordering. An existing manifest with a different content hash is a hard conflict; a payload that exists without its manifest is a recoverable interrupted commit.
+
+Live feature submission is bounded and asynchronous. Submission returns accepted, queue-full, not-running, or writer-failed status. Writer health exposes pending, accepted, committed, duplicate, rejected, and last-error evidence. A failed batch remains retained in memory and the writer rejects new work; it does not silently skip the damaged feature stream.

@@ -382,7 +382,7 @@ Reason: Persisting mutable indicator internals would couple recovery to library 
 
 ## DR-0042: Lineage-Identified Feature Parquet Outside The Raw-Market Catalog
 
-Status: accepted for implementation
+Status: accepted
 
 Persist deterministic market-context output in a versioned feature envelope containing the complete provider-neutral snapshot, calculation version, configuration fingerprint, and exact input-stream lineage fingerprints. Derive a stable feature id from calculation/configuration identity, instrument, timeframe, `as_of`, source/fidelity, and canonically sorted lineage. Hash the output payload separately. Retain a corrected-input variant under a new feature id even when its instrument/timeframe/`as_of` matches an earlier calculation; reject the same feature id with different output content as nondeterminism or corruption.
 
@@ -391,3 +391,15 @@ Store immutable feature payloads in a Markeitech-owned PyArrow Parquet catalog p
 Do not force features through Nautilus raw-market custom-data file identity. That catalog uses initialization timestamps as physical file identity and can silently skip a second legitimate feature variant at the same timestamp. Inventing a fake timestamp would corrupt timestamp semantics. Nautilus remains the runtime and native market-data catalog owner; Markeitech owns product-specific feature identity, lineage, and persistence.
 
 Reason: Signals, reports, replay comparison, and ML datasets need reproducible evidence rather than transient callbacks or DEBUG logs. Separate identity and content hashes make revisions auditable and nondeterminism visible. The dedicated feature boundary preserves Nautilus's value without inheriting a physical identity model that cannot represent Markeitech's analytical revision semantics.
+
+## DR-0043: Catalog-First Feature Commits And Bounded Live Submission
+
+Status: accepted
+
+Commit each deterministic feature payload to its immutable Parquet catalog before inserting its SQLite commit manifest. On restart, treat a catalog payload without a manifest as an interrupted commit: verify the deterministic identity and content, then complete the manifest. Treat a manifest with different content for the same feature id as corruption or nondeterminism and fail closed. SQLite stores commit evidence and lookup metadata, never a duplicate feature payload.
+
+Publish active and background warmup/live context through one bounded asynchronous feature writer. Build each envelope from the exact analytical bars consumed at or before the snapshot `as_of`, and fingerprint the calculation's history, profile, composite, calendar, and session policy. Expose accepted, pending, committed, duplicate, rejected, and failed evidence. Retain a failed batch in memory, reject further submissions, and require a bounded shutdown flush. Later signals may reference only successfully accepted versioned feature ids.
+
+Defer feature retention, SQLite lookup optimization and pruning, a standalone feature CLI, broad historical backfill, and full live-versus-replay comparison until after the first deterministic signal lifecycle. These are recorded obligations, not removed requirements.
+
+Reason: Parquet and SQLite cannot share an atomic transaction. Catalog-first ordering makes interruption recoverable without allowing metadata to certify a missing payload. Bounded actor submission protects live analysis from storage latency while explicit failure evidence prevents an apparently healthy signal stream from outrunning its durable analytical basis.

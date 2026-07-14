@@ -33,6 +33,14 @@ from markeitech.persistence.feature_catalog import (
     MarketContextFeatureRecord,
     ParquetFeatureStore,
 )
+from markeitech.persistence.feature_pipeline import (
+    BoundedFeatureWriter,
+    FeaturePersistenceCoordinator,
+    FeaturePersistenceResult,
+    FeatureSubmissionStatus,
+    FeatureWriterSnapshot,
+    FeatureWriterStatus,
+)
 from markeitech.persistence.journal import (
     DurableIngressJournal,
     JournalCapacityError,
@@ -83,9 +91,15 @@ from markeitech.persistence.startup_recovery import (
 __all__ = [
     "DataFidelity",
     "BoundedPersistenceWriter",
+    "BoundedFeatureWriter",
     "DurableIngressJournal",
     "ExplicitSessionCalendar",
     "FeatureCatalogWriteResult",
+    "FeaturePersistenceCoordinator",
+    "FeaturePersistenceResult",
+    "FeatureSubmissionStatus",
+    "FeatureWriterSnapshot",
+    "FeatureWriterStatus",
     "HistoricalRecoveryRequest",
     "IdempotentPersistenceCoordinator",
     "InstrumentCalendarPolicy",

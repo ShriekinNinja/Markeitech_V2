@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from markeitech.analytics import AnalysisBar, AnalyticsInputFidelity, AnalyticsTimeframe
 from markeitech.domain import (
     AnalysisProfile,
     InstrumentDataMode,
@@ -246,6 +247,25 @@ def test_prepared_node_wires_and_flushes_persistence_runtime(tmp_path: Path) -> 
         def emit(self) -> None:
             captured["on_native_market_data_event"](native_trade())
             captured["on_market_data_event"](completed_bar())
+            source = completed_bar()
+            snapshots = captured["market_context_engine"].initialize_bars(
+                (
+                    AnalysisBar(
+                        instrument_id=source.instrument_id,
+                        timeframe=AnalyticsTimeframe.ONE_MINUTE,
+                        open_ts=source.open_ts,
+                        close_ts=source.close_ts,
+                        open=source.open,
+                        high=source.high,
+                        low=source.low,
+                        close=source.close,
+                        volume=source.volume,
+                        source=source.source,
+                        input_fidelity=AnalyticsInputFidelity.REPORTED,
+                    ),
+                )
+            )
+            assert captured["on_market_context"](snapshots[0])
 
     node = build_prepared_market_data_live_node(
         runtime_config(persistence=persistence_config(tmp_path)),
@@ -262,5 +282,9 @@ def test_prepared_node_wires_and_flushes_persistence_runtime(tmp_path: Path) -> 
     assert node.persistence.status == PersistenceRuntimeStatus.STOPPED
     assert len(node.persistence.catalog.query_trade_ticks("NQU6.CME")) == 1
     assert len(node.persistence.catalog.query_one_minute_bars("NQU6.CME")) == 1
+    assert node.persistence.feature_catalog is not None
+    assert len(node.persistence.feature_catalog.query_history("NQU6.CME")) == 1
     assert node.persistence.ingress.snapshot.accepted_native_count == 1
     assert node.persistence.ingress.snapshot.accepted_bar_count == 1
+    assert node.persistence.feature_writer_snapshot is not None
+    assert node.persistence.feature_writer_snapshot.committed_count == 1

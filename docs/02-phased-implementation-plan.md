@@ -377,7 +377,17 @@ First implementation slice:
 - Query ordered feature history and every latest-as-of variant without selecting an arbitrary revision.
 - Keep SQLite feature commit manifests, bounded asynchronous actor wiring, operational counters, and live acceptance evidence in the next reviewable slice.
 
-Feature Parquet is separate from the Nautilus raw-market catalog. SQLite will later prove feature commit/checkpoint state and accelerate identity lookup, but Parquet remains the feature payload truth. Signals remain out of scope until the live feature writer and restart audit path are complete.
+Feature Parquet is separate from the Nautilus raw-market catalog. SQLite proves feature commit state after catalog durability and may later accelerate broader identity lookup, but Parquet remains the feature payload truth. Signals remain out of scope until the live feature writer and restart audit path are complete.
+
+Narrowed Stage 4C.2 delivery for the first live signal path:
+
+- Add catalog-first SQLite feature commit manifests and conflict detection.
+- Build exact feature lineage from the analytical bars actually consumed by each context snapshot.
+- Add a bounded asynchronous feature writer and wire warmup/live snapshots through the existing actor sink.
+- Expose accepted, committed, duplicate, rejected, pending, and failed writer evidence and force a bounded shutdown flush.
+- Prove live-node composition, restart idempotency, and active/background feature persistence.
+
+Deferred explicitly, not removed: feature retention policy, SQLite lookup optimization and pruning, a standalone feature inspection CLI, broad historical feature backfill, and full live-versus-replay value comparison. Those return after the first deterministic signal candidate lifecycle; signals may consume only successfully submitted versioned feature envelopes and must retain their feature ids.
 
 ## Stage 5: Signals
 
