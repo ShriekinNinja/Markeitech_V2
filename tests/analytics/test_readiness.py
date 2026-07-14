@@ -163,10 +163,25 @@ def test_stale_higher_timeframe_degrades_but_does_not_block() -> None:
     assert five_minute.lag_intervals == 1
 
 
-def test_stale_one_minute_context_blocks_live_readiness() -> None:
+def test_one_interval_stale_one_minute_context_is_tolerated_at_startup() -> None:
     values = bars_ending_at(
         AnalyticsTimeframe.ONE_MINUTE,
         EVALUATED.replace(minute=6, second=0),
+    )
+
+    snapshot = evaluator(AnalyticsTimeframe.ONE_MINUTE).evaluate_bars(
+        values,
+        evaluated_ts=EVALUATED,
+    )
+
+    assert snapshot.status == AnalyticsReadinessStatus.DEGRADED
+    assert snapshot.instruments[0].reason_codes == ("one_minute_startup_lag_tolerated",)
+
+
+def test_two_interval_stale_one_minute_context_blocks_live_readiness() -> None:
+    values = bars_ending_at(
+        AnalyticsTimeframe.ONE_MINUTE,
+        EVALUATED.replace(minute=5, second=0),
     )
 
     snapshot = evaluator(AnalyticsTimeframe.ONE_MINUTE).evaluate_bars(

@@ -85,7 +85,13 @@ Instrument status:
 - `DEGRADED`: 1-minute data is current and all required timeframes exist, but
   one or more higher timeframes are stale or below full depth.
 - `BLOCKED`: a required timeframe is unavailable, or 1-minute data is missing
-  or stale. Live subscriptions do not proceed through this gate.
+  or stale by more than one completed interval. Live subscriptions do not
+  proceed through this gate.
+
+Exactly one stale 1-minute interval is `DEGRADED` with reason
+`one_minute_startup_lag_tolerated`. This bounded tolerance handles a sequential
+warmup crossing a minute boundary without hiding a larger outage or fabricating
+the missing bar.
 
 Each timeframe has the form:
 

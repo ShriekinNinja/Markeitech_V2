@@ -356,7 +356,7 @@ Proceed live-first. Keep contracts, timestamps, lineage, fidelity, and determini
 
 Implemented slices:
 
-- Timeframe-specific history requirements, daily-first warmup context, session-aware freshness, independent indicator-depth classification, bounded readiness logs, subscription gating, and acceptance evidence.
+- Timeframe-specific history requirements, daily-first warmup context, session-aware freshness, independent indicator-depth classification, bounded readiness logs, subscription gating, and acceptance evidence. Exactly one stale 1m interval is tolerated as degraded startup evidence so a sequential warmup crossing a minute boundary cannot create an endless restart race; larger 1m lag still blocks.
 - Restart-safe sequential IB warmup with bounded retries, followed by an active-first operator briefing and change-aware periodic context reports capped at three lines per changed instrument. Full context snapshots continue through the structured callback boundary and DEBUG JSONL evidence path.
 - Instrument-specific profile refinement with explicit rolling 2-session and 5-session composites, observed-window lineage, developing state, exact-session-count gating, and finer NQ/ES bins. Existing current-session profile-location semantics remain unchanged.
 - Restart-continuous higher-timeframe aggregation by seeding only currently forming session-aligned buckets from warmup 1m bars, preserving mixed provider/tick lineage, rejecting missing minutes, and avoiding duplicate completed-bucket emissions.

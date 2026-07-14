@@ -199,7 +199,7 @@ Warmup history requirements are configured per timeframe. The legacy instrument-
 - Depth: `full` at 200+ bars, `partial` at 50-199 bars, or `insufficient` below 50 bars
 - Instrument/runtime status: `ready`, `degraded`, or `blocked`
 
-The currently forming interval is never required. Unavailable required history or non-current 1m evidence blocks subscriptions. Stale higher timeframes and incomplete indicator depth are degraded evidence and do not prevent live operation.
+The currently forming interval is never required. Unavailable required history or 1m evidence stale by more than one completed interval blocks subscriptions. Exactly one stale 1m interval is retained as explicit degraded startup evidence to tolerate a sequential warmup crossing a minute boundary. Stale higher timeframes and incomplete indicator depth are also degraded evidence and do not prevent live operation.
 
 On restart, completed canonical 1m warmup bars seed only the currently forming session-aligned 5m, 15m, 30m, and 1h buckets. A seeded bucket must still contain every exact minute before it can emit. A bucket complete at the warmup cutoff is not seeded because historical higher-timeframe evidence already owns it. Aggregates spanning provider warmup and tick-built live inputs carry source `mixed` and fidelity `mixed`.
 

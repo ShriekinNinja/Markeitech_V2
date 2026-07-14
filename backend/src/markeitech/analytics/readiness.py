@@ -17,6 +17,7 @@ _MINUTE = timedelta(minutes=1)
 _EXPECTED_BAR_QUERY_WINDOW = timedelta(days=30)
 _FULL_INDICATOR_DEPTH = 200
 _DIRECTIONAL_DEPTH = 50
+_MAX_TOLERATED_STARTUP_ONE_MINUTE_LAG = 1
 
 
 class AnalyticsFreshnessStatus(StrEnum):
@@ -329,8 +330,15 @@ def _instrument_status(
         (item for item in timeframes if item.timeframe == AnalyticsTimeframe.ONE_MINUTE),
         None,
     )
-    if one_minute is None or one_minute.freshness != AnalyticsFreshnessStatus.CURRENT:
+    if one_minute is None:
         return AnalyticsReadinessStatus.BLOCKED, ("one_minute_not_current",)
+    if (
+        one_minute.freshness == AnalyticsFreshnessStatus.STALE
+        and one_minute.lag_intervals > _MAX_TOLERATED_STARTUP_ONE_MINUTE_LAG
+    ):
+        return AnalyticsReadinessStatus.BLOCKED, ("one_minute_not_current",)
+    if one_minute.freshness == AnalyticsFreshnessStatus.STALE:
+        return AnalyticsReadinessStatus.DEGRADED, ("one_minute_startup_lag_tolerated",)
     if any(
         item.freshness == AnalyticsFreshnessStatus.STALE or item.depth != AnalyticsDepthStatus.FULL
         for item in timeframes
