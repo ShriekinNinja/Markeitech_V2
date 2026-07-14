@@ -98,8 +98,12 @@ def test_coordinator_waits_for_all_warmups_and_analysis_before_subscribing() -> 
     assert coordinator.state == WarmupState.REQUESTING
     assert not any(call.startswith(("trades:", "bars:")) for call in target.calls)
 
-    for bar_type, callback in target.callbacks.items():
+    for bar_type in (
+        "NQU6.CME-1-MINUTE-LAST-EXTERNAL",
+        "ESU6.CME-1-DAY-LAST-EXTERNAL",
+    ):
         coordinator.record_historical_data(bar_type=bar_type, data=f"bar:{bar_type}")
+        callback = target.callbacks[bar_type]
         callback(f"request-{bar_type}")
 
     assert events == ["analyze:2"]
@@ -119,13 +123,53 @@ def test_analysis_failure_blocks_live_subscriptions() -> None:
     )
     coordinator.start()
 
-    callbacks = list(target.callbacks.items())
-    with pytest.raises(RuntimeError, match="returned no data"):
-        for _bar_type, callback in callbacks:
-            callback("request")
+    bar_type = "NQU6.CME-1-MINUTE-LAST-EXTERNAL"
+    with pytest.raises(RuntimeError, match="after 3 attempts"):
+        for _ in range(3):
+            target.callbacks[bar_type]("request")
 
     assert coordinator.state == WarmupState.FAILED
     assert not any(call.startswith(("trades:", "bars:")) for call in target.calls)
+
+
+def test_empty_warmup_retries_same_request_before_advancing() -> None:
+    target = DeferredTarget()
+    retries: list[tuple[str, int, int]] = []
+    coordinator = WarmupCoordinator(
+        action_plan(),
+        target,
+        on_warmup_ready=require_historical_coverage,
+        on_warmup_retry=lambda action, attempt, maximum: retries.append(
+            (action.bar_type or "", attempt, maximum)
+        ),
+    )
+    first = "NQU6.CME-1-MINUTE-LAST-EXTERNAL"
+
+    coordinator.start()
+    target.callbacks[first]("empty-request")
+
+    assert target.calls == [f"request:{first}", f"request:{first}"]
+    assert retries == [(first, 2, 3)]
+    coordinator.record_historical_data(bar_type=first, data="bar")
+    target.callbacks[first]("successful-retry")
+    assert target.calls[-1] == "request:ESU6.CME-1-DAY-LAST-EXTERNAL"
+
+
+def test_warmups_are_issued_sequentially() -> None:
+    target = DeferredTarget()
+    coordinator = WarmupCoordinator(
+        action_plan(),
+        target,
+        on_warmup_ready=lambda _snapshot: None,
+    )
+    first = "NQU6.CME-1-MINUTE-LAST-EXTERNAL"
+    second = "ESU6.CME-1-DAY-LAST-EXTERNAL"
+
+    coordinator.start()
+    assert target.calls == [f"request:{first}"]
+    coordinator.record_historical_data(bar_type=first, data="bar")
+    target.callbacks[first]("first")
+    assert target.calls == [f"request:{first}", f"request:{second}"]
 
 
 def test_coordinator_rejects_second_start() -> None:
@@ -204,8 +248,12 @@ def test_recovery_requests_run_sequentially_before_analysis_and_subscriptions() 
         startup_recovery=recovery,
     )
     coordinator.start()
-    for bar_type, callback in tuple(target.callbacks.items()):
+    for bar_type in (
+        "NQU6.CME-1-MINUTE-LAST-EXTERNAL",
+        "ESU6.CME-1-DAY-LAST-EXTERNAL",
+    ):
         coordinator.record_historical_data(bar_type=bar_type, data=f"bar:{bar_type}")
+        callback = target.callbacks[bar_type]
         callback(f"request-{bar_type}")
 
     assert coordinator.state == WarmupState.RECOVERING

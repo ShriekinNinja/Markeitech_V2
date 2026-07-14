@@ -31,16 +31,17 @@ BASE_NS = 1_786_360_120_000_000_000
 
 
 def config(tmp_path: Path, **updates: object) -> PersistenceConfig:
-    return PersistenceConfig(
-        catalog_path=tmp_path / "catalog",
-        metadata_path=tmp_path / "metadata.sqlite3",
-        journal_path=tmp_path / "journal",
-        catalog_batch_size=10,
+    values = {
+        "catalog_path": tmp_path / "catalog",
+        "metadata_path": tmp_path / "metadata.sqlite3",
+        "journal_path": tmp_path / "journal",
+        "catalog_batch_size": 10,
         **updates,
-    )
+    }
+    return PersistenceConfig(**values)
 
 
-def trade_tick(offset_ns: int = 100) -> TradeTick:
+def trade_tick(offset_ns: int = 100, *, init_offset_ns: int | None = None) -> TradeTick:
     return TradeTick(
         instrument_id=InstrumentId.from_str("NQU6.CME"),
         price=Price.from_str("20000.25"),
@@ -48,7 +49,7 @@ def trade_tick(offset_ns: int = 100) -> TradeTick:
         aggressor_side=AggressorSide.BUYER,
         trade_id=TradeId(f"trade-{offset_ns}"),
         ts_event=BASE_NS + offset_ns,
-        ts_init=BASE_NS + offset_ns + 100,
+        ts_init=BASE_NS + (init_offset_ns if init_offset_ns is not None else offset_ns + 100),
     )
 
 
@@ -216,6 +217,34 @@ def test_journal_capacity_fails_before_creating_a_record(tmp_path: Path) -> None
 
     assert journal.total_bytes == 0
     assert list(persistence_config.journal_path.glob("*.wal")) == []
+
+
+def test_writer_never_splits_a_shared_receipt_timestamp_across_catalog_chunks(
+    tmp_path: Path,
+) -> None:
+    persistence_config = config(tmp_path, catalog_batch_size=2)
+    catalog = NautilusParquetTimeSeriesStore(persistence_config)
+    metadata = SQLiteMetadataStore(persistence_config)
+    writer = BoundedPersistenceWriter(
+        persistence_config,
+        IdempotentPersistenceCoordinator(persistence_config, catalog, metadata),
+        catalog,
+    )
+    events = (
+        trade_tick(100, init_offset_ns=200),
+        trade_tick(200, init_offset_ns=300),
+        trade_tick(201, init_offset_ns=300),
+    )
+
+    writer.start()
+    for event in events:
+        assert writer.submit(event) == PersistenceSubmissionStatus.ACCEPTED
+    assert writer.stop(timeout=2)
+
+    assert writer.snapshot.status == PersistenceWriterStatus.STOPPED, writer.snapshot
+    assert writer.snapshot.persisted_count == 3
+    assert len(catalog.query_trade_ticks("NQU6.CME")) == 3
+    metadata.close()
 
 
 @pytest.mark.parametrize(

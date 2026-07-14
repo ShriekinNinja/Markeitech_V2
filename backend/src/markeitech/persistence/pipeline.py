@@ -315,8 +315,30 @@ class BoundedPersistenceWriter:
             buffered = self._buckets.pop(key)
             journal_paths = {item.journal_path for item in buffered}
             buffered.sort(key=lambda item: (item.identity.init_ts_ns, item.identity.dedupe_key))
-            for offset in range(0, len(buffered), self._config.catalog_batch_size):
-                chunk = buffered[offset : offset + self._config.catalog_batch_size]
+            offset = 0
+            while offset < len(buffered):
+                chunk_end = min(offset + self._config.catalog_batch_size, len(buffered))
+                if (
+                    chunk_end < len(buffered)
+                    and buffered[chunk_end - 1].identity.init_ts_ns
+                    == buffered[chunk_end].identity.init_ts_ns
+                ):
+                    shared_init_ns = buffered[chunk_end].identity.init_ts_ns
+                    group_start = chunk_end - 1
+                    while (
+                        group_start > offset
+                        and buffered[group_start - 1].identity.init_ts_ns == shared_init_ns
+                    ):
+                        group_start -= 1
+                    if group_start > offset:
+                        chunk_end = group_start
+                    else:
+                        while (
+                            chunk_end < len(buffered)
+                            and buffered[chunk_end].identity.init_ts_ns == shared_init_ns
+                        ):
+                            chunk_end += 1
+                chunk = buffered[offset:chunk_end]
                 try:
                     result = self._coordinator.persist_closed_batch([item.event for item in chunk])
                 except Exception:
@@ -331,6 +353,7 @@ class BoundedPersistenceWriter:
                     self._condition.notify_all()
                     snapshot = self._snapshot_unlocked()
                 self._publish(snapshot)
+                offset = chunk_end
             for path in journal_paths:
                 self._journal.acknowledge(path)
             with self._condition:

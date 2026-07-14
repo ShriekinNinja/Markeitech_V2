@@ -85,8 +85,18 @@ def coordinator(
 
 
 class FailingCatalogBackend:
-    def write_data(self, data: list[object]) -> None:
+    def write_data(self, data: list[object], **kwargs: object) -> None:
         raise RuntimeError("catalog unavailable")
+
+    def get_intervals(
+        self,
+        data_cls: type,
+        identifier: str | None = None,
+    ) -> list[tuple[int, int]]:
+        return []
+
+    def consolidate_data(self, *args: object, **kwargs: object) -> None:
+        return None
 
     def query(self, data_cls: type, identifiers: list[str] | None = None) -> list[object]:
         return []

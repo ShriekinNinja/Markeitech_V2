@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Sequence
 from threading import Lock
 from typing import Any, Protocol
@@ -25,7 +26,23 @@ CatalogEvent = TradeTick | QuoteTick | OneMinuteBar
 
 
 class CatalogBackend(Protocol):
-    def write_data(self, data: list[object]) -> None: ...
+    def write_data(self, data: list[object], **kwargs: Any) -> None: ...
+
+    def get_intervals(
+        self,
+        data_cls: type,
+        identifier: str | None = None,
+    ) -> list[tuple[int, int]]: ...
+
+    def consolidate_data(
+        self,
+        data_cls: type,
+        identifier: str | None = None,
+        start: int | None = None,
+        end: int | None = None,
+        ensure_contiguous_files: bool = True,
+        deduplicate: bool = False,
+    ) -> None: ...
 
     def query(
         self,
@@ -51,21 +68,55 @@ class NautilusParquetTimeSeriesStore:
     def write(self, events: Sequence[object]) -> tuple[PersistenceEventIdentity, ...]:
         if not events:
             return ()
-        if len(events) > self._config.catalog_batch_size:
+        validated = tuple(self._require_supported(event) for event in events)
+        identities = tuple(self._identity(event) for event in validated)
+        if len(events) > self._config.catalog_batch_size and not _shares_init_timestamp(identities):
             raise ValueError(
                 f"catalog batch contains {len(events)} events; "
                 f"maximum is {self._config.catalog_batch_size}"
             )
-
-        validated = tuple(self._require_supported(event) for event in events)
-        identities = tuple(self._identity(event) for event in validated)
         catalog_data = [
             canonical_bar_to_record(event) if isinstance(event, OneMinuteBar) else event
             for event in validated
         ]
         with self._write_lock:
-            self._catalog.write_data(catalog_data)
+            repairs = self._overlapping_groups(catalog_data)
+            self._catalog.write_data(
+                catalog_data,
+                skip_disjoint_check=bool(repairs),
+            )
+            for data_cls, identifier, bucket_start_ns, bucket_end_ns in repairs:
+                self._catalog.consolidate_data(
+                    data_cls=data_cls,
+                    identifier=identifier,
+                    start=bucket_start_ns,
+                    end=bucket_end_ns - 1,
+                    ensure_contiguous_files=False,
+                    deduplicate=True,
+                )
         return identities
+
+    def _overlapping_groups(
+        self,
+        catalog_data: list[object],
+    ) -> tuple[tuple[type, str, int, int], ...]:
+        grouped: dict[tuple[type, str, int], list[int]] = defaultdict(list)
+        interval_ns = self._config.persistence_batch_interval_seconds * 1_000_000_000
+        for event in catalog_data:
+            init_ns = int(event.ts_init)
+            identifier = str(event.instrument_id)
+            bucket_start_ns = (init_ns // interval_ns) * interval_ns
+            grouped[(type(event), identifier, bucket_start_ns)].append(init_ns)
+
+        repairs: list[tuple[type, str, int, int]] = []
+        for (data_cls, identifier, bucket_start_ns), timestamps in grouped.items():
+            new_start, new_end = min(timestamps), max(timestamps)
+            intervals = self._catalog.get_intervals(data_cls, identifier)
+            if any(start <= new_end and new_start <= end for start, end in intervals):
+                repairs.append(
+                    (data_cls, identifier, bucket_start_ns, bucket_start_ns + interval_ns)
+                )
+        return tuple(repairs)
 
     def query_trade_ticks(self, instrument_id: str) -> tuple[TradeTick, ...]:
         with self._write_lock:
@@ -152,3 +203,7 @@ class NautilusParquetTimeSeriesStore:
     def identify(self, events: Sequence[object]) -> tuple[PersistenceEventIdentity, ...]:
         validated = tuple(self._require_supported(event) for event in events)
         return tuple(self._identity(event) for event in validated)
+
+
+def _shares_init_timestamp(identities: Sequence[PersistenceEventIdentity]) -> bool:
+    return len({identity.init_ts_ns for identity in identities}) == 1

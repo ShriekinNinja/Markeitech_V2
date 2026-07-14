@@ -53,10 +53,11 @@ class IdempotentPersistenceCoordinator:
     def persist_closed_batch(self, events: Sequence[object]) -> PersistenceWriteResult:
         if not events:
             return PersistenceWriteResult(batch=None, persisted_count=0, duplicate_count=0)
-        if len(events) > self._config.catalog_batch_size:
-            raise ValueError("persistence batch exceeds configured catalog batch size")
-
         paired = self._validated_pairs(events)
+        if len(events) > self._config.catalog_batch_size and not _shares_init_timestamp(
+            tuple(identity for _, identity in paired)
+        ):
+            raise ValueError("persistence batch exceeds configured catalog batch size")
         unique = self._deduplicate_input(paired)
         committed_keys = self._metadata.committed_dedupe_keys(
             tuple(identity for _, identity in unique)
@@ -207,6 +208,10 @@ def _event_ns(identity: PersistenceEventIdentity) -> int:
     if identity.event_ts_ns is None:
         raise ValueError("persistence identity requires nanosecond event time")
     return identity.event_ts_ns
+
+
+def _shares_init_timestamp(identities: Sequence[PersistenceEventIdentity]) -> bool:
+    return len({identity.init_ts_ns for identity in identities}) == 1
 
 
 def _hash_identities(identities: tuple[PersistenceEventIdentity, ...]) -> str:

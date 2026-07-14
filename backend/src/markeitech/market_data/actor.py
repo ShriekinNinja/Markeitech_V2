@@ -268,6 +268,10 @@ class MarkeitechMarketDataActor(Actor):
             target,
             on_warmup_ready=self._analyze_warmup,
             startup_recovery=recovery_hook,
+            on_warmup_retry=lambda action, attempt, maximum: self.log.warning(
+                f"WARMUP_RETRY | {action.bar_type} | attempt={attempt}/{maximum} "
+                "| reason=empty_or_timed_out_response"
+            ),
         )
         enabled_instrument_ids = {
             action.instrument_id

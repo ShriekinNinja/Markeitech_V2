@@ -23,15 +23,15 @@ EVENT_NS = 1_786_360_100_123_456_789
 INIT_NS = 1_786_360_100_223_456_789
 
 
-def trade_tick(instrument_id: str = "NQU6.CME") -> TradeTick:
+def trade_tick(instrument_id: str = "NQU6.CME", *, offset_ns: int = 0) -> TradeTick:
     return TradeTick(
         instrument_id=InstrumentId.from_str(instrument_id),
         price=Price.from_str("20000.25"),
         size=Quantity.from_str("3.125"),
         aggressor_side=AggressorSide.BUYER,
-        trade_id=TradeId("trade-123"),
-        ts_event=EVENT_NS,
-        ts_init=INIT_NS,
+        trade_id=TradeId(f"trade-{123 + offset_ns}"),
+        ts_event=EVENT_NS + offset_ns,
+        ts_init=INIT_NS + offset_ns,
     )
 
 
@@ -122,6 +122,41 @@ def test_catalog_keeps_instruments_isolated(store: NautilusParquetTimeSeriesStor
     assert len(store.query_trade_ticks("ESU6.CME")) == 1
 
 
+def test_distinct_ticks_with_shared_boundary_timestamp_are_consolidated(
+    store: NautilusParquetTimeSeriesStore,
+) -> None:
+    first = trade_tick()
+    boundary = TradeTick(
+        instrument_id=first.instrument_id,
+        price=Price.from_str("20000.375"),
+        size=first.size,
+        aggressor_side=first.aggressor_side,
+        trade_id=TradeId("trade-boundary"),
+        ts_event=first.ts_event + 1,
+        ts_init=first.ts_init + 1,
+    )
+    second = TradeTick(
+        instrument_id=first.instrument_id,
+        price=Price.from_str("20000.50"),
+        size=first.size,
+        aggressor_side=first.aggressor_side,
+        trade_id=TradeId("trade-124"),
+        ts_event=first.ts_event + 2,
+        ts_init=boundary.ts_init,
+    )
+
+    store.write([first, boundary])
+    store.write([second])
+
+    stored = store.query_trade_ticks("NQU6.CME")
+    assert {tick.trade_id for tick in stored} == {
+        first.trade_id,
+        boundary.trade_id,
+        second.trade_id,
+    }
+    assert len(store._catalog.get_intervals(TradeTick, "NQU6.CME")) == 1
+
+
 def test_empty_batch_is_harmless(store: NautilusParquetTimeSeriesStore) -> None:
     assert store.write([]) == ()
 
@@ -138,7 +173,7 @@ def test_unsupported_and_provisional_events_fail_before_catalog_write(
 
 def test_batch_limit_is_enforced(store: NautilusParquetTimeSeriesStore) -> None:
     with pytest.raises(ValueError, match="maximum is 10"):
-        store.write([trade_tick()] * 11)
+        store.write([trade_tick(offset_ns=index) for index in range(11)])
 
 
 class DetectingCatalog:
@@ -148,7 +183,7 @@ class DetectingCatalog:
         self.max_active_writes = 0
         self.fail = fail
 
-    def write_data(self, data: list[object]) -> None:
+    def write_data(self, data: list[object], **kwargs: object) -> None:
         if self.fail:
             raise RuntimeError("catalog unavailable")
         with self._state_lock:
@@ -157,6 +192,16 @@ class DetectingCatalog:
         time.sleep(0.01)
         with self._state_lock:
             self._active_writes -= 1
+
+    def get_intervals(
+        self,
+        data_cls: type,
+        identifier: str | None = None,
+    ) -> list[tuple[int, int]]:
+        return []
+
+    def consolidate_data(self, *args: object, **kwargs: object) -> None:
+        return None
 
 
 def test_store_serializes_concurrent_catalog_writes(tmp_path: Path) -> None:
