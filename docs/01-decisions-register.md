@@ -450,4 +450,6 @@ Give each location zone a semantic identity derived from instrument, direction, 
 
 Suppress duplicate setups while price remains in the same semantic zone. A later exit followed by re-entry may begin a new location episode even when the higher-timeframe Direction regime has not changed. Derivation and episode tracking must use committed point-in-time evidence and remain identical for active and background instruments.
 
+Require the product-session start as explicit UTC input for session VWAP and value-area identity. Match the current evaluation close using source-specific ATR proximity, with zero tolerance available for strict containment. Missing ATR may prevent an outside-zone proximity match but cannot invalidate price already inside a zone. Count confluence by distinct source kind and fail closed when nested zone evidence is newer than its committed feature.
+
 Reason: One setup per 1h/15m Direction regime would miss later pullbacks during a trend that may persist for hours or days. Including every developing bound or feature id in zone identity would create the opposite failure: a new setup every minute. Semantic origin identity plus edge-triggered episodes preserves both repeatability and dedupe while retaining exact evidence for audit and calibration.

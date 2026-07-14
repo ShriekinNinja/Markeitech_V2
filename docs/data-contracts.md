@@ -250,7 +250,13 @@ Direction is long-lived context; a DLA trade setup is a repeatable entry into a 
 
 Direction alignment is fail-closed: long zones may be support, bullish FVG, value-area low, or session VWAP; short zones may be resistance, bearish FVG, value-area high, or session VWAP. A zone rejects mismatched source/type pairs, inverted bounds, untrimmed anchors, naive timestamps, and incompatible direction.
 
-`SignalLocationMatch` binds one semantic zone to the exact evaluation feature, observed price and timestamp, calculated distance, applied tolerance, and reason codes. A match cannot predate its zone evidence or exceed tolerance. Zone derivation, edge-triggered entry/exit episodes, and attachment to Armed signal state remain subsequent 5C.2 slices.
+`SignalLocationMatch` binds one semantic zone to the exact evaluation feature, observed price and timestamp, calculated distance, applied tolerance, and reason codes. A match cannot predate its zone evidence or exceed tolerance. Edge-triggered entry/exit episodes and attachment to Armed signal state remain subsequent 5C.2 slices.
+
+Location derivation accepts the product-session start explicitly in UTC; it never infers a CME or exchange session from the UTC calendar date. Long evaluation selects nearest support, bullish active FVGs, developing value-area low, and session VWAP. Short evaluation selects nearest resistance, bearish active FVGs, developing value-area high, and session VWAP. Structural and FVG anchors retain their originating observation/detection time and prices, while value-edge and VWAP anchors retain the product-session start.
+
+The current evaluation-timeframe close is matched against every configured zone. Distance is zero inside a zone; otherwise source-timeframe ATR multiplied by the policy fraction defines proximity. Missing ATR prevents an outside-zone proximity claim but does not erase an exact inside-zone match. FVG policy may use zero tolerance to require containment. Match fidelity combines the source-zone and exact evaluation-feature input fidelity without upgrading either.
+
+Qualification requires the configured number of distinct matched source kinds, not merely several levels from one kind. Existing but unmatched sources return `not_at_location`; partial matches below confluence return `insufficient_confluence`; unavailable policy/current-clock evidence returns `missing_evidence`. Missing configured timeframes or source payloads mark the result degraded. Nested level/FVG timestamps newer than their committed feature fail closed as look-ahead evidence.
 
 ### Durable Signal State
 

@@ -35,6 +35,11 @@ from markeitech.signals.direction import (
     qualify_direction,
 )
 from markeitech.signals.lifecycle import transition_signal
+from markeitech.signals.location import (
+    LocationZoneDerivation,
+    derive_location_zones,
+    qualify_location,
+)
 
 __all__ = [
     "SignalDirection",
@@ -48,6 +53,7 @@ __all__ = [
     "LocationQualificationStatus",
     "LocationSourceKind",
     "LocationSourcePolicyConfig",
+    "LocationZoneDerivation",
     "OpposingContextPolicy",
     "SignalDefinitionConfig",
     "SignalEvidenceFidelity",
@@ -63,7 +69,9 @@ __all__ = [
     "SignalStatus",
     "SignalTransitionEvent",
     "signal_setup_key",
+    "derive_location_zones",
     "qualify_direction",
+    "qualify_location",
     "intraday_context_definition",
     "transition_signal",
 ]
