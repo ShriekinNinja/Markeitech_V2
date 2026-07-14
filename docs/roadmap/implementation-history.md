@@ -1,4 +1,14 @@
-# Phased Implementation Plan
+# Detailed Implementation History
+
+This document preserves the reviewed slices, stop conditions, and implementation
+outcomes that brought Markeitech to its current boundary. It includes historical
+phrasing such as “deferred” and earlier stage ownership; those statements record
+the sequence at that time rather than reopening completed gates.
+
+Use [current status](../current-status.md) for actual completion and the
+[implementation roadmap](implementation-roadmap.md) for future intent. BTC and
+crypto references below record an early continuous-market test and calendar
+coverage; they are not active product scope.
 
 ## Stage 0: Repository Bootstrap
 
@@ -144,7 +154,7 @@ Eleventh implementation slice:
 
 ## Stage 3: Persistence And Recovery
 
-Deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata and durable notification outbox, Redis hot runtime coordination, idempotent writes, restart recovery tests, and source/fidelity lineage for IB-first canonical data.
+Original target: deliver Nautilus-compatible Parquet/catalog storage, SQLite metadata and durable notification outbox, optional hot runtime coordination, idempotent writes, restart recovery tests, and source/fidelity lineage for IB-first canonical data. Redis was deliberately deferred because no demonstrated coordination requirement justified it.
 
 First implementation slice:
 
@@ -264,7 +274,7 @@ Ninth implementation slice:
 
 Tenth implementation slice:
 
-- Use the ordinary multi-timeframe historical warmup as the first recovery evidence wave for every enabled non-crypto instrument.
+- Use the ordinary multi-timeframe historical warmup as the first recovery evidence wave for every enabled product instrument.
 - Normalize and durably persist returned one-minute warmup bars without routing them into live counters.
 - Force a bounded writer flush before recovery planning and verify observed opens from Parquet rather than trusting accepted queue submissions.
 - Plan only unresolved calendar-aware one-minute gaps after the coarse warmup response.
@@ -419,7 +429,7 @@ Stage 5C.3 is split at the asynchronous durability boundary:
 
 Stage 5C.3a is complete. Stage 5C.3b now owns a bounded consumer thread under the managed LiveNode lifecycle. It restores verified open Armed/Triggered episodes, rebuilds point-in-time state from committed warmup revisions without emitting historical setups, evaluates every enabled definition from the first post-start evaluation bar, and atomically persists episode entry, replacement, and exit. Stage 5C.3c remains presentation-only console projection and operational acceptance evidence.
 
-Stage 5C.1 is complete. It is a pure decision boundary and does not yet emit live signals; 5C.3 owns actor/runtime wiring.
+Stage 5C.1 is complete. It remains a pure decision boundary; the Stage 5C.3 runtime now consumes it without moving live concerns into the evaluator.
 
 Stage 5C.2 uses repeatable location episodes rather than one trade setup for an entire Direction regime:
 
@@ -434,40 +444,8 @@ Stage 5C.2b is complete. It derives only direction-aligned zones from configured
 
 Stage 5C.2c is complete. It converts point-in-time qualification into idempotent enter, active, exit-pending, exited, replaced, and evidence-gap decisions. Same-zone overlap remains one episode, disjoint qualified zones replace immediately, ordinary exit requires a configurable number of consecutive observed bars, and missing evidence preserves the episode while breaking that sequence.
 
-Stage 5C.2d is implemented pending review. Episode entry deterministically creates a Candidate and Armed transition carrying the Direction regime, episode id, structured entry matches, and complete Direction/Location feature evidence. Initial creation and replacement commit atomically in SQLite; conflicts roll back all affected signal and outbox state. Verified open Armed/Triggered snapshots reconstruct both trackers after restart. Episode exit/replacement invalidates Armed state. Time-based Armed expiry remains coupled to the Stage 5D aggression observation policy rather than using an arbitrary pre-aggression timeout here.
+Stage 5C.2d is complete. Episode entry deterministically creates a Candidate and Armed transition carrying the Direction regime, episode id, structured entry matches, and complete Direction/Location feature evidence. Initial creation and replacement commit atomically in SQLite; conflicts roll back all affected signal and outbox state. Verified open Armed/Triggered snapshots reconstruct both trackers after restart. Episode exit/replacement invalidates Armed state. Time-based Armed expiry remains coupled to the Stage 5D aggression observation policy rather than using an arbitrary pre-aggression timeout here.
 
-## Stage 6: Notifications And Reports
-
-Deliver one-way Discord webhook alerts and analysis reports through a durable, rate-limited, retryable notification pipeline. AI-generated narrative must remain grounded in persisted structured evidence. Do not build a Discord bot.
-
-Not started.
-
-## Stage 7: Strategy Runtime
-
-Deliver isolated strategy worker topology, bounded queues, lag metrics, state restoration, controlled lifecycle, and shadow/paper evaluation for model-assisted strategies.
-
-Not started.
-
-## Stage 8: Backtesting And Replay
-
-Deliver NautilusTrader-based backtesting, reproducible replay datasets, and versioned ML training, calibration, and comparison workflows.
-
-Not started.
-
-## Stage 9: WebSocket Gateway
-
-Deliver snapshot-first WebSocket streaming, bounded client queues, resync behavior, readiness, health, gap, analytics, and signal events for future presentation clients.
-
-Not started.
-
-## Stage 10: Frontend Dashboard
-
-Deliver an operational cockpit with active-instrument chart, session context, readiness, source health, gaps, analytics, levels, background signals, and reconnect behavior.
-
-Not started.
-
-## Stage 11: Execution And Risk Controls
-
-Deliver explicitly configured paper/live execution with risk checks, auditability, and no accidental live orders.
-
-Not started.
+Future stages previously listed here now live only in the active
+[implementation roadmap](implementation-roadmap.md). Keeping unstarted work out
+of the history prevents an old sequence from becoming an accidental requirement.

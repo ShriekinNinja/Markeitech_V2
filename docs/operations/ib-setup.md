@@ -4,9 +4,9 @@
 
 Interactive Brokers connectivity is implemented behind a manual-only smoke command. No live connection is made by automated tests or the default configuration.
 
-Market-data startup begins in Stage 2 only after explicit active-instrument configuration and operator approval.
+Market-data startup requires explicit active-instrument configuration, guarded runtime flags, and operator confirmation.
 
-The Stage 2 runtime is centered on a Nautilus `TradingNodeConfig` and a Markeitech market-data actor. Automated tests build configuration, action plans, coordinators, and fake nodes, but they must not start a real node or connect to IB.
+The runtime is centered on a Nautilus `TradingNodeConfig` and a Markeitech market-data actor. Automated tests build configuration, action plans, coordinators, and fake nodes, but they must not start a real node or connect to IB.
 
 ## Supported Connection Paths
 
@@ -65,7 +65,7 @@ The dry-run output includes Nautilus-oriented request intents. These are validat
 
 ## Guarded LiveNode Bootstrap
 
-Stage 2 can prepare a Nautilus `TradingNode` from validated config by registering the IB data-client factory, attaching the market-data actor, and building the node clients. Starting it remains manual-only.
+Markeitech prepares a Nautilus `TradingNode` from validated config by registering the IB data-client factory, attaching the market-data actor, and building the node clients. Starting it remains manual-only.
 
 LiveNode start requires all of:
 
@@ -93,13 +93,13 @@ uv run markeitech-market-data-smoke config/market-data.example.toml --confirm I_
 
 The command prints the same plan summary as the dry run and refuses to start unless both config flags and the confirmation token are present. After startup, the actor requests every configured historical warmup, waits for all asynchronous completions, validates historical coverage, and only then submits active and background live subscriptions. Automated tests use fake actors and nodes; they do not connect to IB.
 
-The PyCharm `Market Data - Continuous Live Context` run configuration invokes this guarded command with `config/market-data.local.toml`. Unlike the acceptance command, it has no duration limit and runs until stopped. Context is emitted as one human-scannable `MARKET_CONTEXT` line per updated instrument and timeframe while the full LiveNode and persistence lifecycle remains active.
+The PyCharm `Market Data - Continuous Live Context` run configuration invokes this guarded command with `config/market-data.local.toml`. Unlike the acceptance command, it has no duration limit and runs until stopped. The console emits bounded `OPERATOR_CONTEXT`, `OPERATOR_LEVELS`, and `OPERATOR_AUCTION` reports while detailed `MARKET_CONTEXT_EVENT` records remain available in file logs. See the [operator context log guide](operator-context-logs.md).
 
 The local runtime enables Nautilus JSONL file logging at `data/logs/markeitech-live.jsonl`. It captures IB, LiveNode, persistence, readiness, context, and structure messages from the same kernel logger while the console remains human-readable. Files rotate at 25 MiB with ten backups and are ignored by Git. Share or inspect this file when diagnosing a live run; do not commit it because broker/runtime metadata may be present.
 
 The runtime monitors required-stream freshness and external 1-minute bar continuity. Every instrument contract must declare `calendar_id` and `session_profile`; recovery uses the pinned product-calendar adapter to exclude holidays, early closes, breaks, and other expected closures. Use `full` when IB bars are expected across published extended hours, `regular` for market-open through market-close expectations, and `continuous` only with the native `24/7` calendar. These package-shipped rules are not a live exchange-hours feed, so representative schedules must be reconciled with observed IB bars before production use. NautilusTrader remains responsible for physical IB reconnect and transport retry behavior.
 
-With persistence enabled, the initial warmup bars are flushed before exact one-minute repair requests begin. Repairs are issued sequentially and fairly across configured non-crypto instruments. The acceptance report records each instrument's recovery request count, missing intervals before and after repair, confirmed provider-empty intervals, and remaining reason codes. A degraded recovery is observable but does not by itself invalidate otherwise sufficient warmup analysis; storage failure or an unbounded recovery plan does fail startup.
+With persistence enabled, the initial warmup bars are flushed before exact one-minute repair requests begin. Repairs are issued sequentially and fairly across configured product instruments. The acceptance report records each instrument's recovery request count, missing intervals before and after repair, confirmed provider-empty intervals, and remaining reason codes. A degraded recovery is observable but does not by itself invalidate otherwise sufficient warmup analysis; storage failure or an unbounded recovery plan does fail startup.
 
 Dry-run output also includes ordered LiveNode actions. The manual smoke path maps those actions to real Nautilus actor calls after the startup guards pass.
 
@@ -133,4 +133,4 @@ Execution is disabled by default:
 - `MARKEITECH_ENABLE_EXECUTION=false`
 - `IB_READ_ONLY_API=true`
 
-Do not add account or order-routing requirements during Stage 0.
+Do not add account or order-routing requirements during data-only/read-only operation. Execution requires a separately reviewed risk and execution stage.

@@ -9,3 +9,4 @@ Observations captured during live trading and carried into development review.
 - TickStrike/aggression indicator.
 - Big trades indicator.
 - Logs were not usable for humans. Stage 4B now emits an active-first warmup briefing and bounded change-aware live reports; confirm the density during trading before closing this observation.
+- On July 14, Direction moved from `+2` to `-1` over roughly 45 minutes and informed a profitable discretionary puts trade. Preserve this as evidence of operator usefulness, not signal validation or a calibration target.

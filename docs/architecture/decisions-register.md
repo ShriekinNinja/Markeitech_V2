@@ -2,6 +2,18 @@
 
 This register records architecture decisions that should not drift silently.
 
+Decision status records architectural acceptance, not implementation progress.
+Use [current status](../current-status.md) for delivery state.
+
+## Decision Groups
+
+- DR-0001 through DR-0010: bootstrap, safety, schemas, and instrument roles
+- DR-0011 through DR-0020: LiveNode market data and IB acceptance
+- DR-0021 through DR-0024: operator surfaces, fidelity, ML/AI, and DLA
+- DR-0025 through DR-0037: persistence, recovery, calendars, and retention
+- DR-0038 through DR-0043: analytics, history, and durable features
+- DR-0044 through DR-0050: signal identity, lifecycle, location, and live runtime
+
 ## DR-0001: Python Version
 
 Status: accepted
@@ -292,13 +304,13 @@ Use pinned `pandas-market-calendars` schedule rules behind Markeitech's `Session
 
 For full equity profiles, include published premarket through postmarket hours when available. For regular profiles, use market open through market close. Split session windows around published breaks and interruptions before generating expected one-minute opens. Normalize output to UTC, bound query ranges and per-runtime schedule caching, and fail closed on unknown policy. Pin the package version because its calendars are shipped rules, not live exchange data; validate upgrades against golden holiday, early-close, maintenance, and DST cases and later reconcile representative schedules with observed IB history.
 
-Reason: Recovery correctness depends on knowing whether a missing minute was actually expected. Explicit product policy handles CME futures, cash indices, equities, and crypto without pretending venue names imply identical sessions. The adapter preserves provider portability, while golden tests and a version pin contain the operational risk of calendar-rule corrections.
+Reason: Recovery correctness depends on knowing whether a missing minute was actually expected. Explicit product policy handles CME futures, cash indices, equities, and continuous-session products without pretending venue names imply identical sessions. The adapter preserves provider portability, while golden tests and a version pin contain the operational risk of calendar-rule corrections.
 
 ## DR-0034: One Fair And Durably Verified Startup Recovery Owner
 
 Status: accepted
 
-Keep ordinary warmup and targeted repair under one actor-side historical coordinator. Treat the existing multi-timeframe warmup as the first recovery evidence wave for every enabled non-crypto instrument. Persist its one-minute bars, force a bounded writer flush, and plan only gaps that remain in Parquet. Convert provider-neutral recovery requests into exact Nautilus historical ranges, interleave them round-robin across instruments, and issue one at a time. Flush and re-query durable bars before completing each instrument's recovery lifecycle.
+Keep ordinary warmup and targeted repair under one actor-side historical coordinator. Treat the existing multi-timeframe warmup as the first recovery evidence wave for every enabled product instrument. Persist its one-minute bars, force a bounded writer flush, and plan only gaps that remain in Parquet. Convert provider-neutral recovery requests into exact Nautilus historical ranges, interleave them round-robin across instruments, and issue one at a time. Flush and re-query durable bars before completing each instrument's recovery lifecycle.
 
 Do not let one active instrument own recovery correctness for the watchlist. Every configured futures, cash-index, equity, or ETF instrument receives an independent plan and terminal result. A degraded historical result remains explicit but may continue through the existing minimum warmup and analysis gate. Fail startup closed when persistence cannot flush or recovery exceeds bounded request limits.
 
@@ -406,7 +418,7 @@ Reason: Parquet and SQLite cannot share an atomic transaction. Catalog-first ord
 
 ## DR-0044: Stable Signal Identity Separate From Lifecycle Content
 
-Status: accepted for implementation
+Status: accepted
 
 Represent the first Direction-Location-Aggression setup as immutable signal snapshots with candidate, armed, triggered, invalidated, and expired states. Derive stable signal identity from schema, family, algorithm/configuration identity, deterministic setup key, instrument, and direction. Hash mutable lifecycle content separately. Emit deterministic transition events carrying prior-content identity, the complete new snapshot, appended evidence, and reason codes.
 
@@ -418,7 +430,7 @@ Reason: Separating setup identity from evolving content gives persistence, notif
 
 ## DR-0045: Optimistic Signal State With Sequenced Transition History
 
-Status: accepted for implementation
+Status: accepted
 
 Persist each signal's immutable initial-candidate content hash, mutable current snapshot, and append-only transition events in SQLite. Assign transitions a contiguous per-signal sequence independent of event timestamps. On restart, validate redundant row metadata and require the transition content-hash chain to begin at the initial candidate and end at the current snapshot.
 
@@ -430,7 +442,7 @@ Reason: Current-state restoration alone cannot prove how a signal arrived there,
 
 ## DR-0046: Named Direction Definitions With Stable Regime Anchors
 
-Status: accepted for implementation
+Status: accepted
 
 Keep Direction-Location-Aggression as one signal family while expressing distinct interpretations as named, versioned signal definitions enabled independently per instrument. The initial `intraday_context` definition requires agreeing 1h and 15m Direction plus matching 5m confirmation; opposing daily context degrades the setup. Permit later definitions such as `scalp` to use different timeframe roles without changing the family or evaluator code.
 
@@ -442,7 +454,7 @@ Reason: A fixed 1h+15m rule would make future shorter-horizon setups either acci
 
 ## DR-0047: Repeatable Semantic Location Episodes
 
-Status: accepted for implementation
+Status: accepted
 
 Treat Direction as long-lived market context and each distinct entry into a direction-aligned location as a repeatable DLA setup opportunity. Configure accepted location source kinds, analytical timeframes, ATR-relative proximity tolerances, and minimum distinct-source confluence per named signal definition. Begin with structural support/resistance, aligned active FVGs, session value-area edges, and session VWAP.
 
@@ -458,7 +470,7 @@ Reason: One setup per 1h/15m Direction regime would miss later pullbacks during 
 
 ## DR-0048: Episode-Anchored Signals With Atomic Arming
 
-Status: accepted for implementation
+Status: accepted
 
 Anchor each repeatable DLA signal setup to its deterministic Location episode id. Store the Direction-regime anchor and episode id on the initial Candidate. On Candidate-to-Armed progression, append the complete structured entry matches and Location evidence references covering every exact source and evaluation feature. Reject Armed or Triggered snapshots without that durable episode state or evidence coverage.
 
@@ -470,7 +482,7 @@ Reason: Persisting Candidate and Armed state separately creates a crash-visible 
 
 ## DR-0049: Sequenced Post-Commit Feature Handoff
 
-Status: accepted for implementation
+Status: accepted
 
 Assign every SQLite feature manifest a monotonically increasing commit sequence inside the manifest transaction. Treat `(as_of, commit_sequence)` as live revision order for one instrument/timeframe: later market state wins first, while the durable sequence resolves legitimate corrected variants at the same timestamp. Preserve this order on migration and restart; never choose a correction by feature hash.
 
@@ -482,7 +494,7 @@ Reason: Actor submission proves neither Parquet durability nor SQLite agreement.
 
 ## DR-0050: Watermarked Live Signal Runtime
 
-Status: accepted for implementation
+Status: accepted
 
 Run committed-feature consumption on one bounded signal thread owned by the managed LiveNode. Start persistence first, restore current-definition open signals through verified SQLite history, then start Nautilus. On shutdown, stop and flush feature production, drain signal evaluation while metadata remains open, and only then close persistence.
 

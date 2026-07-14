@@ -42,7 +42,7 @@ The manual smoke command is the first path allowed to call `TradingNode.run()`. 
 
 Warmup lookbacks currently over-fetch calendar days to cover the configured minimum session count across weekends and common closures. Exact exchange-calendar session resolution remains a later refinement at the session/calendar boundary.
 
-## Initial Runtime Topology
+## Runtime Topology
 
 ```text
 IB Gateway / TWS
@@ -55,34 +55,37 @@ Authoritative market-data runtime
       |
       +--> Parquet/catalog storage
       +--> SQLite metadata + durable notification outbox
-      +--> Redis hot coordination
       +--> Analytics + signals
                 |
                 +--> Discord webhook delivery
                 +--> Future WebSocket gateway --> Frontend
 ```
 
+Optional Redis coordination may be added beside these services only when a
+demonstrated distributed-runtime need appears. It is not part of the current
+runtime or a durability boundary.
+
 ## Instrument Runtime Model
 
 Markeitech supports multiple configured instruments with one enabled active instrument at a time.
 
-The active instrument receives live tick-by-tick data, real-time trade/quote classification, active bar construction, dashboard primary chart updates, and later strategy eligibility. Stage 2 starts with explicit-expiry NQ as the first active instrument.
+The active instrument receives live tick-by-tick data, real-time trade/quote classification, active bar construction, and operator-first context updates. Explicit-expiry NQ is the first active instrument.
 
 At boot, every enabled instrument is warmed from historical bars, analyzed across configured timeframes, and annotated with market context such as support/resistance zones, EMAs, trend, VWAP, FVGs, session levels, and later additional structures.
 
-Background instruments then track live 1-minute bars through Nautilus where supported. They can produce indicators, zones, trend state, context, and dashboard signals while another instrument remains active. Examples include ES, SPX, VIX, QQQ, SPY, MAG7 names, and later additional operator-selected instruments.
+Background instruments then track live 1-minute bars through Nautilus where supported. They produce indicators, zones, trend state, context, and signals while another instrument remains active. Examples include ES, SPX, VIX, QQQ, SPY, MAG7 names, and later additional operator-selected instruments.
 
 Switching the active instrument changes runtime stream ownership:
 
 - the old active instrument can downgrade to background monitoring or be disabled by policy
 - the new active instrument upgrades to live tick-by-tick ownership
 - each instrument keeps separate readiness, gap state, checkpoints, bars, analytics, and signals
-- dashboard primary views follow the active instrument
-- signal views may include both active and background instruments
+- operator-primary projections follow the active instrument
+- signal projections may include both active and background instruments
 
 Runtime switching uses a make-before-break handover. The candidate must already be enabled and must have completed the boot warmup. The actor subscribes candidate trade and quote ticks, waits until both stream types have produced data, then changes the logical active instrument and removes the previous active tick streams. All 1-minute bar subscriptions remain unchanged.
 
-Only one instrument is logically active during this process, although the candidate and current active instrument can briefly have overlapping tick subscriptions while readiness is established. A timeout or subscription failure removes the candidate streams and keeps the previous instrument active. The Stage 2 actor exposes the internal switch command; operator-facing command transport belongs to the later gateway stage.
+Only one instrument is logically active during this process, although the candidate and current active instrument can briefly have overlapping tick subscriptions while readiness is established. A timeout or subscription failure removes the candidate streams and keeps the previous instrument active. The actor exposes the internal switch command; operator-facing command transport belongs to a later surface.
 
 ## Live Data Ingestion
 
@@ -92,7 +95,7 @@ Each configured instrument has an isolated runtime snapshot containing event cou
 
 Subscribed trades are classified against the latest valid same-instrument quote. The logical active instrument also builds a provisional 1-minute bar from classified ticks. That bar carries classified buy, sell, and unknown volume and becomes complete when the first trade in the next minute arrives. Nautilus/IB external bars are completed bars whose volume remains unknown-side unless a later reconciliation step can prove attribution.
 
-Normalized events flow through an injectable sink. Stage 2 does not persist or broadcast them yet; persistence, analytics, notifications, and later WebSocket delivery consume this boundary in later stages.
+Normalized events flow through an injectable sink. The managed runtime routes supported completed events to bounded persistence and analytics boundaries. Notifications and later WebSocket delivery consume downstream domain projections rather than provider objects.
 
 Interactive Brokers is the only implemented live provider initially. Canonical events remain provider-neutral and retain source identity, source-specific trade or sequence identifiers, original timestamps, and methodology metadata where values are derived. Future providers must enter through adapters at this canonical boundary rather than inherit IB-shaped contracts.
 
@@ -133,7 +136,7 @@ Parquet/catalog storage is the durable time-series store for raw ticks and bars.
 
 Raw valid trade and quote ticks retain Nautilus native catalog schemas. Completed canonical one-minute bars use a registered custom Arrow record because the canonical contract includes classified volume, source, revision, completion, schema, and dedupe fields that a native OHLCV bar cannot preserve. Decimal fields are encoded as strings and reconstructed as immutable domain values to avoid floating-point precision loss.
 
-One `NautilusParquetTimeSeriesStore` serializes catalog writes because `ParquetDataCatalog` is not thread-safe. It validates an entire bounded batch before writing, returns persistence identities only after the catalog call succeeds, and does not own checkpoints; Stage 3 metadata coordination will advance SQLite checkpoints only after successful catalog persistence.
+One `NautilusParquetTimeSeriesStore` serializes catalog writes because `ParquetDataCatalog` is not thread-safe. It validates an entire bounded batch before writing, returns persistence identities only after the catalog call succeeds, and does not own checkpoints; metadata coordination advances SQLite checkpoints only after successful catalog persistence.
 
 The idempotent coordinator accepts one closed fixed `ts_init` bucket for one stream at a time. It sorts identities deterministically, creates a content-addressed batch manifest, records preparation, writes the exact catalog batch, records catalog success, then atomically commits the compact identity ledger and checkpoint. Exact retries and historical/live overlap are filtered through fixed-size dedupe and logical-identity fingerprints. Receipt-time metadata is excluded so retransmission remains stable, while a matching dedupe fingerprint with different logical metadata fails as corruption. Typed batch, stream, source, and event-time columns support inspection and conservative retention without duplicating full tick payloads in SQLite.
 
@@ -143,11 +146,11 @@ Accepted ingress remains a non-durable queue state until the writer appends it t
 
 Recovery planning uses a provider-neutral session calendar which supplies expected one-minute opens for an instrument and UTC range. Missing bars are calculated only from those expected opens, so weekends, holidays, and maintenance breaks are not gaps. An instrument missing calendar configuration fails planning rather than being mistaken for a closed session. Contiguous missing opens become bounded deterministic historical requests; out-of-lookback bars remain explicitly unavailable. Journaled ticks are exactly replayable. Unjournaled tick gaps are partial when a provider offers best-effort history and unavailable otherwise; neither outcome is represented as complete. Recovery lifecycle records may advance from pending through recovering to a terminal result, but terminal states cannot regress.
 
-Production schedule generation uses a pinned `pandas-market-calendars` adapter behind that protocol. Every instrument contract declares its calendar identifier and whether recovery expects the full, regular, or continuous session. Exchange names and security types never select calendars implicitly: products on the same venue can have different hours, and related indices and futures do not necessarily share a session. Full equity schedules use published premarket and postmarket boundaries when available; regular schedules use market open and close. Published breaks and interruptions split windows before minute generation. Continuous instruments use a native UTC 24/7 implementation. Calendar queries and cached schedules are bounded, and unknown instruments or calendars fail closed. Package rules are local versioned code rather than a live schedule feed, so upgrades require the golden CME, NYSE, DST, holiday, and crypto tests plus later comparison against observed IB bars.
+Production schedule generation uses a pinned `pandas-market-calendars` adapter behind that protocol. Every instrument contract declares its calendar identifier and whether recovery expects the full, regular, or continuous session. Exchange names and security types never select calendars implicitly: products on the same venue can have different hours, and related indices and futures do not necessarily share a session. Full equity schedules use published premarket and postmarket boundaries when available; regular schedules use market open and close. Published breaks and interruptions split windows before minute generation. A provider-neutral UTC 24/7 implementation remains available for continuous-session contracts, although crypto is not an active product scope. Calendar queries and cached schedules are bounded, and unknown instruments or calendars fail closed. Package rules are local versioned code rather than a live schedule feed, so upgrades require the golden CME, NYSE, DST, holiday, and continuous-session tests plus later comparison against observed IB bars.
 
 The optional LiveNode persistence runtime composes the catalog, SQLite metadata, idempotent coordinator, durable journal, bounded writer, and a narrow actor-facing ingress. It starts and completes journal replay before the LiveNode can start actors or subscriptions. Valid native Nautilus ticks flow directly to the writer; only completed canonical one-minute bars cross the canonical event sink. Callback submission never waits for storage. A rejected tick records known fidelity damage, while a rejected completed bar records an obligation for later historical repair. During shutdown, the LiveNode stops producing events before the writer forces its bounded flush and SQLite closes. Reported and tick-built bars use source-scoped dedupe keys so both observations may coexist for one instrument-minute.
 
-Startup historical ownership remains with one actor-side coordinator. The ordinary multi-timeframe warmup is the first evidence wave for every enabled non-crypto instrument, and its one-minute bars enter the same durable writer as live bars. After all coarse requests complete, startup recovery forces a bounded flush and plans gaps from Parquet plus confirmed provider-empty evidence. Exact repair ranges are interleaved round-robin across instruments and issued sequentially. After responses, another bounded flush precedes durable re-verification and independent terminal recovery records. Degraded historical recovery remains visible but does not replace the minimum warmup and analysis gate. If IB repeatedly returns no bar for an expected minute, SQLite counts bounded attempts; only a configured confirmation threshold converts that minute into known provider-empty evidence, preventing endless requests without fabricating market data.
+Startup historical ownership remains with one actor-side coordinator. The ordinary multi-timeframe warmup is the first evidence wave for every enabled product instrument, and its one-minute bars enter the same durable writer as live bars. After all coarse requests complete, startup recovery forces a bounded flush and plans gaps from Parquet plus confirmed provider-empty evidence. Exact repair ranges are interleaved round-robin across instruments and issued sequentially. After responses, another bounded flush precedes durable re-verification and independent terminal recovery records. Degraded historical recovery remains visible but does not replace the minimum warmup and analysis gate. If IB repeatedly returns no bar for an expected minute, SQLite counts bounded attempts; only a configured confirmation threshold converts that minute into known provider-empty evidence, preventing endless requests without fabricating market data.
 
 Explicit failure hooks prove every crash boundary. A prepared batch may have no catalog data or may represent the ambiguous window immediately after a physical write; replaying the exact deterministic batch is safe because Nautilus skips the same catalog file. A catalog-written batch can proceed directly to metadata commit. A committed batch is a no-op on retry. Delayed events with newer initialization time but older event time can still be recorded without moving the checkpoint backward.
 
@@ -159,13 +162,13 @@ The metadata store uses versioned migrations, WAL mode, full synchronous durabil
 
 Opt-in retention runs at startup before the writer accepts new events. Product calendars resolve cutoffs from completed sessions, then maintenance reads Parquet `ts_event` statistics and deletes only wholly expired files. Mixed-age files pin the metadata cutoff to their oldest event. Each deletion is synchronized to its parent directory before one SQLite transaction removes older compact identities and committed manifests that no longer own identities. WAL presence or incomplete batches suppress the run so recovery always wins. Catalog and identity-ledger stream discovery are combined, allowing a later startup to complete metadata pruning when a crash occurred after deleting the last file. Unmanaged instruments remain untouched and visible in the maintenance report.
 
-Native Nautilus trade and quote schemas do not encode Markeitech's provider source. The Stage 3 catalog is therefore a single-source IB catalog, and retention assigns native tick files to that same configured runtime source. Before a second native tick provider can share storage, catalog ownership must be partitioned by source or the source must become durable file metadata; changing the runtime source against an existing catalog is not supported.
+Native Nautilus trade and quote schemas do not encode Markeitech's provider source. The current catalog is therefore a single-source IB catalog, and retention assigns native tick files to that same configured runtime source. Before a second native tick provider can share storage, catalog ownership must be partitioned by source or the source must become durable file metadata; changing the runtime source against an existing catalog is not supported.
 
 Every enabled retention attempt is stored as an immutable SQLite audit record, including unsafe skips and failures. Physical SQLite compaction remains an offline operator action: a separate command requires explicit confirmation, rejects ingress WAL or incomplete batches, checkpoints SQLite, obtains exclusive maintenance access, and rewrites only when free pages exceed the configured threshold. Its before/after page evidence is also durable. The LiveNode never runs `VACUUM` automatically.
 
 SQLite also stores a durable notification outbox. Delivery transports consume outbox records idempotently; a Discord outage must not lose signals or block ingestion.
 
-Redis is only hot runtime coordination. Redis must never be the sole durable source.
+Redis is reserved for optional future hot coordination. It is not used by the current runtime and must never become the sole durable source.
 
 ### Notification Boundary
 
@@ -205,19 +208,19 @@ The first named decision-support model is Direction-Location-Aggression: determi
 
 Its signal lifecycle advances from Candidate with Direction evidence, to Armed with added Location evidence, to Triggered with added Aggression evidence; Invalidated and Expired are terminal exits. Stable signal identity is separate from mutable lifecycle content and notification policy. Every state retains typed evidence ids and fidelity, and every transition carries the previous content hash plus the complete next snapshot so SQLite can later enforce optimistic, restart-safe progression.
 
-SQLite retains the initial candidate hash separately from mutable current content and appends every transition under a contiguous per-signal sequence. Restart reads verify that chain end to end. Applying a transition uses an optimistic previous-content check and may atomically insert a pending notification-outbox record; any state, history, or outbox conflict rolls the complete transaction back. This persistence boundary is available before candidate evaluation is wired into the LiveNode.
+SQLite retains the initial candidate hash separately from mutable current content and appends every transition under a contiguous per-signal sequence. Restart reads verify that chain end to end. Applying a transition uses an optimistic previous-content check and may atomically insert a pending notification-outbox record; any state, history, or outbox conflict rolls the complete transaction back. The managed LiveNode signal runtime uses this persistence boundary before any lifecycle change becomes an operator projection.
 
 Direction evaluation is definition-driven rather than tied to the active instrument or one fixed timeframe recipe. The initial `intraday_context` definition uses agreeing 1h and 15m Direction, 5m confirmation, and daily context that can degrade confidence. Definitions are enabled per instrument, so active NQ and background ES can produce independent signals from the same rules while a future `scalp` definition can coexist with different timeframe roles. Cross-instrument confluence remains a later explicit relationship feature; one instrument's evidence is never silently embedded in another instrument's setup identity.
 
-The evaluator consumes a point-in-time bundle of committed feature envelopes and retains every considered feature id as evidence. It creates one candidate per continuous qualified direction regime, preserves that regime across temporary missing evidence, and seeds it from verified open signals after restart. The live composition layer remains separate: it must observe feature-writer commit completion, select only evidence available at the evaluation timestamp, persist decisions, and apply identical behavior to active and background instruments.
+The evaluator consumes a point-in-time bundle of committed feature envelopes and retains every considered feature id as evidence. It creates one candidate per continuous qualified direction regime, preserves that regime across temporary missing evidence, and seeds it from verified open signals after restart. The live composition layer remains separate: it observes feature-writer commit completion, selects only evidence available at the evaluation timestamp, persists decisions, and applies identical behavior to active and background instruments.
 
-Location is modeled as an edge-triggered episode inside that Direction context, not as a one-time property of the whole regime. Named definitions configure structural-level, FVG, value-area-edge, and session-VWAP sources independently by timeframe and ATR-relative tolerance. Semantic zone identity is anchored to the originating swing, gap, or product session and remains stable as developing bounds or feature revisions change. Later composition must suppress repeated evaluations while price remains inside the same zone, then permit a fresh DLA setup only after a confirmed exit and re-entry.
+Location is modeled as an edge-triggered episode inside that Direction context, not as a one-time property of the whole regime. Named definitions configure structural-level, FVG, value-area-edge, and session-VWAP sources independently by timeframe and ATR-relative tolerance. Semantic zone identity is anchored to the originating swing, gap, or product session and remains stable as developing bounds or feature revisions change. Live composition suppresses repeated setup creation while price remains inside the same zone, then permits a fresh DLA setup only after a confirmed exit and re-entry.
 
 The pure location evaluator derives zones only from the configured feature timeframes in one committed point-in-time bundle. Session-scoped sources require the calendar resolver's explicit UTC product-session start; UTC dates are never treated as trading sessions. The evaluation-timeframe close is matched with source-timeframe ATR tolerance, distinct source-kind confluence is enforced, and missing ATR or payloads remain visible as degraded evidence. The evaluator itself has no persistence side effects.
 
 The location episode tracker turns repeated per-bar qualification into edge-triggered state. Entry is immediate. Continued overlap with any entry zone remains one episode; a wholly disjoint qualified zone set replaces it. Ordinary exit uses a configurable consecutive-bar confirmation, while missing evidence pauses and resets that confirmation without claiming an exit. Exact latest-observation retries are idempotent, conflicting same-time observations and backward time fail closed, and a Direction-regime change terminates the old episode immediately. Transient counters remain in memory; the active episode reconstructs from verified durable signal state after restart.
 
-The arming boundary converts an entered episode into an episode-anchored Candidate and immediate Armed transition with complete structured evidence. SQLite commits initial Candidate plus Armed state atomically. Replacing a disjoint episode atomically invalidates the old signal and creates plus arms the new signal, preventing restart from observing two open setups or neither. Verified open snapshots seed Direction and Location trackers before new evaluations. This boundary remains dormant until the Stage 5C.3 post-commit feature composer invokes it.
+The arming boundary converts an entered episode into an episode-anchored Candidate and immediate Armed transition with complete structured evidence. SQLite commits initial Candidate plus Armed state atomically. Replacing a disjoint episode atomically invalidates the old signal and creates plus arms the new signal, preventing restart from observing two open setups or neither. Verified open snapshots seed Direction and Location trackers before new evaluations. The Stage 5C.3 post-commit feature composer invokes this boundary for every enabled definition and instrument.
 
 The fast-track Direction/Location view combines deterministic trend, VWAP relation, session quartile, profile location, nearby levels, and active FVG location. Current, prior, London, and New York candle-derived profiles use configured price bins and are explicitly inferred. Configured rolling 2-session and 5-session composites add broader auction context only when the exact number of calendar-resolved product sessions is represented; they include explicit observed windows and complete/developing state. The current-session profile remains authoritative for the existing profile-location calculation. Exact tick-price profiles require a separate tick-at-price accumulator and are not claimed by this implementation.
 
@@ -237,7 +240,7 @@ Strategy worker failure must not interrupt ingestion, persistence, notifications
 
 ## Data-Only Default
 
-Stage 0 configures data-only mode. Execution is off by default and remains out of scope until Stage 11.
+The runtime operates in data-only mode. Execution is off by default and remains out of scope until a separately approved execution and risk stage.
 
 IB Gateway should be read-only during data phases.
 
@@ -246,7 +249,7 @@ IB Gateway should be read-only during data phases.
 - All timestamps are UTC at storage and event boundaries.
 - Session definitions use IANA timezones, never fixed UTC offsets.
 - Futures contracts are explicit-expiry contracts.
-- Stage 2 starts with NQ as the first active instrument.
+- NQ is the first active instrument.
 - Exactly one enabled instrument is active at a time.
 - Every enabled instrument warms up from historical bars before live tracking.
 - Background instruments track live 1-minute bars after warmup.

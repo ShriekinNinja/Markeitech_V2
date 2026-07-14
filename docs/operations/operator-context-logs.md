@@ -1,9 +1,13 @@
-# Actor Operator Log Guide
+# Operator Context Log Guide
 
 This guide explains the human-readable messages produced around
 `MarkeitechMarketDataActor` during warmup and live operation. The operator log is
 an observability surface: it summarizes the current analytical state, but it is
 not a signal, an order instruction, or the canonical persistence layer.
+
+Signal lifecycle console messages will be documented separately when Stage
+5C.3c defines that projection. Do not interpret the Direction score in these
+context lines as a durable signal transition.
 
 ## Log Envelope
 

@@ -1,40 +1,47 @@
 # Markeitech
 
-Markeitech is a greenfield market-analysis, strategy-research, backtesting, replay, dashboard, and later live-trading platform for discretionary and systematic futures trading.
+Markeitech is a live-first market-analysis and decision-support system for
+discretionary index trading, with options as the primary trade expression. It
+runs a NautilusTrader `LiveNode` against Interactive Brokers, warms multiple
+underlying instruments across configured timeframes, persists deterministic
+market context, and evaluates versioned Direction and Location signal evidence.
 
-Initial active focus is explicit-expiry NQ futures through Interactive Brokers, with NautilusTrader used as the primary trading-system runtime wherever practical. The runtime is designed for one active tick-by-tick instrument plus multiple background monitored instruments.
+The system is data-only and read-only. Trading execution is intentionally not
+implemented.
 
 ## Project Credits
 
 - **Markeitect** - founder, trader, product owner, and system designer
 - **Kite** - co-builder, architecture and engineering collaborator
 
-## Stage 0 Scope
+## Current State
 
-This repository is currently bootstrapped through Stage 1:
+Implemented foundations include:
 
-- Python 3.13 uv project
-- NautilusTrader with Interactive Brokers and Docker extras declared
-- FastAPI backend skeleton
-- SQLite-ready standard-library persistence boundary
-- Redis and Parquet dependencies declared
-- pytest, ruff, and black configured
-- Vite + React + TypeScript frontend skeleton
-- Architecture and setup documentation
-- Pydantic domain contracts for active/background instrument configuration and market-data events
+- one runtime-switchable active tick-by-tick instrument
+- multiple background instruments receiving live 1-minute bars
+- timeframe-specific historical warmup and restart recovery
+- canonical market events with explicit contract and source identity
+- Parquet time-series persistence with SQLite transactional metadata
+- deterministic multi-timeframe context, session levels, FVGs, and profiles
+- human-readable active-first operator context logs
+- durable, restart-safe signal lifecycle persistence
+- live post-commit Direction and Location evaluation for active and background
+  instruments
 
-Trading execution is intentionally not implemented. Data-only mode is the default posture.
+The next product slice is console projection and live shadow acceptance of the
+durable signal events. See [current status](docs/current-status.md) for the exact
+boundary and known validation debt. Options-chain ingestion and analysis are an
+explicit future roadmap track rather than part of the current runtime.
 
 ## Requirements
 
 - Python 3.13
-- uv
-- Node.js 22.12 or newer for the frontend
-- npm
+- [uv](https://docs.astral.sh/uv/)
+- TWS or IB Gateway for live paper-data runs
+- Node.js 22.12 or newer only when working on the deferred frontend
 
-The current Vite release requires Node.js 20.19+ or 22.12+. If your shell reports Node 22.4, upgrade Node before running the frontend dev server.
-
-## Backend Setup
+## Setup And Checks
 
 ```bash
 uv sync
@@ -42,41 +49,56 @@ uv run pytest
 uv run ruff check .
 uv run black --check .
 uv run markeitech-market-data-plan config/market-data.example.toml
-# Manual IB smoke path only after editing config start flags:
-# uv run markeitech-market-data-smoke config/market-data.example.toml --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
+```
+
+The API skeleton can be started with:
+
+```bash
 uv run fastapi dev backend/src/markeitech/api.py
 ```
 
-The backend exposes:
+It exposes `GET /health` and `GET /readiness`.
 
-- `GET /health`
-- `GET /readiness`
+## Interactive Brokers Runs
 
-## Frontend Setup
+Real IB connections require a local untracked configuration and explicit
+confirmation. The continuous paper-data command is:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+uv run markeitech-market-data-smoke \
+  config/market-data.local.toml \
+  --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
 ```
+
+Duration-limited acceptance runs use:
+
+```bash
+uv run markeitech-market-data-acceptance \
+  config/market-data.local.toml \
+  --duration 300 \
+  --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
+```
+
+Shared PyCharm run configurations are available under `.run/`. Review
+[Interactive Brokers setup](docs/operations/ib-setup.md) before connecting.
 
 ## Configuration
 
-Copy `.env.example` to `.env` when running locally. Current docs require:
+Use `config/market-data.example.toml` as the tracked template and keep local
+credentials, account identifiers, and machine-specific settings out of Git.
 
-- explicit active instrument configuration before market-data startup
-- NQ as the first active tick-by-tick instrument
-- optional background instruments warmed from history and then monitored through live 1-minute bars
-- IB Gateway or TWS timestamps configured to UTC
-- IB read-only/data-only mode by default
-- no live execution unless a later stage explicitly enables it
+The operating posture requires:
+
+- an explicit active instrument
+- explicit-expiry futures contracts
+- configured background instruments
+- UTC API timestamps and explicit session timezones
+- read-only/data-only IB access
+- no execution configuration
 
 ## Documentation
 
-- [Project context](docs/00-project-context.md)
-- [Decisions register](docs/01-decisions-register.md)
-- [Phased implementation plan](docs/02-phased-implementation-plan.md)
-- [Runtime architecture](docs/runtime-architecture.md)
-- [Data contracts](docs/data-contracts.md)
-- [Actor operator log guide](docs/operator-context-logs.md)
-- [Interactive Brokers setup](docs/ib-setup.md)
+Start with the [documentation map](docs/README.md). The governing project
+principles are in the [project charter](markeitech.md), while
+[current status](docs/current-status.md) records what is actually complete and
+what comes next.

@@ -244,7 +244,9 @@ The setup key is a stable SHA-256 identity derived from family, named definition
 
 `SignalDefinitionConfig` gives one named/versioned interpretation of the DLA family explicit timeframe roles. Definitions are enabled independently per instrument. The initial `intraday_context` definition evaluates on completed 1m context, requires agreeing 1h and 15m Direction plus matching 5m confirmation, and treats opposing daily context as degraded rather than vetoed. Other definitions, including a later scalp interpretation, can select different primary and confirmation roles without changing the family or hard-coding those timeframes in the evaluator.
 
-`CommittedMarketContextBundle` is one instrument's point-in-time feature set. It permits one feature per timeframe, rejects cross-instrument and future evidence, and requires the evaluation-timeframe feature to be current at the evaluation timestamp. The contract name describes the required upstream guarantee: Stage 5C.3 must compose it only from successfully committed feature ids. The pure 5C.1 evaluator does not infer durability from an in-memory object.
+### Live Signal Runtime
+
+`CommittedMarketContextBundle` is one instrument's point-in-time feature set. It permits one feature per timeframe, rejects cross-instrument and future evidence, and requires the evaluation-timeframe feature to be current at the evaluation timestamp. The contract name describes the required upstream guarantee: live composition creates it only from successfully committed feature ids. The pure evaluator does not infer durability from an in-memory object.
 
 Direction qualification fails closed when primary evidence is missing, neutral, or conflicting, or when configured confirmation is insufficient. Context can be ignored, degrade a candidate, or veto it by definition policy. Every considered feature id remains attached as typed Direction evidence with its original fidelity.
 
