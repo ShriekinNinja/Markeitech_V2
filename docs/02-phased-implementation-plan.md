@@ -411,6 +411,12 @@ Stage 5C is divided further so market semantics remain reviewable:
 - **5C.2 - Location and candidate progression:** define deterministic location qualification, arm candidates at actionable auction locations, and invalidate or expire stale setups.
 - **5C.3 - Live composition:** build point-in-time bundles only from durably committed features, persist evaluator decisions, restore open regimes, and apply the same definitions to active and background instruments.
 
+Stage 5C.3 is split at the asynchronous durability boundary:
+
+- **5C.3a - Committed feature handoff:** assign restart-stable commit sequence, publish exact verified revisions through an atomic bounded queue, and maintain deterministic per-instrument point-in-time feature state.
+- **5C.3b - Live signal runtime:** consume committed revisions, restore open Direction/Location state, evaluate enabled definitions, and persist episode/arming decisions for active and background instruments.
+- **5C.3c - Console projection:** expose change-aware human-readable signal and runtime-health logs without making presentation output a source of truth.
+
 Stage 5C.1 is complete. It is a pure decision boundary and does not yet emit live signals; 5C.3 owns actor/runtime wiring.
 
 Stage 5C.2 uses repeatable location episodes rather than one trade setup for an entire Direction regime:

@@ -6,6 +6,12 @@ from markeitech.signals.arming import (
     invalidate_ended_location_signal,
     restore_location_episode,
 )
+from markeitech.signals.composition import (
+    BoundedFeatureCommitHandoff,
+    CommittedFeatureState,
+    FeatureHandoffSnapshot,
+    FeatureHandoffStatus,
+)
 from markeitech.signals.config import (
     LocationPolicyConfig,
     LocationSourcePolicyConfig,
@@ -55,6 +61,10 @@ from markeitech.signals.location import (
 )
 
 __all__ = [
+    "BoundedFeatureCommitHandoff",
+    "CommittedFeatureState",
+    "FeatureHandoffSnapshot",
+    "FeatureHandoffStatus",
     "ArmedLocationSignal",
     "SignalDirection",
     "CommittedMarketContextBundle",

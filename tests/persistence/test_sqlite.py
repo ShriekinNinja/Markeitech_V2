@@ -105,13 +105,13 @@ def outbox(
 def test_migrations_are_idempotent_and_auditable(tmp_path: Path) -> None:
     path = tmp_path / "metadata.sqlite3"
     with SQLiteMetadataStore(config(path)) as first:
-        assert first.schema_version == 8
+        assert first.schema_version == 9
     with SQLiteMetadataStore(config(path)) as second:
-        assert second.schema_version == 8
+        assert second.schema_version == 9
         row = second._connection.execute(  # noqa: SLF001
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [item["version"] for item in row] == [1, 2, 3, 4, 5, 6, 7, 8]
+        assert [item["version"] for item in row] == [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 
 def test_newer_unknown_schema_fails_clearly(tmp_path: Path) -> None:
@@ -153,8 +153,70 @@ def test_schema_one_upgrades_without_losing_checkpoint(tmp_path: Path) -> None:
     connection.close()
 
     with SQLiteMetadataStore(config(path)) as upgraded:
-        assert upgraded.schema_version == 8
+        assert upgraded.schema_version == 9
         assert upgraded.load_checkpoint(expected.stream_key) == expected
+
+
+def test_schema_eight_feature_manifests_receive_durable_commit_order(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "version-eight.sqlite3"
+    with SQLiteMetadataStore(config(path)) as current:
+        current._connection.execute(  # noqa: SLF001
+            """
+            INSERT INTO feature_snapshot_commits
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                b"a" * 32,
+                b"b" * 32,
+                "NQU6.CME",
+                "1m",
+                EVENT_NS,
+                "market_context",
+                "1.0",
+                b"c" * 32,
+                EVENT_NS,
+                1,
+            ),
+        )
+
+    connection = sqlite3.connect(path)
+    connection.executescript(
+        """
+        DROP INDEX feature_snapshot_commit_sequence_idx;
+        DROP INDEX feature_snapshot_lookup_idx;
+        ALTER TABLE feature_snapshot_commits RENAME TO sequenced_feature_commits;
+        CREATE TABLE feature_snapshot_commits (
+            feature_id BLOB PRIMARY KEY,
+            content_hash BLOB NOT NULL,
+            instrument_id TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            as_of_ts_ns INTEGER NOT NULL,
+            feature_set TEXT NOT NULL,
+            calculation_version TEXT NOT NULL,
+            configuration_hash BLOB NOT NULL,
+            committed_ts_ns INTEGER NOT NULL
+        );
+        INSERT INTO feature_snapshot_commits
+        SELECT feature_id, content_hash, instrument_id, timeframe, as_of_ts_ns,
+               feature_set, calculation_version, configuration_hash, committed_ts_ns
+        FROM sequenced_feature_commits;
+        DROP TABLE sequenced_feature_commits;
+        CREATE INDEX feature_snapshot_lookup_idx
+            ON feature_snapshot_commits(instrument_id, timeframe, as_of_ts_ns DESC);
+        DELETE FROM schema_migrations WHERE version = 9;
+        PRAGMA user_version = 8;
+        """
+    )
+    connection.close()
+
+    with SQLiteMetadataStore(config(path)) as upgraded:
+        row = upgraded._connection.execute(  # noqa: SLF001
+            "SELECT commit_sequence FROM feature_snapshot_commits"
+        ).fetchone()
+
+    assert row["commit_sequence"] == 1
 
 
 def test_schema_three_compacts_identity_without_losing_dedupe(tmp_path: Path) -> None:

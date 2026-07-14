@@ -218,9 +218,13 @@ The separation is intentional:
 
 Feature payloads are immutable Parquet records partitioned by feature set, instrument, timeframe, and UTC date. Query APIs return all latest-as-of variants instead of choosing an arbitrary revision. Human-readable operator logs are projections of context and are never feature persistence.
 
-SQLite stores only the durable commit manifest for each `feature_id`: content hash, instrument, timeframe, `as_of`, feature set, calculation version, configuration hash, and commit time. Payload and manifest follow catalog-first ordering. An existing manifest with a different content hash is a hard conflict; a payload that exists without its manifest is a recoverable interrupted commit.
+SQLite stores only the durable commit manifest for each `feature_id`: content hash, instrument, timeframe, `as_of`, feature set, calculation version, configuration hash, commit time, and a monotonic commit sequence. Payload and manifest follow catalog-first ordering. The sequence makes same-timestamp corrected variants deterministic across live operation and restart without selecting one by feature hash. An existing manifest with a different content hash is a hard conflict; a payload that exists without its manifest is a recoverable interrupted commit.
 
 Live feature submission is bounded and asynchronous. Submission returns accepted, queue-full, not-running, or writer-failed status. Writer health exposes pending, accepted, committed, duplicate, rejected, and last-error evidence. A failed batch remains retained in memory and the writer rejects new work; it does not silently skip the damaged feature stream.
+
+The post-commit handoff carries the exact feature payload together with its authoritative SQLite commit time and sequence. Publication is bounded and admits a writer batch atomically: saturation cannot expose only part of a committed multi-instrument batch. Handoff failure leaves the writer failed with its input batch retained, while persistence counters still report any payloads already made durable. Retrying re-verifies those manifests and republishes the same revisions idempotently.
+
+Live composition keeps the newest committed revision per instrument and timeframe ordered by market `as_of` and then durable commit sequence. A corrected variant at the same market timestamp supersedes the earlier revision; an older delayed revision cannot regress state. Only a newly accepted evaluation-timeframe revision creates a point-in-time bundle, and evidence newer than that evaluation timestamp is excluded. Active and background instruments use independent keys and identical rules.
 
 ### Signal Contracts
 

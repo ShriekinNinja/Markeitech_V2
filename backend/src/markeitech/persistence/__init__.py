@@ -36,6 +36,7 @@ from markeitech.persistence.feature_catalog import (
 )
 from markeitech.persistence.feature_pipeline import (
     BoundedFeatureWriter,
+    CommittedFeatureRevision,
     FeaturePersistenceCoordinator,
     FeaturePersistenceResult,
     FeatureSubmissionStatus,
@@ -94,6 +95,7 @@ __all__ = [
     "DataFidelity",
     "BoundedPersistenceWriter",
     "BoundedFeatureWriter",
+    "CommittedFeatureRevision",
     "DurableIngressJournal",
     "ExplicitSessionCalendar",
     "FeatureCatalogWriteResult",

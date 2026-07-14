@@ -33,9 +33,10 @@ from markeitech.persistence.contracts import (
     logical_event_identity_fingerprint,
     same_logical_event_identity,
 )
+from markeitech.persistence.feature_pipeline import CommittedFeatureRevision
 from markeitech.signals import SignalSnapshot, SignalStatus, SignalTransitionEvent
 
-LATEST_SCHEMA_VERSION = 8
+LATEST_SCHEMA_VERSION = 9
 
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (
@@ -281,6 +282,23 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
             ON signal_snapshots(instrument_id, definition_id, status, updated_ts_ns DESC);
         """,
     ),
+    (
+        9,
+        """
+        ALTER TABLE feature_snapshot_commits ADD COLUMN commit_sequence INTEGER;
+        WITH ordered_commits AS (
+            SELECT rowid, ROW_NUMBER() OVER (ORDER BY rowid) AS sequence_no
+            FROM feature_snapshot_commits
+        )
+        UPDATE feature_snapshot_commits AS current
+        SET commit_sequence = (
+            SELECT sequence_no FROM ordered_commits
+            WHERE ordered_commits.rowid = current.rowid
+        );
+        CREATE UNIQUE INDEX feature_snapshot_commit_sequence_idx
+            ON feature_snapshot_commits(commit_sequence);
+        """,
+    ),
 )
 
 
@@ -346,8 +364,16 @@ class SQLiteMetadataStore:
         self,
         features: tuple[MarketContextFeatureSnapshot, ...],
     ) -> frozenset[str]:
+        return frozenset(
+            item.feature.feature_id for item in self.committed_feature_revisions(features)
+        )
+
+    def committed_feature_revisions(
+        self,
+        features: tuple[MarketContextFeatureSnapshot, ...],
+    ) -> tuple[CommittedFeatureRevision, ...]:
         if not features:
-            return frozenset()
+            return ()
         by_id: dict[bytes, MarketContextFeatureSnapshot] = {}
         for feature in features:
             feature_id = bytes.fromhex(feature.feature_id)
@@ -358,28 +384,44 @@ class SQLiteMetadataStore:
         placeholders = ",".join("?" for _ in by_id)
         rows = self._connection.execute(
             f"""
-            SELECT feature_id, content_hash FROM feature_snapshot_commits
+            SELECT feature_id, content_hash, committed_ts_ns, commit_sequence
+            FROM feature_snapshot_commits
             WHERE feature_id IN ({placeholders})
             """,
             tuple(by_id),
         ).fetchall()
-        committed: set[str] = set()
+        revisions: dict[str, CommittedFeatureRevision] = {}
         for row in rows:
             feature_id = bytes(row["feature_id"])
             feature = by_id[feature_id]
             if bytes(row["content_hash"]) != bytes.fromhex(feature.content_hash):
                 raise ValueError("feature id conflicts with different committed content")
-            committed.add(feature.feature_id)
-        return frozenset(committed)
+            if row["commit_sequence"] is None:
+                raise RuntimeError("committed feature is missing durable commit sequence")
+            revisions[feature.feature_id] = CommittedFeatureRevision(
+                feature=feature,
+                committed_ts=utc_datetime_from_unix_ns(row["committed_ts_ns"]),
+                commit_sequence=row["commit_sequence"],
+            )
+        return tuple(
+            revisions[feature.feature_id]
+            for feature in features
+            if feature.feature_id in revisions
+        )
 
     def commit_feature_snapshots(
         self,
         features: tuple[MarketContextFeatureSnapshot, ...],
         *,
         committed_ts: datetime,
-    ) -> None:
+    ) -> tuple[CommittedFeatureRevision, ...]:
         committed_ts_ns = unix_ns_from_utc_datetime(committed_ts)
         with self._transaction() as connection:
+            row = connection.execute(
+                "SELECT COALESCE(MAX(commit_sequence), 0) AS value "
+                "FROM feature_snapshot_commits"
+            ).fetchone()
+            next_sequence = int(row["value"]) + 1
             for feature in features:
                 values = (
                     bytes.fromhex(feature.feature_id),
@@ -391,10 +433,11 @@ class SQLiteMetadataStore:
                     feature.calculation_version,
                     bytes.fromhex(feature.configuration_hash),
                     committed_ts_ns,
+                    next_sequence,
                 )
                 cursor = connection.execute(
                     """
-                    INSERT INTO feature_snapshot_commits VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO feature_snapshot_commits VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(feature_id) DO NOTHING
                     """,
                     values,
@@ -409,6 +452,9 @@ class SQLiteMetadataStore:
                     ).fetchone()
                     if bytes(row["content_hash"]) != values[1]:
                         raise ValueError("feature id conflicts with different committed content")
+                else:
+                    next_sequence += 1
+        return self.committed_feature_revisions(features)
 
     def save_signal_candidate(self, signal: SignalSnapshot) -> SignalPersistenceOutcome:
         if signal.status != SignalStatus.CANDIDATE:

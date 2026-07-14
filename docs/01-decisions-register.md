@@ -467,3 +467,15 @@ Commit Candidate creation and its immediate Armed transition in one SQLite trans
 Restore only from verified open Armed or Triggered snapshots whose transition hash chain, episode payload, and calculated episode id agree. Seed at most one active episode per definition/instrument and restore the canonical Direction-regime anchor independently from the episode-based setup key. Invalidate only when the tracker reports the matching ended episode. Define time-based Armed expiry with Stage 5D Aggression cadence rather than inventing a timeout before its observation window exists.
 
 Reason: Persisting Candidate and Armed state separately creates a crash-visible half-setup, while replacing signals in separate transactions can leave zero or two open setups. Carrying the episode evidence in the verified signal aggregate gives restart one source of truth, and atomic progression preserves lifecycle, notification, and dedupe invariants across interruption.
+
+## DR-0049: Sequenced Post-Commit Feature Handoff
+
+Status: accepted for implementation
+
+Assign every SQLite feature manifest a monotonically increasing commit sequence inside the manifest transaction. Treat `(as_of, commit_sequence)` as live revision order for one instrument/timeframe: later market state wins first, while the durable sequence resolves legitimate corrected variants at the same timestamp. Preserve this order on migration and restart; never choose a correction by feature hash.
+
+Publish only the exact revisions re-verified after Parquet and SQLite commit. Admit each writer batch to a bounded handoff atomically. On saturation, fail the feature writer closed and retain its input batch while reporting already-durable commits truthfully. A retry may observe those features as duplicates, but republishes their original commit metadata idempotently.
+
+Maintain independent latest state per instrument and timeframe. Ignore stale or exact duplicate deliveries, reject conflicting feature/sequence evidence, exclude future evidence from point-in-time bundles, and compose only when a new evaluation-timeframe revision advances state. Keep this handoff dormant until the live signal consumer owns its lifecycle.
+
+Reason: Actor submission proves neither Parquet durability nor SQLite agreement. Commit timestamps can collide inside one batch, and feature hashes are identities rather than revision priority. A durable sequence and bounded post-commit boundary make correction choice, restart recovery, backpressure, and active/background parity explicit before evaluators gain live side effects.

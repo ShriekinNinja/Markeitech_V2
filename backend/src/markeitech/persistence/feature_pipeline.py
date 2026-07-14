@@ -10,27 +10,41 @@ from threading import Condition, Thread
 from typing import Protocol
 
 from markeitech.analytics.features import MarketContextFeatureSnapshot
+from markeitech.domain.base import require_utc
 from markeitech.persistence.feature_catalog import ParquetFeatureStore
 
 
+@dataclass(frozen=True)
+class CommittedFeatureRevision:
+    feature: MarketContextFeatureSnapshot
+    committed_ts: datetime
+    commit_sequence: int
+
+    def __post_init__(self) -> None:
+        require_utc(self.committed_ts)
+        if self.commit_sequence < 1:
+            raise ValueError("feature commit sequence must be positive")
+
+
 class FeatureCommitMetadata(Protocol):
-    def committed_feature_ids(
+    def committed_feature_revisions(
         self,
         features: tuple[MarketContextFeatureSnapshot, ...],
-    ) -> frozenset[str]: ...
+    ) -> tuple[CommittedFeatureRevision, ...]: ...
 
     def commit_feature_snapshots(
         self,
         features: tuple[MarketContextFeatureSnapshot, ...],
         *,
         committed_ts: datetime,
-    ) -> None: ...
+    ) -> tuple[CommittedFeatureRevision, ...]: ...
 
 
 @dataclass(frozen=True)
 class FeaturePersistenceResult:
     committed_count: int
     duplicate_count: int
+    revisions: tuple[CommittedFeatureRevision, ...] = ()
 
 
 class FeaturePersistenceCoordinator:
@@ -61,14 +75,19 @@ class FeaturePersistenceCoordinator:
                 raise ValueError("feature id conflicts within submitted batch")
             unique[value.feature_id] = value
         unique_values = tuple(unique.values())
-        committed = self._metadata.committed_feature_ids(unique_values)
-        pending = tuple(value for value in unique_values if value.feature_id not in committed)
+        committed = self._metadata.committed_feature_revisions(unique_values)
+        committed_ids = {item.feature.feature_id for item in committed}
+        pending = tuple(value for value in unique_values if value.feature_id not in committed_ids)
         if pending:
             self._catalog.write(pending)
             self._metadata.commit_feature_snapshots(pending, committed_ts=self._clock())
+        revisions = self._metadata.committed_feature_revisions(unique_values)
+        if len(revisions) != len(unique_values):
+            raise RuntimeError("feature metadata did not verify the complete committed batch")
         return FeaturePersistenceResult(
             committed_count=len(pending),
             duplicate_count=len(values) - len(pending),
+            revisions=revisions,
         )
 
 
@@ -94,6 +113,7 @@ class FeatureWriterSnapshot:
     accepted_count: int
     committed_count: int
     duplicate_count: int
+    handed_off_count: int
     rejected_count: int
     last_error: str | None
 
@@ -106,6 +126,7 @@ class BoundedFeatureWriter:
         queue_size: int,
         batch_size: int,
         poll_seconds: float,
+        commit_sink: Callable[[tuple[CommittedFeatureRevision, ...]], bool] | None = None,
     ) -> None:
         if queue_size < 1 or batch_size < 1 or batch_size > queue_size:
             raise ValueError("feature writer requires valid bounded queue and batch sizes")
@@ -115,6 +136,7 @@ class BoundedFeatureWriter:
         self._queue_size = queue_size
         self._batch_size = batch_size
         self._poll_seconds = poll_seconds
+        self._commit_sink = commit_sink
         self._condition = Condition()
         self._queue: deque[MarketContextFeatureSnapshot] = deque()
         self._status = FeatureWriterStatus.CREATED
@@ -122,6 +144,7 @@ class BoundedFeatureWriter:
         self._accepted_count = 0
         self._committed_count = 0
         self._duplicate_count = 0
+        self._handed_off_count = 0
         self._rejected_count = 0
         self._last_error: str | None = None
         self._thread: Thread | None = None
@@ -210,9 +233,22 @@ class BoundedFeatureWriter:
                     self._condition.notify_all()
                 return
             with self._condition:
-                self._pending_count -= len(batch)
                 self._committed_count += result.committed_count
                 self._duplicate_count += result.duplicate_count
+            try:
+                if self._commit_sink is not None and not self._commit_sink(result.revisions):
+                    raise RuntimeError("feature commit handoff rejected batch")
+            except Exception as exc:
+                with self._condition:
+                    self._queue.extendleft(reversed(batch))
+                    self._status = FeatureWriterStatus.FAILED
+                    self._last_error = f"{type(exc).__name__}: {exc}"
+                    self._condition.notify_all()
+                return
+            with self._condition:
+                self._pending_count -= len(batch)
+                if self._commit_sink is not None:
+                    self._handed_off_count += len(result.revisions)
                 self._condition.notify_all()
 
     def _snapshot_unlocked(self) -> FeatureWriterSnapshot:
@@ -222,6 +258,7 @@ class BoundedFeatureWriter:
             accepted_count=self._accepted_count,
             committed_count=self._committed_count,
             duplicate_count=self._duplicate_count,
+            handed_off_count=self._handed_off_count,
             rejected_count=self._rejected_count,
             last_error=self._last_error,
         )
