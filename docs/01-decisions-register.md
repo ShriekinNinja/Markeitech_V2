@@ -415,3 +415,15 @@ Require typed evidence references with explicit reported, inferred, partial, or 
 Keep setup-anchor and scoring semantics out of this foundational contract slice. Stage 5C must define a market-semantic anchor that remains stable across ordinary 1m feature updates, preventing one setup from becoming a new alert every minute. Active/background role, presentation text, Discord policy, receipt time, and mutable score are not signal identity.
 
 Reason: Separating setup identity from evolving content gives persistence, notification dedupe, restart restoration, and later replay one shared invariant. Typed evidence prevents Direction/Location analytics and weaker IB-derived aggression from being blended into an unexplained score, while deferring anchor policy avoids freezing an untested market assumption into durable keys.
+
+## DR-0045: Optimistic Signal State With Sequenced Transition History
+
+Status: accepted for implementation
+
+Persist each signal's immutable initial-candidate content hash, mutable current snapshot, and append-only transition events in SQLite. Assign transitions a contiguous per-signal sequence independent of event timestamps. On restart, validate redundant row metadata and require the transition content-hash chain to begin at the initial candidate and end at the current snapshot.
+
+Treat exact candidate and transition retries as idempotent duplicates. Reject a different initial payload under the same signal identity. Apply each transition only when its previous content hash and source status match current durable state, ensuring two concurrent transitions from one prior state cannot both commit.
+
+Allow notification policy to supply an optional pending outbox record when applying a transition. Insert the outbox record, append history, and replace current state in one SQLite transaction. Reject mismatched aggregate identity, event type/schema, outbox content, or dedupe identity and roll back the signal transition. Keep topic and destination policy outside signal contracts.
+
+Reason: Current-state restoration alone cannot prove how a signal arrived there, while timestamps alone cannot order multiple valid transitions from one market event. An explicit sequence and hash chain provide deterministic replay and corruption evidence. Optimistic transitions prevent duplicate or racing live callbacks from silently overwriting one another, and atomic outbox coupling prevents an alertable transition from committing without its delivery obligation.

@@ -19,6 +19,7 @@ from markeitech.persistence.contracts import (
     RecoveryStatus,
     RetentionReport,
     RetentionStatus,
+    SignalPersistenceOutcome,
     SQLiteCompactionReport,
     SQLiteCompactionStatus,
     StreamCheckpoint,
@@ -57,6 +58,7 @@ from markeitech.persistence.pipeline import (
 from markeitech.persistence.ports import (
     NotificationOutboxStore,
     RecoveryMetadataStore,
+    SignalStateStore,
     TimeSeriesStore,
 )
 from markeitech.persistence.recovery import (
@@ -147,6 +149,8 @@ __all__ = [
     "SQLiteCompactionReport",
     "SQLiteCompactionStatus",
     "SQLiteMetadataStore",
+    "SignalPersistenceOutcome",
+    "SignalStateStore",
     "SessionCalendar",
     "SessionWindow",
     "StreamCheckpoint",

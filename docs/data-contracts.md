@@ -231,3 +231,11 @@ The initial lifecycle is `candidate -> armed -> triggered`, with invalidated and
 Evidence is typed by Direction, Location, Aggression, or Follow-through and identifies either a market-context feature or a deterministic market-data window. Direction and Location require feature evidence. Armed state requires available Direction and Location; Triggered state additionally requires available Aggression. Reported, inferred, partial, and unavailable fidelity remain explicit. Unavailable evidence can explain why a setup did not progress but cannot qualify a lifecycle stage.
 
 The setup key is a stable SHA-256 identity derived from family, instrument, direction, and a caller-supplied deterministic anchor. Stage 5C owns anchor semantics; presentation text, wall-clock receipt time, active/background role, Discord routing, and mutable scores must not become dedupe identity by accident.
+
+### Durable Signal State
+
+SQLite stores one current `SignalSnapshot` per signal id plus its immutable initial-candidate content hash. Every accepted `SignalTransitionEvent` is append-only and receives a contiguous per-signal sequence number independent of market timestamps. Restart restoration validates typed row metadata, candidate identity, transition identity, the complete previous-to-current content-hash chain, and agreement between the final transition and current snapshot.
+
+Creating the exact candidate or applying the exact transition again is an idempotent duplicate. A different initial payload under the same signal id is a conflict. A transition must match both the stored prior content hash and source status, so concurrent contenders from one prior state cannot both commit.
+
+An optional pending `NotificationOutboxRecord` may be attached to a transition. The transition event, current snapshot replacement, history append, and outbox enqueue share one SQLite transaction. Outbox identity, dedupe, aggregate signal id, event type, schema, and content conflicts fail the whole transaction. Topic and destination selection remain notification policy rather than signal-domain state.

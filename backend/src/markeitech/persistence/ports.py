@@ -9,8 +9,10 @@ from markeitech.persistence.contracts import (
     NotificationOutboxRecord,
     PersistenceEventIdentity,
     RecoveryRecord,
+    SignalPersistenceOutcome,
     StreamCheckpoint,
 )
+from markeitech.signals import SignalSnapshot, SignalStatus, SignalTransitionEvent
 
 
 class TimeSeriesStore(Protocol):
@@ -74,3 +76,25 @@ class NotificationOutboxStore(Protocol):
         retry_ts: datetime,
         error: str,
     ) -> NotificationOutboxRecord: ...
+
+
+class SignalStateStore(Protocol):
+    def save_signal_candidate(self, signal: SignalSnapshot) -> SignalPersistenceOutcome: ...
+
+    def apply_signal_transition(
+        self,
+        event: SignalTransitionEvent,
+        *,
+        notification: NotificationOutboxRecord | None = None,
+    ) -> SignalPersistenceOutcome: ...
+
+    def load_signal(self, signal_id: str) -> SignalSnapshot | None: ...
+
+    def load_signals(
+        self,
+        *,
+        instrument_id: str | None = None,
+        status: SignalStatus | None = None,
+    ) -> tuple[SignalSnapshot, ...]: ...
+
+    def load_signal_transitions(self, signal_id: str) -> tuple[SignalTransitionEvent, ...]: ...

@@ -401,7 +401,9 @@ Stage 5 is split into reviewable slices:
 - **5D - Aggression and follow-through:** bounded IB trade/top-of-book evidence windows, honest inferred/partial/unavailable semantics, arming and triggering rules, and tick-gap degradation.
 - **5E - Live operationalization:** actor/runtime wiring, human-readable signal logs, notification-ready events, restart and saturation evidence, and a live shadow acceptance run before Discord delivery.
 
-Stage 5A is in progress. A candidate is decision support, not an order instruction. Direction and Location require market-context feature evidence; Aggression may later use a deterministic market-data window. No lifecycle state may skip required evidence, move backward, or mutate after invalidation/expiry.
+Stage 5A is complete. A candidate is decision support, not an order instruction. Direction and Location require market-context feature evidence; Aggression may later use a deterministic market-data window. No lifecycle state may skip required evidence, move backward, or mutate after invalidation/expiry.
+
+Stage 5B is implemented pending review. SQLite retains the immutable initial-candidate hash, current snapshot, and append-only sequenced transition events. Candidate and transition retries are idempotent; optimistic prior-content checks reject competing progression. Restart reads verify the complete transition hash chain reaches current state. A transition and its optional pending notification-outbox record commit or roll back together, without embedding destination policy in signal logic.
 
 ## Stage 6: Notifications And Reports
 

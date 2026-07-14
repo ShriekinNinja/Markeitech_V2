@@ -54,6 +54,12 @@ class PersistenceBatchStatus(StrEnum):
     FAILED = "failed"
 
 
+class SignalPersistenceOutcome(StrEnum):
+    CREATED = "created"
+    TRANSITIONED = "transitioned"
+    DUPLICATE = "duplicate"
+
+
 class RetentionStatus(StrEnum):
     DISABLED = "disabled"
     SKIPPED_UNSAFE = "skipped_unsafe"

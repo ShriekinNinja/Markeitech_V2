@@ -151,7 +151,7 @@ Startup historical ownership remains with one actor-side coordinator. The ordina
 
 Explicit failure hooks prove every crash boundary. A prepared batch may have no catalog data or may represent the ambiguous window immediately after a physical write; replaying the exact deterministic batch is safe because Nautilus skips the same catalog file. A catalog-written batch can proceed directly to metadata commit. A committed batch is a no-op on retry. Delayed events with newer initialization time but older event time can still be recorded without moving the checkpoint backward.
 
-SQLite stores transactional metadata such as checkpoints, readiness, gap state, recovery state, and later signal metadata.
+SQLite stores transactional metadata such as checkpoints, readiness, gap state, recovery state, and durable signal lifecycle state.
 
 SQLite does not govern or replace Parquet market data. Parquet answers which durable market events exist; SQLite answers which ranges have been verified and processed plus the current mutable operational state. Catalog writes must complete before checkpoints advance. A crash may leave a checkpoint behind already-written Parquet data, causing safe overlap on recovery, but a checkpoint must never lead durable catalog data.
 
@@ -198,6 +198,8 @@ AI agents may explain persisted evidence, assist research, and compose operator 
 The first named decision-support model is Direction-Location-Aggression: determine auction direction or market condition, identify and refine a relevant location, then observe aggression and follow-through. Direction and location should be deterministic where possible. Aggression starts as evidence-assisted interpretation because its fidelity depends on available IB trades and quotes; automation must be earned through captured data and replay validation.
 
 Its signal lifecycle advances from Candidate with Direction evidence, to Armed with added Location evidence, to Triggered with added Aggression evidence; Invalidated and Expired are terminal exits. Stable signal identity is separate from mutable lifecycle content and notification policy. Every state retains typed evidence ids and fidelity, and every transition carries the previous content hash plus the complete next snapshot so SQLite can later enforce optimistic, restart-safe progression.
+
+SQLite retains the initial candidate hash separately from mutable current content and appends every transition under a contiguous per-signal sequence. Restart reads verify that chain end to end. Applying a transition uses an optimistic previous-content check and may atomically insert a pending notification-outbox record; any state, history, or outbox conflict rolls the complete transaction back. This persistence boundary is available before candidate evaluation is wired into the LiveNode.
 
 The fast-track Direction/Location view combines deterministic trend, VWAP relation, session quartile, profile location, nearby levels, and active FVG location. Current, prior, London, and New York candle-derived profiles use configured price bins and are explicitly inferred. Configured rolling 2-session and 5-session composites add broader auction context only when the exact number of calendar-resolved product sessions is represented; they include explicit observed windows and complete/developing state. The current-session profile remains authoritative for the existing profile-location calculation. Exact tick-price profiles require a separate tick-at-price accumulator and are not claimed by this implementation.
 

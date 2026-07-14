@@ -25,6 +25,7 @@ from markeitech.persistence.contracts import (
     RecoveryStatus,
     RetentionReport,
     RetentionStatus,
+    SignalPersistenceOutcome,
     SQLiteCompactionReport,
     SQLiteCompactionStatus,
     StreamCheckpoint,
@@ -32,8 +33,9 @@ from markeitech.persistence.contracts import (
     logical_event_identity_fingerprint,
     same_logical_event_identity,
 )
+from markeitech.signals import SignalSnapshot, SignalStatus, SignalTransitionEvent
 
-LATEST_SCHEMA_VERSION = 6
+LATEST_SCHEMA_VERSION = 7
 
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (
@@ -237,6 +239,38 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
             ON feature_snapshot_commits(instrument_id, timeframe, as_of_ts_ns DESC);
         """,
     ),
+    (
+        7,
+        """
+        CREATE TABLE signal_snapshots (
+            signal_id BLOB PRIMARY KEY,
+            initial_content_hash BLOB NOT NULL,
+            content_hash BLOB NOT NULL,
+            instrument_id TEXT NOT NULL,
+            family TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            status TEXT NOT NULL,
+            updated_ts_ns INTEGER NOT NULL,
+            snapshot_json TEXT NOT NULL
+        );
+        CREATE INDEX signal_snapshot_lookup_idx
+            ON signal_snapshots(instrument_id, status, updated_ts_ns DESC);
+        CREATE TABLE signal_transitions (
+            transition_id BLOB PRIMARY KEY,
+            signal_id BLOB NOT NULL,
+            sequence_no INTEGER NOT NULL,
+            occurred_ts_ns INTEGER NOT NULL,
+            from_status TEXT NOT NULL,
+            to_status TEXT NOT NULL,
+            event_json TEXT NOT NULL,
+            notification_outbox_id TEXT,
+            FOREIGN KEY(signal_id) REFERENCES signal_snapshots(signal_id),
+            FOREIGN KEY(notification_outbox_id) REFERENCES notification_outbox(outbox_id)
+        );
+        CREATE UNIQUE INDEX signal_transition_sequence_idx
+            ON signal_transitions(signal_id, sequence_no);
+        """,
+    ),
 )
 
 
@@ -366,6 +400,164 @@ class SQLiteMetadataStore:
                     if bytes(row["content_hash"]) != values[1]:
                         raise ValueError("feature id conflicts with different committed content")
 
+    def save_signal_candidate(self, signal: SignalSnapshot) -> SignalPersistenceOutcome:
+        if signal.status != SignalStatus.CANDIDATE:
+            raise ValueError("initial signal snapshot must have candidate status")
+        values = _new_signal_snapshot_values(signal)
+        with self._transaction() as connection:
+            cursor = connection.execute(
+                "INSERT OR IGNORE INTO signal_snapshots VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                values,
+            )
+            if cursor.rowcount == 1:
+                return SignalPersistenceOutcome.CREATED
+            row = connection.execute(
+                "SELECT * FROM signal_snapshots WHERE signal_id=?",
+                (values[0],),
+            ).fetchone()
+            _verified_signal_history(connection, row)
+            if bytes(row["initial_content_hash"]) != bytes.fromhex(signal.content_hash):
+                raise ValueError("signal identity conflicts with different initial content")
+            return SignalPersistenceOutcome.DUPLICATE
+
+    def apply_signal_transition(
+        self,
+        event: SignalTransitionEvent,
+        *,
+        notification: NotificationOutboxRecord | None = None,
+    ) -> SignalPersistenceOutcome:
+        if notification is not None:
+            if notification.status != OutboxStatus.PENDING:
+                raise ValueError("signal transition notification must be pending")
+            if (
+                notification.aggregate_key != event.signal_id
+                or notification.event_type != "signal.transition"
+                or notification.event_schema_version != event.schema_version
+            ):
+                raise ValueError("signal transition notification metadata does not match event")
+        transition_id = bytes.fromhex(event.transition_id)
+        signal_id = bytes.fromhex(event.signal_id)
+        notification_id = None if notification is None else str(notification.outbox_id)
+        with self._transaction() as connection:
+            prior_transition = connection.execute(
+                "SELECT * FROM signal_transitions WHERE transition_id=?",
+                (transition_id,),
+            ).fetchone()
+            if prior_transition is not None:
+                existing = _row_to_signal_transition(prior_transition)
+                if existing != event:
+                    raise ValueError("transition identity conflicts with different content")
+                if prior_transition["notification_outbox_id"] != notification_id:
+                    raise ValueError("transition notification attachment conflicts with retry")
+                if notification is not None:
+                    outbox_row = connection.execute(
+                        "SELECT * FROM notification_outbox WHERE outbox_id=?",
+                        (notification_id,),
+                    ).fetchone()
+                    if outbox_row is None or not _same_outbox_intent(
+                        _row_to_outbox(outbox_row), notification
+                    ):
+                        raise ValueError("transition notification content conflicts with retry")
+                return SignalPersistenceOutcome.DUPLICATE
+
+            row = connection.execute(
+                "SELECT * FROM signal_snapshots WHERE signal_id=?",
+                (signal_id,),
+            ).fetchone()
+            if row is None:
+                raise KeyError(f"unknown signal: {event.signal_id}")
+            current, _ = _verified_signal_history(connection, row)
+            if current.content_hash != event.previous_content_hash:
+                raise ValueError("signal transition previous content hash is stale")
+            if current.status != event.from_status:
+                raise ValueError("signal transition source status is stale")
+
+            if notification is not None:
+                _enqueue_outbox_exact(connection, notification)
+            sequence_no = connection.execute(
+                """
+                SELECT COALESCE(MAX(sequence_no), 0) + 1
+                FROM signal_transitions WHERE signal_id=?
+                """,
+                (signal_id,),
+            ).fetchone()[0]
+            connection.execute(
+                """
+                INSERT INTO signal_transitions VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    transition_id,
+                    signal_id,
+                    sequence_no,
+                    unix_ns_from_utc_datetime(event.occurred_ts),
+                    event.from_status.value,
+                    event.to_status.value,
+                    event.model_dump_json(),
+                    notification_id,
+                ),
+            )
+            snapshot_values = _signal_current_values(event.current)
+            cursor = connection.execute(
+                """
+                UPDATE signal_snapshots
+                SET content_hash=?, instrument_id=?, family=?, direction=?, status=?,
+                    updated_ts_ns=?, snapshot_json=?
+                WHERE signal_id=? AND content_hash=?
+                """,
+                (
+                    *snapshot_values[1:],
+                    signal_id,
+                    bytes.fromhex(event.previous_content_hash),
+                ),
+            )
+            if cursor.rowcount != 1:
+                raise RuntimeError("signal transition lost optimistic update race")
+            return SignalPersistenceOutcome.TRANSITIONED
+
+    def load_signal(self, signal_id: str) -> SignalSnapshot | None:
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM signal_snapshots WHERE signal_id=?",
+                (bytes.fromhex(signal_id),),
+            ).fetchone()
+            if row is None:
+                return None
+            current, _ = _verified_signal_history(self._connection, row)
+            return current
+
+    def load_signals(
+        self,
+        *,
+        instrument_id: str | None = None,
+        status: SignalStatus | None = None,
+    ) -> tuple[SignalSnapshot, ...]:
+        clauses: list[str] = []
+        values: list[str] = []
+        if instrument_id is not None:
+            clauses.append("instrument_id=?")
+            values.append(instrument_id)
+        if status is not None:
+            clauses.append("status=?")
+            values.append(status.value)
+        where = "" if not clauses else f" WHERE {' AND '.join(clauses)}"
+        with self._lock:
+            rows = self._connection.execute(
+                f"SELECT * FROM signal_snapshots{where} ORDER BY updated_ts_ns, signal_id",
+                tuple(values),
+            ).fetchall()
+            return tuple(_verified_signal_history(self._connection, row)[0] for row in rows)
+
+    def load_signal_transitions(self, signal_id: str) -> tuple[SignalTransitionEvent, ...]:
+        with self._lock:
+            snapshot_row = self._connection.execute(
+                "SELECT * FROM signal_snapshots WHERE signal_id=?",
+                (bytes.fromhex(signal_id),),
+            ).fetchone()
+            if snapshot_row is None:
+                return ()
+            _, events = _verified_signal_history(self._connection, snapshot_row)
+            return events
+
     def save_recovery(self, recovery: RecoveryRecord) -> None:
         with self._transaction() as connection:
             existing = connection.execute(
@@ -490,15 +682,7 @@ class SQLiteMetadataStore:
 
     def enqueue(self, record: NotificationOutboxRecord) -> bool:
         with self._transaction() as connection:
-            cursor = connection.execute(
-                """
-                INSERT OR IGNORE INTO notification_outbox VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                )
-                """,
-                _outbox_values(record),
-            )
-            return cursor.rowcount == 1
+            return _enqueue_outbox(connection, record)
 
     def lease_pending(
         self,
@@ -1159,6 +1343,127 @@ def _outbox_values(record: NotificationOutboxRecord) -> tuple[Any, ...]:
         _optional_ns(record.delivered_ts),
         record.last_error,
     )
+
+
+def _enqueue_outbox(connection: sqlite3.Connection, record: NotificationOutboxRecord) -> bool:
+    cursor = connection.execute(
+        """
+        INSERT OR IGNORE INTO notification_outbox VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        )
+        """,
+        _outbox_values(record),
+    )
+    return cursor.rowcount == 1
+
+
+def _enqueue_outbox_exact(
+    connection: sqlite3.Connection,
+    record: NotificationOutboxRecord,
+) -> None:
+    if _enqueue_outbox(connection, record):
+        return
+    row = connection.execute(
+        """
+        SELECT * FROM notification_outbox
+        WHERE outbox_id=? OR dedupe_key=?
+        """,
+        (str(record.outbox_id), record.dedupe_key),
+    ).fetchone()
+    if row is None or _row_to_outbox(row) != record:
+        raise ValueError("signal notification conflicts with existing outbox record")
+
+
+def _same_outbox_intent(
+    existing: NotificationOutboxRecord,
+    submitted: NotificationOutboxRecord,
+) -> bool:
+    excluded = {
+        "status",
+        "attempt_count",
+        "updated_ts",
+        "lease_owner",
+        "lease_expires_ts",
+        "delivered_ts",
+        "last_error",
+    }
+    return existing.model_dump(exclude=excluded) == submitted.model_dump(exclude=excluded)
+
+
+def _new_signal_snapshot_values(signal: SignalSnapshot) -> tuple[Any, ...]:
+    return (
+        bytes.fromhex(signal.signal_id),
+        bytes.fromhex(signal.content_hash),
+        *_signal_current_values(signal)[1:],
+    )
+
+
+def _signal_current_values(signal: SignalSnapshot) -> tuple[Any, ...]:
+    return (
+        bytes.fromhex(signal.signal_id),
+        bytes.fromhex(signal.content_hash),
+        signal.instrument_id,
+        signal.family.value,
+        signal.direction.value,
+        signal.status.value,
+        unix_ns_from_utc_datetime(signal.updated_ts),
+        signal.model_dump_json(),
+    )
+
+
+def _row_to_signal_snapshot(row: sqlite3.Row) -> SignalSnapshot:
+    signal = SignalSnapshot.model_validate_json(row["snapshot_json"])
+    if bytes(row["signal_id"]) != bytes.fromhex(signal.signal_id):
+        raise ValueError("stored signal id does not match snapshot")
+    if bytes(row["content_hash"]) != bytes.fromhex(signal.content_hash):
+        raise ValueError("stored signal content hash does not match snapshot")
+    if (
+        row["instrument_id"] != signal.instrument_id
+        or row["family"] != signal.family.value
+        or row["direction"] != signal.direction.value
+        or row["status"] != signal.status.value
+        or row["updated_ts_ns"] != unix_ns_from_utc_datetime(signal.updated_ts)
+    ):
+        raise ValueError("stored signal metadata does not match snapshot")
+    return signal
+
+
+def _row_to_signal_transition(row: sqlite3.Row) -> SignalTransitionEvent:
+    event = SignalTransitionEvent.model_validate_json(row["event_json"])
+    if (
+        bytes(row["transition_id"]) != bytes.fromhex(event.transition_id)
+        or bytes(row["signal_id"]) != bytes.fromhex(event.signal_id)
+        or row["occurred_ts_ns"] != unix_ns_from_utc_datetime(event.occurred_ts)
+        or row["from_status"] != event.from_status.value
+        or row["to_status"] != event.to_status.value
+    ):
+        raise ValueError("stored signal transition metadata does not match event")
+    return event
+
+
+def _verified_signal_history(
+    connection: sqlite3.Connection,
+    snapshot_row: sqlite3.Row,
+) -> tuple[SignalSnapshot, tuple[SignalTransitionEvent, ...]]:
+    current = _row_to_signal_snapshot(snapshot_row)
+    rows = connection.execute(
+        """
+        SELECT * FROM signal_transitions
+        WHERE signal_id=? ORDER BY sequence_no
+        """,
+        (snapshot_row["signal_id"],),
+    ).fetchall()
+    events = tuple(_row_to_signal_transition(row) for row in rows)
+    expected_hash = bytes(snapshot_row["initial_content_hash"]).hex()
+    for expected_sequence, (row, event) in enumerate(zip(rows, events, strict=True), start=1):
+        if row["sequence_no"] != expected_sequence:
+            raise ValueError("stored signal transition sequence is not contiguous")
+        if event.previous_content_hash != expected_hash:
+            raise ValueError("stored signal transition history has a broken content chain")
+        expected_hash = event.current.content_hash
+    if expected_hash != current.content_hash:
+        raise ValueError("stored signal transition history does not reach current snapshot")
+    return current, events
 
 
 def _row_to_outbox(row: sqlite3.Row) -> NotificationOutboxRecord:
