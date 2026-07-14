@@ -191,7 +191,7 @@ AI agents may explain persisted evidence, assist research, and compose operator 
 
 The first named decision-support model is Direction-Location-Aggression: determine auction direction or market condition, identify and refine a relevant location, then observe aggression and follow-through. Direction and location should be deterministic where possible. Aggression starts as evidence-assisted interpretation because its fidelity depends on available IB trades and quotes; automation must be earned through captured data and replay validation.
 
-The fast-track Direction/Location view combines deterministic trend, VWAP relation, session quartile, profile location, nearby levels, and active FVG location. Current, prior, London, and New York candle-derived profiles use configured price bins and are explicitly inferred. Exact tick-price profiles require a separate tick-at-price accumulator and are not claimed by this implementation.
+The fast-track Direction/Location view combines deterministic trend, VWAP relation, session quartile, profile location, nearby levels, and active FVG location. Current, prior, London, and New York candle-derived profiles use configured price bins and are explicitly inferred. Configured rolling 2-session and 5-session composites add broader auction context only when the exact number of calendar-resolved product sessions is represented; they include explicit observed windows and complete/developing state. The current-session profile remains authoritative for the existing profile-location calculation. Exact tick-price profiles require a separate tick-at-price accumulator and are not claimed by this implementation.
 
 ### Gateway Boundary
 

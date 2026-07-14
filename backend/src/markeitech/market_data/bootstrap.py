@@ -148,6 +148,11 @@ def build_prepared_market_data_live_node(
                 for runtime in config.instrument_registry.instruments
                 if runtime.enabled and runtime.warmup is not None
             },
+            profile_composite_sessions={
+                runtime.contract.instrument_id: (runtime.warmup.volume_profile_composite_sessions)
+                for runtime in config.instrument_registry.instruments
+                if runtime.enabled and runtime.warmup is not None
+            },
         ),
         "analytics_readiness_evaluator": AnalyticsReadinessEvaluator(
             session_calendar,

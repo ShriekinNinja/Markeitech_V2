@@ -5,10 +5,12 @@ import pytest
 from markeitech.analytics import (
     AnalyticsInputFidelity,
     AnalyticsTimeframe,
+    CompositeVolumeProfileSnapshot,
     FairValueGap,
     FairValueGapDirection,
     MarketContextSnapshot,
     TrendState,
+    VolumeProfileSnapshot,
     VwapPosition,
 )
 from markeitech.market_data.operator_context import OperatorContextReporter
@@ -175,6 +177,45 @@ def test_auction_report_selects_fvgs_nearest_to_price() -> None:
 
     assert "5m=bullish:24990-24995,bullish:25005-25010" in lines[2]
     assert "24000-24010" not in lines[2]
+
+
+def test_auction_report_exposes_composite_profile_state() -> None:
+    snapshot = context(
+        "NQU6.CME",
+        AnalyticsTimeframe.ONE_MINUTE,
+        close="25000",
+        trend=TrendState.RANGE,
+    ).model_copy(
+        update={
+            "composite_volume_profiles": (
+                CompositeVolumeProfileSnapshot(
+                    session_count=2,
+                    start_ts=datetime(2026, 7, 13, tzinfo=UTC),
+                    end_ts=datetime(2026, 7, 14, 12, tzinfo=UTC),
+                    is_complete=False,
+                    profile=VolumeProfileSnapshot(
+                        bin_size=Decimal("1"),
+                        value_area_fraction=Decimal("0.70"),
+                        poc=Decimal("25000"),
+                        value_area_low=Decimal("24900"),
+                        value_area_high=Decimal("25100"),
+                        total_volume=Decimal("1000"),
+                        input_fidelity=AnalyticsInputFidelity.INFERRED,
+                        methodology="bar_range_uniform_volume",
+                    ),
+                ),
+            )
+        }
+    )
+
+    lines = OperatorContextReporter().render(
+        (snapshot,),
+        active_instrument_id="NQU6.CME",
+        phase="live",
+        force=True,
+    )
+
+    assert "COMPOSITE[2s=24900/25000/25100:inferred:developing]" in lines[2]
 
 
 def test_report_rejects_unknown_phase() -> None:

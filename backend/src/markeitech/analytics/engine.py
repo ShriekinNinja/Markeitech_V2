@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, time, timedelta
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 from typing import Any, Protocol
 from zoneinfo import ZoneInfo
 
@@ -13,6 +13,7 @@ from markeitech.analytics.contracts import (
     AnalysisBar,
     AnalyticsInputFidelity,
     AnalyticsTimeframe,
+    CompositeVolumeProfileSnapshot,
     ContextLevel,
     ContextRange,
     FairValueGap,
@@ -60,6 +61,7 @@ class MarketContextEngine:
         *,
         maximum_bars_per_timeframe: int = 10_000,
         profile_bin_sizes: Mapping[str, Decimal] | None = None,
+        profile_composite_sessions: Mapping[str, Sequence[int]] | None = None,
     ) -> None:
         if maximum_bars_per_timeframe < 200:
             raise ValueError("analytics history must retain at least 200 bars")
@@ -68,6 +70,20 @@ class MarketContextEngine:
         self._profile_bin_sizes = dict(profile_bin_sizes or {})
         if any(value <= 0 for value in self._profile_bin_sizes.values()):
             raise ValueError("volume profile bin sizes must be positive")
+        self._profile_composite_sessions = {
+            instrument_id: tuple(sorted(values))
+            for instrument_id, values in (profile_composite_sessions or {}).items()
+        }
+        if any(
+            sessions < 2 or sessions > 20
+            for values in self._profile_composite_sessions.values()
+            for sessions in values
+        ):
+            raise ValueError("composite volume profiles require between 2 and 20 sessions")
+        if any(
+            len(set(values)) != len(values) for values in self._profile_composite_sessions.values()
+        ):
+            raise ValueError("composite volume profile session counts must be unique")
         self._bars: dict[tuple[str, AnalyticsTimeframe], list[AnalysisBar]] = defaultdict(list)
         self._configured: dict[str, set[AnalyticsTimeframe]] = defaultdict(set)
         self._aggregators: dict[tuple[str, AnalyticsTimeframe], _BarAggregator] = {}
@@ -229,6 +245,14 @@ class MarketContextEngine:
             latest.close_ts,
             bin_size,
         )
+        composite_profiles = _composite_volume_profiles(
+            structure_bars,
+            structure_reference,
+            self._session_windows,
+            as_of=latest.close_ts,
+            bin_size=bin_size,
+            session_counts=self._profile_composite_sessions.get(latest.instrument_id, ()),
+        )
         profile_location, location_reasons = _profile_location(latest.close, profile)
         gaps = _fair_value_gaps(bars[-500:])
         direction_score, direction_location_reasons = _direction_location_summary(
@@ -277,6 +301,7 @@ class MarketContextEngine:
             prior_volume_profile=prior_profile,
             london_volume_profile=london_profile,
             new_york_volume_profile=new_york_profile,
+            composite_volume_profiles=composite_profiles,
             profile_location=profile_location,
             location_reason_codes=location_reasons,
             direction_score=direction_score,
@@ -522,20 +547,27 @@ def _volume_profile(
     bin_size: Decimal,
 ) -> VolumeProfileSnapshot | None:
     volumes: dict[Decimal, Decimal] = defaultdict(lambda: Decimal("0"))
+    total_volume = Decimal("0")
     for bar in bars:
         if bar.volume <= 0:
             continue
-        typical = (bar.high + bar.low + bar.close) / Decimal("3")
-        price_bin = (typical / bin_size).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-        volumes[price_bin * bin_size] += bar.volume
-    total = sum(volumes.values(), Decimal("0"))
-    if total <= 0:
+        total_volume += bar.volume
+        lower_index = int((bar.low / bin_size).quantize(Decimal("1"), rounding=ROUND_FLOOR))
+        upper_index = int((bar.high / bin_size).quantize(Decimal("1"), rounding=ROUND_CEILING))
+        bin_count = upper_index - lower_index + 1
+        share = bar.volume / bin_count
+        allocated = Decimal("0")
+        for index in range(lower_index, upper_index + 1):
+            allocation = bar.volume - allocated if index == upper_index else share
+            volumes[Decimal(index) * bin_size] += allocation
+            allocated += allocation
+    if total_volume <= 0:
         return None
     prices = sorted(volumes)
     poc = max(prices, key=lambda price: (volumes[price], price))
     left = right = prices.index(poc)
     included = volumes[poc]
-    target = total * Decimal("0.70")
+    target = total_volume * Decimal("0.70")
     while included < target and (left > 0 or right < len(prices) - 1):
         left_volume = volumes[prices[left - 1]] if left > 0 else Decimal("-1")
         right_volume = volumes[prices[right + 1]] if right < len(prices) - 1 else Decimal("-1")
@@ -551,9 +583,9 @@ def _volume_profile(
         poc=poc,
         value_area_low=prices[left],
         value_area_high=prices[right],
-        total_volume=total,
+        total_volume=total_volume,
         input_fidelity=AnalyticsInputFidelity.INFERRED,
-        methodology="bar_typical_price_volume",
+        methodology="bar_range_uniform_volume",
     )
 
 
@@ -568,6 +600,75 @@ def _range_volume_profile(
     end = min(context_range.end_ts, as_of)
     selected = [bar for bar in bars if context_range.start_ts <= bar.open_ts < end]
     return _volume_profile(selected, bin_size)
+
+
+def _composite_volume_profiles(
+    bars: Sequence[AnalysisBar],
+    reference: AnalysisBar,
+    session_windows: SessionWindowResolver,
+    *,
+    as_of: datetime,
+    bin_size: Decimal,
+    session_counts: Sequence[int],
+) -> tuple[CompositeVolumeProfileSnapshot, ...]:
+    if not session_counts:
+        return ()
+    groups = _recent_session_groups(
+        bars,
+        reference,
+        session_windows,
+        as_of=as_of,
+        maximum=max(session_counts),
+    )
+    profiles: list[CompositeVolumeProfileSnapshot] = []
+    for session_count in sorted(set(session_counts)):
+        if len(groups) < session_count:
+            continue
+        selected_groups = groups[-session_count:]
+        selected_bars = [bar for _, _, values in selected_groups for bar in values]
+        profile = _volume_profile(selected_bars, bin_size)
+        if profile is None:
+            continue
+        current_close = selected_groups[-1][1]
+        profiles.append(
+            CompositeVolumeProfileSnapshot(
+                session_count=session_count,
+                start_ts=selected_groups[0][0],
+                end_ts=selected_bars[-1].close_ts,
+                is_complete=as_of >= current_close,
+                profile=profile,
+            )
+        )
+    return tuple(profiles)
+
+
+def _recent_session_groups(
+    bars: Sequence[AnalysisBar],
+    reference: AnalysisBar,
+    session_windows: SessionWindowResolver,
+    *,
+    as_of: datetime,
+    maximum: int,
+) -> list[tuple[datetime, datetime, list[AnalysisBar]]]:
+    eligible = [bar for bar in bars if bar.close_ts <= as_of]
+    cursor: AnalysisBar | None = reference
+    newest_first: list[tuple[datetime, datetime, list[AnalysisBar]]] = []
+    seen: set[tuple[datetime, datetime]] = set()
+    while cursor is not None and len(newest_first) < maximum:
+        session_open, session_close = session_windows.session_window(
+            cursor.instrument_id,
+            cursor.open_ts,
+        )
+        window = (session_open, session_close)
+        if window in seen:
+            break
+        seen.add(window)
+        selected = [bar for bar in eligible if session_open <= bar.open_ts < session_close]
+        if selected:
+            newest_first.append((session_open, session_close, selected))
+        prior = [bar for bar in eligible if bar.open_ts < session_open]
+        cursor = prior[-1] if prior else None
+    return list(reversed(newest_first))
 
 
 def _profile_location(

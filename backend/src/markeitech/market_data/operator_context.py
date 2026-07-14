@@ -100,6 +100,7 @@ def _instrument_lines(
         f"prior={_profile(reference.prior_volume_profile)} "
         f"london={_profile(reference.london_volume_profile)} "
         f"new_york={_profile(reference.new_york_volume_profile)}] "
+        f"| COMPOSITE[{_composite_profiles(reference.composite_volume_profiles)}] "
         f"| RANGES[london={_context_range(reference.london_range)} "
         f"new_york={_context_range(reference.new_york_range)}] "
         f"| OR[L15={_context_range(reference.london_opening_range_15)} "
@@ -150,4 +151,14 @@ def _profile(value: Any | None) -> str:
     return (
         f"{value.value_area_low}/{value.poc}/{value.value_area_high}:"
         f"{value.input_fidelity.value}"
+    )
+
+
+def _composite_profiles(values: Any) -> str:
+    if not values:
+        return "none"
+    return " ".join(
+        f"{value.session_count}s={_profile(value.profile)}:"
+        f"{'complete' if value.is_complete else 'developing'}"
+        for value in values
     )

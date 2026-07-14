@@ -177,6 +177,25 @@ class VolumeProfileSnapshot(VersionedDomainModel):
         return self
 
 
+class CompositeVolumeProfileSnapshot(VersionedDomainModel):
+    session_count: int = Field(ge=2)
+    start_ts: datetime
+    end_ts: datetime
+    is_complete: bool
+    profile: VolumeProfileSnapshot
+
+    @field_validator("start_ts", "end_ts")
+    @classmethod
+    def _timestamps_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+    @model_validator(mode="after")
+    def _window_must_be_consistent(self) -> CompositeVolumeProfileSnapshot:
+        if self.end_ts <= self.start_ts:
+            raise ValueError("composite profile end must be after start")
+        return self
+
+
 class MarketContextSnapshot(VersionedDomainModel):
     instrument_id: str = Field(min_length=1)
     timeframe: AnalyticsTimeframe
@@ -212,6 +231,9 @@ class MarketContextSnapshot(VersionedDomainModel):
     prior_volume_profile: VolumeProfileSnapshot | None = None
     london_volume_profile: VolumeProfileSnapshot | None = None
     new_york_volume_profile: VolumeProfileSnapshot | None = None
+    composite_volume_profiles: tuple[CompositeVolumeProfileSnapshot, ...] = Field(
+        default_factory=tuple,
+    )
     profile_location: ProfileLocation = ProfileLocation.UNAVAILABLE
     location_reason_codes: tuple[str, ...] = Field(default_factory=tuple)
     direction_score: int = Field(default=0, ge=-2, le=2)

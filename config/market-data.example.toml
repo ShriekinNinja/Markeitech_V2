@@ -77,7 +77,8 @@ annotate_emas = true
 annotate_trend = true
 annotate_vwap = true
 annotate_fvgs = true
-volume_profile_bin_size = 5
+volume_profile_bin_size = 1
+volume_profile_composite_sessions = [2, 5]
 
 [[instruments]]
 role = "background"
@@ -109,7 +110,8 @@ annotate_emas = true
 annotate_trend = true
 annotate_vwap = true
 annotate_fvgs = true
-volume_profile_bin_size = 1
+volume_profile_bin_size = 0.5
+volume_profile_composite_sessions = [2, 5]
 
 [[instruments]]
 role = "background"

@@ -212,6 +212,17 @@ def test_registry_allows_one_active_and_multiple_background_instruments() -> Non
         assert WarmupTimeframe.ONE_MINUTE in runtime.warmup.timeframes
 
 
+def test_volume_profile_composite_sessions_are_sorted_and_validated() -> None:
+    warmup = InstrumentWarmupConfig(volume_profile_composite_sessions=(5, 2))
+
+    assert warmup.volume_profile_composite_sessions == (2, 5)
+
+    with pytest.raises(ValidationError, match="between 2 and 20"):
+        InstrumentWarmupConfig(volume_profile_composite_sessions=(1, 5))
+    with pytest.raises(ValidationError, match="must be unique"):
+        InstrumentWarmupConfig(volume_profile_composite_sessions=(2, 2))
+
+
 def test_registry_rejects_multiple_active_instruments() -> None:
     with pytest.raises(ValidationError, match="exactly one active"):
         InstrumentRegistryConfig(

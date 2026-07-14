@@ -338,7 +338,7 @@ Implemented on the dedicated usable-context branch ahead of the normal persisten
 - Calculate DST-aware London and New York developing ranges plus 15m and 30m opening ranges.
 - Detect confirmed, still-unfilled three-bar FVGs independently on each context timeframe.
 - Build current, prior, London, and New York 70% value-area profiles using per-instrument price bins.
-- Label candle-derived profiles as inferred with methodology `bar_typical_price_volume`; do not describe them as footprint or authoritative trade-at-price data.
+- Label candle-derived profiles as inferred with methodology `bar_range_uniform_volume`; do not describe them as footprint or authoritative trade-at-price data.
 - Emit deterministic Direction/Location context from EMA trend, session VWAP, session quartile, profile location, nearby support/resistance, and active FVG location.
 
 This fast-track work remains subject to later persisted-data replay and value-integrity comparison before signals or automation depend on it.
@@ -358,8 +358,9 @@ Implemented slices:
 
 - Timeframe-specific history requirements, daily-first warmup context, session-aware freshness, independent indicator-depth classification, bounded readiness logs, subscription gating, and acceptance evidence.
 - Restart-safe sequential IB warmup with bounded retries, followed by an active-first operator briefing and change-aware periodic context reports capped at three lines per changed instrument. Full context snapshots continue through the structured callback boundary and DEBUG JSONL evidence path.
+- Instrument-specific profile refinement with explicit rolling 2-session and 5-session composites, observed-window lineage, developing state, exact-session-count gating, and finer NQ/ES bins. Existing current-session profile-location semantics remain unchanged.
 
-Profile granularity and composite definitions remain an explicit analytics decision. Do not silently reinterpret candle-derived session profiles while improving their presentation.
+All candle-derived profiles remain inferred. Persisted feature restoration and later live-versus-replay comparison remain before signals can depend on composites.
 
 ## Stage 5: Signals
 

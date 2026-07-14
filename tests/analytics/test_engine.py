@@ -208,11 +208,11 @@ def test_inferred_volume_profile_uses_configured_bins_and_classifies_location() 
     assert snapshot.volume_profile is not None
     assert snapshot.volume_profile.bin_size == Decimal("5")
     assert snapshot.volume_profile.poc == Decimal("105")
-    assert snapshot.volume_profile.value_area_low == Decimal("105")
-    assert snapshot.volume_profile.value_area_high == Decimal("105")
+    assert snapshot.volume_profile.value_area_low == Decimal("100")
+    assert snapshot.volume_profile.value_area_high == Decimal("110")
     assert snapshot.volume_profile.input_fidelity == AnalyticsInputFidelity.INFERRED
-    assert snapshot.profile_location == ProfileLocation.ABOVE_VALUE
-    assert snapshot.location_reason_codes == ("close_above_value_area",)
+    assert snapshot.profile_location == ProfileLocation.UPPER_VALUE
+    assert snapshot.location_reason_codes == ("close_in_upper_value",)
     assert snapshot.direction_score == 1
     assert "above_session_vwap" in snapshot.direction_location_reason_codes
 
@@ -234,6 +234,68 @@ def test_higher_timeframe_profile_does_not_look_ahead_into_newer_minute_bars() -
 
     assert five_minute.volume_profile is not None
     assert five_minute.volume_profile.total_volume == Decimal("50")
+
+
+def test_composite_profiles_require_exact_resolved_session_counts() -> None:
+    bars = tuple(
+        analysis_bar(
+            minute,
+            start=START + timedelta(days=day),
+            close=Decimal("100") + day,
+        )
+        for day in range(5)
+        for minute in range(2)
+    )
+    engine = MarketContextEngine(
+        DailySessions(),
+        profile_bin_sizes={"NQU6.CME": Decimal("1")},
+        profile_composite_sessions={"NQU6.CME": (2, 5)},
+    )
+
+    snapshot = engine.initialize_bars(bars)[0]
+
+    assert [value.session_count for value in snapshot.composite_volume_profiles] == [2, 5]
+    two_session, five_session = snapshot.composite_volume_profiles
+    assert two_session.start_ts == START.replace(hour=0) + timedelta(days=3)
+    assert two_session.end_ts == START + timedelta(days=4, minutes=2)
+    assert two_session.is_complete is False
+    assert two_session.profile.total_volume == Decimal("40")
+    assert five_session.start_ts == START.replace(hour=0)
+    assert five_session.profile.total_volume == Decimal("100")
+
+
+def test_composite_profile_omits_periods_without_enough_sessions() -> None:
+    bars = tuple(analysis_bar(0, start=START + timedelta(days=day)) for day in range(3))
+    engine = MarketContextEngine(
+        DailySessions(),
+        profile_composite_sessions={"NQU6.CME": (2, 5)},
+    )
+
+    snapshot = engine.initialize_bars(bars)[0]
+
+    assert [value.session_count for value in snapshot.composite_volume_profiles] == [2]
+
+
+def test_composite_profile_does_not_include_structure_bars_after_snapshot() -> None:
+    current = analysis_bar(0, start=START + timedelta(days=1))
+    future = analysis_bar(0, start=START + timedelta(days=2), volume=Decimal("1000"))
+    higher_timeframe = analysis_bar(
+        0,
+        timeframe=AnalyticsTimeframe.FIVE_MINUTES,
+        start=START + timedelta(days=1),
+    )
+    engine = MarketContextEngine(
+        DailySessions(),
+        profile_composite_sessions={"NQU6.CME": (2,)},
+    )
+
+    snapshots = engine.initialize_bars((analysis_bar(0), current, future, higher_timeframe))
+    five_minute = next(
+        snapshot for snapshot in snapshots if snapshot.timeframe == AnalyticsTimeframe.FIVE_MINUTES
+    )
+
+    assert len(five_minute.composite_volume_profiles) == 1
+    assert five_minute.composite_volume_profiles[0].profile.total_volume == Decimal("20")
 
 
 def test_warmup_context_is_emitted_in_top_down_analysis_order() -> None:

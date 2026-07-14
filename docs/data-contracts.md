@@ -182,9 +182,12 @@ Usable-context extensions remain part of the same versioned snapshot:
 - DST-aware London and New York ranges and 15m/30m opening ranges
 - confirmed active three-bar fair value gaps with timeframe and bounds
 - current, prior, London, and New York volume-profile snapshots
+- rolling multi-session composite profiles with requested session count, observed UTC window, and complete/developing state
 - profile location plus deterministic Direction/Location score and reason codes
 
-`volume_profile_bin_size` is configured per instrument. Candle-based profiles assign each completed 1m bar's volume to its typical-price bin, use a contiguous 70% expansion around POC, and are always marked `inferred` with methodology `bar_typical_price_volume`. They are not exchange aggressor data, market depth, footprints, or exact historical trade-at-price distributions.
+`volume_profile_bin_size` is configured per instrument. Candle-based profiles distribute each completed 1m bar's volume uniformly across every configured price bin intersecting its high-low range, conserve the bar's total volume exactly, and use a contiguous 70% expansion around POC. They are always marked `inferred` with methodology `bar_range_uniform_volume`. They are not exchange aggressor data, market depth, footprints, or exact historical trade-at-price distributions.
+
+`volume_profile_composite_sessions` declares rolling product-session counts per instrument. A composite is emitted only when that many distinct calendar-resolved sessions are represented. Its window includes the current session and is therefore marked developing until that session closes. The current-session profile remains the sole profile used by `profile_location` and the deterministic Direction/Location score; composites are additional evidence and do not silently change existing signal semantics.
 
 ### Analytics Readiness
 

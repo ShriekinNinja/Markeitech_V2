@@ -71,6 +71,7 @@ class InstrumentWarmupConfig(VersionedDomainModel):
     annotate_vwap: bool = True
     annotate_fvgs: bool = True
     volume_profile_bin_size: Decimal = Field(default=Decimal("1"), gt=0)
+    volume_profile_composite_sessions: tuple[int, ...] = (2, 5)
 
     @field_validator("lookback_sessions_by_timeframe")
     @classmethod
@@ -81,6 +82,18 @@ class InstrumentWarmupConfig(VersionedDomainModel):
         if any(sessions < 1 for sessions in value.values()):
             raise ValueError("timeframe lookback sessions must be positive")
         return value
+
+    @field_validator("volume_profile_composite_sessions")
+    @classmethod
+    def _composite_sessions_must_be_unique_and_bounded(
+        cls,
+        value: tuple[int, ...],
+    ) -> tuple[int, ...]:
+        if any(sessions < 2 or sessions > 20 for sessions in value):
+            raise ValueError("volume profile composite sessions must be between 2 and 20")
+        if len(set(value)) != len(value):
+            raise ValueError("volume profile composite sessions must be unique")
+        return tuple(sorted(value))
 
     @model_validator(mode="after")
     def _timeframe_lookbacks_must_match_configured_timeframes(
