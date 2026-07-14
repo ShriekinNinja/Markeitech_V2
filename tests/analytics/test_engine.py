@@ -65,7 +65,12 @@ def analysis_bar(
     )
 
 
-def canonical_bar(index: int, *, start: datetime) -> OneMinuteBar:
+def canonical_bar(
+    index: int,
+    *,
+    start: datetime,
+    source_name: str = "ib",
+) -> OneMinuteBar:
     source = analysis_bar(index, start=start)
     return OneMinuteBar(
         instrument_id=source.instrument_id,
@@ -81,7 +86,7 @@ def canonical_bar(index: int, *, start: datetime) -> OneMinuteBar:
         buy_volume=Decimal("0"),
         sell_volume=Decimal("0"),
         unknown_volume=source.volume,
-        source=source.source,
+        source=source_name,
     )
 
 
@@ -386,3 +391,155 @@ def test_live_aggregates_align_to_product_session_open() -> None:
 
     one_hour = next(item for item in updates if item.timeframe == AnalyticsTimeframe.ONE_HOUR)
     assert one_hour.as_of == datetime(2026, 7, 13, 14, 30, tzinfo=UTC)
+
+
+def test_restart_seeds_forming_bucket_and_preserves_mixed_lineage() -> None:
+    live_start = datetime(2026, 7, 13, 10, tzinfo=UTC)
+    engine = MarketContextEngine(DailySessions())
+    engine.initialize_bars(
+        (
+            analysis_bar(0, start=live_start - timedelta(minutes=1)),
+            *(analysis_bar(index, start=live_start) for index in range(3)),
+            analysis_bar(
+                0,
+                timeframe=AnalyticsTimeframe.FIVE_MINUTES,
+                start=live_start - timedelta(minutes=5),
+            ),
+        )
+    )
+
+    engine.update_one_minute(canonical_bar(3, start=live_start, source_name="classified_ticks"))
+    engine.update_one_minute(canonical_bar(4, start=live_start, source_name="classified_ticks"))
+    updates = engine.update_one_minute(
+        canonical_bar(5, start=live_start, source_name="classified_ticks")
+    )
+
+    five_minute = next(
+        item for item in updates if item.timeframe == AnalyticsTimeframe.FIVE_MINUTES
+    )
+    assert five_minute.as_of == live_start + timedelta(minutes=5)
+    assert five_minute.source == "mixed"
+    assert five_minute.input_fidelity == AnalyticsInputFidelity.MIXED
+
+
+def test_missing_seeded_minute_still_prevents_aggregate_fabrication() -> None:
+    live_start = datetime(2026, 7, 13, 10, tzinfo=UTC)
+    engine = MarketContextEngine(DailySessions())
+    engine.initialize_bars(
+        (
+            analysis_bar(0, start=live_start - timedelta(minutes=1)),
+            analysis_bar(0, start=live_start),
+            analysis_bar(2, start=live_start),
+            analysis_bar(
+                0,
+                timeframe=AnalyticsTimeframe.FIVE_MINUTES,
+                start=live_start - timedelta(minutes=5),
+            ),
+        )
+    )
+
+    for index in (3, 4):
+        engine.update_one_minute(canonical_bar(index, start=live_start))
+    updates = engine.update_one_minute(canonical_bar(5, start=live_start))
+
+    assert [item.timeframe for item in updates] == [AnalyticsTimeframe.ONE_MINUTE]
+
+
+def test_completed_warmup_bucket_is_not_emitted_again_after_restart() -> None:
+    live_start = datetime(2026, 7, 13, 10, tzinfo=UTC)
+    engine = MarketContextEngine(DailySessions())
+    engine.initialize_bars(
+        (
+            *(analysis_bar(index, start=live_start) for index in range(5)),
+            analysis_bar(
+                0,
+                timeframe=AnalyticsTimeframe.FIVE_MINUTES,
+                start=live_start,
+            ),
+        )
+    )
+
+    first_updates = engine.update_one_minute(canonical_bar(5, start=live_start))
+    for index in range(6, 10):
+        engine.update_one_minute(canonical_bar(index, start=live_start))
+    boundary_updates = engine.update_one_minute(canonical_bar(10, start=live_start))
+
+    assert [item.timeframe for item in first_updates] == [AnalyticsTimeframe.ONE_MINUTE]
+    assert {item.timeframe for item in boundary_updates} == {
+        AnalyticsTimeframe.ONE_MINUTE,
+        AnalyticsTimeframe.FIVE_MINUTES,
+    }
+
+
+def test_restarted_aggregate_matches_uninterrupted_market_values() -> None:
+    historical_start = datetime(2026, 7, 13, 9, tzinfo=UTC)
+    live_start = datetime(2026, 7, 13, 10, tzinfo=UTC)
+    baseline = (
+        analysis_bar(0, start=historical_start),
+        analysis_bar(
+            0,
+            timeframe=AnalyticsTimeframe.FIVE_MINUTES,
+            start=historical_start,
+        ),
+    )
+    uninterrupted = MarketContextEngine(DailySessions())
+    uninterrupted.initialize_bars(baseline)
+    for index in range(6):
+        uninterrupted.update_one_minute(
+            canonical_bar(index, start=live_start, source_name="classified_ticks")
+        )
+
+    restarted = MarketContextEngine(DailySessions())
+    restarted.initialize_bars(
+        (
+            *baseline,
+            *(analysis_bar(index, start=live_start) for index in range(3)),
+        )
+    )
+    for index in range(3, 6):
+        restarted.update_one_minute(
+            canonical_bar(index, start=live_start, source_name="classified_ticks")
+        )
+
+    uninterrupted_snapshot = next(
+        item
+        for item in uninterrupted.snapshots
+        if item.timeframe == AnalyticsTimeframe.FIVE_MINUTES
+    )
+    restarted_snapshot = next(
+        item for item in restarted.snapshots if item.timeframe == AnalyticsTimeframe.FIVE_MINUTES
+    )
+    assert restarted_snapshot.close == uninterrupted_snapshot.close
+    assert restarted_snapshot.session_high == uninterrupted_snapshot.session_high
+    assert restarted_snapshot.session_low == uninterrupted_snapshot.session_low
+    assert restarted_snapshot.session_vwap == uninterrupted_snapshot.session_vwap
+    assert restarted_snapshot.source == "mixed"
+    assert uninterrupted_snapshot.source == "classified_ticks"
+
+
+def test_restart_seeding_continues_forming_hour_without_extra_hour_delay() -> None:
+    live_start = datetime(2026, 7, 13, 10, tzinfo=UTC)
+    engine = MarketContextEngine(DailySessions())
+    engine.initialize_bars(
+        (
+            analysis_bar(0, start=live_start - timedelta(minutes=1)),
+            *(analysis_bar(index, start=live_start) for index in range(23)),
+            analysis_bar(
+                0,
+                timeframe=AnalyticsTimeframe.ONE_HOUR,
+                start=live_start - timedelta(hours=1),
+            ),
+        )
+    )
+
+    for index in range(23, 60):
+        engine.update_one_minute(
+            canonical_bar(index, start=live_start, source_name="classified_ticks")
+        )
+    updates = engine.update_one_minute(
+        canonical_bar(60, start=live_start, source_name="classified_ticks")
+    )
+
+    one_hour = next(item for item in updates if item.timeframe == AnalyticsTimeframe.ONE_HOUR)
+    assert one_hour.as_of == live_start + timedelta(hours=1)
+    assert one_hour.input_fidelity == AnalyticsInputFidelity.MIXED

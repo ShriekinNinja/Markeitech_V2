@@ -369,3 +369,13 @@ Configure historical lookback independently per instrument and timeframe. Use in
 Evaluate readiness against the latest fully closed session-aware interval at the warmup cutoff. Never require a forming bar. Record freshness separately from indicator depth: 200 bars provide full EMA depth, 50-199 provide partial directional depth, and fewer than 50 are insufficient. Missing required evidence or stale 1m blocks live subscriptions; stale higher timeframes or shallow history degrades context but may continue live.
 
 Reason: Five sessions was a dashboard and tactical-data choice, not a valid ceiling on macro analysis. Daily and hourly structure require materially deeper history, while requesting hundreds of sessions of 1m bars would create needless IB load and storage pressure. Separate freshness and depth prevent a recent but analytically shallow series, or a deep but stale series, from being mislabeled ready.
+
+## DR-0041: Rebuild Derived State And Seed Only Forming Aggregates
+
+Status: accepted
+
+Treat canonical bars plus versioned analytics configuration as authoritative restart inputs. Recalculate market-context snapshots on boot rather than restoring opaque indicator or profile internals. Seed each configured 5m, 15m, 30m, and 1h live aggregator only with warmup 1m bars belonging to its currently forming product-session-aligned bucket. Do not seed a bucket already complete at the warmup cutoff, and never fill a missing minute.
+
+When an active instrument crosses from provider-reported warmup bars to tick-built live bars inside one aggregate bucket, mark the completed aggregate source and input fidelity as mixed. Background aggregates remain provider-reported when all constituent bars are provider-reported. Emit the boundary aggregate once; historical higher-timeframe evidence owns completed pre-live buckets.
+
+Reason: Persisting mutable indicator internals would couple recovery to library implementation details and create competing derived truth. Rebuilding from canonical evidence is deterministic. Narrow forming-bucket seeding preserves continuity across restart without fabricating gaps, duplicating completed warmup bars, or delaying the first valid post-restart hourly update by an extra hour.

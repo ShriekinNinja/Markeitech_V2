@@ -120,10 +120,17 @@ class MarketContextEngine:
             raise RuntimeError("market context warmup contains no analyzable bars")
         for instrument_id, timeframes in self._configured.items():
             for timeframe in timeframes & set(_LIVE_AGGREGATE_TIMEFRAMES):
-                self._aggregators[(instrument_id, timeframe)] = _BarAggregator(
+                aggregator = _BarAggregator(
                     timeframe,
                     self._session_windows,
                 )
+                aggregator.seed(
+                    self._bars.get(
+                        (instrument_id, AnalyticsTimeframe.ONE_MINUTE),
+                        (),
+                    )
+                )
+                self._aggregators[(instrument_id, timeframe)] = aggregator
         initialized: list[MarketContextSnapshot] = []
         for key in sorted(
             self._bars,
@@ -319,6 +326,33 @@ class _BarAggregator:
         self._session_windows = session_windows
         self._current: list[AnalysisBar] = []
         self._bucket_start: datetime | None = None
+
+    def seed(self, bars: Sequence[AnalysisBar]) -> None:
+        if self._bucket_start is not None or self._current:
+            raise RuntimeError("aggregate bucket can only be seeded once")
+        if not bars:
+            return
+        latest = bars[-1]
+        session_open, _ = self._session_windows.session_window(
+            latest.instrument_id,
+            latest.open_ts,
+        )
+        bucket_start = _floor_timestamp(
+            latest.open_ts,
+            self._timeframe.duration,
+            anchor=session_open,
+        )
+        bucket_end = bucket_start + self._timeframe.duration
+        if latest.close_ts >= bucket_end:
+            return
+        self._bucket_start = bucket_start
+        self._current = [
+            bar
+            for bar in bars
+            if bar.timeframe == AnalyticsTimeframe.ONE_MINUTE
+            and bucket_start <= bar.open_ts < bucket_end
+            and bar.close_ts <= latest.close_ts
+        ]
 
     def update(self, bar: AnalysisBar) -> AnalysisBar | None:
         session_open, _ = self._session_windows.session_window(

@@ -78,4 +78,5 @@ Copy `.env.example` to `.env` when running locally. Current docs require:
 - [Phased implementation plan](docs/02-phased-implementation-plan.md)
 - [Runtime architecture](docs/runtime-architecture.md)
 - [Data contracts](docs/data-contracts.md)
+- [Actor operator log guide](docs/operator-context-logs.md)
 - [Interactive Brokers setup](docs/ib-setup.md)
