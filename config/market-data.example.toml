@@ -47,6 +47,20 @@ runtime_shutdown_timeout_seconds = 30
 recovery_max_total_requests = 256
 recovery_provider_empty_confirmation_attempts = 2
 
+[signals]
+enabled_definition_ids_by_instrument = { "NQU6.CME" = ["intraday_context"], "ESU6.CME" = ["intraday_context"] }
+
+[[signals.definitions]]
+definition_id = "intraday_context"
+algorithm_version = "1.0"
+evaluation_timeframe = "1m"
+primary_direction_timeframes = ["1h", "15m"]
+confirmation_timeframes = ["5m"]
+minimum_confirmation_count = 1
+context_timeframes = ["1d"]
+opposing_context_policy = "degrade"
+minimum_direction_score = 1
+
 [[instruments]]
 role = "active"
 data_mode = "tick_by_tick"

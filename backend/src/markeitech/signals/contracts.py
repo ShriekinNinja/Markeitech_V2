@@ -91,6 +91,7 @@ class SignalEvidenceReference(VersionedDomainModel):
 
 class SignalSnapshot(VersionedDomainModel):
     family: SignalFamily = SignalFamily.DIRECTION_LOCATION_AGGRESSION
+    definition_id: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
     algorithm_version: str = Field(min_length=1)
     configuration_hash: str = Field(pattern=_SHA256_PATTERN)
     setup_key: str = Field(pattern=_SHA256_PATTERN)
@@ -144,6 +145,7 @@ class SignalSnapshot(VersionedDomainModel):
             {
                 "schema_version": self.schema_version,
                 "family": self.family.value,
+                "definition_id": self.definition_id,
                 "algorithm_version": self.algorithm_version,
                 "configuration_hash": self.configuration_hash,
                 "setup_key": self.setup_key,
@@ -218,20 +220,24 @@ class SignalTransitionEvent(VersionedDomainModel):
 def signal_setup_key(
     *,
     family: SignalFamily,
+    definition_id: str,
     instrument_id: str,
     direction: SignalDirection,
     anchor: str,
 ) -> str:
     if (
-        not instrument_id.strip()
+        not definition_id.strip()
+        or definition_id != definition_id.strip()
+        or not instrument_id.strip()
         or instrument_id != instrument_id.strip()
         or not anchor.strip()
         or anchor != anchor.strip()
     ):
-        raise ValueError("signal setup identity requires instrument and anchor")
+        raise ValueError("signal setup identity requires definition, instrument, and anchor")
     return _canonical_hash(
         {
             "family": family.value,
+            "definition_id": definition_id,
             "instrument_id": instrument_id,
             "direction": direction.value,
             "anchor": anchor,

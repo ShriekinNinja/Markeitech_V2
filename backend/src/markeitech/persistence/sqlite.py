@@ -35,7 +35,7 @@ from markeitech.persistence.contracts import (
 )
 from markeitech.signals import SignalSnapshot, SignalStatus, SignalTransitionEvent
 
-LATEST_SCHEMA_VERSION = 7
+LATEST_SCHEMA_VERSION = 8
 
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (
@@ -271,6 +271,16 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
             ON signal_transitions(signal_id, sequence_no);
         """,
     ),
+    (
+        8,
+        """
+        ALTER TABLE signal_snapshots
+            ADD COLUMN definition_id TEXT NOT NULL DEFAULT 'intraday_context';
+        DROP INDEX signal_snapshot_lookup_idx;
+        CREATE INDEX signal_snapshot_lookup_idx
+            ON signal_snapshots(instrument_id, definition_id, status, updated_ts_ns DESC);
+        """,
+    ),
 )
 
 
@@ -406,7 +416,12 @@ class SQLiteMetadataStore:
         values = _new_signal_snapshot_values(signal)
         with self._transaction() as connection:
             cursor = connection.execute(
-                "INSERT OR IGNORE INTO signal_snapshots VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                """
+                INSERT OR IGNORE INTO signal_snapshots (
+                    signal_id, initial_content_hash, content_hash, instrument_id,
+                    family, direction, status, updated_ts_ns, snapshot_json, definition_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
                 values,
             )
             if cursor.rowcount == 1:
@@ -501,7 +516,7 @@ class SQLiteMetadataStore:
                 """
                 UPDATE signal_snapshots
                 SET content_hash=?, instrument_id=?, family=?, direction=?, status=?,
-                    updated_ts_ns=?, snapshot_json=?
+                    updated_ts_ns=?, snapshot_json=?, definition_id=?
                 WHERE signal_id=? AND content_hash=?
                 """,
                 (
@@ -529,6 +544,7 @@ class SQLiteMetadataStore:
         self,
         *,
         instrument_id: str | None = None,
+        definition_id: str | None = None,
         status: SignalStatus | None = None,
     ) -> tuple[SignalSnapshot, ...]:
         clauses: list[str] = []
@@ -536,6 +552,9 @@ class SQLiteMetadataStore:
         if instrument_id is not None:
             clauses.append("instrument_id=?")
             values.append(instrument_id)
+        if definition_id is not None:
+            clauses.append("definition_id=?")
+            values.append(definition_id)
         if status is not None:
             clauses.append("status=?")
             values.append(status.value)
@@ -1408,6 +1427,7 @@ def _signal_current_values(signal: SignalSnapshot) -> tuple[Any, ...]:
         signal.status.value,
         unix_ns_from_utc_datetime(signal.updated_ts),
         signal.model_dump_json(),
+        signal.definition_id,
     )
 
 
@@ -1419,6 +1439,7 @@ def _row_to_signal_snapshot(row: sqlite3.Row) -> SignalSnapshot:
         raise ValueError("stored signal content hash does not match snapshot")
     if (
         row["instrument_id"] != signal.instrument_id
+        or row["definition_id"] != signal.definition_id
         or row["family"] != signal.family.value
         or row["direction"] != signal.direction.value
         or row["status"] != signal.status.value

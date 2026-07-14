@@ -94,6 +94,7 @@ class SignalStateStore(Protocol):
         self,
         *,
         instrument_id: str | None = None,
+        definition_id: str | None = None,
         status: SignalStatus | None = None,
     ) -> tuple[SignalSnapshot, ...]: ...
 

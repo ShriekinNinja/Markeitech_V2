@@ -139,6 +139,62 @@ def test_parse_operator_context_config() -> None:
     assert config.operator_context.interval_seconds == 90
 
 
+def test_parse_named_signal_definitions_and_instrument_enablement(tmp_path: Path) -> None:
+    raw = raw_config()
+    raw["persistence"] = {
+        "catalog_path": tmp_path / "catalog",
+        "metadata_path": tmp_path / "metadata.sqlite3",
+        "journal_path": tmp_path / "journal",
+    }
+    raw["signals"] = {
+        "definitions": [
+            {
+                "definition_id": "intraday_context",
+                "evaluation_timeframe": "1m",
+                "primary_direction_timeframes": ["15m", "5m"],
+                "confirmation_timeframes": ["1m"],
+                "minimum_confirmation_count": 1,
+                "context_timeframes": ["1d"],
+            }
+        ],
+        "enabled_definition_ids_by_instrument": {
+            "NQU6.CME": ["intraday_context"],
+        },
+    }
+
+    config = parse_market_data_runtime_config(raw)
+
+    assert config.signals is not None
+    definition = config.signals.enabled_definitions("NQU6.CME")[0]
+    assert definition.definition_id == "intraday_context"
+    assert [timeframe.value for timeframe in definition.primary_direction_timeframes] == [
+        "15m",
+        "5m",
+    ]
+
+
+def test_enabled_signals_require_persistence_and_matching_warmup() -> None:
+    raw = raw_config()
+    raw["signals"] = {
+        "definitions": [
+            {
+                "definition_id": "intraday_context",
+                "primary_direction_timeframes": ["1h", "15m"],
+            }
+        ],
+        "enabled_definition_ids_by_instrument": {
+            "NQU6.CME": ["intraday_context"],
+        },
+    }
+
+    with pytest.raises(ValidationError, match="require durable persistence"):
+        parse_market_data_runtime_config(raw)
+
+    raw["persistence"] = {}
+    with pytest.raises(ValidationError, match="requires warmup timeframes.*1h"):
+        parse_market_data_runtime_config(raw)
+
+
 def test_parse_crypto_market_data_runtime_config() -> None:
     raw = raw_config()
     raw["runtime"]["active_instrument_id"] = "BTC/USD.PAXOS"  # type: ignore[index]

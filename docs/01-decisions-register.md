@@ -427,3 +427,15 @@ Treat exact candidate and transition retries as idempotent duplicates. Reject a 
 Allow notification policy to supply an optional pending outbox record when applying a transition. Insert the outbox record, append history, and replace current state in one SQLite transaction. Reject mismatched aggregate identity, event type/schema, outbox content, or dedupe identity and roll back the signal transition. Keep topic and destination policy outside signal contracts.
 
 Reason: Current-state restoration alone cannot prove how a signal arrived there, while timestamps alone cannot order multiple valid transitions from one market event. An explicit sequence and hash chain provide deterministic replay and corruption evidence. Optimistic transitions prevent duplicate or racing live callbacks from silently overwriting one another, and atomic outbox coupling prevents an alertable transition from committing without its delivery obligation.
+
+## DR-0046: Named Direction Definitions With Stable Regime Anchors
+
+Status: accepted for implementation
+
+Keep Direction-Location-Aggression as one signal family while expressing distinct interpretations as named, versioned signal definitions enabled independently per instrument. The initial `intraday_context` definition requires agreeing 1h and 15m Direction plus matching 5m confirmation; opposing daily context degrades the setup. Permit later definitions such as `scalp` to use different timeframe roles without changing the family or evaluator code.
+
+Evaluate only point-in-time bundles of durably committed market-context feature ids. Reject future, duplicate-timeframe, and cross-instrument evidence. Retain every considered feature id and its fidelity on a candidate. Active and background instruments use the same definition boundary and produce independent signals; cross-instrument confluence must be modeled explicitly later.
+
+Anchor candidate identity to the start of a continuous qualified Direction regime. Emit once while the direction remains qualified, end the regime on neutral or conflicting evidence, preserve it across temporary missing evidence, and replace it when the opposite direction qualifies. Seed open regimes from verified persisted signals on restart and reject inconsistent setup identity.
+
+Reason: A fixed 1h+15m rule would make future shorter-horizon setups either accidental duplicates or invasive rewrites. Named definitions preserve one coherent DLA lifecycle while keeping cadence, evidence, and configuration identity explicit. Regime anchors stop each 1m recalculation from becoming a new alert, and preserving state across data gaps avoids false invalidation and duplicate recovery signals.

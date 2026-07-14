@@ -224,13 +224,23 @@ Live feature submission is bounded and asynchronous. Submission returns accepted
 
 ### Signal Contracts
 
-`SignalSnapshot` is the immutable current state of one deterministic setup. Its stable `signal_id` binds schema, setup family, algorithm version, configuration hash, setup key, instrument, and direction; lifecycle status, timestamps, evidence, and reasons live under a separate content hash. Recalculating the same setup therefore deduplicates while an algorithm/configuration revision creates a distinct signal identity.
+`SignalSnapshot` is the immutable current state of one deterministic setup. Its stable `signal_id` binds schema, setup family, named definition id, algorithm version, configuration hash, setup key, instrument, and direction; lifecycle status, timestamps, evidence, and reasons live under a separate content hash. Recalculating the same setup therefore deduplicates while a definition, algorithm, or configuration revision creates a distinct signal identity.
 
 The initial lifecycle is `candidate -> armed -> triggered`, with invalidated and expired terminal exits. Candidate means Direction evidence exists, Armed adds Location, and Triggered adds Aggression. A transition cannot skip a stage, move time backward, retain the same status, or mutate a terminal signal. Every transition carries the prior content hash, complete current snapshot, appended evidence, reason codes, and its own deterministic transition id.
 
 Evidence is typed by Direction, Location, Aggression, or Follow-through and identifies either a market-context feature or a deterministic market-data window. Direction and Location require feature evidence. Armed state requires available Direction and Location; Triggered state additionally requires available Aggression. Reported, inferred, partial, and unavailable fidelity remain explicit. Unavailable evidence can explain why a setup did not progress but cannot qualify a lifecycle stage.
 
-The setup key is a stable SHA-256 identity derived from family, instrument, direction, and a caller-supplied deterministic anchor. Stage 5C owns anchor semantics; presentation text, wall-clock receipt time, active/background role, Discord routing, and mutable scores must not become dedupe identity by accident.
+The setup key is a stable SHA-256 identity derived from family, named definition, instrument, direction, and a caller-supplied deterministic anchor. Presentation text, receipt time, active/background role, Discord routing, and mutable scores do not participate in dedupe identity.
+
+### Direction Definition And Regime Contracts
+
+`SignalDefinitionConfig` gives one named/versioned interpretation of the DLA family explicit timeframe roles. Definitions are enabled independently per instrument. The initial `intraday_context` definition evaluates on completed 1m context, requires agreeing 1h and 15m Direction plus matching 5m confirmation, and treats opposing daily context as degraded rather than vetoed. Other definitions, including a later scalp interpretation, can select different primary and confirmation roles without changing the family or hard-coding those timeframes in the evaluator.
+
+`CommittedMarketContextBundle` is one instrument's point-in-time feature set. It permits one feature per timeframe, rejects cross-instrument and future evidence, and requires the evaluation-timeframe feature to be current at the evaluation timestamp. The contract name describes the required upstream guarantee: Stage 5C.3 must compose it only from successfully committed feature ids. The pure 5C.1 evaluator does not infer durability from an in-memory object.
+
+Direction qualification fails closed when primary evidence is missing, neutral, or conflicting, or when configured confirmation is insufficient. Context can be ignored, degrade a candidate, or veto it by definition policy. Every considered feature id remains attached as typed Direction evidence with its original fidelity.
+
+`DirectionRegimeTracker` emits at most one candidate while a definition/instrument remains in the same qualified direction. Its setup anchor is the UTC timestamp when that qualified regime began, not each subsequent 1m update. Neutral or conflicting evidence ends the regime; missing evidence preserves it because a temporary data gap is not market invalidation. An opposite qualified direction ends the old regime and starts a distinct candidate. Restart seeds open regimes from verified persisted signals and rejects setup keys inconsistent with their creation timestamp.
 
 ### Durable Signal State
 

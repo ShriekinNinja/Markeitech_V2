@@ -403,7 +403,15 @@ Stage 5 is split into reviewable slices:
 
 Stage 5A is complete. A candidate is decision support, not an order instruction. Direction and Location require market-context feature evidence; Aggression may later use a deterministic market-data window. No lifecycle state may skip required evidence, move backward, or mutate after invalidation/expiry.
 
-Stage 5B is implemented pending review. SQLite retains the immutable initial-candidate hash, current snapshot, and append-only sequenced transition events. Candidate and transition retries are idempotent; optimistic prior-content checks reject competing progression. Restart reads verify the complete transition hash chain reaches current state. A transition and its optional pending notification-outbox record commit or roll back together, without embedding destination policy in signal logic.
+Stage 5B is complete. SQLite retains the immutable initial-candidate hash, current snapshot, and append-only sequenced transition events. Candidate and transition retries are idempotent; optimistic prior-content checks reject competing progression. Restart reads verify the complete transition hash chain reaches current state. A transition and its optional pending notification-outbox record commit or roll back together, without embedding destination policy in signal logic.
+
+Stage 5C is divided further so market semantics remain reviewable:
+
+- **5C.1 - Named Direction definitions:** versioned per-instrument definition enablement, committed multi-timeframe feature bundles, configurable Direction qualification, stable regime anchors, and restart seeding. The first definition uses 1h+15m Direction, 5m confirmation, and degrading daily context. A later scalp definition may use 15m+5m/1m without changing the signal family.
+- **5C.2 - Location and candidate progression:** define deterministic location qualification, arm candidates at actionable auction locations, and invalidate or expire stale setups.
+- **5C.3 - Live composition:** build point-in-time bundles only from durably committed features, persist evaluator decisions, restore open regimes, and apply the same definitions to active and background instruments.
+
+Stage 5C.1 is implemented pending review. It is a pure decision boundary and does not yet emit live signals; 5C.3 owns actor/runtime wiring.
 
 ## Stage 6: Notifications And Reports
 

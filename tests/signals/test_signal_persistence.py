@@ -63,9 +63,11 @@ def evidence(stage: SignalEvidenceStage) -> SignalEvidenceReference:
 def candidate(**updates: object) -> SignalSnapshot:
     values: dict[str, object] = {
         "algorithm_version": "1.0",
+        "definition_id": "intraday_context",
         "configuration_hash": "c" * 64,
         "setup_key": signal_setup_key(
             family=SignalFamily.DIRECTION_LOCATION_AGGRESSION,
+            definition_id="intraday_context",
             instrument_id="NQU6.CME",
             direction=SignalDirection.LONG,
             anchor="2026-07-14:CME_Equity:prior_value_area_low",
@@ -122,6 +124,8 @@ def test_candidate_insert_is_idempotent_and_restores_after_restart(tmp_path: Pat
     with SQLiteMetadataStore(config(path)) as restarted:
         assert restarted.load_signal(signal.signal_id) == signal
         assert restarted.load_signals(instrument_id="NQU6.CME") == (signal,)
+        assert restarted.load_signals(definition_id="intraday_context") == (signal,)
+        assert restarted.load_signals(definition_id="scalp") == ()
         assert restarted.load_signals(status=SignalStatus.ARMED) == ()
 
 

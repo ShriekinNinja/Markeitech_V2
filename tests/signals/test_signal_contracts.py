@@ -47,9 +47,11 @@ def evidence(
 def candidate(**updates: object) -> SignalSnapshot:
     values: dict[str, object] = {
         "algorithm_version": "1.0",
+        "definition_id": "intraday_context",
         "configuration_hash": "c" * 64,
         "setup_key": signal_setup_key(
             family=SignalFamily.DIRECTION_LOCATION_AGGRESSION,
+            definition_id="intraday_context",
             instrument_id="NQU6.CME",
             direction=SignalDirection.LONG,
             anchor="2026-07-14:CME_Equity:prior_value_area_low",
@@ -89,6 +91,7 @@ def test_signal_identity_is_stable_across_lifecycle_content() -> None:
 def test_setup_identity_changes_with_direction_instrument_or_anchor() -> None:
     base = signal_setup_key(
         family=SignalFamily.DIRECTION_LOCATION_AGGRESSION,
+        definition_id="intraday_context",
         instrument_id="NQU6.CME",
         direction=SignalDirection.LONG,
         anchor="session:level-a",
@@ -96,18 +99,21 @@ def test_setup_identity_changes_with_direction_instrument_or_anchor() -> None:
     changed = {
         signal_setup_key(
             family=SignalFamily.DIRECTION_LOCATION_AGGRESSION,
+            definition_id="intraday_context",
             instrument_id="NQU6.CME",
             direction=SignalDirection.SHORT,
             anchor="session:level-a",
         ),
         signal_setup_key(
             family=SignalFamily.DIRECTION_LOCATION_AGGRESSION,
+            definition_id="intraday_context",
             instrument_id="ESU6.CME",
             direction=SignalDirection.LONG,
             anchor="session:level-a",
         ),
         signal_setup_key(
             family=SignalFamily.DIRECTION_LOCATION_AGGRESSION,
+            definition_id="intraday_context",
             instrument_id="NQU6.CME",
             direction=SignalDirection.LONG,
             anchor="session:level-b",
@@ -117,9 +123,10 @@ def test_setup_identity_changes_with_direction_instrument_or_anchor() -> None:
     assert base not in changed
     assert len(changed) == 3
 
-    with pytest.raises(ValueError, match="requires instrument and anchor"):
+    with pytest.raises(ValueError, match="requires definition, instrument, and anchor"):
         signal_setup_key(
             family=SignalFamily.DIRECTION_LOCATION_AGGRESSION,
+            definition_id="intraday_context",
             instrument_id="NQU6.CME",
             direction=SignalDirection.LONG,
             anchor=" session:level-a",
