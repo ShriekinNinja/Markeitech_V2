@@ -81,6 +81,21 @@ class NotificationOutboxStore(Protocol):
 class SignalStateStore(Protocol):
     def save_signal_candidate(self, signal: SignalSnapshot) -> SignalPersistenceOutcome: ...
 
+    def save_signal_candidate_and_transition(
+        self,
+        candidate: SignalSnapshot,
+        event: SignalTransitionEvent,
+        *,
+        notification: NotificationOutboxRecord | None = None,
+    ) -> SignalPersistenceOutcome: ...
+
+    def replace_signal_with_armed_candidate(
+        self,
+        ended_event: SignalTransitionEvent,
+        candidate: SignalSnapshot,
+        armed_event: SignalTransitionEvent,
+    ) -> SignalPersistenceOutcome: ...
+
     def apply_signal_transition(
         self,
         event: SignalTransitionEvent,

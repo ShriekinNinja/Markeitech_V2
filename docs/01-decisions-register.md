@@ -455,3 +455,15 @@ Require the product-session start as explicit UTC input for session VWAP and val
 Define episode entry from the canonical zone ids matched at one evaluation timestamp. Preserve the episode while any entry zone remains matched; replace it immediately when qualification moves to a wholly disjoint semantic zone set. Require a configurable number of consecutive observed nonqualifying bars for ordinary exit. Missing evidence preserves the episode and resets that sequence, while a changed Direction regime ends or replaces the episode immediately. Treat an exact retry of the latest observation as idempotent and reject conflicting same-time or backward observations.
 
 Reason: One setup per 1h/15m Direction regime would miss later pullbacks during a trend that may persist for hours or days. Including every developing bound or feature id in zone identity would create the opposite failure: a new setup every minute. Semantic origin identity plus edge-triggered episodes preserves both repeatability and dedupe while retaining exact evidence for audit and calibration.
+
+## DR-0048: Episode-Anchored Signals With Atomic Arming
+
+Status: accepted for implementation
+
+Anchor each repeatable DLA signal setup to its deterministic Location episode id. Store the Direction-regime anchor and episode id on the initial Candidate. On Candidate-to-Armed progression, append the complete structured entry matches and Location evidence references covering every exact source and evaluation feature. Reject Armed or Triggered snapshots without that durable episode state or evidence coverage.
+
+Commit Candidate creation and its immediate Armed transition in one SQLite transaction, including any attached outbox obligation. On a disjoint-zone replacement, invalidate the old Armed signal and create plus arm the replacement in one transaction. Exact retries are idempotent; identity, history, optimistic-state, or outbox conflicts roll back the complete operation.
+
+Restore only from verified open Armed or Triggered snapshots whose transition hash chain, episode payload, and calculated episode id agree. Seed at most one active episode per definition/instrument and restore the canonical Direction-regime anchor independently from the episode-based setup key. Invalidate only when the tracker reports the matching ended episode. Define time-based Armed expiry with Stage 5D Aggression cadence rather than inventing a timeout before its observation window exists.
+
+Reason: Persisting Candidate and Armed state separately creates a crash-visible half-setup, while replacing signals in separate transactions can leave zero or two open setups. Carrying the episode evidence in the verified signal aggregate gives restart one source of truth, and atomic progression preserves lifecycle, notification, and dedupe invariants across interruption.

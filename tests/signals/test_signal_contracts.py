@@ -1,13 +1,19 @@
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 import pytest
+from markeitech.analytics import AnalyticsTimeframe
 from markeitech.signals import (
+    LocationSourceKind,
     SignalDirection,
     SignalEvidenceFidelity,
     SignalEvidenceReference,
     SignalEvidenceStage,
     SignalEvidenceType,
     SignalFamily,
+    SignalLocationMatch,
+    SignalLocationZone,
+    SignalLocationZoneKind,
     SignalSnapshot,
     SignalStatus,
     signal_setup_key,
@@ -16,6 +22,32 @@ from markeitech.signals import (
 from pydantic import ValidationError
 
 NOW = datetime(2026, 7, 14, 13, 30, tzinfo=UTC)
+
+
+def location_match(*, feature_id: str = "b" * 64) -> SignalLocationMatch:
+    return SignalLocationMatch(
+        zone=SignalLocationZone(
+            instrument_id="NQU6.CME",
+            direction=SignalDirection.LONG,
+            source_kind=LocationSourceKind.STRUCTURAL_LEVEL,
+            zone_kind=SignalLocationZoneKind.SUPPORT,
+            timeframe=AnalyticsTimeframe.FIFTEEN_MINUTES,
+            zone_anchor="test-support",
+            source_feature_id=feature_id,
+            observed_ts=NOW,
+            lower_price=Decimal("100"),
+            upper_price=Decimal("100"),
+            fidelity=SignalEvidenceFidelity.INFERRED,
+            reason_codes=("test_support",),
+        ),
+        evaluation_feature_id=feature_id,
+        observed_ts=NOW,
+        observed_price=Decimal("100"),
+        distance=Decimal("0"),
+        tolerance=Decimal("1"),
+        fidelity=SignalEvidenceFidelity.INFERRED,
+        reason_codes=("test_location_match",),
+    )
 
 
 def evidence(
@@ -60,6 +92,8 @@ def candidate(**updates: object) -> SignalSnapshot:
         "direction": SignalDirection.LONG,
         "created_ts": NOW,
         "updated_ts": NOW,
+        "direction_regime_anchor": "direction_regime:test",
+        "location_episode_id": "e" * 64,
         "evidence": (evidence(SignalEvidenceStage.DIRECTION),),
         "reason_codes": ("bullish_direction_candidate",),
     }
@@ -75,6 +109,7 @@ def test_signal_identity_is_stable_across_lifecycle_content() -> None:
         occurred_ts=NOW + timedelta(seconds=1),
         reason_codes=("location_held",),
         evidence=(evidence(SignalEvidenceStage.LOCATION),),
+        location_matches=(location_match(),),
     ).current
 
     assert armed.signal_id == initial.signal_id
@@ -174,6 +209,7 @@ def test_unavailable_evidence_cannot_arm_or_trigger_signal() -> None:
                     fidelity=SignalEvidenceFidelity.UNAVAILABLE,
                 ),
             ),
+            location_matches=(location_match(),),
         )
     with pytest.raises(ValidationError, match="available aggression"):
         candidate(
@@ -182,6 +218,7 @@ def test_unavailable_evidence_cannot_arm_or_trigger_signal() -> None:
                 evidence(SignalEvidenceStage.DIRECTION),
                 evidence(SignalEvidenceStage.LOCATION),
             ),
+            location_matches=(location_match(),),
         )
 
 
@@ -193,6 +230,7 @@ def test_one_feature_can_support_multiple_stages_without_duplicate_feature_ids()
             evidence(SignalEvidenceStage.DIRECTION, evidence_id=shared_id),
             evidence(SignalEvidenceStage.LOCATION, evidence_id=shared_id),
         ),
+        location_matches=(location_match(feature_id=shared_id),),
     )
 
     assert snapshot.feature_ids == (shared_id,)
@@ -206,6 +244,7 @@ def test_lifecycle_requires_ordered_evidence_and_stable_identity() -> None:
         occurred_ts=NOW + timedelta(seconds=1),
         reason_codes=("location_held",),
         evidence=(evidence(SignalEvidenceStage.LOCATION),),
+        location_matches=(location_match(),),
     )
     aggression = evidence(
         SignalEvidenceStage.AGGRESSION,

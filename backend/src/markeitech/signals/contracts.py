@@ -239,6 +239,9 @@ class SignalSnapshot(VersionedDomainModel):
     status: SignalStatus = SignalStatus.CANDIDATE
     created_ts: datetime
     updated_ts: datetime
+    direction_regime_anchor: str | None = Field(default=None, min_length=1)
+    location_episode_id: str | None = Field(default=None, pattern=_SHA256_PATTERN)
+    location_matches: tuple[SignalLocationMatch, ...] = ()
     evidence: tuple[SignalEvidenceReference, ...] = Field(min_length=1)
     reason_codes: tuple[str, ...] = Field(min_length=1)
 
@@ -255,6 +258,22 @@ class SignalSnapshot(VersionedDomainModel):
             raise ValueError("signal evidence instrument must match signal")
         if any(item.observed_ts > self.updated_ts for item in self.evidence):
             raise ValueError("signal evidence cannot be newer than signal state")
+        if self.direction_regime_anchor is not None and (
+            self.direction_regime_anchor != self.direction_regime_anchor.strip()
+        ):
+            raise ValueError("signal direction regime anchor must be trimmed")
+        if (self.location_episode_id is None) != (self.direction_regime_anchor is None):
+            raise ValueError("signal location episode and direction regime must coexist")
+        if self.location_matches and self.location_episode_id is None:
+            raise ValueError("signal location matches require episode identity")
+        if any(
+            item.zone.instrument_id != self.instrument_id for item in self.location_matches
+        ):
+            raise ValueError("signal location matches must use signal instrument")
+        if any(item.zone.direction != self.direction for item in self.location_matches):
+            raise ValueError("signal location matches must align with signal direction")
+        if any(item.observed_ts > self.updated_ts for item in self.location_matches):
+            raise ValueError("signal location matches cannot be newer than signal state")
         evidence_keys = [item.evidence_key for item in self.evidence]
         if len(evidence_keys) != len(set(evidence_keys)):
             raise ValueError("signal evidence references must be unique")
@@ -268,11 +287,30 @@ class SignalSnapshot(VersionedDomainModel):
         if self.status in {
             SignalStatus.ARMED,
             SignalStatus.TRIGGERED,
-        } and not {
-            SignalEvidenceStage.DIRECTION,
-            SignalEvidenceStage.LOCATION,
-        }.issubset(available_stages):
-            raise ValueError("armed signals require available direction and location evidence")
+        }:
+            if not {
+                SignalEvidenceStage.DIRECTION,
+                SignalEvidenceStage.LOCATION,
+            }.issubset(available_stages):
+                raise ValueError("armed signals require available direction and location evidence")
+            if self.location_episode_id is None or not self.location_matches:
+                raise ValueError("armed signals require a durable location episode")
+            location_feature_ids = {
+                item.evidence_id
+                for item in self.evidence
+                if item.stage == SignalEvidenceStage.LOCATION
+                and item.fidelity != SignalEvidenceFidelity.UNAVAILABLE
+            }
+            required_location_feature_ids = {
+                feature_id
+                for item in self.location_matches
+                for feature_id in (
+                    item.zone.source_feature_id,
+                    item.evaluation_feature_id,
+                )
+            }
+            if not required_location_feature_ids.issubset(location_feature_ids):
+                raise ValueError("armed signal evidence must cover location match features")
         if self.status == SignalStatus.TRIGGERED:
             if SignalEvidenceStage.AGGRESSION not in available_stages:
                 raise ValueError("triggered signals require available aggression evidence")

@@ -17,6 +17,7 @@ from markeitech.signals.contracts import (
     SignalLocationMatch,
 )
 
+
 class LocationEpisodeEventType(StrEnum):
     ENTERED = "entered"
     ACTIVE = "active"
@@ -124,6 +125,16 @@ class LocationEpisodeTracker:
         self._definition = definition
         self._exit_confirmation_bars = definition.location_policy.exit_confirmation_bars
         self._states: dict[str, _InstrumentEpisodeState] = {}
+
+    def seed_active_episodes(self, episodes: tuple[SignalLocationEpisode, ...]) -> None:
+        if self._states:
+            raise ValueError("location episode tracker can only seed before evaluation")
+        for episode in episodes:
+            if episode.definition_id != self._definition.definition_id:
+                raise ValueError("restored location episode definition does not match tracker")
+            if episode.instrument_id in self._states:
+                raise ValueError("multiple active location episodes exist for one definition")
+            self._states[episode.instrument_id] = _InstrumentEpisodeState(active=episode)
 
     def evaluate(self, observation: LocationEpisodeObservation) -> LocationEpisodeDecision:
         if observation.definition_id != self._definition.definition_id:

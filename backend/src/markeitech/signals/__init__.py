@@ -1,5 +1,11 @@
 """Deterministic signal contracts and lifecycle rules."""
 
+from markeitech.signals.arming import (
+    ArmedLocationSignal,
+    build_armed_location_signal,
+    invalidate_ended_location_signal,
+    restore_location_episode,
+)
 from markeitech.signals.config import (
     LocationPolicyConfig,
     LocationSourcePolicyConfig,
@@ -49,6 +55,7 @@ from markeitech.signals.location import (
 )
 
 __all__ = [
+    "ArmedLocationSignal",
     "SignalDirection",
     "CommittedMarketContextBundle",
     "DirectionCandidateDecision",
@@ -82,8 +89,11 @@ __all__ = [
     "SignalTransitionEvent",
     "signal_setup_key",
     "derive_location_zones",
+    "build_armed_location_signal",
+    "invalidate_ended_location_signal",
     "qualify_direction",
     "qualify_location",
+    "restore_location_episode",
     "intraday_context_definition",
     "transition_signal",
 ]

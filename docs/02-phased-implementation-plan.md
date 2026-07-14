@@ -411,7 +411,7 @@ Stage 5C is divided further so market semantics remain reviewable:
 - **5C.2 - Location and candidate progression:** define deterministic location qualification, arm candidates at actionable auction locations, and invalidate or expire stale setups.
 - **5C.3 - Live composition:** build point-in-time bundles only from durably committed features, persist evaluator decisions, restore open regimes, and apply the same definitions to active and background instruments.
 
-Stage 5C.1 is implemented pending review. It is a pure decision boundary and does not yet emit live signals; 5C.3 owns actor/runtime wiring.
+Stage 5C.1 is complete. It is a pure decision boundary and does not yet emit live signals; 5C.3 owns actor/runtime wiring.
 
 Stage 5C.2 uses repeatable location episodes rather than one trade setup for an entire Direction regime:
 
@@ -420,11 +420,13 @@ Stage 5C.2 uses repeatable location episodes rather than one trade setup for an 
 - **5C.2c - Repeatable episodes:** suppress duplicates while price remains in one semantic zone and allow a new setup only after exit and re-entry.
 - **5C.2d - Armed lifecycle:** persist Candidate and Candidate-to-Armed progression, invalidation, expiry, and restart restoration.
 
-Stage 5C.2a is implemented pending review. It does not yet derive zones or change signal lifecycle state.
+Stage 5C.2a is complete. It does not itself derive zones or change signal lifecycle state.
 
-Stage 5C.2b is implemented pending review. It derives only direction-aligned zones from configured committed features, requires an explicit product-session start for session-scoped identity, applies source-specific ATR proximity, and returns qualified, not-at-location, missing-evidence, or insufficient-confluence outcomes. It still does not create location episodes or arm signals.
+Stage 5C.2b is complete. It derives only direction-aligned zones from configured committed features, requires an explicit product-session start for session-scoped identity, applies source-specific ATR proximity, and returns qualified, not-at-location, missing-evidence, or insufficient-confluence outcomes. It does not create location episodes or arm signals.
 
-Stage 5C.2c is implemented pending review. It converts point-in-time qualification into idempotent enter, active, exit-pending, exited, replaced, and evidence-gap decisions. Same-zone overlap remains one episode, disjoint qualified zones replace immediately, ordinary exit requires a configurable number of consecutive observed bars, and missing evidence preserves the episode while breaking that sequence. Signal persistence and Candidate-to-Armed progression remain 5C.2d.
+Stage 5C.2c is complete. It converts point-in-time qualification into idempotent enter, active, exit-pending, exited, replaced, and evidence-gap decisions. Same-zone overlap remains one episode, disjoint qualified zones replace immediately, ordinary exit requires a configurable number of consecutive observed bars, and missing evidence preserves the episode while breaking that sequence.
+
+Stage 5C.2d is implemented pending review. Episode entry deterministically creates a Candidate and Armed transition carrying the Direction regime, episode id, structured entry matches, and complete Direction/Location feature evidence. Initial creation and replacement commit atomically in SQLite; conflicts roll back all affected signal and outbox state. Verified open Armed/Triggered snapshots reconstruct both trackers after restart. Episode exit/replacement invalidates Armed state. Time-based Armed expiry remains coupled to the Stage 5D aggression observation policy rather than using an arbitrary pre-aggression timeout here.
 
 ## Stage 6: Notifications And Reports
 

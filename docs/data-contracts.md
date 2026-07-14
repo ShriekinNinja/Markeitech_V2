@@ -266,7 +266,17 @@ Qualification requires the configured number of distinct matched source kinds, n
 
 Ordinary loss of Location requires `exit_confirmation_bars` consecutive completed observations, initially two. `not_at_location` and `insufficient_confluence` count toward exit. `missing_evidence` preserves the episode and resets the consecutive-exit count; it never claims that price left. A Direction or Direction-regime change ends or replaces the episode immediately. After confirmed exit, later entry creates a new id even in the same Direction regime.
 
-Exact retries of the latest observation return the same decision without advancing counters. Different content at the same evaluation timestamp and backward event time fail closed. Direction qualification exposes the active regime anchor on every qualified or missing-evidence decision so composition never reads private tracker state. Episode restart seeding and signal lifecycle persistence remain 5C.2d.
+Exact retries of the latest observation return the same decision without advancing counters. Different content at the same evaluation timestamp and backward event time fail closed. Direction qualification exposes the active regime anchor on every qualified or missing-evidence decision so composition never reads private tracker state.
+
+### Durable Location Arming
+
+An episode entry creates a deterministic Candidate whose setup key is anchored by the location episode id. The Candidate retains current Direction feature evidence, Direction-regime anchor, and episode id but no Location matches. Its immediate Candidate-to-Armed transition appends deduplicated Location feature references and the complete structured entry matches. Armed and Triggered snapshots require episode identity plus available Location evidence covering every source and evaluation feature used by those matches.
+
+Candidate creation and the initial Armed transition share one SQLite transaction. Exact retries are idempotent. Initial-content, transition, or attached outbox conflicts roll back the Candidate insert, transition history, current snapshot, and notification obligation together. A disjoint-zone replacement similarly invalidates the old Armed signal and creates plus arms the new signal atomically; a conflict in any side leaves the old signal unchanged.
+
+Restart reads continue to verify the initial Candidate hash and complete transition chain before restoring state. The Armed snapshot reconstructs the canonical `SignalLocationEpisode`; its calculated episode id must match the stored id. The Location tracker accepts at most one active episode per definition/instrument, and the Direction tracker restores the canonical UTC regime anchor without assuming the episode-based setup key is a Direction-regime key.
+
+Episode exit or replacement produces an Invalidated transition only when its ended episode id matches the Armed signal. Expiry is not guessed here: the useful Armed observation window depends on Stage 5D Aggression cadence and will be explicit configuration there.
 
 ### Durable Signal State
 

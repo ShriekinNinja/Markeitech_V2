@@ -98,18 +98,22 @@ class DirectionRegimeTracker:
                 continue
             if signal.instrument_id in self._regimes:
                 raise ValueError("multiple open direction regimes exist for one definition")
-            expected_setup_key = signal_setup_key(
-                family=self._definition.family,
-                definition_id=self._definition.definition_id,
-                instrument_id=signal.instrument_id,
-                direction=signal.direction,
-                anchor=_regime_anchor(signal.created_ts),
-            )
-            if signal.setup_key != expected_setup_key:
-                raise ValueError("restored signal setup key does not match direction regime")
+            if signal.direction_regime_anchor is None:
+                started_ts = signal.created_ts
+                expected_setup_key = signal_setup_key(
+                    family=self._definition.family,
+                    definition_id=self._definition.definition_id,
+                    instrument_id=signal.instrument_id,
+                    direction=signal.direction,
+                    anchor=_regime_anchor(started_ts),
+                )
+                if signal.setup_key != expected_setup_key:
+                    raise ValueError("restored signal setup key does not match direction regime")
+            else:
+                started_ts = _regime_started_ts(signal.direction_regime_anchor)
             self._regimes[signal.instrument_id] = _DirectionRegime(
                 direction=signal.direction,
-                started_ts=signal.created_ts,
+                started_ts=started_ts,
                 signal_id=signal.signal_id,
             )
 
@@ -366,6 +370,20 @@ def _build_candidate(
 
 def _regime_anchor(started_ts: datetime) -> str:
     return f"direction_regime:{require_utc(started_ts).isoformat()}"
+
+
+def _regime_started_ts(anchor: str) -> datetime:
+    prefix = "direction_regime:"
+    if not anchor.startswith(prefix):
+        raise ValueError("restored signal has invalid direction regime anchor")
+    try:
+        started_ts = datetime.fromisoformat(anchor.removeprefix(prefix))
+    except ValueError as error:
+        raise ValueError("restored signal has invalid direction regime anchor") from error
+    require_utc(started_ts)
+    if _regime_anchor(started_ts) != anchor:
+        raise ValueError("restored signal has noncanonical direction regime anchor")
+    return started_ts
 
 
 def _signal_fidelity(value: AnalyticsInputFidelity) -> SignalEvidenceFidelity:

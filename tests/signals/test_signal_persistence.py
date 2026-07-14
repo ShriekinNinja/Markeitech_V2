@@ -1,9 +1,11 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 from uuid import UUID
 
 import pytest
+from markeitech.analytics import AnalyticsTimeframe
 from markeitech.persistence import (
     NotificationOutboxRecord,
     OutboxStatus,
@@ -12,12 +14,16 @@ from markeitech.persistence import (
     SQLiteMetadataStore,
 )
 from markeitech.signals import (
+    LocationSourceKind,
     SignalDirection,
     SignalEvidenceFidelity,
     SignalEvidenceReference,
     SignalEvidenceStage,
     SignalEvidenceType,
     SignalFamily,
+    SignalLocationMatch,
+    SignalLocationZone,
+    SignalLocationZoneKind,
     SignalSnapshot,
     SignalStatus,
     SignalTransitionEvent,
@@ -27,6 +33,32 @@ from markeitech.signals import (
 
 NOW = datetime(2026, 7, 14, 13, 30, tzinfo=UTC)
 OUTBOX_ID = UUID("89710d83-4811-49ab-9d60-3c8d0c8da565")
+
+
+def location_match() -> SignalLocationMatch:
+    return SignalLocationMatch(
+        zone=SignalLocationZone(
+            instrument_id="NQU6.CME",
+            direction=SignalDirection.LONG,
+            source_kind=LocationSourceKind.STRUCTURAL_LEVEL,
+            zone_kind=SignalLocationZoneKind.SUPPORT,
+            timeframe=AnalyticsTimeframe.FIFTEEN_MINUTES,
+            zone_anchor="test-support",
+            source_feature_id="b" * 64,
+            observed_ts=NOW,
+            lower_price=Decimal("100"),
+            upper_price=Decimal("100"),
+            fidelity=SignalEvidenceFidelity.INFERRED,
+            reason_codes=("test_support",),
+        ),
+        evaluation_feature_id="b" * 64,
+        observed_ts=NOW,
+        observed_price=Decimal("100"),
+        distance=Decimal("0"),
+        tolerance=Decimal("1"),
+        fidelity=SignalEvidenceFidelity.INFERRED,
+        reason_codes=("test_location_match",),
+    )
 
 
 def config(path: Path) -> PersistenceConfig:
@@ -76,6 +108,8 @@ def candidate(**updates: object) -> SignalSnapshot:
         "direction": SignalDirection.LONG,
         "created_ts": NOW,
         "updated_ts": NOW,
+        "direction_regime_anchor": "direction_regime:test",
+        "location_episode_id": "e" * 64,
         "evidence": (evidence(SignalEvidenceStage.DIRECTION),),
         "reason_codes": ("bullish_direction_candidate",),
     }
@@ -90,6 +124,7 @@ def armed_event(signal: SignalSnapshot) -> SignalTransitionEvent:
         occurred_ts=NOW + timedelta(seconds=1),
         reason_codes=("supportive_location_reached",),
         evidence=(evidence(SignalEvidenceStage.LOCATION),),
+        location_matches=(location_match(),),
     )
 
 
