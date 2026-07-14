@@ -221,3 +221,13 @@ Feature payloads are immutable Parquet records partitioned by feature set, instr
 SQLite stores only the durable commit manifest for each `feature_id`: content hash, instrument, timeframe, `as_of`, feature set, calculation version, configuration hash, and commit time. Payload and manifest follow catalog-first ordering. An existing manifest with a different content hash is a hard conflict; a payload that exists without its manifest is a recoverable interrupted commit.
 
 Live feature submission is bounded and asynchronous. Submission returns accepted, queue-full, not-running, or writer-failed status. Writer health exposes pending, accepted, committed, duplicate, rejected, and last-error evidence. A failed batch remains retained in memory and the writer rejects new work; it does not silently skip the damaged feature stream.
+
+### Signal Contracts
+
+`SignalSnapshot` is the immutable current state of one deterministic setup. Its stable `signal_id` binds schema, setup family, algorithm version, configuration hash, setup key, instrument, and direction; lifecycle status, timestamps, evidence, and reasons live under a separate content hash. Recalculating the same setup therefore deduplicates while an algorithm/configuration revision creates a distinct signal identity.
+
+The initial lifecycle is `candidate -> armed -> triggered`, with invalidated and expired terminal exits. Candidate means Direction evidence exists, Armed adds Location, and Triggered adds Aggression. A transition cannot skip a stage, move time backward, retain the same status, or mutate a terminal signal. Every transition carries the prior content hash, complete current snapshot, appended evidence, reason codes, and its own deterministic transition id.
+
+Evidence is typed by Direction, Location, Aggression, or Follow-through and identifies either a market-context feature or a deterministic market-data window. Direction and Location require feature evidence. Armed state requires available Direction and Location; Triggered state additionally requires available Aggression. Reported, inferred, partial, and unavailable fidelity remain explicit. Unavailable evidence can explain why a setup did not progress but cannot qualify a lifecycle stage.
+
+The setup key is a stable SHA-256 identity derived from family, instrument, direction, and a caller-supplied deterministic anchor. Stage 5C owns anchor semantics; presentation text, wall-clock receipt time, active/background role, Discord routing, and mutable scores must not become dedupe identity by accident.

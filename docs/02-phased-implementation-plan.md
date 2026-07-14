@@ -393,7 +393,15 @@ Deferred explicitly, not removed: feature retention policy, SQLite lookup optimi
 
 Deliver deterministic signal lifecycle, scoring, dedupe, persistence, notification-ready domain events, and the first Direction-Location-Aggression setup family with explicit evidence fidelity. Optional ML inference may rank setups only after a deterministic baseline exists.
 
-Not started.
+Stage 5 is split into reviewable slices:
+
+- **5A - Contracts and lifecycle:** immutable signal snapshots, deterministic setup/signal/transition identity, typed evidence references, explicit fidelity, and fail-closed lifecycle transitions.
+- **5B - Durable signal state:** SQLite signal snapshots and append-only transitions, optimistic conflict detection, restart restoration, and atomic notification-outbox enqueue where policy requires delivery.
+- **5C - Direction/Location candidates:** deterministic candidate qualification from committed market-context feature ids, stable setup anchors, scoring configuration, invalidation, expiry, and active/background parity.
+- **5D - Aggression and follow-through:** bounded IB trade/top-of-book evidence windows, honest inferred/partial/unavailable semantics, arming and triggering rules, and tick-gap degradation.
+- **5E - Live operationalization:** actor/runtime wiring, human-readable signal logs, notification-ready events, restart and saturation evidence, and a live shadow acceptance run before Discord delivery.
+
+Stage 5A is in progress. A candidate is decision support, not an order instruction. Direction and Location require market-context feature evidence; Aggression may later use a deterministic market-data window. No lifecycle state may skip required evidence, move backward, or mutate after invalidation/expiry.
 
 ## Stage 6: Notifications And Reports
 

@@ -403,3 +403,15 @@ Publish active and background warmup/live context through one bounded asynchrono
 Defer feature retention, SQLite lookup optimization and pruning, a standalone feature CLI, broad historical backfill, and full live-versus-replay comparison until after the first deterministic signal lifecycle. These are recorded obligations, not removed requirements.
 
 Reason: Parquet and SQLite cannot share an atomic transaction. Catalog-first ordering makes interruption recoverable without allowing metadata to certify a missing payload. Bounded actor submission protects live analysis from storage latency while explicit failure evidence prevents an apparently healthy signal stream from outrunning its durable analytical basis.
+
+## DR-0044: Stable Signal Identity Separate From Lifecycle Content
+
+Status: accepted for implementation
+
+Represent the first Direction-Location-Aggression setup as immutable signal snapshots with candidate, armed, triggered, invalidated, and expired states. Derive stable signal identity from schema, family, algorithm/configuration identity, deterministic setup key, instrument, and direction. Hash mutable lifecycle content separately. Emit deterministic transition events carrying prior-content identity, the complete new snapshot, appended evidence, and reason codes.
+
+Require typed evidence references with explicit reported, inferred, partial, or unavailable fidelity. Direction and Location reference market-context feature ids; later Aggression and Follow-through may reference deterministic market-data windows. Candidate state requires available Direction, Armed state adds available Location, and Triggered state adds available Aggression. Do not permit skipped stages, backward event time, duplicate evidence, cross-instrument evidence, or terminal-state mutation.
+
+Keep setup-anchor and scoring semantics out of this foundational contract slice. Stage 5C must define a market-semantic anchor that remains stable across ordinary 1m feature updates, preventing one setup from becoming a new alert every minute. Active/background role, presentation text, Discord policy, receipt time, and mutable score are not signal identity.
+
+Reason: Separating setup identity from evolving content gives persistence, notification dedupe, restart restoration, and later replay one shared invariant. Typed evidence prevents Direction/Location analytics and weaker IB-derived aggression from being blended into an unexplained score, while deferring anchor policy avoids freezing an untested market assumption into durable keys.
