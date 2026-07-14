@@ -258,6 +258,16 @@ The current evaluation-timeframe close is matched against every configured zone.
 
 Qualification requires the configured number of distinct matched source kinds, not merely several levels from one kind. Existing but unmatched sources return `not_at_location`; partial matches below confluence return `insufficient_confluence`; unavailable policy/current-clock evidence returns `missing_evidence`. Missing configured timeframes or source payloads mark the result degraded. Nested level/FVG timestamps newer than their committed feature fail closed as look-ahead evidence.
 
+### Repeatable Location Episodes
+
+`SignalLocationEpisode` binds one repeatable setup opportunity to definition, instrument, Direction, Direction-regime anchor, UTC entry timestamp, and the canonically sorted semantic zone ids matched on entry. Exact entry matches retain their feature revisions, prices, tolerances, fidelity, and reasons but match ordering does not affect episode identity. Every match must use the episode instrument, Direction, and entry timestamp.
+
+`LocationEpisodeObservation` carries one definition/instrument's Direction regime and Location qualification at an evaluation timestamp. The tracker emits `entered`, `active`, `exit_pending`, `exited`, `replaced`, `evidence_gap`, or `no_episode`. Any overlap with an entry zone keeps the existing episode even if other confluence joins or leaves. A qualified set with no entry-zone overlap replaces the old episode immediately because it is a different semantic area.
+
+Ordinary loss of Location requires `exit_confirmation_bars` consecutive completed observations, initially two. `not_at_location` and `insufficient_confluence` count toward exit. `missing_evidence` preserves the episode and resets the consecutive-exit count; it never claims that price left. A Direction or Direction-regime change ends or replaces the episode immediately. After confirmed exit, later entry creates a new id even in the same Direction regime.
+
+Exact retries of the latest observation return the same decision without advancing counters. Different content at the same evaluation timestamp and backward event time fail closed. Direction qualification exposes the active regime anchor on every qualified or missing-evidence decision so composition never reads private tracker state. Episode restart seeding and signal lifecycle persistence remain 5C.2d.
+
 ### Durable Signal State
 
 SQLite stores one current `SignalSnapshot` per signal id plus its immutable initial-candidate content hash. Every accepted `SignalTransitionEvent` is append-only and receives a contiguous per-signal sequence number independent of market timestamps. Restart restoration validates typed row metadata, candidate identity, transition identity, the complete previous-to-current content-hash chain, and agreement between the final transition and current snapshot.

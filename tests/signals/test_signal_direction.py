@@ -115,6 +115,7 @@ def test_intraday_direction_qualifies_and_degrades_against_daily_context() -> No
     assert decision.candidate is not None
     assert decision.candidate.definition_id == "intraday_context"
     assert len(decision.candidate.evidence) == 5
+    assert decision.regime_anchor == f"direction_regime:{AS_OF.isoformat()}"
 
 
 @pytest.mark.parametrize(
@@ -210,8 +211,10 @@ def test_tracker_emits_once_per_direction_regime_and_requalifies_after_neutral()
     assert first.candidate is not None
     assert repeated.candidate is None
     assert repeated.ended_signal_id is None
+    assert repeated.regime_anchor == first.regime_anchor
     assert ended.candidate is None
     assert ended.ended_signal_id == first.candidate.signal_id
+    assert ended.regime_anchor is None
     assert resumed.candidate is not None
     assert resumed.candidate.signal_id != first.candidate.signal_id
 

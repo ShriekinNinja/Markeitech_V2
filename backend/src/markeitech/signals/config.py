@@ -33,6 +33,7 @@ class LocationSourcePolicyConfig(VersionedDomainModel):
 class LocationPolicyConfig(VersionedDomainModel):
     sources: tuple[LocationSourcePolicyConfig, ...] = Field(min_length=1)
     minimum_distinct_sources: int = Field(default=1, ge=1)
+    exit_confirmation_bars: int = Field(default=2, ge=1, le=20)
 
     @model_validator(mode="after")
     def _sources_must_be_consistent(self) -> LocationPolicyConfig:

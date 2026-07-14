@@ -34,6 +34,13 @@ from markeitech.signals.direction import (
     DirectionRegimeTracker,
     qualify_direction,
 )
+from markeitech.signals.episode import (
+    LocationEpisodeDecision,
+    LocationEpisodeEventType,
+    LocationEpisodeObservation,
+    LocationEpisodeTracker,
+    SignalLocationEpisode,
+)
 from markeitech.signals.lifecycle import transition_signal
 from markeitech.signals.location import (
     LocationZoneDerivation,
@@ -49,6 +56,10 @@ __all__ = [
     "DirectionQualificationStatus",
     "DirectionRegimeTracker",
     "LocationPolicyConfig",
+    "LocationEpisodeDecision",
+    "LocationEpisodeEventType",
+    "LocationEpisodeObservation",
+    "LocationEpisodeTracker",
     "LocationQualification",
     "LocationQualificationStatus",
     "LocationSourceKind",
@@ -62,6 +73,7 @@ __all__ = [
     "SignalEvidenceType",
     "SignalFamily",
     "SignalLocationMatch",
+    "SignalLocationEpisode",
     "SignalLocationZone",
     "SignalLocationZoneKind",
     "SignalSnapshot",

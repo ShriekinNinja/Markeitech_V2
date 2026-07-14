@@ -424,6 +424,8 @@ Stage 5C.2a is implemented pending review. It does not yet derive zones or chang
 
 Stage 5C.2b is implemented pending review. It derives only direction-aligned zones from configured committed features, requires an explicit product-session start for session-scoped identity, applies source-specific ATR proximity, and returns qualified, not-at-location, missing-evidence, or insufficient-confluence outcomes. It still does not create location episodes or arm signals.
 
+Stage 5C.2c is implemented pending review. It converts point-in-time qualification into idempotent enter, active, exit-pending, exited, replaced, and evidence-gap decisions. Same-zone overlap remains one episode, disjoint qualified zones replace immediately, ordinary exit requires a configurable number of consecutive observed bars, and missing evidence preserves the episode while breaking that sequence. Signal persistence and Candidate-to-Armed progression remain 5C.2d.
+
 ## Stage 6: Notifications And Reports
 
 Deliver one-way Discord webhook alerts and analysis reports through a durable, rate-limited, retryable notification pipeline. AI-generated narrative must remain grounded in persisted structured evidence. Do not build a Discord bot.

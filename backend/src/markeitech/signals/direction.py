@@ -71,6 +71,7 @@ class DirectionCandidateDecision:
     qualification: DirectionQualification
     candidate: SignalSnapshot | None
     ended_signal_id: str | None
+    regime_anchor: str | None
 
 
 @dataclass(frozen=True)
@@ -117,12 +118,18 @@ class DirectionRegimeTracker:
         existing = self._regimes.get(bundle.instrument_id)
         if qualification.direction is None:
             if qualification.status == DirectionQualificationStatus.MISSING_EVIDENCE:
-                return DirectionCandidateDecision(qualification, None, None)
+                anchor = None if existing is None else _regime_anchor(existing.started_ts)
+                return DirectionCandidateDecision(qualification, None, None, anchor)
             ended = None if existing is None else existing.signal_id
             self._regimes.pop(bundle.instrument_id, None)
-            return DirectionCandidateDecision(qualification, None, ended)
+            return DirectionCandidateDecision(qualification, None, ended, None)
         if existing is not None and existing.direction == qualification.direction:
-            return DirectionCandidateDecision(qualification, None, None)
+            return DirectionCandidateDecision(
+                qualification,
+                None,
+                None,
+                _regime_anchor(existing.started_ts),
+            )
 
         candidate = _build_candidate(bundle, self._definition, qualification)
         ended = None if existing is None else existing.signal_id
@@ -131,7 +138,12 @@ class DirectionRegimeTracker:
             started_ts=candidate.created_ts,
             signal_id=candidate.signal_id,
         )
-        return DirectionCandidateDecision(qualification, candidate, ended)
+        return DirectionCandidateDecision(
+            qualification,
+            candidate,
+            ended,
+            _regime_anchor(candidate.created_ts),
+        )
 
 
 def qualify_direction(

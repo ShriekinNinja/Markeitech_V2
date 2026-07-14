@@ -63,6 +63,7 @@ minimum_direction_score = 1
 
 [signals.definitions.location_policy]
 minimum_distinct_sources = 1
+exit_confirmation_bars = 2
 
 [[signals.definitions.location_policy.sources]]
 source_kind = "structural_level"
