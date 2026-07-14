@@ -59,6 +59,7 @@ def persistence(
     config = PersistenceConfig(
         catalog_path=tmp_path / "catalog",
         metadata_path=tmp_path / "metadata.sqlite3",
+        journal_path=tmp_path / "journal",
         catalog_batch_size=100,
         persistence_batch_interval_seconds=60,
     )

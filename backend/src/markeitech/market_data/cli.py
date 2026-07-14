@@ -40,7 +40,10 @@ def build_plan_summary(config_path: Path) -> dict[str, Any]:
         "planned_warmups": [
             {
                 "instrument_id": warmup.instrument_id,
-                "lookback_sessions": warmup.lookback_sessions,
+                "lookback_sessions_by_timeframe": {
+                    timeframe.value: warmup.lookback_for(timeframe)
+                    for timeframe in warmup.timeframes
+                },
                 "timeframes": [timeframe.value for timeframe in warmup.timeframes],
             }
             for warmup in plan.warmups

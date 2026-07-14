@@ -9,7 +9,11 @@ from nautilus_trader.adapters.interactive_brokers.factories import (
 from nautilus_trader.live.node import TradingNode
 from pydantic import Field
 
-from markeitech.analytics import MarketContextEngine
+from markeitech.analytics import (
+    AnalyticsReadinessEvaluator,
+    AnalyticsTimeframe,
+    MarketContextEngine,
+)
 from markeitech.domain.base import VersionedDomainModel
 from markeitech.market_data.actions import build_livenode_action_plan
 from markeitech.market_data.actor import MarkeitechMarketDataActor
@@ -140,6 +144,17 @@ def build_prepared_market_data_live_node(
             session_calendar,
             profile_bin_sizes={
                 runtime.contract.instrument_id: runtime.warmup.volume_profile_bin_size
+                for runtime in config.instrument_registry.instruments
+                if runtime.enabled and runtime.warmup is not None
+            },
+        ),
+        "analytics_readiness_evaluator": AnalyticsReadinessEvaluator(
+            session_calendar,
+            {
+                runtime.contract.instrument_id: {
+                    AnalyticsTimeframe(timeframe.value): runtime.warmup.lookback_for(timeframe)
+                    for timeframe in runtime.warmup.timeframes
+                }
                 for runtime in config.instrument_registry.instruments
                 if runtime.enabled and runtime.warmup is not None
             },

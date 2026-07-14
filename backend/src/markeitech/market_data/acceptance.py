@@ -11,7 +11,11 @@ from typing import Any, Protocol
 
 from pydantic import Field, field_validator
 
-from markeitech.analytics import MarketContextSnapshot
+from markeitech.analytics import (
+    AnalyticsReadinessSnapshot,
+    AnalyticsReadinessStatus,
+    MarketContextSnapshot,
+)
 from markeitech.domain.base import VersionedDomainModel
 from markeitech.domain.state import SourceStatus
 from markeitech.market_data.actor import MarkeitechMarketDataActor
@@ -80,6 +84,7 @@ class PaperIbAcceptanceReport(VersionedDomainModel):
     recovery_status: StartupRecoveryStatus | None = None
     recoveries: tuple[AcceptanceRecoveryResult, ...] = Field(default_factory=tuple)
     market_contexts: tuple[MarketContextSnapshot, ...] = Field(default_factory=tuple)
+    analytics_readiness: AnalyticsReadinessSnapshot | None = None
     error: str | None = None
 
     @field_validator("started_ts", "ended_ts")
@@ -111,6 +116,9 @@ class AcceptanceActor(Protocol):
 
     @property
     def market_context_snapshots(self) -> tuple[MarketContextSnapshot, ...]: ...
+
+    @property
+    def analytics_readiness_snapshot(self) -> AnalyticsReadinessSnapshot | None: ...
 
 
 def main() -> None:
@@ -238,6 +246,7 @@ def _build_report(
 ) -> PaperIbAcceptanceReport:
     snapshots = actor.market_data_snapshots
     market_contexts = actor.market_context_snapshots
+    analytics_readiness = actor.analytics_readiness_snapshot
     health = actor.market_data_health
     recovery = getattr(actor, "startup_recovery_snapshot", None)
     checks = [
@@ -254,6 +263,18 @@ def _build_report(
             "LiveNode remained running for the requested duration",
         ),
     ]
+    checks.append(
+        _check(
+            "analytics_readiness",
+            analytics_readiness is not None
+            and analytics_readiness.status != AnalyticsReadinessStatus.BLOCKED,
+            (
+                "analytics readiness snapshot is unavailable"
+                if analytics_readiness is None
+                else f"analytics readiness is {analytics_readiness.status.value}"
+            ),
+        )
+    )
     for snapshot in snapshots:
         if snapshot.is_active:
             checks.extend(
@@ -353,6 +374,7 @@ def _build_report(
             )
         ),
         market_contexts=market_contexts,
+        analytics_readiness=analytics_readiness,
         error=runtime_error,
     )
 

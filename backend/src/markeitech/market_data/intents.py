@@ -35,8 +35,16 @@ class NautilusWarmupIntent(VersionedDomainModel):
     instrument_id: str = Field(min_length=1)
     kind: NautilusIntentKind = Field(default=NautilusIntentKind.HISTORICAL_BARS)
     lookback_sessions: int = Field(ge=1)
+    lookback_sessions_by_timeframe: dict[WarmupTimeframe, int] = Field(
+        default_factory=dict,
+    )
     timeframes: tuple[WarmupTimeframe, ...] = Field(min_length=1)
     bar_types: tuple[str, ...] = Field(min_length=1)
+
+    def lookback_for(self, timeframe: WarmupTimeframe) -> int:
+        if timeframe not in self.timeframes:
+            raise ValueError(f"timeframe {timeframe.value} is not requested for warmup")
+        return self.lookback_sessions_by_timeframe.get(timeframe, self.lookback_sessions)
 
 
 class NautilusSubscriptionIntent(VersionedDomainModel):
@@ -90,6 +98,9 @@ def _warmup_intent(warmup: PlannedWarmup) -> NautilusWarmupIntent:
     return NautilusWarmupIntent(
         instrument_id=warmup.instrument_id,
         lookback_sessions=warmup.lookback_sessions,
+        lookback_sessions_by_timeframe={
+            timeframe: warmup.lookback_for(timeframe) for timeframe in warmup.timeframes
+        },
         timeframes=warmup.timeframes,
         bar_types=tuple(
             _bar_type(warmup.instrument_id, timeframe) for timeframe in warmup.timeframes

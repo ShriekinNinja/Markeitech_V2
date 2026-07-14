@@ -4,6 +4,7 @@ from nautilus_trader.adapters.interactive_brokers.config import (
     InteractiveBrokersDataClientConfig,
     InteractiveBrokersInstrumentProviderConfig,
 )
+from nautilus_trader.config import LoggingConfig
 from nautilus_trader.live.config import TradingNodeConfig
 from nautilus_trader.model.identifiers import InstrumentId, TraderId
 
@@ -34,4 +35,18 @@ def build_trading_node_config(config: MarketDataRuntimeConfig) -> TradingNodeCon
         actors=[],
         load_state=False,
         save_state=False,
+        logging=(
+            LoggingConfig(
+                log_level=config.logging.console_level,
+                log_level_file=config.logging.file_level,
+                log_directory=str(config.logging.directory),
+                log_file_name=config.logging.file_name,
+                log_file_format="JSON",
+                log_file_max_size=config.logging.max_file_size_bytes,
+                log_file_max_backup_count=config.logging.max_backup_count,
+                fileout_sync_on_flush=True,
+            )
+            if config.logging.enabled
+            else None
+        ),
     )

@@ -178,9 +178,9 @@ def _warmup_actions(warmup: NautilusWarmupIntent) -> list[LiveNodeAction]:
             kind=LiveNodeActionKind.REQUEST_HISTORICAL_BARS,
             phase=LiveNodeActionPhase.WARMUP,
             bar_type=bar_type,
-            lookback_sessions=warmup.lookback_sessions,
+            lookback_sessions=warmup.lookback_for(timeframe),
         )
-        for bar_type in warmup.bar_types
+        for timeframe, bar_type in zip(warmup.timeframes, warmup.bar_types, strict=True)
     ]
 
 

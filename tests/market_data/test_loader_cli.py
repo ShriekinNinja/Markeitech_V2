@@ -110,6 +110,25 @@ def test_parse_optional_persistence_runtime_config(tmp_path: Path) -> None:
     assert config.persistence.catalog_writer_queue_size == 25
 
 
+def test_parse_optional_runtime_file_logging_config(tmp_path: Path) -> None:
+    raw = raw_config()
+    raw["logging"] = {
+        "enabled": True,
+        "directory": tmp_path / "logs",
+        "file_name": "live-review",
+        "max_file_size_bytes": 1024,
+        "max_backup_count": 2,
+    }
+
+    config = parse_market_data_runtime_config(raw)
+
+    assert config.logging.enabled is True
+    assert config.logging.directory == tmp_path / "logs"
+    assert config.logging.file_name == "live-review"
+    assert config.logging.max_file_size_bytes == 1024
+    assert config.logging.max_backup_count == 2
+
+
 def test_parse_crypto_market_data_runtime_config() -> None:
     raw = raw_config()
     raw["runtime"]["active_instrument_id"] = "BTC/USD.PAXOS"  # type: ignore[index]

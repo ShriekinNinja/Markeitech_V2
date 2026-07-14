@@ -357,3 +357,13 @@ Before the normal Stage 4 persistence sequence, expose immediate higher-timefram
 Treat every profile produced by the context engine as inferred because completed OHLCV bars do not preserve historical trade-at-price distribution. Record methodology `bar_typical_price_volume`; do not represent these values as footprint, depth, exchange aggressor data, or exact tick profiles. Prevent higher-timeframe warmup snapshots from reading 1m evidence newer than their own `as_of`. Require later persisted-data replay and integrity comparison before these fast-track features can qualify signals or automation.
 
 Reason: These structures provide immediate discretionary value during the operator-evaluation week without weakening evidence semantics or silently introducing look-ahead. A dedicated branch preserves the option to revise or discard the fast track when the normal staged plan resumes.
+
+## DR-0040: Separate Analytical History From Dashboard Recency
+
+Status: accepted
+
+Configure historical lookback independently per instrument and timeframe. Use initial NQ and ES defaults of 260 sessions for daily, 60 for 1h, 20 for 15m, 10 for 5m, and five for 30m and 1m. Preserve the shared `lookback_sessions` field only as a compatibility fallback. Emit warmup context in the operator's top-down analysis order before tactical timeframes.
+
+Evaluate readiness against the latest fully closed session-aware interval at the warmup cutoff. Never require a forming bar. Record freshness separately from indicator depth: 200 bars provide full EMA depth, 50-199 provide partial directional depth, and fewer than 50 are insufficient. Missing required evidence or stale 1m blocks live subscriptions; stale higher timeframes or shallow history degrades context but may continue live.
+
+Reason: Five sessions was a dashboard and tactical-data choice, not a valid ceiling on macro analysis. Daily and hourly structure require materially deeper history, while requesting hundreds of sessions of 1m bars would create needless IB load and storage pressure. Separate freshness and depth prevent a recent but analytically shallow series, or a deep but stale series, from being mislabeled ready.

@@ -8,7 +8,11 @@ from nautilus_trader.common.actor import Actor
 from nautilus_trader.model.data import BarType
 from nautilus_trader.model.identifiers import ClientId, InstrumentId
 
-from markeitech.analytics import MarketContextSnapshot
+from markeitech.analytics import (
+    AnalyticsReadinessSnapshot,
+    AnalyticsReadinessStatus,
+    MarketContextSnapshot,
+)
 from markeitech.domain.events import ActiveInstrumentChangedEvent
 from markeitech.domain.market_data import OneMinuteBar
 from markeitech.market_data.actions import (
@@ -71,6 +75,15 @@ class MarketContextEngineLike(Protocol):
     ) -> tuple[MarketContextSnapshot, ...]: ...
 
     def update_one_minute(self, bar: OneMinuteBar) -> tuple[MarketContextSnapshot, ...]: ...
+
+
+class AnalyticsReadinessEvaluatorLike(Protocol):
+    def evaluate(
+        self,
+        data_by_bar_type: dict[str, tuple[Any, ...]],
+        *,
+        evaluated_ts: datetime,
+    ) -> AnalyticsReadinessSnapshot: ...
 
 
 class StartupRecoveryServiceLike(Protocol):
@@ -222,6 +235,7 @@ class MarkeitechMarketDataActor(Actor):
         on_native_market_data_event: NativeMarketDataSink | None = None,
         on_historical_bar: HistoricalBarSink | None = None,
         market_context_engine: MarketContextEngineLike | None = None,
+        analytics_readiness_evaluator: AnalyticsReadinessEvaluatorLike | None = None,
         on_market_context: MarketContextSink | None = None,
         startup_recovery: StartupRecoveryServiceLike | None = None,
         on_market_data_health: MarketDataHealthSink | None = None,
@@ -277,6 +291,8 @@ class MarkeitechMarketDataActor(Actor):
         self._historical_bar_sink = on_historical_bar
         self._startup_recovery = startup_recovery
         self._market_context = market_context_engine
+        self._analytics_readiness_evaluator = analytics_readiness_evaluator
+        self._analytics_readiness_snapshot: AnalyticsReadinessSnapshot | None = None
         self._on_market_context = on_market_context
         self._on_warmup_ready = on_warmup_ready
         self._health = MarketDataHealthMonitor(
@@ -320,6 +336,10 @@ class MarkeitechMarketDataActor(Actor):
     @property
     def market_context_snapshots(self) -> tuple[MarketContextSnapshot, ...]:
         return () if self._market_context is None else self._market_context.snapshots
+
+    @property
+    def analytics_readiness_snapshot(self) -> AnalyticsReadinessSnapshot | None:
+        return self._analytics_readiness_snapshot
 
     def on_start(self) -> None:
         self._warmup.start()
@@ -417,6 +437,18 @@ class MarkeitechMarketDataActor(Actor):
 
     def _analyze_warmup(self, snapshot: Any) -> None:
         self._on_warmup_ready(snapshot)
+        if self._analytics_readiness_evaluator is not None:
+            readiness = self._analytics_readiness_evaluator.evaluate(
+                snapshot.data_by_bar_type,
+                evaluated_ts=self.clock.utc_now(),
+            )
+            self._analytics_readiness_snapshot = readiness
+            for instrument in readiness.instruments:
+                self.log.info(format_analytics_readiness(instrument))
+            if readiness.status == AnalyticsReadinessStatus.BLOCKED:
+                raise RuntimeError(
+                    "analytics warmup readiness is blocked: " + ", ".join(readiness.reason_codes)
+                )
         if self._market_context is None:
             return
         contexts = self._market_context.initialize(snapshot.data_by_bar_type)
@@ -484,6 +516,18 @@ def format_market_context(
         f"active_fvgs={len(snapshot.fair_value_gaps)}] "
         f"| input={snapshot.input_fidelity.value}:{snapshot.source} "
         f"| as_of={snapshot.as_of.isoformat()}"
+    )
+
+
+def format_analytics_readiness(value: Any) -> str:
+    timeframes = " | ".join(
+        f"{item.timeframe.value}={item.freshness.value}/"
+        f"{item.depth.value}/bars:{item.bar_count}/lag:{item.lag_intervals}"
+        for item in value.timeframes
+    )
+    return (
+        f"ANALYTICS_READY | {value.instrument_id} | status={value.status.value.upper()} "
+        f"| {timeframes} | reasons={','.join(value.reason_codes)}"
     )
 
 

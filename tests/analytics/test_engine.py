@@ -236,6 +236,28 @@ def test_higher_timeframe_profile_does_not_look_ahead_into_newer_minute_bars() -
     assert five_minute.volume_profile.total_volume == Decimal("50")
 
 
+def test_warmup_context_is_emitted_in_top_down_analysis_order() -> None:
+    bars = (
+        analysis_bar(0),
+        analysis_bar(0, timeframe=AnalyticsTimeframe.FIVE_MINUTES),
+        analysis_bar(0, timeframe=AnalyticsTimeframe.FIFTEEN_MINUTES),
+        analysis_bar(0, timeframe=AnalyticsTimeframe.THIRTY_MINUTES),
+        analysis_bar(0, timeframe=AnalyticsTimeframe.ONE_HOUR),
+        analysis_bar(0, timeframe=AnalyticsTimeframe.DAILY),
+    )
+
+    snapshots = MarketContextEngine(DailySessions()).initialize_bars(bars)
+
+    assert [snapshot.timeframe for snapshot in snapshots] == [
+        AnalyticsTimeframe.DAILY,
+        AnalyticsTimeframe.ONE_HOUR,
+        AnalyticsTimeframe.FIFTEEN_MINUTES,
+        AnalyticsTimeframe.FIVE_MINUTES,
+        AnalyticsTimeframe.THIRTY_MINUTES,
+        AnalyticsTimeframe.ONE_MINUTE,
+    ]
+
+
 def test_live_one_minute_bars_update_context_and_complete_configured_aggregates() -> None:
     engine = MarketContextEngine(DailySessions())
     engine.initialize_bars(

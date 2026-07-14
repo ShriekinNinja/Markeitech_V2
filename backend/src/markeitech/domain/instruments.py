@@ -53,6 +53,9 @@ class WarmupTimeframe(StrEnum):
 
 class InstrumentWarmupConfig(VersionedDomainModel):
     lookback_sessions: int = Field(default=5, ge=1)
+    lookback_sessions_by_timeframe: dict[WarmupTimeframe, int] = Field(
+        default_factory=dict,
+    )
     timeframes: tuple[WarmupTimeframe, ...] = Field(
         default=(
             WarmupTimeframe.ONE_MINUTE,
@@ -68,6 +71,31 @@ class InstrumentWarmupConfig(VersionedDomainModel):
     annotate_vwap: bool = True
     annotate_fvgs: bool = True
     volume_profile_bin_size: Decimal = Field(default=Decimal("1"), gt=0)
+
+    @field_validator("lookback_sessions_by_timeframe")
+    @classmethod
+    def _timeframe_lookbacks_must_be_positive(
+        cls,
+        value: dict[WarmupTimeframe, int],
+    ) -> dict[WarmupTimeframe, int]:
+        if any(sessions < 1 for sessions in value.values()):
+            raise ValueError("timeframe lookback sessions must be positive")
+        return value
+
+    @model_validator(mode="after")
+    def _timeframe_lookbacks_must_match_configured_timeframes(
+        self,
+    ) -> InstrumentWarmupConfig:
+        unknown = set(self.lookback_sessions_by_timeframe) - set(self.timeframes)
+        if unknown:
+            values = ", ".join(sorted(timeframe.value for timeframe in unknown))
+            raise ValueError(f"lookbacks configured for disabled timeframes: {values}")
+        return self
+
+    def lookback_for(self, timeframe: WarmupTimeframe) -> int:
+        if timeframe not in self.timeframes:
+            raise ValueError(f"timeframe {timeframe.value} is not enabled for warmup")
+        return self.lookback_sessions_by_timeframe.get(timeframe, self.lookback_sessions)
 
 
 class InstrumentContractConfig(VersionedDomainModel):

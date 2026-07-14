@@ -354,6 +354,8 @@ Proceed live-first. Keep contracts, timestamps, lineage, fidelity, and determini
 - Define restart restoration and derived-state ownership for the continuous LiveNode path.
 - Preserve stable replay inputs and pure deterministic calculation boundaries for the later replay stage.
 
+First slice implemented and under live review: timeframe-specific history requirements, daily-first warmup context, session-aware freshness, independent indicator-depth classification, bounded readiness logs, subscription gating, and acceptance evidence.
+
 ## Stage 5: Signals
 
 Deliver deterministic signal lifecycle, scoring, dedupe, persistence, notification-ready domain events, and the first Direction-Location-Aggression setup family with explicit evidence fidelity. Optional ML inference may rank setups only after a deterministic baseline exists.

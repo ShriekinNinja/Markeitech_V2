@@ -101,6 +101,28 @@ def test_continuous_profile_requires_native_24_7_calendar() -> None:
         )
 
 
+def test_warmup_supports_per_timeframe_history_requirements() -> None:
+    warmup = InstrumentWarmupConfig(
+        timeframes=(WarmupTimeframe.ONE_MINUTE, WarmupTimeframe.DAILY),
+        lookback_sessions=5,
+        lookback_sessions_by_timeframe={
+            WarmupTimeframe.ONE_MINUTE: 5,
+            WarmupTimeframe.DAILY: 260,
+        },
+    )
+
+    assert warmup.lookback_for(WarmupTimeframe.ONE_MINUTE) == 5
+    assert warmup.lookback_for(WarmupTimeframe.DAILY) == 260
+
+
+def test_warmup_rejects_lookback_for_disabled_timeframe() -> None:
+    with pytest.raises(ValidationError, match="disabled timeframes"):
+        InstrumentWarmupConfig(
+            timeframes=(WarmupTimeframe.ONE_MINUTE,),
+            lookback_sessions_by_timeframe={WarmupTimeframe.DAILY: 260},
+        )
+
+
 def active_runtime(contract: FuturesContractConfig) -> InstrumentRuntimeConfig:
     return InstrumentRuntimeConfig(
         contract=contract,

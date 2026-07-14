@@ -185,3 +185,15 @@ Usable-context extensions remain part of the same versioned snapshot:
 - profile location plus deterministic Direction/Location score and reason codes
 
 `volume_profile_bin_size` is configured per instrument. Candle-based profiles assign each completed 1m bar's volume to its typical-price bin, use a contiguous 70% expansion around POC, and are always marked `inferred` with methodology `bar_typical_price_volume`. They are not exchange aggressor data, market depth, footprints, or exact historical trade-at-price distributions.
+
+### Analytics Readiness
+
+Warmup history requirements are configured per timeframe. The legacy instrument-level `lookback_sessions` remains a compatibility fallback only; `lookback_sessions_by_timeframe` owns explicit analytical depth.
+
+`AnalyticsReadinessSnapshot` contains one `TimeframeAnalyticsReadiness` result for every required instrument/timeframe. Each result records the request lookback, expected and observed latest completed bar, lag intervals, bar count, freshness, indicator depth, and reason codes.
+
+- Freshness: `current`, `stale`, or `unavailable`
+- Depth: `full` at 200+ bars, `partial` at 50-199 bars, or `insufficient` below 50 bars
+- Instrument/runtime status: `ready`, `degraded`, or `blocked`
+
+The currently forming interval is never required. Unavailable required history or non-current 1m evidence blocks subscriptions. Stale higher timeframes and incomplete indicator depth are degraded evidence and do not prevent live operation.

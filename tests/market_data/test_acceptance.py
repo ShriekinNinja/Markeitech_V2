@@ -8,9 +8,15 @@ from typing import Any
 
 import pytest
 from markeitech.analytics import (
+    AnalyticsDepthStatus,
+    AnalyticsFreshnessStatus,
     AnalyticsInputFidelity,
+    AnalyticsReadinessSnapshot,
+    AnalyticsReadinessStatus,
     AnalyticsTimeframe,
+    InstrumentAnalyticsReadiness,
     MarketContextSnapshot,
+    TimeframeAnalyticsReadiness,
     TrendState,
     VwapPosition,
 )
@@ -91,6 +97,38 @@ class FakeAcceptanceActor:
                 trend_reason_codes=("close_above_ema_stack", "ema20_rising"),
             )
             for instrument_id in instrument_ids
+        )
+        evaluated_ts = datetime(2026, 7, 13, 12, 1, tzinfo=UTC)
+        self.analytics_readiness_snapshot = AnalyticsReadinessSnapshot(
+            status=AnalyticsReadinessStatus.READY,
+            evaluated_ts=evaluated_ts,
+            instruments=tuple(
+                InstrumentAnalyticsReadiness(
+                    instrument_id=instrument_id,
+                    status=AnalyticsReadinessStatus.READY,
+                    timeframes=(
+                        TimeframeAnalyticsReadiness(
+                            instrument_id=instrument_id,
+                            timeframe=AnalyticsTimeframe.ONE_MINUTE,
+                            evaluated_ts=evaluated_ts,
+                            expected_latest_close=evaluated_ts,
+                            observed_latest_close=evaluated_ts,
+                            lookback_sessions=5,
+                            bar_count=200,
+                            freshness=AnalyticsFreshnessStatus.CURRENT,
+                            lag_intervals=0,
+                            depth=AnalyticsDepthStatus.FULL,
+                            reason_codes=(
+                                "latest_completed_interval_present",
+                                "ema200_depth_available",
+                            ),
+                        ),
+                    ),
+                    reason_codes=("all_timeframes_current_and_full_depth",),
+                )
+                for instrument_id in instrument_ids
+            ),
+            reason_codes=("instrument_status_ready",),
         )
         self.market_data_health = MarketDataHealthSnapshot(
             source=SourceHealth(
@@ -194,6 +232,8 @@ async def test_acceptance_runs_for_duration_stops_and_reports_pass(tmp_path: Pat
     assert report.instruments[0].trade_ticks == 3
     assert report.instruments[0].dropped_events == 0
     assert report.market_contexts[0].trend == TrendState.BULLISH
+    assert report.analytics_readiness is not None
+    assert report.analytics_readiness.status == AnalyticsReadinessStatus.READY
     assert any(check.name == "NQU6.CME:market_context" for check in report.checks)
     assert all(check.status.value == "pass" for check in report.checks)
 

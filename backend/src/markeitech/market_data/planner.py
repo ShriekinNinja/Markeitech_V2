@@ -27,12 +27,20 @@ class PlannedWarmup(VersionedDomainModel):
     instrument_id: str = Field(min_length=1)
     kind: WarmupKind
     lookback_sessions: int = Field(ge=1)
+    lookback_sessions_by_timeframe: dict[WarmupTimeframe, int] = Field(
+        default_factory=dict,
+    )
     timeframes: tuple[WarmupTimeframe, ...] = Field(min_length=1)
     annotate_support_resistance: bool
     annotate_emas: bool
     annotate_trend: bool
     annotate_vwap: bool
     annotate_fvgs: bool
+
+    def lookback_for(self, timeframe: WarmupTimeframe) -> int:
+        if timeframe not in self.timeframes:
+            raise ValueError(f"timeframe {timeframe.value} is not planned for warmup")
+        return self.lookback_sessions_by_timeframe.get(timeframe, self.lookback_sessions)
 
 
 class PlannedSubscription(VersionedDomainModel):
@@ -71,6 +79,10 @@ def build_market_data_plan(registry: InstrumentRegistryConfig) -> MarketDataRunt
                 instrument_id=runtime.contract.instrument_id,
                 kind=WarmupKind.HISTORICAL_BARS,
                 lookback_sessions=runtime.warmup.lookback_sessions,
+                lookback_sessions_by_timeframe={
+                    timeframe: runtime.warmup.lookback_for(timeframe)
+                    for timeframe in runtime.warmup.timeframes
+                },
                 timeframes=runtime.warmup.timeframes,
                 annotate_support_resistance=runtime.warmup.annotate_support_resistance,
                 annotate_emas=runtime.warmup.annotate_emas,

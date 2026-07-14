@@ -37,6 +37,15 @@ _LIVE_AGGREGATE_TIMEFRAMES = (
     AnalyticsTimeframe.ONE_HOUR,
 )
 
+_WARMUP_CONTEXT_ORDER = {
+    AnalyticsTimeframe.DAILY: 0,
+    AnalyticsTimeframe.ONE_HOUR: 1,
+    AnalyticsTimeframe.FIFTEEN_MINUTES: 2,
+    AnalyticsTimeframe.FIVE_MINUTES: 3,
+    AnalyticsTimeframe.THIRTY_MINUTES: 4,
+    AnalyticsTimeframe.ONE_MINUTE: 5,
+}
+
 
 class SessionWindowResolver(Protocol):
     def session_window(
@@ -100,7 +109,10 @@ class MarketContextEngine:
                     self._session_windows,
                 )
         initialized: list[MarketContextSnapshot] = []
-        for key in sorted(self._bars, key=lambda item: (item[0], item[1].duration)):
+        for key in sorted(
+            self._bars,
+            key=lambda item: (item[0], _WARMUP_CONTEXT_ORDER[item[1]]),
+        ):
             snapshot = self._calculate(key)
             self._snapshots[key] = snapshot
             initialized.append(snapshot)

@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 
 import pytest
 from markeitech.domain import (
@@ -19,6 +20,7 @@ from markeitech.market_data import (
     MarketDataRuntimeConfig,
     NautilusIntentKind,
     PlannedSubscription,
+    RuntimeLoggingConfig,
     SubscriptionKind,
     build_market_data_plan,
     build_nautilus_request_plan,
@@ -233,3 +235,27 @@ def test_builds_nautilus_trading_node_config_without_execution_clients() -> None
     assert node_config.exec_clients == {}
     assert node_config.strategies == []
     assert node_config.actors == []
+
+
+def test_builds_rotating_json_file_logging_for_live_review(tmp_path: Path) -> None:
+    config = MarketDataRuntimeConfig(
+        instrument_registry=registry(),
+        logging=RuntimeLoggingConfig(
+            enabled=True,
+            directory=tmp_path / "logs",
+            file_name="markeitech-live",
+            max_file_size_bytes=1024,
+            max_backup_count=3,
+        ),
+    )
+
+    node_config = build_trading_node_config(config)
+
+    assert node_config.logging is not None
+    assert node_config.logging.log_level == "INFO"
+    assert node_config.logging.log_level_file == "INFO"
+    assert node_config.logging.log_directory == str(tmp_path / "logs")
+    assert node_config.logging.log_file_name == "markeitech-live"
+    assert node_config.logging.log_file_format == "JSON"
+    assert node_config.logging.log_file_max_size == 1024
+    assert node_config.logging.log_file_max_backup_count == 3

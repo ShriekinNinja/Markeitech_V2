@@ -10,7 +10,9 @@ from markeitech.domain import (
     InstrumentRegistryConfig,
     InstrumentRole,
     InstrumentRuntimeConfig,
+    InstrumentWarmupConfig,
     NQContractConfig,
+    WarmupTimeframe,
 )
 from markeitech.market_data import (
     LiveNodeAction,
@@ -130,6 +132,44 @@ def test_livenode_actions_are_warmup_first_then_live_subscriptions() -> None:
     assert any(action.kind == LiveNodeActionKind.SUBSCRIBE_QUOTE_TICKS for action in plan.actions)
     assert ("ESU6.CME", LiveNodeActionKind.SUBSCRIBE_TRADE_TICKS) not in {
         (action.instrument_id, action.kind) for action in plan.actions
+    }
+
+
+def test_livenode_actions_preserve_per_timeframe_lookbacks() -> None:
+    configured = InstrumentRegistryConfig(
+        active_instrument_id="NQU6.CME",
+        instruments=(
+            InstrumentRuntimeConfig(
+                contract=nq_contract(),
+                role=InstrumentRole.ACTIVE,
+                data_mode=InstrumentDataMode.TICK_BY_TICK,
+                analysis_profile=AnalysisProfile.ACTIVE_TICK,
+                warmup=InstrumentWarmupConfig(
+                    timeframes=(WarmupTimeframe.ONE_MINUTE, WarmupTimeframe.DAILY),
+                    lookback_sessions_by_timeframe={
+                        WarmupTimeframe.ONE_MINUTE: 5,
+                        WarmupTimeframe.DAILY: 260,
+                    },
+                ),
+            ),
+        ),
+    )
+
+    actions = build_livenode_action_plan(
+        build_nautilus_request_plan(
+            build_market_data_plan(configured),
+            data_client_name="IB",
+        )
+    ).actions
+    historical = {
+        action.bar_type: action.lookback_sessions
+        for action in actions
+        if action.kind == LiveNodeActionKind.REQUEST_HISTORICAL_BARS
+    }
+
+    assert historical == {
+        "NQU6.CME-1-MINUTE-LAST-EXTERNAL": 5,
+        "NQU6.CME-1-DAY-LAST-EXTERNAL": 260,
     }
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic import Field, model_validator
 
 from markeitech.domain.base import VersionedDomainModel
@@ -18,6 +20,16 @@ class InteractiveBrokersConnectionConfig(VersionedDomainModel):
     read_only: bool = True
 
 
+class RuntimeLoggingConfig(VersionedDomainModel):
+    enabled: bool = False
+    console_level: str = Field(default="INFO", min_length=1)
+    file_level: str = Field(default="INFO", min_length=1)
+    directory: Path = Path("data/logs")
+    file_name: str = Field(default="markeitech-live", min_length=1)
+    max_file_size_bytes: int = Field(default=25 * 1024 * 1024, gt=0)
+    max_backup_count: int = Field(default=10, ge=0)
+
+
 class MarketDataRuntimeConfig(VersionedDomainModel):
     instrument_registry: InstrumentRegistryConfig
     ib: InteractiveBrokersConnectionConfig = Field(
@@ -30,6 +42,7 @@ class MarketDataRuntimeConfig(VersionedDomainModel):
     manual_live_node_start: bool = False
     run_live_node: bool = False
     persistence: PersistenceConfig | None = None
+    logging: RuntimeLoggingConfig = Field(default_factory=RuntimeLoggingConfig)
 
     @model_validator(mode="after")
     def _runtime_must_remain_data_only_for_stage_2(self) -> MarketDataRuntimeConfig:

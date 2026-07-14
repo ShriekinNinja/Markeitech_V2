@@ -41,6 +41,7 @@ def config(path: Path, **overrides: object) -> PersistenceConfig:
     values: dict[str, object] = {
         "catalog_path": path.parent / "catalog",
         "metadata_path": path,
+        "journal_path": path.parent / "journal",
         "outbox_lease_seconds": 30,
     }
     values.update(overrides)
