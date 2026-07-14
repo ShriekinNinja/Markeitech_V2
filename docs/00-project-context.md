@@ -1,6 +1,6 @@
 # Project Context
 
-Markeitech by Markeitect is a greenfield trading-system platform for market analysis, strategy research, deterministic replay, dashboarding, backtesting, and later controlled execution.
+Markeitech is a greenfield trading-system platform built by Markeitect and Kite. It supports market analysis, strategy research, deterministic replay, dashboarding, backtesting, and later controlled execution.
 
 The initial active production target is explicit-expiry NQ futures through Interactive Brokers. The implementation must use NautilusTrader as extensively as practical for trading-domain runtime concerns and must support one active tick-by-tick instrument plus multiple background monitored instruments.
 

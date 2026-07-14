@@ -343,6 +343,17 @@ Implemented on the dedicated usable-context branch ahead of the normal persisten
 
 This fast-track work remains subject to later persisted-data replay and value-integrity comparison before signals or automation depend on it.
 
+### Stage 4B: Live Analytics Operationalization
+
+Proceed live-first. Keep contracts, timestamps, lineage, fidelity, and deterministic calculations replay-compatible, but defer construction of the replay runtime while live operation is the product priority.
+
+- Prove every requested warmup timeframe reaches a bounded freshness threshold near boot time.
+- Publish explicit analytics readiness, freshness, history-depth, and degraded-input evidence.
+- Refine profile granularity and combinations without overstating candle-derived precision.
+- Replace high-volume diagnostic logs with bounded periodic operator context reports.
+- Define restart restoration and derived-state ownership for the continuous LiveNode path.
+- Preserve stable replay inputs and pure deterministic calculation boundaries for the later replay stage.
+
 ## Stage 5: Signals
 
 Deliver deterministic signal lifecycle, scoring, dedupe, persistence, notification-ready domain events, and the first Direction-Location-Aggression setup family with explicit evidence fidelity. Optional ML inference may rank setups only after a deterministic baseline exists.

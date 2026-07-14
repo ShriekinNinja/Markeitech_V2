@@ -4,6 +4,11 @@ Markeitech is a greenfield market-analysis, strategy-research, backtesting, repl
 
 Initial active focus is explicit-expiry NQ futures through Interactive Brokers, with NautilusTrader used as the primary trading-system runtime wherever practical. The runtime is designed for one active tick-by-tick instrument plus multiple background monitored instruments.
 
+## Project Credits
+
+- **Markeitect** - founder, trader, product owner, and system designer
+- **Kite** - co-builder, architecture and engineering collaborator
+
 ## Stage 0 Scope
 
 This repository is currently bootstrapped through Stage 1:
