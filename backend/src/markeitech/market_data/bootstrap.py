@@ -32,7 +32,11 @@ from markeitech.persistence.feature_pipeline import FeatureSubmissionStatus
 from markeitech.persistence.pipeline import PersistenceSubmissionStatus
 from markeitech.persistence.runtime import PersistenceRuntime
 from markeitech.persistence.startup_recovery import StartupRecoveryService
-from markeitech.signals import BoundedFeatureCommitHandoff, LiveSignalRuntime
+from markeitech.signals import (
+    BoundedFeatureCommitHandoff,
+    BoundedSignalProjectionWriter,
+    LiveSignalRuntime,
+)
 
 LIVE_NODE_START_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_IB"
 
@@ -69,10 +73,12 @@ class PersistenceManagedLiveNode:
         node: ConfigurableLiveNodeLike,
         persistence: PersistenceRuntime,
         signal_runtime: LiveSignalRuntime | None = None,
+        signal_projection_writer: BoundedSignalProjectionWriter | None = None,
     ) -> None:
         self._node = node
         self.persistence = persistence
         self.signal_runtime = signal_runtime
+        self.signal_projection_writer = signal_projection_writer
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._node, name)
@@ -99,13 +105,17 @@ class PersistenceManagedLiveNode:
 
     def _start_runtimes(self) -> None:
         self.persistence.start()
+        if self.signal_projection_writer is not None:
+            self.signal_projection_writer.start()
         if self.signal_runtime is not None:
             try:
                 self.signal_runtime.start()
             except Exception:
-                self.signal_runtime.stop(
-                    self.persistence.config.runtime_shutdown_timeout_seconds
-                )
+                self.signal_runtime.stop(self.persistence.config.runtime_shutdown_timeout_seconds)
+                if self.signal_projection_writer is not None:
+                    self.signal_projection_writer.stop(
+                        self.persistence.config.runtime_shutdown_timeout_seconds
+                    )
                 self.persistence.stop()
                 raise
 
@@ -118,12 +128,18 @@ class PersistenceManagedLiveNode:
             else:
                 timeout = self.persistence.config.runtime_shutdown_timeout_seconds
                 if not feature_writer.stop(timeout):
-                    shutdown_error = RuntimeError(
-                        "feature writer did not stop before signal drain"
-                    )
+                    shutdown_error = RuntimeError("feature writer did not stop before signal drain")
                 if not self.signal_runtime.stop(timeout) and shutdown_error is None:
                     shutdown_error = RuntimeError(
                         "signal runtime did not drain within shutdown timeout"
+                    )
+                if (
+                    self.signal_projection_writer is not None
+                    and not self.signal_projection_writer.stop(timeout)
+                    and shutdown_error is None
+                ):
+                    shutdown_error = RuntimeError(
+                        "signal projection writer did not drain within shutdown timeout"
                     )
         try:
             self.persistence.stop()
@@ -168,6 +184,8 @@ def build_prepared_market_data_live_node(
     actor_factory: Callable[..., Any] = MarkeitechMarketDataActor,
     on_warmup_ready: WarmupReadyHandler = require_historical_coverage,
     data_client_factory: type[Any] = InteractiveBrokersLiveDataClientFactory,
+    signal_projection_sink: Callable[[str], None] | None = None,
+    signal_role_resolver: Callable[[str], str] | None = None,
 ) -> ConfigurableLiveNodeLike | PersistenceManagedLiveNode:
     node = build_live_node(config, node_factory=node_factory)
     runtime_plan = build_market_data_plan(config.instrument_registry)
@@ -182,9 +200,7 @@ def build_prepared_market_data_live_node(
     )
     signal_handoff = None
     if config.signals is not None and config.signals.enabled_definition_ids_by_instrument:
-        signal_handoff = BoundedFeatureCommitHandoff(
-            config.signals.feature_handoff_queue_size
-        )
+        signal_handoff = BoundedFeatureCommitHandoff(config.signals.feature_handoff_queue_size)
     persistence = (
         PersistenceRuntime.build(
             config.persistence,
@@ -192,18 +208,6 @@ def build_prepared_market_data_live_node(
             feature_commit_sink=None if signal_handoff is None else signal_handoff.offer,
         )
         if config.persistence
-        else None
-    )
-    signal_runtime = (
-        LiveSignalRuntime(
-            config.signals,
-            persistence.metadata,
-            session_calendar,
-            signal_handoff,
-        )
-        if config.signals is not None
-        and persistence is not None
-        and signal_handoff is not None
         else None
     )
     profile_bin_sizes = {
@@ -292,7 +296,49 @@ def build_prepared_market_data_live_node(
         raise
     if persistence is None:
         return node
-    return PersistenceManagedLiveNode(node, persistence, signal_runtime)
+    signal_projection_writer = None
+    signal_runtime = None
+    if config.signals is not None and signal_handoff is not None:
+        sink = signal_projection_sink
+        if sink is None:
+            actor_log = getattr(actor, "log", None)
+            if actor_log is None or not callable(getattr(actor_log, "info", None)):
+                persistence.stop()
+                raise RuntimeError("signal projection requires an actor INFO log sink")
+            sink = actor_log.info
+        role_resolver = signal_role_resolver
+        if role_resolver is None:
+            if not hasattr(actor, "active_switch"):
+                persistence.stop()
+                raise RuntimeError("signal projection requires active instrument state")
+
+            def resolve_actor_role(instrument_id: str) -> str:
+                return (
+                    "ACTIVE"
+                    if actor.active_switch.active_instrument_id == instrument_id
+                    else "BACKGROUND"
+                )
+
+            role_resolver = resolve_actor_role
+        signal_projection_writer = BoundedSignalProjectionWriter(
+            sink,
+            role_resolver,
+            queue_size=config.signals.operator_projection_queue_size,
+            dedupe_size=config.signals.operator_projection_dedupe_size,
+        )
+        signal_runtime = LiveSignalRuntime(
+            config.signals,
+            persistence.metadata,
+            session_calendar,
+            signal_handoff,
+            on_projection=signal_projection_writer.submit,
+        )
+    return PersistenceManagedLiveNode(
+        node,
+        persistence,
+        signal_runtime,
+        signal_projection_writer,
+    )
 
 
 def start_live_node(

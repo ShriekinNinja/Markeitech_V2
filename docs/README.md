@@ -48,6 +48,7 @@ for investigation and context, but it does not reopen old stage gates.
 
 - [Interactive Brokers setup](operations/ib-setup.md)
 - [Operator context log guide](operations/operator-context-logs.md)
+- [Operator signal log guide](operations/operator-signal-logs.md)
 - [Persistence maintenance](operations/persistence-maintenance.md)
 
 ## Notes And Archive

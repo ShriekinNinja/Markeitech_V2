@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from threading import Condition, Thread
 from typing import Protocol
@@ -39,6 +39,12 @@ from markeitech.signals.episode import (
     LocationEpisodeTracker,
 )
 from markeitech.signals.location import qualify_location
+from markeitech.signals.projection import (
+    SignalLifecycleProjection,
+    SignalOperatorProjection,
+    SignalRuntimeProjection,
+    SignalRuntimeProjectionKind,
+)
 
 
 class SignalStateStore(Protocol):
@@ -92,6 +98,13 @@ class SignalEvaluationEvent:
     episode_event: LocationEpisodeEventType | None
     signal_id: str | None
     signal_status: SignalStatus | None
+    lifecycle_events: tuple[SignalTransitionEvent, ...] = ()
+
+
+@dataclass(frozen=True)
+class _PersistedSignalDecision:
+    current: SignalSnapshot | None
+    lifecycle_events: tuple[SignalTransitionEvent, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -104,6 +117,8 @@ class LiveSignalRuntimeSnapshot:
     evaluation_count: int
     lifecycle_write_count: int
     open_signal_count: int
+    projection_rejected_count: int
+    projection_callback_error_count: int
     last_event: SignalEvaluationEvent | None
     last_error: str | None
 
@@ -120,6 +135,7 @@ class LiveSignalRuntime:
         *,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         on_evaluation: Callable[[SignalEvaluationEvent], None] | None = None,
+        on_projection: Callable[[SignalOperatorProjection], bool] | None = None,
     ) -> None:
         enabled_ids = {
             definition_id
@@ -139,6 +155,7 @@ class LiveSignalRuntime:
         self._handoff = handoff
         self._clock = clock
         self._on_evaluation = on_evaluation
+        self._on_projection = on_projection
         self._feature_state = CommittedFeatureState()
         self._direction_trackers = {
             key: DirectionRegimeTracker(value) for key, value in self._definitions.items()
@@ -155,6 +172,9 @@ class LiveSignalRuntime:
         self._stale_evaluation_count = 0
         self._evaluation_count = 0
         self._lifecycle_write_count = 0
+        self._projection_rejected_count = 0
+        self._projection_callback_error_count = 0
+        self._last_heartbeat_ts: datetime | None = None
         self._last_event: SignalEvaluationEvent | None = None
         self._last_error: str | None = None
         self._thread: Thread | None = None
@@ -171,6 +191,8 @@ class LiveSignalRuntime:
                 evaluation_count=self._evaluation_count,
                 lifecycle_write_count=self._lifecycle_write_count,
                 open_signal_count=len(self._open_signals),
+                projection_rejected_count=self._projection_rejected_count,
+                projection_callback_error_count=self._projection_callback_error_count,
                 last_event=self._last_event,
                 last_error=self._last_error,
             )
@@ -181,7 +203,7 @@ class LiveSignalRuntime:
                 raise RuntimeError("live signal runtime can only start once")
             self._startup_watermark = require_utc(self._clock())
         try:
-            self._restore_open_state()
+            restored = self._restore_open_state()
         except Exception as exc:
             with self._condition:
                 self._status = LiveSignalRuntimeStatus.FAILED
@@ -189,6 +211,13 @@ class LiveSignalRuntime:
             raise
         with self._condition:
             self._status = LiveSignalRuntimeStatus.RUNNING
+        self._offer_runtime_projection(SignalRuntimeProjectionKind.STARTED)
+        assert self._startup_watermark is not None
+        for signal in restored:
+            self._offer_projection(
+                SignalLifecycleProjection.restored(signal, self._startup_watermark)
+            )
+        with self._condition:
             self._thread = Thread(
                 target=self._run,
                 name="markeitech-signal-runtime",
@@ -214,7 +243,7 @@ class LiveSignalRuntime:
             thread.join(timeout)
         return thread is None or not thread.is_alive()
 
-    def _restore_open_state(self) -> None:
+    def _restore_open_state(self) -> tuple[SignalSnapshot, ...]:
         restored = []
         enabled_instruments = self._config.enabled_definition_ids_by_instrument
         for definition_id, definition in self._definitions.items():
@@ -238,6 +267,7 @@ class LiveSignalRuntime:
                 self._open_signals[(definition_id, signal.instrument_id)] = signal
             restored.extend(current)
         self._restored_open_signal_count = len(restored)
+        return tuple(restored)
 
     def _run(self) -> None:
         while True:
@@ -255,6 +285,7 @@ class LiveSignalRuntime:
                         self._status = LiveSignalRuntimeStatus.FAILED
                         self._last_error = f"{type(exc).__name__}: {exc}"
                         self._condition.notify_all()
+                    self._offer_runtime_projection(SignalRuntimeProjectionKind.FAILED)
                     return
             with self._condition:
                 if (
@@ -263,6 +294,7 @@ class LiveSignalRuntime:
                 ):
                     self._status = LiveSignalRuntimeStatus.STOPPED
                     self._condition.notify_all()
+                    self._offer_runtime_projection(SignalRuntimeProjectionKind.STOPPED)
                     return
 
     def _process_revision(self, revision: CommittedFeatureRevision) -> None:
@@ -287,6 +319,9 @@ class LiveSignalRuntime:
             with self._condition:
                 self._evaluation_count += 1
                 self._last_event = event
+            for lifecycle_event in event.lifecycle_events:
+                self._offer_projection(SignalLifecycleProjection.transitioned(lifecycle_event))
+            self._offer_heartbeat(bundle.evaluation_as_of)
             if self._on_evaluation is not None:
                 self._on_evaluation(event)
 
@@ -302,14 +337,14 @@ class LiveSignalRuntime:
         open_signal = self._open_signals.get(open_key)
         if direction is None and open_signal is None:
             return SignalEvaluationEvent(
-                bundle.instrument_id,
-                definition_id,
-                bundle.evaluation_as_of,
-                direction_decision.qualification.status,
-                None,
-                None,
-                None,
-                None,
+                instrument_id=bundle.instrument_id,
+                definition_id=definition_id,
+                evaluation_ts=bundle.evaluation_as_of,
+                direction_status=direction_decision.qualification.status,
+                location_status=None,
+                episode_event=None,
+                signal_id=None,
+                signal_status=None,
             )
 
         if direction is None:
@@ -369,8 +404,9 @@ class LiveSignalRuntime:
             direction_decision.qualification.status,
             location.status,
             episode_decision.event_type,
-            None if persisted is None else persisted.signal_id,
-            None if persisted is None else persisted.status,
+            None if persisted.current is None else persisted.current.signal_id,
+            None if persisted.current is None else persisted.current.status,
+            persisted.lifecycle_events,
         )
 
     def _persist_episode_decision(
@@ -380,11 +416,9 @@ class LiveSignalRuntime:
         decision: LocationEpisodeDecision,
         open_signal: SignalSnapshot | None,
         occurred_ts: datetime,
-    ) -> SignalSnapshot | None:
+    ) -> _PersistedSignalDecision:
         key = (
-            (definition.definition_id, decision.episode.instrument_id)
-            if decision.episode
-            else None
+            (definition.definition_id, decision.episode.instrument_id) if decision.episode else None
         )
         if decision.event_type == LocationEpisodeEventType.ENTERED:
             if decision.episode is None or open_signal is not None or key is None:
@@ -398,7 +432,7 @@ class LiveSignalRuntime:
             with self._condition:
                 self._open_signals[key] = current
                 self._lifecycle_write_count += 1
-            return current
+            return _PersistedSignalDecision(current, (setup.armed_transition,))
         if decision.event_type == LocationEpisodeEventType.REPLACED:
             if decision.episode is None or open_signal is None or key is None:
                 raise RuntimeError("replacement episode requires existing and new signal state")
@@ -417,7 +451,10 @@ class LiveSignalRuntime:
             with self._condition:
                 self._open_signals[key] = current
                 self._lifecycle_write_count += 1
-            return current
+            return _PersistedSignalDecision(
+                current,
+                (ended, setup.armed_transition),
+            )
         if decision.event_type == LocationEpisodeEventType.EXITED:
             if open_signal is None:
                 raise RuntimeError("exited location episode requires an open signal")
@@ -433,5 +470,55 @@ class LiveSignalRuntime:
                     None,
                 )
                 self._lifecycle_write_count += 1
-            return ended.current
-        return open_signal
+            return _PersistedSignalDecision(ended.current, (ended,))
+        return _PersistedSignalDecision(open_signal)
+
+    def _offer_heartbeat(self, evaluation_ts: datetime) -> None:
+        interval = timedelta(seconds=self._config.operator_heartbeat_interval_seconds)
+        if (
+            self._last_heartbeat_ts is not None
+            and evaluation_ts < self._last_heartbeat_ts + interval
+        ):
+            return
+        self._last_heartbeat_ts = evaluation_ts
+        self._offer_runtime_projection(
+            SignalRuntimeProjectionKind.HEARTBEAT,
+            occurred_ts=evaluation_ts,
+        )
+
+    def _offer_runtime_projection(
+        self,
+        kind: SignalRuntimeProjectionKind,
+        *,
+        occurred_ts: datetime | None = None,
+    ) -> None:
+        snapshot = self.snapshot
+        self._offer_projection(
+            SignalRuntimeProjection(
+                kind=kind,
+                occurred_ts=require_utc(occurred_ts or self._clock()),
+                status=snapshot.status.value,
+                startup_watermark=snapshot.startup_watermark,
+                restored_open_signal_count=snapshot.restored_open_signal_count,
+                processed_revision_count=snapshot.processed_revision_count,
+                stale_evaluation_count=snapshot.stale_evaluation_count,
+                evaluation_count=snapshot.evaluation_count,
+                lifecycle_write_count=snapshot.lifecycle_write_count,
+                open_signal_count=snapshot.open_signal_count,
+                projection_rejected_count=snapshot.projection_rejected_count,
+                projection_callback_error_count=snapshot.projection_callback_error_count,
+            )
+        )
+
+    def _offer_projection(self, projection: SignalOperatorProjection) -> None:
+        if self._on_projection is None:
+            return
+        try:
+            accepted = self._on_projection(projection)
+        except Exception:
+            with self._condition:
+                self._projection_callback_error_count += 1
+            return
+        if not accepted:
+            with self._condition:
+                self._projection_rejected_count += 1

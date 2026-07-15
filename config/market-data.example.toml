@@ -52,6 +52,9 @@ enabled_definition_ids_by_instrument = { "NQU6.CME" = ["intraday_context"], "ESU
 feature_handoff_queue_size = 2048
 evaluation_batch_size = 128
 evaluation_poll_seconds = 0.05
+operator_projection_queue_size = 256
+operator_projection_dedupe_size = 4096
+operator_heartbeat_interval_seconds = 60
 
 [[signals.definitions]]
 definition_id = "intraday_context"

@@ -16,13 +16,18 @@ from markeitech.analytics import (
 from markeitech.persistence import CommittedFeatureRevision
 from markeitech.signals import (
     BoundedFeatureCommitHandoff,
+    BoundedSignalProjectionWriter,
     LiveSignalRuntime,
     LiveSignalRuntimeStatus,
     LocationPolicyConfig,
     LocationSourceKind,
     LocationSourcePolicyConfig,
     SignalDefinitionConfig,
+    SignalLifecycleProjection,
+    SignalLifecycleProjectionKind,
     SignalRuntimeConfig,
+    SignalRuntimeProjection,
+    SignalRuntimeProjectionKind,
     SignalStatus,
 )
 
@@ -108,10 +113,7 @@ class MemorySignalStore:
         return tuple(
             signal
             for signal in values
-            if all(
-                value is None or getattr(signal, key) == value
-                for key, value in filters.items()
-            )
+            if all(value is None or getattr(signal, key) == value for key, value in filters.items())
         )
 
     def save_signal_candidate_and_transition(self, candidate, event, **kwargs):
@@ -322,3 +324,139 @@ def test_runtime_fails_closed_and_requeues_unprocessed_revision() -> None:
     assert runtime.snapshot.status == LiveSignalRuntimeStatus.FAILED
     assert runtime.snapshot.last_error == "RuntimeError: calendar unavailable"
     assert handoff.snapshot.pending_count == 1
+
+
+def test_runtime_projects_lifecycle_only_after_durable_write() -> None:
+    store = MemorySignalStore()
+    handoff = BoundedFeatureCommitHandoff(16)
+    completed = Event()
+    projections = []
+
+    def capture(projection):
+        if isinstance(projection, SignalLifecycleProjection):
+            assert store.lifecycle_writes == 1
+            completed.set()
+        projections.append(projection)
+        return True
+
+    runtime = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(definition(),),
+            enabled_definition_ids_by_instrument={
+                "NQU6.CME": ("runtime_context",),
+            },
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        handoff,
+        clock=lambda: STARTED,
+        on_projection=capture,
+    )
+
+    runtime.start()
+    assert handoff.offer(revisions("NQU6.CME", 1))
+    assert completed.wait(1)
+    assert runtime.stop(1)
+
+    lifecycle = [item for item in projections if isinstance(item, SignalLifecycleProjection)]
+    runtime_events = [item for item in projections if isinstance(item, SignalRuntimeProjection)]
+    assert len(lifecycle) == 1
+    assert lifecycle[0].kind == SignalLifecycleProjectionKind.TRANSITION
+    assert lifecycle[0].signal.status == SignalStatus.ARMED
+    assert lifecycle[0].transition_id is not None
+    assert [item.kind for item in runtime_events] == [
+        SignalRuntimeProjectionKind.STARTED,
+        SignalRuntimeProjectionKind.HEARTBEAT,
+        SignalRuntimeProjectionKind.STOPPED,
+    ]
+
+    lines: list[str] = []
+    writer = BoundedSignalProjectionWriter(
+        lines.append,
+        lambda _instrument_id: "ACTIVE",
+        queue_size=4,
+        dedupe_size=8,
+        poll_seconds=0.01,
+    )
+    writer.start()
+    assert writer.submit(lifecycle[0])
+    assert writer.submit(lifecycle[0])
+    assert writer.stop(1)
+    assert writer.snapshot.rendered_count == 1
+    assert writer.snapshot.duplicate_count == 1
+    assert lines[0].startswith("SIGNAL_ARMED | role=ACTIVE | NQU6.CME | definition=runtime_context")
+    assert "location=support@5m:100-100" in lines[0]
+
+
+def test_projection_callback_failure_never_fails_signal_runtime() -> None:
+    handoff = BoundedFeatureCommitHandoff(16)
+
+    def fail(_projection):
+        raise RuntimeError("presentation unavailable")
+
+    runtime = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(definition(),),
+            enabled_definition_ids_by_instrument={
+                "NQU6.CME": ("runtime_context",),
+            },
+            evaluation_poll_seconds=0.01,
+        ),
+        MemorySignalStore(),
+        FixedSessionResolver(),
+        handoff,
+        clock=lambda: STARTED,
+        on_projection=fail,
+    )
+
+    runtime.start()
+    assert handoff.offer(revisions("NQU6.CME", 1))
+    deadline = datetime.now(UTC) + timedelta(seconds=1)
+    while runtime.snapshot.evaluation_count < 1 and datetime.now(UTC) < deadline:
+        Event().wait(0.01)
+    assert runtime.stop(1)
+
+    assert runtime.snapshot.status == LiveSignalRuntimeStatus.STOPPED
+    assert runtime.snapshot.lifecycle_write_count == 1
+    assert runtime.snapshot.projection_callback_error_count >= 3
+
+
+def test_runtime_labels_verified_open_state_as_restored_not_fresh() -> None:
+    store = MemorySignalStore()
+    first_handoff = BoundedFeatureCommitHandoff(16)
+    armed = Event()
+    config = SignalRuntimeConfig(
+        definitions=(definition(),),
+        enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+        evaluation_poll_seconds=0.01,
+    )
+    first = LiveSignalRuntime(
+        config,
+        store,
+        FixedSessionResolver(),
+        first_handoff,
+        clock=lambda: STARTED,
+        on_evaluation=lambda _event: armed.set(),
+    )
+    first.start()
+    assert first_handoff.offer(revisions("NQU6.CME", 1))
+    assert armed.wait(1)
+    assert first.stop(1)
+
+    projections = []
+    restarted = LiveSignalRuntime(
+        config,
+        store,
+        FixedSessionResolver(),
+        BoundedFeatureCommitHandoff(16),
+        clock=lambda: STARTED + timedelta(minutes=2),
+        on_projection=lambda projection: projections.append(projection) or True,
+    )
+    restarted.start()
+    assert restarted.stop(1)
+
+    restored = [item for item in projections if isinstance(item, SignalLifecycleProjection)]
+    assert len(restored) == 1
+    assert restored[0].kind == SignalLifecycleProjectionKind.RESTORED
+    assert restored[0].transition_id is None

@@ -46,9 +46,7 @@ class LocationPolicyConfig(VersionedDomainModel):
 
     @property
     def timeframes(self) -> frozenset[AnalyticsTimeframe]:
-        return frozenset(
-            timeframe for source in self.sources for timeframe in source.timeframes
-        )
+        return frozenset(timeframe for source in self.sources for timeframe in source.timeframes)
 
 
 class SignalDefinitionConfig(VersionedDomainModel):
@@ -104,18 +102,21 @@ class SignalDefinitionConfig(VersionedDomainModel):
 
 class SignalRuntimeConfig(VersionedDomainModel):
     definitions: tuple[SignalDefinitionConfig, ...] = ()
-    enabled_definition_ids_by_instrument: dict[str, tuple[str, ...]] = Field(
-        default_factory=dict
-    )
+    enabled_definition_ids_by_instrument: dict[str, tuple[str, ...]] = Field(default_factory=dict)
     feature_handoff_queue_size: int = Field(default=2_048, ge=1)
     evaluation_batch_size: int = Field(default=128, ge=1)
     evaluation_poll_seconds: float = Field(default=0.05, gt=0, le=5)
+    operator_projection_queue_size: int = Field(default=256, ge=1)
+    operator_projection_dedupe_size: int = Field(default=4_096, ge=1)
+    operator_heartbeat_interval_seconds: int = Field(default=60, ge=10, le=3_600)
 
     @model_validator(mode="after")
     def _references_must_be_consistent(self) -> SignalRuntimeConfig:
         definitions = {item.definition_id: item for item in self.definitions}
         if self.evaluation_batch_size > self.feature_handoff_queue_size:
             raise ValueError("signal evaluation batch cannot exceed handoff queue size")
+        if self.operator_projection_dedupe_size < self.operator_projection_queue_size:
+            raise ValueError("signal projection dedupe size cannot be smaller than queue")
         if len(definitions) != len(self.definitions):
             raise ValueError("signal definition ids must be unique")
         for instrument_id, definition_ids in self.enabled_definition_ids_by_instrument.items():

@@ -59,6 +59,17 @@ from markeitech.signals.location import (
     derive_location_zones,
     qualify_location,
 )
+from markeitech.signals.projection import (
+    BoundedSignalProjectionWriter,
+    SignalLifecycleProjection,
+    SignalLifecycleProjectionKind,
+    SignalOperatorProjection,
+    SignalProjectionWriterSnapshot,
+    SignalProjectionWriterStatus,
+    SignalRuntimeProjection,
+    SignalRuntimeProjectionKind,
+    format_signal_operator_projection,
+)
 from markeitech.signals.runtime import (
     LiveSignalRuntime,
     LiveSignalRuntimeSnapshot,
@@ -68,6 +79,7 @@ from markeitech.signals.runtime import (
 
 __all__ = [
     "BoundedFeatureCommitHandoff",
+    "BoundedSignalProjectionWriter",
     "CommittedFeatureState",
     "FeatureHandoffSnapshot",
     "FeatureHandoffStatus",
@@ -75,6 +87,13 @@ __all__ = [
     "LiveSignalRuntimeSnapshot",
     "LiveSignalRuntimeStatus",
     "SignalEvaluationEvent",
+    "SignalLifecycleProjection",
+    "SignalLifecycleProjectionKind",
+    "SignalOperatorProjection",
+    "SignalProjectionWriterSnapshot",
+    "SignalProjectionWriterStatus",
+    "SignalRuntimeProjection",
+    "SignalRuntimeProjectionKind",
     "ArmedLocationSignal",
     "SignalDirection",
     "CommittedMarketContextBundle",
@@ -116,4 +135,5 @@ __all__ = [
     "restore_location_episode",
     "intraday_context_definition",
     "transition_signal",
+    "format_signal_operator_projection",
 ]

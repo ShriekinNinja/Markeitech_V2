@@ -35,6 +35,7 @@ from markeitech.signals import (
     LocationSourceKind,
     LocationSourcePolicyConfig,
     SignalDefinitionConfig,
+    SignalProjectionWriterStatus,
     SignalRuntimeConfig,
 )
 from nautilus_trader.model.data import TradeTick
@@ -319,6 +320,7 @@ def test_prepared_node_owns_signal_runtime_lifecycle(tmp_path: Path) -> None:
         },
         evaluation_poll_seconds=0.01,
     )
+    projection_lines: list[str] = []
     node = build_prepared_market_data_live_node(
         runtime_config(
             persistence=persistence_config(tmp_path),
@@ -327,10 +329,16 @@ def test_prepared_node_owns_signal_runtime_lifecycle(tmp_path: Path) -> None:
         node_factory=FakeNode,
         actor_factory=lambda *args, **kwargs: object(),
         data_client_factory=type("FakeDataClientFactory", (), {}),
+        signal_projection_sink=projection_lines.append,
+        signal_role_resolver=lambda _instrument_id: "ACTIVE",
     )
 
     assert isinstance(node, PersistenceManagedLiveNode)
     assert node.signal_runtime is not None
+    assert node.signal_projection_writer is not None
     assert node.run() == "started"
     assert node.signal_runtime.snapshot.status == LiveSignalRuntimeStatus.STOPPED
+    assert node.signal_projection_writer.snapshot.status == SignalProjectionWriterStatus.STOPPED
+    assert projection_lines[0].startswith("SIGNAL_RUNTIME | event=STARTED")
+    assert projection_lines[-1].startswith("SIGNAL_RUNTIME | event=STOPPED")
     assert node.persistence.status == PersistenceRuntimeStatus.STOPPED
