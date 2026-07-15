@@ -16,6 +16,7 @@ from markeitech.analytics import (
     VolumeProfileSnapshot,
     VwapPosition,
     build_chart_dataset,
+    market_closed_minutes,
     render_analytics_chart,
 )
 from markeitech.domain import OneMinuteBar
@@ -145,6 +146,7 @@ def test_dataset_selects_latest_coherent_features_and_exact_bar_source() -> None
 
     assert dataset.as_of == NOW + timedelta(minutes=60)
     assert dataset.source == "classified_ticks"
+    assert dataset.bar_source == "classified_ticks"
     assert len(dataset.bars) == 50
     assert {item.source for item in dataset.bars} == {"classified_ticks"}
     assert len(dataset.one_minute_history) == 50
@@ -153,6 +155,18 @@ def test_dataset_selects_latest_coherent_features_and_exact_bar_source() -> None
         AnalyticsTimeframe.ONE_MINUTE,
         AnalyticsTimeframe.FIVE_MINUTES,
     }
+
+
+def test_dataset_uses_a_four_hour_wall_clock_window() -> None:
+    bars = tuple(bar(minute) for minute in range(360))
+    features = tuple(feature(minute + 1, AnalyticsTimeframe.ONE_MINUTE) for minute in range(360))
+
+    dataset = build_chart_dataset(INSTRUMENT, bars, features)
+
+    assert dataset.window_start == NOW + timedelta(minutes=120)
+    assert len(dataset.bars) == 240
+    assert dataset.bars[0].close_ts == NOW + timedelta(minutes=121)
+    assert len(dataset.one_minute_history) == 240
 
 
 def test_renderer_contains_price_volume_ema_levels_and_fvg_annotations() -> None:
@@ -178,11 +192,49 @@ def test_renderer_contains_price_volume_ema_levels_and_fvg_annotations() -> None
     assert figure.layout.xaxis.rangeslider.visible is False
 
 
-def test_dataset_refuses_silent_bar_source_fallback() -> None:
-    with pytest.raises(ValueError, match="no committed 'classified_ticks' bars"):
-        build_chart_dataset(
-            INSTRUMENT,
-            tuple(bar(minute, source="ib") for minute in range(60)),
-            tuple(feature(minute + 1, AnalyticsTimeframe.ONE_MINUTE) for minute in range(60)),
-            maximum_bars=50,
-        )
+def test_renderer_uses_visible_candles_for_y_range_and_calendar_breaks() -> None:
+    bars = tuple(bar(minute) for minute in range(60))
+    features = tuple(feature(minute + 1, AnalyticsTimeframe.ONE_MINUTE) for minute in range(60))
+    closed_minute = NOW + timedelta(minutes=30)
+
+    figure = render_analytics_chart(
+        build_chart_dataset(INSTRUMENT, bars, features, maximum_bars=50),
+        range_breaks=(closed_minute,),
+    )
+
+    assert tuple(figure.layout.yaxis.range) == pytest.approx((99.0, 107.9))
+    assert figure.layout.yaxis.fixedrange is False
+    assert tuple(figure.layout.xaxis.range) == (
+        NOW - timedelta(hours=3),
+        NOW + timedelta(hours=1),
+    )
+    assert tuple(figure.layout.xaxis.rangebreaks[0].values) == (closed_minute,)
+    assert figure.layout.xaxis.rangebreaks[0].dvalue == 60_000
+
+
+def test_market_closed_minutes_only_returns_calendar_known_closures() -> None:
+    start = NOW
+    end = NOW + timedelta(minutes=5)
+    expected = (start, start + timedelta(minutes=1), start + timedelta(minutes=4))
+
+    assert market_closed_minutes(start, end, expected) == (
+        start + timedelta(minutes=2),
+        start + timedelta(minutes=3),
+    )
+
+
+def test_dataset_reports_a_more_complete_candle_source_without_blending() -> None:
+    dataset = build_chart_dataset(
+        INSTRUMENT,
+        tuple(
+            [bar(minute, source="ib") for minute in range(60)]
+            + [bar(minute) for minute in range(30, 60)]
+        ),
+        tuple(feature(minute + 1, AnalyticsTimeframe.ONE_MINUTE) for minute in range(60)),
+        maximum_bars=50,
+    )
+
+    assert dataset.source == "classified_ticks"
+    assert dataset.bar_source == "ib"
+    assert len(dataset.bars) == 50
+    assert {item.source for item in dataset.bars} == {"ib"}

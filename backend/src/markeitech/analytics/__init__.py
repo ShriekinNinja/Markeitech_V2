@@ -1,6 +1,7 @@
 from markeitech.analytics.chart import (
     AnalyticsChartDataset,
     build_chart_dataset,
+    market_closed_minutes,
     render_analytics_chart,
 )
 from markeitech.analytics.contracts import (
@@ -72,5 +73,6 @@ __all__ = [
     "analysis_bar_lineages",
     "build_chart_dataset",
     "configuration_fingerprint",
+    "market_closed_minutes",
     "render_analytics_chart",
 ]

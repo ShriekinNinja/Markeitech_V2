@@ -3,9 +3,17 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from markeitech.analytics.chart import build_chart_dataset, render_analytics_chart
+from markeitech.analytics.chart import (
+    build_chart_dataset,
+    market_closed_minutes,
+    render_analytics_chart,
+)
 from markeitech.market_data.loader import load_market_data_runtime_config
-from markeitech.persistence import NautilusParquetTimeSeriesStore, ParquetFeatureStore
+from markeitech.persistence import (
+    NautilusParquetTimeSeriesStore,
+    PandasMarketSessionCalendar,
+    ParquetFeatureStore,
+)
 
 
 def main() -> None:
@@ -34,12 +42,25 @@ def main() -> None:
         features,
         maximum_bars=args.bars,
     )
-    figure = render_analytics_chart(dataset)
+    calendar = PandasMarketSessionCalendar.from_registry(config.instrument_registry)
+    expected_minutes = calendar.expected_minute_opens(
+        instrument_id,
+        dataset.window_start,
+        dataset.as_of,
+    )
+    range_breaks = market_closed_minutes(
+        dataset.window_start,
+        dataset.as_of,
+        expected_minutes,
+    )
+    figure = render_analytics_chart(dataset, range_breaks=range_breaks)
     output.parent.mkdir(parents=True, exist_ok=True)
     figure.write_html(output, include_plotlyjs=True, full_html=True, auto_open=False)
     print(
         f"ANALYTICS_CHART | instrument={instrument_id} | as_of={dataset.as_of.isoformat()} "
-        f"| source={dataset.source} | bars={len(dataset.bars)} | output={output.resolve()}"
+        f"| window=4h | analytics_source={dataset.source} "
+        f"| candle_source={dataset.bar_source} | bars={len(dataset.bars)} "
+        f"| closed_minutes={len(range_breaks)} | output={output.resolve()}"
     )
 
 
