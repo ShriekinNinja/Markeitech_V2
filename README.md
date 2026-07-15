@@ -13,6 +13,8 @@ implemented.
 
 - **Markeitect** - founder, trader, product owner, and system designer
 - **Kite** - co-builder, architecture and engineering collaborator
+- **WT** - spiritual guideness
+- **ESS** - angle investor
 
 ## Current State
 
@@ -29,10 +31,11 @@ Implemented foundations include:
 - live post-commit Direction and Location evaluation for active and background
   instruments
 
-The next product slice is console projection and live shadow acceptance of the
-durable signal events. See [current status](docs/current-status.md) for the exact
-boundary and known validation debt. Options-chain ingestion and analysis are an
-explicit future roadmap track rather than part of the current runtime.
+The next product slice wires cadence-bounded Aggression and follow-through into
+durable live lifecycle transitions for active and background instruments. See
+[current status](docs/current-status.md) for the exact boundary and known
+validation debt. Options-chain ingestion and analysis are an explicit future
+roadmap track rather than part of the current runtime.
 
 ## Requirements
 

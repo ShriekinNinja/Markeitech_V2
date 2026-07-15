@@ -377,6 +377,12 @@ class LiveSignalRuntime:
             )
         if anchor is None:
             raise RuntimeError("Direction decision did not expose a regime anchor")
+        evaluation = bundle.feature(definition.evaluation_timeframe)
+        observed_price = (
+            evaluation.snapshot.close
+            if evaluation is not None and evaluation.snapshot.as_of == bundle.evaluation_as_of
+            else None
+        )
         episode_decision = self._episode_trackers[definition_id].evaluate(
             LocationEpisodeObservation(
                 definition_id=definition_id,
@@ -384,6 +390,7 @@ class LiveSignalRuntime:
                 direction=direction,
                 direction_regime_anchor=anchor,
                 evaluation_ts=bundle.evaluation_as_of,
+                observed_price=observed_price,
                 qualification=location,
             )
         )
@@ -459,6 +466,7 @@ class LiveSignalRuntime:
                 open_signal,
                 decision,
                 occurred_ts=occurred_ts,
+                reason_codes=decision.reason_codes,
             )
             self._store.apply_signal_transition(ended)
             with self._condition:

@@ -4,6 +4,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import Field, field_validator, model_validator
@@ -21,6 +22,8 @@ from markeitech.signals.contracts import (
 class LocationEpisodeEventType(StrEnum):
     ENTERED = "entered"
     ACTIVE = "active"
+    FAVORABLE_DEPARTURE = "favorable_departure"
+    DEPARTURE_UNRESOLVED = "departure_unresolved"
     EXIT_PENDING = "exit_pending"
     EXITED = "exited"
     REPLACED = "replaced"
@@ -80,6 +83,7 @@ class LocationEpisodeObservation(VersionedDomainModel):
     direction: SignalDirection
     direction_regime_anchor: str = Field(min_length=1)
     evaluation_ts: datetime
+    observed_price: Decimal | None = Field(default=None, gt=0)
     qualification: LocationQualification
 
     @field_validator("evaluation_ts")
@@ -99,6 +103,11 @@ class LocationEpisodeObservation(VersionedDomainModel):
             raise ValueError("location observation matches must align with direction")
         if any(item.observed_ts != self.evaluation_ts for item in self.qualification.matches):
             raise ValueError("location observation matches must use evaluation timestamp")
+        if (
+            self.qualification.status != LocationQualificationStatus.MISSING_EVIDENCE
+            and self.observed_price is None
+        ):
+            raise ValueError("observed location evidence requires an evaluation price")
         return self
 
 
@@ -108,6 +117,7 @@ class LocationEpisodeDecision:
     episode: SignalLocationEpisode | None
     ended_episode_id: str | None
     outside_confirmation_count: int
+    reason_codes: tuple[str, ...] = ()
 
 
 @dataclass
@@ -234,6 +244,27 @@ class LocationEpisodeTracker:
                 0,
             )
 
+        assert observation.observed_price is not None
+        departure = _classify_departure(active, observation.observed_price)
+        if departure == LocationEpisodeEventType.FAVORABLE_DEPARTURE:
+            state.outside_confirmation_count = 0
+            return LocationEpisodeDecision(
+                LocationEpisodeEventType.FAVORABLE_DEPARTURE,
+                active,
+                None,
+                0,
+                ("price_departed_entry_location_favorably",),
+            )
+        if departure == LocationEpisodeEventType.DEPARTURE_UNRESOLVED:
+            state.outside_confirmation_count = 0
+            return LocationEpisodeDecision(
+                LocationEpisodeEventType.DEPARTURE_UNRESOLVED,
+                active,
+                None,
+                0,
+                ("price_departure_did_not_breach_entry_thesis",),
+            )
+
         state.outside_confirmation_count += 1
         if state.outside_confirmation_count < self._exit_confirmation_bars:
             return LocationEpisodeDecision(
@@ -241,6 +272,7 @@ class LocationEpisodeTracker:
                 active,
                 None,
                 state.outside_confirmation_count,
+                ("location_adverse_breach_pending",),
             )
         state.active = None
         state.outside_confirmation_count = 0
@@ -249,7 +281,41 @@ class LocationEpisodeTracker:
             None,
             active.episode_id,
             self._exit_confirmation_bars,
+            ("location_adverse_breach_confirmed",),
         )
+
+
+def _classify_departure(
+    active: SignalLocationEpisode,
+    observed_price: Decimal,
+) -> LocationEpisodeEventType:
+    adverse_edges = tuple(
+        (
+            match.zone.lower_price - match.tolerance
+            if active.direction == SignalDirection.LONG
+            else match.zone.upper_price + match.tolerance
+        )
+        for match in active.entry_matches
+    )
+    favorable_edges = tuple(
+        (
+            match.zone.upper_price + match.tolerance
+            if active.direction == SignalDirection.LONG
+            else match.zone.lower_price - match.tolerance
+        )
+        for match in active.entry_matches
+    )
+    if active.direction == SignalDirection.LONG:
+        if observed_price < min(adverse_edges):
+            return LocationEpisodeEventType.EXIT_PENDING
+        if observed_price > max(favorable_edges):
+            return LocationEpisodeEventType.FAVORABLE_DEPARTURE
+    else:
+        if observed_price > max(adverse_edges):
+            return LocationEpisodeEventType.EXIT_PENDING
+        if observed_price < min(favorable_edges):
+            return LocationEpisodeEventType.FAVORABLE_DEPARTURE
+    return LocationEpisodeEventType.DEPARTURE_UNRESOLVED
 
 
 def _new_episode(observation: LocationEpisodeObservation) -> SignalLocationEpisode:

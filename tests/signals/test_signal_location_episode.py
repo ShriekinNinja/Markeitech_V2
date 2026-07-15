@@ -69,6 +69,7 @@ def observation(
     anchors: tuple[str, ...] = (),
     direction: SignalDirection = SignalDirection.LONG,
     regime_anchor: str = REGIME,
+    observed_price: Decimal | None = Decimal("100"),
 ) -> LocationEpisodeObservation:
     matches = tuple(
         location_match(anchor, observed_ts=ts, direction=direction) for anchor in anchors
@@ -79,6 +80,7 @@ def observation(
         direction=direction,
         direction_regime_anchor=regime_anchor,
         evaluation_ts=ts,
+        observed_price=observed_price,
         qualification=LocationQualification(
             status=status,
             matches=matches,
@@ -148,6 +150,7 @@ def test_exit_requires_configured_consecutive_observed_bars_then_reentry_is_new(
         observation(
             NOW + timedelta(minutes=1),
             LocationQualificationStatus.NOT_AT_LOCATION,
+            observed_price=Decimal("98"),
         )
     )
     exited = tracker.evaluate(
@@ -155,6 +158,7 @@ def test_exit_requires_configured_consecutive_observed_bars_then_reentry_is_new(
             NOW + timedelta(minutes=2),
             LocationQualificationStatus.INSUFFICIENT_CONFLUENCE,
             anchors=("zone-a",),
+            observed_price=Decimal("98"),
         )
     )
     reentered = tracker.evaluate(
@@ -189,18 +193,21 @@ def test_missing_evidence_preserves_episode_and_breaks_exit_confirmation_sequenc
         observation(
             NOW + timedelta(minutes=1),
             LocationQualificationStatus.NOT_AT_LOCATION,
+            observed_price=Decimal("98"),
         )
     )
     gap = tracker.evaluate(
         observation(
             NOW + timedelta(minutes=2),
             LocationQualificationStatus.MISSING_EVIDENCE,
+            observed_price=None,
         )
     )
     pending_again = tracker.evaluate(
         observation(
             NOW + timedelta(minutes=3),
             LocationQualificationStatus.NOT_AT_LOCATION,
+            observed_price=Decimal("98"),
         )
     )
 
@@ -341,9 +348,99 @@ def test_exit_confirmation_is_definition_configuration() -> None:
         observation(
             NOW + timedelta(minutes=1),
             LocationQualificationStatus.NOT_AT_LOCATION,
+            observed_price=Decimal("98"),
         )
     )
 
     assert entered.episode is not None
     assert exited.event_type == LocationEpisodeEventType.EXITED
     assert exited.ended_episode_id == entered.episode.episode_id
+
+
+@pytest.mark.parametrize(
+    ("direction", "favorable_price"),
+    (
+        (SignalDirection.LONG, Decimal("102")),
+        (SignalDirection.SHORT, Decimal("98")),
+    ),
+)
+def test_favorable_departure_preserves_episode_and_resets_adverse_confirmation(
+    direction: SignalDirection,
+    favorable_price: Decimal,
+) -> None:
+    tracker = LocationEpisodeTracker(intraday_context_definition())
+    entered = tracker.evaluate(
+        observation(
+            NOW,
+            LocationQualificationStatus.QUALIFIED,
+            anchors=("zone-a",),
+            direction=direction,
+        )
+    )
+    favorable = tracker.evaluate(
+        observation(
+            NOW + timedelta(minutes=1),
+            LocationQualificationStatus.NOT_AT_LOCATION,
+            direction=direction,
+            observed_price=favorable_price,
+        )
+    )
+
+    assert favorable.event_type == LocationEpisodeEventType.FAVORABLE_DEPARTURE
+    assert favorable.episode == entered.episode
+    assert favorable.ended_episode_id is None
+    assert favorable.outside_confirmation_count == 0
+    assert favorable.reason_codes == ("price_departed_entry_location_favorably",)
+
+
+def test_unresolved_departure_preserves_episode_without_advancing_breach_count() -> None:
+    tracker = LocationEpisodeTracker(intraday_context_definition())
+    entered = tracker.evaluate(
+        observation(
+            NOW,
+            LocationQualificationStatus.QUALIFIED,
+            anchors=("zone-a",),
+        )
+    )
+    unresolved = tracker.evaluate(
+        observation(
+            NOW + timedelta(minutes=1),
+            LocationQualificationStatus.NOT_AT_LOCATION,
+            observed_price=Decimal("100.5"),
+        )
+    )
+
+    assert unresolved.event_type == LocationEpisodeEventType.DEPARTURE_UNRESOLVED
+    assert unresolved.episode == entered.episode
+    assert unresolved.outside_confirmation_count == 0
+
+
+def test_adverse_breach_requires_confirmation_and_exposes_terminal_reason() -> None:
+    tracker = LocationEpisodeTracker(intraday_context_definition())
+    entered = tracker.evaluate(
+        observation(
+            NOW,
+            LocationQualificationStatus.QUALIFIED,
+            anchors=("zone-a",),
+        )
+    )
+    pending = tracker.evaluate(
+        observation(
+            NOW + timedelta(minutes=1),
+            LocationQualificationStatus.NOT_AT_LOCATION,
+            observed_price=Decimal("98"),
+        )
+    )
+    exited = tracker.evaluate(
+        observation(
+            NOW + timedelta(minutes=2),
+            LocationQualificationStatus.NOT_AT_LOCATION,
+            observed_price=Decimal("98"),
+        )
+    )
+
+    assert pending.event_type == LocationEpisodeEventType.EXIT_PENDING
+    assert pending.reason_codes == ("location_adverse_breach_pending",)
+    assert exited.event_type == LocationEpisodeEventType.EXITED
+    assert exited.ended_episode_id == entered.episode.episode_id
+    assert exited.reason_codes == ("location_adverse_breach_confirmed",)

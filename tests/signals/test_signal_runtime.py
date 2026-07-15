@@ -61,6 +61,7 @@ def feature(
     *,
     revision: str,
     direction_score: int = 1,
+    close: Decimal = Decimal("100"),
 ) -> MarketContextFeatureSnapshot:
     return MarketContextFeatureSnapshot(
         configuration_hash="a" * 64,
@@ -83,7 +84,7 @@ def feature(
             source="ib",
             input_fidelity=AnalyticsInputFidelity.REPORTED,
             bar_count=251,
-            close=Decimal("100"),
+            close=close,
             atr_14=Decimal("10"),
             session_open=Decimal("98"),
             session_high=Decimal("105"),
@@ -310,6 +311,119 @@ def test_runtime_invalidates_armed_episode_on_fully_qualified_opposite_direction
     assert flipped.signal_status == SignalStatus.INVALIDATED
     assert store.lifecycle_writes == 2
     assert runtime.snapshot.open_signal_count == 0
+
+
+def test_runtime_preserves_armed_episode_after_favorable_location_departure() -> None:
+    store = MemorySignalStore()
+    handoff = BoundedFeatureCommitHandoff(16)
+    observed = []
+    completed = Event()
+
+    def capture(event):
+        observed.append(event)
+        if len(observed) == 2:
+            completed.set()
+
+    runtime = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(definition(),),
+            enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        handoff,
+        clock=lambda: STARTED,
+        on_evaluation=capture,
+    )
+    runtime.start()
+    assert handoff.offer(revisions("NQU6.CME", 1))
+    departure_ts = STARTED + timedelta(minutes=2)
+    assert handoff.offer(
+        (
+            CommittedFeatureRevision(
+                feature(
+                    "NQU6.CME",
+                    AnalyticsTimeframe.ONE_MINUTE,
+                    departure_ts,
+                    revision="5",
+                    close=Decimal("102"),
+                ),
+                departure_ts,
+                5,
+            ),
+        )
+    )
+    assert completed.wait(1)
+    assert runtime.stop(1)
+
+    favorable = observed[-1]
+    assert favorable.location_status == LocationQualificationStatus.NOT_AT_LOCATION
+    assert favorable.episode_event == LocationEpisodeEventType.FAVORABLE_DEPARTURE
+    assert favorable.signal_status == SignalStatus.ARMED
+    assert store.lifecycle_writes == 1
+    assert runtime.snapshot.open_signal_count == 1
+
+
+def test_runtime_invalidates_only_after_confirmed_adverse_location_breach() -> None:
+    store = MemorySignalStore()
+    handoff = BoundedFeatureCommitHandoff(16)
+    observed = []
+    completed = Event()
+
+    def capture(event):
+        observed.append(event)
+        if len(observed) == 3:
+            completed.set()
+
+    runtime = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(definition(),),
+            enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        handoff,
+        clock=lambda: STARTED,
+        on_evaluation=capture,
+    )
+    runtime.start()
+    assert handoff.offer(revisions("NQU6.CME", 1))
+    first_breach_ts = STARTED + timedelta(minutes=2)
+    second_breach_ts = STARTED + timedelta(minutes=3)
+    assert handoff.offer(
+        tuple(
+            CommittedFeatureRevision(
+                feature(
+                    "NQU6.CME",
+                    AnalyticsTimeframe.ONE_MINUTE,
+                    timestamp,
+                    revision=revision,
+                    close=Decimal("98"),
+                ),
+                timestamp,
+                sequence,
+            )
+            for timestamp, revision, sequence in (
+                (first_breach_ts, "5", 5),
+                (second_breach_ts, "6", 6),
+            )
+        )
+    )
+    assert completed.wait(1)
+    assert runtime.stop(1)
+
+    pending, invalidated = observed[-2:]
+    assert pending.episode_event == LocationEpisodeEventType.EXIT_PENDING
+    assert pending.signal_status == SignalStatus.ARMED
+    assert invalidated.episode_event == LocationEpisodeEventType.EXITED
+    assert invalidated.signal_status == SignalStatus.INVALIDATED
+    assert store.lifecycle_writes == 2
+    assert runtime.snapshot.open_signal_count == 0
+    assert next(iter(store.signals.values())).reason_codes[-1] == (
+        "location_adverse_breach_confirmed"
+    )
 
 
 def test_runtime_applies_identical_signal_path_to_active_and_background() -> None:

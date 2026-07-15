@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-07-14
+Last reviewed: 2026-07-15
 
 This page is the source of truth for implementation progress. It separates code
 that exists from behavior that has received live acceptance.
@@ -64,31 +64,39 @@ that exists from behavior that has received live acceptance.
 - Direction regime tracking
 - Direction-aligned location qualification
 - Repeatable location episode tracking
+- Soft Direction degradation preserves open regimes while blocking Trigger
+- Directional Location departure classification with confirmed adverse breach
 - Restart restoration of verified open signal state
 - Bounded post-commit live feature composition and Direction/Location evaluation
 - Equal evaluation path for active and background instruments
+- Concise lifecycle and runtime-health console projections
 
 ## Current Boundary
 
-Stage 5C.3b is implemented and unit-tested. A managed bounded consumer restores
-verified signal state, rebuilds warmup state without emitting historical setups,
-and evaluates committed live feature bundles. It atomically persists location
-episode entry, replacement, and exit.
+Stage 5C.3c is implemented and live-observed. The managed bounded consumer
+restores verified signal state, rebuilds warmup state without emitting
+historical setups, evaluates committed live feature bundles, persists lifecycle
+changes atomically, and projects concise signal events plus runtime health.
 
-The next slice is Stage 5C.3c: project durable signal changes into concise,
-human-readable console output and collect live shadow acceptance evidence. This
-slice must not change signal semantics or persistence behavior.
+Stage 5D.1 now protects the Armed observation window from two false
+invalidation paths: soft Direction degradation and favorable or unresolved
+Location departure. Only a fully qualified opposite Direction or configured
+consecutive adverse breaches of the immutable entry geometry terminate the
+setup before confirmation.
 
-The existing `OPERATOR_CONTEXT`, `OPERATOR_LEVELS`, and related direction output
-is analytical context. It demonstrated operator usefulness during live trading,
-but it is not the new signal-event console projection.
+The next slice is Stage 5D.2: wire the existing cadence-bounded,
+provider-aware Aggression policy into the managed live runtime. It will consume
+active classified-tick windows and background bar-impulse windows, then persist
+and project explicit Armed-to-Triggered or Armed-to-Expired transitions. The
+pure Aggression evaluator exists and is tested; live lifecycle composition does
+not yet call it.
 
 ## Validation Debt
 
 - NQ live operation has been exercised more thoroughly than ES, indices, and
   equities. Broader provider and contract coverage remains an acceptance task.
-- Post-commit Direction/Location evaluation is covered by deterministic tests,
-  but live signal console acceptance awaits Stage 5C.3c.
+- Post-commit Direction/Location evaluation and console lifecycle output have
+  live evidence, but the new departure policy still awaits a live observation.
 - Tick gaps and damaged tick windows are observable; their effect on future
   Aggression confidence still needs an explicit policy.
 - Selected profile, FVG, session, and context values have been compared with
@@ -100,7 +108,6 @@ but it is not the new signal-event console projection.
 
 ## Deliberately Deferred
 
-- Stage 5D Aggression and follow-through evidence
 - Stage 5E composite scoring, suppression, and expiry refinement
 - Discord webhook delivery and scheduled reports
 - Options contract discovery, chain snapshots, and options-derived context

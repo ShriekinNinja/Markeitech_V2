@@ -413,6 +413,7 @@ def test_verified_open_signal_seeds_direction_and_location_trackers() -> None:
             direction=SignalDirection.LONG,
             direction_regime_anchor=restored_episode.direction_regime_anchor,
             evaluation_ts=next_ts,
+            observed_price=next_match.observed_price,
             qualification=LocationQualification(
                 status=LocationQualificationStatus.QUALIFIED,
                 matches=(next_match,),
