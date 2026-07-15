@@ -176,17 +176,20 @@ class PersistenceRuntime:
         config: PersistenceConfig,
         *,
         retention_calendar: RetentionCalendar | None = None,
-        feature_commit_sink: Callable[
-            [tuple[CommittedFeatureRevision, ...]], bool
-        ]
-        | None = None,
+        feature_commit_sink: Callable[[tuple[CommittedFeatureRevision, ...]], bool] | None = None,
+        market_data_commit_sink: Callable[[tuple[object, ...]], bool] | None = None,
     ) -> PersistenceRuntime:
         if config.retention_maintenance_enabled and retention_calendar is None:
             raise ValueError("enabled retention maintenance requires a session calendar")
         catalog = NautilusParquetTimeSeriesStore(config)
         metadata = SQLiteMetadataStore(config)
         coordinator = IdempotentPersistenceCoordinator(config, catalog, metadata)
-        writer = BoundedPersistenceWriter(config, coordinator, catalog)
+        writer = BoundedPersistenceWriter(
+            config,
+            coordinator,
+            catalog,
+            post_commit_sink=market_data_commit_sink,
+        )
         feature_catalog = ParquetFeatureStore(config)
         feature_coordinator = FeaturePersistenceCoordinator(feature_catalog, metadata)
         feature_writer = BoundedFeatureWriter(

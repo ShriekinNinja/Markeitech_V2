@@ -7,6 +7,7 @@ from pathlib import Path
 from threading import Event
 
 from markeitech.domain import OneMinuteBar
+from markeitech.domain.base import unix_ns_from_utc_datetime
 from markeitech.persistence import (
     BoundedPersistenceWriter,
     IdempotentPersistenceCoordinator,
@@ -129,6 +130,86 @@ def test_force_flush_sorts_bucket_and_splits_stable_chunks(tmp_path: Path) -> No
     assert writer.snapshot.persisted_count == 3
     assert writer.snapshot.pending_count == 0
     assert writer.snapshot.status == PersistenceWriterStatus.STOPPED
+
+
+def test_post_commit_sink_only_receives_successfully_committed_chunks(tmp_path: Path) -> None:
+    config = PersistenceConfig(
+        catalog_path=tmp_path / "catalog",
+        metadata_path=tmp_path / "metadata.sqlite3",
+        journal_path=tmp_path / "journal",
+        catalog_batch_size=2,
+    )
+    committed: list[tuple[object, ...]] = []
+    coordinator = RecordingCoordinator()
+    writer = BoundedPersistenceWriter(
+        config,
+        coordinator,
+        catalog(tmp_path, config),
+        clock=lambda: FUTURE,
+        post_commit_sink=lambda events: not committed.append(events),
+    )
+    writer.start()
+    first = trade_tick(100)
+    second = trade_tick(200)
+
+    assert writer.submit(first) == PersistenceSubmissionStatus.ACCEPTED
+    assert writer.submit(second) == PersistenceSubmissionStatus.ACCEPTED
+    assert writer.stop(timeout=2)
+
+    assert committed == [(first, second)]
+
+
+def test_journal_recovery_reoffers_durable_batch_after_post_commit_rejection(
+    tmp_path: Path,
+) -> None:
+    config = PersistenceConfig(
+        catalog_path=tmp_path / "catalog",
+        metadata_path=tmp_path / "metadata.sqlite3",
+        journal_path=tmp_path / "journal",
+        catalog_batch_size=10,
+    )
+    time_series = catalog(tmp_path, config)
+    metadata = SQLiteMetadataStore(config)
+    coordinator = IdempotentPersistenceCoordinator(config, time_series, metadata)
+    rejected = BoundedPersistenceWriter(
+        config,
+        coordinator,
+        time_series,
+        clock=lambda: FUTURE,
+        post_commit_sink=lambda _events: False,
+    )
+    completed = provisional_bar().model_copy(
+        update={
+            "is_complete": True,
+            "event_ts_ns": unix_ns_from_utc_datetime(datetime(2026, 8, 10, 11, 9, tzinfo=UTC)),
+            "ts_init_ns": unix_ns_from_utc_datetime(datetime(2026, 8, 10, 11, 8, tzinfo=UTC)),
+        }
+    )
+    rejected.start()
+
+    assert rejected.submit(completed) == PersistenceSubmissionStatus.ACCEPTED
+    assert not rejected.flush(timeout=2)
+    wait_for_status(rejected, PersistenceWriterStatus.FAILED)
+    assert rejected.snapshot.last_error == (
+        "RuntimeError: persistence post-commit handoff rejected batch"
+    )
+    assert len(tuple(config.journal_path.glob("*.wal"))) == 1
+
+    recovered: list[tuple[object, ...]] = []
+    replacement = BoundedPersistenceWriter(
+        config,
+        coordinator,
+        time_series,
+        clock=lambda: FUTURE,
+        post_commit_sink=lambda events: not recovered.append(events),
+    )
+    replacement.start()
+    assert replacement.wait_until_ready(timeout=2)
+    assert replacement.stop(timeout=2)
+
+    assert recovered == [(completed,)]
+    assert replacement.snapshot.recovered_count == 1
+    metadata.close()
 
 
 def test_total_pending_capacity_returns_explicit_backpressure(tmp_path: Path) -> None:

@@ -304,6 +304,20 @@ Armed signal: market closure, a reconnect, or a missing bar cannot impersonate
 observed market cadence. Keeping the policy absent preserves the prior
 definition configuration hash and leaves Stage 5D behavior disabled.
 
+`BoundedAggressionObservationStore` retains only complete, non-revision bars
+from the explicit `classified_ticks` and `ib` sources after their persistence
+batch commits. Instrument and source define independent streams. One source
+minute accepts retries with identical market content even when a historical
+request has a newer receipt/initialization timestamp. Different OHLCV,
+classification, revision, completion, or event-time content increments
+`conflicting_retry_count` but cannot replace the catalog-seeded first committed
+bar. This covers provider historical corrections that arrive without an
+explicit revision flag while retaining deterministic replay truth. Retention
+keeps the latest observations by event time even when catalog recovery arrives
+out of order. `aggression_observation_history_bars` must cover the largest
+configured expiry plus pace-baseline requirement. Point-in-time reads exclude
+bars closing after the requested evaluation timestamp.
+
 `evaluate_aggression_window` is currently a pure, unwired policy boundary. It
 accepts only complete, non-revision `classified_ticks` bars after the Armed
 timestamp. Reported IB OHLCV bars cannot impersonate tick aggression. The

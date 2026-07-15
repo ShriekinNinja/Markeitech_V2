@@ -55,6 +55,7 @@ evaluation_poll_seconds = 0.05
 operator_projection_queue_size = 256
 operator_projection_dedupe_size = 4096
 operator_heartbeat_interval_seconds = 60
+aggression_observation_history_bars = 240
 
 [[signals.definitions]]
 definition_id = "intraday_context"
@@ -90,6 +91,22 @@ proximity_atr_fraction = 0.10
 source_kind = "session_vwap"
 timeframes = ["1m"]
 proximity_atr_fraction = 0.10
+
+[signals.definitions.aggression_policy]
+observation_timeframe = "1m"
+active_confirmation_method = "tick_aggression"
+background_confirmation_method = "bar_impulse_proxy"
+window_bars = 3
+expiry_observation_bars = 5
+minimum_classified_volume_ratio = 0.70
+minimum_directional_delta_ratio = 0.10
+minimum_follow_through_atr_fraction = 0.10
+maximum_adverse_atr_fraction = 0.30
+minimum_pace_baseline_bars = 10
+bar_proxy_minimum_directional_bar_ratio = 0.66
+bar_proxy_minimum_close_location = 0.65
+bar_proxy_minimum_follow_through_atr_fraction = 0.15
+bar_proxy_minimum_pace_ratio = 1.10
 
 [[instruments]]
 role = "active"

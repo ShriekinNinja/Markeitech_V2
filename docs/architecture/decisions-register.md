@@ -613,3 +613,27 @@ that must contain every subsequent bar. Generic absence confirmation erased
 valid setups precisely when price began moving in their intended direction.
 Using immutable entry geometry makes the distinction deterministic across live
 runtime, restart recovery, and future replay without inventing hindsight levels.
+
+## DR-0055: Confirmation Observations Enter After Durable Commit
+
+Status: accepted
+
+Feed Aggression confirmation only from completed, non-revision one-minute bars
+whose market-data persistence batch has committed. Retain independent bounded
+tails for active `classified_ticks` and reported `ib` streams, sized to cover
+configured Armed expiry plus the relative-volume pace baseline. Deduplicate
+source-minute retries by market content while ignoring transport receipt time,
+and preserve the first durable bar when a provider later returns conflicting
+historical content without an explicit revision. Count that conflict for health
+visibility rather than replacing replay truth or failing startup.
+
+Seed the same store from catalog history before signal runtime startup, then let
+journal recovery and live commits enter through one post-commit callback. Do
+not let the observation bridge evaluate thresholds, choose runtime role, or
+write lifecycle state.
+
+Reason: Actor delivery proves neither durability nor restart availability. A
+signal Trigger based on data that never committed could not be reconstructed,
+while querying the full catalog on every one-minute evaluation would move
+blocking I/O into the decision path. A bounded post-commit tail gives the live
+coordinator deterministic evidence without creating a second source of truth.

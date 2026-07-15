@@ -66,16 +66,55 @@ This is recovery evidence, not a new alert. The projector deduplicates the same
 restored content within one process, while SQLite verification decides whether
 the signal is eligible for restoration.
 
-## Terminal And Trigger Messages
+## `SIGNAL_INVALIDATED`
 
-The same stable layout supports:
+```text
+SIGNAL_INVALIDATED | role=ACTIVE | NQU6.CME | definition=intraday_context | direction=LONG | from=ARMED | location=bullish_fvg@15m:30009.5-30027.75 | evidence=D:5,L:2;fidelity=reported | reason=location_adverse_breach_confirmed | as_of=2026-07-15T13:48:00+00:00 | signal=7ac1e4e9085d | transition=a963bc6b7fd1
+```
 
-- `SIGNAL_TRIGGERED`: Aggression evidence advanced an Armed signal.
-- `SIGNAL_INVALIDATED`: Direction or Location semantics ended the setup.
-- `SIGNAL_EXPIRED`: the configured observation window ended without a trigger.
+Invalidation means the setup thesis ended before normal observation expiry. The
+terminal `reason` is essential:
 
-Triggered and Expired behavior belongs to Stage 5D. Their formatter vocabulary
-exists before live activation so presentation does not shape lifecycle design.
+- `location_adverse_breach_confirmed` means configured consecutive closes
+  crossed beyond every original entry zone's adverse tolerated edge.
+- `location_episode_replaced` means a wholly disjoint qualified Location became
+  the active opportunity.
+- Direction-regime invalidation requires a newly fully qualified opposite
+  Direction. Neutral, conflicted, vetoed, or missing Direction blocks Trigger
+  but does not emit this line.
+
+Favorable departure and unresolved displacement preserve the Armed signal and
+therefore do not emit a lifecycle transition line.
+
+## `SIGNAL_TRIGGERED`
+
+```text
+SIGNAL_TRIGGERED | role=ACTIVE | NQU6.CME | definition=intraday_context | direction=LONG | from=ARMED | location=support@5m:29600-29608 | evidence=D:4,L:2,A:1,F:1;fidelity=inferred+reported;confirmation=tick_aggression | reason=aggression_and_follow_through_confirmed | as_of=2026-07-15T13:45:00+00:00 | signal=7ac1e4e9085d | transition=be78f819b6a0
+```
+
+This line will be enabled by Stage 5D lifecycle wiring. `confirmation` names the
+actual evidence method. Active classified-tick confirmation and background
+bar-impulse confirmation must never be silently substituted for each other.
+
+## `SIGNAL_EXPIRED`
+
+```text
+SIGNAL_EXPIRED | role=BACKGROUND | ESU6.CME | definition=intraday_context | direction=LONG | from=ARMED | location=support@15m:7600-7602 | evidence=D:4,L:2,A:1,F:1;fidelity=partial+reported;confirmation=bar_impulse_proxy | reason=armed_observation_window_expired,bar_proxy_pace_below_threshold | as_of=2026-07-15T13:47:00+00:00 | signal=cbe0479be4f2 | transition=7b58038e0c71
+```
+
+Expiry means the configured number of completed observations elapsed without a
+qualified confirmation. It is not invalidation and it is not measured by wall
+clock. Terminal unavailable or failed-window evidence remains attached so the
+operator can distinguish absent input from a measured threshold failure.
+
+## Observation Logs
+
+Committed one-minute bars do not emit one signal log line per bar. They are
+retained in a bounded source-specific observation store and become evidence only
+through a lifecycle decision. This keeps signal logs sparse. Observation-store
+health counters will join `SIGNAL_RUNTIME` when Stage 5D runtime coordination is
+wired; until then, Triggered and Expired examples above describe reserved output
+rather than active behavior.
 
 ## Failure Semantics
 

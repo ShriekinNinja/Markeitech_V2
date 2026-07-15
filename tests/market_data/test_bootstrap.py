@@ -321,13 +321,21 @@ def test_prepared_node_owns_signal_runtime_lifecycle(tmp_path: Path) -> None:
         evaluation_poll_seconds=0.01,
     )
     projection_lines: list[str] = []
+
+    class SignalEmittingActor:
+        def __init__(self, _action_plan: Any, **kwargs: Any) -> None:
+            self._market_data_sink = kwargs["on_market_data_event"]
+
+        def emit(self) -> None:
+            self._market_data_sink(completed_bar())
+
     node = build_prepared_market_data_live_node(
         runtime_config(
             persistence=persistence_config(tmp_path),
             signals=signals,
         ),
         node_factory=FakeNode,
-        actor_factory=lambda *args, **kwargs: object(),
+        actor_factory=SignalEmittingActor,
         data_client_factory=type("FakeDataClientFactory", (), {}),
         signal_projection_sink=projection_lines.append,
         signal_role_resolver=lambda _instrument_id: "ACTIVE",
@@ -336,9 +344,27 @@ def test_prepared_node_owns_signal_runtime_lifecycle(tmp_path: Path) -> None:
     assert isinstance(node, PersistenceManagedLiveNode)
     assert node.signal_runtime is not None
     assert node.signal_projection_writer is not None
+    assert node.signal_observations is not None
     assert node.run() == "started"
+    assert node.signal_observations.bars("NQU6.CME", "ib") == (completed_bar(),)
     assert node.signal_runtime.snapshot.status == LiveSignalRuntimeStatus.STOPPED
     assert node.signal_projection_writer.snapshot.status == SignalProjectionWriterStatus.STOPPED
     assert projection_lines[0].startswith("SIGNAL_RUNTIME | event=STARTED")
     assert projection_lines[-1].startswith("SIGNAL_RUNTIME | event=STOPPED")
     assert node.persistence.status == PersistenceRuntimeStatus.STOPPED
+
+    restarted = build_prepared_market_data_live_node(
+        runtime_config(
+            persistence=persistence_config(tmp_path),
+            signals=signals,
+        ),
+        node_factory=FakeNode,
+        actor_factory=lambda *args, **kwargs: object(),
+        data_client_factory=type("FakeDataClientFactory", (), {}),
+        signal_projection_sink=lambda _line: None,
+        signal_role_resolver=lambda _instrument_id: "ACTIVE",
+    )
+    assert isinstance(restarted, PersistenceManagedLiveNode)
+    assert restarted.signal_observations is not None
+    assert restarted.signal_observations.bars("NQU6.CME", "ib") == (completed_bar(),)
+    assert restarted.run() == "started"

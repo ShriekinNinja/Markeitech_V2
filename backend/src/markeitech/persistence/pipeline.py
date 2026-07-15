@@ -84,6 +84,7 @@ class BoundedPersistenceWriter:
         journal: DurableIngressJournal | None = None,
         clock: Callable[[], datetime] | None = None,
         on_health_change: Callable[[PersistenceWriterSnapshot], None] | None = None,
+        post_commit_sink: Callable[[tuple[object, ...]], bool] | None = None,
     ) -> None:
         self._config = config
         self._coordinator = coordinator
@@ -91,6 +92,7 @@ class BoundedPersistenceWriter:
         self._journal = journal or DurableIngressJournal(config)
         self._clock = clock or (lambda: datetime.now(UTC))
         self._on_health_change = on_health_change
+        self._post_commit_sink = post_commit_sink
         self._condition = Condition()
         self._ingress: deque[object] = deque()
         self._recovery: deque[JournalEntry] = deque()
@@ -344,6 +346,11 @@ class BoundedPersistenceWriter:
                 except Exception:
                     self._buckets[key] = buffered[offset:]
                     raise
+                if self._post_commit_sink is not None and not self._post_commit_sink(
+                    tuple(item.event for item in chunk)
+                ):
+                    self._buckets[key] = buffered[offset:]
+                    raise RuntimeError("persistence post-commit handoff rejected batch")
                 with self._condition:
                     self._pending_count -= len(chunk)
                     self._persisted_count += result.persisted_count

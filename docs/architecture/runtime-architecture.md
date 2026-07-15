@@ -220,6 +220,21 @@ The pure location evaluator derives zones only from the configured feature timef
 
 The location episode tracker turns repeated per-bar qualification into edge-triggered state. Entry is immediate. Continued overlap with any entry zone remains one episode; a wholly disjoint qualified zone set replaces it. Once price leaves, the persisted entry zones and their original tolerances classify the move as favorable departure, adverse breach, or unresolved displacement. Favorable and unresolved moves preserve the setup; only configured consecutive adverse-breach observations exit it. Missing evidence resets breach confirmation without claiming an exit. Exact latest-observation retries are idempotent, conflicting same-time observations and backward time fail closed, and a fully qualified opposite Direction regime terminates the old episode immediately. Transient counters remain in memory; the active episode reconstructs from verified durable signal state after restart.
 
+Aggression observations cross into signal ownership only after the market-data
+persistence coordinator has committed their source batch. The persistence writer
+offers completed, non-revision `classified_ticks` and `ib` one-minute bars to a
+thread-safe store keyed by instrument and source. Each stream retains a bounded
+latest-time tail large enough for configured expiry plus pace baseline. Exact
+retries are idempotent. Conflicting historical retries preserve the existing
+catalog-seeded minute and increment health damage rather than replacing durable
+evidence; infrastructure-level handoff rejection still fails the writer and
+retains its WAL.
+
+Bootstrap seeds this bounded tail from the durable catalog before the managed
+signal runtime starts. Journal-recovered bars re-enter through the same
+post-commit callback. The store does not evaluate confirmation or mutate signal
+lifecycle; Stage 5D.3 owns that composition boundary.
+
 The arming boundary converts an entered episode into an episode-anchored Candidate and immediate Armed transition with complete structured evidence. SQLite commits initial Candidate plus Armed state atomically. Replacing a disjoint episode atomically invalidates the old signal and creates plus arms the new signal, preventing restart from observing two open setups or neither. Verified open snapshots seed Direction and Location trackers before new evaluations. The Stage 5C.3 post-commit feature composer invokes this boundary for every enabled definition and instrument.
 
 The fast-track Direction/Location view combines deterministic trend, VWAP relation, session quartile, profile location, nearby levels, and active FVG location. Current, prior, London, and New York candle-derived profiles use configured price bins and are explicitly inferred. Configured rolling 2-session and 5-session composites add broader auction context only when the exact number of calendar-resolved product sessions is represented; they include explicit observed windows and complete/developing state. The current-session profile remains authoritative for the existing profile-location calculation. Exact tick-price profiles require a separate tick-at-price accumulator and are not claimed by this implementation.

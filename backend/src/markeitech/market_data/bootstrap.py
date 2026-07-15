@@ -33,6 +33,7 @@ from markeitech.persistence.pipeline import PersistenceSubmissionStatus
 from markeitech.persistence.runtime import PersistenceRuntime
 from markeitech.persistence.startup_recovery import StartupRecoveryService
 from markeitech.signals import (
+    BoundedAggressionObservationStore,
     BoundedFeatureCommitHandoff,
     BoundedSignalProjectionWriter,
     LiveSignalRuntime,
@@ -74,11 +75,13 @@ class PersistenceManagedLiveNode:
         persistence: PersistenceRuntime,
         signal_runtime: LiveSignalRuntime | None = None,
         signal_projection_writer: BoundedSignalProjectionWriter | None = None,
+        signal_observations: BoundedAggressionObservationStore | None = None,
     ) -> None:
         self._node = node
         self.persistence = persistence
         self.signal_runtime = signal_runtime
         self.signal_projection_writer = signal_projection_writer
+        self.signal_observations = signal_observations
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._node, name)
@@ -199,13 +202,20 @@ def build_prepared_market_data_live_node(
         include_disabled=True,
     )
     signal_handoff = None
+    signal_observations = None
     if config.signals is not None and config.signals.enabled_definition_ids_by_instrument:
         signal_handoff = BoundedFeatureCommitHandoff(config.signals.feature_handoff_queue_size)
+        signal_observations = BoundedAggressionObservationStore(
+            config.signals.aggression_observation_history_bars
+        )
     persistence = (
         PersistenceRuntime.build(
             config.persistence,
             retention_calendar=session_calendar,
             feature_commit_sink=None if signal_handoff is None else signal_handoff.offer,
+            market_data_commit_sink=(
+                None if signal_observations is None else signal_observations.offer_committed
+            ),
         )
         if config.persistence
         else None
@@ -296,6 +306,13 @@ def build_prepared_market_data_live_node(
         raise
     if persistence is None:
         return node
+    if signal_observations is not None and config.signals is not None:
+        for instrument_id in config.signals.enabled_definition_ids_by_instrument:
+            if not signal_observations.offer_committed(
+                persistence.catalog.query_one_minute_bars(instrument_id)
+            ):
+                persistence.stop()
+                raise RuntimeError("catalog contains conflicting aggression observation bars")
     signal_projection_writer = None
     signal_runtime = None
     if config.signals is not None and signal_handoff is not None:
@@ -338,6 +355,7 @@ def build_prepared_market_data_live_node(
         persistence,
         signal_runtime,
         signal_projection_writer,
+        signal_observations,
     )
 
 

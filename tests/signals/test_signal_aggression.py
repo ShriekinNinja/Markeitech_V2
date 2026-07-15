@@ -20,6 +20,7 @@ from markeitech.signals import (
     SignalLocationMatch,
     SignalLocationZone,
     SignalLocationZoneKind,
+    SignalRuntimeConfig,
     SignalSnapshot,
     SignalStatus,
     evaluate_aggression_window,
@@ -178,6 +179,23 @@ def qualifying_reported_bars() -> tuple[OneMinuteBar, ...]:
 def test_policy_requires_window_to_fit_observation_expiry() -> None:
     with pytest.raises(ValidationError, match="window cannot exceed"):
         AggressionPolicyConfig(window_bars=6, expiry_observation_bars=5)
+
+
+def test_runtime_history_must_cover_expiry_and_pace_baseline() -> None:
+    definition = intraday_context_definition().model_copy(
+        update={
+            "aggression_policy": AggressionPolicyConfig(
+                expiry_observation_bars=6,
+                minimum_pace_baseline_bars=10,
+            )
+        }
+    )
+
+    with pytest.raises(ValueError, match="expiry plus pace baseline"):
+        SignalRuntimeConfig(
+            definitions=(definition,),
+            aggression_observation_history_bars=15,
+        )
 
 
 def test_disabled_policy_preserves_existing_definition_identity() -> None:

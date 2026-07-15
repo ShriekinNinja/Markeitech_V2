@@ -84,12 +84,17 @@ Location departure. Only a fully qualified opposite Direction or configured
 consecutive adverse breaches of the immutable entry geometry terminate the
 setup before confirmation.
 
-The next slice is Stage 5D.2: wire the existing cadence-bounded,
-provider-aware Aggression policy into the managed live runtime. It will consume
-active classified-tick windows and background bar-impulse windows, then persist
-and project explicit Armed-to-Triggered or Armed-to-Expired transitions. The
-pure Aggression evaluator exists and is tested; live lifecycle composition does
-not yet call it.
+Stage 5D.2 provides a bounded, commit-coupled Aggression observation bridge.
+Completed active classified-tick bars and reported one-minute bars enter only
+after durable market-data commit, retain independent source streams, and seed
+from catalog history before restart. The bridge is available to the managed
+LiveNode but does not yet mutate lifecycle.
+
+The next slice is Stage 5D.3: compose the existing cadence-bounded,
+provider-aware Aggression evaluator into the managed signal runtime. It will
+select the active classified-tick or background bar-impulse stream by current
+runtime role, then persist and project explicit Armed-to-Triggered or
+Armed-to-Expired transitions.
 
 ## Validation Debt
 

@@ -176,6 +176,7 @@ class SignalRuntimeConfig(VersionedDomainModel):
     operator_projection_queue_size: int = Field(default=256, ge=1)
     operator_projection_dedupe_size: int = Field(default=4_096, ge=1)
     operator_heartbeat_interval_seconds: int = Field(default=60, ge=10, le=3_600)
+    aggression_observation_history_bars: int = Field(default=240, ge=1, le=10_000)
 
     @model_validator(mode="after")
     def _references_must_be_consistent(self) -> SignalRuntimeConfig:
@@ -186,6 +187,19 @@ class SignalRuntimeConfig(VersionedDomainModel):
             raise ValueError("signal projection dedupe size cannot be smaller than queue")
         if len(definitions) != len(self.definitions):
             raise ValueError("signal definition ids must be unique")
+        required_observation_bars = max(
+            (
+                definition.aggression_policy.expiry_observation_bars
+                + definition.aggression_policy.minimum_pace_baseline_bars
+                for definition in self.definitions
+                if definition.aggression_policy is not None
+            ),
+            default=1,
+        )
+        if self.aggression_observation_history_bars < required_observation_bars:
+            raise ValueError(
+                "aggression observation history cannot be smaller than expiry plus pace baseline"
+            )
         for instrument_id, definition_ids in self.enabled_definition_ids_by_instrument.items():
             if not instrument_id.strip() or instrument_id != instrument_id.strip():
                 raise ValueError("signal instrument ids must be non-empty and trimmed")

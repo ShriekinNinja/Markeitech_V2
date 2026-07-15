@@ -68,6 +68,10 @@ from markeitech.signals.location import (
     derive_location_zones,
     qualify_location,
 )
+from markeitech.signals.observations import (
+    AggressionObservationStoreSnapshot,
+    BoundedAggressionObservationStore,
+)
 from markeitech.signals.projection import (
     BoundedSignalProjectionWriter,
     SignalLifecycleProjection,
@@ -91,7 +95,9 @@ __all__ = [
     "AggressionEvaluationStatus",
     "AggressionPolicyConfig",
     "AggressionWindowSnapshot",
+    "AggressionObservationStoreSnapshot",
     "BoundedFeatureCommitHandoff",
+    "BoundedAggressionObservationStore",
     "BoundedSignalProjectionWriter",
     "CommittedFeatureState",
     "FeatureHandoffSnapshot",
