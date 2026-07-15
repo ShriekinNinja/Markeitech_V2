@@ -34,7 +34,7 @@ from markeitech.persistence.contracts import (
     same_logical_event_identity,
 )
 from markeitech.persistence.feature_pipeline import CommittedFeatureRevision
-from markeitech.signals import SignalSnapshot, SignalStatus, SignalTransitionEvent
+from markeitech.signals.contracts import SignalSnapshot, SignalStatus, SignalTransitionEvent
 
 LATEST_SCHEMA_VERSION = 9
 

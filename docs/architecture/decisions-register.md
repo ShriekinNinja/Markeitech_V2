@@ -503,3 +503,32 @@ Use runtime start time as the live-decision watermark. Apply older committed war
 Persist Location entry as atomic Candidate-plus-Armed state, replacement as atomic old invalidation plus new Candidate/Armed state, and confirmed exit as one terminal transition. Restore only Armed or Triggered signals matching current algorithm and configuration identity. Preserve open episodes through missing Direction evidence, end them on observed neutral/conflicted/vetoed Direction, and retain unprocessed committed revisions when evaluation fails.
 
 Reason: Replaying warmup through live evaluators would generate stale alerts and can move a restored episode backward in time. Closing SQLite before the consumer drains would lose the ability to commit already-durable evidence. Explicit watermark and lifecycle ordering let warmup rebuild context without becoming market action, while one consumer thread keeps tracker mutation and durable signal progression sequential and auditable.
+
+## DR-0051: Cadence-Bounded Provider-Aware Aggression Windows
+
+Status: proposed
+
+Measure Stage 5D Aggression in a configured window of consecutive completed
+one-minute classified-trade bars beginning after an Armed signal. Expire the
+Armed setup after a configured number of completed definition observations,
+not elapsed wall-clock time. A market closure, reconnect, or missing observation
+must not consume the observation budget silently.
+
+Use direction-signed classified delta and ATR-relative price follow-through as
+the first deterministic gates. Retain adverse excursion and optional relative
+volume pace in the same reproducible window. Treat quote-test trade
+classification as inferred, lower classified coverage as partial, and absence
+of a committed classified window as unavailable. Keep quote-response evidence
+explicitly unavailable until a durable quote-aware model exists.
+
+Do not infer aggression from provider OHLCV bars. This means a background
+instrument without the tick subscription may Arm from Direction and Location
+but cannot Trigger from invented order-flow evidence. It expires with durable
+unavailable Aggression and Follow-through evidence unless it becomes active and
+collects a valid window before its observation budget ends.
+
+Reason: Active and background instruments are equally important analytically,
+but their source capabilities are not equal. Preserving that distinction avoids
+giving a lower-fidelity stream a false vote while keeping the policy portable to
+future providers. Observation-count expiry is reproducible across live,
+recovery, and later replay; wall-clock expiry is not.

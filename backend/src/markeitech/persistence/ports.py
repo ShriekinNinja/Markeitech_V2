@@ -12,7 +12,7 @@ from markeitech.persistence.contracts import (
     SignalPersistenceOutcome,
     StreamCheckpoint,
 )
-from markeitech.signals import SignalSnapshot, SignalStatus, SignalTransitionEvent
+from markeitech.signals.contracts import SignalSnapshot, SignalStatus, SignalTransitionEvent
 
 
 class TimeSeriesStore(Protocol):

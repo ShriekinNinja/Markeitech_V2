@@ -1,5 +1,11 @@
 """Deterministic signal contracts and lifecycle rules."""
 
+from markeitech.signals.aggression import (
+    AggressionEvaluation,
+    AggressionEvaluationStatus,
+    AggressionWindowSnapshot,
+    evaluate_aggression_window,
+)
 from markeitech.signals.arming import (
     ArmedLocationSignal,
     build_armed_location_signal,
@@ -13,6 +19,7 @@ from markeitech.signals.composition import (
     FeatureHandoffStatus,
 )
 from markeitech.signals.config import (
+    AggressionPolicyConfig,
     LocationPolicyConfig,
     LocationSourcePolicyConfig,
     OpposingContextPolicy,
@@ -78,6 +85,10 @@ from markeitech.signals.runtime import (
 )
 
 __all__ = [
+    "AggressionEvaluation",
+    "AggressionEvaluationStatus",
+    "AggressionPolicyConfig",
+    "AggressionWindowSnapshot",
     "BoundedFeatureCommitHandoff",
     "BoundedSignalProjectionWriter",
     "CommittedFeatureState",
@@ -128,6 +139,7 @@ __all__ = [
     "SignalTransitionEvent",
     "signal_setup_key",
     "derive_location_zones",
+    "evaluate_aggression_window",
     "build_armed_location_signal",
     "invalidate_ended_location_signal",
     "qualify_direction",

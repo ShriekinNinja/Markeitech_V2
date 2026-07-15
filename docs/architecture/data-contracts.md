@@ -288,6 +288,34 @@ Restart reads continue to verify the initial Candidate hash and complete transit
 
 Episode exit or replacement produces an Invalidated transition only when its ended episode id matches the Armed signal. Expiry is not guessed here: the useful Armed observation window depends on Stage 5D Aggression cadence and will be explicit configuration there.
 
+### Aggression Observation Contracts
+
+`AggressionPolicyConfig` defines a one-minute classified-trade window and a
+larger Armed expiry measured in completed definition observations. Wall-clock
+time does not age an Armed signal: market closure, a reconnect, or a missing bar
+cannot impersonate observed market cadence. Keeping the policy absent preserves
+the prior definition configuration hash and leaves Stage 5D behavior disabled.
+
+`evaluate_aggression_window` is currently a pure, unwired policy boundary. It
+accepts only complete, non-revision `classified_ticks` bars after the Armed
+timestamp. Reported IB OHLCV bars cannot impersonate tick aggression. The
+latest consecutive window measures classified-volume coverage, direction-signed
+delta, ATR-relative follow-through and adverse excursion, plus optional pace
+against a pre-Arm baseline. Quote response remains explicitly unavailable in
+this first provider-limited model.
+
+A qualified window emits deterministic Aggression and Follow-through
+market-data-window references sharing one reproducible window id. Full quote-test
+classification is `inferred`; accepted windows containing unknown volume are
+`partial`. Expiry retains terminal evidence: an observed but insufficient
+window keeps its actual fidelity and failure reasons, while a missing tick
+window records `unavailable` evidence. Neither case can qualify Triggered state.
+
+Runtime collection, post-commit bar handoff, Triggered/Expired persistence, and
+restart reconstruction remain subsequent Stage 5D slices. Until those are
+wired, configuring a policy changes definition identity but does not activate
+live progression.
+
 ### Durable Signal State
 
 SQLite stores one current `SignalSnapshot` per signal id plus its immutable initial-candidate content hash. Every accepted `SignalTransitionEvent` is append-only and receives a contiguous per-signal sequence number independent of market timestamps. Restart restoration validates typed row metadata, candidate identity, transition identity, the complete previous-to-current content-hash chain, and agreement between the final transition and current snapshot.

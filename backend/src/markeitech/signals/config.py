@@ -49,6 +49,42 @@ class LocationPolicyConfig(VersionedDomainModel):
         return frozenset(timeframe for source in self.sources for timeframe in source.timeframes)
 
 
+class AggressionPolicyConfig(VersionedDomainModel):
+    observation_timeframe: AnalyticsTimeframe = AnalyticsTimeframe.ONE_MINUTE
+    window_bars: int = Field(default=3, ge=1, le=30)
+    expiry_observation_bars: int = Field(default=5, ge=1, le=120)
+    minimum_classified_volume_ratio: Decimal = Field(
+        default=Decimal("0.70"),
+        ge=0,
+        le=1,
+    )
+    minimum_directional_delta_ratio: Decimal = Field(
+        default=Decimal("0.10"),
+        ge=0,
+        le=1,
+    )
+    minimum_follow_through_atr_fraction: Decimal = Field(
+        default=Decimal("0.10"),
+        ge=0,
+        le=5,
+    )
+    maximum_adverse_atr_fraction: Decimal = Field(
+        default=Decimal("0.30"),
+        ge=0,
+        le=5,
+    )
+    minimum_pace_ratio: Decimal | None = Field(default=None, gt=0, le=20)
+    minimum_pace_baseline_bars: int = Field(default=10, ge=3, le=120)
+
+    @model_validator(mode="after")
+    def _window_must_fit_expiry(self) -> AggressionPolicyConfig:
+        if self.observation_timeframe != AnalyticsTimeframe.ONE_MINUTE:
+            raise ValueError("initial aggression policy requires one-minute observations")
+        if self.window_bars > self.expiry_observation_bars:
+            raise ValueError("aggression window cannot exceed armed expiry observations")
+        return self
+
+
 class SignalDefinitionConfig(VersionedDomainModel):
     definition_id: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
     family: SignalFamily = SignalFamily.DIRECTION_LOCATION_AGGRESSION
@@ -61,6 +97,7 @@ class SignalDefinitionConfig(VersionedDomainModel):
     opposing_context_policy: OpposingContextPolicy = OpposingContextPolicy.DEGRADE
     minimum_direction_score: int = Field(default=1, ge=1, le=2)
     location_policy: LocationPolicyConfig | None = None
+    aggression_policy: AggressionPolicyConfig | None = None
 
     @model_validator(mode="after")
     def _timeframe_roles_must_be_consistent(self) -> SignalDefinitionConfig:
@@ -84,6 +121,8 @@ class SignalDefinitionConfig(VersionedDomainModel):
     @property
     def configuration_hash(self) -> str:
         payload = self.model_dump(mode="json")
+        if payload["aggression_policy"] is None:
+            del payload["aggression_policy"]
         encoded = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
         return hashlib.sha256(encoded).hexdigest()
 
