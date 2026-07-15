@@ -5,6 +5,7 @@ from markeitech.signals.aggression import (
     AggressionEvaluationStatus,
     AggressionWindowSnapshot,
     evaluate_aggression_window,
+    evaluate_bar_impulse_window,
 )
 from markeitech.signals.arming import (
     ArmedLocationSignal,
@@ -31,6 +32,7 @@ from markeitech.signals.contracts import (
     LocationQualification,
     LocationQualificationStatus,
     LocationSourceKind,
+    SignalConfirmationMethod,
     SignalDirection,
     SignalEvidenceFidelity,
     SignalEvidenceReference,
@@ -107,6 +109,7 @@ __all__ = [
     "SignalRuntimeProjectionKind",
     "ArmedLocationSignal",
     "SignalDirection",
+    "SignalConfirmationMethod",
     "CommittedMarketContextBundle",
     "DirectionCandidateDecision",
     "DirectionQualification",
@@ -140,6 +143,7 @@ __all__ = [
     "signal_setup_key",
     "derive_location_zones",
     "evaluate_aggression_window",
+    "evaluate_bar_impulse_window",
     "build_armed_location_signal",
     "invalidate_ended_location_signal",
     "qualify_direction",

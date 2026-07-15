@@ -508,11 +508,15 @@ Reason: Replaying warmup through live evaluators would generate stale alerts and
 
 Status: proposed
 
-Measure Stage 5D Aggression in a configured window of consecutive completed
-one-minute classified-trade bars beginning after an Armed signal. Expire the
-Armed setup after a configured number of completed definition observations,
-not elapsed wall-clock time. A market closure, reconnect, or missing observation
-must not consume the observation budget silently.
+Measure Stage 5D confirmation in a configured window of consecutive completed
+one-minute observations beginning after an Armed signal. Select the expected
+method explicitly by runtime role: `tick_aggression` for the active instrument
+and `bar_impulse_proxy` for background instruments. This selection is not a
+fallback, and one evidence window cannot mix methods.
+
+Expire the Armed setup after a configured number of completed definition
+observations, not elapsed wall-clock time. A market closure, reconnect, or
+missing observation must not consume the observation budget silently.
 
 Use direction-signed classified delta and ATR-relative price follow-through as
 the first deterministic gates. Retain adverse excursion and optional relative
@@ -521,14 +525,43 @@ classification as inferred, lower classified coverage as partial, and absence
 of a committed classified window as unavailable. Keep quote-response evidence
 explicitly unavailable until a durable quote-aware model exists.
 
-Do not infer aggression from provider OHLCV bars. This means a background
-instrument without the tick subscription may Arm from Direction and Location
-but cannot Trigger from invented order-flow evidence. It expires with durable
-unavailable Aggression and Follow-through evidence unless it becomes active and
-collects a valid window before its observation budget ends.
+Do not infer order-flow aggression from provider OHLCV bars. A background
+instrument may instead Trigger through an explicit bar-impulse proxy requiring
+directional persistence, close quality, ATR-relative displacement, bounded
+adverse excursion, and relative volume pace. Mark this evidence `partial` and
+retain classified-trade and quote-response unavailability. When expected input
+is missing or insufficient, expire with durable terminal evidence rather than
+substituting the other method.
 
 Reason: Active and background instruments are equally important analytically,
 but their source capabilities are not equal. Preserving that distinction avoids
 giving a lower-fidelity stream a false vote while keeping the policy portable to
 future providers. Observation-count expiry is reproducible across live,
 recovery, and later replay; wall-clock expiry is not.
+
+## DR-0052: Cross-Market Context Is An External Signal Overlay
+
+Status: proposed
+
+Keep each instrument's Direction-Location-Aggression lifecycle local and
+auditable. Consume watchlist signals and feature states through a separate
+cross-market context layer that may classify current evidence as confirming,
+opposing, divergent, suggestive, or insufficient for a target instrument and
+horizon. A suggestion requests operator attention; it does not create a target
+Candidate or Trigger without target-local lifecycle evidence.
+
+Represent relationships as versioned, timestamped, horizon-specific predictive
+associations with source and target, sign, strength, freshness, lead/lag, market
+regime, and model provenance. Do not encode current observations such as SOXL
+leadership or a conditional CL relationship as permanent market rules.
+
+Begin with deterministic rolling relationships and run later statistical or ML
+models in shadow. An accepted model may rank, confirm, oppose, or suggest, but
+cannot rewrite target evidence or silently replace Direction, Location, or
+confirmation requirements. Persist method, fidelity, timing, and evidence
+identity now so future models receive reproducible inputs.
+
+Reason: Cross-market relationships are useful and nonstationary. Treating them
+as static DLA rules makes temporary regimes permanent; allowing an opaque model
+to own lifecycle truth makes signals unauditable. A bounded overlay preserves
+both adaptive context and an independently testable core signal.

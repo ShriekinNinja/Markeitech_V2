@@ -290,11 +290,17 @@ Episode exit or replacement produces an Invalidated transition only when its end
 
 ### Aggression Observation Contracts
 
-`AggressionPolicyConfig` defines a one-minute classified-trade window and a
-larger Armed expiry measured in completed definition observations. Wall-clock
-time does not age an Armed signal: market closure, a reconnect, or a missing bar
-cannot impersonate observed market cadence. Keeping the policy absent preserves
-the prior definition configuration hash and leaves Stage 5D behavior disabled.
+`AggressionPolicyConfig` selects confirmation methods explicitly by runtime
+role. The active instrument initially uses `tick_aggression`; background
+instruments use `bar_impulse_proxy`. This is not a failure fallback: expected
+tick evidence cannot silently degrade to OHLCV proxy evidence. A role change
+must begin a method-consistent window rather than combining evidence modes.
+
+Both methods use a configured one-minute window and a larger Armed expiry
+measured in completed definition observations. Wall-clock time does not age an
+Armed signal: market closure, a reconnect, or a missing bar cannot impersonate
+observed market cadence. Keeping the policy absent preserves the prior
+definition configuration hash and leaves Stage 5D behavior disabled.
 
 `evaluate_aggression_window` is currently a pure, unwired policy boundary. It
 accepts only complete, non-revision `classified_ticks` bars after the Armed
@@ -304,12 +310,22 @@ delta, ATR-relative follow-through and adverse excursion, plus optional pace
 against a pre-Arm baseline. Quote response remains explicitly unavailable in
 this first provider-limited model.
 
+`evaluate_bar_impulse_window` is a separate pure boundary for complete reported
+IB bars. It requires directional bar persistence, directional close location,
+ATR-relative follow-through, bounded adverse excursion, and volume pace against
+a pre-Arm baseline. It never calculates or claims classified delta. Qualified
+proxy evidence is always `partial`, uses the source `ib:bar_impulse_proxy`, and
+retains order-flow and quote-response unavailability in its reasons.
+
 A qualified window emits deterministic Aggression and Follow-through
 market-data-window references sharing one reproducible window id. Full quote-test
-classification is `inferred`; accepted windows containing unknown volume are
-`partial`. Expiry retains terminal evidence: an observed but insufficient
-window keeps its actual fidelity and failure reasons, while a missing tick
-window records `unavailable` evidence. Neither case can qualify Triggered state.
+classification is `inferred`; accepted tick windows containing unknown volume
+are `partial`. The confirmation method participates in window identity and is
+also encoded in the evidence source so persistence, logs, and later context
+models cannot confuse the two. Expiry retains terminal evidence: an observed
+but insufficient window keeps its actual fidelity and failure reasons, while a
+missing expected window records `unavailable` evidence. Neither case can
+qualify Triggered state.
 
 Runtime collection, post-commit bar handoff, Triggered/Expired persistence, and
 restart reconstruction remain subsequent Stage 5D slices. Until those are

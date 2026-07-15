@@ -10,18 +10,23 @@ from markeitech.signals import (
     AggressionEvaluationStatus,
     AggressionPolicyConfig,
     LocationSourceKind,
+    SignalConfirmationMethod,
     SignalDirection,
     SignalEvidenceFidelity,
     SignalEvidenceReference,
     SignalEvidenceStage,
     SignalEvidenceType,
+    SignalLifecycleProjection,
     SignalLocationMatch,
     SignalLocationZone,
     SignalLocationZoneKind,
     SignalSnapshot,
     SignalStatus,
     evaluate_aggression_window,
+    evaluate_bar_impulse_window,
+    format_signal_operator_projection,
     intraday_context_definition,
+    transition_signal,
 )
 from pydantic import ValidationError
 
@@ -138,6 +143,38 @@ def qualifying_bars() -> tuple[OneMinuteBar, ...]:
     )
 
 
+def reported_baseline() -> tuple[OneMinuteBar, ...]:
+    return tuple(
+        bar(
+            minute,
+            open_price="99",
+            high="100",
+            low="98",
+            close="99",
+            buy_volume="0",
+            sell_volume="0",
+            unknown_volume="100",
+            source="ib",
+        )
+        for minute in range(-10, 0)
+    )
+
+
+def qualifying_reported_bars() -> tuple[OneMinuteBar, ...]:
+    return tuple(
+        item.model_copy(
+            update={
+                "buy_volume": Decimal("0"),
+                "sell_volume": Decimal("0"),
+                "unknown_volume": Decimal("150"),
+                "volume": Decimal("150"),
+                "source": "ib",
+            }
+        )
+        for item in qualifying_bars()
+    )
+
+
 def test_policy_requires_window_to_fit_observation_expiry() -> None:
     with pytest.raises(ValidationError, match="window cannot exceed"):
         AggressionPolicyConfig(window_bars=6, expiry_observation_bars=5)
@@ -161,6 +198,13 @@ def test_disabled_policy_preserves_existing_definition_identity() -> None:
     )
 
 
+def test_policy_selects_explicit_active_and_background_confirmation_methods() -> None:
+    policy = AggressionPolicyConfig()
+
+    assert policy.active_confirmation_method == SignalConfirmationMethod.TICK_AGGRESSION
+    assert policy.background_confirmation_method == SignalConfirmationMethod.BAR_IMPULSE_PROXY
+
+
 def test_qualifies_directional_delta_and_price_follow_through() -> None:
     result = evaluate_aggression_window(
         armed_signal(),
@@ -181,6 +225,7 @@ def test_qualifies_directional_delta_and_price_follow_through() -> None:
         SignalEvidenceStage.FOLLOW_THROUGH,
     }
     assert {item.evidence_id for item in result.evidence} == {result.window.window_id}
+    assert {item.source for item in result.evidence} == {"classified_ticks:tick_aggression"}
 
 
 def test_short_direction_inverts_delta_progress_and_adverse_excursion() -> None:
@@ -339,3 +384,102 @@ def test_optional_pace_gate_fails_closed_without_enough_baseline() -> None:
 
     assert result.status == AggressionEvaluationStatus.OBSERVING
     assert "pace_baseline_unavailable" in result.reason_codes
+
+
+def test_reported_watchlist_bars_can_qualify_only_as_partial_proxy_evidence() -> None:
+    result = evaluate_bar_impulse_window(
+        armed_signal(),
+        AggressionPolicyConfig(),
+        qualifying_reported_bars(),
+        evaluated_ts=NOW + timedelta(minutes=3),
+        elapsed_observation_bars=3,
+        atr_at_arm=Decimal("10"),
+        pace_baseline_bars=reported_baseline(),
+    )
+
+    assert result.status == AggressionEvaluationStatus.QUALIFIED
+    assert result.window is not None
+    assert result.window.confirmation_method == SignalConfirmationMethod.BAR_IMPULSE_PROXY
+    assert result.window.fidelity == SignalEvidenceFidelity.PARTIAL
+    assert result.window.classified_volume_ratio is None
+    assert result.window.directional_delta_ratio is None
+    assert result.window.directional_bar_ratio == Decimal("1")
+    assert result.window.pace_ratio == Decimal("1.5")
+    assert {item.source for item in result.evidence} == {"ib:bar_impulse_proxy"}
+    assert all(item.fidelity == SignalEvidenceFidelity.PARTIAL for item in result.evidence)
+
+    transition = transition_signal(
+        armed_signal(),
+        SignalStatus.TRIGGERED,
+        occurred_ts=NOW + timedelta(minutes=3),
+        reason_codes=result.reason_codes,
+        evidence=result.evidence,
+    )
+    line = format_signal_operator_projection(
+        SignalLifecycleProjection.transitioned(transition),
+        role_resolver=lambda _instrument_id: "BACKGROUND",
+    )
+    assert "SIGNAL_TRIGGERED | role=BACKGROUND" in line
+    assert "confirmation=bar_impulse_proxy" in line
+
+
+def test_bar_proxy_requires_relative_volume_baseline() -> None:
+    result = evaluate_bar_impulse_window(
+        armed_signal(),
+        AggressionPolicyConfig(),
+        qualifying_reported_bars(),
+        evaluated_ts=NOW + timedelta(minutes=3),
+        elapsed_observation_bars=3,
+        atr_at_arm=Decimal("10"),
+        pace_baseline_bars=(),
+    )
+
+    assert result.status == AggressionEvaluationStatus.OBSERVING
+    assert "pace_baseline_unavailable" in result.reason_codes
+    assert result.evidence == ()
+
+
+def test_tick_bars_cannot_silently_fall_back_to_bar_proxy() -> None:
+    result = evaluate_bar_impulse_window(
+        armed_signal(),
+        AggressionPolicyConfig(),
+        qualifying_bars(),
+        evaluated_ts=NOW + timedelta(minutes=5),
+        elapsed_observation_bars=5,
+        atr_at_arm=Decimal("10"),
+        pace_baseline_bars=(),
+    )
+
+    assert result.status == AggressionEvaluationStatus.EXPIRED
+    assert result.window is None
+    assert {item.source for item in result.evidence} == {"ib:bar_impulse_proxy"}
+    assert all(item.fidelity == SignalEvidenceFidelity.UNAVAILABLE for item in result.evidence)
+
+
+def test_bar_proxy_expires_with_observed_partial_evidence_when_thresholds_fail() -> None:
+    weak = tuple(
+        item.model_copy(
+            update={
+                "open": Decimal("100"),
+                "high": Decimal("100.5"),
+                "low": Decimal("99.5"),
+                "close": Decimal("99.75"),
+            }
+        )
+        for item in qualifying_reported_bars()
+    )
+
+    result = evaluate_bar_impulse_window(
+        armed_signal(),
+        AggressionPolicyConfig(),
+        weak,
+        evaluated_ts=NOW + timedelta(minutes=5),
+        elapsed_observation_bars=5,
+        atr_at_arm=Decimal("10"),
+        pace_baseline_bars=reported_baseline(),
+    )
+
+    assert result.status == AggressionEvaluationStatus.EXPIRED
+    assert result.window is not None
+    assert "directional_bar_ratio_below_threshold" in result.reason_codes
+    assert all(item.fidelity == SignalEvidenceFidelity.PARTIAL for item in result.evidence)

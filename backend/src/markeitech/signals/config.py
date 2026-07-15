@@ -9,7 +9,11 @@ from pydantic import Field, model_validator
 
 from markeitech.analytics import AnalyticsTimeframe
 from markeitech.domain.base import VersionedDomainModel
-from markeitech.signals.contracts import LocationSourceKind, SignalFamily
+from markeitech.signals.contracts import (
+    LocationSourceKind,
+    SignalConfirmationMethod,
+    SignalFamily,
+)
 
 
 class OpposingContextPolicy(StrEnum):
@@ -51,6 +55,10 @@ class LocationPolicyConfig(VersionedDomainModel):
 
 class AggressionPolicyConfig(VersionedDomainModel):
     observation_timeframe: AnalyticsTimeframe = AnalyticsTimeframe.ONE_MINUTE
+    active_confirmation_method: SignalConfirmationMethod = SignalConfirmationMethod.TICK_AGGRESSION
+    background_confirmation_method: SignalConfirmationMethod = (
+        SignalConfirmationMethod.BAR_IMPULSE_PROXY
+    )
     window_bars: int = Field(default=3, ge=1, le=30)
     expiry_observation_bars: int = Field(default=5, ge=1, le=120)
     minimum_classified_volume_ratio: Decimal = Field(
@@ -75,6 +83,26 @@ class AggressionPolicyConfig(VersionedDomainModel):
     )
     minimum_pace_ratio: Decimal | None = Field(default=None, gt=0, le=20)
     minimum_pace_baseline_bars: int = Field(default=10, ge=3, le=120)
+    bar_proxy_minimum_directional_bar_ratio: Decimal = Field(
+        default=Decimal("0.66"),
+        ge=0,
+        le=1,
+    )
+    bar_proxy_minimum_close_location: Decimal = Field(
+        default=Decimal("0.65"),
+        ge=0,
+        le=1,
+    )
+    bar_proxy_minimum_follow_through_atr_fraction: Decimal = Field(
+        default=Decimal("0.15"),
+        ge=0,
+        le=5,
+    )
+    bar_proxy_minimum_pace_ratio: Decimal = Field(
+        default=Decimal("1.10"),
+        gt=0,
+        le=20,
+    )
 
     @model_validator(mode="after")
     def _window_must_fit_expiry(self) -> AggressionPolicyConfig:

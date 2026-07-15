@@ -27,6 +27,8 @@ stable.
 - Add deterministic trade, quote, pace, and follow-through evidence where source
   fidelity permits.
 - Represent missing or damaged tick evidence explicitly.
+- Support explicit tick-aggression and lower-fidelity bar-impulse confirmation
+  without silent fallback or mixed-method windows.
 - Allow definitions to configure their timeframe stack and aggression policy.
 - Progress Armed signals to Triggered only through persisted evidence.
 - Define time-based Armed expiry from the actual observation cadence.
@@ -42,6 +44,10 @@ plus 5-minute or 1-minute evidence without changing global signal semantics.
 - Apply cooldown, replacement, suppression, and expiry rules.
 - Preserve identical evaluation semantics for active and background instruments.
 - Produce structured notification-ready signal events.
+- Add a deterministic cross-market context overlay with confirm, oppose,
+  divergence, suggest, and insufficient outcomes.
+- Persist versioned, horizon-specific relationship inputs suitable for later
+  statistical and ML shadow models without granting them lifecycle authority.
 
 ## Stage 6: Notifications And Reports
 

@@ -338,7 +338,17 @@ def _evidence_summary(signal: SignalSnapshot) -> str:
         if counts[stage]
     )
     fidelity = "+".join(sorted(fidelities)) or "n/a"
-    return f"{stages or 'none'};fidelity={fidelity}"
+    confirmation_methods = sorted(
+        {
+            item.source.rsplit(":", 1)[-1]
+            for item in signal.evidence
+            if item.stage == SignalEvidenceStage.AGGRESSION and ":" in item.source
+        }
+    )
+    confirmation = (
+        "" if not confirmation_methods else f";confirmation={'+'.join(confirmation_methods)}"
+    )
+    return f"{stages or 'none'};fidelity={fidelity}{confirmation}"
 
 
 def _location_summary(signal: SignalSnapshot) -> str:

@@ -64,6 +64,11 @@ class SignalEvidenceFidelity(StrEnum):
     UNAVAILABLE = "unavailable"
 
 
+class SignalConfirmationMethod(StrEnum):
+    TICK_AGGRESSION = "tick_aggression"
+    BAR_IMPULSE_PROXY = "bar_impulse_proxy"
+
+
 class LocationSourceKind(StrEnum):
     STRUCTURAL_LEVEL = "structural_level"
     FAIR_VALUE_GAP = "fair_value_gap"
@@ -266,9 +271,7 @@ class SignalSnapshot(VersionedDomainModel):
             raise ValueError("signal location episode and direction regime must coexist")
         if self.location_matches and self.location_episode_id is None:
             raise ValueError("signal location matches require episode identity")
-        if any(
-            item.zone.instrument_id != self.instrument_id for item in self.location_matches
-        ):
+        if any(item.zone.instrument_id != self.instrument_id for item in self.location_matches):
             raise ValueError("signal location matches must use signal instrument")
         if any(item.zone.direction != self.direction for item in self.location_matches):
             raise ValueError("signal location matches must align with signal direction")

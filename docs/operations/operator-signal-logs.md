@@ -51,7 +51,9 @@ SIGNAL_ARMED | role=ACTIVE | NQU6.CME | definition=intraday_context | direction=
 - `role` is current presentation metadata and is not part of signal identity.
 - `location` shows up to three semantic entry zones plus an omitted count.
 - `evidence` counts Direction, Location, Aggression, and Follow-through evidence
-  stages that are present, followed by their fidelity classes.
+  stages that are present, followed by their fidelity classes. Triggered and
+  terminal observation lines also include `confirmation=tick_aggression` or
+  `confirmation=bar_impulse_proxy`; the latter is always partial evidence.
 - `signal` and `transition` are shortened display forms of durable identities.
 
 ## `SIGNAL_RESTORED`
