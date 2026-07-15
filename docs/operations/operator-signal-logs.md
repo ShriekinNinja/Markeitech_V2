@@ -8,13 +8,18 @@ These messages are separate from `OPERATOR_CONTEXT`, `OPERATOR_LEVELS`, and
 `OPERATOR_AUCTION`. Context lines describe analytical state; signal lines report
 runtime presence or a committed lifecycle change.
 
+Console colors are presentation metadata: Armed is yellow, Triggered is green,
+Invalidated is red, Expired is magenta, restored and heartbeat lines are cyan,
+runtime start is green, and runtime failure is red. Colors do not participate
+in durable signal identity or lifecycle decisions.
+
 ## `SIGNAL_RUNTIME`
 
 `SIGNAL_RUNTIME` proves that the configured signal consumer exists even when no
 setup qualifies.
 
 ```text
-SIGNAL_RUNTIME | event=HEARTBEAT | status=RUNNING | watermark=2026-07-15T06:00:00+00:00 | restored=0 | revisions=48 | stale=36 | evaluations=4 | writes=0 | open=0 | projection_rejected=0 | projection_errors=0 | render_errors=0
+SIGNAL_RUNTIME | event=HEARTBEAT | status=RUNNING | watermark=2026-07-15T06:00:00+00:00 | restored=0 | revisions=48 | stale=36 | evaluations=4 | writes=2 | open=1 | confirmations=3 | triggered=1 | expired=0 | observations=96 | retained=96 | observation_conflicts=0 | projection_rejected=0 | projection_errors=0 | render_errors=0
 ```
 
 Fields:
@@ -30,6 +35,15 @@ Fields:
 - `evaluations`: post-watermark definition evaluations.
 - `writes`: atomic lifecycle persistence operations, not individual SQL rows.
 - `open`: current Armed or Triggered signals.
+- `confirmations`: Aggression window evaluations, including collecting and
+  observing attempts that do not write a lifecycle transition.
+- `triggered` and `expired`: terminal Aggression outcomes written by this
+  process.
+- `observations`: committed one-minute observations accepted since store
+  construction; catalog-seeded bars are included.
+- `retained`: bars currently available in the bounded confirmation store.
+- `observation_conflicts`: conflicting retries rejected in favor of the first
+  durable market observation. This should normally remain zero.
 - `projection_rejected`: signal projections rejected by the bounded queue.
 - `projection_errors`: exceptions raised while offering a projection.
 - `render_errors`: formatting or log-sink failures isolated by the projector.
@@ -92,9 +106,10 @@ therefore do not emit a lifecycle transition line.
 SIGNAL_TRIGGERED | role=ACTIVE | NQU6.CME | definition=intraday_context | direction=LONG | from=ARMED | location=support@5m:29600-29608 | evidence=D:4,L:2,A:1,F:1;fidelity=inferred+reported;confirmation=tick_aggression | reason=aggression_and_follow_through_confirmed | as_of=2026-07-15T13:45:00+00:00 | signal=7ac1e4e9085d | transition=be78f819b6a0
 ```
 
-This line will be enabled by Stage 5D lifecycle wiring. `confirmation` names the
-actual evidence method. Active classified-tick confirmation and background
-bar-impulse confirmation must never be silently substituted for each other.
+`confirmation` names the actual evidence method frozen when the setup was
+Armed. An active-instrument switch does not change an existing setup's method.
+Active classified-tick confirmation and background bar-impulse confirmation
+are never silently substituted for each other.
 
 ## `SIGNAL_EXPIRED`
 
@@ -112,9 +127,10 @@ operator can distinguish absent input from a measured threshold failure.
 Committed one-minute bars do not emit one signal log line per bar. They are
 retained in a bounded source-specific observation store and become evidence only
 through a lifecycle decision. This keeps signal logs sparse. Observation-store
-health counters will join `SIGNAL_RUNTIME` when Stage 5D runtime coordination is
-wired; until then, Triggered and Expired examples above describe reserved output
-rather than active behavior.
+health is summarized in `SIGNAL_RUNTIME`. The expiry clock is the count of
+committed `ib` one-minute bars since arming, not elapsed wall time. Feature and
+bar commits may arrive in either order; the coordinator retries from the latest
+committed feature bundle when the observation store advances.
 
 ## Failure Semantics
 

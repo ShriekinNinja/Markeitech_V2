@@ -8,7 +8,13 @@ from threading import Condition, Thread
 from typing import Protocol
 
 from markeitech.domain.base import require_utc
+from markeitech.domain.market_data import OneMinuteBar
 from markeitech.persistence.feature_pipeline import CommittedFeatureRevision
+from markeitech.signals.aggression import (
+    AggressionEvaluationStatus,
+    evaluate_aggression_window,
+    evaluate_bar_impulse_window,
+)
 from markeitech.signals.arming import (
     build_armed_location_signal,
     invalidate_ended_location_signal,
@@ -22,6 +28,8 @@ from markeitech.signals.config import SignalDefinitionConfig, SignalRuntimeConfi
 from markeitech.signals.contracts import (
     LocationQualification,
     LocationQualificationStatus,
+    SignalConfirmationContext,
+    SignalConfirmationMethod,
     SignalSnapshot,
     SignalStatus,
     SignalTransitionEvent,
@@ -38,6 +46,7 @@ from markeitech.signals.episode import (
     LocationEpisodeObservation,
     LocationEpisodeTracker,
 )
+from markeitech.signals.lifecycle import transition_signal
 from markeitech.signals.location import qualify_location
 from markeitech.signals.projection import (
     SignalLifecycleProjection,
@@ -80,6 +89,19 @@ class ProductSessionResolver(Protocol):
     ) -> tuple[datetime, datetime]: ...
 
 
+class AggressionObservationStore(Protocol):
+    @property
+    def snapshot(self) -> object: ...
+
+    def bars(
+        self,
+        instrument_id: str,
+        source: str,
+        *,
+        through_ts: datetime | None = None,
+    ) -> tuple[OneMinuteBar, ...]: ...
+
+
 class LiveSignalRuntimeStatus(StrEnum):
     CREATED = "created"
     RUNNING = "running"
@@ -99,12 +121,23 @@ class SignalEvaluationEvent:
     signal_id: str | None
     signal_status: SignalStatus | None
     lifecycle_events: tuple[SignalTransitionEvent, ...] = ()
+    aggression_status: AggressionEvaluationStatus | None = None
+    confirmation_method: SignalConfirmationMethod | None = None
+    elapsed_observation_bars: int | None = None
 
 
 @dataclass(frozen=True)
 class _PersistedSignalDecision:
     current: SignalSnapshot | None
     lifecycle_events: tuple[SignalTransitionEvent, ...] = ()
+
+
+@dataclass(frozen=True)
+class _ConfirmationGate:
+    direction_status: DirectionQualificationStatus
+    location_status: LocationQualificationStatus
+    episode_event: LocationEpisodeEventType
+    is_open: bool
 
 
 @dataclass(frozen=True)
@@ -119,6 +152,12 @@ class LiveSignalRuntimeSnapshot:
     open_signal_count: int
     projection_rejected_count: int
     projection_callback_error_count: int
+    confirmation_evaluation_count: int
+    triggered_signal_count: int
+    expired_signal_count: int
+    observation_accepted_bar_count: int
+    observation_retained_bar_count: int
+    observation_conflicting_retry_count: int
     last_event: SignalEvaluationEvent | None
     last_error: str | None
 
@@ -133,6 +172,8 @@ class LiveSignalRuntime:
         session_resolver: ProductSessionResolver,
         handoff: BoundedFeatureCommitHandoff,
         *,
+        observation_store: AggressionObservationStore | None = None,
+        role_resolver: Callable[[str], str] | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         on_evaluation: Callable[[SignalEvaluationEvent], None] | None = None,
         on_projection: Callable[[SignalOperatorProjection], bool] | None = None,
@@ -149,6 +190,10 @@ class LiveSignalRuntime:
         }
         if any(item.location_policy is None for item in self._definitions.values()):
             raise ValueError("live Direction/Location definitions require location policy")
+        if any(item.aggression_policy is not None for item in self._definitions.values()) and (
+            observation_store is None or role_resolver is None
+        ):
+            raise ValueError("live Aggression definitions require observations and role resolver")
         self._config = config
         self._store = store
         self._session_resolver = session_resolver
@@ -156,6 +201,8 @@ class LiveSignalRuntime:
         self._clock = clock
         self._on_evaluation = on_evaluation
         self._on_projection = on_projection
+        self._observation_store = observation_store
+        self._role_resolver = role_resolver
         self._feature_state = CommittedFeatureState()
         self._direction_trackers = {
             key: DirectionRegimeTracker(value) for key, value in self._definitions.items()
@@ -164,6 +211,9 @@ class LiveSignalRuntime:
             key: LocationEpisodeTracker(value) for key, value in self._definitions.items()
         }
         self._open_signals: dict[tuple[str, str], SignalSnapshot] = {}
+        self._suppressed_episode_ids: dict[tuple[str, str], str] = {}
+        self._confirmation_gates: dict[tuple[str, str], _ConfirmationGate] = {}
+        self._confirmation_attempts: dict[tuple[str, str], tuple[object, ...]] = {}
         self._condition = Condition()
         self._status = LiveSignalRuntimeStatus.CREATED
         self._startup_watermark: datetime | None = None
@@ -174,6 +224,10 @@ class LiveSignalRuntime:
         self._lifecycle_write_count = 0
         self._projection_rejected_count = 0
         self._projection_callback_error_count = 0
+        self._confirmation_evaluation_count = 0
+        self._triggered_signal_count = 0
+        self._expired_signal_count = 0
+        self._last_observation_accepted_count = 0
         self._last_heartbeat_ts: datetime | None = None
         self._last_event: SignalEvaluationEvent | None = None
         self._last_error: str | None = None
@@ -182,6 +236,9 @@ class LiveSignalRuntime:
     @property
     def snapshot(self) -> LiveSignalRuntimeSnapshot:
         with self._condition:
+            observation = (
+                None if self._observation_store is None else self._observation_store.snapshot
+            )
             return LiveSignalRuntimeSnapshot(
                 status=self._status,
                 startup_watermark=self._startup_watermark,
@@ -193,6 +250,18 @@ class LiveSignalRuntime:
                 open_signal_count=len(self._open_signals),
                 projection_rejected_count=self._projection_rejected_count,
                 projection_callback_error_count=self._projection_callback_error_count,
+                confirmation_evaluation_count=self._confirmation_evaluation_count,
+                triggered_signal_count=self._triggered_signal_count,
+                expired_signal_count=self._expired_signal_count,
+                observation_accepted_bar_count=(
+                    0 if observation is None else observation.accepted_bar_count
+                ),
+                observation_retained_bar_count=(
+                    0 if observation is None else observation.retained_bar_count
+                ),
+                observation_conflicting_retry_count=(
+                    0 if observation is None else observation.conflicting_retry_count
+                ),
                 last_event=self._last_event,
                 last_error=self._last_error,
             )
@@ -209,6 +278,10 @@ class LiveSignalRuntime:
                 self._status = LiveSignalRuntimeStatus.FAILED
                 self._last_error = f"{type(exc).__name__}: {exc}"
             raise
+        if self._observation_store is not None:
+            self._last_observation_accepted_count = (
+                self._observation_store.snapshot.accepted_bar_count
+            )
         with self._condition:
             self._status = LiveSignalRuntimeStatus.RUNNING
         self._offer_runtime_projection(SignalRuntimeProjectionKind.STARTED)
@@ -248,23 +321,44 @@ class LiveSignalRuntime:
         enabled_instruments = self._config.enabled_definition_ids_by_instrument
         for definition_id, definition in self._definitions.items():
             signals = self._store.load_signals(definition_id=definition_id)
-            current = tuple(
+            compatible = tuple(
                 signal
                 for signal in signals
-                if signal.status in {SignalStatus.ARMED, SignalStatus.TRIGGERED}
-                and definition_id in enabled_instruments.get(signal.instrument_id, ())
+                if definition_id in enabled_instruments.get(signal.instrument_id, ())
                 and signal.algorithm_version == definition.algorithm_version
                 and signal.configuration_hash == definition.configuration_hash
             )
+            latest_by_instrument: dict[str, SignalSnapshot] = {}
+            for signal in compatible:
+                current_latest = latest_by_instrument.get(signal.instrument_id)
+                if current_latest is None or (signal.updated_ts, signal.signal_id) > (
+                    current_latest.updated_ts,
+                    current_latest.signal_id,
+                ):
+                    latest_by_instrument[signal.instrument_id] = signal
+            latest = tuple(latest_by_instrument.values())
+            current = tuple(
+                signal
+                for signal in latest
+                if signal.status in {SignalStatus.ARMED, SignalStatus.TRIGGERED}
+            )
+            suppressed = tuple(signal for signal in latest if signal.status == SignalStatus.EXPIRED)
             keys = [(signal.definition_id, signal.instrument_id) for signal in current]
             if len(keys) != len(set(keys)):
                 raise ValueError("multiple open signals exist for one definition/instrument")
-            self._direction_trackers[definition_id].seed_open_signals(current)
+            self._direction_trackers[definition_id].seed_open_signals(
+                (*current, *suppressed), include_expired=True
+            )
             self._episode_trackers[definition_id].seed_active_episodes(
-                tuple(restore_location_episode(signal) for signal in current)
+                tuple(restore_location_episode(signal) for signal in (*current, *suppressed))
             )
             for signal in current:
                 self._open_signals[(definition_id, signal.instrument_id)] = signal
+            for signal in suppressed:
+                assert signal.location_episode_id is not None
+                self._suppressed_episode_ids[(definition_id, signal.instrument_id)] = (
+                    signal.location_episode_id
+                )
             restored.extend(current)
         self._restored_open_signal_count = len(restored)
         return tuple(restored)
@@ -287,6 +381,15 @@ class LiveSignalRuntime:
                         self._condition.notify_all()
                     self._offer_runtime_projection(SignalRuntimeProjectionKind.FAILED)
                     return
+            try:
+                self._process_observation_updates()
+            except Exception as exc:
+                with self._condition:
+                    self._status = LiveSignalRuntimeStatus.FAILED
+                    self._last_error = f"{type(exc).__name__}: {exc}"
+                    self._condition.notify_all()
+                self._offer_runtime_projection(SignalRuntimeProjectionKind.FAILED)
+                return
             with self._condition:
                 if (
                     self._status == LiveSignalRuntimeStatus.STOPPING
@@ -324,6 +427,34 @@ class LiveSignalRuntime:
             self._offer_heartbeat(bundle.evaluation_as_of)
             if self._on_evaluation is not None:
                 self._on_evaluation(event)
+
+    def _process_observation_updates(self) -> None:
+        if self._observation_store is None:
+            return
+        accepted = self._observation_store.snapshot.accepted_bar_count
+        if accepted == self._last_observation_accepted_count:
+            return
+        self._last_observation_accepted_count = accepted
+        for key, signal in tuple(self._open_signals.items()):
+            if signal.status != SignalStatus.ARMED:
+                continue
+            definition = self._definitions[key[0]]
+            bundle = self._feature_state.latest_bundle(signal.instrument_id, definition)
+            gate = self._confirmation_gates.get(key)
+            if bundle is None or gate is None or not gate.is_open:
+                continue
+            event = self._confirm_signal(definition, bundle, signal, gate)
+            if event is not None:
+                self._record_event(event)
+
+    def _record_event(self, event: SignalEvaluationEvent) -> None:
+        with self._condition:
+            self._evaluation_count += 1
+            self._last_event = event
+        for lifecycle_event in event.lifecycle_events:
+            self._offer_projection(SignalLifecycleProjection.transitioned(lifecycle_event))
+        if self._on_evaluation is not None:
+            self._on_evaluation(event)
 
     def _evaluate(
         self,
@@ -400,7 +531,47 @@ class LiveSignalRuntime:
             episode_decision,
             open_signal,
             bundle.evaluation_as_of,
+            bundle,
         )
+        gate = _ConfirmationGate(
+            direction_status=direction_decision.qualification.status,
+            location_status=location.status,
+            episode_event=episode_decision.event_type,
+            is_open=(
+                direction_decision.qualification.status == DirectionQualificationStatus.QUALIFIED
+                and episode_decision.event_type
+                in {
+                    LocationEpisodeEventType.ENTERED,
+                    LocationEpisodeEventType.ACTIVE,
+                    LocationEpisodeEventType.FAVORABLE_DEPARTURE,
+                    LocationEpisodeEventType.DEPARTURE_UNRESOLVED,
+                }
+            ),
+        )
+        self._confirmation_gates[open_key] = gate
+        confirmation = None
+        if persisted.current is not None and persisted.current.status == SignalStatus.ARMED:
+            confirmation = self._confirm_signal(
+                definition,
+                bundle,
+                persisted.current,
+                gate,
+            )
+        if confirmation is not None:
+            return SignalEvaluationEvent(
+                instrument_id=bundle.instrument_id,
+                definition_id=definition_id,
+                evaluation_ts=bundle.evaluation_as_of,
+                direction_status=direction_decision.qualification.status,
+                location_status=location.status,
+                episode_event=episode_decision.event_type,
+                signal_id=confirmation.signal_id,
+                signal_status=confirmation.signal_status,
+                lifecycle_events=(*persisted.lifecycle_events, *confirmation.lifecycle_events),
+                aggression_status=confirmation.aggression_status,
+                confirmation_method=confirmation.confirmation_method,
+                elapsed_observation_bars=confirmation.elapsed_observation_bars,
+            )
         return SignalEvaluationEvent(
             bundle.instrument_id,
             definition_id,
@@ -420,6 +591,7 @@ class LiveSignalRuntime:
         decision: LocationEpisodeDecision,
         open_signal: SignalSnapshot | None,
         occurred_ts: datetime,
+        bundle: CommittedMarketContextBundle,
     ) -> _PersistedSignalDecision:
         key = (
             (definition.definition_id, decision.episode.instrument_id) if decision.episode else None
@@ -427,7 +599,12 @@ class LiveSignalRuntime:
         if decision.event_type == LocationEpisodeEventType.ENTERED:
             if decision.episode is None or open_signal is not None or key is None:
                 raise RuntimeError("entered location episode conflicts with open signal state")
-            setup = build_armed_location_signal(definition, decision.episode, direction)
+            setup = build_armed_location_signal(
+                definition,
+                decision.episode,
+                direction,
+                self._confirmation_context(definition, bundle),
+            )
             self._store.save_signal_candidate_and_transition(
                 setup.candidate,
                 setup.armed_transition,
@@ -438,14 +615,39 @@ class LiveSignalRuntime:
                 self._lifecycle_write_count += 1
             return _PersistedSignalDecision(current, (setup.armed_transition,))
         if decision.event_type == LocationEpisodeEventType.REPLACED:
-            if decision.episode is None or open_signal is None or key is None:
-                raise RuntimeError("replacement episode requires existing and new signal state")
+            if decision.episode is None or key is None:
+                raise RuntimeError("replacement episode requires new signal state")
+            suppressed_id = self._suppressed_episode_ids.get(key)
+            if open_signal is None and suppressed_id == decision.ended_episode_id:
+                setup = build_armed_location_signal(
+                    definition,
+                    decision.episode,
+                    direction,
+                    self._confirmation_context(definition, bundle),
+                )
+                self._store.save_signal_candidate_and_transition(
+                    setup.candidate,
+                    setup.armed_transition,
+                )
+                current = setup.armed_transition.current
+                with self._condition:
+                    self._suppressed_episode_ids.pop(key, None)
+                    self._open_signals[key] = current
+                    self._lifecycle_write_count += 1
+                return _PersistedSignalDecision(current, (setup.armed_transition,))
+            if open_signal is None:
+                raise RuntimeError("replacement episode requires existing signal state")
             ended = invalidate_ended_location_signal(
                 open_signal,
                 decision,
                 occurred_ts=occurred_ts,
             )
-            setup = build_armed_location_signal(definition, decision.episode, direction)
+            setup = build_armed_location_signal(
+                definition,
+                decision.episode,
+                direction,
+                self._confirmation_context(definition, bundle),
+            )
             self._store.replace_signal_with_armed_candidate(
                 ended,
                 setup.candidate,
@@ -461,6 +663,12 @@ class LiveSignalRuntime:
             )
         if decision.event_type == LocationEpisodeEventType.EXITED:
             if open_signal is None:
+                if key is not None and self._suppressed_episode_ids.get(key) == (
+                    decision.ended_episode_id
+                ):
+                    self._suppressed_episode_ids.pop(key, None)
+                    self._confirmation_gates.pop(key, None)
+                    return _PersistedSignalDecision(None)
                 raise RuntimeError("exited location episode requires an open signal")
             ended = invalidate_ended_location_signal(
                 open_signal,
@@ -477,6 +685,142 @@ class LiveSignalRuntime:
                 self._lifecycle_write_count += 1
             return _PersistedSignalDecision(ended.current, (ended,))
         return _PersistedSignalDecision(open_signal)
+
+    def _confirmation_context(
+        self,
+        definition: SignalDefinitionConfig,
+        bundle: CommittedMarketContextBundle,
+    ) -> SignalConfirmationContext | None:
+        policy = definition.aggression_policy
+        if policy is None:
+            return None
+        evaluation = bundle.feature(definition.evaluation_timeframe)
+        if evaluation is None or evaluation.snapshot.atr_14 <= 0:
+            raise RuntimeError("Aggression arming requires positive evaluation ATR")
+        assert self._role_resolver is not None
+        role = self._role_resolver(bundle.instrument_id).strip().upper()
+        if role == "ACTIVE":
+            method = policy.active_confirmation_method
+        elif role == "BACKGROUND":
+            method = policy.background_confirmation_method
+        else:
+            raise ValueError(f"unsupported signal instrument role {role!r}")
+        return SignalConfirmationContext(
+            method=method,
+            window_started_ts=bundle.evaluation_as_of,
+            atr_at_arm=evaluation.snapshot.atr_14,
+        )
+
+    def _confirm_signal(
+        self,
+        definition: SignalDefinitionConfig,
+        bundle: CommittedMarketContextBundle,
+        signal: SignalSnapshot,
+        gate: _ConfirmationGate,
+    ) -> SignalEvaluationEvent | None:
+        policy = definition.aggression_policy
+        context = signal.confirmation_context
+        if policy is None or context is None or not gate.is_open:
+            return None
+        assert self._observation_store is not None
+        cadence = self._observation_store.bars(
+            signal.instrument_id,
+            "ib",
+            through_ts=bundle.evaluation_as_of,
+        )
+        elapsed = sum(bar.open_ts >= context.window_started_ts for bar in cadence)
+        source = (
+            "classified_ticks"
+            if context.method == SignalConfirmationMethod.TICK_AGGRESSION
+            else "ib"
+        )
+        observations = self._observation_store.bars(
+            signal.instrument_id,
+            source,
+            through_ts=bundle.evaluation_as_of,
+        )
+        key = (signal.definition_id, signal.instrument_id)
+        signature = (
+            signal.signal_id,
+            bundle.evaluation_as_of,
+            len(cadence),
+            None if not cadence else cadence[-1].close_ts,
+            len(observations),
+            None if not observations else observations[-1].close_ts,
+        )
+        if self._confirmation_attempts.get(key) == signature:
+            return None
+        self._confirmation_attempts[key] = signature
+        if context.method == SignalConfirmationMethod.TICK_AGGRESSION:
+            result = evaluate_aggression_window(
+                signal,
+                policy,
+                observations,
+                evaluated_ts=bundle.evaluation_as_of,
+                elapsed_observation_bars=elapsed,
+                atr_at_arm=context.atr_at_arm,
+                pace_baseline_bars=observations,
+            )
+        else:
+            result = evaluate_bar_impulse_window(
+                signal,
+                policy,
+                observations,
+                evaluated_ts=bundle.evaluation_as_of,
+                elapsed_observation_bars=elapsed,
+                atr_at_arm=context.atr_at_arm,
+                pace_baseline_bars=observations,
+            )
+        with self._condition:
+            self._confirmation_evaluation_count += 1
+        if result.status not in {
+            AggressionEvaluationStatus.QUALIFIED,
+            AggressionEvaluationStatus.EXPIRED,
+        }:
+            return None
+        terminal_status = (
+            SignalStatus.TRIGGERED
+            if result.status == AggressionEvaluationStatus.QUALIFIED
+            else SignalStatus.EXPIRED
+        )
+        reasons = result.reason_codes
+        if (
+            terminal_status == SignalStatus.EXPIRED
+            and "armed_observation_window_expired" not in reasons
+        ):
+            reasons = ("armed_observation_window_expired", *reasons)
+        event = transition_signal(
+            signal,
+            terminal_status,
+            occurred_ts=result.evaluated_ts,
+            reason_codes=reasons,
+            evidence=result.evidence,
+        )
+        self._store.apply_signal_transition(event)
+        with self._condition:
+            self._lifecycle_write_count += 1
+            if terminal_status == SignalStatus.TRIGGERED:
+                self._open_signals[key] = event.current
+                self._triggered_signal_count += 1
+            else:
+                self._open_signals.pop(key, None)
+                assert signal.location_episode_id is not None
+                self._suppressed_episode_ids[key] = signal.location_episode_id
+                self._expired_signal_count += 1
+        return SignalEvaluationEvent(
+            instrument_id=signal.instrument_id,
+            definition_id=signal.definition_id,
+            evaluation_ts=bundle.evaluation_as_of,
+            direction_status=gate.direction_status,
+            location_status=gate.location_status,
+            episode_event=gate.episode_event,
+            signal_id=event.current.signal_id,
+            signal_status=event.current.status,
+            lifecycle_events=(event,),
+            aggression_status=result.status,
+            confirmation_method=context.method,
+            elapsed_observation_bars=result.elapsed_observation_bars,
+        )
 
     def _offer_heartbeat(self, evaluation_ts: datetime) -> None:
         interval = timedelta(seconds=self._config.operator_heartbeat_interval_seconds)
@@ -512,6 +856,12 @@ class LiveSignalRuntime:
                 open_signal_count=snapshot.open_signal_count,
                 projection_rejected_count=snapshot.projection_rejected_count,
                 projection_callback_error_count=snapshot.projection_callback_error_count,
+                confirmation_evaluation_count=snapshot.confirmation_evaluation_count,
+                triggered_signal_count=snapshot.triggered_signal_count,
+                expired_signal_count=snapshot.expired_signal_count,
+                observation_accepted_bar_count=snapshot.observation_accepted_bar_count,
+                observation_retained_bar_count=snapshot.observation_retained_bar_count,
+                observation_conflicting_retry_count=(snapshot.observation_conflicting_retry_count),
             )
         )
 

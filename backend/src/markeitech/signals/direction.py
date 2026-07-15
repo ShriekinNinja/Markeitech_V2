@@ -86,9 +86,16 @@ class DirectionRegimeTracker:
         self._definition = definition
         self._regimes: dict[str, _DirectionRegime] = {}
 
-    def seed_open_signals(self, signals: tuple[SignalSnapshot, ...]) -> None:
+    def seed_open_signals(
+        self,
+        signals: tuple[SignalSnapshot, ...],
+        *,
+        include_expired: bool = False,
+    ) -> None:
         for signal in signals:
-            if signal.status in {SignalStatus.INVALIDATED, SignalStatus.EXPIRED}:
+            if signal.status == SignalStatus.INVALIDATED or (
+                signal.status == SignalStatus.EXPIRED and not include_expired
+            ):
                 continue
             if (
                 signal.definition_id != self._definition.definition_id

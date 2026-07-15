@@ -261,6 +261,11 @@ def _eligible_bars(
     *,
     source: str,
 ) -> tuple[OneMinuteBar, ...]:
+    window_started_ts = (
+        signal.updated_ts
+        if signal.confirmation_context is None
+        else signal.confirmation_context.window_started_ts
+    )
     eligible = [
         bar
         for bar in bars
@@ -268,7 +273,7 @@ def _eligible_bars(
         and bar.source == source
         and bar.is_complete
         and not bar.is_revision
-        and bar.open_ts >= signal.updated_ts
+        and bar.open_ts >= window_started_ts
         and bar.close_ts <= evaluated_ts
     ]
     eligible.sort(key=lambda bar: (bar.open_ts, bar.close_ts, bar.dedupe_key))

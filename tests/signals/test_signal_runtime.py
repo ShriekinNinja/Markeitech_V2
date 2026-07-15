@@ -13,8 +13,11 @@ from markeitech.analytics import (
     TrendState,
     VwapPosition,
 )
+from markeitech.domain import OneMinuteBar
 from markeitech.persistence import CommittedFeatureRevision
 from markeitech.signals import (
+    AggressionPolicyConfig,
+    BoundedAggressionObservationStore,
     BoundedFeatureCommitHandoff,
     BoundedSignalProjectionWriter,
     DirectionQualificationStatus,
@@ -25,6 +28,7 @@ from markeitech.signals import (
     LocationQualificationStatus,
     LocationSourceKind,
     LocationSourcePolicyConfig,
+    SignalConfirmationMethod,
     SignalDefinitionConfig,
     SignalLifecycleProjection,
     SignalLifecycleProjectionKind,
@@ -51,6 +55,49 @@ def definition() -> SignalDefinitionConfig:
                 ),
             ),
         ),
+    )
+
+
+def aggression_definition() -> SignalDefinitionConfig:
+    return definition().model_copy(
+        update={
+            "aggression_policy": AggressionPolicyConfig(
+                window_bars=3,
+                expiry_observation_bars=5,
+                minimum_pace_baseline_bars=3,
+                bar_proxy_minimum_pace_ratio=Decimal("1.0"),
+            )
+        }
+    )
+
+
+def observation_bar(
+    minute: int,
+    *,
+    source: str,
+    open_price: str,
+    high: str,
+    low: str,
+    close: str,
+) -> OneMinuteBar:
+    open_ts = STARTED + timedelta(minutes=minute)
+    close_ts = open_ts + timedelta(minutes=1)
+    classified = source == "classified_ticks"
+    return OneMinuteBar(
+        instrument_id="NQU6.CME",
+        event_ts=close_ts,
+        ts_init=close_ts,
+        open_ts=open_ts,
+        close_ts=close_ts,
+        open=Decimal(open_price),
+        high=Decimal(high),
+        low=Decimal(low),
+        close=Decimal(close),
+        volume=Decimal("100"),
+        buy_volume=Decimal("70") if classified else Decimal("0"),
+        sell_volume=Decimal("30") if classified else Decimal("0"),
+        unknown_volume=Decimal("0") if classified else Decimal("100"),
+        source=source,
     )
 
 
@@ -703,3 +750,281 @@ def test_runtime_labels_verified_open_state_as_restored_not_fresh() -> None:
     assert len(restored) == 1
     assert restored[0].kind == SignalLifecycleProjectionKind.RESTORED
     assert restored[0].transition_id is None
+
+
+def test_runtime_triggers_active_signal_when_feature_arrives_before_committed_bars() -> None:
+    store = MemorySignalStore()
+    observations = BoundedAggressionObservationStore(32)
+    handoff = BoundedFeatureCommitHandoff(32)
+    terminal = Event()
+    role = {"value": "ACTIVE"}
+    runtime = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(aggression_definition(),),
+            enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        handoff,
+        observation_store=observations,
+        role_resolver=lambda _instrument_id: role["value"],
+        clock=lambda: STARTED,
+        on_evaluation=lambda event: (
+            terminal.set() if event.signal_status == SignalStatus.TRIGGERED else None
+        ),
+    )
+    runtime.start()
+    assert handoff.offer(revisions("NQU6.CME", 1))
+    deadline = datetime.now(UTC) + timedelta(seconds=1)
+    while runtime.snapshot.open_signal_count != 1 and datetime.now(UTC) < deadline:
+        Event().wait(0.01)
+
+    role["value"] = "BACKGROUND"
+    prices = (
+        ("100", "101", "99.5", "100.75"),
+        ("100.75", "101.75", "100.5", "101.5"),
+        ("101.5", "102.25", "101.25", "102"),
+    )
+    for index, values in enumerate(prices, start=1):
+        as_of = STARTED + timedelta(minutes=index + 1)
+        assert handoff.offer(
+            (
+                CommittedFeatureRevision(
+                    feature(
+                        "NQU6.CME",
+                        AnalyticsTimeframe.ONE_MINUTE,
+                        as_of,
+                        revision=str(index + 4),
+                        close=Decimal(values[3]),
+                    ),
+                    as_of,
+                    index + 4,
+                ),
+            )
+        )
+        Event().wait(0.02)
+        assert observations.offer_committed(
+            (
+                observation_bar(
+                    index,
+                    source="classified_ticks",
+                    open_price=values[0],
+                    high=values[1],
+                    low=values[2],
+                    close=values[3],
+                ),
+                observation_bar(
+                    index,
+                    source="ib",
+                    open_price=values[0],
+                    high=values[1],
+                    low=values[2],
+                    close=values[3],
+                ),
+            )
+        )
+
+    assert terminal.wait(1)
+    assert runtime.stop(1)
+    signal = next(iter(store.signals.values()))
+    assert signal.status == SignalStatus.TRIGGERED
+    assert signal.confirmation_context is not None
+    assert signal.confirmation_context.method == SignalConfirmationMethod.TICK_AGGRESSION
+    assert runtime.snapshot.triggered_signal_count == 1
+    assert runtime.snapshot.observation_accepted_bar_count == 6
+
+
+def test_runtime_expires_once_and_suppresses_same_location_episode() -> None:
+    store = MemorySignalStore()
+    observations = BoundedAggressionObservationStore(32)
+    handoff = BoundedFeatureCommitHandoff(32)
+    expired = Event()
+    runtime = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(aggression_definition(),),
+            enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        handoff,
+        observation_store=observations,
+        role_resolver=lambda _instrument_id: "ACTIVE",
+        clock=lambda: STARTED,
+        on_evaluation=lambda event: (
+            expired.set() if event.signal_status == SignalStatus.EXPIRED else None
+        ),
+    )
+    runtime.start()
+    assert handoff.offer(revisions("NQU6.CME", 1))
+    deadline = datetime.now(UTC) + timedelta(seconds=1)
+    while runtime.snapshot.open_signal_count != 1 and datetime.now(UTC) < deadline:
+        Event().wait(0.01)
+    bars = tuple(
+        observation_bar(
+            minute,
+            source="ib",
+            open_price="100",
+            high="100.25",
+            low="99.75",
+            close="100",
+        )
+        for minute in range(1, 6)
+    )
+    assert observations.offer_committed(bars)
+    latest = STARTED + timedelta(minutes=6)
+    assert handoff.offer(
+        (
+            CommittedFeatureRevision(
+                feature(
+                    "NQU6.CME",
+                    AnalyticsTimeframe.ONE_MINUTE,
+                    latest,
+                    revision="8",
+                ),
+                latest,
+                8,
+            ),
+        )
+    )
+    assert expired.wait(1)
+    next_ts = latest + timedelta(minutes=1)
+    assert handoff.offer(
+        (
+            CommittedFeatureRevision(
+                feature(
+                    "NQU6.CME",
+                    AnalyticsTimeframe.ONE_MINUTE,
+                    next_ts,
+                    revision="9",
+                ),
+                next_ts,
+                9,
+            ),
+        )
+    )
+    Event().wait(0.05)
+    assert runtime.stop(1)
+    assert tuple(signal.status for signal in store.signals.values()) == (SignalStatus.EXPIRED,)
+    assert store.lifecycle_writes == 2
+    assert runtime.snapshot.expired_signal_count == 1
+    assert runtime.snapshot.open_signal_count == 0
+
+    restart_watermark = STARTED + timedelta(minutes=7)
+    restarted_evaluation = Event()
+    restarted_handoff = BoundedFeatureCommitHandoff(32)
+    restarted = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(aggression_definition(),),
+            enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        restarted_handoff,
+        observation_store=BoundedAggressionObservationStore(32),
+        role_resolver=lambda _instrument_id: "ACTIVE",
+        clock=lambda: restart_watermark,
+        on_evaluation=lambda _event: restarted_evaluation.set(),
+    )
+    restarted.start()
+    original_warmup = tuple(item.feature for item in revisions("NQU6.CME", 30)[:3])
+    warmup = (
+        *original_warmup,
+        feature(
+            "NQU6.CME",
+            AnalyticsTimeframe.ONE_MINUTE,
+            restart_watermark + timedelta(minutes=1),
+            revision="d",
+        ),
+    )
+    assert restarted_handoff.offer(
+        tuple(
+            CommittedFeatureRevision(value, restart_watermark, 20 + index)
+            for index, value in enumerate(warmup)
+        )
+    )
+    assert restarted_evaluation.wait(1)
+    assert restarted.stop(1)
+    assert restarted.snapshot.restored_open_signal_count == 0
+    assert restarted.snapshot.open_signal_count == 0
+    assert store.lifecycle_writes == 2
+
+
+def test_runtime_triggers_background_signal_from_reported_bar_proxy() -> None:
+    store = MemorySignalStore()
+    observations = BoundedAggressionObservationStore(32)
+    baseline = tuple(
+        observation_bar(
+            minute,
+            source="ib",
+            open_price="99",
+            high="99.25",
+            low="98.75",
+            close="99",
+        )
+        for minute in range(-2, 1)
+    )
+    assert observations.offer_committed(baseline)
+    handoff = BoundedFeatureCommitHandoff(32)
+    terminal = Event()
+    runtime = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(aggression_definition(),),
+            enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        handoff,
+        observation_store=observations,
+        role_resolver=lambda _instrument_id: "BACKGROUND",
+        clock=lambda: STARTED,
+        on_evaluation=lambda event: (
+            terminal.set() if event.signal_status == SignalStatus.TRIGGERED else None
+        ),
+    )
+    runtime.start()
+    assert handoff.offer(revisions("NQU6.CME", 1))
+    deadline = datetime.now(UTC) + timedelta(seconds=1)
+    while runtime.snapshot.open_signal_count != 1 and datetime.now(UTC) < deadline:
+        Event().wait(0.01)
+    prices = (
+        ("100", "101", "99.5", "100.75"),
+        ("100.75", "101.75", "100.5", "101.5"),
+        ("101.5", "102.25", "101.25", "102"),
+    )
+    for index, values in enumerate(prices, start=1):
+        bar = observation_bar(
+            index,
+            source="ib",
+            open_price=values[0],
+            high=values[1],
+            low=values[2],
+            close=values[3],
+        )
+        assert observations.offer_committed((bar,))
+        as_of = bar.close_ts
+        assert handoff.offer(
+            (
+                CommittedFeatureRevision(
+                    feature(
+                        "NQU6.CME",
+                        AnalyticsTimeframe.ONE_MINUTE,
+                        as_of,
+                        revision=str(index + 4),
+                        close=Decimal(values[3]),
+                    ),
+                    as_of,
+                    index + 4,
+                ),
+            )
+        )
+    assert terminal.wait(1)
+    assert runtime.stop(1)
+    signal = next(iter(store.signals.values()))
+    assert signal.status == SignalStatus.TRIGGERED
+    assert signal.confirmation_context is not None
+    assert signal.confirmation_context.method == SignalConfirmationMethod.BAR_IMPULSE_PROXY
+    assert runtime.snapshot.triggered_signal_count == 1

@@ -9,6 +9,8 @@ from decimal import Decimal
 from enum import StrEnum
 from threading import Condition, Thread
 
+from nautilus_trader.common.enums import LogColor
+
 from markeitech.domain.base import require_utc
 from markeitech.signals.contracts import (
     SignalEvidenceStage,
@@ -94,6 +96,12 @@ class SignalRuntimeProjection:
     open_signal_count: int
     projection_rejected_count: int
     projection_callback_error_count: int
+    confirmation_evaluation_count: int = 0
+    triggered_signal_count: int = 0
+    expired_signal_count: int = 0
+    observation_accepted_bar_count: int = 0
+    observation_retained_bar_count: int = 0
+    observation_conflicting_retry_count: int = 0
 
     def __post_init__(self) -> None:
         require_utc(self.occurred_ts)
@@ -110,6 +118,12 @@ class SignalRuntimeProjection:
             self.open_signal_count,
             self.projection_rejected_count,
             self.projection_callback_error_count,
+            self.confirmation_evaluation_count,
+            self.triggered_signal_count,
+            self.expired_signal_count,
+            self.observation_accepted_bar_count,
+            self.observation_retained_bar_count,
+            self.observation_conflicting_retry_count,
         )
         if any(value < 0 for value in counters):
             raise ValueError("signal runtime projection counters cannot be negative")
@@ -145,6 +159,7 @@ class BoundedSignalProjectionWriter:
         sink: Callable[[str], None],
         role_resolver: Callable[[str], str],
         *,
+        colored_sink: Callable[[str, LogColor], None] | None = None,
         queue_size: int,
         dedupe_size: int,
         poll_seconds: float = 0.1,
@@ -156,6 +171,7 @@ class BoundedSignalProjectionWriter:
         if poll_seconds <= 0:
             raise ValueError("signal projection poll interval must be positive")
         self._sink = sink
+        self._colored_sink = colored_sink
         self._role_resolver = role_resolver
         self._queue_size = queue_size
         self._dedupe_size = dedupe_size
@@ -253,7 +269,10 @@ class BoundedSignalProjectionWriter:
                 )
                 if isinstance(projection, SignalRuntimeProjection):
                     line += f" | render_errors={self._failed_count}"
-                self._sink(line)
+                if self._colored_sink is None:
+                    self._sink(line)
+                else:
+                    self._colored_sink(line, signal_projection_color(projection))
             except Exception as exc:
                 with self._condition:
                     self._failed_count += 1
@@ -295,6 +314,12 @@ def format_signal_operator_projection(
             f"| evaluations={projection.evaluation_count} "
             f"| writes={projection.lifecycle_write_count} "
             f"| open={projection.open_signal_count} "
+            f"| confirmations={projection.confirmation_evaluation_count} "
+            f"| triggered={projection.triggered_signal_count} "
+            f"| expired={projection.expired_signal_count} "
+            f"| observations={projection.observation_accepted_bar_count} "
+            f"| retained={projection.observation_retained_bar_count} "
+            f"| observation_conflicts={projection.observation_conflicting_retry_count} "
             f"| projection_rejected={projection.projection_rejected_count} "
             f"| projection_errors={projection.projection_callback_error_count}"
         )
@@ -318,6 +343,25 @@ def format_signal_operator_projection(
         f"| reason={reasons} | as_of={projection.occurred_ts.isoformat()} "
         f"| signal={signal.signal_id[:12]} | transition={transition}"
     )
+
+
+def signal_projection_color(projection: SignalOperatorProjection) -> LogColor:
+    if isinstance(projection, SignalRuntimeProjection):
+        return {
+            SignalRuntimeProjectionKind.STARTED: LogColor.GREEN,
+            SignalRuntimeProjectionKind.HEARTBEAT: LogColor.CYAN,
+            SignalRuntimeProjectionKind.FAILED: LogColor.RED,
+            SignalRuntimeProjectionKind.STOPPED: LogColor.YELLOW,
+        }[projection.kind]
+    if projection.kind == SignalLifecycleProjectionKind.RESTORED:
+        return LogColor.CYAN
+    return {
+        SignalStatus.CANDIDATE: LogColor.NORMAL,
+        SignalStatus.ARMED: LogColor.YELLOW,
+        SignalStatus.TRIGGERED: LogColor.GREEN,
+        SignalStatus.INVALIDATED: LogColor.RED,
+        SignalStatus.EXPIRED: LogColor.MAGENTA,
+    }[projection.signal.status]
 
 
 def _projection_dedupe_key(projection: SignalOperatorProjection) -> str | None:

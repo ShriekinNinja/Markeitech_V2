@@ -7,6 +7,7 @@ from datetime import datetime
 from markeitech.analytics import AnalyticsInputFidelity
 from markeitech.signals.config import SignalDefinitionConfig
 from markeitech.signals.contracts import (
+    SignalConfirmationContext,
     SignalEvidenceFidelity,
     SignalEvidenceReference,
     SignalEvidenceStage,
@@ -38,6 +39,7 @@ def build_armed_location_signal(
     definition: SignalDefinitionConfig,
     episode: SignalLocationEpisode,
     direction: DirectionQualification,
+    confirmation_context: SignalConfirmationContext | None = None,
 ) -> ArmedLocationSignal:
     if direction.status != DirectionQualificationStatus.QUALIFIED:
         raise ValueError("location signal requires qualified Direction")
@@ -88,13 +90,14 @@ def build_armed_location_signal(
         reason_codes=("location_episode_armed",),
         evidence=location_evidence,
         location_matches=episode.entry_matches,
+        confirmation_context=confirmation_context,
     )
     return ArmedLocationSignal(candidate, armed)
 
 
 def restore_location_episode(signal: SignalSnapshot) -> SignalLocationEpisode:
-    if signal.status not in {SignalStatus.ARMED, SignalStatus.TRIGGERED}:
-        raise ValueError("only open Armed or Triggered signals restore location episodes")
+    if signal.status not in {SignalStatus.ARMED, SignalStatus.TRIGGERED, SignalStatus.EXPIRED}:
+        raise ValueError("only Armed, Triggered, or Expired signals restore location episodes")
     if signal.location_episode_id is None or signal.direction_regime_anchor is None:
         raise ValueError("open location signal is missing episode identity")
     episode = SignalLocationEpisode(

@@ -188,6 +188,17 @@ class SignalLocationMatch(VersionedDomainModel):
         return self
 
 
+class SignalConfirmationContext(VersionedDomainModel):
+    method: SignalConfirmationMethod
+    window_started_ts: datetime
+    atr_at_arm: Decimal = Field(gt=0)
+
+    @field_validator("window_started_ts")
+    @classmethod
+    def _timestamp_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+
 class LocationQualification(VersionedDomainModel):
     status: LocationQualificationStatus
     matches: tuple[SignalLocationMatch, ...] = ()
@@ -247,6 +258,7 @@ class SignalSnapshot(VersionedDomainModel):
     direction_regime_anchor: str | None = Field(default=None, min_length=1)
     location_episode_id: str | None = Field(default=None, pattern=_SHA256_PATTERN)
     location_matches: tuple[SignalLocationMatch, ...] = ()
+    confirmation_context: SignalConfirmationContext | None = None
     evidence: tuple[SignalEvidenceReference, ...] = Field(min_length=1)
     reason_codes: tuple[str, ...] = Field(min_length=1)
 
@@ -277,6 +289,11 @@ class SignalSnapshot(VersionedDomainModel):
             raise ValueError("signal location matches must align with signal direction")
         if any(item.observed_ts > self.updated_ts for item in self.location_matches):
             raise ValueError("signal location matches cannot be newer than signal state")
+        if (
+            self.confirmation_context is not None
+            and self.confirmation_context.window_started_ts > self.updated_ts
+        ):
+            raise ValueError("signal confirmation window cannot start after signal state")
         evidence_keys = [item.evidence_key for item in self.evidence]
         if len(evidence_keys) != len(set(evidence_keys)):
             raise ValueError("signal evidence references must be unique")
@@ -336,7 +353,10 @@ class SignalSnapshot(VersionedDomainModel):
 
     @property
     def content_hash(self) -> str:
-        return _canonical_hash(self.model_dump(mode="json"))
+        payload = self.model_dump(mode="json")
+        if self.confirmation_context is None:
+            del payload["confirmation_context"]
+        return _canonical_hash(payload)
 
     @property
     def feature_ids(self) -> tuple[str, ...]:

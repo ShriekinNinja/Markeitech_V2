@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from datetime import datetime
 
 from markeitech.signals.contracts import (
+    SignalConfirmationContext,
     SignalEvidenceReference,
     SignalLocationMatch,
     SignalSnapshot,
@@ -21,6 +22,7 @@ def transition_signal(
     reason_codes: Sequence[str],
     evidence: Sequence[SignalEvidenceReference] = (),
     location_matches: Sequence[SignalLocationMatch] | None = None,
+    confirmation_context: SignalConfirmationContext | None = None,
 ) -> SignalTransitionEvent:
     if to_status not in allowed_signal_statuses(current.status):
         raise ValueError(
@@ -41,6 +43,8 @@ def transition_signal(
     )
     if location_matches is not None:
         updated_values["location_matches"] = tuple(location_matches)
+    if confirmation_context is not None:
+        updated_values["confirmation_context"] = confirmation_context
     updated = SignalSnapshot.model_validate(updated_values)
     return SignalTransitionEvent(
         signal_id=current.signal_id,

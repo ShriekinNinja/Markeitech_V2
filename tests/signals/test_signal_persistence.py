@@ -1,3 +1,4 @@
+import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -162,6 +163,33 @@ def test_candidate_insert_is_idempotent_and_restores_after_restart(tmp_path: Pat
         assert restarted.load_signals(definition_id="intraday_context") == (signal,)
         assert restarted.load_signals(definition_id="scalp") == ()
         assert restarted.load_signals(status=SignalStatus.ARMED) == ()
+
+
+def test_restart_accepts_legacy_signal_payload_without_confirmation_context(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "metadata.sqlite3"
+    signal = candidate()
+    event = armed_event(signal)
+    with SQLiteMetadataStore(config(path)) as store:
+        store.save_signal_candidate(signal)
+        store.apply_signal_transition(event)
+        snapshot_payload = event.current.model_dump(mode="json")
+        del snapshot_payload["confirmation_context"]
+        event_payload = event.model_dump(mode="json")
+        del event_payload["current"]["confirmation_context"]
+        store._connection.execute(  # noqa: SLF001 - pre-5D.3 compatibility fixture
+            "UPDATE signal_snapshots SET snapshot_json=? WHERE signal_id=?",
+            (json.dumps(snapshot_payload), bytes.fromhex(signal.signal_id)),
+        )
+        store._connection.execute(  # noqa: SLF001 - pre-5D.3 compatibility fixture
+            "UPDATE signal_transitions SET event_json=? WHERE signal_id=?",
+            (json.dumps(event_payload), bytes.fromhex(signal.signal_id)),
+        )
+
+    with SQLiteMetadataStore(config(path)) as restarted:
+        assert restarted.load_signal(signal.signal_id) == event.current
+        assert restarted.load_signal_transitions(signal.signal_id) == (event,)
 
 
 def test_same_signal_identity_rejects_different_initial_content(tmp_path: Path) -> None:

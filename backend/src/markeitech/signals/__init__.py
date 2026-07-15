@@ -32,6 +32,7 @@ from markeitech.signals.contracts import (
     LocationQualification,
     LocationQualificationStatus,
     LocationSourceKind,
+    SignalConfirmationContext,
     SignalConfirmationMethod,
     SignalDirection,
     SignalEvidenceFidelity,
@@ -82,6 +83,7 @@ from markeitech.signals.projection import (
     SignalRuntimeProjection,
     SignalRuntimeProjectionKind,
     format_signal_operator_projection,
+    signal_projection_color,
 )
 from markeitech.signals.runtime import (
     LiveSignalRuntime,
@@ -116,6 +118,7 @@ __all__ = [
     "ArmedLocationSignal",
     "SignalDirection",
     "SignalConfirmationMethod",
+    "SignalConfirmationContext",
     "CommittedMarketContextBundle",
     "DirectionCandidateDecision",
     "DirectionQualification",
@@ -158,4 +161,5 @@ __all__ = [
     "intraday_context_definition",
     "transition_signal",
     "format_signal_operator_projection",
+    "signal_projection_color",
 ]

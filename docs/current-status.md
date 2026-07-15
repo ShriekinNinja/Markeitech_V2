@@ -69,6 +69,9 @@ that exists from behavior that has received live acceptance.
 - Restart restoration of verified open signal state
 - Bounded post-commit live feature composition and Direction/Location evaluation
 - Equal evaluation path for active and background instruments
+- Durable role-selected Aggression and follow-through evaluation
+- Atomic Armed-to-Triggered and Armed-to-Expired lifecycle transitions
+- Restart-stable expiry suppression for unchanged Location episodes
 - Concise lifecycle and runtime-health console projections
 
 ## Current Boundary
@@ -87,14 +90,23 @@ setup before confirmation.
 Stage 5D.2 provides a bounded, commit-coupled Aggression observation bridge.
 Completed active classified-tick bars and reported one-minute bars enter only
 after durable market-data commit, retain independent source streams, and seed
-from catalog history before restart. The bridge is available to the managed
-LiveNode but does not yet mutate lifecycle.
+from catalog history before restart.
 
-The next slice is Stage 5D.3: compose the existing cadence-bounded,
-provider-aware Aggression evaluator into the managed signal runtime. It will
-select the active classified-tick or background bar-impulse stream by current
-runtime role, then persist and project explicit Armed-to-Triggered or
-Armed-to-Expired transitions.
+Stage 5D.3 is implemented and awaiting live acceptance. Arming freezes the
+current role-selected confirmation method, ATR, and observation-window start.
+The managed runtime composes durable observations with the latest committed
+feature bundle, blocks confirmation during degraded Direction or adverse
+Location states, and atomically persists explicit Armed-to-Triggered or
+Armed-to-Expired transitions. Expired Location episodes remain suppressed
+across restart until their original episode exits or is replaced. Runtime
+health now reports confirmation attempts, terminal outcomes, retained
+observations, and conflicting retries.
+
+The first 5D.3 live launch exposed a backward-compatibility defect: adding the
+optional confirmation context changed calculated hashes for pre-5D.3 signal
+snapshots. The compatibility fix preserves legacy hashes when that field is
+absent and is covered by restart regression tests. A successful live restart
+and observed Aggression lifecycle remain the acceptance boundary.
 
 ## Validation Debt
 
@@ -102,6 +114,9 @@ Armed-to-Expired transitions.
   equities. Broader provider and contract coverage remains an acceptance task.
 - Post-commit Direction/Location evaluation and console lifecycle output have
   live evidence, but the new departure policy still awaits a live observation.
+- Stage 5D.3 has deterministic active, background, expiry, race-order, and
+  restart tests, but its corrected legacy recovery path still awaits a live
+  rerun and Triggered/Expired output awaits market qualification.
 - Tick gaps and damaged tick windows are observable; their effect on future
   Aggression confidence still needs an explicit policy.
 - Selected profile, FVG, session, and context values have been compared with

@@ -115,9 +115,7 @@ class CommittedFeatureState:
     """Latest durable revision per instrument and timeframe for live composition."""
 
     def __init__(self) -> None:
-        self._latest: dict[
-            tuple[str, AnalyticsTimeframe], CommittedFeatureRevision
-        ] = {}
+        self._latest: dict[tuple[str, AnalyticsTimeframe], CommittedFeatureRevision] = {}
 
     def apply(self, revision: CommittedFeatureRevision) -> bool:
         feature = revision.feature
@@ -169,3 +167,13 @@ class CommittedFeatureState:
             evaluation_as_of=feature.snapshot.as_of,
             features=tuple(values),
         )
+
+    def latest_bundle(
+        self,
+        instrument_id: str,
+        definition: SignalDefinitionConfig,
+    ) -> CommittedMarketContextBundle | None:
+        revision = self._latest.get((instrument_id, definition.evaluation_timeframe))
+        if revision is None:
+            return None
+        return self.compose(revision, definition)

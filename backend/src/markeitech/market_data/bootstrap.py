@@ -317,12 +317,14 @@ def build_prepared_market_data_live_node(
     signal_runtime = None
     if config.signals is not None and signal_handoff is not None:
         sink = signal_projection_sink
+        colored_sink = None
         if sink is None:
             actor_log = getattr(actor, "log", None)
             if actor_log is None or not callable(getattr(actor_log, "info", None)):
                 persistence.stop()
                 raise RuntimeError("signal projection requires an actor INFO log sink")
             sink = actor_log.info
+            colored_sink = actor_log.info
         role_resolver = signal_role_resolver
         if role_resolver is None:
             if not hasattr(actor, "active_switch"):
@@ -340,6 +342,7 @@ def build_prepared_market_data_live_node(
         signal_projection_writer = BoundedSignalProjectionWriter(
             sink,
             role_resolver,
+            colored_sink=colored_sink,
             queue_size=config.signals.operator_projection_queue_size,
             dedupe_size=config.signals.operator_projection_dedupe_size,
         )
@@ -348,6 +351,8 @@ def build_prepared_market_data_live_node(
             persistence.metadata,
             session_calendar,
             signal_handoff,
+            observation_store=signal_observations,
+            role_resolver=role_resolver,
             on_projection=signal_projection_writer.submit,
         )
     return PersistenceManagedLiveNode(

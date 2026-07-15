@@ -6,7 +6,9 @@ from markeitech.signals import (
     SignalRuntimeProjection,
     SignalRuntimeProjectionKind,
     format_signal_operator_projection,
+    signal_projection_color,
 )
+from nautilus_trader.common.enums import LogColor
 
 NOW = datetime(2026, 7, 15, 6, 0, tzinfo=UTC)
 
@@ -40,6 +42,8 @@ def test_runtime_projection_is_human_readable_and_machine_stable() -> None:
         "SIGNAL_RUNTIME | event=HEARTBEAT | status=RUNNING "
         "| watermark=2026-07-15T06:00:00+00:00 | restored=1 | revisions=12 "
         "| stale=6 | evaluations=4 | writes=2 | open=1 "
+        "| confirmations=0 | triggered=0 | expired=0 | observations=0 "
+        "| retained=0 | observation_conflicts=0 "
         "| projection_rejected=0 | projection_errors=0"
     )
 
@@ -68,6 +72,28 @@ def test_projection_writer_drains_without_blocking_signal_runtime() -> None:
         )
         + " | render_errors=0"
     ]
+
+
+def test_projection_writer_passes_semantic_color_to_nautilus_sink() -> None:
+    colored: list[tuple[str, LogColor]] = []
+    projection = runtime_projection(SignalRuntimeProjectionKind.STARTED)
+    writer = BoundedSignalProjectionWriter(
+        lambda _line: None,
+        lambda _instrument_id: "ACTIVE",
+        colored_sink=lambda line, color: colored.append((line, color)),
+        queue_size=4,
+        dedupe_size=8,
+        poll_seconds=0.01,
+    )
+
+    writer.start()
+    assert writer.submit(projection)
+    assert writer.stop(1)
+
+    assert signal_projection_color(projection) == LogColor.GREEN
+    assert len(colored) == 1
+    assert colored[0][0].startswith("SIGNAL_RUNTIME | event=STARTED")
+    assert colored[0][1] == LogColor.GREEN
 
 
 def test_projection_sink_failure_is_recorded_and_does_not_fail_writer() -> None:
