@@ -121,12 +121,8 @@ class DirectionRegimeTracker:
         qualification = qualify_direction(bundle, self._definition)
         existing = self._regimes.get(bundle.instrument_id)
         if qualification.direction is None:
-            if qualification.status == DirectionQualificationStatus.MISSING_EVIDENCE:
-                anchor = None if existing is None else _regime_anchor(existing.started_ts)
-                return DirectionCandidateDecision(qualification, None, None, anchor)
-            ended = None if existing is None else existing.signal_id
-            self._regimes.pop(bundle.instrument_id, None)
-            return DirectionCandidateDecision(qualification, None, ended, None)
+            anchor = None if existing is None else _regime_anchor(existing.started_ts)
+            return DirectionCandidateDecision(qualification, None, None, anchor)
         if existing is not None and existing.direction == qualification.direction:
             return DirectionCandidateDecision(
                 qualification,

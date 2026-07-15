@@ -350,22 +350,19 @@ class LiveSignalRuntime:
         if direction is None:
             assert open_signal is not None
             direction = open_signal.direction
-            if (
-                direction_decision.qualification.status
+            anchor = open_signal.direction_regime_anchor
+            reason = (
+                "direction_evidence_unavailable"
+                if direction_decision.qualification.status
                 == DirectionQualificationStatus.MISSING_EVIDENCE
-            ):
-                anchor = open_signal.direction_regime_anchor
-                location = LocationQualification(
-                    status=LocationQualificationStatus.MISSING_EVIDENCE,
-                    is_degraded=True,
-                    reason_codes=("direction_evidence_unavailable",),
-                )
-            else:
-                anchor = f"direction_ended:{bundle.evaluation_as_of.isoformat()}"
-                location = LocationQualification(
-                    status=LocationQualificationStatus.NOT_AT_LOCATION,
-                    reason_codes=("direction_regime_ended",),
-                )
+                else "direction_entry_qualification_degraded_"
+                f"{direction_decision.qualification.status.value}"
+            )
+            location = LocationQualification(
+                status=LocationQualificationStatus.MISSING_EVIDENCE,
+                is_degraded=True,
+                reason_codes=(reason, "trigger_blocked_by_direction_degradation"),
+            )
         else:
             anchor = direction_decision.regime_anchor
             session_start, _ = self._session_resolver.session_window(

@@ -17,9 +17,12 @@ from markeitech.persistence import CommittedFeatureRevision
 from markeitech.signals import (
     BoundedFeatureCommitHandoff,
     BoundedSignalProjectionWriter,
+    DirectionQualificationStatus,
     LiveSignalRuntime,
     LiveSignalRuntimeStatus,
+    LocationEpisodeEventType,
     LocationPolicyConfig,
+    LocationQualificationStatus,
     LocationSourceKind,
     LocationSourcePolicyConfig,
     SignalDefinitionConfig,
@@ -57,6 +60,7 @@ def feature(
     as_of: datetime,
     *,
     revision: str,
+    direction_score: int = 1,
 ) -> MarketContextFeatureSnapshot:
     return MarketContextFeatureSnapshot(
         configuration_hash="a" * 64,
@@ -97,7 +101,7 @@ def feature(
                 if timeframe == AnalyticsTimeframe.FIVE_MINUTES
                 else None
             ),
-            direction_score=1,
+            direction_score=direction_score,
             direction_location_reason_codes=("bullish_direction_score",),
         ),
     )
@@ -181,6 +185,131 @@ def test_runtime_rebuilds_from_warmup_then_arms_on_first_live_evaluation() -> No
     assert snapshot.open_signal_count == 1
     assert store.lifecycle_writes == 1
     assert {signal.status for signal in store.signals.values()} == {SignalStatus.ARMED}
+
+
+def test_runtime_preserves_armed_episode_during_soft_direction_degradation() -> None:
+    store = MemorySignalStore()
+    handoff = BoundedFeatureCommitHandoff(16)
+    observed = []
+    completed = Event()
+
+    def capture(event):
+        observed.append(event)
+        if len(observed) == 2:
+            completed.set()
+
+    runtime = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(definition(),),
+            enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        handoff,
+        clock=lambda: STARTED,
+        on_evaluation=capture,
+    )
+    runtime.start()
+    assert handoff.offer(revisions("NQU6.CME", 1))
+    degraded_ts = STARTED + timedelta(minutes=2)
+    assert handoff.offer(
+        (
+            CommittedFeatureRevision(
+                feature(
+                    "NQU6.CME",
+                    AnalyticsTimeframe.ONE_HOUR,
+                    degraded_ts,
+                    revision="5",
+                    direction_score=0,
+                ),
+                degraded_ts,
+                5,
+            ),
+            CommittedFeatureRevision(
+                feature(
+                    "NQU6.CME",
+                    AnalyticsTimeframe.ONE_MINUTE,
+                    degraded_ts,
+                    revision="6",
+                ),
+                degraded_ts,
+                6,
+            ),
+        )
+    )
+    assert completed.wait(1)
+    assert runtime.stop(1)
+
+    degraded = observed[-1]
+    assert degraded.direction_status == DirectionQualificationStatus.NEUTRAL
+    assert degraded.location_status == LocationQualificationStatus.MISSING_EVIDENCE
+    assert degraded.episode_event == LocationEpisodeEventType.EVIDENCE_GAP
+    assert degraded.signal_status == SignalStatus.ARMED
+    assert store.lifecycle_writes == 1
+    assert runtime.snapshot.open_signal_count == 1
+
+
+def test_runtime_invalidates_armed_episode_on_fully_qualified_opposite_direction() -> None:
+    store = MemorySignalStore()
+    handoff = BoundedFeatureCommitHandoff(16)
+    observed = []
+    completed = Event()
+
+    def capture(event):
+        observed.append(event)
+        if len(observed) == 2:
+            completed.set()
+
+    runtime = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(definition(),),
+            enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        handoff,
+        clock=lambda: STARTED,
+        on_evaluation=capture,
+    )
+    runtime.start()
+    assert handoff.offer(revisions("NQU6.CME", 1))
+    flipped_ts = STARTED + timedelta(minutes=2)
+    assert handoff.offer(
+        (
+            CommittedFeatureRevision(
+                feature(
+                    "NQU6.CME",
+                    AnalyticsTimeframe.ONE_HOUR,
+                    flipped_ts,
+                    revision="5",
+                    direction_score=-1,
+                ),
+                flipped_ts,
+                5,
+            ),
+            CommittedFeatureRevision(
+                feature(
+                    "NQU6.CME",
+                    AnalyticsTimeframe.ONE_MINUTE,
+                    flipped_ts,
+                    revision="6",
+                ),
+                flipped_ts,
+                6,
+            ),
+        )
+    )
+    assert completed.wait(1)
+    assert runtime.stop(1)
+
+    flipped = observed[-1]
+    assert flipped.direction_status == DirectionQualificationStatus.QUALIFIED
+    assert flipped.episode_event == LocationEpisodeEventType.EXITED
+    assert flipped.signal_status == SignalStatus.INVALIDATED
+    assert store.lifecycle_writes == 2
+    assert runtime.snapshot.open_signal_count == 0
 
 
 def test_runtime_applies_identical_signal_path_to_active_and_background() -> None:

@@ -189,9 +189,7 @@ def test_alternate_scalp_definition_uses_its_own_timeframe_roles() -> None:
         minimum_confirmation_count=1,
     )
 
-    decision = DirectionRegimeTracker(definition).evaluate(
-        bundle(one_hour=None, daily=None)
-    )
+    decision = DirectionRegimeTracker(definition).evaluate(bundle(one_hour=None, daily=None))
 
     assert decision.qualification.status == DirectionQualificationStatus.QUALIFIED
     assert decision.candidate is not None
@@ -199,13 +197,11 @@ def test_alternate_scalp_definition_uses_its_own_timeframe_roles() -> None:
     assert len(decision.candidate.evidence) == 3
 
 
-def test_tracker_emits_once_per_direction_regime_and_requalifies_after_neutral() -> None:
+def test_tracker_preserves_regime_through_neutral_entry_assessment() -> None:
     tracker = DirectionRegimeTracker(intraday_context_definition())
     first = tracker.evaluate(bundle())
     repeated = tracker.evaluate(bundle(as_of=AS_OF + timedelta(minutes=1)))
-    ended = tracker.evaluate(
-        bundle(fifteen_minutes=0, as_of=AS_OF + timedelta(minutes=2))
-    )
+    ended = tracker.evaluate(bundle(fifteen_minutes=0, as_of=AS_OF + timedelta(minutes=2)))
     resumed = tracker.evaluate(bundle(as_of=AS_OF + timedelta(minutes=3)))
 
     assert first.candidate is not None
@@ -213,18 +209,53 @@ def test_tracker_emits_once_per_direction_regime_and_requalifies_after_neutral()
     assert repeated.ended_signal_id is None
     assert repeated.regime_anchor == first.regime_anchor
     assert ended.candidate is None
-    assert ended.ended_signal_id == first.candidate.signal_id
-    assert ended.regime_anchor is None
-    assert resumed.candidate is not None
-    assert resumed.candidate.signal_id != first.candidate.signal_id
+    assert ended.ended_signal_id is None
+    assert ended.regime_anchor == first.regime_anchor
+    assert resumed.candidate is None
+    assert resumed.regime_anchor == first.regime_anchor
+
+
+@pytest.mark.parametrize(
+    ("updates", "expected_status"),
+    [
+        ({"five_minutes": -1}, DirectionQualificationStatus.CONFLICTED),
+        ({"fifteen_minutes": 0}, DirectionQualificationStatus.NEUTRAL),
+        ({"one_hour": -1}, DirectionQualificationStatus.CONFLICTED),
+    ],
+)
+def test_tracker_soft_direction_degradation_does_not_end_open_regime(
+    updates: dict[str, int],
+    expected_status: DirectionQualificationStatus,
+) -> None:
+    tracker = DirectionRegimeTracker(intraday_context_definition())
+    first = tracker.evaluate(bundle())
+    degraded = tracker.evaluate(bundle(**updates, as_of=AS_OF + timedelta(minutes=1)))
+
+    assert first.candidate is not None
+    assert degraded.qualification.status == expected_status
+    assert degraded.candidate is None
+    assert degraded.ended_signal_id is None
+    assert degraded.regime_anchor == first.regime_anchor
+
+
+def test_context_entry_veto_does_not_terminate_existing_regime() -> None:
+    definition = intraday_context_definition().model_copy(
+        update={"opposing_context_policy": OpposingContextPolicy.VETO}
+    )
+    tracker = DirectionRegimeTracker(definition)
+    first = tracker.evaluate(bundle(daily=1))
+    vetoed = tracker.evaluate(bundle(as_of=AS_OF + timedelta(minutes=1)))
+
+    assert first.candidate is not None
+    assert vetoed.qualification.status == DirectionQualificationStatus.VETOED
+    assert vetoed.ended_signal_id is None
+    assert vetoed.regime_anchor == first.regime_anchor
 
 
 def test_missing_evidence_preserves_regime_and_does_not_duplicate_on_recovery() -> None:
     tracker = DirectionRegimeTracker(intraday_context_definition())
     first = tracker.evaluate(bundle())
-    missing = tracker.evaluate(
-        bundle(one_hour=None, as_of=AS_OF + timedelta(minutes=1))
-    )
+    missing = tracker.evaluate(bundle(one_hour=None, as_of=AS_OF + timedelta(minutes=1)))
     recovered = tracker.evaluate(bundle(as_of=AS_OF + timedelta(minutes=2)))
 
     assert first.candidate is not None
@@ -283,9 +314,10 @@ def test_definition_identity_configuration_and_instrument_enablement_are_explici
 
     assert runtime.enabled_definitions(INSTRUMENT_ID) == (intraday, scalp)
     assert runtime.enabled_definitions("ESU6.CME") == (intraday,)
-    assert intraday.configuration_hash != intraday.model_copy(
-        update={"minimum_direction_score": 2}
-    ).configuration_hash
+    assert (
+        intraday.configuration_hash
+        != intraday.model_copy(update={"minimum_direction_score": 2}).configuration_hash
+    )
 
     with pytest.raises(ValidationError, match="unknown enabled signal definitions"):
         SignalRuntimeConfig(

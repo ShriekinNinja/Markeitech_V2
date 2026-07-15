@@ -228,7 +228,7 @@ Live composition keeps the newest committed revision per instrument and timefram
 
 The live signal runtime starts with a UTC watermark and restores only verified open Armed or Triggered signals matching an enabled definition's current algorithm and configuration identity. Committed warmup revisions at or before that watermark rebuild multi-timeframe state but cannot create, replace, or invalidate a signal. Each later evaluation-timeframe revision is applied once and may be composed independently for every enabled definition.
 
-Location episode entry persists Candidate plus Armed transition atomically. A disjoint replacement atomically invalidates the old signal and creates plus arms the new one; confirmed exit applies one terminal transition. Missing Direction evidence preserves an open episode, while neutral, conflicted, or vetoed Direction ends it. A processing failure retains the unprocessed tail of the drained committed-feature batch and marks the runtime failed instead of silently advancing.
+Location episode entry persists Candidate plus Armed transition atomically. A disjoint replacement atomically invalidates the old signal and creates plus arms the new one; confirmed exit applies one terminal transition. Missing, neutral, conflicted, or entry-vetoed Direction preserves an open episode as degraded evidence; only a newly qualified opposite Direction changes the regime. A processing failure retains the unprocessed tail of the drained committed-feature batch and marks the runtime failed instead of silently advancing.
 
 ### Signal Contracts
 
@@ -250,7 +250,9 @@ The setup key is a stable SHA-256 identity derived from family, named definition
 
 Direction qualification fails closed when primary evidence is missing, neutral, or conflicting, or when configured confirmation is insufficient. Context can be ignored, degrade a candidate, or veto it by definition policy. Every considered feature id remains attached as typed Direction evidence with its original fidelity.
 
-`DirectionRegimeTracker` emits at most one candidate while a definition/instrument remains in the same qualified direction. Its setup anchor is the UTC timestamp when that qualified regime began, not each subsequent 1m update. Neutral or conflicting evidence ends the regime; missing evidence preserves it because a temporary data gap is not market invalidation. An opposite qualified direction ends the old regime and starts a distinct candidate. Restart seeds open regimes from verified persisted signals and rejects setup keys inconsistent with their creation timestamp.
+`DirectionRegimeTracker` emits at most one candidate while a definition/instrument remains in the same qualified direction. Its setup anchor is the UTC timestamp when that qualified regime began, not each subsequent 1m update. Missing, neutral, conflicting, insufficient-confirmation, and context-veto assessments cannot qualify a new entry, but they preserve an existing regime because loss of strict entry alignment is not proof of reversal. A newly fully qualified opposite direction ends the old regime and starts a distinct candidate. Restart seeds open regimes from verified persisted signals and rejects setup keys inconsistent with their creation timestamp.
+
+For an open signal, soft Direction degradation is exposed as a degraded evidence gap. It preserves the Location episode, resets ordinary exit confirmation, and must block later Trigger progression until Direction is qualified again. It does not append a lifecycle transition. Hard Direction invalidation currently requires the complete named definition to qualify in the opposite direction from newly committed closed-bar evidence; repeated 1m evaluations of unchanged higher-timeframe features cannot manufacture confirmation.
 
 ### Location Zone Contracts
 

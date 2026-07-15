@@ -448,7 +448,7 @@ Keep Direction-Location-Aggression as one signal family while expressing distinc
 
 Evaluate only point-in-time bundles of durably committed market-context feature ids. Reject future, duplicate-timeframe, and cross-instrument evidence. Retain every considered feature id and its fidelity on a candidate. Active and background instruments use the same definition boundary and produce independent signals; cross-instrument confluence must be modeled explicitly later.
 
-Anchor candidate identity to the start of a continuous qualified Direction regime. Emit once while the direction remains qualified, end the regime on neutral or conflicting evidence, preserve it across temporary missing evidence, and replace it when the opposite direction qualifies. Seed open regimes from verified persisted signals on restart and reject inconsistent setup identity.
+Anchor candidate identity to the start of a continuous qualified Direction regime. Emit once while the same direction remains qualified. Preserve an existing regime through missing, neutral, conflicting, insufficient-confirmation, and context-veto entry assessments; replace it only when the complete definition qualifies in the opposite direction. Seed open regimes from verified persisted signals on restart and reject inconsistent setup identity.
 
 Reason: A fixed 1h+15m rule would make future shorter-horizon setups either accidental duplicates or invasive rewrites. Named definitions preserve one coherent DLA lifecycle while keeping cadence, evidence, and configuration identity explicit. Regime anchors stop each 1m recalculation from becoming a new alert, and preserving state across data gaps avoids false invalidation and duplicate recovery signals.
 
@@ -500,7 +500,7 @@ Run committed-feature consumption on one bounded signal thread owned by the mana
 
 Use runtime start time as the live-decision watermark. Apply older committed warmup revisions to rebuild the latest multi-timeframe feature state, but prohibit them from creating or changing signal lifecycle. Evaluate each newer evaluation-timeframe revision independently for every enabled definition and identically for active and background instruments. Resolve product-session identity through the configured calendar rather than UTC date inference.
 
-Persist Location entry as atomic Candidate-plus-Armed state, replacement as atomic old invalidation plus new Candidate/Armed state, and confirmed exit as one terminal transition. Restore only Armed or Triggered signals matching current algorithm and configuration identity. Preserve open episodes through missing Direction evidence, end them on observed neutral/conflicted/vetoed Direction, and retain unprocessed committed revisions when evaluation fails.
+Persist Location entry as atomic Candidate-plus-Armed state, replacement as atomic old invalidation plus new Candidate/Armed state, and confirmed exit as one terminal transition. Restore only Armed or Triggered signals matching current algorithm and configuration identity. Preserve open episodes through missing or softly degraded Direction, end them only on a newly qualified opposite regime, and retain unprocessed committed revisions when evaluation fails.
 
 Reason: Replaying warmup through live evaluators would generate stale alerts and can move a restored episode backward in time. Closing SQLite before the consumer drains would lose the ability to commit already-durable evidence. Explicit watermark and lifecycle ordering let warmup rebuild context without becoming market action, while one consumer thread keeps tracker mutation and durable signal progression sequential and auditable.
 
@@ -565,3 +565,27 @@ Reason: Cross-market relationships are useful and nonstationary. Treating them
 as static DLA rules makes temporary regimes permanent; allowing an opaque model
 to own lifecycle truth makes signals unauditable. A bounded overlay preserves
 both adaptive context and an independently testable core signal.
+
+## DR-0053: Entry Qualification Does Not Define Open-Signal Invalidation
+
+Status: accepted
+
+Use strict Direction alignment to admit a new setup, but do not terminate an
+existing Direction regime merely because that entry predicate becomes neutral,
+conflicted, insufficiently confirmed, or vetoed by contextual entry policy.
+Preserve the regime anchor and open Location episode under those assessments,
+mark current evidence degraded, and block Trigger progression until Direction
+qualifies again.
+
+Treat a newly fully qualified opposite Direction as hard regime invalidation.
+It must arise from the named definition's committed closed-bar evidence; repeated
+evaluation-clock observations of unchanged primary features do not count as
+additional reversal confirmation. Keep adverse Location breach as an independent
+hard invalidation path in Stage 5D.
+
+Reason: Entry rules answer whether conditions are sufficiently aligned to begin
+watching. They do not prove that an existing thesis has reversed. Equating the
+two lets a lower confirmation timeframe or contextual wobble erase a valid
+higher-timeframe setup, while preserving every state indefinitely would ignore
+real reversal. Soft degradation plus explicit Trigger blocking provides the
+necessary hysteresis without adding a mutable Suspended lifecycle status.
