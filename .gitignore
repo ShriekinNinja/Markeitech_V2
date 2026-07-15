@@ -12,6 +12,7 @@ data/catalog/
 data/runtime/
 data/backups/
 data/logs/
+data/charts/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/

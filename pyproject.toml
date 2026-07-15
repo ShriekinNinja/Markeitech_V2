@@ -15,6 +15,7 @@ dependencies = [
   "pydantic>=2.8",
   "pyarrow>=16",
   "redis>=5",
+  "plotly>=6.9.0",
 ]
 
 [project.scripts]
@@ -22,6 +23,7 @@ markeitech-api = "markeitech.api:main"
 markeitech-market-data-plan = "markeitech.market_data.cli:main"
 markeitech-market-data-smoke = "markeitech.market_data.smoke:main"
 markeitech-market-data-acceptance = "markeitech.market_data.acceptance:main"
+markeitech-analytics-chart = "markeitech.analytics.chart_cli:main"
 markeitech-sqlite-compact = "markeitech.persistence.compact:main"
 
 [dependency-groups]

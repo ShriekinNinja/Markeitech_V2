@@ -1,3 +1,8 @@
+from markeitech.analytics.chart import (
+    AnalyticsChartDataset,
+    build_chart_dataset,
+    render_analytics_chart,
+)
 from markeitech.analytics.contracts import (
     AnalysisBar,
     AnalyticsInputFidelity,
@@ -35,6 +40,7 @@ from markeitech.analytics.readiness import (
 )
 
 __all__ = [
+    "AnalyticsChartDataset",
     "AnalysisBar",
     "AnalyticsInputFidelity",
     "AnalyticsDepthStatus",
@@ -64,5 +70,7 @@ __all__ = [
     "VolumeProfileSnapshot",
     "VwapPosition",
     "analysis_bar_lineages",
+    "build_chart_dataset",
     "configuration_fingerprint",
+    "render_analytics_chart",
 ]
