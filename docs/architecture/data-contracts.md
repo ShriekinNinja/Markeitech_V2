@@ -153,6 +153,33 @@ Retention and SQLite compaction reports are immutable operational evidence. They
 
 Writes must be idempotent and restart-safe.
 
+## Context Transition Contract
+
+Committed market-context features may produce setup-independent transition
+events. The first event families are trend change and value-area region change.
+Each event retains instrument, timeframe, occurrence and detection timestamps,
+previous and current feature identity, durable commit order, input fidelity,
+typed previous/current values, and deterministic reason codes. Event identity
+is a stable hash of the transition and its evidence, not receipt time.
+
+Value-area regions deliberately collapse `lower_value`, `at_poc`, and
+`upper_value` into `inside`. Movement inside accepted value is not itself a
+value-region event; only transitions among `below`, `inside`, and `above` are.
+POC interaction may become a separate explicit event family later.
+
+The detector seeds its first durable revision without emitting historical
+market action. Exact retries are duplicates, older event-time or durable-order
+revisions are stale, and a corrected feature at the same market timestamp
+replaces the baseline without fabricating a transition. `insufficient_data`
+trend or unavailable profile location breaks comparison for that dimension;
+the detector never bridges an unknown interval to claim a change. Conflicting
+feature or commit identities fail closed.
+
+This pure detector does not persist or publish events. A subsequent runtime
+slice must commit immutable events before sending `markeitech.context.event`,
+restore its baseline without replaying old alerts, and keep feature loading and
+SQLite work outside synchronous Nautilus bus callbacks.
+
 Stage 3 persistence contracts live under `markeitech.persistence`. They add source-scoped event identities, stream checkpoints, recovery lifecycle records, durable notification outbox records, bounded persistence configuration, and storage protocols without coupling the Stage 1 domain models to a specific database.
 
 Persistence fidelity is explicit:

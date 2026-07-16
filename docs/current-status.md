@@ -104,6 +104,13 @@ volume units, reporting a 96.81% classified-volume ratio with explicit reasons
 for the remaining two observations. This is strong evidence for the corrected
 event-time classifier, but it is not yet full-session Aggression calibration.
 
+The next Context Event semantics slice is implemented for review but not yet
+runtime-wired. Immutable contracts and a pure ordered detector cover trend and
+coarse value-area region transitions, suppress initial, duplicate, stale, and
+same-timestamp correction output, and break comparison across unavailable
+evidence. Persistence, restart restoration, and the dedicated actor remain the
+following slice.
+
 The 2026-07-15 run separated operational success from trading usefulness. The
 LiveNode, market-data ingestion, persistence, recovery, analytics, and operator
 context continued through London and New York observation. The initial Fabio
