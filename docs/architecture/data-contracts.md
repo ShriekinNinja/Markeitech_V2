@@ -375,6 +375,27 @@ restart reconstruction remain subsequent Stage 5D slices. Until those are
 wired, configuring a policy changes definition identity but does not activate
 live progression.
 
+### Durable Context Transitions
+
+`ContextTransitionEvent` records a semantic change between two committed
+feature revisions for one instrument and timeframe. The first observation,
+exact retries, stale delivery, and same-timestamp corrections do not emit a
+transition. Unavailable evidence breaks the comparison chain so the next usable
+revision seeds a new baseline instead of claiming continuity across a gap.
+
+SQLite stores a compact `ContextDetectorCheckpoint` for every detector stream.
+The checkpoint advances for every accepted revision, including revisions whose
+trend and coarse value-area region are unchanged. Any emitted events and the
+advancing checkpoint share one transaction. An event must reference the exact
+previous durable checkpoint and current advancing checkpoint; retries are
+idempotent, while regressions, conflicting event content, and broken chains
+fail the complete transaction.
+
+Restart seeds the pure detector from these verified checkpoints without
+re-emitting history. The checkpoint contains comparison state and durable
+feature identity, not a duplicate feature payload. Parquet and the feature
+manifest remain authoritative for complete analytical evidence.
+
 ### Durable Signal State
 
 SQLite stores one current `SignalSnapshot` per signal id plus its immutable initial-candidate content hash. Every accepted `SignalTransitionEvent` is append-only and receives a contiguous per-signal sequence number independent of market timestamps. Restart restoration validates typed row metadata, candidate identity, transition identity, the complete previous-to-current content-hash chain, and agreement between the final transition and current snapshot.

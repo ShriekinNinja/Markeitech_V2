@@ -105,13 +105,13 @@ def outbox(
 def test_migrations_are_idempotent_and_auditable(tmp_path: Path) -> None:
     path = tmp_path / "metadata.sqlite3"
     with SQLiteMetadataStore(config(path)) as first:
-        assert first.schema_version == 9
+        assert first.schema_version == 10
     with SQLiteMetadataStore(config(path)) as second:
-        assert second.schema_version == 9
+        assert second.schema_version == 10
         row = second._connection.execute(  # noqa: SLF001
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [item["version"] for item in row] == [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        assert [item["version"] for item in row] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 
 def test_newer_unknown_schema_fails_clearly(tmp_path: Path) -> None:
@@ -153,7 +153,7 @@ def test_schema_one_upgrades_without_losing_checkpoint(tmp_path: Path) -> None:
     connection.close()
 
     with SQLiteMetadataStore(config(path)) as upgraded:
-        assert upgraded.schema_version == 9
+        assert upgraded.schema_version == 10
         assert upgraded.load_checkpoint(expected.stream_key) == expected
 
 
@@ -184,6 +184,10 @@ def test_schema_eight_feature_manifests_receive_durable_commit_order(
     connection = sqlite3.connect(path)
     connection.executescript(
         """
+        DROP INDEX context_event_lookup_idx;
+        DROP INDEX context_event_current_feature_idx;
+        DROP TABLE context_transition_events;
+        DROP TABLE context_detector_checkpoints;
         DROP INDEX feature_snapshot_commit_sequence_idx;
         DROP INDEX feature_snapshot_lookup_idx;
         ALTER TABLE feature_snapshot_commits RENAME TO sequenced_feature_commits;
@@ -205,7 +209,7 @@ def test_schema_eight_feature_manifests_receive_durable_commit_order(
         DROP TABLE sequenced_feature_commits;
         CREATE INDEX feature_snapshot_lookup_idx
             ON feature_snapshot_commits(instrument_id, timeframe, as_of_ts_ns DESC);
-        DELETE FROM schema_migrations WHERE version = 9;
+        DELETE FROM schema_migrations WHERE version >= 9;
         PRAGMA user_version = 8;
         """
     )

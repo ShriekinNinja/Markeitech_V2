@@ -7,13 +7,14 @@ from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Lock
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from markeitech.analytics.features import MarketContextFeatureSnapshot
 from markeitech.domain.base import unix_ns_from_utc_datetime, utc_datetime_from_unix_ns
 from markeitech.domain.state import GapState, ReadinessState
 from markeitech.persistence.config import PersistenceConfig
+from markeitech.persistence.context_events import ContextEventCommitResult
 from markeitech.persistence.contracts import (
     NotificationOutboxRecord,
     OutboxStatus,
@@ -36,7 +37,16 @@ from markeitech.persistence.contracts import (
 from markeitech.persistence.feature_pipeline import CommittedFeatureRevision
 from markeitech.signals.contracts import SignalSnapshot, SignalStatus, SignalTransitionEvent
 
-LATEST_SCHEMA_VERSION = 9
+if TYPE_CHECKING:
+    from markeitech.context_events import (
+        ContextDetectionResult,
+        ContextDetectorCheckpoint,
+        ContextEventKind,
+        ContextTransitionEvent,
+    )
+
+
+LATEST_SCHEMA_VERSION = 10
 
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (
@@ -299,6 +309,40 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
             ON feature_snapshot_commits(commit_sequence);
         """,
     ),
+    (
+        10,
+        """
+        CREATE TABLE context_detector_checkpoints (
+            instrument_id TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            feature_id BLOB NOT NULL,
+            commit_sequence INTEGER NOT NULL UNIQUE,
+            as_of_ts_ns INTEGER NOT NULL,
+            checkpoint_json TEXT NOT NULL,
+            PRIMARY KEY(instrument_id, timeframe),
+            FOREIGN KEY(feature_id) REFERENCES feature_snapshot_commits(feature_id)
+        );
+        CREATE TABLE context_transition_events (
+            event_id BLOB PRIMARY KEY,
+            kind TEXT NOT NULL,
+            instrument_id TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            occurred_ts_ns INTEGER NOT NULL,
+            detected_ts_ns INTEGER NOT NULL,
+            previous_feature_id BLOB NOT NULL,
+            current_feature_id BLOB NOT NULL,
+            previous_commit_sequence INTEGER NOT NULL,
+            current_commit_sequence INTEGER NOT NULL,
+            event_json TEXT NOT NULL,
+            FOREIGN KEY(previous_feature_id) REFERENCES feature_snapshot_commits(feature_id),
+            FOREIGN KEY(current_feature_id) REFERENCES feature_snapshot_commits(feature_id)
+        );
+        CREATE UNIQUE INDEX context_event_current_feature_idx
+            ON context_transition_events(kind, current_feature_id);
+        CREATE INDEX context_event_lookup_idx
+            ON context_transition_events(instrument_id, timeframe, occurred_ts_ns, event_id);
+        """,
+    ),
 )
 
 
@@ -455,6 +499,148 @@ class SQLiteMetadataStore:
                 else:
                     next_sequence += 1
         return self.committed_feature_revisions(features)
+
+    def commit_context_detection(
+        self,
+        result: ContextDetectionResult,
+    ) -> ContextEventCommitResult:
+        checkpoint = result.checkpoint
+        if checkpoint is None:
+            if result.events:
+                raise ValueError("context events require an advancing detector checkpoint")
+            return ContextEventCommitResult(0, 0, 0, False)
+        for event in result.events:
+            if (
+                event.instrument_id != checkpoint.instrument_id
+                or event.timeframe != checkpoint.timeframe
+                or event.current_feature_id != checkpoint.feature_id
+                or event.current_commit_sequence != checkpoint.commit_sequence
+            ):
+                raise ValueError("context event does not match detector checkpoint")
+        with self._transaction() as connection:
+            prior_row = connection.execute(
+                """
+                SELECT checkpoint_json FROM context_detector_checkpoints
+                WHERE instrument_id=? AND timeframe=?
+                """,
+                (checkpoint.instrument_id, checkpoint.timeframe.value),
+            ).fetchone()
+            prior = None if prior_row is None else _row_to_context_checkpoint(prior_row)
+            checkpoint_advanced = _validate_context_checkpoint_advance(prior, checkpoint)
+            if result.events and prior is None:
+                raise ValueError("initial context checkpoint cannot emit a transition")
+            if checkpoint_advanced and prior is not None:
+                for event in result.events:
+                    if (
+                        event.previous_feature_id != prior.feature_id
+                        or event.previous_commit_sequence != prior.commit_sequence
+                    ):
+                        raise ValueError("context event does not continue stored checkpoint state")
+            committed_count = 0
+            for event in result.events:
+                existing_row = connection.execute(
+                    """
+                    SELECT event_json FROM context_transition_events
+                    WHERE kind=? AND current_feature_id=?
+                    """,
+                    (event.kind.value, bytes.fromhex(event.current_feature_id)),
+                ).fetchone()
+                if existing_row is not None:
+                    if _row_to_context_event(existing_row) != event:
+                        raise ValueError(
+                            "context event kind and current feature identify conflicting content"
+                        )
+                    continue
+                if not checkpoint_advanced:
+                    raise ValueError("unchanged context checkpoint cannot gain new events")
+                cursor = connection.execute(
+                    """
+                    INSERT INTO context_transition_events VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(event_id) DO NOTHING
+                    """,
+                    (
+                        bytes.fromhex(event.event_id),
+                        event.kind.value,
+                        event.instrument_id,
+                        event.timeframe.value,
+                        unix_ns_from_utc_datetime(event.occurred_ts),
+                        unix_ns_from_utc_datetime(event.detected_ts),
+                        bytes.fromhex(event.previous_feature_id),
+                        bytes.fromhex(event.current_feature_id),
+                        event.previous_commit_sequence,
+                        event.current_commit_sequence,
+                        event.model_dump_json(exclude_computed_fields=True),
+                    ),
+                )
+                if cursor.rowcount == 0:
+                    row = connection.execute(
+                        "SELECT event_json FROM context_transition_events WHERE event_id=?",
+                        (bytes.fromhex(event.event_id),),
+                    ).fetchone()
+                    if row is None or _row_to_context_event(row) != event:
+                        raise ValueError("context event identity conflicts with stored content")
+                else:
+                    committed_count += 1
+            if checkpoint_advanced:
+                connection.execute(
+                    """
+                    INSERT INTO context_detector_checkpoints VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(instrument_id, timeframe) DO UPDATE SET
+                        feature_id=excluded.feature_id,
+                        commit_sequence=excluded.commit_sequence,
+                        as_of_ts_ns=excluded.as_of_ts_ns,
+                        checkpoint_json=excluded.checkpoint_json
+                    """,
+                    (
+                        checkpoint.instrument_id,
+                        checkpoint.timeframe.value,
+                        bytes.fromhex(checkpoint.feature_id),
+                        checkpoint.commit_sequence,
+                        unix_ns_from_utc_datetime(checkpoint.as_of),
+                        checkpoint.model_dump_json(),
+                    ),
+                )
+        return ContextEventCommitResult(
+            submitted_event_count=len(result.events),
+            committed_event_count=committed_count,
+            duplicate_event_count=len(result.events) - committed_count,
+            checkpoint_advanced=checkpoint_advanced,
+        )
+
+    def load_context_checkpoints(self) -> tuple[ContextDetectorCheckpoint, ...]:
+        with self._lock:
+            rows = self._connection.execute(
+                """
+                SELECT checkpoint_json FROM context_detector_checkpoints
+                ORDER BY instrument_id, timeframe
+                """
+            ).fetchall()
+        return tuple(_row_to_context_checkpoint(row) for row in rows)
+
+    def load_context_events(
+        self,
+        *,
+        instrument_id: str | None = None,
+        kind: ContextEventKind | None = None,
+    ) -> tuple[ContextTransitionEvent, ...]:
+        clauses: list[str] = []
+        values: list[str] = []
+        if instrument_id is not None:
+            clauses.append("instrument_id=?")
+            values.append(instrument_id)
+        if kind is not None:
+            clauses.append("kind=?")
+            values.append(kind.value)
+        where = "" if not clauses else f" WHERE {' AND '.join(clauses)}"
+        with self._lock:
+            rows = self._connection.execute(
+                f"""
+                SELECT event_json FROM context_transition_events{where}
+                ORDER BY occurred_ts_ns, event_id
+                """,
+                tuple(values),
+            ).fetchall()
+        return tuple(_row_to_context_event(row) for row in rows)
 
     def save_signal_candidate(self, signal: SignalSnapshot) -> SignalPersistenceOutcome:
         if signal.status != SignalStatus.CANDIDATE:
@@ -1288,6 +1474,35 @@ def _optional_ns(value: datetime | None) -> int | None:
 
 def _optional_datetime(value: int | None) -> datetime | None:
     return None if value is None else utc_datetime_from_unix_ns(value)
+
+
+def _row_to_context_checkpoint(row: sqlite3.Row) -> ContextDetectorCheckpoint:
+    from markeitech.context_events import ContextDetectorCheckpoint
+
+    return ContextDetectorCheckpoint.model_validate_json(row["checkpoint_json"])
+
+
+def _row_to_context_event(row: sqlite3.Row) -> ContextTransitionEvent:
+    from markeitech.context_events import ContextTransitionEvent
+
+    return ContextTransitionEvent.model_validate_json(row["event_json"])
+
+
+def _validate_context_checkpoint_advance(
+    previous: ContextDetectorCheckpoint | None,
+    current: ContextDetectorCheckpoint,
+) -> bool:
+    if previous is None:
+        return True
+    if previous == current:
+        return False
+    if previous.feature_id == current.feature_id:
+        raise ValueError("context checkpoint feature identity conflicts with stored state")
+    if current.commit_sequence <= previous.commit_sequence:
+        raise ValueError("context checkpoint commit order cannot regress or conflict")
+    if current.as_of < previous.as_of:
+        raise ValueError("context checkpoint event time cannot regress")
+    return True
 
 
 def _require_recovery_transition(

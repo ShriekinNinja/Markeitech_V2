@@ -229,6 +229,15 @@ This separation preserves ownership and revision semantics. Nautilus continues t
 
 The signal-side boundary begins only after the coordinator re-reads and verifies the complete committed batch. Exact committed revisions enter an all-or-nothing bounded handoff; saturation fails the feature writer closed while preserving both the original input batch and truthful durable-commit counters. A point-in-time state index advances independently per instrument/timeframe by `(as_of, commit_sequence)`, ignores stale delivery, and emits bundles only for accepted evaluation-timeframe revisions. The handoff is constructed only when signal definitions are enabled, so persistence-only runs retain their existing path.
 
+Context-transition detection consumes the same ordered committed feature
+revisions through a separate pure state machine. SQLite schema 10 atomically
+stores semantic transition events and a compact per-instrument/timeframe
+detector checkpoint. No-change revisions still advance that checkpoint, so a
+restart cannot compare new evidence against an older semantic event and cannot
+hide a crash between feature commit and detector progress. Startup restores the
+checkpoint silently before any new revision is evaluated. Runtime bus
+publication remains downstream of this durable boundary.
+
 The Stage 5C.3b consumer is a dedicated bounded thread owned by the managed LiveNode. Startup order is persistence, verified signal restoration, then Nautilus execution. Shutdown stops and flushes the feature writer, drains and stops signal evaluation while SQLite remains open, then closes the remaining persistence runtime. Warmup commits rebuild feature state behind a startup watermark; only a newer completed evaluation bar may change signal lifecycle. Active and background instruments use the same definition/evaluator/store path.
 
 For each live evaluation, the runtime qualifies Direction, resolves the explicit product-session start from the configured calendar, qualifies Location, advances the repeatable episode tracker, and persists only lifecycle changes. Open state is restored from hash-chain-verified SQLite aggregates matching current definition identity. Calendar, evaluator, callback, or persistence failure marks the runtime failed and returns the unprocessed committed revisions to the handoff. Console projection is intentionally deferred to 5C.3c and is never restart truth.

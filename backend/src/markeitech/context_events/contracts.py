@@ -25,6 +25,29 @@ class ValueAreaRegion(StrEnum):
     ABOVE = "above"
 
 
+class ContextDetectorCheckpoint(VersionedDomainModel):
+    instrument_id: str = Field(min_length=1)
+    timeframe: AnalyticsTimeframe
+    as_of: datetime
+    committed_ts: datetime
+    feature_id: str = Field(pattern=_SHA256_PATTERN)
+    commit_sequence: int = Field(ge=1)
+    trend: TrendState
+    value_area_region: ValueAreaRegion
+    input_fidelity: AnalyticsInputFidelity
+
+    @field_validator("as_of", "committed_ts")
+    @classmethod
+    def _timestamps_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+    @model_validator(mode="after")
+    def _commit_cannot_precede_evidence(self) -> ContextDetectorCheckpoint:
+        if self.committed_ts < self.as_of:
+            raise ValueError("context checkpoint cannot commit before feature evidence")
+        return self
+
+
 class ContextTransitionEvent(VersionedDomainModel):
     kind: ContextEventKind
     instrument_id: str = Field(min_length=1)

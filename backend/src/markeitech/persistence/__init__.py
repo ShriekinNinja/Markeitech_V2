@@ -7,6 +7,7 @@ from markeitech.persistence.calendar import (
 from markeitech.persistence.catalog import NautilusParquetTimeSeriesStore
 from markeitech.persistence.catalog_data import CanonicalOneMinuteBarRecord
 from markeitech.persistence.config import PersistenceConfig
+from markeitech.persistence.context_events import ContextEventCommitResult
 from markeitech.persistence.contracts import (
     DataFidelity,
     NotificationOutboxRecord,
@@ -96,6 +97,7 @@ __all__ = [
     "BoundedPersistenceWriter",
     "BoundedFeatureWriter",
     "CommittedFeatureRevision",
+    "ContextEventCommitResult",
     "DurableIngressJournal",
     "ExplicitSessionCalendar",
     "FeatureCatalogWriteResult",

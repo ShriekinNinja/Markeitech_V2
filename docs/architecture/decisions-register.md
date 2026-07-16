@@ -706,3 +706,25 @@ and failed participants are central Markeitecting concepts. Keeping them
 decomposed preserves their trading meaning, makes calibration possible, avoids
 false precision from the IB feed, and prevents the current Fabio setup family
 from owning reusable auction evidence.
+
+## DR-0058: Context Detector Progress Commits With Semantic Events
+
+Status: accepted
+
+Persist one compact detector checkpoint per instrument and timeframe. Advance
+it for every accepted committed-feature revision, even when no semantic event
+is emitted. Commit any transition events and the advancing checkpoint in the
+same SQLite transaction. Require each new event to continue the exact durable
+checkpoint chain, make exact retries idempotent, and reject regressions or
+conflicting content atomically.
+
+Seed the detector from checkpoints on restart without replaying historical
+events. Keep complete feature payloads in the existing Parquet feature catalog;
+the checkpoint stores only ordered feature identity and the comparison fields
+needed by the detector.
+
+Reason: Restoring from the latest transition event loses later no-change
+revisions, while restoring from the latest feature manifest can skip work after
+a crash between feature and context-event commits. An atomic detector
+checkpoint records the precise durable comparison boundary without duplicating
+analytics truth or producing startup noise.
