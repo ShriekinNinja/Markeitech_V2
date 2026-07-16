@@ -4,38 +4,32 @@ This roadmap describes current future intent. Completed slice details live in
 the [implementation history](implementation-history.md), while exact progress
 lives in [current status](../current-status.md).
 
-## Immediate: Signal Visibility And Acceptance
+## Immediate: Reliability And Market Events
 
-### Stage 5C.3c: Console Signal Projection
+### Stage 5D.4: Event Backbone
 
-- Read durable signal lifecycle changes without recalculating evidence.
-- Emit concise human-readable Candidate, Armed, Triggered, Invalidated, and
-  Expired events.
-- Include instrument, definition, Direction regime, Location episode, evidence
-  summary, transition reason, and durable identity.
-- Keep active/background role as presentation metadata, not signal identity.
-- Bound and deduplicate console output.
-- Run live shadow acceptance against NQ and configured watchlist instruments.
+- Expose signal-runtime failure causes, tracebacks, last successful sequence,
+  and affected input identity without requiring forensic log reconstruction.
+- Account for every classified and unclassified trade by explicit reason before
+  using tick Aggression, delta, or CVD as trusted evidence.
+- Introduce versioned, immutable Markeitech domain messages on the Nautilus
+  message bus while preserving commit-before-publish ordering.
+- Bridge post-commit worker notifications onto the Nautilus event-loop thread;
+  never call the non-thread-safe bus directly from persistence workers.
+- Keep blocking persistence, rendering, and delivery work behind bounded worker
+  queues rather than inside synchronous bus subscribers.
+- Prove the boundary with an operator projection consumer, then add a dedicated
+  Context Event actor.
+- Emit persisted and deduplicated level, value, trend, and pressure transitions
+  independently from any setup family.
 
-Exit condition: durable signal changes are visible and understandable in live
-console output, restart does not duplicate alerts, and runtime health remains
-stable.
+Exit condition: no signal subsystem failure is silent, observation fidelity is
+fully accountable, and multiple actors can consume committed market events
+without blocking ingestion or bypassing durable truth.
 
-## Stage 5D: Aggression And Follow-Through
-
-- Define provider-aware, bounded observation windows.
-- Add deterministic trade, quote, pace, and follow-through evidence where source
-  fidelity permits.
-- Represent missing or damaged tick evidence explicitly.
-- Support explicit tick-aggression and lower-fidelity bar-impulse confirmation
-  without silent fallback or mixed-method windows.
-- Allow definitions to configure their timeframe stack and aggression policy.
-- Progress Armed signals to Triggered only through persisted evidence.
-- Define time-based Armed expiry from the actual observation cadence.
-
-This stage must support different setup families. A slower context setup may use
-1-hour plus 15-minute evidence, while a future scalp definition may use 15-minute
-plus 5-minute or 1-minute evidence without changing global signal semantics.
+The first Fabio Direction-Location-Aggression definition remains a shadow setup
+family during this work. Its live lifecycle is engineering evidence, not trading
+acceptance and not the organizing boundary for market context.
 
 ## Stage 5E: Composite Decision Policy
 

@@ -446,6 +446,31 @@ Stage 5C.2c is complete. It converts point-in-time qualification into idempotent
 
 Stage 5C.2d is complete. Episode entry deterministically creates a Candidate and Armed transition carrying the Direction regime, episode id, structured entry matches, and complete Direction/Location feature evidence. Initial creation and replacement commit atomically in SQLite; conflicts roll back all affected signal and outbox state. Verified open Armed/Triggered snapshots reconstruct both trackers after restart. Episode exit/replacement invalidates Armed state. Time-based Armed expiry remains coupled to the Stage 5D aggression observation policy rather than using an arbitrary pre-aggression timeout here.
 
+Stage 5D established the first complete Aggression and follow-through lifecycle:
+
+- **5D.1 - Armed-state continuity:** soft Direction degradation blocks Trigger
+  without destroying the setup; only a qualified opposite regime or confirmed
+  adverse breach invalidates immutable entry geometry.
+- **5D.2 - Durable observation bridge:** active classified-tick bars and
+  background reported bars enter independent bounded streams only after durable
+  market-data commit and seed from catalog history on restart.
+- **5D.3 - Aggression lifecycle:** arming freezes confirmation method, ATR, and
+  observation start; deterministic confirmation advances Armed to Triggered or
+  Expired atomically, with restart-stable suppression and operator health logs.
+
+Stage 5D.3 passed deterministic active, background, expiry, race-order, legacy
+recovery, and restart tests. Live operation on 2026-07-15 produced Armed and
+Expired transitions but no Triggered transition. The broader runtime and
+analytics were operationally useful; the first Fabio setup definition was not
+useful for discretionary trading. During that run the managed signal consumer
+later reported `FAILED` without exposing its causal exception while the
+LiveNode continued, creating the immediate reliability boundary for Stage
+5D.4.
+
+An experimental Plotly chart renderer was added after 5D.3 as an offline
+diagnostic consumer of persisted bars and analytical snapshots. It remains
+outside the LiveNode and does not modify canonical analytics or signal state.
+
 Future stages previously listed here now live only in the active
 [implementation roadmap](implementation-roadmap.md). Keeping unstarted work out
 of the history prevents an old sequence from becoming an accidental requirement.

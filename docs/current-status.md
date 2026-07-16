@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-07-15
+Last reviewed: 2026-07-16
 
 This page is the source of truth for implementation progress. It separates code
 that exists from behavior that has received live acceptance.
@@ -76,47 +76,44 @@ that exists from behavior that has received live acceptance.
 
 ## Current Boundary
 
-Stage 5C.3c is implemented and live-observed. The managed bounded consumer
-restores verified signal state, rebuilds warmup state without emitting
-historical setups, evaluates committed live feature bundles, persists lifecycle
-changes atomically, and projects concise signal events plus runtime health.
+Stage 5D.3 is mechanically complete and has live evidence across the full
+Candidate, Armed, Invalidated, and Expired lifecycle. The managed bounded
+consumer restores verified signal state, evaluates durably committed feature
+and Aggression evidence, persists transitions atomically, and projects concise
+signal events plus runtime health. Its corrected legacy recovery path has also
+survived live restart.
 
-Stage 5D.1 now protects the Armed observation window from two false
-invalidation paths: soft Direction degradation and favorable or unresolved
-Location departure. Only a fully qualified opposite Direction or configured
-consecutive adverse breaches of the immutable entry geometry terminate the
-setup before confirmation.
+The 2026-07-15 run separated operational success from trading usefulness. The
+LiveNode, market-data ingestion, persistence, recovery, analytics, and operator
+context continued through London and New York observation. The initial Fabio
+Direction-Location-Aggression definition armed and expired setups, but produced
+no Triggered transition and its output did not pass Markeitect's discretionary
+trading-usefulness review. The lifecycle implementation is retained as a
+deterministic shadow setup family; it is not a trusted trading signal.
 
-Stage 5D.2 provides a bounded, commit-coupled Aggression observation bridge.
-Completed active classified-tick bars and reported one-minute bars enter only
-after durable market-data commit, retain independent source streams, and seed
-from catalog history before restart.
+The same run exposed an observability defect. At 15:30:08 UTC the signal runtime
+reported `FAILED` after 889 revisions, 676 evaluations, 47 lifecycle writes,
+221 confirmation evaluations, and 12 expirations, while the main LiveNode and
+analytics continued. The heartbeat did not include the underlying exception.
+Failure-cause visibility and classified-tick fidelity accounting are therefore
+the first Stage 5D.4 acceptance gates.
 
-Stage 5D.3 is implemented and awaiting live acceptance. Arming freezes the
-current role-selected confirmation method, ATR, and observation-window start.
-The managed runtime composes durable observations with the latest committed
-feature bundle, blocks confirmation during degraded Direction or adverse
-Location states, and atomically persists explicit Armed-to-Triggered or
-Armed-to-Expired transitions. Expired Location episodes remain suppressed
-across restart until their original episode exits or is replaced. Runtime
-health now reports confirmation attempts, terminal outcomes, retained
-observations, and conflicting retries.
-
-The first 5D.3 live launch exposed a backward-compatibility defect: adding the
-optional confirmation context changed calculated hashes for pre-5D.3 signal
-snapshots. The compatibility fix preserves legacy hashes when that field is
-absent and is covered by restart regression tests. A successful live restart
-and observed Aggression lifecycle remain the acceptance boundary.
+An experimental, manually invoked Plotly analytics chart is available on the
+current branch. It reads persisted evidence and does not participate in the
+LiveNode or canonical analytics path.
 
 ## Validation Debt
 
 - NQ live operation has been exercised more thoroughly than ES, indices, and
   equities. Broader provider and contract coverage remains an acceptance task.
-- Post-commit Direction/Location evaluation and console lifecycle output have
-  live evidence, but the new departure policy still awaits a live observation.
+- The signal runtime can fail while the LiveNode continues, and its current
+  heartbeat does not expose the causal exception or traceback.
+- The 2026-07-15 run classified only a small fraction of observed trade volume.
+  Timestamp alignment and every unclassified reason require explicit accounting
+  before delta, CVD, or tick Aggression can be treated as reliable evidence.
 - Stage 5D.3 has deterministic active, background, expiry, race-order, and
-  restart tests, but its corrected legacy recovery path still awaits a live
-  rerun and Triggered/Expired output awaits market qualification.
+  restart tests plus live Armed and Expired evidence, but no live Triggered
+  evidence and no trading-usefulness acceptance.
 - Tick gaps and damaged tick windows are observable; their effect on future
   Aggression confidence still needs an explicit policy.
 - Selected profile, FVG, session, and context values have been compared with
@@ -144,7 +141,10 @@ The continuous live context runtime has completed warmup, emitted context for
 active and background instruments, survived operator restarts, and continued
 running during live observation. On 2026-07-14, Markeitect followed a Direction
 change from `+2` to `-1` over roughly 45 minutes and used that context in a
-profitable discretionary puts trade.
+profitable discretionary puts trade. On 2026-07-15, the broader runtime and
+analytics remained useful throughout extended live observation, while the first
+Fabio signal definition did not provide useful trading guidance and its managed
+consumer later failed without a causal operator message.
 
 That observation is evidence that the operator projection can be useful. It is
 not statistical validation, signal calibration, or evidence for automation.
