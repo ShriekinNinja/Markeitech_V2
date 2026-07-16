@@ -637,3 +637,34 @@ signal Trigger based on data that never committed could not be reconstructed,
 while querying the full catalog on every one-minute evaluation would move
 blocking I/O into the decision path. A bounded post-commit tail gives the live
 coordinator deterministic evidence without creating a second source of truth.
+
+## DR-0056: Nautilus Message Bus As A Post-Commit Event Spine
+
+Status: accepted
+
+Use the in-process Nautilus message bus to connect actors by immutable,
+versioned Markeitech domain notices. Treat SQLite and Parquet as durable truth;
+the bus announces that committed evidence exists and carries stable identity,
+sequence, instrument, timestamp, and payload type rather than duplicating the
+full persisted payload.
+
+Nautilus bus publication and subscriber callbacks run synchronously on the
+event-loop thread, and the bus is not thread-safe. Persistence and signal worker
+threads must therefore offer notices to a bounded bridge whose only publication
+path is an event-loop scheduler. Subscriber handlers must remain non-blocking;
+disk I/O, chart rendering, network delivery, and substantial computation stay
+behind bounded workers. Saturation, schedule failure, publish failure, pending
+depth, and forced discard are explicit health state.
+
+Split actors by domain responsibility and lifecycle ownership, not by
+instrument, timeframe, or indicator. Preserve existing bounded persistence and
+signal workers where they provide actual backpressure and failure isolation.
+Bus consumers must be idempotent because a future recovery bridge may
+re-announce durable identities after restart.
+
+Reason: Markeitech now has multiple legitimate consumers of committed market
+evidence, and direct callback growth would concentrate unrelated ownership in
+the market-data actor. The Nautilus bus provides efficient in-node routing and
+actor lifecycle integration, but it does not replace durability, asynchronous
+work queues, or process isolation. A post-commit bridge gains the coordination
+benefit without weakening the runtime guarantees already established.

@@ -65,6 +65,34 @@ Optional Redis coordination may be added beside these services only when a
 demonstrated distributed-runtime need appears. It is not part of the current
 runtime or a durability boundary.
 
+### In-Node Event Spine
+
+Markeitech uses the Nautilus message bus for typed coordination between actors,
+not as a persistence layer. Worker-thread outputs cross a bounded thread-safe
+bridge and are published only after an event-loop callback executes. Direct bus
+calls from persistence, signal, rendering, or delivery workers are forbidden
+because the Nautilus bus is not thread-safe and invokes subscribers
+synchronously.
+
+Committed notices contain stable evidence identity and commit sequence. Actors
+that require full content load or retain the canonical durable object by that
+identity. Subscriber handlers either perform small deterministic state changes
+or enqueue bounded off-thread work; they do not write SQLite or Parquet, render
+charts, call Discord, or perform unbounded analysis inline.
+
+The initial topic hierarchy is:
+
+- `markeitech.analytics.feature.committed`
+- `markeitech.market.observation.committed`
+- `markeitech.context.event`
+- `markeitech.signal.lifecycle`
+- `markeitech.operator.projection`
+- `markeitech.runtime.health`
+
+Actor boundaries represent independent responsibilities such as market-data
+ownership, analytics, context-event detection, setup families, and operator
+projection. Instruments and timeframes remain keyed state inside those actors.
+
 ## Instrument Runtime Model
 
 Markeitech supports multiple configured instruments with one enabled active instrument at a time.
@@ -93,7 +121,16 @@ The market-data actor normalizes Nautilus `TradeTick`, `QuoteTick`, and external
 
 Each configured instrument has an isolated runtime snapshot containing event counts and its latest trade, quote, classified trade, external bar, and active tick-built bar. Snapshot role follows the runtime switch coordinator rather than the boot registry, so active ownership changes without replacing instrument state.
 
-Subscribed trades are classified against the latest valid same-instrument quote. The logical active instrument also builds a provisional 1-minute bar from classified ticks. That bar carries classified buy, sell, and unknown volume and becomes complete when the first trade in the next minute arrives. Nautilus/IB external bars are completed bars whose volume remains unknown-side unless a later reconciliation step can prove attribution.
+Subscribed trades are classified against bounded already-received
+same-instrument quote history. The router chooses the most recently received
+quote whose event timestamp is at or before the trade and still within the
+configured freshness window. This handles IB trade and quote streams arriving
+out of event-time order without lookahead. The logical active instrument also
+builds a provisional 1-minute bar from classified ticks. That bar carries
+classified buy, sell, and unknown volume and becomes complete when the first
+trade in the next minute arrives. Nautilus/IB external bars are completed bars
+whose volume remains unknown-side unless a later reconciliation step can prove
+attribution.
 
 Normalized events flow through an injectable sink. The managed runtime routes supported completed events to bounded persistence and analytics boundaries. Notifications and later WebSocket delivery consume downstream domain projections rather than provider objects.
 
