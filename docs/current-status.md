@@ -83,6 +83,27 @@ and Aggression evidence, persists transitions atomically, and projects concise
 signal events plus runtime health. Its corrected legacy recovery path has also
 survived live restart.
 
+Stage 5D.4 is active. Signal-runtime failures now retain phase, input identity,
+last successful commit sequence, exception, and traceback, while active trade
+classification uses bounded event-time quote history and accounts for every
+classified or rejected observation. These corrections are deterministic-test
+complete and await live acceptance evidence.
+
+The first event-spine vertical slice is also test-complete. Durable feature
+revisions become compact versioned notices, cross a bounded thread-safe bridge,
+and publish on the Nautilus event-loop thread to a dedicated operator projection
+actor. Bus rejection is explicitly counted but cannot invalidate already-
+committed evidence or the existing critical signal handoff. Live publication
+is now observed for active and background features. One idempotently repeated
+feature notice exposed and produced a bounded consumer-deduplication fix.
+Graceful shutdown counters remain the next acceptance evidence because the
+review run ended without entering Nautilus's logged stopping lifecycle.
+
+The same short 2026-07-16 run classified 64 of 66 active NQ trades and 91 of 94
+volume units, reporting a 96.81% classified-volume ratio with explicit reasons
+for the remaining two observations. This is strong evidence for the corrected
+event-time classifier, but it is not yet full-session Aggression calibration.
+
 The 2026-07-15 run separated operational success from trading usefulness. The
 LiveNode, market-data ingestion, persistence, recovery, analytics, and operator
 context continued through London and New York observation. The initial Fabio
@@ -106,11 +127,14 @@ LiveNode or canonical analytics path.
 
 - NQ live operation has been exercised more thoroughly than ES, indices, and
   equities. Broader provider and contract coverage remains an acceptance task.
-- The signal runtime can fail while the LiveNode continues, and its current
-  heartbeat does not expose the causal exception or traceback.
+- Signal failure diagnostics and event-time trade classification are implemented.
+  Short-run classification evidence is healthy, but neither has accumulated a
+  full live-session acceptance run.
 - The 2026-07-15 run classified only a small fraction of observed trade volume.
-  Timestamp alignment and every unclassified reason require explicit accounting
-  before delta, CVD, or tick Aggression can be treated as reliable evidence.
+  Corrected timestamp alignment and explicit unclassified reasons need new live
+  evidence before delta, CVD, or tick Aggression can be trusted.
+- The committed-feature event bridge and operator consumer have reviewed live
+  publication evidence; graceful shutdown-health evidence remains outstanding.
 - Stage 5D.3 has deterministic active, background, expiry, race-order, and
   restart tests plus live Armed and Expired evidence, but no live Triggered
   evidence and no trading-usefulness acceptance.

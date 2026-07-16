@@ -34,6 +34,7 @@ from markeitech.market_data.bootstrap import (
     start_live_node,
 )
 from markeitech.market_data.config import (
+    DomainEventRuntimeConfig,
     InteractiveBrokersConnectionConfig,
     MarketDataRuntimeConfig,
     OperatorContextConfig,
@@ -92,6 +93,7 @@ from markeitech.market_data.switching import (
 )
 
 __all__ = [
+    "DomainEventRuntimeConfig",
     "InteractiveBrokersConnectionConfig",
     "InstrumentMarketDataSnapshot",
     "InstrumentMarketDataHealth",

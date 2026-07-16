@@ -54,6 +54,9 @@ class FakeNode:
     def build(self) -> None:
         self.built = True
 
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+        return asyncio.get_running_loop()
+
     async def run_async(self) -> None:
         await self.stopped.wait()
 

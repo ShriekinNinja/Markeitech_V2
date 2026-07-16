@@ -139,6 +139,23 @@ def test_parse_operator_context_config() -> None:
     assert config.operator_context.interval_seconds == 90
 
 
+def test_parse_domain_event_config() -> None:
+    raw = raw_config()
+    raw["domain_events"] = {
+        "enabled": True,
+        "queue_size": 32,
+        "drain_batch_size": 8,
+        "operator_dedupe_size": 128,
+    }
+
+    config = parse_market_data_runtime_config(raw)
+
+    assert config.domain_events.enabled is True
+    assert config.domain_events.queue_size == 32
+    assert config.domain_events.drain_batch_size == 8
+    assert config.domain_events.operator_dedupe_size == 128
+
+
 def test_parse_named_signal_definitions_and_instrument_enablement(tmp_path: Path) -> None:
     raw = raw_config()
     raw["persistence"] = {

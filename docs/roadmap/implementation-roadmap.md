@@ -83,6 +83,20 @@ replayable snapshots, stale-field handling, and operator-readable chain reports.
 Order construction, routing, sizing, and risk remain in the separately approved
 execution stage.
 
+## Supplemental Provider Capabilities
+
+Nautilus remains the owner of supported IB historical bars, ticks, quotes, and
+subscriptions. Do not introduce a second general-purpose IB client while those
+paths satisfy the requirement.
+
+IB `reqHistogramData` is a possible future supplemental input for profile
+comparison and feature research. If adopted, retain its provider-reported
+methodology and request window explicitly, persist it as supporting evidence,
+and do not substitute it for Markeitech's session-aligned canonical profiles.
+Any native IB extension must own only capabilities unavailable through the
+Nautilus adapter and must demonstrate a real need before adding another
+connection lifecycle.
+
 ## Validation Track: Replay And Backtesting
 
 Live operation remains the immediate product focus, but deterministic replay and

@@ -6,10 +6,18 @@ from markeitech.runtime.event_bus import (
     DomainEventBridgeStatus,
     DomainEventOfferStatus,
 )
+from markeitech.runtime.feature_events import (
+    FeatureCommitEventFanout,
+    FeatureCommitEventSnapshot,
+    feature_committed_event,
+)
 
 __all__ = [
     "BoundedEventLoopBridge",
     "DomainEventBridgeSnapshot",
     "DomainEventBridgeStatus",
     "DomainEventOfferStatus",
+    "FeatureCommitEventFanout",
+    "FeatureCommitEventSnapshot",
+    "feature_committed_event",
 ]

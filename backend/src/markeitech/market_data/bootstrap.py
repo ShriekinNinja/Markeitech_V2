@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from asyncio import AbstractEventLoop
 from collections.abc import Callable
 from datetime import timedelta
 from typing import Any, Protocol
@@ -32,6 +33,8 @@ from markeitech.persistence.feature_pipeline import FeatureSubmissionStatus
 from markeitech.persistence.pipeline import PersistenceSubmissionStatus
 from markeitech.persistence.runtime import PersistenceRuntime
 from markeitech.persistence.startup_recovery import StartupRecoveryService
+from markeitech.runtime import BoundedEventLoopBridge, FeatureCommitEventFanout
+from markeitech.runtime.actor import OperatorEventProjectionActor
 from markeitech.signals import (
     BoundedAggressionObservationStore,
     BoundedFeatureCommitHandoff,
@@ -57,6 +60,8 @@ class ConfigurableLiveNodeLike(LiveNodeLike, Protocol):
 
     def build(self) -> None: ...
 
+    def get_event_loop(self) -> AbstractEventLoop | None: ...
+
 
 class LiveNodeBootstrapSummary(VersionedDomainModel):
     can_build_node: bool
@@ -76,12 +81,16 @@ class PersistenceManagedLiveNode:
         signal_runtime: LiveSignalRuntime | None = None,
         signal_projection_writer: BoundedSignalProjectionWriter | None = None,
         signal_observations: BoundedAggressionObservationStore | None = None,
+        domain_event_bridge: BoundedEventLoopBridge | None = None,
+        feature_event_fanout: FeatureCommitEventFanout | None = None,
     ) -> None:
         self._node = node
         self.persistence = persistence
         self.signal_runtime = signal_runtime
         self.signal_projection_writer = signal_projection_writer
         self.signal_observations = signal_observations
+        self.domain_event_bridge = domain_event_bridge
+        self.feature_event_fanout = feature_event_fanout
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._node, name)
@@ -208,11 +217,31 @@ def build_prepared_market_data_live_node(
         signal_observations = BoundedAggressionObservationStore(
             config.signals.aggression_observation_history_bars
         )
+    domain_event_bridge = (
+        BoundedEventLoopBridge(
+            config.domain_events.queue_size,
+            drain_batch_size=config.domain_events.drain_batch_size,
+        )
+        if config.persistence is not None and config.domain_events.enabled
+        else None
+    )
+    feature_event_fanout = (
+        FeatureCommitEventFanout(
+            domain_event_bridge,
+            critical_sink=None if signal_handoff is None else signal_handoff.offer,
+        )
+        if domain_event_bridge is not None
+        else None
+    )
     persistence = (
         PersistenceRuntime.build(
             config.persistence,
             retention_calendar=session_calendar,
-            feature_commit_sink=None if signal_handoff is None else signal_handoff.offer,
+            feature_commit_sink=(
+                feature_event_fanout.offer
+                if feature_event_fanout is not None
+                else (None if signal_handoff is None else signal_handoff.offer)
+            ),
             market_data_commit_sink=(
                 None if signal_observations is None else signal_observations.offer_committed
             ),
@@ -298,6 +327,17 @@ def build_prepared_market_data_live_node(
     try:
         actor = actor_factory(action_plan, **actor_kwargs)
         node.trader.add_actor(actor)
+        if domain_event_bridge is not None:
+            event_loop = node.get_event_loop()
+            if event_loop is None:
+                raise RuntimeError("domain event bridge requires a Nautilus event loop")
+            node.trader.add_actor(
+                OperatorEventProjectionActor(
+                    domain_event_bridge,
+                    event_loop.call_soon_threadsafe,
+                    dedupe_size=config.domain_events.operator_dedupe_size,
+                )
+            )
         node.add_data_client_factory(config.data_client_name, data_client_factory)
         node.build()
     except Exception:
@@ -361,6 +401,8 @@ def build_prepared_market_data_live_node(
         signal_runtime,
         signal_projection_writer,
         signal_observations,
+        domain_event_bridge,
+        feature_event_fanout,
     )
 
 

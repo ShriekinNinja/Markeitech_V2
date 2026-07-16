@@ -75,6 +75,18 @@ def test_bridge_reports_saturation_and_closed_rejection() -> None:
     assert snapshot.rejected_count == 3
 
 
+def test_batch_offer_is_all_or_nothing() -> None:
+    bridge = BoundedEventLoopBridge(2)
+
+    assert bridge.offer_batch((event(1), event(2))) == DomainEventOfferStatus.ACCEPTED
+    assert bridge.offer_batch((event(3), event(4))) == DomainEventOfferStatus.QUEUE_FULL
+
+    snapshot = bridge.snapshot
+    assert snapshot.pending_count == 2
+    assert snapshot.accepted_count == 2
+    assert snapshot.rejected_count == 2
+
+
 def test_schedule_failure_retains_event_for_explicit_retry() -> None:
     callbacks = []
     attempts = 0

@@ -19,6 +19,7 @@ from markeitech.domain import (
     WarmupTimeframe,
 )
 from markeitech.market_data.config import (
+    DomainEventRuntimeConfig,
     InteractiveBrokersConnectionConfig,
     MarketDataRuntimeConfig,
     OperatorContextConfig,
@@ -41,6 +42,7 @@ def parse_market_data_runtime_config(raw: dict[str, Any]) -> MarketDataRuntimeCo
     persistence_raw = raw.get("persistence")
     logging_raw = raw.get("logging", {})
     operator_context_raw = raw.get("operator_context", {})
+    domain_events_raw = raw.get("domain_events", {})
     signals_raw = raw.get("signals")
     instruments_raw = raw.get("instruments", [])
     if not isinstance(instruments_raw, list):
@@ -63,6 +65,7 @@ def parse_market_data_runtime_config(raw: dict[str, Any]) -> MarketDataRuntimeCo
         persistence=(PersistenceConfig(**persistence_raw) if persistence_raw is not None else None),
         logging=RuntimeLoggingConfig(**logging_raw),
         operator_context=OperatorContextConfig(**operator_context_raw),
+        domain_events=DomainEventRuntimeConfig(**domain_events_raw),
         signals=(SignalRuntimeConfig(**signals_raw) if signals_raw is not None else None),
     )
 

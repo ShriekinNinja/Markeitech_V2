@@ -93,16 +93,24 @@ class BoundedEventLoopBridge:
             self._schedule_drain()
 
     def offer(self, event: CommittedDomainEvent) -> DomainEventOfferStatus:
+        return self.offer_batch((event,))
+
+    def offer_batch(
+        self,
+        events: tuple[CommittedDomainEvent, ...],
+    ) -> DomainEventOfferStatus:
+        if not events:
+            return DomainEventOfferStatus.ACCEPTED
         schedule = False
         with self._lock:
             if self._status == DomainEventBridgeStatus.CLOSED:
-                self._rejected_count += 1
+                self._rejected_count += len(events)
                 return DomainEventOfferStatus.CLOSED
-            if len(self._queue) >= self._capacity:
-                self._rejected_count += 1
+            if len(self._queue) + len(events) > self._capacity:
+                self._rejected_count += len(events)
                 return DomainEventOfferStatus.QUEUE_FULL
-            self._queue.append(event)
-            self._accepted_count += 1
+            self._queue.extend(events)
+            self._accepted_count += len(events)
             if self._status == DomainEventBridgeStatus.BOUND and not self._is_scheduled:
                 self._is_scheduled = True
                 schedule = True

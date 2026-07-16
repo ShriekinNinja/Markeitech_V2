@@ -53,6 +53,7 @@ class FakeNode:
         self.trader = self
         self.actors: list[Any] = []
         self.data_client_factories: dict[str, type[Any]] = {}
+        self.loop = FakeEventLoop()
 
     def add_actor(self, actor: Any) -> None:
         self.actors.append(actor)
@@ -63,6 +64,9 @@ class FakeNode:
     def build(self) -> None:
         self.built = True
 
+    def get_event_loop(self) -> Any:
+        return self.loop
+
     def run(self) -> str:
         self.started = True
         for actor in self.actors:
@@ -70,6 +74,14 @@ class FakeNode:
             if emit is not None:
                 emit()
         return "started"
+
+
+class FakeEventLoop:
+    def __init__(self) -> None:
+        self.callbacks: list[Any] = []
+
+    def call_soon_threadsafe(self, callback: Any) -> None:
+        self.callbacks.append(callback)
 
 
 def nq_contract() -> NQContractConfig:
@@ -297,6 +309,10 @@ def test_prepared_node_wires_and_flushes_persistence_runtime(tmp_path: Path) -> 
     assert node.persistence.ingress.snapshot.accepted_bar_count == 1
     assert node.persistence.feature_writer_snapshot is not None
     assert node.persistence.feature_writer_snapshot.committed_count == 1
+    assert node.domain_event_bridge is not None
+    assert node.domain_event_bridge.snapshot.pending_count == 1
+    assert node.feature_event_fanout is not None
+    assert node.feature_event_fanout.snapshot.offered_count == 1
 
 
 def test_prepared_node_owns_signal_runtime_lifecycle(tmp_path: Path) -> None:

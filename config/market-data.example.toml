@@ -30,6 +30,12 @@ max_backup_count = 10
 enabled = true
 interval_seconds = 60
 
+[domain_events]
+enabled = true
+queue_size = 2048
+drain_batch_size = 64
+operator_dedupe_size = 4096
+
 [persistence]
 catalog_path = "data/catalog"
 metadata_path = "data/runtime/markeitech.sqlite3"

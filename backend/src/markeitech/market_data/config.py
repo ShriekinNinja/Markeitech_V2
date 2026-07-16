@@ -36,6 +36,19 @@ class OperatorContextConfig(VersionedDomainModel):
     interval_seconds: int = Field(default=60, ge=10)
 
 
+class DomainEventRuntimeConfig(VersionedDomainModel):
+    enabled: bool = True
+    queue_size: int = Field(default=2048, ge=1)
+    drain_batch_size: int = Field(default=64, ge=1)
+    operator_dedupe_size: int = Field(default=4096, ge=1)
+
+    @model_validator(mode="after")
+    def _drain_must_fit_queue(self) -> DomainEventRuntimeConfig:
+        if self.drain_batch_size > self.queue_size:
+            raise ValueError("domain event drain batch size cannot exceed queue size")
+        return self
+
+
 class MarketDataRuntimeConfig(VersionedDomainModel):
     instrument_registry: InstrumentRegistryConfig
     ib: InteractiveBrokersConnectionConfig = Field(
@@ -50,6 +63,7 @@ class MarketDataRuntimeConfig(VersionedDomainModel):
     persistence: PersistenceConfig | None = None
     logging: RuntimeLoggingConfig = Field(default_factory=RuntimeLoggingConfig)
     operator_context: OperatorContextConfig = Field(default_factory=OperatorContextConfig)
+    domain_events: DomainEventRuntimeConfig = Field(default_factory=DomainEventRuntimeConfig)
     signals: SignalRuntimeConfig | None = None
 
     @model_validator(mode="after")

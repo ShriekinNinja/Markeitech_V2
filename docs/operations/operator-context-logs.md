@@ -9,6 +9,31 @@ Signal lifecycle console messages are documented in the
 [operator signal log guide](operator-signal-logs.md). Do not interpret the
 Direction score in these context lines as a durable signal transition.
 
+## `MARKET_EVENT`
+
+Example:
+
+```text
+MARKET_EVENT | event=FEATURE_COMMITTED | instrument=NQU6.CME | aggregate=NQU6.CME:market_context:1m | sequence=812 | payload_id=<feature-id>
+```
+
+This line proves that a durable feature commit crossed the bounded worker-to-
+event-loop bridge and was consumed through the Nautilus message bus. It does
+not duplicate the feature payload and is not a new analytical calculation.
+
+- `aggregate` identifies the instrument, feature family, and timeframe.
+- `sequence` is the SQLite-assigned durable feature commit order.
+- `payload_id` identifies the canonical feature snapshot in persistence.
+- Missing sequence numbers can reflect bus saturation or shutdown discard; the
+  durable feature remains authoritative and recoverable.
+
+`MARKET_EVENT_RUNTIME | event=STOPPED` summarizes accepted, published,
+rejected, scheduling-failure, publication-failure, and duplicate counts.
+Duplicates are expected from idempotent durable resubmission and are suppressed
+by the projection actor's bounded identity window. Any nonzero
+failure or rejection count is logged as a warning and requires review before
+the event spine is treated as complete operational evidence.
+
 ## Log Envelope
 
 The local runtime writes Nautilus JSONL logs under `data/logs/` while also
