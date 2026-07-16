@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -29,6 +29,7 @@ from markeitech.persistence import (
     PersistenceRuntimeStatus,
     StartupRecoveryService,
 )
+from markeitech.runtime import ContextEventProcessorStatus
 from markeitech.signals import (
     LiveSignalRuntimeStatus,
     LocationPolicyConfig,
@@ -140,14 +141,17 @@ def native_trade() -> TradeTick:
 
 
 def completed_bar() -> OneMinuteBar:
+    open_ts = datetime(2026, 7, 15, 11, 8, tzinfo=UTC)
+    close_ts = datetime(2026, 7, 15, 11, 9, tzinfo=UTC)
+    event_ts_ns = int(close_ts.timestamp() * 1_000_000_000)
     return OneMinuteBar(
         instrument_id="NQU6.CME",
-        event_ts=datetime(2026, 8, 10, 11, 9, tzinfo=UTC),
-        ts_init=datetime(2026, 8, 10, 11, 9, 0, 123456, tzinfo=UTC),
-        event_ts_ns=1_786_360_140_000_000_000,
-        ts_init_ns=1_786_360_140_123_456_789,
-        open_ts=datetime(2026, 8, 10, 11, 8, tzinfo=UTC),
-        close_ts=datetime(2026, 8, 10, 11, 9, tzinfo=UTC),
+        event_ts=close_ts,
+        ts_init=close_ts + timedelta(microseconds=123456),
+        event_ts_ns=event_ts_ns,
+        ts_init_ns=event_ts_ns + 123_456_789,
+        open_ts=open_ts,
+        close_ts=close_ts,
         open=Decimal("20000"),
         high=Decimal("20001"),
         low=Decimal("19999"),
@@ -299,6 +303,8 @@ def test_prepared_node_wires_and_flushes_persistence_runtime(tmp_path: Path) -> 
     assert isinstance(captured["startup_recovery"], StartupRecoveryService)
     assert callable(captured["on_historical_bar"])
     assert node.persistence.status == PersistenceRuntimeStatus.CREATED
+    assert node.context_event_processor is not None
+    assert node.context_event_processor.snapshot.status == ContextEventProcessorStatus.READY
     assert node.run() == "started"
     assert node.persistence.status == PersistenceRuntimeStatus.STOPPED
     assert len(node.persistence.catalog.query_trade_ticks("NQU6.CME")) == 1
@@ -313,6 +319,8 @@ def test_prepared_node_wires_and_flushes_persistence_runtime(tmp_path: Path) -> 
     assert node.domain_event_bridge.snapshot.pending_count == 1
     assert node.feature_event_fanout is not None
     assert node.feature_event_fanout.snapshot.offered_count == 1
+    assert node.context_event_processor.snapshot.processed_revision_count == 1
+    assert node.context_event_processor.snapshot.checkpoint_advance_count == 1
 
 
 def test_prepared_node_owns_signal_runtime_lifecycle(tmp_path: Path) -> None:

@@ -34,6 +34,32 @@ by the projection actor's bounded identity window. Any nonzero
 failure or rejection count is logged as a warning and requires review before
 the event spine is treated as complete operational evidence.
 
+## `CONTEXT_EVENT`
+
+Example:
+
+```text
+CONTEXT_EVENT | kind=TREND_CHANGED | instrument=NQU6.CME | timeframe=1m | bullish->bearish | fidelity=inferred->inferred | as_of=2026-07-16T10:00:00+00:00 | sequence=842 | event=<event-id>
+```
+
+This line is an edge-triggered semantic transition, not another periodic
+snapshot. It is projected only after the transition and its detector checkpoint
+commit atomically to SQLite.
+
+- `kind` currently identifies a trend change or coarse value-area-region
+  change.
+- The arrow shows the previous and current semantic state.
+- `fidelity` preserves the input quality on both sides of the comparison.
+- `sequence` is the current feature's durable commit sequence.
+- `event` is the shortened stable transition identity.
+
+Initial state, exact retries, stale revisions, same-time corrections, and
+movement among lower/POC/upper positions inside value do not produce this line.
+Unavailable evidence breaks comparison continuity. Startup restores or
+reconciles the durable checkpoint without replaying historical operator lines.
+`CONTEXT_EVENT_RUNTIME | event=STOPPED` reports the projection actor's bounded
+duplicate count.
+
 ## Log Envelope
 
 The local runtime writes Nautilus JSONL logs under `data/logs/` while also

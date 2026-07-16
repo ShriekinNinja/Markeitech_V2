@@ -48,3 +48,20 @@ class CommittedDomainEvent(VersionedDomainModel):
     @property
     def dedupe_key(self) -> str:
         return f"{self.topic.value}:{self.event_id}"
+
+
+class CommittedContextTransitionNotice(CommittedDomainEvent):
+    transition_kind: str = Field(min_length=1)
+    timeframe: str = Field(min_length=1)
+    previous_value: str = Field(min_length=1)
+    current_value: str = Field(min_length=1)
+    previous_input_fidelity: str = Field(min_length=1)
+    current_input_fidelity: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _must_be_context_event(self) -> CommittedContextTransitionNotice:
+        if self.topic != MarkeitechBusTopic.CONTEXT_EVENT:
+            raise ValueError("context transition notice requires context-event topic")
+        if self.instrument_id is None or self.commit_sequence is None:
+            raise ValueError("context transition notice requires instrument and commit sequence")
+        return self

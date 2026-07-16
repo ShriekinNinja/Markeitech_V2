@@ -9,3 +9,4 @@ class ContextEventCommitResult:
     committed_event_count: int
     duplicate_event_count: int
     checkpoint_advanced: bool
+    committed_event_ids: tuple[str, ...] = ()

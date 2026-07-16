@@ -99,10 +99,14 @@ def test_context_events_and_checkpoint_commit_atomically_and_idempotently(
         assert seed_result.checkpoint_advanced
         assert seed_result.committed_event_count == 0
         assert first_result.committed_event_count == 2
+        assert first_result.committed_event_ids == tuple(
+            event.event_id for event in transitioned.events
+        )
         assert first_result.duplicate_event_count == 0
         assert not retry_result.checkpoint_advanced
         assert retry_result.committed_event_count == 0
         assert retry_result.duplicate_event_count == 2
+        assert retry_result.committed_event_ids == ()
         assert store.load_context_checkpoints() == (transitioned.checkpoint,)
         assert store.load_context_events() == transitioned.events
         assert store.load_context_events(kind=ContextEventKind.TREND_CHANGED) == (

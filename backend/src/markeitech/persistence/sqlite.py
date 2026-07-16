@@ -425,15 +425,21 @@ class SQLiteMetadataStore:
             if existing is not None and existing != feature:
                 raise ValueError("feature id conflicts within metadata lookup")
             by_id[feature_id] = feature
-        placeholders = ",".join("?" for _ in by_id)
-        rows = self._connection.execute(
-            f"""
-            SELECT feature_id, content_hash, committed_ts_ns, commit_sequence
-            FROM feature_snapshot_commits
-            WHERE feature_id IN ({placeholders})
-            """,
-            tuple(by_id),
-        ).fetchall()
+        rows: list[sqlite3.Row] = []
+        feature_ids = tuple(by_id)
+        for offset in range(0, len(feature_ids), 500):
+            batch = feature_ids[offset : offset + 500]
+            placeholders = ",".join("?" for _ in batch)
+            rows.extend(
+                self._connection.execute(
+                    f"""
+                    SELECT feature_id, content_hash, committed_ts_ns, commit_sequence
+                    FROM feature_snapshot_commits
+                    WHERE feature_id IN ({placeholders})
+                    """,
+                    batch,
+                ).fetchall()
+            )
         revisions: dict[str, CommittedFeatureRevision] = {}
         for row in rows:
             feature_id = bytes(row["feature_id"])
@@ -537,6 +543,7 @@ class SQLiteMetadataStore:
                     ):
                         raise ValueError("context event does not continue stored checkpoint state")
             committed_count = 0
+            committed_event_ids: list[str] = []
             for event in result.events:
                 existing_row = connection.execute(
                     """
@@ -581,6 +588,7 @@ class SQLiteMetadataStore:
                         raise ValueError("context event identity conflicts with stored content")
                 else:
                     committed_count += 1
+                    committed_event_ids.append(event.event_id)
             if checkpoint_advanced:
                 connection.execute(
                     """
@@ -605,6 +613,7 @@ class SQLiteMetadataStore:
             committed_event_count=committed_count,
             duplicate_event_count=len(result.events) - committed_count,
             checkpoint_advanced=checkpoint_advanced,
+            committed_event_ids=tuple(committed_event_ids),
         )
 
     def load_context_checkpoints(self) -> tuple[ContextDetectorCheckpoint, ...]:

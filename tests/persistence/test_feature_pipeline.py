@@ -219,6 +219,24 @@ def test_bounded_writer_flushes_batches_and_stops_cleanly() -> None:
     assert writer.snapshot.pending_count == 0
 
 
+def test_feature_commit_sink_can_only_be_bound_once_before_start() -> None:
+    writer = BoundedFeatureWriter(
+        RecordingCoordinator(),  # type: ignore[arg-type]
+        queue_size=1,
+        batch_size=1,
+        poll_seconds=0.01,
+    )
+    writer.set_commit_sink(lambda _revisions: True)
+
+    with pytest.raises(RuntimeError, match="already configured"):
+        writer.set_commit_sink(lambda _revisions: True)
+
+    writer.start()
+    with pytest.raises(RuntimeError, match="before start"):
+        writer.set_commit_sink(lambda _revisions: True)
+    assert writer.stop(1)
+
+
 def test_bounded_writer_fails_closed_and_retains_failed_batch() -> None:
     class FailingCoordinator:
         def persist(

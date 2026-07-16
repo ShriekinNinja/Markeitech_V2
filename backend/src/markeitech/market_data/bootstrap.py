@@ -30,12 +30,19 @@ from markeitech.market_data.intents import build_nautilus_request_plan
 from markeitech.market_data.nautilus import build_trading_node_config
 from markeitech.market_data.planner import build_market_data_plan
 from markeitech.persistence.calendar import PandasMarketSessionCalendar
-from markeitech.persistence.feature_pipeline import FeatureSubmissionStatus
+from markeitech.persistence.feature_pipeline import (
+    CommittedFeatureRevision,
+    FeatureSubmissionStatus,
+)
 from markeitech.persistence.pipeline import PersistenceSubmissionStatus
 from markeitech.persistence.runtime import PersistenceRuntime
 from markeitech.persistence.startup_recovery import StartupRecoveryService
-from markeitech.runtime import BoundedEventLoopBridge, FeatureCommitEventFanout
-from markeitech.runtime.actor import OperatorEventProjectionActor
+from markeitech.runtime import (
+    BoundedEventLoopBridge,
+    ContextEventCommitProcessor,
+    FeatureCommitEventFanout,
+)
+from markeitech.runtime.actor import ContextEventProjectionActor, OperatorEventProjectionActor
 from markeitech.signals import (
     BoundedAggressionObservationStore,
     BoundedFeatureCommitHandoff,
@@ -84,6 +91,7 @@ class PersistenceManagedLiveNode:
         signal_observations: BoundedAggressionObservationStore | None = None,
         domain_event_bridge: BoundedEventLoopBridge | None = None,
         feature_event_fanout: FeatureCommitEventFanout | None = None,
+        context_event_processor: ContextEventCommitProcessor | None = None,
     ) -> None:
         self._node = node
         self.persistence = persistence
@@ -92,6 +100,7 @@ class PersistenceManagedLiveNode:
         self.signal_observations = signal_observations
         self.domain_event_bridge = domain_event_bridge
         self.feature_event_fanout = feature_event_fanout
+        self.context_event_processor = context_event_processor
         self._runtime_lifecycle_lock = Lock()
         self._runtimes_started = False
         self._runtimes_stop_started = False
@@ -237,23 +246,10 @@ def build_prepared_market_data_live_node(
         if config.persistence is not None and config.domain_events.enabled
         else None
     )
-    feature_event_fanout = (
-        FeatureCommitEventFanout(
-            domain_event_bridge,
-            critical_sink=None if signal_handoff is None else signal_handoff.offer,
-        )
-        if domain_event_bridge is not None
-        else None
-    )
     persistence = (
         PersistenceRuntime.build(
             config.persistence,
             retention_calendar=session_calendar,
-            feature_commit_sink=(
-                feature_event_fanout.offer
-                if feature_event_fanout is not None
-                else (None if signal_handoff is None else signal_handoff.offer)
-            ),
             market_data_commit_sink=(
                 None if signal_observations is None else signal_observations.offer_committed
             ),
@@ -261,6 +257,49 @@ def build_prepared_market_data_live_node(
         if config.persistence
         else None
     )
+    context_event_processor = None
+    feature_event_fanout = None
+    if persistence is not None:
+        try:
+            if persistence.feature_catalog is None or persistence.feature_writer is None:
+                raise RuntimeError("persistence runtime did not build feature storage")
+            context_event_processor = ContextEventCommitProcessor(
+                persistence.metadata,
+                domain_event_bridge,
+            )
+            feature_history = tuple(
+                feature
+                for runtime in config.instrument_registry.instruments
+                if runtime.enabled
+                for feature in persistence.feature_catalog.query_history(
+                    runtime.contract.instrument_id
+                )
+            )
+            context_event_processor.reconcile(
+                persistence.metadata.committed_feature_revisions(feature_history)
+            )
+
+            def critical_feature_sink(
+                revisions: tuple[CommittedFeatureRevision, ...],
+            ) -> bool:
+                assert context_event_processor is not None
+                if not context_event_processor.offer(revisions):
+                    return False
+                return signal_handoff is None or signal_handoff.offer(revisions)
+
+            feature_event_fanout = (
+                FeatureCommitEventFanout(domain_event_bridge, critical_sink=critical_feature_sink)
+                if domain_event_bridge is not None
+                else None
+            )
+            persistence.feature_writer.set_commit_sink(
+                critical_feature_sink
+                if feature_event_fanout is None
+                else feature_event_fanout.offer
+            )
+        except Exception:
+            persistence.stop()
+            raise
     profile_bin_sizes = {
         runtime.contract.instrument_id: runtime.warmup.volume_profile_bin_size
         for runtime in config.instrument_registry.instruments
@@ -350,6 +389,11 @@ def build_prepared_market_data_live_node(
                     dedupe_size=config.domain_events.operator_dedupe_size,
                 )
             )
+            node.trader.add_actor(
+                ContextEventProjectionActor(
+                    dedupe_size=config.domain_events.operator_dedupe_size,
+                )
+            )
         node.add_data_client_factory(config.data_client_name, data_client_factory)
         node.build()
     except Exception:
@@ -415,6 +459,7 @@ def build_prepared_market_data_live_node(
         signal_observations,
         domain_event_bridge,
         feature_event_fanout,
+        context_event_processor,
     )
 
 

@@ -154,6 +154,17 @@ class BoundedFeatureWriter:
         with self._condition:
             return self._snapshot_unlocked()
 
+    def set_commit_sink(
+        self,
+        sink: Callable[[tuple[CommittedFeatureRevision, ...]], bool],
+    ) -> None:
+        with self._condition:
+            if self._status != FeatureWriterStatus.CREATED:
+                raise RuntimeError("feature commit sink must be configured before start")
+            if self._commit_sink is not None:
+                raise RuntimeError("feature commit sink is already configured")
+            self._commit_sink = sink
+
     def start(self) -> None:
         with self._condition:
             if self._status != FeatureWriterStatus.CREATED:

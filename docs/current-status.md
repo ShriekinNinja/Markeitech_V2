@@ -107,14 +107,17 @@ volume units, reporting a 96.81% classified-volume ratio with explicit reasons
 for the remaining two observations. This is strong evidence for the corrected
 event-time classifier, but it is not yet full-session Aggression calibration.
 
-Context Event semantics plus durable recovery are implemented for review but
-not yet runtime-wired. Immutable contracts and a pure ordered detector cover
+Context Event semantics, durable recovery, and live runtime wiring are
+deterministic-test complete for review. Immutable contracts and a pure ordered detector cover
 trend and coarse value-area region transitions, suppress initial, duplicate,
 stale, and same-timestamp correction output, and break comparison across
 unavailable evidence. SQLite schema 10 atomically commits emitted transitions
 with a compact detector checkpoint; no-change revisions still advance the
-checkpoint, and restart seeds it without replaying history. A dedicated bus
-actor and its managed shutdown ordering remain the following slice.
+checkpoint. The existing bounded feature-writer thread owns ordered processing;
+startup seeds new streams from their latest feature and reconciles only durable
+checkpoint gaps without historical projection. Newly committed transitions
+cross the event bridge to a dedicated non-blocking projection actor. Live
+acceptance remains outstanding.
 
 The 2026-07-15 run separated operational success from trading usefulness. The
 LiveNode, market-data ingestion, persistence, recovery, analytics, and operator
@@ -151,7 +154,8 @@ LiveNode or canonical analytics path.
   intermittent IDE-stop completion remains operational debt rather than a
   blocker for the event-backbone work.
 - Context-transition persistence and restart restoration are deterministic-test
-  complete but have not yet been connected to the live event actor.
+  complete and connected to the live event actor; live transition and restart
+  acceptance remain outstanding.
 - Stage 5D.3 has deterministic active, background, expiry, race-order, and
   restart tests plus live Armed and Expired evidence, but no live Triggered
   evidence and no trading-usefulness acceptance.

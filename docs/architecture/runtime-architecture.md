@@ -238,6 +238,15 @@ hide a crash between feature commit and detector progress. Startup restores the
 checkpoint silently before any new revision is evaluated. Runtime bus
 publication remains downstream of this durable boundary.
 
+The live processor runs synchronously on the existing bounded feature-writer
+thread after feature durability, rather than adding another queue. On first
+activation it seeds each stream from the latest committed feature. On restart it
+replays only revisions newer than the stored stream checkpoint and suppresses
+operator publication during that reconciliation. Newly committed transitions
+then become typed compact notices on the event bridge; a dedicated actor renders
+them without persistence reads. Bus rejection is observable but cannot roll
+back an already durable transition.
+
 The Stage 5C.3b consumer is a dedicated bounded thread owned by the managed LiveNode. Startup order is persistence, verified signal restoration, then Nautilus execution. Shutdown stops and flushes the feature writer, drains and stops signal evaluation while SQLite remains open, then closes the remaining persistence runtime. Warmup commits rebuild feature state behind a startup watermark; only a newer completed evaluation bar may change signal lifecycle. Active and background instruments use the same definition/evaluator/store path.
 
 For each live evaluation, the runtime qualifies Direction, resolves the explicit product-session start from the configured calendar, qualifies Location, advances the repeatable episode tracker, and persists only lifecycle changes. Open state is restored from hash-chain-verified SQLite aggregates matching current definition identity. Calendar, evaluator, callback, or persistence failure marks the runtime failed and returns the unprocessed committed revisions to the handoff. Console projection is intentionally deferred to 5C.3c and is never restart truth.

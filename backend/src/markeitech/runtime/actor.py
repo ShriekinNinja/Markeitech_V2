@@ -6,7 +6,11 @@ from collections.abc import Callable
 from nautilus_trader.common.actor import Actor
 
 from markeitech.runtime.event_bus import BoundedEventLoopBridge
-from markeitech.runtime.events import CommittedDomainEvent, MarkeitechBusTopic
+from markeitech.runtime.events import (
+    CommittedContextTransitionNotice,
+    CommittedDomainEvent,
+    MarkeitechBusTopic,
+)
 
 
 class BoundedEventIdentityWindow:
@@ -89,3 +93,37 @@ class OperatorEventProjectionActor(Actor):
             f"| instrument={event.instrument_id} | aggregate={event.aggregate_id} "
             f"| sequence={event.commit_sequence} | payload_id={event.payload_id}"
         )
+
+
+class ContextEventProjectionActor(Actor):
+    """Projects durable context transitions without reading persistence."""
+
+    def __init__(self, *, dedupe_size: int) -> None:
+        super().__init__()
+        self._identities = BoundedEventIdentityWindow(dedupe_size)
+
+    def on_start(self) -> None:
+        self.msgbus.subscribe(MarkeitechBusTopic.CONTEXT_EVENT.value, self._on_context_event)
+
+    def on_stop(self) -> None:
+        self.msgbus.unsubscribe(MarkeitechBusTopic.CONTEXT_EVENT.value, self._on_context_event)
+        self.log.info(
+            "CONTEXT_EVENT_RUNTIME | event=STOPPED "
+            f"| duplicates={self._identities.duplicate_count}"
+        )
+
+    def _on_context_event(self, event: CommittedContextTransitionNotice) -> None:
+        if not self._identities.observe(event.dedupe_key):
+            return
+        self.log.info(render_context_transition_notice(event))
+
+
+def render_context_transition_notice(event: CommittedContextTransitionNotice) -> str:
+    return (
+        "CONTEXT_EVENT "
+        f"| kind={event.transition_kind.upper()} | instrument={event.instrument_id} "
+        f"| timeframe={event.timeframe} | {event.previous_value}->{event.current_value} "
+        f"| fidelity={event.previous_input_fidelity}->{event.current_input_fidelity} "
+        f"| as_of={event.occurred_ts.isoformat()} | sequence={event.commit_sequence} "
+        f"| event={event.payload_id[:12]}"
+    )
