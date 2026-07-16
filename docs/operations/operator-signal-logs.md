@@ -48,6 +48,21 @@ Fields:
 - `projection_errors`: exceptions raised while offering a projection.
 - `render_errors`: formatting or log-sink failures isolated by the projector.
 
+When `event=FAILED`, the line additionally contains:
+
+- `failure_phase`: startup restoration, feature handoff, feature revision, or
+  observation update.
+- `failure_input`: the durable revision identity or observation boundary being
+  processed when the exception occurred.
+- `last_successful_sequence`: the last feature commit sequence processed fully,
+  or `none` when failure preceded the first successful revision.
+- `error`: exception type and message.
+- `traceback`: the complete traceback collapsed onto one log line.
+
+A FAILED projection can evict a queued heartbeat when the bounded presentation
+queue is full. Ordinary presentation backpressure must not hide the terminal
+runtime alert.
+
 Zero lifecycle messages with increasing `evaluations` means the engine evaluated
 and no setup changed state. Zero evaluations with increasing revisions usually
 means evidence is still rebuilding or no complete definition bundle exists.
@@ -138,7 +153,9 @@ The projector uses a bounded non-blocking queue and bounded dedupe memory.
 Formatting or log-sink failure increments health counters but does not stop
 ingestion, feature persistence, or signal evaluation. A rejected projection is
 observable damage to operator presentation; it does not roll back an already
-committed signal transition.
+committed signal transition. Signal-runtime failure remains fail-closed and
+requeues the failing durable revision when capacity permits; its FAILED line
+identifies whether that requeue also failed.
 
 Always inspect SQLite when investigating missing or ambiguous lifecycle output.
 Console and JSONL logs are evidence about presentation, not the durable signal

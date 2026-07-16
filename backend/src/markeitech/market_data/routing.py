@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Callable
+from decimal import Decimal
 from typing import Any
 
 from pydantic import Field
 
 from markeitech.domain.base import VersionedDomainModel
-from markeitech.domain.classification import classify_trade
+from markeitech.domain.classification import classify_trade_with_quote_history
 from markeitech.domain.market_data import (
     CanonicalQuoteTick,
     CanonicalTradeTick,
@@ -26,6 +28,8 @@ type RoutedMarketDataEvent = (
 )
 type MarketDataEventSink = Callable[[RoutedMarketDataEvent], None]
 
+QUOTE_HISTORY_CAPACITY = 1024
+
 
 class InstrumentMarketDataSnapshot(VersionedDomainModel):
     instrument_id: str = Field(min_length=1)
@@ -41,6 +45,11 @@ class InstrumentMarketDataSnapshot(VersionedDomainModel):
     tick_bar_update_count: int = Field(default=0, ge=0)
     dropped_event_count: int = Field(default=0, ge=0)
     last_drop_reason: str | None = None
+    classified_trade_count: int = Field(default=0, ge=0)
+    unknown_trade_count: int = Field(default=0, ge=0)
+    classified_volume: Decimal = Field(default=Decimal("0"), ge=0)
+    unknown_volume: Decimal = Field(default=Decimal("0"), ge=0)
+    classification_reason_counts: dict[str, int] = Field(default_factory=dict)
 
 
 class LiveMarketDataRouter:
@@ -68,6 +77,9 @@ class LiveMarketDataRouter:
         self._active_bar_builders = {
             instrument_id: ActiveOneMinuteBarBuilder(instrument_id)
             for instrument_id in instrument_ids
+        }
+        self._quote_history = {
+            instrument_id: deque(maxlen=QUOTE_HISTORY_CAPACITY) for instrument_id in instrument_ids
         }
 
     def snapshot(self, instrument_id: str) -> InstrumentMarketDataSnapshot:
@@ -97,16 +109,28 @@ class LiveMarketDataRouter:
             self._record_drop(str(tick.instrument_id), str(exc))
             return None
         snapshot = self.snapshot(trade.instrument_id)
-        classified = classify_trade(
+        classified = classify_trade_with_quote_history(
             trade,
-            snapshot.latest_quote,
+            tuple(self._quote_history[trade.instrument_id]),
             previous_trade=snapshot.latest_trade,
         )
+        reason_counts = dict(snapshot.classification_reason_counts)
+        reason_counts[classified.classification_reason] = (
+            reason_counts.get(classified.classification_reason, 0) + 1
+        )
+        is_classified = classified.side.value != "unknown"
         self._snapshots[trade.instrument_id] = snapshot.model_copy(
             update={
                 "trade_tick_count": snapshot.trade_tick_count + 1,
                 "latest_trade": trade,
                 "latest_classified_trade": classified,
+                "classified_trade_count": snapshot.classified_trade_count + int(is_classified),
+                "unknown_trade_count": snapshot.unknown_trade_count + int(not is_classified),
+                "classified_volume": snapshot.classified_volume
+                + (trade.size if is_classified else Decimal("0")),
+                "unknown_volume": snapshot.unknown_volume
+                + (trade.size if not is_classified else Decimal("0")),
+                "classification_reason_counts": reason_counts,
             }
         )
         self._emit(trade)
@@ -122,6 +146,7 @@ class LiveMarketDataRouter:
             self._record_drop(str(tick.instrument_id), str(exc))
             return None
         snapshot = self.snapshot(quote.instrument_id)
+        self._quote_history[quote.instrument_id].append(quote)
         self._snapshots[quote.instrument_id] = snapshot.model_copy(
             update={
                 "quote_tick_count": snapshot.quote_tick_count + 1,

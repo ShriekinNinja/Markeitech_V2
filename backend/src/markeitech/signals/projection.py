@@ -102,6 +102,11 @@ class SignalRuntimeProjection:
     observation_accepted_bar_count: int = 0
     observation_retained_bar_count: int = 0
     observation_conflicting_retry_count: int = 0
+    last_error: str | None = None
+    failure_phase: str | None = None
+    failure_input_identity: str | None = None
+    last_successful_commit_sequence: int | None = None
+    error_traceback: str | None = None
 
     def __post_init__(self) -> None:
         require_utc(self.occurred_ts)
@@ -225,8 +230,17 @@ class BoundedSignalProjectionWriter:
                 self._duplicate_count += 1
                 return True
             if len(self._queue) >= self._queue_size:
-                self._rejected_count += 1
-                return False
+                if not _is_failure_projection(projection):
+                    self._rejected_count += 1
+                    return False
+                for index, queued in enumerate(self._queue):
+                    if _is_heartbeat_projection(queued):
+                        del self._queue[index]
+                        self._rejected_count += 1
+                        break
+                else:
+                    self._rejected_count += 1
+                    return False
             if dedupe_key is not None:
                 self._dedupe[dedupe_key] = None
                 while len(self._dedupe) > self._dedupe_size:
@@ -305,7 +319,7 @@ def format_signal_operator_projection(
             if projection.startup_watermark is None
             else projection.startup_watermark.isoformat()
         )
-        return (
+        line = (
             f"SIGNAL_RUNTIME | event={projection.kind.value.upper()} "
             f"| status={projection.status.upper()} | watermark={watermark} "
             f"| restored={projection.restored_open_signal_count} "
@@ -323,6 +337,16 @@ def format_signal_operator_projection(
             f"| projection_rejected={projection.projection_rejected_count} "
             f"| projection_errors={projection.projection_callback_error_count}"
         )
+        if projection.kind == SignalRuntimeProjectionKind.FAILED:
+            sequence = projection.last_successful_commit_sequence
+            line += (
+                f" | failure_phase={projection.failure_phase or 'unknown'} "
+                f"| failure_input={_single_line(projection.failure_input_identity)} "
+                f"| last_successful_sequence={sequence if sequence is not None else 'none'} "
+                f"| error={_single_line(projection.last_error)} "
+                f"| traceback={_single_line(projection.error_traceback)}"
+            )
+        return line
 
     signal = projection.signal
     token = (
@@ -368,6 +392,26 @@ def _projection_dedupe_key(projection: SignalOperatorProjection) -> str | None:
     if isinstance(projection, SignalLifecycleProjection):
         return projection.dedupe_key
     return None
+
+
+def _is_failure_projection(projection: SignalOperatorProjection) -> bool:
+    return (
+        isinstance(projection, SignalRuntimeProjection)
+        and projection.kind == SignalRuntimeProjectionKind.FAILED
+    )
+
+
+def _is_heartbeat_projection(projection: SignalOperatorProjection) -> bool:
+    return (
+        isinstance(projection, SignalRuntimeProjection)
+        and projection.kind == SignalRuntimeProjectionKind.HEARTBEAT
+    )
+
+
+def _single_line(value: str | None) -> str:
+    if value is None:
+        return "none"
+    return " ".join(value.replace("|", "/").split())
 
 
 def _evidence_summary(signal: SignalSnapshot) -> str:

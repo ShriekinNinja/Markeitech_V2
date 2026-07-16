@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import timedelta
 
 from markeitech.domain.market_data import (
@@ -19,9 +20,45 @@ def classify_trade(
     *,
     max_quote_age: timedelta = DEFAULT_QUOTE_FRESHNESS,
 ) -> ClassifiedTrade:
-    matched_quote = _valid_quote_for_trade(trade, quote, max_quote_age)
+    matched_quote, unmatched_reason = _match_quote_for_trade(
+        trade,
+        () if quote is None else (quote,),
+        max_quote_age,
+    )
+    return _classify_with_quote(
+        trade,
+        matched_quote,
+        previous_trade,
+        unmatched_reason=unmatched_reason,
+    )
+
+
+def classify_trade_with_quote_history(
+    trade: CanonicalTradeTick,
+    quotes: Sequence[CanonicalQuoteTick],
+    previous_trade: CanonicalTradeTick | None = None,
+    *,
+    max_quote_age: timedelta = DEFAULT_QUOTE_FRESHNESS,
+) -> ClassifiedTrade:
+    """Classify against received quotes without using event-time lookahead."""
+    matched_quote, unmatched_reason = _match_quote_for_trade(trade, quotes, max_quote_age)
+    return _classify_with_quote(
+        trade,
+        matched_quote,
+        previous_trade,
+        unmatched_reason=unmatched_reason,
+    )
+
+
+def _classify_with_quote(
+    trade: CanonicalTradeTick,
+    matched_quote: CanonicalQuoteTick | None,
+    previous_trade: CanonicalTradeTick | None,
+    *,
+    unmatched_reason: str,
+) -> ClassifiedTrade:
     side = TradeSide.UNKNOWN
-    reason = "no_valid_quote"
+    reason = unmatched_reason
 
     if matched_quote is not None:
         if trade.price >= matched_quote.ask_price:
@@ -46,20 +83,26 @@ def classify_trade(
     )
 
 
-def _valid_quote_for_trade(
+def _match_quote_for_trade(
     trade: CanonicalTradeTick,
-    quote: CanonicalQuoteTick | None,
+    quotes: Sequence[CanonicalQuoteTick],
     max_quote_age: timedelta,
-) -> CanonicalQuoteTick | None:
-    if quote is None:
-        return None
-    if quote.instrument_id != trade.instrument_id:
-        return None
-    if quote.event_ts > trade.event_ts:
-        return None
-    if trade.event_ts - quote.event_ts > max_quote_age:
-        return None
-    return quote
+) -> tuple[CanonicalQuoteTick | None, str]:
+    if not quotes:
+        return None, "no_quote_available"
+    found_instrument = False
+    for quote in reversed(quotes):
+        if quote.instrument_id != trade.instrument_id:
+            continue
+        found_instrument = True
+        if quote.event_ts > trade.event_ts:
+            continue
+        if trade.event_ts - quote.event_ts > max_quote_age:
+            return None, "quote_stale"
+        return quote, "matched_quote"
+    if not found_instrument:
+        return None, "quote_instrument_mismatch"
+    return None, "no_quote_at_or_before_trade"
 
 
 def _tick_rule_side(

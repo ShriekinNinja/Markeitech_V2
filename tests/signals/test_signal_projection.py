@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from threading import Event
 
 from markeitech.signals import (
     BoundedSignalProjectionWriter,
@@ -123,6 +124,52 @@ def test_projection_sink_failure_is_recorded_and_does_not_fail_writer() -> None:
     assert snapshot.rendered_count == 1
     assert snapshot.last_error == "RuntimeError: operator sink unavailable"
     assert attempts == 2
+
+
+def test_failed_runtime_projection_replaces_queued_heartbeat_at_capacity() -> None:
+    lines: list[str] = []
+    sink_entered = Event()
+    release_sink = Event()
+
+    def blocking_sink(line: str) -> None:
+        if "event=STARTED" in line:
+            sink_entered.set()
+            assert release_sink.wait(1)
+        lines.append(line)
+
+    writer = BoundedSignalProjectionWriter(
+        blocking_sink,
+        lambda _instrument_id: "ACTIVE",
+        queue_size=1,
+        dedupe_size=1,
+        poll_seconds=1,
+    )
+    writer.start()
+    assert writer.submit(runtime_projection(SignalRuntimeProjectionKind.STARTED))
+    assert sink_entered.wait(1)
+    assert writer.submit(runtime_projection())
+    failed = runtime_projection(SignalRuntimeProjectionKind.FAILED)
+    failed = SignalRuntimeProjection(
+        **{
+            **failed.__dict__,
+            "status": "failed",
+            "last_error": "RuntimeError: calendar unavailable",
+            "failure_phase": "feature_revision",
+            "failure_input_identity": "commit_sequence=12;instrument=NQU6.CME",
+            "last_successful_commit_sequence": 11,
+            "error_traceback": "Traceback: calendar unavailable",
+        }
+    )
+
+    assert writer.submit(failed)
+    release_sink.set()
+    assert writer.stop(2)
+
+    assert len(lines) == 2
+    assert "event=STARTED" in lines[0]
+    assert "event=FAILED" in lines[1]
+    assert "failure_phase=feature_revision" in lines[1]
+    assert "last_successful_sequence=11" in lines[1]
 
 
 def test_projection_writer_rejects_submission_outside_running_lifecycle() -> None:

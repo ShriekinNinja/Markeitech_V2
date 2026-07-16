@@ -595,6 +595,7 @@ def test_runtime_fails_closed_and_requeues_unprocessed_revision() -> None:
 
     resolver = FailingSessionResolver()
     handoff = BoundedFeatureCommitHandoff(16)
+    projections = []
     runtime = LiveSignalRuntime(
         SignalRuntimeConfig(
             definitions=(definition(),),
@@ -605,6 +606,7 @@ def test_runtime_fails_closed_and_requeues_unprocessed_revision() -> None:
         resolver,
         handoff,
         clock=lambda: STARTED,
+        on_projection=lambda projection: projections.append(projection) or True,
     )
     runtime.start()
     assert handoff.offer(revisions("NQU6.CME", 1))
@@ -613,7 +615,22 @@ def test_runtime_fails_closed_and_requeues_unprocessed_revision() -> None:
 
     assert runtime.snapshot.status == LiveSignalRuntimeStatus.FAILED
     assert runtime.snapshot.last_error == "RuntimeError: calendar unavailable"
+    assert runtime.snapshot.failure_phase == "feature_revision"
+    assert runtime.snapshot.failure_input_identity is not None
+    assert "commit_sequence=4" in runtime.snapshot.failure_input_identity
+    assert runtime.snapshot.last_successful_commit_sequence == 3
+    assert runtime.snapshot.last_traceback is not None
+    assert "calendar unavailable" in runtime.snapshot.last_traceback
     assert handoff.snapshot.pending_count == 1
+    failed = [
+        projection
+        for projection in projections
+        if isinstance(projection, SignalRuntimeProjection)
+        and projection.kind == SignalRuntimeProjectionKind.FAILED
+    ]
+    assert len(failed) == 1
+    assert failed[0].last_error == "RuntimeError: calendar unavailable"
+    assert failed[0].failure_phase == "feature_revision"
 
 
 def test_runtime_projects_lifecycle_only_after_durable_write() -> None:

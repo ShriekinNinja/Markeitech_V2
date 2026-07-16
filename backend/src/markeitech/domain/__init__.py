@@ -1,6 +1,6 @@
 """Versioned domain contracts for Markeitech."""
 
-from markeitech.domain.classification import classify_trade
+from markeitech.domain.classification import classify_trade, classify_trade_with_quote_history
 from markeitech.domain.events import (
     ActiveInstrumentChangedEvent,
     GatewayEvent,
@@ -74,4 +74,5 @@ __all__ = [
     "TradeSide",
     "WarmupTimeframe",
     "classify_trade",
+    "classify_trade_with_quote_history",
 ]

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from threading import Condition, Thread
+from traceback import format_exc
 from typing import Protocol
 
 from markeitech.domain.base import require_utc
@@ -160,6 +161,10 @@ class LiveSignalRuntimeSnapshot:
     observation_conflicting_retry_count: int
     last_event: SignalEvaluationEvent | None
     last_error: str | None
+    failure_phase: str | None
+    failure_input_identity: str | None
+    last_successful_commit_sequence: int | None
+    last_traceback: str | None
 
 
 class LiveSignalRuntime:
@@ -231,6 +236,10 @@ class LiveSignalRuntime:
         self._last_heartbeat_ts: datetime | None = None
         self._last_event: SignalEvaluationEvent | None = None
         self._last_error: str | None = None
+        self._failure_phase: str | None = None
+        self._failure_input_identity: str | None = None
+        self._last_successful_commit_sequence: int | None = None
+        self._last_traceback: str | None = None
         self._thread: Thread | None = None
 
     @property
@@ -264,6 +273,10 @@ class LiveSignalRuntime:
                 ),
                 last_event=self._last_event,
                 last_error=self._last_error,
+                failure_phase=self._failure_phase,
+                failure_input_identity=self._failure_input_identity,
+                last_successful_commit_sequence=self._last_successful_commit_sequence,
+                last_traceback=self._last_traceback,
             )
 
     def start(self) -> None:
@@ -274,9 +287,7 @@ class LiveSignalRuntime:
         try:
             restored = self._restore_open_state()
         except Exception as exc:
-            with self._condition:
-                self._status = LiveSignalRuntimeStatus.FAILED
-                self._last_error = f"{type(exc).__name__}: {exc}"
+            self._record_failure(exc, phase="startup_restore", input_identity="open_signals")
             raise
         if self._observation_store is not None:
             self._last_observation_accepted_count = (
@@ -365,29 +376,51 @@ class LiveSignalRuntime:
 
     def _run(self) -> None:
         while True:
-            revisions = self._handoff.wait_and_drain(
-                self._config.evaluation_batch_size,
-                self._config.evaluation_poll_seconds,
-            )
+            try:
+                revisions = self._handoff.wait_and_drain(
+                    self._config.evaluation_batch_size,
+                    self._config.evaluation_poll_seconds,
+                )
+            except Exception as exc:
+                self._record_failure(exc, phase="feature_handoff", input_identity="wait_and_drain")
+                self._offer_runtime_projection(SignalRuntimeProjectionKind.FAILED)
+                return
             if revisions:
                 try:
                     for _index, revision in enumerate(revisions):
                         self._process_revision(revision)
+                        with self._condition:
+                            self._last_successful_commit_sequence = revision.commit_sequence
                 except Exception as exc:
-                    self._handoff.requeue_front(revisions[_index:])
-                    with self._condition:
-                        self._status = LiveSignalRuntimeStatus.FAILED
-                        self._last_error = f"{type(exc).__name__}: {exc}"
-                        self._condition.notify_all()
+                    try:
+                        self._handoff.requeue_front(revisions[_index:])
+                    except Exception as requeue_exc:
+                        failure = RuntimeError(
+                            f"{type(exc).__name__}: {exc}; durable revision requeue also failed: "
+                            f"{type(requeue_exc).__name__}: {requeue_exc}"
+                        )
+                        failure.__cause__ = requeue_exc
+                    else:
+                        failure = exc
+                    self._record_failure(
+                        failure,
+                        phase="feature_revision",
+                        input_identity=_feature_revision_identity(revision),
+                    )
                     self._offer_runtime_projection(SignalRuntimeProjectionKind.FAILED)
                     return
             try:
                 self._process_observation_updates()
             except Exception as exc:
-                with self._condition:
-                    self._status = LiveSignalRuntimeStatus.FAILED
-                    self._last_error = f"{type(exc).__name__}: {exc}"
-                    self._condition.notify_all()
+                observation = (
+                    None if self._observation_store is None else self._observation_store.snapshot
+                )
+                accepted = 0 if observation is None else observation.accepted_bar_count
+                self._record_failure(
+                    exc,
+                    phase="observation_update",
+                    input_identity=f"accepted_bars={accepted};open_signals={len(self._open_signals)}",
+                )
                 self._offer_runtime_projection(SignalRuntimeProjectionKind.FAILED)
                 return
             with self._condition:
@@ -399,6 +432,15 @@ class LiveSignalRuntime:
                     self._condition.notify_all()
                     self._offer_runtime_projection(SignalRuntimeProjectionKind.STOPPED)
                     return
+
+    def _record_failure(self, exc: Exception, *, phase: str, input_identity: str) -> None:
+        with self._condition:
+            self._status = LiveSignalRuntimeStatus.FAILED
+            self._last_error = f"{type(exc).__name__}: {exc}"
+            self._failure_phase = phase
+            self._failure_input_identity = input_identity
+            self._last_traceback = format_exc()
+            self._condition.notify_all()
 
     def _process_revision(self, revision: CommittedFeatureRevision) -> None:
         changed = self._feature_state.apply(revision)
@@ -862,6 +904,11 @@ class LiveSignalRuntime:
                 observation_accepted_bar_count=snapshot.observation_accepted_bar_count,
                 observation_retained_bar_count=snapshot.observation_retained_bar_count,
                 observation_conflicting_retry_count=(snapshot.observation_conflicting_retry_count),
+                last_error=snapshot.last_error,
+                failure_phase=snapshot.failure_phase,
+                failure_input_identity=snapshot.failure_input_identity,
+                last_successful_commit_sequence=snapshot.last_successful_commit_sequence,
+                error_traceback=snapshot.last_traceback,
             )
         )
 
@@ -877,3 +924,12 @@ class LiveSignalRuntime:
         if not accepted:
             with self._condition:
                 self._projection_rejected_count += 1
+
+
+def _feature_revision_identity(revision: CommittedFeatureRevision) -> str:
+    snapshot = revision.feature.snapshot
+    return (
+        f"commit_sequence={revision.commit_sequence};instrument={snapshot.instrument_id};"
+        f"timeframe={snapshot.timeframe.value};as_of={snapshot.as_of.isoformat()};"
+        f"feature_id={revision.feature.feature_id}"
+    )

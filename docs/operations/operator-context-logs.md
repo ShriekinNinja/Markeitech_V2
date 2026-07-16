@@ -34,8 +34,9 @@ General conventions:
 
 The warmup report is always complete. Live reports run on the configured
 interval, one minute by default, and include only instruments whose snapshot or
-role changed. Each included instrument has exactly three domain lines:
-`OPERATOR_CONTEXT`, `OPERATOR_LEVELS`, and `OPERATOR_AUCTION`.
+role changed. Each included instrument has three context lines:
+`OPERATOR_CONTEXT`, `OPERATOR_LEVELS`, and `OPERATOR_AUCTION`. The block also
+includes one cumulative `OPERATOR_FLOW` fidelity line for the active instrument.
 
 ## Normal Startup Order
 
@@ -248,6 +249,33 @@ The final field describes the reference snapshot's incoming bars:
 
 Profile fidelity remains `inferred` even when the surrounding snapshot input is
 `reported:ib`, because candle bars do not contain volume-at-price distribution.
+
+## `OPERATOR_FLOW`
+
+Example:
+
+```text
+OPERATOR_FLOW | role=ACTIVE | NQU6.CME | trades=2012 | classified=1890 | unknown=122 | volume=2834 | classified_volume=2668 | unknown_volume=166 | classified_ratio=94.14% | reasons=at_or_above_ask:955,at_or_below_bid:935,inside_spread_tick_rule_unchanged:112,no_quote_at_or_before_trade:10
+```
+
+This cumulative line describes active tick-classification fidelity since the
+current process started. It is observation quality, not directional evidence.
+
+- `trades`, `classified`, and `unknown` count trade messages.
+- `volume`, `classified_volume`, and `unknown_volume` use the provider-reported
+  trade sizes and therefore need not have the same ratio as the message counts.
+- `classified_ratio` is classified volume divided by total observed volume.
+- `reasons` accounts for every trade using stable classification outcomes.
+  Quote failures distinguish no received quote, no quote event at or before the
+  trade, stale quote, and instrument mismatch. Inside-spread outcomes distinguish
+  tick-rule direction from unavailable or unchanged references.
+
+Quotes are selected only from messages already received by Markeitech. Because
+IB trade and quote streams can arrive out of event-time order, the router keeps
+a bounded quote history and selects the most recently received quote whose
+event timestamp is not after the trade. The existing two-second freshness gate
+still applies. This prevents event-time lookahead without discarding a trade
+merely because the latest-arrived quote is future-dated relative to it.
 
 ## `OPERATOR_CONTEXT_COMPLETE`
 

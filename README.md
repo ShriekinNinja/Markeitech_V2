@@ -9,6 +9,10 @@ market context, and evaluates versioned Direction and Location signal evidence.
 The system is data-only and read-only. Trading execution is intentionally not
 implemented.
 
+> **Markeitech:** No Obstacles, Only Challenges.
+>
+> **Markeitect:** It's Just a Ride.
+
 ## Project Credits
 
 - **Markeitect** - founder, trader, product owner, and system designer
@@ -31,9 +35,9 @@ Implemented foundations include:
 - live post-commit Direction and Location evaluation for active and background
   instruments
 
-The next product slice wires cadence-bounded Aggression and follow-through into
-durable live lifecycle transitions for active and background instruments. See
-[current status](docs/current-status.md) for the exact boundary and known
+The current product slice closes signal-runtime and classification-fidelity
+debt, then establishes a durable event backbone for multiple Nautilus actors.
+See [current status](docs/current-status.md) for the exact boundary and known
 validation debt. Options-chain ingestion and analysis are an explicit future
 roadmap track rather than part of the current runtime.
 

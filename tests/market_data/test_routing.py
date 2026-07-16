@@ -36,14 +36,18 @@ def trade_tick(
     )
 
 
-def quote_tick(instrument_id: str = "NQU6.CME") -> QuoteTick:
+def quote_tick(
+    instrument_id: str = "NQU6.CME",
+    *,
+    event_ns: int = EVENT_NS,
+) -> QuoteTick:
     return QuoteTick(
         instrument_id=InstrumentId.from_str(instrument_id),
         bid_price=Price.from_str("20000.00"),
         ask_price=Price.from_str("20000.50"),
         bid_size=Quantity.from_str("4"),
         ask_size=Quantity.from_str("6"),
-        ts_event=EVENT_NS,
+        ts_event=event_ns,
         ts_init=INIT_NS,
     )
 
@@ -90,6 +94,30 @@ def test_router_tracks_instruments_and_emits_normalized_events() -> None:
     ]
     assert router.snapshot("NQU6.CME").active_bar is not None
     assert router.snapshot("NQU6.CME").active_bar.is_complete is False
+    assert router.snapshot("NQU6.CME").unknown_trade_count == 1
+    assert router.snapshot("NQU6.CME").unknown_volume == 3
+    assert router.snapshot("NQU6.CME").classification_reason_counts == {
+        "inside_spread_no_tick_rule_reference": 1
+    }
+
+
+def test_router_matches_received_quote_history_without_event_time_lookahead() -> None:
+    router = LiveMarketDataRouter(
+        instrument_ids={"NQU6.CME"},
+        active_instrument_id=lambda: "NQU6.CME",
+    )
+    router.handle_quote_tick(quote_tick(event_ns=EVENT_NS - 100_000_000))
+    router.handle_quote_tick(quote_tick(event_ns=EVENT_NS + 600_000_000))
+
+    classified = router.handle_trade_tick(trade_tick())
+
+    assert classified is not None
+    assert classified.quote is not None
+    assert classified.quote.event_ts_ns == EVENT_NS - 100_000_000
+    snapshot = router.snapshot("NQU6.CME")
+    assert snapshot.trade_tick_count == 1
+    assert snapshot.unknown_trade_count == 1
+    assert snapshot.classification_reason_counts == {"inside_spread_no_tick_rule_reference": 1}
 
 
 def test_router_reflects_runtime_active_instrument_change() -> None:

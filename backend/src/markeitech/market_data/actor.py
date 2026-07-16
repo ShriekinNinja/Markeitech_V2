@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any, Protocol
 
 from nautilus_trader.common.actor import Actor
@@ -507,6 +508,11 @@ class MarkeitechMarketDataActor(Actor):
         )
         for line in lines:
             self.log.info(line)
+        self.log.info(
+            format_classification_fidelity(
+                self._router.snapshot(self._switch.snapshot.active_instrument_id)
+            )
+        )
         self.log.info(f"OPERATOR_CONTEXT_COMPLETE | phase={phase.upper()}")
 
     def _cancel_switch_timer(self) -> None:
@@ -574,6 +580,27 @@ def format_analytics_readiness(value: Any) -> str:
     return (
         f"ANALYTICS_READY | {value.instrument_id} | status={value.status.value.upper()} "
         f"| {timeframes} | reasons={','.join(value.reason_codes)}"
+    )
+
+
+def format_classification_fidelity(snapshot: InstrumentMarketDataSnapshot) -> str:
+    total_volume = snapshot.classified_volume + snapshot.unknown_volume
+    ratio = Decimal("0") if total_volume == 0 else snapshot.classified_volume / total_volume
+    reasons = ",".join(
+        f"{reason}:{count}"
+        for reason, count in sorted(
+            snapshot.classification_reason_counts.items(),
+            key=lambda item: (-item[1], item[0]),
+        )
+    )
+    return (
+        f"OPERATOR_FLOW | role=ACTIVE | {snapshot.instrument_id} "
+        f"| trades={snapshot.trade_tick_count} "
+        f"| classified={snapshot.classified_trade_count} "
+        f"| unknown={snapshot.unknown_trade_count} "
+        f"| volume={total_volume} | classified_volume={snapshot.classified_volume} "
+        f"| unknown_volume={snapshot.unknown_volume} | classified_ratio={ratio:.2%} "
+        f"| reasons={reasons or 'none'}"
     )
 
 

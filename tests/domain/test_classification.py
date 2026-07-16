@@ -1,7 +1,13 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-from markeitech.domain import CanonicalQuoteTick, CanonicalTradeTick, TradeSide, classify_trade
+from markeitech.domain import (
+    CanonicalQuoteTick,
+    CanonicalTradeTick,
+    TradeSide,
+    classify_trade,
+    classify_trade_with_quote_history,
+)
 
 
 def utc_now() -> datetime:
@@ -79,7 +85,7 @@ def test_future_quote_is_not_valid_for_trade() -> None:
 
     assert classified.side == TradeSide.UNKNOWN
     assert classified.quote is None
-    assert classified.classification_reason == "no_valid_quote"
+    assert classified.classification_reason == "no_quote_at_or_before_trade"
 
 
 def test_stale_quote_is_not_valid_for_trade() -> None:
@@ -91,4 +97,25 @@ def test_stale_quote_is_not_valid_for_trade() -> None:
 
     assert classified.side == TradeSide.UNKNOWN
     assert classified.quote is None
-    assert classified.classification_reason == "no_valid_quote"
+    assert classified.classification_reason == "quote_stale"
+
+
+def test_quote_history_uses_received_non_future_quote() -> None:
+    older = quote(event_ts=utc_now() - timedelta(milliseconds=100))
+    latest_arrival = quote(event_ts=utc_now() + timedelta(milliseconds=600))
+
+    classified = classify_trade_with_quote_history(
+        trade("20000.50"),
+        (older, latest_arrival),
+    )
+
+    assert classified.side == TradeSide.BUY
+    assert classified.quote == older
+    assert classified.classification_reason == "at_or_above_ask"
+
+
+def test_quote_history_explains_missing_quote() -> None:
+    classified = classify_trade_with_quote_history(trade("20000.50"), ())
+
+    assert classified.side == TradeSide.UNKNOWN
+    assert classified.classification_reason == "no_quote_available"
