@@ -23,6 +23,29 @@ lives in [current status](../current-status.md).
 - Emit persisted and deduplicated level, value, trend, and pressure transitions
   independently from any setup family.
 
+Auction pressure is a first-class Stage 5D track, not a hidden field inside one
+signal definition. It will add reviewable slices for:
+
+- classified buy/sell volume, delta, delta ratio, and explicitly session-anchored
+  CVD with coverage, unknown volume, gaps, and reset policy retained
+- delta-versus-price-action events such as initiative confirmation, weak price
+  response, opposing flow, absorption candidates, and price/flow divergence
+- large-trade and clustered-large-trade observations using versioned absolute
+  and distribution-relative thresholds by instrument and session
+- trapped-buyer and trapped-seller candidates that require aggressive
+  participation, failed continuation or rejection, and subsequent adverse price
+  response before confirmation
+- pressure acceleration, deceleration, exhaustion, and persistence events built
+  from the underlying observations rather than one opaque pressure score
+
+These capabilities use inferred quote-test classification for the active
+instrument and retain that fidelity on every derived event. Background bars do
+not receive fabricated delta, CVD, large-trade, or trapped-participant evidence;
+an explicitly named bar proxy may coexist but cannot masquerade as order flow.
+Unknown or damaged windows break or degrade cumulative evidence rather than
+being silently bridged. A future provider may improve fidelity through the same
+contracts without changing their semantics.
+
 Exit condition: no signal subsystem failure is silent, observation fidelity is
 fully accountable, and multiple actors can consume committed market events
 without blocking ingestion or bypassing durable truth.

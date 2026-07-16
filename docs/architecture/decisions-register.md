@@ -668,3 +668,41 @@ the market-data actor. The Nautilus bus provides efficient in-node routing and
 actor lifecycle integration, but it does not replace durability, asynchronous
 work queues, or process isolation. A post-commit bridge gains the coordination
 benefit without weakening the runtime guarantees already established.
+
+## DR-0057: Auction Pressure Remains Decomposed And Inference-Honest
+
+Status: accepted
+
+Model auction pressure as separate durable evidence families: classified flow
+and session CVD, delta-versus-price response, large-trade activity, and inferred
+participant-trap candidates. Do not collapse these observations into one score
+before each component has explicit timing, coverage, threshold, reset, gap,
+fidelity, and invalidation semantics.
+
+Classified delta and CVD require classified trades and retain quote-test
+`inferred` fidelity. Session CVD resets at a configured product-session anchor
+and cannot silently continue across unavailable or damaged windows. Large-trade
+events retain the configured absolute threshold and any rolling
+distribution-relative threshold used for that instrument and session. A large
+trade is an observation, not proof of informed participation.
+
+Treat trapped buyers and sellers as inferred hypotheses, never identified
+market participants. Confirmation requires directional aggressive activity at
+an explicit location, failed continuation or rejection, and subsequent adverse
+price response inside a bounded window. Preserve the precursor, confirmation,
+and invalidation evidence independently so later setup definitions, operator
+reports, replay, and ML research can consume the same facts without rewriting
+their meaning.
+
+Apply these semantics only where source capability supports them. The active
+tick stream may produce inferred pressure evidence when coverage is sufficient.
+Provider OHLCV bars cannot produce historical delta, CVD, large-trade, or
+participant-trap claims; any background bar-impulse proxy remains a separately
+named partial method. Future feeds may raise fidelity without changing the
+domain contract.
+
+Reason: Delta divergence, cumulative participation, unusually large aggression,
+and failed participants are central Markeitecting concepts. Keeping them
+decomposed preserves their trading meaning, makes calibration possible, avoids
+false precision from the IB feed, and prevents the current Fabio setup family
+from owning reusable auction evidence.
