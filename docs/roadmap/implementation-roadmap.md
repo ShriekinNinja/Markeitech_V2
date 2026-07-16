@@ -46,6 +46,48 @@ Unknown or damaged windows break or degrade cumulative evidence rather than
 being silently bridged. A future provider may improve fidelity through the same
 contracts without changing their semantics.
 
+### Balance And Rotation Auction Model
+
+Add a reusable market-condition and target model for sustained balance rather
+than embedding rotation behavior inside one signal family. The initial research
+view uses hourly regular-session price action, with product-session and related
+cash/ETF views retained as explicitly different clocks.
+
+- Detect candidate balance boundaries from confirmed swing structure and robust
+  channel fitting. Require configurable duration, touches, interior occupancy,
+  width, and slope/convergence evidence; hand-selected endpoints cannot become
+  production truth.
+- Treat excursions beyond a boundary as breakout candidates. A wick does not
+  redraw or invalidate the range by itself. Acceptance outside, continuation,
+  and failed-break/re-entry behavior must be classified explicitly so transient
+  fakeouts can be preserved as evidence rather than erased.
+- Build exact-window rotation profiles and retain their POC, major high-volume
+  nodes, low-volume separations, methodology, and window anchors. Multiple
+  useful horizontal targets are named rotation nodes: they may be persistent
+  HVNs or POCs from distinct anchored sub-rotations, not multiple POCs silently
+  claimed for one profile.
+- In a qualified balance regime, expose rotation nodes, session value edges,
+  VWAP, session open, and opposite range structure as conditional destinations.
+  A target is not a guaranteed magnet; its relevance depends on current auction
+  location, intervening acceptance, and available pressure evidence.
+- Model edge rejection and value re-entry separately from trend continuation.
+  A move into a lower rotation node may complete a short objective and then
+  create a distinct reversal candidate only after failed downside continuation,
+  reclaim, and confirming price/flow response. Target completion never flips a
+  signal automatically.
+- Invalidate the rotational thesis on sustained acceptance outside the balance,
+  not on one overshoot. Preserve the exact boundary, node, profile, price-action,
+  and pressure evidence used for every classification.
+- Allow NQ, QQQ, ES, SPX, and other related products to confirm or oppose the
+  regime through explicit normalized relationship features. Their price levels,
+  sessions, and profile identities remain independent.
+
+The supplied NQ and QQQ examples motivate this track but are not calibration
+evidence. Historical replay must test whether robust boundaries and rotation
+nodes remain stable without hindsight, whether failed breaks are classified in
+time, and whether node-to-node targets improve decisions across different
+volatility regimes.
+
 Exit condition: no signal subsystem failure is silent, observation fidelity is
 fully accountable, and multiple actors can consume committed market events
 without blocking ingestion or bypassing durable truth.

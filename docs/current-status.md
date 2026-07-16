@@ -146,7 +146,10 @@ LiveNode or canonical analytics path.
   Corrected timestamp alignment and explicit unclassified reasons need new live
   evidence before delta, CVD, or tick Aggression can be trusted.
 - The committed-feature event bridge, operator consumer, and PyCharm graceful
-  stop path have reviewed live acceptance evidence.
+  stop path have reviewed live acceptance evidence. A subsequent PyCharm stop
+  reached actor and bridge shutdown but its JSONL ended during IB disconnect;
+  intermittent IDE-stop completion remains operational debt rather than a
+  blocker for the event-backbone work.
 - Context-transition persistence and restart restoration are deterministic-test
   complete but have not yet been connected to the live event actor.
 - Stage 5D.3 has deterministic active, background, expiry, race-order, and
