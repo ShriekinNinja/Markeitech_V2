@@ -49,6 +49,12 @@ class DomainEventRuntimeConfig(VersionedDomainModel):
         return self
 
 
+class LiveNodeLifecycleConfig(VersionedDomainModel):
+    post_stop_timeout_seconds: float = Field(default=1, gt=0)
+    disconnection_timeout_seconds: float = Field(default=3, gt=0)
+    shutdown_timeout_seconds: float = Field(default=3, gt=0)
+
+
 class MarketDataRuntimeConfig(VersionedDomainModel):
     instrument_registry: InstrumentRegistryConfig
     ib: InteractiveBrokersConnectionConfig = Field(
@@ -64,6 +70,7 @@ class MarketDataRuntimeConfig(VersionedDomainModel):
     logging: RuntimeLoggingConfig = Field(default_factory=RuntimeLoggingConfig)
     operator_context: OperatorContextConfig = Field(default_factory=OperatorContextConfig)
     domain_events: DomainEventRuntimeConfig = Field(default_factory=DomainEventRuntimeConfig)
+    live_node: LiveNodeLifecycleConfig = Field(default_factory=LiveNodeLifecycleConfig)
     signals: SignalRuntimeConfig | None = None
 
     @model_validator(mode="after")

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import Any
 
 from markeitech.market_data import LIVE_NODE_START_CONFIRMATION, run_smoke_with_factory
+from markeitech.market_data.smoke import _run_until_shutdown_signal
 
 
 class FakeNode:
@@ -119,3 +121,50 @@ def test_smoke_starts_fake_node_only_with_confirmation(tmp_path: Path) -> None:
     assert result["status"] == "started"
     assert result["result"] == "fake-started"
     assert result["plan"]["execution_clients"] == []
+
+
+def test_continuous_smoke_reports_stopped_after_runner_returns(tmp_path: Path) -> None:
+    config_path = tmp_path / "market-data.toml"
+    write_config(config_path, run_live_node=True, manual_live_node_start=True)
+
+    result = run_smoke_with_factory(
+        config_path,
+        confirmation=LIVE_NODE_START_CONFIRMATION,
+        node_factory=FakeNode,
+        continuous_runner=lambda _node: "SIGTERM",
+    )
+
+    assert result["status"] == "stopped"
+    assert result["result"] == "SIGTERM"
+
+
+def test_continuous_runner_translates_shutdown_request_to_graceful_stop() -> None:
+    class AsyncNode:
+        def __init__(self) -> None:
+            self.running = asyncio.Event()
+            self.stopped = asyncio.Event()
+            self.stop_count = 0
+
+        async def run_async(self) -> None:
+            self.running.set()
+            await self.stopped.wait()
+
+        async def stop_async(self) -> None:
+            self.stop_count += 1
+            self.stopped.set()
+
+    async def exercise() -> AsyncNode:
+        node = AsyncNode()
+        shutdown_requested = asyncio.Event()
+        task = asyncio.create_task(
+            _run_until_shutdown_signal(node, shutdown_requested=shutdown_requested)
+        )
+        await node.running.wait()
+        shutdown_requested.set()
+        await task
+        return node
+
+    node = asyncio.run(exercise())
+
+    assert node.stop_count == 1
+    assert node.stopped.is_set()

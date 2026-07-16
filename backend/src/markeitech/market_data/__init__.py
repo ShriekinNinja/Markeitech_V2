@@ -36,6 +36,7 @@ from markeitech.market_data.bootstrap import (
 from markeitech.market_data.config import (
     DomainEventRuntimeConfig,
     InteractiveBrokersConnectionConfig,
+    LiveNodeLifecycleConfig,
     MarketDataRuntimeConfig,
     OperatorContextConfig,
     RuntimeLoggingConfig,
@@ -108,6 +109,7 @@ __all__ = [
     "AcceptanceRecoveryResult",
     "AcceptanceStatus",
     "LIVE_NODE_START_CONFIRMATION",
+    "LiveNodeLifecycleConfig",
     "LiveNodeAction",
     "LiveNodeActionKind",
     "LiveNodeActionPhase",

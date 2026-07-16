@@ -95,21 +95,26 @@ and publish on the Nautilus event-loop thread to a dedicated operator projection
 actor. Bus rejection is explicitly counted but cannot invalidate already-
 committed evidence or the existing critical signal handoff. Live publication
 is now observed for active and background features. One idempotently repeated
-feature notice exposed and produced a bounded consumer-deduplication fix.
-Graceful shutdown counters remain the next acceptance evidence because the
-review run ended without entering Nautilus's logged stopping lifecycle.
+feature notice exposed and produced a bounded consumer-deduplication fix. The
+continuous PyCharm runner now translates `SIGINT`, `SIGTERM`, and `SIGHUP` into the
+LiveNode's asynchronous stop path and guards managed worker teardown against
+duplicate run/stop completion. The 2026-07-16 PyCharm stop acceptance entered
+the complete Nautilus lifecycle, stopped both actors, disconnected IB, stopped
+all engines, and reached `TradingNode STOPPED` without an error.
 
 The same short 2026-07-16 run classified 64 of 66 active NQ trades and 91 of 94
 volume units, reporting a 96.81% classified-volume ratio with explicit reasons
 for the remaining two observations. This is strong evidence for the corrected
 event-time classifier, but it is not yet full-session Aggression calibration.
 
-The next Context Event semantics slice is implemented for review but not yet
-runtime-wired. Immutable contracts and a pure ordered detector cover trend and
-coarse value-area region transitions, suppress initial, duplicate, stale, and
-same-timestamp correction output, and break comparison across unavailable
-evidence. Persistence, restart restoration, and the dedicated actor remain the
-following slice.
+Context Event semantics plus durable recovery are implemented for review but
+not yet runtime-wired. Immutable contracts and a pure ordered detector cover
+trend and coarse value-area region transitions, suppress initial, duplicate,
+stale, and same-timestamp correction output, and break comparison across
+unavailable evidence. SQLite schema 10 atomically commits emitted transitions
+with a compact detector checkpoint; no-change revisions still advance the
+checkpoint, and restart seeds it without replaying history. A dedicated bus
+actor and its managed shutdown ordering remain the following slice.
 
 The 2026-07-15 run separated operational success from trading usefulness. The
 LiveNode, market-data ingestion, persistence, recovery, analytics, and operator
@@ -140,8 +145,10 @@ LiveNode or canonical analytics path.
 - The 2026-07-15 run classified only a small fraction of observed trade volume.
   Corrected timestamp alignment and explicit unclassified reasons need new live
   evidence before delta, CVD, or tick Aggression can be trusted.
-- The committed-feature event bridge and operator consumer have reviewed live
-  publication evidence; graceful shutdown-health evidence remains outstanding.
+- The committed-feature event bridge, operator consumer, and PyCharm graceful
+  stop path have reviewed live acceptance evidence.
+- Context-transition persistence and restart restoration are deterministic-test
+  complete but have not yet been connected to the live event actor.
 - Stage 5D.3 has deterministic active, background, expiry, race-order, and
   restart tests plus live Armed and Expired evidence, but no live Triggered
   evidence and no trading-usefulness acceptance.
