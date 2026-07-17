@@ -26,28 +26,33 @@ def build_health_notification(
     *,
     trader_id: str,
     event: str,
-    detail: str,
+    detail: str | None = None,
+    facts: Sequence[tuple[str, str]] = (),
     occurred_ts: datetime | None = None,
 ) -> NotificationOutboxRecord:
     now = datetime.now(UTC) if occurred_ts is None else occurred_ts
     status = event.upper()
-    content = f"**SYSTEM {status} | {trader_id}**\n{detail}"
+    fields: list[dict[str, object]] = [
+        {"name": "Runtime", "value": trader_id, "inline": True},
+        *(
+            {"name": name, "value": value, "inline": len(value) < 40}
+            for name, value in facts
+        ),
+    ]
+    if detail and not facts:
+        fields.append({"name": "Details", "value": detail, "inline": False})
     return _record(
         destination=SYSTEM_HEALTH_DESTINATION,
         aggregate=trader_id,
         event_type=f"runtime.{event.lower()}",
-        identity=f"{event}:{now.isoformat()}:{detail}",
-        content=content,
+        identity=f"{event}:{now.isoformat()}:{detail}:{facts}",
+        content="",
         now=now,
         embeds=(
             {
-                "title": "Markeitech System Health",
-                "description": detail,
+                "title": status.replace("_", " ").title(),
                 "color": _health_color(status),
-                "fields": (
-                    {"name": "Status", "value": status, "inline": True},
-                    {"name": "Runtime", "value": trader_id, "inline": True},
-                ),
+                "fields": tuple(fields),
                 "timestamp": now.isoformat(),
                 "footer": {"text": "No Obstacles, Only Challenges"},
             },
@@ -163,7 +168,6 @@ def build_location_narrative_notification(
     )
     detail = _narrative_explanation(event, location_name)
     fields: list[dict[str, object]] = [
-        {"name": "What happened", "value": detail, "inline": False},
         {"name": "Direction", "value": direction, "inline": True},
         {"name": "Instrument role", "value": role.title(), "inline": True},
         {"name": "Observed price", "value": _price(event.observed_price), "inline": True},
@@ -194,10 +198,7 @@ def build_location_narrative_notification(
             f"{event.definition_id}:{event.instrument_id}:"
             f"{event.episode_event.value}:{event.evaluation_ts.isoformat()}"
         ),
-        content=(
-            f"**{narrative.title()} {location_name} — "
-            f"{_instrument_name(event.instrument_id)}**"
-        ),
+        content="",
         now=event.evaluation_ts,
         embeds=(
             {
@@ -333,7 +334,7 @@ def _record(
         event_type=event_type,
         event_schema_version="1.0",
         payload={
-            "content": content[:_MAX_CONTENT],
+            **({"content": content[:_MAX_CONTENT]} if content else {}),
             "allowed_mentions": {"parse": []},
             **({"embeds": _json_native_embeds(embeds)} if embeds else {}),
         },

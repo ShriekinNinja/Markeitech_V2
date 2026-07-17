@@ -393,6 +393,37 @@ def build_prepared_market_data_live_node(
             pressure=pressure,
         ):
             persistence.metadata.enqueue(notification)
+
+    def enqueue_market_data_health(snapshot: Any) -> None:
+        instrument_rows = "\n".join(
+            f"**{item.instrument_id}:** "
+            f"{item.readiness.value.replace('_', ' ').title()}"
+            + (
+                ""
+                if not item.reason_codes
+                else " — "
+                + ", ".join(reason.replace("_", " ").title() for reason in item.reason_codes)
+            )
+            for item in snapshot.instruments
+        )
+        if persistence is not None and config.discord.enabled:
+            persistence.metadata.enqueue(
+                build_health_notification(
+                    trader_id=config.trader_id,
+                    event=f"MARKET_DATA_{snapshot.source.status.value.upper()}",
+                    facts=(
+                        ("Source", snapshot.source.source.upper()),
+                        (
+                            "Feed lag",
+                            "Unavailable"
+                            if snapshot.source.lag_ms is None
+                            else f"{snapshot.source.lag_ms} ms",
+                        ),
+                        ("Instruments", instrument_rows),
+                    ),
+                )
+            )
+
     actor_kwargs: dict[str, Any] = {
         "on_warmup_ready": on_warmup_ready,
         "market_context_engine": market_context_engine,
@@ -418,24 +449,7 @@ def build_prepared_market_data_live_node(
         ),
         "on_operator_context_report": enqueue_context_report,
         "on_runtime_health": enqueue_health,
-        "on_market_data_health": lambda snapshot: enqueue_health(
-            f"MARKET_DATA_{snapshot.source.status.value.upper()}",
-            " | ".join(
-                (
-                    f"source={snapshot.source.source}",
-                    f"lag_ms={snapshot.source.lag_ms}",
-                    *(
-                        f"{item.instrument_id}={item.readiness.value}"
-                        + (
-                            ""
-                            if not item.reason_codes
-                            else f"({','.join(item.reason_codes)})"
-                        )
-                        for item in snapshot.instruments
-                    ),
-                )
-            ),
-        ),
+        "on_market_data_health": enqueue_market_data_health,
     }
     if persistence is not None:
         if persistence.feature_writer is None:

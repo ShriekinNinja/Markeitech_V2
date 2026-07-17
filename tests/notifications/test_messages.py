@@ -64,18 +64,26 @@ def test_health_notification_uses_a_severity_colored_embed() -> None:
     record = build_health_notification(
         trader_id="MARKEITECH-PAPER-001",
         event="MARKET_DATA_DEGRADED",
-        detail="NQU6.CME=degraded(stale_trade_tick)",
+        facts=(
+            ("Source", "IB"),
+            ("Feed lag", "13 ms"),
+            ("Instruments", "**NQU6.CME:** Not Ready — Waiting For Trade Tick"),
+        ),
         occurred_ts=NOW,
     )
 
     embed = record.payload["embeds"][0]
-    assert embed["title"] == "Markeitech System Health"
+    assert "content" not in record.payload
+    assert embed["title"] == "Market Data Degraded"
+    assert "description" not in embed
     assert embed["color"] == 0xF39C12
     assert embed["fields"][0] == {
-        "name": "Status",
-        "value": "MARKET_DATA_DEGRADED",
+        "name": "Runtime",
+        "value": "MARKEITECH-PAPER-001",
         "inline": True,
     }
+    assert embed["fields"][1]["value"] == "IB"
+    assert embed["fields"][3]["inline"] is False
     assert embed["footer"]["text"] == "No Obstacles, Only Challenges"
 
 
@@ -217,5 +225,13 @@ def test_repeated_holding_narrative_is_suppressed() -> None:
     assert record.payload["embeds"][0]["description"] == (
         "Price remains engaged with 5m Support at 29,950.00 – 29,955.00."
     )
-    assert record.payload["embeds"][0]["fields"][1]["value"] == "Long"
+    assert "content" not in record.payload
+    assert [field["name"] for field in record.payload["embeds"][0]["fields"]] == [
+        "Direction",
+        "Instrument role",
+        "Observed price",
+        "Location",
+        "Evidence",
+    ]
+    assert record.payload["embeds"][0]["fields"][0]["value"] == "Long"
     assert notifier.observe(event, role="ACTIVE") is None
