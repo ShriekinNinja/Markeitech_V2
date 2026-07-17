@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+from collections import defaultdict
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import NAMESPACE_URL, uuid5
@@ -50,37 +52,80 @@ def build_health_notification(
 
 
 def build_market_context_notifications(
-    lines: tuple[str, ...],
+    snapshots: Sequence[MarketContextSnapshot],
     *,
     phase: str,
+    active_instrument_id: str,
     pressure: SessionAuctionPressureSnapshot | None,
     occurred_ts: datetime | None = None,
 ) -> tuple[NotificationOutboxRecord, ...]:
     now = datetime.now(UTC) if occurred_ts is None else occurred_ts
     records: list[NotificationOutboxRecord] = []
-    for index in range(0, len(lines), 3):
-        group = lines[index : index + 3]
-        if not group:
-            continue
-        instrument = _instrument_from_operator_line(group[0])
-        body = "\n".join(_readable_operator_line(line) for line in group)
+    grouped: dict[str, list[MarketContextSnapshot]] = defaultdict(list)
+    for snapshot in snapshots:
+        grouped[snapshot.instrument_id].append(snapshot)
+    for instrument, values in grouped.items():
+        by_timeframe = {value.timeframe: value for value in values}
+        reference = by_timeframe.get(AnalyticsTimeframe.ONE_MINUTE, values[-1])
+        is_active = instrument == active_instrument_id
+        role = "Primary market" if is_active else "Watchlist market"
+        fields: list[dict[str, object]] = [
+            {
+                "name": "Directional bias",
+                "value": (
+                    f"**{_direction_name(reference.direction_score)}**\n"
+                    f"Score: {reference.direction_score:+d} of 2"
+                ),
+                "inline": True,
+            },
+            {
+                "name": "Value location",
+                "value": _profile_location_name(reference.profile_location.value),
+                "inline": True,
+            },
+            {
+                "name": "Price and value",
+                "value": _price_and_value(reference),
+                "inline": False,
+            },
+            {"name": "Trend map", "value": _trend_map(by_timeframe), "inline": False},
+            {"name": "Key levels", "value": _key_levels(by_timeframe), "inline": False},
+            {"name": "Auction structure", "value": _auction_structure(reference), "inline": False},
+            {"name": "Fair value gaps", "value": _fair_value_gaps(by_timeframe), "inline": False},
+        ]
         if pressure is not None and pressure.instrument_id == instrument:
-            ratio = "n/a" if pressure.delta_ratio is None else f"{pressure.delta_ratio:+.3f}"
-            body += (
-                "\n**ORDER FLOW (inferred)**"
-                f"\nCVD `{pressure.cvd:+}` | Delta `{pressure.delta:+}` | "
-                f"Delta ratio `{ratio}` | Classified `{pressure.classified_volume_ratio:.1%}` | "
-                f"Trades `{pressure.trade_count}` | Fidelity `{pressure.fidelity.value}`"
+            fields.append(
+                {
+                    "name": "Order flow",
+                    "value": _order_flow(pressure),
+                    "inline": False,
+                }
             )
-        content = f"**MARKET CONTEXT | {instrument} | {phase.upper()}**\n{body}"
+        identity_body = "|".join(value.model_dump_json() for value in values)
+        content = f"**{_instrument_name(instrument)} market brief**"
         records.append(
             _record(
                 destination=MARKET_EVENTS_DESTINATION,
                 aggregate=instrument,
                 event_type="market.context.report",
-                identity=f"{instrument}:{phase}:{now.isoformat()}:{body}",
+                identity=f"{instrument}:{phase}:{now.isoformat()}:{identity_body}",
                 content=content,
                 now=now,
+                embeds=(
+                    {
+                        "title": f"{_instrument_name(instrument)} — Market Brief",
+                        "description": f"{role} • {phase.title()} update",
+                        "color": _direction_color(reference.direction_score),
+                        "fields": tuple(fields),
+                        "timestamp": now.isoformat(),
+                        "footer": {
+                            "text": (
+                                f"{instrument} • {reference.input_fidelity.value.title()} data • "
+                                "Decision support"
+                            )
+                        },
+                    },
+                ),
             )
         )
     return tuple(records)
@@ -221,17 +266,6 @@ def _record(
     )
 
 
-def _instrument_from_operator_line(line: str) -> str:
-    fields = [field.strip() for field in line.split("|")]
-    return fields[3] if len(fields) > 3 else "UNKNOWN"
-
-
-def _readable_operator_line(line: str) -> str:
-    label, _, detail = line.partition("|")
-    title = label.removeprefix("OPERATOR_").replace("_", " ").title()
-    return f"**{title}**\n{detail.strip().replace(' | ', ' · ')}"
-
-
 def _health_color(status: str) -> int:
     if "FAILED" in status or "CRITICAL" in status:
         return 0xE74C3C
@@ -242,3 +276,145 @@ def _health_color(status: str) -> int:
     if "STOPPED" in status:
         return 0x95A5A6
     return 0x3498DB
+
+
+def _direction_color(score: int) -> int:
+    if score > 0:
+        return 0x2ECC71
+    if score < 0:
+        return 0xE74C3C
+    return 0xFFFFFF
+
+
+def _direction_name(score: int) -> str:
+    return {
+        2: "Strong bullish alignment",
+        1: "Bullish lean",
+        0: "Balanced / mixed",
+        -1: "Bearish lean",
+        -2: "Strong bearish alignment",
+    }[score]
+
+
+def _instrument_name(instrument_id: str) -> str:
+    if instrument_id.startswith("NQ"):
+        return "Nasdaq 100 Futures"
+    if instrument_id.startswith("ES"):
+        return "S&P 500 Futures"
+    return instrument_id.split(".")[0]
+
+
+def _profile_location_name(value: str) -> str:
+    return value.replace("_", " ").title()
+
+
+def _price(value: Decimal | None) -> str:
+    return "Unavailable" if value is None else f"{value:,.2f}"
+
+
+def _price_and_value(snapshot: MarketContextSnapshot) -> str:
+    position = snapshot.vwap_position.value.replace("_", " ").title()
+    return (
+        f"Last: **{_price(snapshot.close)}**\n"
+        f"VWAP: {_price(snapshot.session_vwap)} ({position})\n"
+        f"Session: {_price(snapshot.session_low)} – {_price(snapshot.session_high)} "
+        f"({snapshot.session_range_position:.0%} of range)"
+    )
+
+
+def _trend_map(values: dict[AnalyticsTimeframe, MarketContextSnapshot]) -> str:
+    labels = {
+        AnalyticsTimeframe.DAILY: "Daily",
+        AnalyticsTimeframe.ONE_HOUR: "1 Hour",
+        AnalyticsTimeframe.THIRTY_MINUTES: "30 Minute",
+        AnalyticsTimeframe.FIFTEEN_MINUTES: "15 Minute",
+        AnalyticsTimeframe.FIVE_MINUTES: "5 Minute",
+        AnalyticsTimeframe.ONE_MINUTE: "1 Minute",
+    }
+    return "  •  ".join(
+        f"**{label}:** {values[timeframe].trend.value.replace('_', ' ').title()}"
+        for timeframe, label in labels.items()
+        if timeframe in values
+    ) or "No trend data available"
+
+
+def _key_levels(values: dict[AnalyticsTimeframe, MarketContextSnapshot]) -> str:
+    labels = {
+        AnalyticsTimeframe.DAILY: "Daily",
+        AnalyticsTimeframe.ONE_HOUR: "1 Hour",
+        AnalyticsTimeframe.FIFTEEN_MINUTES: "15 Minute",
+        AnalyticsTimeframe.FIVE_MINUTES: "5 Minute",
+    }
+    rows = []
+    for timeframe, label in labels.items():
+        snapshot = values.get(timeframe)
+        if snapshot is None:
+            continue
+        support = None if snapshot.nearest_support is None else snapshot.nearest_support.price
+        resistance = (
+            None if snapshot.nearest_resistance is None else snapshot.nearest_resistance.price
+        )
+        if support is not None or resistance is not None:
+            rows.append(
+                f"**{label}:** Support {_price(support)}  •  Resistance {_price(resistance)}"
+            )
+    return "\n".join(rows) or "No nearby structural levels"
+
+
+def _auction_structure(snapshot: MarketContextSnapshot) -> str:
+    rows = []
+    if snapshot.volume_profile is not None:
+        profile = snapshot.volume_profile
+        rows.append(
+            f"**Current value:** {_price(profile.value_area_low)} – "
+            f"{_price(profile.value_area_high)}  •  POC {_price(profile.poc)}"
+        )
+    if snapshot.prior_volume_profile is not None:
+        profile = snapshot.prior_volume_profile
+        rows.append(
+            f"**Prior value:** {_price(profile.value_area_low)} – "
+            f"{_price(profile.value_area_high)}  •  POC {_price(profile.poc)}"
+        )
+    if snapshot.london_range is not None:
+        rows.append(
+            f"**London range:** {_price(snapshot.london_range.low)} – "
+            f"{_price(snapshot.london_range.high)}"
+        )
+    if snapshot.new_york_range is not None:
+        rows.append(
+            f"**New York range:** {_price(snapshot.new_york_range.low)} – "
+            f"{_price(snapshot.new_york_range.high)}"
+        )
+    return "\n".join(rows) or "Auction structure is still developing"
+
+
+def _fair_value_gaps(values: dict[AnalyticsTimeframe, MarketContextSnapshot]) -> str:
+    labels = {
+        AnalyticsTimeframe.ONE_HOUR: "1 Hour",
+        AnalyticsTimeframe.FIFTEEN_MINUTES: "15 Minute",
+        AnalyticsTimeframe.FIVE_MINUTES: "5 Minute",
+    }
+    rows = []
+    for timeframe, label in labels.items():
+        snapshot = values.get(timeframe)
+        if snapshot is None:
+            continue
+        nearest = sorted(
+            snapshot.fair_value_gaps,
+            key=lambda gap: min(abs(snapshot.close - gap.lower), abs(snapshot.close - gap.upper)),
+        )[:2]
+        rows.extend(
+            f"**{label}:** {gap.direction.value.title()} {_price(gap.lower)} – {_price(gap.upper)}"
+            for gap in nearest
+        )
+    return "\n".join(rows) or "No nearby fair value gaps"
+
+
+def _order_flow(pressure: SessionAuctionPressureSnapshot) -> str:
+    ratio = "Unavailable" if pressure.delta_ratio is None else f"{pressure.delta_ratio:+.1%}"
+    return (
+        f"**Cumulative delta:** {pressure.cvd:+,.0f}  •  **Delta ratio:** {ratio}\n"
+        f"Buy volume: {pressure.buy_volume:,.0f}  •  Sell volume: {pressure.sell_volume:,.0f}\n"
+        f"Classification coverage: {pressure.classified_volume_ratio:.1%}  •  "
+        f"Fidelity: {pressure.fidelity.value.title()}"
+    )

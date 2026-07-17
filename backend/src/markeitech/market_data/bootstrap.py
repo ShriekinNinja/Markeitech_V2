@@ -378,12 +378,18 @@ def build_prepared_market_data_live_node(
                 )
             )
 
-    def enqueue_context_report(lines: tuple[str, ...], phase: str, pressure: Any) -> None:
+    def enqueue_context_report(
+        snapshots: tuple[Any, ...],
+        phase: str,
+        active_instrument_id: str,
+        pressure: Any,
+    ) -> None:
         if persistence is None or not config.discord.enabled:
             return
         for notification in build_market_context_notifications(
-            lines,
+            snapshots,
             phase=phase,
+            active_instrument_id=active_instrument_id,
             pressure=pressure,
         ):
             persistence.metadata.enqueue(notification)

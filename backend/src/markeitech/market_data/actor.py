@@ -250,7 +250,16 @@ class MarkeitechMarketDataActor(Actor):
         operator_context_report_interval: timedelta | None = timedelta(minutes=1),
         auction_pressure_accumulator: SessionAuctionPressureAccumulator | None = None,
         on_operator_context_report: (
-            Callable[[tuple[str, ...], str, SessionAuctionPressureSnapshot | None], None] | None
+            Callable[
+                [
+                    tuple[MarketContextSnapshot, ...],
+                    str,
+                    str,
+                    SessionAuctionPressureSnapshot | None,
+                ],
+                None,
+            ]
+            | None
         ) = None,
         on_runtime_health: Callable[[str, str], None] | None = None,
     ) -> None:
@@ -542,9 +551,19 @@ class MarkeitechMarketDataActor(Actor):
         )
         self.log.info(f"OPERATOR_CONTEXT_COMPLETE | phase={phase.upper()}")
         if self._on_operator_context_report is not None:
+            changed_instruments = {
+                fields[3]
+                for line in lines
+                if len(fields := [field.strip() for field in line.split("|")]) > 3
+            }
             self._on_operator_context_report(
-                lines,
+                tuple(
+                    snapshot
+                    for snapshot in self._market_context.snapshots
+                    if snapshot.instrument_id in changed_instruments
+                ),
                 phase,
+                self._switch.snapshot.active_instrument_id,
                 self._auction_pressure_snapshot,
             )
 

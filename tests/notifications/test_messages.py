@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
+import pytest
 from markeitech.analytics import (
     AnalyticsInputFidelity,
     AnalyticsTimeframe,
@@ -46,21 +47,87 @@ def test_health_notification_uses_a_severity_colored_embed() -> None:
 
 
 def test_market_context_routes_the_instrument_from_operator_lines() -> None:
-    lines = (
-        "OPERATOR_CONTEXT | phase=LIVE | role=ACTIVE | NQU6.CME | price=30000",
-        "OPERATOR_LEVELS | phase=LIVE | role=ACTIVE | NQU6.CME | VWAP[29990 above]",
-        "OPERATOR_AUCTION | phase=LIVE | role=ACTIVE | NQU6.CME | PROFILE[current=x]",
+    snapshot = MarketContextSnapshot(
+        instrument_id="NQU6.CME",
+        timeframe=AnalyticsTimeframe.ONE_MINUTE,
+        as_of=NOW,
+        source="classified_ticks",
+        input_fidelity=AnalyticsInputFidelity.INFERRED,
+        bar_count=251,
+        close=Decimal("30000"),
+        atr_14=Decimal("10"),
+        session_open=Decimal("29900"),
+        session_high=Decimal("30020"),
+        session_low=Decimal("29880"),
+        session_vwap=Decimal("29990"),
+        session_range_position=Decimal("0.85"),
+        vwap_position=VwapPosition.ABOVE,
+        trend=TrendState.BULLISH,
+        trend_reason_codes=("test",),
+        direction_score=2,
     )
 
     record = build_market_context_notifications(
-        lines,
+        (snapshot,),
         phase="live",
+        active_instrument_id="NQU6.CME",
         pressure=None,
         occurred_ts=NOW,
     )[0]
 
     assert record.aggregate_key == "NQU6.CME"
-    assert "MARKET CONTEXT | NQU6.CME | LIVE" in record.payload["content"]
+    assert "Nasdaq 100 Futures market brief" in record.payload["content"]
+    embed = record.payload["embeds"][0]
+    assert embed["title"] == "Nasdaq 100 Futures — Market Brief"
+    assert embed["description"] == "Primary market • Live update"
+    assert embed["color"] == 0x2ECC71
+    assert [field["name"] for field in embed["fields"]] == [
+        "Directional bias",
+        "Value location",
+        "Price and value",
+        "Trend map",
+        "Key levels",
+        "Auction structure",
+        "Fair value gaps",
+    ]
+    assert embed["fields"][0]["value"] == "**Strong bullish alignment**\nScore: +2 of 2"
+
+
+@pytest.mark.parametrize(
+    ("score", "expected_color"),
+    ((-2, 0xE74C3C), (-1, 0xE74C3C), (0, 0xFFFFFF), (1, 0x2ECC71), (2, 0x2ECC71)),
+)
+def test_market_context_color_tracks_direction_score(
+    score: int,
+    expected_color: int,
+) -> None:
+    snapshot = MarketContextSnapshot(
+        instrument_id="NQU6.CME",
+        timeframe=AnalyticsTimeframe.ONE_MINUTE,
+        as_of=NOW,
+        source="classified_ticks",
+        input_fidelity=AnalyticsInputFidelity.INFERRED,
+        bar_count=251,
+        close=Decimal("30000"),
+        session_open=Decimal("29900"),
+        session_high=Decimal("30020"),
+        session_low=Decimal("29880"),
+        session_range_position=Decimal("0.85"),
+        vwap_position=VwapPosition.ABOVE,
+        trend=TrendState.RANGE,
+        trend_reason_codes=("test",),
+        direction_score=score,
+    )
+
+    record = build_market_context_notifications(
+        (snapshot,),
+        phase="live",
+        active_instrument_id="NQU6.CME",
+        pressure=None,
+        occurred_ts=NOW,
+    )[0]
+
+    assert record.payload["embeds"][0]["color"] == expected_color
 
 
 def test_approaching_location_is_deduplicated_until_price_leaves() -> None:
