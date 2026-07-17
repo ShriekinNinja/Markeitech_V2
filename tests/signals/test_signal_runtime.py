@@ -201,6 +201,92 @@ def revisions(instrument_id: str, start_sequence: int):
     )
 
 
+def _expired_runtime_for_location_exit(store, handoff, observations):
+    events = []
+    expired = Event()
+    terminal_episode = Event()
+
+    def capture(event):
+        events.append(event)
+        if event.signal_status == SignalStatus.EXPIRED:
+            expired.set()
+        if event.episode_event == LocationEpisodeEventType.EXITED:
+            terminal_episode.set()
+
+    runtime = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(aggression_definition(),),
+            enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        handoff,
+        observation_store=observations,
+        role_resolver=lambda _instrument_id: "ACTIVE",
+        clock=lambda: STARTED,
+        on_evaluation=capture,
+    )
+    runtime.start()
+    assert handoff.offer(revisions("NQU6.CME", 1))
+    deadline = datetime.now(UTC) + timedelta(seconds=1)
+    while runtime.snapshot.open_signal_count != 1 and datetime.now(UTC) < deadline:
+        Event().wait(0.01)
+
+    bars = tuple(
+        observation_bar(
+            minute,
+            source="ib",
+            open_price="100",
+            high="100.25",
+            low="99.75",
+            close="100",
+        )
+        for minute in range(1, 6)
+    )
+    assert observations.offer_committed(bars)
+    expired_ts = STARTED + timedelta(minutes=6)
+    assert handoff.offer(
+        (
+            CommittedFeatureRevision(
+                feature("NQU6.CME", AnalyticsTimeframe.ONE_MINUTE, expired_ts, revision="8"),
+                expired_ts,
+                8,
+            ),
+        )
+    )
+    assert expired.wait(1)
+    assert runtime.snapshot.status == LiveSignalRuntimeStatus.RUNNING
+    return runtime, events, terminal_episode
+
+
+def _offer_runtime_feature(
+    handoff,
+    as_of: datetime,
+    sequence: int,
+    *,
+    close: Decimal = Decimal("100"),
+    direction_score: int = 1,
+    revision: str = "x",
+) -> None:
+    assert handoff.offer(
+        (
+            CommittedFeatureRevision(
+                feature(
+                    "NQU6.CME",
+                    AnalyticsTimeframe.ONE_MINUTE,
+                    as_of,
+                    revision=revision,
+                    close=close,
+                    direction_score=direction_score,
+                ),
+                as_of,
+                sequence,
+            ),
+        )
+    )
+
+
 def test_runtime_rebuilds_from_warmup_then_arms_on_first_live_evaluation() -> None:
     store = MemorySignalStore()
     handoff = BoundedFeatureCommitHandoff(16)
@@ -967,6 +1053,195 @@ def test_runtime_expires_once_and_suppresses_same_location_episode() -> None:
     assert restarted.snapshot.restored_open_signal_count == 0
     assert restarted.snapshot.open_signal_count == 0
     assert store.lifecycle_writes == 2
+
+
+def test_runtime_closes_suppressed_episode_after_confirmed_adverse_exit() -> None:
+    store = MemorySignalStore()
+    handoff = BoundedFeatureCommitHandoff(32)
+    observations = BoundedAggressionObservationStore(32)
+    runtime, events, exited = _expired_runtime_for_location_exit(store, handoff, observations)
+
+    try:
+        first_breach_ts = STARTED + timedelta(minutes=7)
+        second_breach_ts = STARTED + timedelta(minutes=8)
+        _offer_runtime_feature(
+            handoff,
+            first_breach_ts,
+            9,
+            close=Decimal("98"),
+            revision="9",
+        )
+        _offer_runtime_feature(
+            handoff,
+            second_breach_ts,
+            10,
+            close=Decimal("98"),
+            revision="a",
+        )
+
+        assert exited.wait(1)
+        assert runtime.snapshot.status == LiveSignalRuntimeStatus.RUNNING
+        pending, closed = events[-2:]
+        assert pending.episode_event == LocationEpisodeEventType.EXIT_PENDING
+        assert closed.episode_event == LocationEpisodeEventType.EXITED
+        assert closed.signal_status is None
+        assert closed.signal_id is None
+        assert runtime.snapshot.last_error is None
+        assert runtime.snapshot.open_signal_count == 0
+        assert store.lifecycle_writes == 2
+        assert tuple(signal.status for signal in store.signals.values()) == (
+            SignalStatus.EXPIRED,
+        )
+    finally:
+        assert runtime.stop(1)
+
+
+def test_runtime_closes_suppressed_episode_after_direction_regime_exit() -> None:
+    store = MemorySignalStore()
+    handoff = BoundedFeatureCommitHandoff(32)
+    observations = BoundedAggressionObservationStore(32)
+    runtime, events, exited = _expired_runtime_for_location_exit(store, handoff, observations)
+
+    try:
+        direction_flip_ts = STARTED + timedelta(minutes=7)
+        assert handoff.offer(
+            (
+                CommittedFeatureRevision(
+                    feature(
+                        "NQU6.CME",
+                        AnalyticsTimeframe.ONE_HOUR,
+                        direction_flip_ts,
+                        revision="9",
+                        direction_score=-1,
+                    ),
+                    direction_flip_ts,
+                    9,
+                ),
+                CommittedFeatureRevision(
+                    feature(
+                        "NQU6.CME",
+                        AnalyticsTimeframe.ONE_MINUTE,
+                        direction_flip_ts,
+                        revision="a",
+                        direction_score=-1,
+                    ),
+                    direction_flip_ts,
+                    10,
+                ),
+            )
+        )
+
+        assert exited.wait(1)
+        assert runtime.snapshot.status == LiveSignalRuntimeStatus.RUNNING
+        closed = events[-1]
+        assert closed.episode_event == LocationEpisodeEventType.EXITED
+        assert closed.direction_status == DirectionQualificationStatus.QUALIFIED
+        assert closed.signal_status is None
+        assert runtime.snapshot.last_error is None
+        assert runtime.snapshot.open_signal_count == 0
+        assert store.lifecycle_writes == 2
+        assert tuple(signal.status for signal in store.signals.values()) == (
+            SignalStatus.EXPIRED,
+        )
+    finally:
+        assert runtime.stop(1)
+
+
+def test_runtime_closes_restored_suppressed_episode_after_exit() -> None:
+    store = MemorySignalStore()
+    first_handoff = BoundedFeatureCommitHandoff(32)
+    first_observations = BoundedAggressionObservationStore(32)
+    first, _events, _exited = _expired_runtime_for_location_exit(
+        store,
+        first_handoff,
+        first_observations,
+    )
+    assert first.stop(1)
+
+    restart_watermark = STARTED + timedelta(minutes=7)
+    handoff = BoundedFeatureCommitHandoff(32)
+    observations = BoundedAggressionObservationStore(32)
+    events = []
+    ready = Event()
+    exited = Event()
+
+    def capture(event):
+        events.append(event)
+        if event.episode_event == LocationEpisodeEventType.ACTIVE:
+            ready.set()
+        if event.episode_event == LocationEpisodeEventType.EXITED:
+            exited.set()
+
+    restarted = LiveSignalRuntime(
+        SignalRuntimeConfig(
+            definitions=(aggression_definition(),),
+            enabled_definition_ids_by_instrument={"NQU6.CME": ("runtime_context",)},
+            evaluation_poll_seconds=0.01,
+        ),
+        store,
+        FixedSessionResolver(),
+        handoff,
+        observation_store=observations,
+        role_resolver=lambda _instrument_id: "ACTIVE",
+        clock=lambda: restart_watermark,
+        on_evaluation=capture,
+    )
+    restarted.start()
+    try:
+        original_warmup = tuple(item.feature for item in revisions("NQU6.CME", 30)[:3])
+        warmup = tuple(
+            CommittedFeatureRevision(value, restart_watermark, 20 + index)
+            for index, value in enumerate(original_warmup)
+        )
+        live_ts = restart_watermark + timedelta(minutes=1)
+        assert handoff.offer(
+            (
+                *warmup,
+                CommittedFeatureRevision(
+                    feature(
+                        "NQU6.CME",
+                        AnalyticsTimeframe.ONE_MINUTE,
+                        live_ts,
+                        revision="d",
+                    ),
+                    live_ts,
+                    23,
+                ),
+            )
+        )
+        assert ready.wait(1)
+
+        first_breach_ts = restart_watermark + timedelta(minutes=2)
+        second_breach_ts = restart_watermark + timedelta(minutes=3)
+        _offer_runtime_feature(
+            handoff,
+            first_breach_ts,
+            24,
+            close=Decimal("98"),
+            revision="e",
+        )
+        _offer_runtime_feature(
+            handoff,
+            second_breach_ts,
+            25,
+            close=Decimal("98"),
+            revision="f",
+        )
+
+        assert exited.wait(1)
+        assert restarted.snapshot.status == LiveSignalRuntimeStatus.RUNNING
+        closed = events[-1]
+        assert closed.episode_event == LocationEpisodeEventType.EXITED
+        assert closed.signal_status is None
+        assert restarted.snapshot.last_error is None
+        assert restarted.snapshot.restored_open_signal_count == 0
+        assert restarted.snapshot.open_signal_count == 0
+        assert store.lifecycle_writes == 2
+        assert tuple(signal.status for signal in store.signals.values()) == (
+            SignalStatus.EXPIRED,
+        )
+    finally:
+        assert restarted.stop(1)
 
 
 def test_runtime_triggers_background_signal_from_reported_bar_proxy() -> None:

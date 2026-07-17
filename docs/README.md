@@ -39,6 +39,7 @@ accidental disagreement.
 ## Roadmap And History
 
 - [Active implementation roadmap](roadmap/implementation-roadmap.md)
+- [Runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
 - [Detailed implementation history](roadmap/implementation-history.md)
 
 The roadmap is intentionally concise. The history retains completed slice detail

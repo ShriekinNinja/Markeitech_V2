@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-07-16
+Last reviewed: 2026-07-17
 
 This page is the source of truth for implementation progress. It separates code
 that exists from behavior that has received live acceptance.
@@ -76,18 +76,23 @@ that exists from behavior that has received live acceptance.
 
 ## Current Boundary
 
-Stage 5D.3 is mechanically complete and has live evidence across the full
-Candidate, Armed, Invalidated, and Expired lifecycle. The managed bounded
+Stage 5D.3 has live evidence across the full Candidate, Armed, Invalidated, and
+Expired lifecycle. The managed bounded
 consumer restores verified signal state, evaluates durably committed feature
 and Aggression evidence, persists transitions atomically, and projects concise
 signal events plus runtime health. Its corrected legacy recovery path has also
-survived live restart.
+survived live restart. The 2026-07-16 run exposed a valid expired-episode exit
+which terminated the signal consumer; its deterministic repair and adverse,
+Direction-change, and restart regressions are complete for review but still
+require live acceptance.
 
-Stage 5D.4 is active. Signal-runtime failures now retain phase, input identity,
-last successful commit sequence, exception, and traceback, while active trade
-classification uses bounded event-time quote history and accounts for every
-classified or rejected observation. These corrections are deterministic-test
-complete and await live acceptance evidence.
+Stage 5D.4 is active. Signal-runtime failures retain phase, input identity, last
+successful commit sequence, exception, and traceback. The 2026-07-16 failure
+provided live acceptance for those diagnostics: it identified ES feature commit
+sequence 3693, the last successful sequence 3692, and the exact location-episode
+exception. Active trade classification uses bounded event-time quote history
+and accounts for every classified or rejected observation; its short-run live
+evidence is promising but not a full-session calibration.
 
 The first event-spine vertical slice is also test-complete. Durable feature
 revisions become compact versioned notices, cross a bounded thread-safe bridge,
@@ -114,7 +119,16 @@ checkpoint. The existing bounded feature-writer thread owns ordered processing;
 startup seeds new streams from their latest feature and reconciles only durable
 checkpoint gaps without historical projection. Newly committed transitions
 cross the event bridge to a dedicated non-blocking projection actor. Live
-acceptance remains outstanding.
+transition publication is observed; restart acceptance remains outstanding.
+
+The same 2026-07-16 signal failure exposed a delayed containment problem. The
+stopped signal consumer left its critical feature handoff undrained. After the
+2,048-revision capacity filled, feature persistence failed closed at commit
+sequence 5747 around 16:08 UTC. Raw tick and canonical bar persistence plus
+in-memory operator context continued until shutdown around 18:25 UTC. This was
+not observed raw-data loss; it was a signal outage followed by feature and
+projection loss. Durable catch-up and earlier handoff-health visibility are the
+next reliability boundary.
 
 The 2026-07-15 run separated operational success from trading usefulness. The
 LiveNode, market-data ingestion, persistence, recovery, analytics, and operator
@@ -139,17 +153,20 @@ LiveNode or canonical analytics path.
 
 - NQ live operation has been exercised more thoroughly than ES, indices, and
   equities. Broader provider and contract coverage remains an acceptance task.
-- Signal failure diagnostics and event-time trade classification are implemented.
-  Short-run classification evidence is healthy, but neither has accumulated a
-  full live-session acceptance run.
+- Signal failure diagnostics have live acceptance. Event-time trade
+  classification has healthy short-run evidence but not a full-session
+  calibration.
 - The 2026-07-15 run classified only a small fraction of observed trade volume.
   Corrected timestamp alignment and explicit unclassified reasons need new live
   evidence before delta, CVD, or tick Aggression can be trusted.
 - The committed-feature event bridge and operator consumer have reviewed live
   publication evidence; graceful shutdown-health evidence remains outstanding.
 - Context-transition persistence and restart restoration are deterministic-test
-  complete and connected to the live event actor; live transition and restart
-  acceptance remain outstanding.
+  complete and connected to the live event actor. Live transition publication
+  is observed; live restart acceptance remains outstanding.
+- A failed signal consumer can eventually saturate the critical feature
+  handoff and stop later feature persistence. Queue-health projection and a
+  deterministic committed-revision catch-up policy remain outstanding.
 - Stage 5D.3 has deterministic active, background, expiry, race-order, and
   restart tests plus live Armed and Expired evidence, but no live Triggered
   evidence and no trading-usefulness acceptance.

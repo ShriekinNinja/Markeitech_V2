@@ -635,11 +635,14 @@ class LiveSignalRuntime:
         occurred_ts: datetime,
         bundle: CommittedMarketContextBundle,
     ) -> _PersistedSignalDecision:
-        key = (
-            (definition.definition_id, decision.episode.instrument_id) if decision.episode else None
-        )
+        key = (definition.definition_id, bundle.instrument_id)
+        if decision.episode is not None and (
+            decision.episode.definition_id != definition.definition_id
+            or decision.episode.instrument_id != bundle.instrument_id
+        ):
+            raise RuntimeError("location episode identity conflicts with evaluation state")
         if decision.event_type == LocationEpisodeEventType.ENTERED:
-            if decision.episode is None or open_signal is not None or key is None:
+            if decision.episode is None or open_signal is not None:
                 raise RuntimeError("entered location episode conflicts with open signal state")
             setup = build_armed_location_signal(
                 definition,
@@ -657,7 +660,7 @@ class LiveSignalRuntime:
                 self._lifecycle_write_count += 1
             return _PersistedSignalDecision(current, (setup.armed_transition,))
         if decision.event_type == LocationEpisodeEventType.REPLACED:
-            if decision.episode is None or key is None:
+            if decision.episode is None:
                 raise RuntimeError("replacement episode requires new signal state")
             suppressed_id = self._suppressed_episode_ids.get(key)
             if open_signal is None and suppressed_id == decision.ended_episode_id:
@@ -705,9 +708,7 @@ class LiveSignalRuntime:
             )
         if decision.event_type == LocationEpisodeEventType.EXITED:
             if open_signal is None:
-                if key is not None and self._suppressed_episode_ids.get(key) == (
-                    decision.ended_episode_id
-                ):
+                if self._suppressed_episode_ids.get(key) == decision.ended_episode_id:
                     self._suppressed_episode_ids.pop(key, None)
                     self._confirmation_gates.pop(key, None)
                     return _PersistedSignalDecision(None)
