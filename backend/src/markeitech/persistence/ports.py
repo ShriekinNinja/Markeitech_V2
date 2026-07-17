@@ -57,6 +57,7 @@ class NotificationOutboxStore(Protocol):
         lease_owner: str,
         now: datetime,
         limit: int,
+        destination_keys: tuple[str, ...] | None = None,
     ) -> tuple[NotificationOutboxRecord, ...]: ...
 
     def mark_delivered(

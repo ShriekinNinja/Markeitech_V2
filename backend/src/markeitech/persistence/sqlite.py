@@ -903,28 +903,46 @@ class SQLiteMetadataStore:
         lease_owner: str,
         now: datetime,
         limit: int,
+        destination_keys: tuple[str, ...] | None = None,
     ) -> tuple[NotificationOutboxRecord, ...]:
         if not lease_owner:
             raise ValueError("lease_owner must not be empty")
         if limit < 1:
             raise ValueError("lease limit must be positive")
+        if destination_keys is not None and (
+            not destination_keys or any(not key for key in destination_keys)
+        ):
+            raise ValueError("destination key filter must contain non-empty keys")
         now_ns = unix_ns_from_utc_datetime(now)
         expires_ns = unix_ns_from_utc_datetime(
             now + timedelta(seconds=self._config.outbox_lease_seconds)
         )
         with self._transaction() as connection:
+            destination_clause = ""
+            destination_values: tuple[str, ...] = ()
+            if destination_keys is not None:
+                destination_values = tuple(sorted(set(destination_keys)))
+                placeholders = ",".join("?" for _ in destination_values)
+                destination_clause = f" AND destination_key IN ({placeholders})"
             rows = connection.execute(
-                """
+                f"""
                 SELECT outbox_id FROM notification_outbox
                 WHERE attempt_count < ?
                   AND (
                     (status IN ('pending', 'failed') AND available_ts_ns <= ?)
                     OR (status = 'leased' AND lease_expires_ts_ns <= ?)
                   )
+                  {destination_clause}
                 ORDER BY created_ts_ns, outbox_id
                 LIMIT ?
                 """,
-                (self._config.outbox_max_attempts, now_ns, now_ns, limit),
+                (
+                    self._config.outbox_max_attempts,
+                    now_ns,
+                    now_ns,
+                    *destination_values,
+                    limit,
+                ),
             ).fetchall()
             ids = [row["outbox_id"] for row in rows]
             if not ids:
