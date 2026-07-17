@@ -3,7 +3,6 @@ from __future__ import annotations
 from asyncio import AbstractEventLoop
 from collections.abc import Callable
 from datetime import timedelta
-from threading import Lock
 from typing import Any, Protocol
 
 from nautilus_trader.adapters.interactive_brokers.factories import (
@@ -101,9 +100,6 @@ class PersistenceManagedLiveNode:
         self.domain_event_bridge = domain_event_bridge
         self.feature_event_fanout = feature_event_fanout
         self.context_event_processor = context_event_processor
-        self._runtime_lifecycle_lock = Lock()
-        self._runtimes_started = False
-        self._runtimes_stop_started = False
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._node, name)
@@ -129,10 +125,6 @@ class PersistenceManagedLiveNode:
             self._stop_runtimes()
 
     def _start_runtimes(self) -> None:
-        with self._runtime_lifecycle_lock:
-            if self._runtimes_started:
-                raise RuntimeError("managed LiveNode runtimes already started")
-            self._runtimes_started = True
         self.persistence.start()
         if self.signal_projection_writer is not None:
             self.signal_projection_writer.start()
@@ -149,10 +141,6 @@ class PersistenceManagedLiveNode:
                 raise
 
     def _stop_runtimes(self) -> None:
-        with self._runtime_lifecycle_lock:
-            if not self._runtimes_started or self._runtimes_stop_started:
-                return
-            self._runtimes_stop_started = True
         shutdown_error: RuntimeError | None = None
         if self.signal_runtime is not None:
             feature_writer = self.persistence.feature_writer

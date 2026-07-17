@@ -36,11 +36,6 @@ queue_size = 2048
 drain_batch_size = 64
 operator_dedupe_size = 4096
 
-[live_node]
-post_stop_timeout_seconds = 1
-disconnection_timeout_seconds = 3
-shutdown_timeout_seconds = 3
-
 [persistence]
 catalog_path = "data/catalog"
 metadata_path = "data/runtime/markeitech.sqlite3"

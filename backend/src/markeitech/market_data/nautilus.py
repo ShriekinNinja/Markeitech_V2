@@ -35,9 +35,6 @@ def build_trading_node_config(config: MarketDataRuntimeConfig) -> TradingNodeCon
         actors=[],
         load_state=False,
         save_state=False,
-        timeout_post_stop=config.live_node.post_stop_timeout_seconds,
-        timeout_disconnection=config.live_node.disconnection_timeout_seconds,
-        timeout_shutdown=config.live_node.shutdown_timeout_seconds,
         logging=(
             LoggingConfig(
                 log_level=config.logging.console_level,

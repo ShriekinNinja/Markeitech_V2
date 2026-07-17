@@ -95,12 +95,9 @@ and publish on the Nautilus event-loop thread to a dedicated operator projection
 actor. Bus rejection is explicitly counted but cannot invalidate already-
 committed evidence or the existing critical signal handoff. Live publication
 is now observed for active and background features. One idempotently repeated
-feature notice exposed and produced a bounded consumer-deduplication fix. The
-continuous PyCharm runner now translates `SIGINT`, `SIGTERM`, and `SIGHUP` into the
-LiveNode's asynchronous stop path and guards managed worker teardown against
-duplicate run/stop completion. The 2026-07-16 PyCharm stop acceptance entered
-the complete Nautilus lifecycle, stopped both actors, disconnected IB, stopped
-all engines, and reached `TradingNode STOPPED` without an error.
+feature notice exposed and produced a bounded consumer-deduplication fix.
+Graceful shutdown counters remain the next acceptance evidence because the
+review run ended without entering Nautilus's logged stopping lifecycle.
 
 The same short 2026-07-16 run classified 64 of 66 active NQ trades and 91 of 94
 volume units, reporting a 96.81% classified-volume ratio with explicit reasons
@@ -148,11 +145,8 @@ LiveNode or canonical analytics path.
 - The 2026-07-15 run classified only a small fraction of observed trade volume.
   Corrected timestamp alignment and explicit unclassified reasons need new live
   evidence before delta, CVD, or tick Aggression can be trusted.
-- The committed-feature event bridge, operator consumer, and PyCharm graceful
-  stop path have reviewed live acceptance evidence. A subsequent PyCharm stop
-  reached actor and bridge shutdown but its JSONL ended during IB disconnect;
-  intermittent IDE-stop completion remains operational debt rather than a
-  blocker for the event-backbone work.
+- The committed-feature event bridge and operator consumer have reviewed live
+  publication evidence; graceful shutdown-health evidence remains outstanding.
 - Context-transition persistence and restart restoration are deterministic-test
   complete and connected to the live event actor; live transition and restart
   acceptance remain outstanding.

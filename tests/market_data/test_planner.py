@@ -233,9 +233,6 @@ def test_builds_nautilus_trading_node_config_without_execution_clients() -> None
         for instrument_id in node_config.data_clients["IB"].instrument_provider.load_ids
     } == {"NQU6.CME", "ESU6.CME", "^SPX.CBOE"}
     assert node_config.exec_clients == {}
-    assert node_config.timeout_post_stop == 1
-    assert node_config.timeout_disconnection == 3
-    assert node_config.timeout_shutdown == 3
     assert node_config.strategies == []
     assert node_config.actors == []
 
