@@ -10,6 +10,7 @@ from typing import Protocol
 
 from markeitech.domain.base import require_utc
 from markeitech.domain.market_data import OneMinuteBar
+from markeitech.persistence.contracts import NotificationOutboxRecord
 from markeitech.persistence.feature_pipeline import CommittedFeatureRevision
 from markeitech.signals.aggression import (
     AggressionEvaluationStatus,
@@ -70,6 +71,8 @@ class SignalStateStore(Protocol):
         self,
         candidate: SignalSnapshot,
         event: SignalTransitionEvent,
+        *,
+        notification: NotificationOutboxRecord | None = None,
     ) -> object: ...
 
     def replace_signal_with_armed_candidate(
@@ -77,9 +80,17 @@ class SignalStateStore(Protocol):
         ended_event: SignalTransitionEvent,
         candidate: SignalSnapshot,
         armed_event: SignalTransitionEvent,
+        *,
+        ended_notification: NotificationOutboxRecord | None = None,
+        armed_notification: NotificationOutboxRecord | None = None,
     ) -> object: ...
 
-    def apply_signal_transition(self, event: SignalTransitionEvent) -> object: ...
+    def apply_signal_transition(
+        self,
+        event: SignalTransitionEvent,
+        *,
+        notification: NotificationOutboxRecord | None = None,
+    ) -> object: ...
 
 
 class ProductSessionResolver(Protocol):
@@ -187,6 +198,9 @@ class LiveSignalRuntime:
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         on_evaluation: Callable[[SignalEvaluationEvent], None] | None = None,
         on_projection: Callable[[SignalOperatorProjection], bool] | None = None,
+        notification_factory: (
+            Callable[[SignalTransitionEvent], NotificationOutboxRecord] | None
+        ) = None,
     ) -> None:
         enabled_ids = {
             definition_id
@@ -211,6 +225,7 @@ class LiveSignalRuntime:
         self._clock = clock
         self._on_evaluation = on_evaluation
         self._on_projection = on_projection
+        self._notification_factory = notification_factory
         self._observation_store = observation_store
         self._role_resolver = role_resolver
         self._feature_state = CommittedFeatureState()
@@ -662,7 +677,7 @@ class LiveSignalRuntime:
                 direction,
                 self._confirmation_context(definition, bundle),
             )
-            self._store.save_signal_candidate_and_transition(
+            self._save_candidate_and_transition(
                 setup.candidate,
                 setup.armed_transition,
             )
@@ -682,7 +697,7 @@ class LiveSignalRuntime:
                     direction,
                     self._confirmation_context(definition, bundle),
                 )
-                self._store.save_signal_candidate_and_transition(
+                self._save_candidate_and_transition(
                     setup.candidate,
                     setup.armed_transition,
                 )
@@ -705,7 +720,7 @@ class LiveSignalRuntime:
                 direction,
                 self._confirmation_context(definition, bundle),
             )
-            self._store.replace_signal_with_armed_candidate(
+            self._replace_signal_with_armed_candidate(
                 ended,
                 setup.candidate,
                 setup.armed_transition,
@@ -731,7 +746,7 @@ class LiveSignalRuntime:
                 occurred_ts=occurred_ts,
                 reason_codes=decision.reason_codes,
             )
-            self._store.apply_signal_transition(ended)
+            self._apply_signal_transition(ended)
             with self._condition:
                 self._open_signals.pop(
                     (open_signal.definition_id, open_signal.instrument_id),
@@ -740,6 +755,47 @@ class LiveSignalRuntime:
                 self._lifecycle_write_count += 1
             return _PersistedSignalDecision(ended.current, (ended,))
         return _PersistedSignalDecision(open_signal)
+
+    def _save_candidate_and_transition(
+        self,
+        candidate: SignalSnapshot,
+        event: SignalTransitionEvent,
+    ) -> object:
+        if self._notification_factory is None:
+            return self._store.save_signal_candidate_and_transition(candidate, event)
+        return self._store.save_signal_candidate_and_transition(
+            candidate,
+            event,
+            notification=self._notification_factory(event),
+        )
+
+    def _replace_signal_with_armed_candidate(
+        self,
+        ended_event: SignalTransitionEvent,
+        candidate: SignalSnapshot,
+        armed_event: SignalTransitionEvent,
+    ) -> object:
+        if self._notification_factory is None:
+            return self._store.replace_signal_with_armed_candidate(
+                ended_event,
+                candidate,
+                armed_event,
+            )
+        return self._store.replace_signal_with_armed_candidate(
+            ended_event,
+            candidate,
+            armed_event,
+            ended_notification=self._notification_factory(ended_event),
+            armed_notification=self._notification_factory(armed_event),
+        )
+
+    def _apply_signal_transition(self, event: SignalTransitionEvent) -> object:
+        if self._notification_factory is None:
+            return self._store.apply_signal_transition(event)
+        return self._store.apply_signal_transition(
+            event,
+            notification=self._notification_factory(event),
+        )
 
     def _confirmation_context(
         self,
@@ -851,7 +907,7 @@ class LiveSignalRuntime:
             reason_codes=reasons,
             evidence=result.evidence,
         )
-        self._store.apply_signal_transition(event)
+        self._apply_signal_transition(event)
         with self._condition:
             self._lifecycle_write_count += 1
             if terminal_status == SignalStatus.TRIGGERED:

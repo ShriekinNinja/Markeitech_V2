@@ -13,6 +13,7 @@ from markeitech.analytics import (
     TrendState,
     VwapPosition,
 )
+from markeitech.notifications import build_signal_transition_notification
 from markeitech.persistence import (
     NotificationOutboxRecord,
     PersistenceConfig,
@@ -335,6 +336,11 @@ def test_episode_replacement_invalidates_old_and_arms_new_atomically(tmp_path: P
         decision,
         occurred_ts=replacement.candidate.created_ts,
     )
+    ended_notification = build_signal_transition_notification(ended, role="ACTIVE")
+    armed_notification = build_signal_transition_notification(
+        replacement.armed_transition,
+        role="ACTIVE",
+    )
 
     with SQLiteMetadataStore(config(tmp_path / "metadata.sqlite3")) as store:
         store.save_signal_candidate_and_transition(
@@ -346,6 +352,8 @@ def test_episode_replacement_invalidates_old_and_arms_new_atomically(tmp_path: P
                 ended,
                 replacement.candidate,
                 replacement.armed_transition,
+                ended_notification=ended_notification,
+                armed_notification=armed_notification,
             )
             == SignalPersistenceOutcome.TRANSITIONED
         )
@@ -354,6 +362,8 @@ def test_episode_replacement_invalidates_old_and_arms_new_atomically(tmp_path: P
                 ended,
                 replacement.candidate,
                 replacement.armed_transition,
+                ended_notification=ended_notification,
+                armed_notification=armed_notification,
             )
             == SignalPersistenceOutcome.DUPLICATE
         )
@@ -362,6 +372,8 @@ def test_episode_replacement_invalidates_old_and_arms_new_atomically(tmp_path: P
             store.load_signal(replacement.candidate.signal_id)
             == replacement.armed_transition.current
         )
+        assert store.load_outbox(ended_notification.outbox_id) == ended_notification
+        assert store.load_outbox(armed_notification.outbox_id) == armed_notification
 
 
 def test_replacement_conflict_rolls_back_old_signal_invalidation(tmp_path: Path) -> None:

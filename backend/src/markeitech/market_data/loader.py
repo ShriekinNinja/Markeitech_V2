@@ -25,6 +25,7 @@ from markeitech.market_data.config import (
     OperatorContextConfig,
     RuntimeLoggingConfig,
 )
+from markeitech.notifications import DiscordDeliveryConfig
 from markeitech.persistence.config import PersistenceConfig
 from markeitech.signals import SignalRuntimeConfig
 
@@ -43,6 +44,7 @@ def parse_market_data_runtime_config(raw: dict[str, Any]) -> MarketDataRuntimeCo
     logging_raw = raw.get("logging", {})
     operator_context_raw = raw.get("operator_context", {})
     domain_events_raw = raw.get("domain_events", {})
+    discord_raw = raw.get("discord", {})
     signals_raw = raw.get("signals")
     instruments_raw = raw.get("instruments", [])
     if not isinstance(instruments_raw, list):
@@ -66,6 +68,7 @@ def parse_market_data_runtime_config(raw: dict[str, Any]) -> MarketDataRuntimeCo
         logging=RuntimeLoggingConfig(**logging_raw),
         operator_context=OperatorContextConfig(**operator_context_raw),
         domain_events=DomainEventRuntimeConfig(**domain_events_raw),
+        discord=DiscordDeliveryConfig(**discord_raw),
         signals=(SignalRuntimeConfig(**signals_raw) if signals_raw is not None else None),
     )
 

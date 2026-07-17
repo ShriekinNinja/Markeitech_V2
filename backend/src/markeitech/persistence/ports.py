@@ -95,6 +95,9 @@ class SignalStateStore(Protocol):
         ended_event: SignalTransitionEvent,
         candidate: SignalSnapshot,
         armed_event: SignalTransitionEvent,
+        *,
+        ended_notification: NotificationOutboxRecord | None = None,
+        armed_notification: NotificationOutboxRecord | None = None,
     ) -> SignalPersistenceOutcome: ...
 
     def apply_signal_transition(

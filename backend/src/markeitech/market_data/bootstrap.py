@@ -17,6 +17,7 @@ from markeitech.analytics import (
     MarketContextCalculationConfig,
     MarketContextEngine,
 )
+from markeitech.auction_pressure import SessionAuctionPressureAccumulator
 from markeitech.domain.base import VersionedDomainModel
 from markeitech.market_data.actions import build_livenode_action_plan
 from markeitech.market_data.actor import MarkeitechMarketDataActor
@@ -28,6 +29,14 @@ from markeitech.market_data.coordinator import (
 from markeitech.market_data.intents import build_nautilus_request_plan
 from markeitech.market_data.nautilus import build_trading_node_config
 from markeitech.market_data.planner import build_market_data_plan
+from markeitech.notifications import (
+    ApproachingLocationNotifier,
+    DiscordOutboxDeliveryWorker,
+    LocationNarrativeNotifier,
+    build_health_notification,
+    build_market_context_notifications,
+    build_signal_transition_notification,
+)
 from markeitech.persistence.calendar import PandasMarketSessionCalendar
 from markeitech.persistence.feature_pipeline import (
     CommittedFeatureRevision,
@@ -91,6 +100,8 @@ class PersistenceManagedLiveNode:
         domain_event_bridge: BoundedEventLoopBridge | None = None,
         feature_event_fanout: FeatureCommitEventFanout | None = None,
         context_event_processor: ContextEventCommitProcessor | None = None,
+        discord_delivery_worker: DiscordOutboxDeliveryWorker | None = None,
+        on_runtime_health: Callable[[str, str], None] | None = None,
     ) -> None:
         self._node = node
         self.persistence = persistence
@@ -100,6 +111,8 @@ class PersistenceManagedLiveNode:
         self.domain_event_bridge = domain_event_bridge
         self.feature_event_fanout = feature_event_fanout
         self.context_event_processor = context_event_processor
+        self.discord_delivery_worker = discord_delivery_worker
+        self._on_runtime_health = on_runtime_health
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._node, name)
@@ -108,6 +121,10 @@ class PersistenceManagedLiveNode:
         self._start_runtimes()
         try:
             return self._node.run()
+        except Exception as exc:
+            if self._on_runtime_health is not None:
+                self._on_runtime_health("FAILED", f"{type(exc).__name__}: {exc}")
+            raise
         finally:
             self._stop_runtimes()
 
@@ -115,6 +132,10 @@ class PersistenceManagedLiveNode:
         self._start_runtimes()
         try:
             await self._node.run_async()
+        except Exception as exc:
+            if self._on_runtime_health is not None:
+                self._on_runtime_health("FAILED", f"{type(exc).__name__}: {exc}")
+            raise
         finally:
             self._stop_runtimes()
 
@@ -126,6 +147,12 @@ class PersistenceManagedLiveNode:
 
     def _start_runtimes(self) -> None:
         self.persistence.start()
+        if self.discord_delivery_worker is not None:
+            try:
+                self.discord_delivery_worker.start()
+            except Exception:
+                self.persistence.stop()
+                raise
         if self.signal_projection_writer is not None:
             self.signal_projection_writer.start()
         if self.signal_runtime is not None:
@@ -135,6 +162,10 @@ class PersistenceManagedLiveNode:
                 self.signal_runtime.stop(self.persistence.config.runtime_shutdown_timeout_seconds)
                 if self.signal_projection_writer is not None:
                     self.signal_projection_writer.stop(
+                        self.persistence.config.runtime_shutdown_timeout_seconds
+                    )
+                if self.discord_delivery_worker is not None:
+                    self.discord_delivery_worker.stop(
                         self.persistence.config.runtime_shutdown_timeout_seconds
                     )
                 self.persistence.stop()
@@ -162,6 +193,16 @@ class PersistenceManagedLiveNode:
                     shutdown_error = RuntimeError(
                         "signal projection writer did not drain within shutdown timeout"
                     )
+        if self.discord_delivery_worker is not None:
+            try:
+                self.discord_delivery_worker.run_once()
+                self.discord_delivery_worker.stop(
+                    self.persistence.config.runtime_shutdown_timeout_seconds
+                )
+            except Exception as exc:
+                if shutdown_error is None:
+                    shutdown_error = RuntimeError("Discord delivery worker did not stop")
+                    shutdown_error.__cause__ = exc
         try:
             self.persistence.stop()
         except Exception as exc:
@@ -245,6 +286,11 @@ def build_prepared_market_data_live_node(
         if config.persistence
         else None
     )
+    discord_delivery_worker = (
+        DiscordOutboxDeliveryWorker(persistence.metadata, config.discord)
+        if persistence is not None and config.discord.enabled
+        else None
+    )
     context_event_processor = None
     feature_event_fanout = None
     if persistence is not None:
@@ -319,6 +365,28 @@ def build_prepared_market_data_live_node(
         profile_composite_sessions=profile_composite_sessions,
         calculation_config=calculation_config,
     )
+    approaching_notifier = ApproachingLocationNotifier()
+    location_narrative_notifier = LocationNarrativeNotifier()
+
+    def enqueue_health(event: str, detail: str) -> None:
+        if persistence is not None and config.discord.enabled:
+            persistence.metadata.enqueue(
+                build_health_notification(
+                    trader_id=config.trader_id,
+                    event=event,
+                    detail=detail,
+                )
+            )
+
+    def enqueue_context_report(lines: tuple[str, ...], phase: str, pressure: Any) -> None:
+        if persistence is None or not config.discord.enabled:
+            return
+        for notification in build_market_context_notifications(
+            lines,
+            phase=phase,
+            pressure=pressure,
+        ):
+            persistence.metadata.enqueue(notification)
     actor_kwargs: dict[str, Any] = {
         "on_warmup_ready": on_warmup_ready,
         "market_context_engine": market_context_engine,
@@ -338,6 +406,30 @@ def build_prepared_market_data_live_node(
             if config.operator_context.enabled
             else None
         ),
+        "auction_pressure_accumulator": SessionAuctionPressureAccumulator(
+            config.instrument_registry.active_instrument_id,
+            session_calendar,
+        ),
+        "on_operator_context_report": enqueue_context_report,
+        "on_runtime_health": enqueue_health,
+        "on_market_data_health": lambda snapshot: enqueue_health(
+            f"MARKET_DATA_{snapshot.source.status.value.upper()}",
+            " | ".join(
+                (
+                    f"source={snapshot.source.source}",
+                    f"lag_ms={snapshot.source.lag_ms}",
+                    *(
+                        f"{item.instrument_id}={item.readiness.value}"
+                        + (
+                            ""
+                            if not item.reason_codes
+                            else f"({','.join(item.reason_codes)})"
+                        )
+                        for item in snapshot.instruments
+                    ),
+                )
+            ),
+        ),
     }
     if persistence is not None:
         if persistence.feature_writer is None:
@@ -352,16 +444,23 @@ def build_prepared_market_data_live_node(
                 config.persistence.runtime_startup_timeout_seconds
             ),
         )
+        def persist_market_context(snapshot: Any) -> bool:
+            accepted = persistence.feature_writer.submit(
+                market_context_engine.feature_for(snapshot)
+            ) == FeatureSubmissionStatus.ACCEPTED
+            if config.discord.enabled:
+                approaching = approaching_notifier.observe(snapshot)
+                if approaching is not None:
+                    persistence.metadata.enqueue(approaching)
+            return accepted
+
         actor_kwargs.update(
             on_native_market_data_event=persistence.ingress.submit_native,
             on_market_data_event=persistence.ingress.submit_canonical,
             on_historical_bar=lambda bar: persistence.ingress.submit_canonical(bar)
             == PersistenceSubmissionStatus.ACCEPTED,
             startup_recovery=startup_recovery,
-            on_market_context=lambda snapshot: persistence.feature_writer.submit(
-                market_context_engine.feature_for(snapshot)
-            )
-            == FeatureSubmissionStatus.ACCEPTED,
+            on_market_context=persist_market_context,
         )
     try:
         actor = actor_factory(action_plan, **actor_kwargs)
@@ -438,6 +537,29 @@ def build_prepared_market_data_live_node(
             observation_store=signal_observations,
             role_resolver=role_resolver,
             on_projection=signal_projection_writer.submit,
+            on_evaluation=(
+                None
+                if discord_delivery_worker is None
+                else lambda event: (
+                    persistence.metadata.enqueue(notification)
+                    if (
+                        notification := location_narrative_notifier.observe(
+                            event,
+                            role=role_resolver(event.instrument_id),
+                        )
+                    )
+                    is not None
+                    else None
+                )
+            ),
+            notification_factory=(
+                None
+                if discord_delivery_worker is None
+                else lambda event: build_signal_transition_notification(
+                    event,
+                    role=role_resolver(event.current.instrument_id),
+                )
+            ),
         )
     return PersistenceManagedLiveNode(
         node,
@@ -448,6 +570,8 @@ def build_prepared_market_data_live_node(
         domain_event_bridge,
         feature_event_fanout,
         context_event_processor,
+        discord_delivery_worker,
+        enqueue_health,
     )
 
 

@@ -118,6 +118,8 @@ class DiscordOutboxDeliveryWorker:
             )
 
     def start(self) -> None:
+        for destination_key in self._routes:
+            self._webhook_url(destination_key)
         with self._lock:
             if self._status != DiscordDeliveryStatus.CREATED:
                 raise RuntimeError("Discord delivery worker can only start once")

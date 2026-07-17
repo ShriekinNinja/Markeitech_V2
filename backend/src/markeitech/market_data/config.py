@@ -6,6 +6,7 @@ from pydantic import Field, model_validator
 
 from markeitech.domain.base import VersionedDomainModel
 from markeitech.domain.instruments import InstrumentRegistryConfig
+from markeitech.notifications import DiscordDeliveryConfig
 from markeitech.persistence.config import PersistenceConfig
 from markeitech.signals import SignalRuntimeConfig
 
@@ -64,6 +65,7 @@ class MarketDataRuntimeConfig(VersionedDomainModel):
     logging: RuntimeLoggingConfig = Field(default_factory=RuntimeLoggingConfig)
     operator_context: OperatorContextConfig = Field(default_factory=OperatorContextConfig)
     domain_events: DomainEventRuntimeConfig = Field(default_factory=DomainEventRuntimeConfig)
+    discord: DiscordDeliveryConfig = Field(default_factory=DiscordDeliveryConfig)
     signals: SignalRuntimeConfig | None = None
 
     @model_validator(mode="after")
@@ -74,6 +76,8 @@ class MarketDataRuntimeConfig(VersionedDomainModel):
             raise ValueError("LiveNode start requires explicit manual_live_node_start")
         if not self.ib.read_only:
             raise ValueError("Stage 2 IB connection must be read-only")
+        if self.discord.enabled and self.persistence is None:
+            raise ValueError("Discord delivery requires durable persistence")
         if self.signals is not None and self.signals.enabled_definition_ids_by_instrument:
             if self.persistence is None:
                 raise ValueError("enabled signals require durable persistence")

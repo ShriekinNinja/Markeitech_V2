@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+import pytest
 from markeitech.notifications import (
     DiscordDeliveryConfig,
     DiscordDeliveryStatus,
@@ -183,6 +184,22 @@ def test_missing_secret_fails_without_exposing_environment_name_or_url(tmp_path:
     assert failed.status == OutboxStatus.FAILED
     assert failed.last_error == "RuntimeError: Discord route 'signal-lifecycle' is not configured"
     assert "WEBHOOK" not in failed.last_error
+
+
+def test_worker_start_fails_fast_when_route_secret_is_missing(tmp_path: Path) -> None:
+    with SQLiteMetadataStore(config(tmp_path)) as store:
+        subject = DiscordOutboxDeliveryWorker(
+            store,
+            delivery_config(),
+            transport=StubTransport([]),
+            environment={},
+            clock=lambda: NOW,
+        )
+
+        with pytest.raises(RuntimeError, match="signal-lifecycle.*not configured"):
+            subject.start()
+
+    assert subject.snapshot.status == DiscordDeliveryStatus.CREATED
 
 
 def test_thread_lifecycle_stops_cleanly_without_pending_records(tmp_path: Path) -> None:

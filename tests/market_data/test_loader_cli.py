@@ -286,6 +286,31 @@ def test_loads_checked_in_example_config() -> None:
     assert config.persistence is not None
 
 
+@pytest.mark.parametrize(
+    ("path", "expected_instruments"),
+    (
+        (Path("config/market-data.live.toml"), 10),
+        (Path("config/market-data.test.toml"), 2),
+    ),
+)
+def test_live_and_test_configs_have_explicit_instrument_scope(
+    path: Path,
+    expected_instruments: int,
+) -> None:
+    config = load_market_data_runtime_config(path)
+    enabled = tuple(
+        runtime for runtime in config.instrument_registry.instruments if runtime.enabled
+    )
+
+    assert len(enabled) == expected_instruments
+    assert config.instrument_registry.active_instrument_id == "NQU6.CME"
+    if expected_instruments == 2:
+        assert {
+            runtime.contract.instrument_id
+            for runtime in enabled
+        } == {"NQU6.CME", "ESU6.CME"}
+
+
 def test_cli_plan_summary_for_checked_in_example() -> None:
     summary = build_plan_summary(Path("config/market-data.example.toml"))
 

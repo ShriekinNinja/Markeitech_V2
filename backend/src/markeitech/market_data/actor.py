@@ -14,8 +14,12 @@ from markeitech.analytics import (
     AnalyticsReadinessStatus,
     MarketContextSnapshot,
 )
+from markeitech.auction_pressure import (
+    SessionAuctionPressureAccumulator,
+    SessionAuctionPressureSnapshot,
+)
 from markeitech.domain.events import ActiveInstrumentChangedEvent
-from markeitech.domain.market_data import OneMinuteBar
+from markeitech.domain.market_data import ClassifiedTrade, OneMinuteBar
 from markeitech.market_data.actions import (
     LiveNodeAction,
     LiveNodeActionKind,
@@ -244,6 +248,11 @@ class MarkeitechMarketDataActor(Actor):
         is_session_open: SessionOpenResolver | None = None,
         resolve_warmup_start: WarmupStartResolver | None = None,
         operator_context_report_interval: timedelta | None = timedelta(minutes=1),
+        auction_pressure_accumulator: SessionAuctionPressureAccumulator | None = None,
+        on_operator_context_report: (
+            Callable[[tuple[str, ...], str, SessionAuctionPressureSnapshot | None], None] | None
+        ) = None,
+        on_runtime_health: Callable[[str, str], None] | None = None,
     ) -> None:
         super().__init__()
         if (
@@ -309,6 +318,10 @@ class MarkeitechMarketDataActor(Actor):
         self._operator_context = OperatorContextReporter()
         self._operator_context_report_interval = operator_context_report_interval
         self._operator_context_timer_started = False
+        self._auction_pressure_accumulator = auction_pressure_accumulator
+        self._auction_pressure_snapshot: SessionAuctionPressureSnapshot | None = None
+        self._on_operator_context_report = on_operator_context_report
+        self._on_runtime_health = on_runtime_health
         self._on_warmup_ready = on_warmup_ready
         self._health = MarketDataHealthMonitor(
             instrument_ids=enabled_instrument_ids,
@@ -357,6 +370,8 @@ class MarkeitechMarketDataActor(Actor):
         return self._analytics_readiness_snapshot
 
     def on_start(self) -> None:
+        if self._on_runtime_health is not None:
+            self._on_runtime_health("STARTED", "Market-data actor started; warmup is beginning.")
         self._warmup.start()
         self.clock.set_timer(
             name="market-data-health",
@@ -373,6 +388,8 @@ class MarkeitechMarketDataActor(Actor):
             self.clock.cancel_timer("operator-context-report")
             self._operator_context_timer_started = False
         self._cancel_switch_timer()
+        if self._on_runtime_health is not None:
+            self._on_runtime_health("STOPPED", "Market-data actor stopped.")
 
     def on_historical_data(self, data: Any) -> None:
         bar_type = getattr(data, "bar_type", None)
@@ -439,6 +456,8 @@ class MarkeitechMarketDataActor(Actor):
 
     def _handle_market_data_event(self, event: Any) -> None:
         self._health.observe(event)
+        if isinstance(event, ClassifiedTrade) and self._auction_pressure_accumulator is not None:
+            self._auction_pressure_snapshot = self._auction_pressure_accumulator.observe(event)
         if self._external_market_data_sink is not None:
             self._external_market_data_sink(event)
         if (
@@ -466,6 +485,14 @@ class MarkeitechMarketDataActor(Actor):
             if readiness.status == AnalyticsReadinessStatus.BLOCKED:
                 raise RuntimeError(
                     "analytics warmup readiness is blocked: " + ", ".join(readiness.reason_codes)
+                )
+            if self._on_runtime_health is not None:
+                self._on_runtime_health(
+                    f"ANALYTICS_{readiness.status.value.upper()}",
+                    " | ".join(
+                        f"{item.instrument_id}={item.status.value}"
+                        for item in readiness.instruments
+                    ),
                 )
         if self._market_context is None:
             return
@@ -514,6 +541,12 @@ class MarkeitechMarketDataActor(Actor):
             )
         )
         self.log.info(f"OPERATOR_CONTEXT_COMPLETE | phase={phase.upper()}")
+        if self._on_operator_context_report is not None:
+            self._on_operator_context_report(
+                lines,
+                phase,
+                self._auction_pressure_snapshot,
+            )
 
     def _cancel_switch_timer(self) -> None:
         if self._switch_timer_name is not None:

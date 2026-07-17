@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
+
 from markeitech.market_data.bootstrap import (
     LIVE_NODE_START_CONFIRMATION,
     LiveNodeLike,
@@ -27,6 +29,8 @@ def main() -> None:
         help=f"Required token to start the LiveNode: {LIVE_NODE_START_CONFIRMATION}",
     )
     args = parser.parse_args()
+
+    load_dotenv(dotenv_path=Path.cwd() / ".env", override=False)
 
     print(
         json.dumps(

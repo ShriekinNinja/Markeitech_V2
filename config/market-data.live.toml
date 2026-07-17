@@ -1,24 +1,24 @@
 [runtime]
 active_instrument_id = "NQU6.CME"
-trader_id = "MARKEITECH-001"
+trader_id = "MARKEITECH-PAPER-001"
 data_client_name = "IB"
 data_only = true
 build_nautilus_node = true
-manual_live_node_start = false
-run_live_node = false
+manual_live_node_start = true
+run_live_node = true
 
 [ib]
 host = "127.0.0.1"
-port = 7497
+port = 4002
 client_id = 1
 use_regular_trading_hours = false
 market_data_type = 1
-connection_timeout_seconds = 300
+connection_timeout_seconds = 30
 request_timeout_seconds = 60
 read_only = true
 
 [logging]
-enabled = false
+enabled = true
 console_level = "INFO"
 file_level = "INFO"
 directory = "data/logs"
@@ -34,10 +34,9 @@ interval_seconds = 60
 enabled = true
 queue_size = 2048
 drain_batch_size = 64
-operator_dedupe_size = 4096
 
 [discord]
-enabled = false
+enabled = true
 poll_interval_seconds = 1
 batch_size = 10
 request_timeout_seconds = 10
@@ -63,10 +62,10 @@ journal_path = "data/runtime/ingress-journal"
 retention_maintenance_enabled = false
 tick_retention_sessions = 5
 bar_retention_sessions = 250
-sqlite_compaction_min_reclaimable_bytes = 16777216
 catalog_writer_queue_size = 10000
 catalog_batch_size = 1000
 persistence_batch_interval_seconds = 60
+catalog_flush_poll_seconds = 0.25
 journal_max_bytes = 536870912
 runtime_startup_timeout_seconds = 30
 runtime_shutdown_timeout_seconds = 30
@@ -81,7 +80,6 @@ evaluation_poll_seconds = 0.05
 operator_projection_queue_size = 256
 operator_projection_dedupe_size = 4096
 operator_heartbeat_interval_seconds = 60
-aggression_observation_history_bars = 240
 
 [[signals.definitions]]
 definition_id = "intraday_context"

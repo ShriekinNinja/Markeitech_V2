@@ -24,6 +24,11 @@ from markeitech.market_data import (
     build_prepared_market_data_live_node,
     start_live_node,
 )
+from markeitech.notifications import (
+    DiscordDeliveryConfig,
+    DiscordDeliveryStatus,
+    DiscordRouteConfig,
+)
 from markeitech.persistence import (
     PersistenceConfig,
     PersistenceRuntimeStatus,
@@ -193,6 +198,7 @@ def test_build_prepared_live_node_attaches_actor_and_builds_clients() -> None:
         market_context_engine: Any,
         analytics_readiness_evaluator: Any,
         operator_context_report_interval: Any,
+        **_kwargs: Any,
     ) -> object:
         actors.append(
             (
@@ -392,3 +398,32 @@ def test_prepared_node_owns_signal_runtime_lifecycle(tmp_path: Path) -> None:
     assert restarted.signal_observations is not None
     assert restarted.signal_observations.bars("NQU6.CME", "ib") == (completed_bar(),)
     assert restarted.run() == "started"
+
+
+def test_prepared_node_owns_discord_delivery_lifecycle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("MARKEITECH_DISCORD_SIGNALS_WEBHOOK", "https://discord.test/hook")
+    node = build_prepared_market_data_live_node(
+        runtime_config(
+            persistence=persistence_config(tmp_path),
+            discord=DiscordDeliveryConfig(
+                enabled=True,
+                routes=(
+                    DiscordRouteConfig(
+                        destination_key="signal-lifecycle",
+                        environment_variable="MARKEITECH_DISCORD_SIGNALS_WEBHOOK",
+                    ),
+                ),
+            ),
+        ),
+        node_factory=FakeNode,
+        actor_factory=lambda *args, **kwargs: object(),
+        data_client_factory=type("FakeDataClientFactory", (), {}),
+    )
+
+    assert isinstance(node, PersistenceManagedLiveNode)
+    assert node.discord_delivery_worker is not None
+    assert node.run() == "started"
+    assert node.discord_delivery_worker.snapshot.status == DiscordDeliveryStatus.STOPPED

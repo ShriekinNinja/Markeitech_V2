@@ -1,0 +1,199 @@
+[runtime]
+active_instrument_id = "NQU6.CME"
+trader_id = "MARKEITECH-PAPER-001"
+data_client_name = "IB"
+data_only = true
+build_nautilus_node = true
+manual_live_node_start = true
+run_live_node = true
+
+[ib]
+host = "127.0.0.1"
+port = 4002
+client_id = 1
+use_regular_trading_hours = false
+market_data_type = 1
+connection_timeout_seconds = 30
+request_timeout_seconds = 60
+read_only = true
+
+[logging]
+enabled = true
+console_level = "INFO"
+file_level = "INFO"
+directory = "data/logs"
+file_name = "markeitech-live"
+max_file_size_bytes = 26214400
+max_backup_count = 10
+
+[operator_context]
+enabled = true
+interval_seconds = 60
+
+[domain_events]
+enabled = true
+queue_size = 2048
+drain_batch_size = 64
+
+[discord]
+enabled = true
+poll_interval_seconds = 1
+batch_size = 10
+request_timeout_seconds = 10
+base_retry_seconds = 2
+max_retry_seconds = 300
+
+[[discord.routes]]
+destination_key = "signal-lifecycle"
+environment_variable = "MARKEITECH_DISCORD_SIGNALS_WEBHOOK"
+
+[[discord.routes]]
+destination_key = "market-events"
+environment_variable = "MARKEITECH_DISCORD_MARKET_EVENTS_WEBHOOK"
+
+[[discord.routes]]
+destination_key = "system-health"
+environment_variable = "MARKEITECH_DISCORD_RUNTIME_HEALTH_WEBHOOK"
+
+[persistence]
+catalog_path = "data/catalog"
+metadata_path = "data/runtime/markeitech.sqlite3"
+journal_path = "data/runtime/ingress-journal"
+retention_maintenance_enabled = false
+tick_retention_sessions = 5
+bar_retention_sessions = 250
+catalog_writer_queue_size = 10000
+catalog_batch_size = 1000
+persistence_batch_interval_seconds = 60
+catalog_flush_poll_seconds = 0.25
+journal_max_bytes = 536870912
+runtime_startup_timeout_seconds = 30
+runtime_shutdown_timeout_seconds = 30
+recovery_max_total_requests = 256
+recovery_provider_empty_confirmation_attempts = 2
+
+[signals]
+enabled_definition_ids_by_instrument = { "NQU6.CME" = ["intraday_context"], "ESU6.CME" = ["intraday_context"] }
+feature_handoff_queue_size = 2048
+evaluation_batch_size = 128
+evaluation_poll_seconds = 0.05
+operator_projection_queue_size = 256
+operator_projection_dedupe_size = 4096
+operator_heartbeat_interval_seconds = 60
+
+[[signals.definitions]]
+definition_id = "intraday_context"
+algorithm_version = "1.0"
+evaluation_timeframe = "1m"
+primary_direction_timeframes = ["1h", "15m"]
+confirmation_timeframes = ["5m"]
+minimum_confirmation_count = 1
+context_timeframes = ["1d"]
+opposing_context_policy = "degrade"
+minimum_direction_score = 1
+
+[signals.definitions.location_policy]
+minimum_distinct_sources = 1
+exit_confirmation_bars = 2
+
+[[signals.definitions.location_policy.sources]]
+source_kind = "structural_level"
+timeframes = ["15m", "5m"]
+proximity_atr_fraction = 0.15
+
+[[signals.definitions.location_policy.sources]]
+source_kind = "fair_value_gap"
+timeframes = ["15m", "5m"]
+proximity_atr_fraction = 0
+
+[[signals.definitions.location_policy.sources]]
+source_kind = "value_area_edge"
+timeframes = ["1m"]
+proximity_atr_fraction = 0.10
+
+[[signals.definitions.location_policy.sources]]
+source_kind = "session_vwap"
+timeframes = ["1m"]
+proximity_atr_fraction = 0.10
+
+[signals.definitions.aggression_policy]
+observation_timeframe = "1m"
+active_confirmation_method = "tick_aggression"
+background_confirmation_method = "bar_impulse_proxy"
+window_bars = 3
+expiry_observation_bars = 5
+minimum_classified_volume_ratio = 0.70
+minimum_directional_delta_ratio = 0.10
+minimum_follow_through_atr_fraction = 0.10
+maximum_adverse_atr_fraction = 0.30
+minimum_pace_baseline_bars = 10
+bar_proxy_minimum_directional_bar_ratio = 0.66
+bar_proxy_minimum_close_location = 0.65
+bar_proxy_minimum_follow_through_atr_fraction = 0.15
+bar_proxy_minimum_pace_ratio = 1.10
+
+[[instruments]]
+role = "active"
+data_mode = "tick_by_tick"
+analysis_profile = "active_tick"
+enabled = true
+priority = 0
+
+[instruments.contract]
+root_symbol = "NQ"
+exchange = "CME"
+instrument_id = "NQU6.CME"
+security_type = "FUT"
+ib_symbol = "NQ"
+ib_exchange = "CME"
+ib_security_type = "FUT"
+expiry = 2026-09-18
+ib_last_trade_date_or_contract_month = "20260918"
+session_timezone = "America/New_York"
+calendar_id = "CME_Equity"
+session_profile = "full"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m", "1h", "1d"]
+lookback_sessions_by_timeframe = { "1m" = 5, "5m" = 10, "15m" = 20, "30m" = 5, "1h" = 60, "1d" = 260 }
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+volume_profile_bin_size = 1
+volume_profile_composite_sessions = [2, 5]
+
+[[instruments]]
+role = "background"
+data_mode = "live_1m_bars"
+analysis_profile = "background_bar"
+enabled = true
+priority = 20
+
+[instruments.contract]
+root_symbol = "ES"
+exchange = "CME"
+instrument_id = "ESU6.CME"
+security_type = "FUT"
+ib_symbol = "ES"
+ib_exchange = "CME"
+ib_security_type = "FUT"
+expiry = 2026-09-18
+ib_last_trade_date_or_contract_month = "20260918"
+session_timezone = "America/New_York"
+calendar_id = "CME_Equity"
+session_profile = "full"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m", "1h", "1d"]
+lookback_sessions_by_timeframe = { "1m" = 5, "5m" = 10, "15m" = 20, "30m" = 5, "1h" = 60, "1d" = 260 }
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+volume_profile_bin_size = 0.5
+volume_profile_composite_sessions = [2, 5]

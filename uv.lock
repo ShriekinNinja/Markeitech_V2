@@ -398,6 +398,7 @@ dependencies = [
     { name = "plotly" },
     { name = "pyarrow" },
     { name = "pydantic" },
+    { name = "python-dotenv" },
     { name = "redis" },
 ]
 
@@ -417,6 +418,7 @@ requires-dist = [
     { name = "plotly", specifier = ">=6.9.0" },
     { name = "pyarrow", specifier = ">=16" },
     { name = "pydantic", specifier = ">=2.8" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "redis", specifier = ">=5" },
 ]
 

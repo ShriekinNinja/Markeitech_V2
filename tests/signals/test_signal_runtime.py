@@ -14,6 +14,7 @@ from markeitech.analytics import (
     VwapPosition,
 )
 from markeitech.domain import OneMinuteBar
+from markeitech.notifications import build_signal_transition_notification
 from markeitech.persistence import CommittedFeatureRevision
 from markeitech.signals import (
     AggressionPolicyConfig,
@@ -159,6 +160,7 @@ class MemorySignalStore:
     def __init__(self) -> None:
         self.signals = {}
         self.lifecycle_writes = 0
+        self.notifications = []
 
     def load_signals(self, **filters):
         values = tuple(self.signals.values())
@@ -171,15 +173,20 @@ class MemorySignalStore:
     def save_signal_candidate_and_transition(self, candidate, event, **kwargs):
         self.signals[candidate.signal_id] = event.current
         self.lifecycle_writes += 1
+        self.notifications.append(kwargs.get("notification"))
 
-    def replace_signal_with_armed_candidate(self, ended_event, candidate, armed_event):
+    def replace_signal_with_armed_candidate(self, ended_event, candidate, armed_event, **kwargs):
         self.signals[ended_event.signal_id] = ended_event.current
         self.signals[candidate.signal_id] = armed_event.current
         self.lifecycle_writes += 1
+        self.notifications.extend(
+            (kwargs.get("ended_notification"), kwargs.get("armed_notification"))
+        )
 
     def apply_signal_transition(self, event, **kwargs):
         self.signals[event.signal_id] = event.current
         self.lifecycle_writes += 1
+        self.notifications.append(kwargs.get("notification"))
 
 
 class FixedSessionResolver:
@@ -303,6 +310,10 @@ def test_runtime_rebuilds_from_warmup_then_arms_on_first_live_evaluation() -> No
         handoff,
         clock=lambda: STARTED,
         on_evaluation=lambda event: observed.set(),
+        notification_factory=lambda event: build_signal_transition_notification(
+            event,
+            role="ACTIVE",
+        ),
     )
 
     runtime.start()
@@ -319,6 +330,12 @@ def test_runtime_rebuilds_from_warmup_then_arms_on_first_live_evaluation() -> No
     assert snapshot.open_signal_count == 1
     assert store.lifecycle_writes == 1
     assert {signal.status for signal in store.signals.values()} == {SignalStatus.ARMED}
+    assert len(store.notifications) == 1
+    notification = store.notifications[0]
+    assert notification.destination_key == "signal-lifecycle"
+    assert notification.aggregate_key in store.signals
+    assert notification.payload["content"].startswith("**SHADOW DLA ARMED | NQU6.CME LONG**")
+    assert notification.payload["allowed_mentions"] == {"parse": []}
 
 
 def test_runtime_preserves_armed_episode_during_soft_direction_degradation() -> None:

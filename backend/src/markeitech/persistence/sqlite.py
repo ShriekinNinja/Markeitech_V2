@@ -688,6 +688,9 @@ class SQLiteMetadataStore:
         ended_event: SignalTransitionEvent,
         candidate: SignalSnapshot,
         armed_event: SignalTransitionEvent,
+        *,
+        ended_notification: NotificationOutboxRecord | None = None,
+        armed_notification: NotificationOutboxRecord | None = None,
     ) -> SignalPersistenceOutcome:
         if ended_event.to_status not in {SignalStatus.INVALIDATED, SignalStatus.EXPIRED}:
             raise ValueError("replaced signal must transition to a terminal status")
@@ -702,10 +705,12 @@ class SQLiteMetadataStore:
             raise ValueError("replacement Armed transition does not match candidate")
         if ended_event.signal_id == candidate.signal_id:
             raise ValueError("replacement signal must have distinct identity")
+        _validate_signal_notification(ended_event, ended_notification)
+        _validate_signal_notification(armed_event, armed_notification)
         with self._transaction() as connection:
-            ended_outcome = _apply_signal_transition(connection, ended_event, None)
+            ended_outcome = _apply_signal_transition(connection, ended_event, ended_notification)
             candidate_outcome = _save_signal_candidate(connection, candidate)
-            armed_outcome = _apply_signal_transition(connection, armed_event, None)
+            armed_outcome = _apply_signal_transition(connection, armed_event, armed_notification)
             if all(
                 outcome == SignalPersistenceOutcome.DUPLICATE
                 for outcome in (ended_outcome, candidate_outcome, armed_outcome)
