@@ -24,7 +24,8 @@ def build_health_notification(
     occurred_ts: datetime | None = None,
 ) -> NotificationOutboxRecord:
     now = datetime.now(UTC) if occurred_ts is None else occurred_ts
-    content = f"**SYSTEM {event.upper()} | {trader_id}**\n{detail}"
+    status = event.upper()
+    content = f"**SYSTEM {status} | {trader_id}**\n{detail}"
     return _record(
         destination=SYSTEM_HEALTH_DESTINATION,
         aggregate=trader_id,
@@ -32,6 +33,19 @@ def build_health_notification(
         identity=f"{event}:{now.isoformat()}:{detail}",
         content=content,
         now=now,
+        embeds=(
+            {
+                "title": "Markeitech System Health",
+                "description": detail,
+                "color": _health_color(status),
+                "fields": (
+                    {"name": "Status", "value": status, "inline": True},
+                    {"name": "Runtime", "value": trader_id, "inline": True},
+                ),
+                "timestamp": now.isoformat(),
+                "footer": {"text": "No Obstacles, Only Challenges"},
+            },
+        ),
     )
 
 
@@ -184,6 +198,7 @@ def _record(
     identity: str,
     content: str,
     now: datetime,
+    embeds: tuple[dict[str, object], ...] = (),
 ) -> NotificationOutboxRecord:
     digest = hashlib.sha256(identity.encode()).hexdigest()
     outbox_id = uuid5(NAMESPACE_URL, f"markeitech:discord:{destination}:{digest}")
@@ -194,7 +209,11 @@ def _record(
         aggregate_key=aggregate,
         event_type=event_type,
         event_schema_version="1.0",
-        payload={"content": content[:_MAX_CONTENT], "allowed_mentions": {"parse": []}},
+        payload={
+            "content": content[:_MAX_CONTENT],
+            "allowed_mentions": {"parse": []},
+            **({"embeds": embeds} if embeds else {}),
+        },
         dedupe_key=f"discord:{destination}:{digest}",
         available_ts=now,
         created_ts=now,
@@ -211,3 +230,15 @@ def _readable_operator_line(line: str) -> str:
     label, _, detail = line.partition("|")
     title = label.removeprefix("OPERATOR_").replace("_", " ").title()
     return f"**{title}**\n{detail.strip().replace(' | ', ' · ')}"
+
+
+def _health_color(status: str) -> int:
+    if "FAILED" in status or "CRITICAL" in status:
+        return 0xE74C3C
+    if "DEGRADED" in status or "BLOCKED" in status or "STALE" in status:
+        return 0xF39C12
+    if "READY" in status or "HEALTHY" in status:
+        return 0x2ECC71
+    if "STOPPED" in status:
+        return 0x95A5A6
+    return 0x3498DB

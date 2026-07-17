@@ -13,6 +13,7 @@ from markeitech.analytics import (
 from markeitech.notifications import (
     ApproachingLocationNotifier,
     LocationNarrativeNotifier,
+    build_health_notification,
     build_market_context_notifications,
 )
 from markeitech.signals import (
@@ -23,6 +24,25 @@ from markeitech.signals import (
 )
 
 NOW = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
+
+
+def test_health_notification_uses_a_severity_colored_embed() -> None:
+    record = build_health_notification(
+        trader_id="MARKEITECH-PAPER-001",
+        event="MARKET_DATA_DEGRADED",
+        detail="NQU6.CME=degraded(stale_trade_tick)",
+        occurred_ts=NOW,
+    )
+
+    embed = record.payload["embeds"][0]
+    assert embed["title"] == "Markeitech System Health"
+    assert embed["color"] == 0xF39C12
+    assert embed["fields"][0] == {
+        "name": "Status",
+        "value": "MARKET_DATA_DEGRADED",
+        "inline": True,
+    }
+    assert embed["footer"]["text"] == "No Obstacles, Only Challenges"
 
 
 def test_market_context_routes_the_instrument_from_operator_lines() -> None:
