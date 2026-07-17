@@ -334,7 +334,10 @@ def test_runtime_rebuilds_from_warmup_then_arms_on_first_live_evaluation() -> No
     notification = store.notifications[0]
     assert notification.destination_key == "signal-lifecycle"
     assert notification.aggregate_key in store.signals
-    assert notification.payload["content"].startswith("**SHADOW DLA ARMED | NQU6.CME LONG**")
+    assert notification.payload["content"] == "**Long Setup Armed — Nasdaq 100 Futures**"
+    assert notification.payload["embeds"][0]["description"] == (
+        "Direction and location are qualified; confirmation is pending."
+    )
     assert notification.payload["allowed_mentions"] == {"parse": []}
 
 

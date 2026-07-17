@@ -21,10 +21,43 @@ from markeitech.signals import (
     DirectionQualificationStatus,
     LocationEpisodeEventType,
     LocationQualificationStatus,
+    LocationSourceKind,
+    SignalDirection,
     SignalEvaluationEvent,
+    SignalEvidenceFidelity,
+    SignalLocationMatch,
+    SignalLocationZone,
+    SignalLocationZoneKind,
 )
 
 NOW = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
+
+
+def location_match() -> SignalLocationMatch:
+    zone = SignalLocationZone(
+        instrument_id="NQU6.CME",
+        direction=SignalDirection.LONG,
+        source_kind=LocationSourceKind.STRUCTURAL_LEVEL,
+        zone_kind=SignalLocationZoneKind.SUPPORT,
+        timeframe=AnalyticsTimeframe.FIVE_MINUTES,
+        zone_anchor="five_minute_support",
+        source_feature_id="a" * 64,
+        observed_ts=NOW - timedelta(minutes=5),
+        lower_price=Decimal("29950"),
+        upper_price=Decimal("29955"),
+        fidelity=SignalEvidenceFidelity.INFERRED,
+        reason_codes=("nearest_support",),
+    )
+    return SignalLocationMatch(
+        zone=zone,
+        evaluation_feature_id="b" * 64,
+        observed_ts=NOW,
+        observed_price=Decimal("29952.75"),
+        distance=Decimal("0"),
+        tolerance=Decimal("3"),
+        fidelity=SignalEvidenceFidelity.INFERRED,
+        reason_codes=("matched_support",),
+    )
 
 
 def test_health_notification_uses_a_severity_colored_embed() -> None:
@@ -170,8 +203,19 @@ def test_repeated_holding_narrative_is_suppressed() -> None:
         episode_event=LocationEpisodeEventType.ACTIVE,
         signal_id="signal-1",
         signal_status=None,
+        signal_direction=SignalDirection.LONG,
+        observed_price=Decimal("30000"),
+        location_matches=(location_match(),),
     )
     notifier = LocationNarrativeNotifier()
 
-    assert notifier.observe(event, role="ACTIVE") is not None
+    record = notifier.observe(event, role="ACTIVE")
+    assert record is not None
+    assert record.payload["embeds"][0]["title"] == (
+        "Holding 5m Support — Nasdaq 100 Futures"
+    )
+    assert record.payload["embeds"][0]["description"] == (
+        "Price remains engaged with 5m Support at 29,950.00 – 29,955.00."
+    )
+    assert record.payload["embeds"][0]["fields"][1]["value"] == "Long"
     assert notifier.observe(event, role="ACTIVE") is None

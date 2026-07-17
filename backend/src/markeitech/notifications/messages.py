@@ -10,7 +10,11 @@ from uuid import NAMESPACE_URL, uuid5
 from markeitech.analytics import AnalyticsTimeframe, MarketContextSnapshot
 from markeitech.auction_pressure import SessionAuctionPressureSnapshot
 from markeitech.persistence import NotificationOutboxRecord
-from markeitech.signals import LocationEpisodeEventType, SignalEvaluationEvent
+from markeitech.signals import (
+    LocationEpisodeEventType,
+    SignalEvaluationEvent,
+    SignalLocationMatch,
+)
 
 SYSTEM_HEALTH_DESTINATION = "system-health"
 MARKET_EVENTS_DESTINATION = "market-events"
@@ -145,14 +149,43 @@ def build_location_narrative_notification(
         LocationEpisodeEventType.EXITED: "EXITED",
         LocationEpisodeEventType.REPLACED: "ROTATED",
     }.get(event.episode_event)
-    if narrative is None:
+    if narrative is None or not event.location_matches:
         return None
-    detail = (
-        f"Role `{role}` | Direction `{event.direction_status.value}` | "
-        f"Location `{event.location_status.value if event.location_status else 'n/a'}`\n"
-        f"Episode `{event.episode_event.value}` | Definition `{event.definition_id}` | "
-        f"As of `{event.evaluation_ts.isoformat()}`"
+    direction = (
+        "Unresolved"
+        if event.signal_direction is None
+        else event.signal_direction.value.title()
     )
+    primary = event.location_matches[0].zone
+    location_name = (
+        f"{primary.timeframe.value} "
+        f"{primary.zone_kind.value.replace('_', ' ').title()}"
+    )
+    detail = _narrative_explanation(event, location_name)
+    fields: list[dict[str, object]] = [
+        {"name": "What happened", "value": detail, "inline": False},
+        {"name": "Direction", "value": direction, "inline": True},
+        {"name": "Instrument role", "value": role.title(), "inline": True},
+        {"name": "Observed price", "value": _price(event.observed_price), "inline": True},
+        {
+            "name": "Location",
+            "value": _signal_locations(event.location_matches),
+            "inline": False,
+        },
+        {
+            "name": "Evidence",
+            "value": _signal_evidence_summary(event),
+            "inline": False,
+        },
+    ]
+    if event.reason_codes:
+        fields.append(
+            {
+                "name": "Reason",
+                "value": _human_reasons(event.reason_codes),
+                "inline": False,
+            }
+        )
     return _record(
         destination=SIGNAL_LIFECYCLE_DESTINATION,
         aggregate=f"{event.definition_id}:{event.instrument_id}",
@@ -161,8 +194,29 @@ def build_location_narrative_notification(
             f"{event.definition_id}:{event.instrument_id}:"
             f"{event.episode_event.value}:{event.evaluation_ts.isoformat()}"
         ),
-        content=f"**{narrative} | {event.instrument_id}**\n{detail}",
+        content=(
+            f"**{narrative.title()} {location_name} — "
+            f"{_instrument_name(event.instrument_id)}**"
+        ),
         now=event.evaluation_ts,
+        embeds=(
+            {
+                "title": (
+                    f"{narrative.title()} {location_name} — "
+                    f"{_instrument_name(event.instrument_id)}"
+                ),
+                "description": detail,
+                "color": _narrative_color(event),
+                "fields": tuple(fields),
+                "timestamp": event.evaluation_ts.isoformat(),
+                "footer": {
+                    "text": (
+                        f"{event.definition_id.replace('_', ' ').title()} • "
+                        "Decision support, not execution"
+                    )
+                },
+            },
+        ),
     )
 
 
@@ -195,19 +249,43 @@ class ApproachingLocationNotifier:
         if self._active_keys.get(snapshot.instrument_id) == key:
             return None
         self._active_keys[snapshot.instrument_id] = key
+        location_name = level.kind.value.replace("_", " ").title()
         return _record(
             destination=SIGNAL_LIFECYCLE_DESTINATION,
             aggregate=snapshot.instrument_id,
             event_type="location.approaching",
             identity=f"{snapshot.instrument_id}:{key}:{snapshot.as_of.isoformat()}",
-            content=(
-                f"**APPROACHING LOCATION | {snapshot.instrument_id}**\n"
-                f"Price `{snapshot.close}` approaching `{level.kind.value}` at `{level.price}`\n"
-                f"Distance `{distance}` | Alert threshold `{threshold}` (0.25 ATR) | "
-                f"Trend `{snapshot.trend.value}` | Direction `{snapshot.direction_score:+d}`\n"
-                "Context warning only; no entry instruction."
-            ),
+            content=f"**Approaching {location_name} — {_instrument_name(snapshot.instrument_id)}**",
             now=snapshot.as_of,
+            embeds=(
+                {
+                    "title": (
+                        f"Approaching {location_name} — "
+                        f"{_instrument_name(snapshot.instrument_id)}"
+                    ),
+                    "description": "Price is nearing a meaningful market location.",
+                    "color": (
+                        0x2ECC71 if "support" in level.kind.value else 0xE74C3C
+                    ),
+                    "fields": (
+                        {"name": "Last price", "value": _price(snapshot.close), "inline": True},
+                        {"name": "Level", "value": _price(level.price), "inline": True},
+                        {"name": "Distance", "value": _price(distance), "inline": True},
+                        {
+                            "name": "Directional context",
+                            "value": (
+                                f"{_direction_name(snapshot.direction_score)} "
+                                f"({snapshot.direction_score:+d})"
+                            ),
+                            "inline": False,
+                        },
+                    ),
+                    "timestamp": snapshot.as_of.isoformat(),
+                    "footer": {
+                        "text": "Proximity threshold: 0.25 ATR • Warning only, not an entry"
+                    },
+                },
+            ),
         )
 
 
@@ -257,7 +335,7 @@ def _record(
         payload={
             "content": content[:_MAX_CONTENT],
             "allowed_mentions": {"parse": []},
-            **({"embeds": embeds} if embeds else {}),
+            **({"embeds": _json_native_embeds(embeds)} if embeds else {}),
         },
         dedupe_key=f"discord:{destination}:{digest}",
         available_ts=now,
@@ -418,3 +496,91 @@ def _order_flow(pressure: SessionAuctionPressureSnapshot) -> str:
         f"Classification coverage: {pressure.classified_volume_ratio:.1%}  •  "
         f"Fidelity: {pressure.fidelity.value.title()}"
     )
+
+
+def _narrative_explanation(event: SignalEvaluationEvent, location_name: str) -> str:
+    zone = event.location_matches[0].zone
+    price_range = f"{_price(zone.lower_price)} – {_price(zone.upper_price)}"
+    direction = (
+        "the qualified direction"
+        if event.signal_direction is None
+        else f"the {event.signal_direction.value} direction"
+    )
+    return {
+        LocationEpisodeEventType.ENTERED: (
+            f"Price entered {location_name} at {price_range}."
+        ),
+        LocationEpisodeEventType.ACTIVE: (
+            f"Price remains engaged with {location_name} at {price_range}."
+        ),
+        LocationEpisodeEventType.FAVORABLE_DEPARTURE: (
+            f"Price rejected {location_name} at {price_range} and departed in {direction}."
+        ),
+        LocationEpisodeEventType.DEPARTURE_UNRESOLVED: (
+            f"Price moved away from {location_name} at {price_range}, "
+            "but the interaction remains unresolved."
+        ),
+        LocationEpisodeEventType.EXIT_PENDING: (
+            f"Price breached {location_name} at {price_range}; "
+            "confirmation is required before declaring an exit."
+        ),
+        LocationEpisodeEventType.EXITED: (
+            f"Price left {location_name} at {price_range}; the interaction ended."
+        ),
+        LocationEpisodeEventType.REPLACED: (
+            f"{location_name} at {price_range} replaced the prior decision area."
+        ),
+    }[event.episode_event]
+
+
+def _narrative_color(event: SignalEvaluationEvent) -> int:
+    if event.episode_event == LocationEpisodeEventType.EXIT_PENDING:
+        return 0xF39C12
+    if event.episode_event in {LocationEpisodeEventType.EXITED, LocationEpisodeEventType.REPLACED}:
+        return 0x95A5A6
+    if event.signal_direction is None:
+        return 0xFFFFFF
+    return 0x2ECC71 if event.signal_direction.value == "long" else 0xE74C3C
+
+
+def _signal_locations(matches: Sequence[SignalLocationMatch]) -> str:
+    if not matches:
+        return "No detailed location available"
+    rows = []
+    for match in matches:
+        zone = match.zone
+        rows.append(
+            f"**{zone.timeframe.value} {zone.zone_kind.value.replace('_', ' ').title()}:** "
+            f"{_price(zone.lower_price)} – {_price(zone.upper_price)}"
+        )
+    return "\n".join(rows[:4])
+
+
+def _signal_evidence_summary(event: SignalEvaluationEvent) -> str:
+    direction = event.direction_status.value.replace("_", " ").title()
+    location = (
+        "Unavailable"
+        if event.location_status is None
+        else event.location_status.value.replace("_", " ").title()
+    )
+    values = [f"Direction: {direction}", f"Location: {location}"]
+    if event.aggression_status is not None:
+        values.append(f"Order flow: {event.aggression_status.value.replace('_', ' ').title()}")
+    return "  •  ".join(values)
+
+
+def _human_reasons(reasons: Sequence[str]) -> str:
+    return "\n".join(f"• {reason.replace('_', ' ').capitalize()}" for reason in reasons[:5])
+
+
+def _json_native_embeds(
+    embeds: tuple[dict[str, object], ...],
+) -> list[dict[str, object]]:
+    normalized = []
+    for embed in embeds:
+        value = dict(embed)
+        fields = value.get("fields")
+        if isinstance(fields, tuple):
+            value["fields"] = list(fields)
+        normalized.append(value)
+    return normalized

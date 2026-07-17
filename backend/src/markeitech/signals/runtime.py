@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from enum import StrEnum
 from threading import Condition, Thread
 from traceback import format_exc
@@ -32,6 +33,8 @@ from markeitech.signals.contracts import (
     LocationQualificationStatus,
     SignalConfirmationContext,
     SignalConfirmationMethod,
+    SignalDirection,
+    SignalLocationMatch,
     SignalSnapshot,
     SignalStatus,
     SignalTransitionEvent,
@@ -136,6 +139,10 @@ class SignalEvaluationEvent:
     aggression_status: AggressionEvaluationStatus | None = None
     confirmation_method: SignalConfirmationMethod | None = None
     elapsed_observation_bars: int | None = None
+    signal_direction: SignalDirection | None = None
+    observed_price: Decimal | None = None
+    location_matches: tuple[SignalLocationMatch, ...] = ()
+    reason_codes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -602,6 +609,11 @@ class LiveSignalRuntime:
             bundle.evaluation_as_of,
             bundle,
         )
+        narrative_matches = (
+            persisted.current.location_matches
+            if persisted.current is not None and persisted.current.location_matches
+            else location.matches
+        )
         gate = _ConfirmationGate(
             direction_status=direction_decision.qualification.status,
             location_status=location.status,
@@ -640,17 +652,25 @@ class LiveSignalRuntime:
                 aggression_status=confirmation.aggression_status,
                 confirmation_method=confirmation.confirmation_method,
                 elapsed_observation_bars=confirmation.elapsed_observation_bars,
+                signal_direction=direction,
+                observed_price=observed_price,
+                location_matches=narrative_matches,
+                reason_codes=episode_decision.reason_codes,
             )
         return SignalEvaluationEvent(
-            bundle.instrument_id,
-            definition_id,
-            bundle.evaluation_as_of,
-            direction_decision.qualification.status,
-            location.status,
-            episode_decision.event_type,
-            None if persisted.current is None else persisted.current.signal_id,
-            None if persisted.current is None else persisted.current.status,
-            persisted.lifecycle_events,
+            instrument_id=bundle.instrument_id,
+            definition_id=definition_id,
+            evaluation_ts=bundle.evaluation_as_of,
+            direction_status=direction_decision.qualification.status,
+            location_status=location.status,
+            episode_event=episode_decision.event_type,
+            signal_id=None if persisted.current is None else persisted.current.signal_id,
+            signal_status=None if persisted.current is None else persisted.current.status,
+            lifecycle_events=persisted.lifecycle_events,
+            signal_direction=direction,
+            observed_price=observed_price,
+            location_matches=narrative_matches,
+            reason_codes=episode_decision.reason_codes,
         )
 
     def _persist_episode_decision(
@@ -931,6 +951,14 @@ class LiveSignalRuntime:
             aggression_status=result.status,
             confirmation_method=context.method,
             elapsed_observation_bars=result.elapsed_observation_bars,
+            signal_direction=signal.direction,
+            observed_price=(
+                evaluation.snapshot.close
+                if (evaluation := bundle.feature(definition.evaluation_timeframe)) is not None
+                else None
+            ),
+            location_matches=signal.location_matches,
+            reason_codes=result.reason_codes,
         )
 
     def _offer_heartbeat(self, evaluation_ts: datetime) -> None:
