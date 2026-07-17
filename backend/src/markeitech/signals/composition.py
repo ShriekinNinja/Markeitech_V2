@@ -19,7 +19,9 @@ class FeatureHandoffStatus(StrEnum):
 
 @dataclass(frozen=True)
 class FeatureHandoffSnapshot:
+    capacity: int
     pending_count: int
+    high_watermark: int
     accepted_count: int
     drained_count: int
     rejected_count: int
@@ -35,6 +37,7 @@ class BoundedFeatureCommitHandoff:
         self._capacity = capacity
         self._condition = Condition()
         self._queue: deque[CommittedFeatureRevision] = deque()
+        self._high_watermark = 0
         self._accepted_count = 0
         self._drained_count = 0
         self._rejected_count = 0
@@ -44,7 +47,9 @@ class BoundedFeatureCommitHandoff:
     def snapshot(self) -> FeatureHandoffSnapshot:
         with self._condition:
             return FeatureHandoffSnapshot(
+                capacity=self._capacity,
                 pending_count=len(self._queue),
+                high_watermark=self._high_watermark,
                 accepted_count=self._accepted_count,
                 drained_count=self._drained_count,
                 rejected_count=self._rejected_count,
@@ -63,6 +68,7 @@ class BoundedFeatureCommitHandoff:
                 self._rejected_count += len(revisions)
                 return FeatureHandoffStatus.QUEUE_FULL
             self._queue.extend(revisions)
+            self._high_watermark = max(self._high_watermark, len(self._queue))
             self._accepted_count += len(revisions)
             self._condition.notify_all()
             return FeatureHandoffStatus.ACCEPTED
@@ -102,6 +108,7 @@ class BoundedFeatureCommitHandoff:
             if len(self._queue) + len(revisions) > self._capacity:
                 raise RuntimeError("feature commit handoff cannot restore drained batch")
             self._queue.extendleft(reversed(revisions))
+            self._high_watermark = max(self._high_watermark, len(self._queue))
             self._drained_count -= len(revisions)
             self._condition.notify_all()
 

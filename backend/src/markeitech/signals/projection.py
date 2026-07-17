@@ -102,6 +102,11 @@ class SignalRuntimeProjection:
     observation_accepted_bar_count: int = 0
     observation_retained_bar_count: int = 0
     observation_conflicting_retry_count: int = 0
+    handoff_capacity: int = 0
+    handoff_pending_count: int = 0
+    handoff_high_watermark: int = 0
+    handoff_rejected_count: int = 0
+    handoff_is_closed: bool = False
     last_error: str | None = None
     failure_phase: str | None = None
     failure_input_identity: str | None = None
@@ -129,9 +134,17 @@ class SignalRuntimeProjection:
             self.observation_accepted_bar_count,
             self.observation_retained_bar_count,
             self.observation_conflicting_retry_count,
+            self.handoff_capacity,
+            self.handoff_pending_count,
+            self.handoff_high_watermark,
+            self.handoff_rejected_count,
         )
         if any(value < 0 for value in counters):
             raise ValueError("signal runtime projection counters cannot be negative")
+        if self.handoff_pending_count > self.handoff_capacity:
+            raise ValueError("signal runtime handoff pending count exceeds capacity")
+        if self.handoff_high_watermark > self.handoff_capacity:
+            raise ValueError("signal runtime handoff high watermark exceeds capacity")
 
 
 type SignalOperatorProjection = SignalLifecycleProjection | SignalRuntimeProjection
@@ -334,6 +347,10 @@ def format_signal_operator_projection(
             f"| observations={projection.observation_accepted_bar_count} "
             f"| retained={projection.observation_retained_bar_count} "
             f"| observation_conflicts={projection.observation_conflicting_retry_count} "
+            f"| handoff={projection.handoff_pending_count}/{projection.handoff_capacity} "
+            f"| handoff_high_water={projection.handoff_high_watermark} "
+            f"| handoff_rejected={projection.handoff_rejected_count} "
+            f"| handoff_closed={int(projection.handoff_is_closed)} "
             f"| projection_rejected={projection.projection_rejected_count} "
             f"| projection_errors={projection.projection_callback_error_count}"
         )

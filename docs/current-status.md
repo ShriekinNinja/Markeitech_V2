@@ -127,8 +127,12 @@ stopped signal consumer left its critical feature handoff undrained. After the
 sequence 5747 around 16:08 UTC. Raw tick and canonical bar persistence plus
 in-memory operator context continued until shutdown around 18:25 UTC. This was
 not observed raw-data loss; it was a signal outage followed by feature and
-projection loss. Durable catch-up and earlier handoff-health visibility are the
-next reliability boundary.
+projection loss. A deterministic containment correction is complete for review:
+signal failure immediately closes the critical handoff, retains the failed
+revision, and projects pending, capacity, high-water, rejection, and closed
+state. The next feature batch then fails immediately rather than filling a dead
+queue for hours. Durable signal catch-up remains a separately reviewed design
+because retroactive setup semantics are not yet defined.
 
 The 2026-07-15 run separated operational success from trading usefulness. The
 LiveNode, market-data ingestion, persistence, recovery, analytics, and operator
@@ -164,9 +168,9 @@ LiveNode or canonical analytics path.
 - Context-transition persistence and restart restoration are deterministic-test
   complete and connected to the live event actor. Live transition publication
   is observed; live restart acceptance remains outstanding.
-- A failed signal consumer can eventually saturate the critical feature
-  handoff and stop later feature persistence. Queue-health projection and a
-  deterministic committed-revision catch-up policy remain outstanding.
+- Fail-fast signal-consumer containment and queue-health projection are
+  deterministic-test complete for review. Durable committed-revision catch-up
+  remains outstanding and cannot silently invent retroactive signal semantics.
 - Stage 5D.3 has deterministic active, background, expiry, race-order, and
   restart tests plus live Armed and Expired evidence, but no live Triggered
   evidence and no trading-usefulness acceptance.

@@ -31,7 +31,8 @@ Deliver a trustworthy live decision-support path in which:
 | Desired outcome | Starting reality | Required evidence | Status |
 | --- | --- | --- | --- |
 | Signal runtime is mechanically trustworthy | A valid suppressed-episode exit terminated signal evaluation on 2026-07-16 | Regression, restart, and live evidence show continuous processing | Deterministic repair in review |
-| Signal failure cannot silently cascade | The stopped consumer filled a 2,048-revision handoff and later stopped feature persistence | Immediate health projection and deterministic recovery behavior | Not started |
+| Signal failure cannot silently cascade | The stopped consumer filled a 2,048-revision handoff and later stopped feature persistence | Immediate health projection and deterministic recovery behavior | Fail-fast containment in review; durable catch-up deferred |
+| Delta, CVD, and price response are trustworthy | Active classified flow has strong short-run coverage but no canonical pressure series | Session-anchored, coverage-aware evidence and deterministic price-response events | Not started |
 | Market interactions are first-class evidence | Trend and value transitions exist; level interaction episodes do not | Versioned contracts, pure state machine, persistence, restart, and live projection | Not started |
 | Discord is an operator surface | Durable signal outbox foundations exist; no webhook delivery runtime exists | Durable intent, bounded delivery, retry, dedupe, recovery, and live message | Not started |
 | Fabio is useful but not dominant | DLA lifecycle exists but has not passed trading-usefulness review | Clearly marked shadow output alongside independent market events | Partially true |
@@ -58,6 +59,14 @@ failure must become visible before saturation. Recovery must reconcile committed
 feature revisions deterministically; silently dropping the critical handoff is
 not acceptable.
 
+The first containment boundary is deliberately fail-fast. A failed consumer
+closes its handoff immediately, retains its failed revision, and rejects the next
+derived-feature handoff instead of accumulating an invisible multi-hour queue.
+Raw persistence remains independent. Continuing derived-feature persistence
+through a dead consumer requires a separately reviewed durable catch-up policy
+because Markeitech has not yet defined whether missed historical setups should
+be reconstructed, suppressed, or reported only as explicit gaps.
+
 Exit conditions:
 
 - focused and full deterministic suites pass
@@ -66,7 +75,40 @@ Exit conditions:
 - committed revision continuity is preserved across restart
 - a short live run shows advancing signal, feature, and context-event sequences
 
-## Slice 2: Market Interaction Lifecycle
+## Slice 2: Auction Pressure Evidence
+
+Build canonical active-instrument pressure evidence before using flow as signal
+confirmation or level-interaction interpretation.
+
+Initial evidence:
+
+- classified buy and sell volume, unknown volume, delta, and delta ratio
+- explicitly product-session-anchored CVD with versioned reset policy
+- classified coverage, quote availability, observed gaps, and damaged-window
+  fidelity carried on every cumulative result
+- deterministic price progress and response over the same bounded windows
+
+Initial delta-versus-price-action events:
+
+- initiative confirmation
+- strong price progress with weak supporting delta
+- strong aggressive delta with weak price response
+- opposing flow and absorption candidates
+- price/flow divergence
+- pressure acceleration, deceleration, persistence, and exhaustion
+
+Unknown or damaged windows degrade or break cumulative evidence; they are never
+silently bridged. Background OHLCV may later expose an explicitly named impulse
+proxy, but it cannot claim delta, CVD, large-trade, or trapped-participant truth.
+
+Exit conditions:
+
+- deterministic reset, coverage, gap, and restart behavior
+- exact source and inferred-classification fidelity retained
+- comparison fixtures prove delta and price use identical windows
+- short live evidence agrees with accountable classified-volume totals
+
+## Slice 3: Market Interaction Lifecycle
 
 Create a setup-independent `LevelInteraction` model over durably committed
 market context.
@@ -105,7 +147,7 @@ Exit conditions:
 - restart restoration without historical notification replay
 - active and background parity where evidence supports the same semantics
 
-## Slice 3: Operator Relevance
+## Slice 4: Operator Relevance
 
 Apply a transport-neutral policy after canonical events exist. It may select,
 prioritize, deduplicate, cool down, or suppress notifications, but it cannot
@@ -123,7 +165,7 @@ Initial controls:
 Exit condition: a representative fixture produces a concise useful event stream
 without losing the canonical underlying events.
 
-## Slice 4: Discord Projection And Delivery
+## Slice 5: Discord Projection And Delivery
 
 A lightweight Discord projection actor subscribes to typed Nautilus bus events,
 formats bounded operator messages, and creates durable notification intents. It
@@ -148,7 +190,7 @@ Initial routes:
 
 Ordinary heartbeats do not belong in Discord.
 
-## Slice 5: Acceptance
+## Slice 6: Acceptance
 
 Deterministic acceptance covers saturation, retry, restart with pending intents,
 duplicate publication, rate limiting, server failure, timeout, malformed
@@ -182,11 +224,12 @@ data.
 | --- | --- | ---: | ---: | ---: | --- | --- |
 | Plan established | Low | 1,062 | Pending | Pending | Branch and measurable delivery plan | In progress |
 | Slice 1A: lifecycle defect | Medium | 1,062 | Pending | Pending | Repair plus adverse-exit, Direction-exit, and restart regressions; 18 signal-runtime tests pass | In review |
-| Slice 1B: containment and health | Medium | Pending | Pending | Pending | Pending | Pending |
-| Slice 2: market interactions | Medium-High | Pending | Pending | Pending | Pending | Pending |
-| Slice 3: relevance policy | Low-Medium | Pending | Pending | Pending | Pending | Pending |
-| Slice 4: Discord vertical slice | Medium-High | Pending | Pending | Pending | Pending | Pending |
-| Slice 5: acceptance | Medium | Pending | Pending | Pending | Pending | Pending |
+| Slice 1B: containment and health | Medium | 944 | Pending | Pending | Immediate handoff closure plus queue capacity, high-water, rejection, and closed-state health; 36 focused tests pass | In review |
+| Slice 2: auction pressure | Medium-High | Pending | Pending | Pending | Pending | Pending |
+| Slice 3: market interactions | Medium-High | Pending | Pending | Pending | Pending | Pending |
+| Slice 4: relevance policy | Low-Medium | Pending | Pending | Pending | Pending | Pending |
+| Slice 5: Discord vertical slice | Medium-High | Pending | Pending | Pending | Pending | Pending |
+| Slice 6: acceptance | Medium | Pending | Pending | Pending | Pending | Pending |
 
 Stop feature work around 300-350 remaining credits unless Markeitect explicitly
 changes the reserve. Stop at every coherent review boundary; do not leave

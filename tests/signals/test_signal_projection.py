@@ -30,6 +30,10 @@ def runtime_projection(
         open_signal_count=1,
         projection_rejected_count=0,
         projection_callback_error_count=0,
+        handoff_capacity=16,
+        handoff_pending_count=3,
+        handoff_high_watermark=4,
+        handoff_rejected_count=1,
     )
 
 
@@ -45,6 +49,8 @@ def test_runtime_projection_is_human_readable_and_machine_stable() -> None:
         "| stale=6 | evaluations=4 | writes=2 | open=1 "
         "| confirmations=0 | triggered=0 | expired=0 | observations=0 "
         "| retained=0 | observation_conflicts=0 "
+        "| handoff=3/16 | handoff_high_water=4 | handoff_rejected=1 "
+        "| handoff_closed=0 "
         "| projection_rejected=0 | projection_errors=0"
     )
 

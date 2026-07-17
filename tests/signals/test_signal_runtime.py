@@ -699,15 +699,36 @@ def test_runtime_fails_closed_and_requeues_unprocessed_revision() -> None:
     assert resolver.entered.wait(1)
     assert runtime.stop(1)
 
-    assert runtime.snapshot.status == LiveSignalRuntimeStatus.FAILED
-    assert runtime.snapshot.last_error == "RuntimeError: calendar unavailable"
-    assert runtime.snapshot.failure_phase == "feature_revision"
-    assert runtime.snapshot.failure_input_identity is not None
-    assert "commit_sequence=4" in runtime.snapshot.failure_input_identity
-    assert runtime.snapshot.last_successful_commit_sequence == 3
-    assert runtime.snapshot.last_traceback is not None
-    assert "calendar unavailable" in runtime.snapshot.last_traceback
+    snapshot = runtime.snapshot
+    assert snapshot.status == LiveSignalRuntimeStatus.FAILED
+    assert snapshot.last_error == "RuntimeError: calendar unavailable"
+    assert snapshot.failure_phase == "feature_revision"
+    assert snapshot.failure_input_identity is not None
+    assert "commit_sequence=4" in snapshot.failure_input_identity
+    assert snapshot.last_successful_commit_sequence == 3
+    assert snapshot.last_traceback is not None
+    assert "calendar unavailable" in snapshot.last_traceback
+    assert snapshot.handoff_capacity == 16
+    assert snapshot.handoff_pending_count == 1
+    assert snapshot.handoff_high_watermark == 4
+    assert snapshot.handoff_rejected_count == 0
+    assert snapshot.handoff_is_closed
     assert handoff.snapshot.pending_count == 1
+    assert not handoff.offer(
+        (
+            CommittedFeatureRevision(
+                feature(
+                    "NQU6.CME",
+                    AnalyticsTimeframe.ONE_MINUTE,
+                    STARTED + timedelta(minutes=2),
+                    revision="5",
+                ),
+                STARTED,
+                5,
+            ),
+        )
+    )
+    assert handoff.snapshot.rejected_count == 1
     failed = [
         projection
         for projection in projections
@@ -717,6 +738,9 @@ def test_runtime_fails_closed_and_requeues_unprocessed_revision() -> None:
     assert len(failed) == 1
     assert failed[0].last_error == "RuntimeError: calendar unavailable"
     assert failed[0].failure_phase == "feature_revision"
+    assert failed[0].handoff_pending_count == 1
+    assert failed[0].handoff_high_watermark == 4
+    assert failed[0].handoff_is_closed
 
 
 def test_runtime_projects_lifecycle_only_after_durable_write() -> None:

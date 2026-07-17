@@ -307,12 +307,17 @@ def test_handoff_admits_batches_atomically_and_reports_saturation() -> None:
     handoff = BoundedFeatureCommitHandoff(capacity=1)
 
     assert handoff.publish(revisions) == FeatureHandoffStatus.QUEUE_FULL
+    assert handoff.snapshot.capacity == 1
     assert handoff.snapshot.pending_count == 0
+    assert handoff.snapshot.high_watermark == 0
     assert handoff.snapshot.rejected_count == 2
     assert handoff.publish(revisions[:1]) == FeatureHandoffStatus.ACCEPTED
+    assert handoff.snapshot.high_watermark == 1
     assert handoff.drain(1) == revisions[:1]
     handoff.close()
     assert handoff.publish(revisions[:1]) == FeatureHandoffStatus.CLOSED
+    assert handoff.snapshot.is_closed
+    assert handoff.snapshot.rejected_count == 3
 
 
 def test_writer_fails_closed_when_committed_batch_cannot_be_handed_off() -> None:
@@ -344,6 +349,41 @@ def test_writer_fails_closed_when_committed_batch_cannot_be_handed_off() -> None
     assert snapshot.committed_count == 1
     assert snapshot.handed_off_count == 0
     assert snapshot.last_error == "RuntimeError: feature commit handoff rejected batch"
+
+
+def test_writer_fails_immediately_when_critical_handoff_is_closed() -> None:
+    value = feature()
+    revision = CommittedFeatureRevision(value, AS_OF, 1)
+
+    class CommittedCoordinator:
+        def persist(
+            self,
+            features: tuple[MarketContextFeatureSnapshot, ...],
+        ) -> FeaturePersistenceResult:
+            return FeaturePersistenceResult(1, 0, (revision,))
+
+    handoff = BoundedFeatureCommitHandoff(capacity=8)
+    handoff.close()
+    writer = BoundedFeatureWriter(
+        CommittedCoordinator(),  # type: ignore[arg-type]
+        queue_size=8,
+        batch_size=1,
+        poll_seconds=0.01,
+        commit_sink=handoff.offer,
+    )
+
+    writer.start()
+    assert writer.submit(value) == FeatureSubmissionStatus.ACCEPTED
+    assert not writer.flush(1)
+
+    snapshot = writer.snapshot
+    assert snapshot.status == FeatureWriterStatus.FAILED
+    assert snapshot.pending_count == 1
+    assert snapshot.committed_count == 1
+    assert snapshot.handed_off_count == 0
+    assert snapshot.last_error == "RuntimeError: feature commit handoff rejected batch"
+    assert handoff.snapshot.pending_count == 0
+    assert handoff.snapshot.rejected_count == 1
 
 
 def test_committed_state_composes_latest_point_in_time_revision() -> None:

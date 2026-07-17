@@ -159,6 +159,11 @@ class LiveSignalRuntimeSnapshot:
     observation_accepted_bar_count: int
     observation_retained_bar_count: int
     observation_conflicting_retry_count: int
+    handoff_capacity: int
+    handoff_pending_count: int
+    handoff_high_watermark: int
+    handoff_rejected_count: int
+    handoff_is_closed: bool
     last_event: SignalEvaluationEvent | None
     last_error: str | None
     failure_phase: str | None
@@ -245,6 +250,7 @@ class LiveSignalRuntime:
     @property
     def snapshot(self) -> LiveSignalRuntimeSnapshot:
         with self._condition:
+            handoff = self._handoff.snapshot
             observation = (
                 None if self._observation_store is None else self._observation_store.snapshot
             )
@@ -271,6 +277,11 @@ class LiveSignalRuntime:
                 observation_conflicting_retry_count=(
                     0 if observation is None else observation.conflicting_retry_count
                 ),
+                handoff_capacity=handoff.capacity,
+                handoff_pending_count=handoff.pending_count,
+                handoff_high_watermark=handoff.high_watermark,
+                handoff_rejected_count=handoff.rejected_count,
+                handoff_is_closed=handoff.is_closed,
                 last_event=self._last_event,
                 last_error=self._last_error,
                 failure_phase=self._failure_phase,
@@ -441,6 +452,7 @@ class LiveSignalRuntime:
             self._failure_input_identity = input_identity
             self._last_traceback = format_exc()
             self._condition.notify_all()
+        self._handoff.close()
 
     def _process_revision(self, revision: CommittedFeatureRevision) -> None:
         changed = self._feature_state.apply(revision)
@@ -905,6 +917,11 @@ class LiveSignalRuntime:
                 observation_accepted_bar_count=snapshot.observation_accepted_bar_count,
                 observation_retained_bar_count=snapshot.observation_retained_bar_count,
                 observation_conflicting_retry_count=(snapshot.observation_conflicting_retry_count),
+                handoff_capacity=snapshot.handoff_capacity,
+                handoff_pending_count=snapshot.handoff_pending_count,
+                handoff_high_watermark=snapshot.handoff_high_watermark,
+                handoff_rejected_count=snapshot.handoff_rejected_count,
+                handoff_is_closed=snapshot.handoff_is_closed,
                 last_error=snapshot.last_error,
                 failure_phase=snapshot.failure_phase,
                 failure_input_identity=snapshot.failure_input_identity,
