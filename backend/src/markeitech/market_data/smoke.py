@@ -73,8 +73,10 @@ def run_smoke_with_factory(
 
     node = _build_node(runtime_config, node_factory=node_factory)
     result = start_live_node(runtime_config, node, confirmation=confirmation)
+    shutdown = _observe_shutdown(node)
     return {
-        "status": "started",
+        "status": "stopped" if shutdown["verified_graceful"] else "shutdown_unverified",
+        "shutdown": shutdown,
         "result": result,
         "plan": summary,
     }
@@ -84,3 +86,46 @@ def _build_node(runtime_config: Any, *, node_factory: Any | None) -> LiveNodeLik
     if node_factory is None:
         return build_prepared_market_data_live_node(runtime_config)
     return build_prepared_market_data_live_node(runtime_config, node_factory=node_factory)
+
+
+def _observe_shutdown(node: LiveNodeLike) -> dict[str, Any]:
+    node_running = _optional_bool_call(node, "is_running")
+    trader = getattr(node, "trader", None)
+    trader_stopped = _optional_bool_call(trader, "is_stopped")
+    persistence_status = _component_status(getattr(node, "persistence", None))
+    signal_runtime_status = _component_status(getattr(node, "signal_runtime", None))
+    managed_components_stopped = all(
+        status in {None, "stopped"}
+        for status in (persistence_status, signal_runtime_status)
+    )
+    verified_graceful = (
+        node_running is False
+        and trader_stopped is True
+        and managed_components_stopped
+    )
+    return {
+        "verified_graceful": verified_graceful,
+        "node_running": node_running,
+        "trader_stopped": trader_stopped,
+        "persistence_status": persistence_status,
+        "signal_runtime_status": signal_runtime_status,
+    }
+
+
+def _optional_bool_call(target: Any, name: str) -> bool | None:
+    method = getattr(target, name, None)
+    if not callable(method):
+        return None
+    value = method()
+    return value if isinstance(value, bool) else None
+
+
+def _component_status(component: Any) -> str | None:
+    if component is None:
+        return None
+    snapshot = getattr(component, "snapshot", None)
+    status = getattr(snapshot, "status", None) if snapshot is not None else None
+    if status is None:
+        status = getattr(component, "status", None)
+    value = getattr(status, "value", status)
+    return value if isinstance(value, str) else None

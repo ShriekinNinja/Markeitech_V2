@@ -10,6 +10,8 @@ class FakeNode:
     def __init__(self, *, config: Any) -> None:
         self.config = config
         self.started = False
+        self.running = False
+        self.stopped = False
         self.built = False
         self.trader = self
         self.actors: list[Any] = []
@@ -25,7 +27,23 @@ class FakeNode:
 
     def run(self) -> str:
         self.started = True
+        self.running = False
+        self.stopped = True
         return "fake-started"
+
+    def is_running(self) -> bool:
+        return self.running
+
+    def is_stopped(self) -> bool:
+        return self.stopped
+
+
+class UnverifiedShutdownNode(FakeNode):
+    def run(self) -> str:
+        self.started = True
+        self.running = True
+        self.stopped = False
+        return "fake-returned-without-stop"
 
 
 def write_config(
@@ -106,7 +124,7 @@ def test_smoke_refuses_without_confirmation(tmp_path: Path) -> None:
     assert result["plan"]["bootstrap"]["will_start_node"] is True
 
 
-def test_smoke_starts_fake_node_only_with_confirmation(tmp_path: Path) -> None:
+def test_smoke_reports_stopped_after_node_returns_with_confirmation(tmp_path: Path) -> None:
     config_path = tmp_path / "market-data.toml"
     write_config(config_path, run_live_node=True, manual_live_node_start=True)
 
@@ -116,6 +134,31 @@ def test_smoke_starts_fake_node_only_with_confirmation(tmp_path: Path) -> None:
         node_factory=FakeNode,
     )
 
-    assert result["status"] == "started"
+    assert result["status"] == "stopped"
+    assert result["shutdown"] == {
+        "verified_graceful": True,
+        "node_running": False,
+        "trader_stopped": True,
+        "persistence_status": None,
+        "signal_runtime_status": None,
+    }
     assert result["result"] == "fake-started"
     assert result["plan"]["execution_clients"] == []
+
+
+def test_smoke_does_not_claim_graceful_shutdown_without_stopped_state(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "market-data.toml"
+    write_config(config_path, run_live_node=True, manual_live_node_start=True)
+
+    result = run_smoke_with_factory(
+        config_path,
+        confirmation=LIVE_NODE_START_CONFIRMATION,
+        node_factory=UnverifiedShutdownNode,
+    )
+
+    assert result["status"] == "shutdown_unverified"
+    assert result["shutdown"]["verified_graceful"] is False
+    assert result["shutdown"]["node_running"] is True
+    assert result["shutdown"]["trader_stopped"] is False
