@@ -190,25 +190,253 @@ role = "background"
 data_mode = "live_1m_bars"
 analysis_profile = "background_bar"
 enabled = true
-priority = 50
+priority = 30
 
 [instruments.contract]
-root_symbol = "SPX"
-exchange = "CBOE"
-instrument_id = "^SPX.CBOE"
-security_type = "IND"
-ib_symbol = "SPX"
-ib_exchange = "CBOE"
-ib_security_type = "IND"
+root_symbol = "QQQ"
+exchange = "NASDAQ"
+instrument_id = "QQQ.NASDAQ"
+security_type = "ETF"
+ib_symbol = "QQQ"
+ib_exchange = "NASDAQ"
+ib_security_type = "ETF"
+currency = "USD"
 session_timezone = "America/New_York"
 calendar_id = "NYSE"
-session_profile = "regular"
+session_profile = "full"
 
 [instruments.warmup]
 lookback_sessions = 5
-timeframes = ["1m", "5m", "15m", "30m", "1d"]
+timeframes = ["1m", "5m", "15m", "30m", "1h", "1d"]
+lookback_sessions_by_timeframe = { "1m" = 5, "5m" = 10, "15m" = 20, "30m" = 5, "1h" = 60, "1d" = 260 }
 annotate_support_resistance = true
 annotate_emas = true
 annotate_trend = true
 annotate_vwap = true
 annotate_fvgs = true
+volume_profile_bin_size = 0.05
+volume_profile_composite_sessions = [2, 5]
+
+[[instruments]]
+role = "background"
+data_mode = "live_1m_bars"
+analysis_profile = "background_bar"
+enabled = true
+priority = 40
+
+[instruments.contract]
+root_symbol = "SPY"
+exchange = "ARCA"
+instrument_id = "SPY.ARCA"
+security_type = "ETF"
+ib_symbol = "SPY"
+ib_exchange = "ARCA"
+ib_security_type = "ETF"
+currency = "USD"
+session_timezone = "America/New_York"
+calendar_id = "NYSE"
+session_profile = "full"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m", "1h", "1d"]
+lookback_sessions_by_timeframe = { "1m" = 5, "5m" = 10, "15m" = 20, "30m" = 5, "1h" = 60, "1d" = 260 }
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+volume_profile_bin_size = 0.05
+volume_profile_composite_sessions = [2, 5]
+
+[[instruments]]
+role = "background"
+data_mode = "live_1m_bars"
+analysis_profile = "background_bar"
+enabled = true
+priority = 50
+
+[instruments.contract]
+root_symbol = "XLK"
+exchange = "ARCA"
+instrument_id = "XLK.ARCA"
+security_type = "ETF"
+ib_symbol = "XLK"
+ib_exchange = "ARCA"
+ib_security_type = "ETF"
+currency = "USD"
+session_timezone = "America/New_York"
+calendar_id = "NYSE"
+session_profile = "full"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m", "1h", "1d"]
+lookback_sessions_by_timeframe = { "1m" = 5, "5m" = 10, "15m" = 20, "30m" = 5, "1h" = 60, "1d" = 260 }
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+volume_profile_bin_size = 0.05
+volume_profile_composite_sessions = [2, 5]
+
+[[instruments]]
+role = "background"
+data_mode = "live_1m_bars"
+analysis_profile = "background_bar"
+enabled = true
+priority = 60
+
+[instruments.contract]
+root_symbol = "XLF"
+exchange = "ARCA"
+instrument_id = "XLF.ARCA"
+security_type = "ETF"
+ib_symbol = "XLF"
+ib_exchange = "ARCA"
+ib_security_type = "ETF"
+currency = "USD"
+session_timezone = "America/New_York"
+calendar_id = "NYSE"
+session_profile = "full"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m", "1h", "1d"]
+lookback_sessions_by_timeframe = { "1m" = 5, "5m" = 10, "15m" = 20, "30m" = 5, "1h" = 60, "1d" = 260 }
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+volume_profile_bin_size = 0.05
+volume_profile_composite_sessions = [2, 5]
+
+[[instruments]]
+role = "background"
+data_mode = "live_1m_bars"
+analysis_profile = "background_bar"
+enabled = true
+priority = 70
+
+[instruments.contract]
+root_symbol = "IWM"
+exchange = "ARCA"
+instrument_id = "IWM.ARCA"
+security_type = "ETF"
+ib_symbol = "IWM"
+ib_exchange = "ARCA"
+ib_security_type = "ETF"
+currency = "USD"
+session_timezone = "America/New_York"
+calendar_id = "NYSE"
+session_profile = "full"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m", "1h", "1d"]
+lookback_sessions_by_timeframe = { "1m" = 5, "5m" = 10, "15m" = 20, "30m" = 5, "1h" = 60, "1d" = 260 }
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+volume_profile_bin_size = 0.05
+volume_profile_composite_sessions = [2, 5]
+
+[[instruments]]
+role = "background"
+data_mode = "live_1m_bars"
+analysis_profile = "background_bar"
+enabled = true
+priority = 80
+
+[instruments.contract]
+root_symbol = "SOXL"
+exchange = "ARCA"
+instrument_id = "SOXL.ARCA"
+security_type = "ETF"
+ib_symbol = "SOXL"
+ib_exchange = "ARCA"
+ib_security_type = "ETF"
+currency = "USD"
+session_timezone = "America/New_York"
+calendar_id = "NYSE"
+session_profile = "full"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m", "1h", "1d"]
+lookback_sessions_by_timeframe = { "1m" = 5, "5m" = 10, "15m" = 20, "30m" = 5, "1h" = 60, "1d" = 260 }
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+volume_profile_bin_size = 0.05
+volume_profile_composite_sessions = [2, 5]
+
+[[instruments]]
+role = "background"
+data_mode = "live_1m_bars"
+analysis_profile = "background_bar"
+enabled = true
+priority = 90
+
+[instruments.contract]
+root_symbol = "IGV"
+exchange = "BATS"
+instrument_id = "IGV.BATS"
+security_type = "ETF"
+ib_symbol = "IGV"
+ib_exchange = "BATS"
+ib_security_type = "ETF"
+currency = "USD"
+session_timezone = "America/New_York"
+calendar_id = "NYSE"
+session_profile = "full"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m", "1h", "1d"]
+lookback_sessions_by_timeframe = { "1m" = 5, "5m" = 10, "15m" = 20, "30m" = 5, "1h" = 60, "1d" = 260 }
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+volume_profile_bin_size = 0.05
+volume_profile_composite_sessions = [2, 5]
+
+[[instruments]]
+role = "background"
+data_mode = "live_1m_bars"
+analysis_profile = "background_bar"
+enabled = true
+priority = 100
+
+[instruments.contract]
+root_symbol = "MAGS"
+exchange = "BATS"
+instrument_id = "MAGS.BATS"
+security_type = "ETF"
+ib_symbol = "MAGS"
+ib_exchange = "BATS"
+ib_security_type = "ETF"
+currency = "USD"
+session_timezone = "America/New_York"
+calendar_id = "NYSE"
+session_profile = "full"
+
+[instruments.warmup]
+lookback_sessions = 5
+timeframes = ["1m", "5m", "15m", "30m", "1h", "1d"]
+lookback_sessions_by_timeframe = { "1m" = 5, "5m" = 10, "15m" = 20, "30m" = 5, "1h" = 60, "1d" = 260 }
+annotate_support_resistance = true
+annotate_emas = true
+annotate_trend = true
+annotate_vwap = true
+annotate_fvgs = true
+volume_profile_bin_size = 0.05
+volume_profile_composite_sessions = [2, 5]

@@ -282,7 +282,7 @@ def test_loads_checked_in_example_config() -> None:
     config = load_market_data_runtime_config(Path("config/market-data.example.toml"))
 
     assert config.instrument_registry.active_instrument_id == "NQU6.CME"
-    assert len(config.instrument_registry.instruments) == 3
+    assert len(config.instrument_registry.instruments) == 10
     assert config.persistence is not None
 
 
@@ -303,7 +303,7 @@ def test_cli_plan_summary_for_checked_in_example() -> None:
         "data_client_name": "IB",
         "persistence_enabled": True,
     }
-    assert len(summary["planned_warmups"]) == 3
+    assert len(summary["planned_warmups"]) == 10
     assert {"instrument_id": "NQU6.CME", "kind": "tick_last", "source": "nautilus_ib"} in summary[
         "planned_subscriptions"
     ]

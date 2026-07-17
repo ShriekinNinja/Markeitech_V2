@@ -17,6 +17,7 @@ Observations captured during live trading and carried into development review.
   resistance-at-VAH semantics; define confirmation and invalidation explicitly
   before enabling it.
 
+#### July 15, 2026
 - The main system ran remarkably well. the analytics as well. generally speaking the system works fantastic. it capable of helping me trading fs but its too focused on Valentini's signal imho
 - Fabio Valentini's singal needs calibration and or pivot. signals were far from helpful. distracting even. ML is guess. suggestions are wellcome
 - looking at the rendered chart, too many fvg's and a lot of them overlapping. we need to render a chart with the analytics and review them all.
@@ -29,3 +30,6 @@ Observations captured during live trading and carried into development review.
   - selling / buying pressure increas/decres etc.
   - breaking/following/reaching trends from multiframes
   - etc..
+
+#### July 16, 2026
+- Run it steady, trust the evidence, and stay humble. Rock & Roll
