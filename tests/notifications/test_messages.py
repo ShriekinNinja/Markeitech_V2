@@ -11,6 +11,10 @@ from markeitech.analytics import (
     TrendState,
     VwapPosition,
 )
+from markeitech.auction_pressure import (
+    BarPressureDirection,
+    BarPressureProxySnapshot,
+)
 from markeitech.notifications import (
     ApproachingLocationNotifier,
     LocationNarrativeNotifier,
@@ -132,6 +136,59 @@ def test_market_context_routes_the_instrument_from_operator_lines() -> None:
         "Fair value gaps",
     ]
     assert embed["fields"][0]["value"] == "**Strong bullish alignment**\nScore: +2 of 2"
+
+
+def test_market_context_exposes_reported_bar_pressure_without_claiming_delta() -> None:
+    snapshot = MarketContextSnapshot(
+        instrument_id="ESU6.CME",
+        timeframe=AnalyticsTimeframe.ONE_MINUTE,
+        as_of=NOW,
+        source="ib",
+        input_fidelity=AnalyticsInputFidelity.REPORTED,
+        bar_count=251,
+        close=Decimal("7517.50"),
+        atr_14=Decimal("10"),
+        session_open=Decimal("7491.25"),
+        session_high=Decimal("7575"),
+        session_low=Decimal("7491.25"),
+        session_range_position=Decimal("0.31"),
+        vwap_position=VwapPosition.BELOW,
+        trend=TrendState.BEARISH,
+        trend_reason_codes=("test",),
+        direction_score=-1,
+    )
+    proxy = BarPressureProxySnapshot(
+        instrument_id="ESU6.CME",
+        start_ts=NOW - timedelta(minutes=3),
+        end_ts=NOW,
+        as_of=NOW,
+        direction=BarPressureDirection.DOWNWARD,
+        window_bars=3,
+        up_bar_count=1,
+        down_bar_count=2,
+        flat_bar_count=0,
+        price_change=Decimal("-4.25"),
+        atr_fraction=Decimal("-0.425"),
+        close_location=Decimal("0.2"),
+        total_volume=Decimal("600"),
+        pace_ratio=Decimal("1.25"),
+    )
+
+    record = build_market_context_notifications(
+        (snapshot,),
+        phase="live",
+        active_instrument_id="NQU6.CME",
+        pressure=None,
+        bar_pressure={"ESU6.CME": proxy},
+        occurred_ts=NOW,
+    )[0]
+
+    field = record.payload["embeds"][0]["fields"][-1]
+    assert field["name"] == "1m Bar Pressure Proxy"
+    assert "Downward price pressure" in field["value"]
+    assert "-0.42 ATR" in field["value"]
+    assert "1.25x baseline" in field["value"]
+    assert "Not bid/ask delta" in field["value"]
 
 
 @pytest.mark.parametrize(

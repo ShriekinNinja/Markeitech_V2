@@ -17,7 +17,10 @@ from markeitech.analytics import (
     MarketContextCalculationConfig,
     MarketContextEngine,
 )
-from markeitech.auction_pressure import SessionAuctionPressureAccumulator
+from markeitech.auction_pressure import (
+    SessionAuctionPressureAccumulator,
+    build_bar_pressure_proxy,
+)
 from markeitech.domain.base import VersionedDomainModel
 from markeitech.market_data.actions import build_livenode_action_plan
 from markeitech.market_data.actor import MarkeitechMarketDataActor
@@ -386,11 +389,38 @@ def build_prepared_market_data_live_node(
     ) -> None:
         if persistence is None or not config.discord.enabled:
             return
+        bar_pressure = {}
+        if signal_observations is not None:
+            for instrument_id in {snapshot.instrument_id for snapshot in snapshots}:
+                one_minute = next(
+                    (
+                        snapshot
+                        for snapshot in snapshots
+                        if snapshot.instrument_id == instrument_id
+                        and snapshot.timeframe == AnalyticsTimeframe.ONE_MINUTE
+                    ),
+                    None,
+                )
+                if one_minute is None:
+                    continue
+                proxy = build_bar_pressure_proxy(
+                    instrument_id,
+                    signal_observations.bars(
+                        instrument_id,
+                        "ib",
+                        through_ts=one_minute.as_of,
+                    ),
+                    as_of=one_minute.as_of,
+                    atr=one_minute.atr_14,
+                )
+                if proxy is not None:
+                    bar_pressure[instrument_id] = proxy
         for notification in build_market_context_notifications(
             snapshots,
             phase=phase,
             active_instrument_id=active_instrument_id,
             pressure=pressure,
+            bar_pressure=bar_pressure,
         ):
             persistence.metadata.enqueue(notification)
 

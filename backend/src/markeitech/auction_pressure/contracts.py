@@ -15,6 +15,48 @@ class AuctionPressureFidelity(StrEnum):
     UNAVAILABLE = "unavailable"
 
 
+class BarPressureDirection(StrEnum):
+    UPWARD = "upward"
+    DOWNWARD = "downward"
+    MIXED = "mixed"
+
+
+class BarPressureProxySnapshot(VersionedDomainModel):
+    instrument_id: str = Field(min_length=1)
+    start_ts: datetime
+    end_ts: datetime
+    as_of: datetime
+    source: str = Field(default="ib", min_length=1)
+    fidelity: AuctionPressureFidelity = AuctionPressureFidelity.PARTIAL
+    direction: BarPressureDirection
+    window_bars: int = Field(ge=1)
+    up_bar_count: int = Field(ge=0)
+    down_bar_count: int = Field(ge=0)
+    flat_bar_count: int = Field(ge=0)
+    price_change: Decimal
+    atr_fraction: Decimal | None = None
+    close_location: Decimal = Field(ge=0, le=1)
+    total_volume: Decimal = Field(ge=0)
+    pace_ratio: Decimal | None = Field(default=None, gt=0)
+
+    @field_validator("start_ts", "end_ts", "as_of")
+    @classmethod
+    def _bar_pressure_timestamps_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+    @model_validator(mode="after")
+    def _bar_pressure_counts_must_be_consistent(self) -> BarPressureProxySnapshot:
+        if self.end_ts <= self.start_ts:
+            raise ValueError("bar-pressure end must follow start")
+        if self.end_ts > self.as_of:
+            raise ValueError("bar-pressure window cannot end after as-of")
+        if self.up_bar_count + self.down_bar_count + self.flat_bar_count != self.window_bars:
+            raise ValueError("bar-pressure counts must equal window bars")
+        if self.source != "ib" or self.fidelity != AuctionPressureFidelity.PARTIAL:
+            raise ValueError("bar-pressure proxy must remain partial reported IB evidence")
+        return self
+
+
 class SessionAuctionPressureSnapshot(VersionedDomainModel):
     instrument_id: str = Field(min_length=1)
     session_start: datetime

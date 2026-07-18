@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import hashlib
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import NAMESPACE_URL, uuid5
 
 from markeitech.analytics import AnalyticsTimeframe, MarketContextSnapshot
-from markeitech.auction_pressure import SessionAuctionPressureSnapshot
+from markeitech.auction_pressure import (
+    BarPressureProxySnapshot,
+    SessionAuctionPressureSnapshot,
+)
 from markeitech.persistence import NotificationOutboxRecord
 from markeitech.signals import (
     LocationEpisodeEventType,
@@ -66,6 +69,7 @@ def build_market_context_notifications(
     phase: str,
     active_instrument_id: str,
     pressure: SessionAuctionPressureSnapshot | None,
+    bar_pressure: Mapping[str, BarPressureProxySnapshot] | None = None,
     occurred_ts: datetime | None = None,
 ) -> tuple[NotificationOutboxRecord, ...]:
     now = datetime.now(UTC) if occurred_ts is None else occurred_ts
@@ -107,6 +111,15 @@ def build_market_context_notifications(
                 {
                     "name": "Order flow",
                     "value": _order_flow(pressure),
+                    "inline": False,
+                }
+            )
+        proxy = None if bar_pressure is None else bar_pressure.get(instrument)
+        if proxy is not None:
+            fields.append(
+                {
+                    "name": "1m Bar Pressure Proxy",
+                    "value": _bar_pressure(proxy),
                     "inline": False,
                 }
             )
@@ -496,6 +509,28 @@ def _order_flow(pressure: SessionAuctionPressureSnapshot) -> str:
         f"Buy volume: {pressure.buy_volume:,.0f}  •  Sell volume: {pressure.sell_volume:,.0f}\n"
         f"Classification coverage: {pressure.classified_volume_ratio:.1%}  •  "
         f"Fidelity: {pressure.fidelity.value.title()}"
+    )
+
+
+def _bar_pressure(pressure: BarPressureProxySnapshot) -> str:
+    atr_move = (
+        "ATR unavailable"
+        if pressure.atr_fraction is None
+        else f"{pressure.atr_fraction:+.2f} ATR"
+    )
+    pace = (
+        "Building 10-bar baseline"
+        if pressure.pace_ratio is None
+        else f"{pressure.pace_ratio:.2f}x baseline"
+    )
+    return (
+        f"**{pressure.direction.value.title()} price pressure** over "
+        f"{pressure.window_bars} completed bars\n"
+        f"Net move: {pressure.price_change:+,.2f}  •  {atr_move}\n"
+        f"Candles: {pressure.up_bar_count} up / {pressure.down_bar_count} down / "
+        f"{pressure.flat_bar_count} flat  •  Close: {pressure.close_location:.0%} of range\n"
+        f"Volume pace: {pace}\n"
+        "*Partial • Reported OHLCV • Not bid/ask delta*"
     )
 
 
