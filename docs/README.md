@@ -52,6 +52,7 @@ for investigation and context, but it does not reopen old stage gates.
 - [Operator context log guide](operations/operator-context-logs.md)
 - [Operator signal log guide](operations/operator-signal-logs.md)
 - [Persistence maintenance](operations/persistence-maintenance.md)
+- [Reference set enrichment](operations/reference-set-enrichment.md)
 - [Signal outcome audit](operations/signal-outcome-audit.md)
 
 ## Notes And Archive

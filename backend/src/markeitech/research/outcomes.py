@@ -101,6 +101,36 @@ class SignalOutcomeHorizon(VersionedDomainModel):
         return self
 
 
+class ForwardPriceResponse(VersionedDomainModel):
+    instrument_id: str = Field(min_length=1)
+    direction: SignalDirection
+    event_ts: datetime
+    reference_price: Decimal | None = Field(default=None, gt=0)
+    reference_ts: datetime | None = None
+    reference_source: str = "ib:latest_completed_one_minute_close_at_or_before_event"
+    atr_at_event: Decimal | None = Field(default=None, gt=0)
+    horizons: tuple[SignalOutcomeHorizon, ...] = Field(min_length=1)
+    reason_codes: tuple[str, ...] = ()
+
+    @field_validator("event_ts", "reference_ts")
+    @classmethod
+    def _timestamps_must_be_utc(cls, value: datetime | None) -> datetime | None:
+        return None if value is None else require_utc(value)
+
+    @model_validator(mode="after")
+    def _reference_fields_must_coexist(self) -> ForwardPriceResponse:
+        if (self.reference_price is None) != (self.reference_ts is None):
+            raise ValueError("forward response reference price and timestamp must coexist")
+        if self.reference_ts is not None and self.reference_ts > self.event_ts:
+            raise ValueError("forward response reference cannot use future data")
+        if (
+            self.reference_price is None
+            and "event_reference_bar_unavailable" not in self.reason_codes
+        ):
+            raise ValueError("missing forward response reference requires a reason")
+        return self
+
+
 class AuditedLocation(VersionedDomainModel):
     zone_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     source_kind: str = Field(min_length=1)
@@ -190,6 +220,53 @@ class SignalOutcomeRecord(VersionedDomainModel):
 class SignalAuditHistory:
     current: SignalSnapshot
     transitions: tuple[SignalTransitionEvent, ...]
+
+
+def measure_forward_price_response(
+    instrument_id: str,
+    direction: SignalDirection,
+    event_ts: datetime,
+    bars: Sequence[OneMinuteBar],
+    *,
+    calendar: AuditSessionCalendar,
+    atr: Decimal | None = None,
+    horizons_minutes: Sequence[int] = DEFAULT_HORIZONS_MINUTES,
+) -> ForwardPriceResponse:
+    event_ts = require_utc(event_ts)
+    horizons = tuple(sorted(horizons_minutes))
+    if not horizons or any(value <= 0 for value in horizons):
+        raise ValueError("forward response horizons must be positive")
+    if len(horizons) != len(set(horizons)):
+        raise ValueError("forward response horizons must be unique")
+    bar_index = _reported_bar_index(bars)
+    session = _session_window(calendar, instrument_id, event_ts)
+    reference = _event_reference(bar_index, event_ts, session)
+    reference_price = None if reference is None else reference.close
+    reference_ts = None if reference is None else reference.close_ts
+    reasons = () if reference is not None else ("event_reference_bar_unavailable",)
+    return ForwardPriceResponse(
+        instrument_id=instrument_id,
+        direction=direction,
+        event_ts=event_ts,
+        reference_price=reference_price,
+        reference_ts=reference_ts,
+        atr_at_event=atr,
+        horizons=tuple(
+            _horizon_outcome(
+                instrument_id,
+                direction,
+                event_ts,
+                reference_price,
+                atr,
+                bar_index,
+                calendar,
+                session,
+                horizon,
+            )
+            for horizon in horizons
+        ),
+        reason_codes=reasons,
+    )
 
 
 def audit_signal_outcomes(

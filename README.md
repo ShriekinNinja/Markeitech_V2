@@ -9,16 +9,21 @@ market context, and evaluates versioned Direction and Location signal evidence.
 The system is data-only and read-only. Trading execution is intentionally not
 implemented.
 
-> **Markeitech:** No Obstacles, Only Challenges.
->
-> **Markeitect:** It's Just a Ride.
+> “When you have eliminated the impossible, whatever remains, however improbable, must be the truth.” --Sherlock Holmes
+
+>  “No Obstacles; Only Challenges; This is Just a Ride.” --Markeitect
 
 ## Project Credits
 
-- **Markeitect** - founder, trader, product owner, and system designer
+- **Markeitect** - market architect, founder, trader, product owner, and system designer
 - **Kite** - co-builder, architecture and engineering collaborator
-- **WT** - spiritual guideness
 - **ESS** - angle investor
+
+### Architects
+
+- **WT** - option flow architect
+
+
 
 ## Current State
 

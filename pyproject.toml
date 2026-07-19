@@ -26,6 +26,7 @@ markeitech-market-data-smoke = "markeitech.market_data.smoke:main"
 markeitech-market-data-acceptance = "markeitech.market_data.acceptance:main"
 markeitech-analytics-chart = "markeitech.analytics.chart_cli:main"
 markeitech-signal-audit = "markeitech.research.cli:main"
+markeitech-reference-set = "markeitech.research.reference_cli:main"
 markeitech-sqlite-compact = "markeitech.persistence.compact:main"
 
 [dependency-groups]
