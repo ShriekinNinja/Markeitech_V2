@@ -13,6 +13,22 @@ Invalidated is red, Expired is magenta, restored and heartbeat lines are cyan,
 runtime start is green, and runtime failure is red. Colors do not participate
 in durable signal identity or lifecycle decisions.
 
+## Discord Channel Semantics
+
+Discord keeps durable signal truth separate from advisory market narration:
+
+- `signal-lifecycle`, configured by `MARKEITECH_DISCORD_SIGNALS_WEBHOOK`,
+  receives only persisted Armed, Triggered, Invalidated, and Expired lifecycle
+  transitions.
+- `alert-stream`, configured by `MARKEITECH_DISCORD_ALERT_STREAM_WEBHOOK`,
+  receives proximity warnings and location narratives such as Entered, Holding,
+  Rejected, Exit Warning, Exited, and Rotated.
+
+An Alert Stream message may be valuable decision support, but it is not a
+signal transition. Moving these messages to a separate destination changes only
+their presentation route; it does not alter Location qualification, signal
+state, or durable lifecycle evidence.
+
 ## `SIGNAL_RUNTIME`
 
 `SIGNAL_RUNTIME` proves that the configured signal consumer exists even when no

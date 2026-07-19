@@ -254,7 +254,9 @@ def test_approaching_location_is_deduplicated_until_price_leaves() -> None:
     )
     notifier = ApproachingLocationNotifier()
 
-    assert notifier.observe(snapshot) is not None
+    record = notifier.observe(snapshot)
+    assert record is not None
+    assert record.destination_key == "alert-stream"
     assert notifier.observe(snapshot) is None
 
 
@@ -276,6 +278,7 @@ def test_repeated_holding_narrative_is_suppressed() -> None:
 
     record = notifier.observe(event, role="ACTIVE")
     assert record is not None
+    assert record.destination_key == "alert-stream"
     assert record.payload["embeds"][0]["title"] == (
         "Holding 5m Support — Nasdaq 100 Futures"
     )

@@ -49,6 +49,10 @@ destination_key = "signal-lifecycle"
 environment_variable = "MARKEITECH_DISCORD_SIGNALS_WEBHOOK"
 
 [[discord.routes]]
+destination_key = "alert-stream"
+environment_variable = "MARKEITECH_DISCORD_ALERT_STREAM_WEBHOOK"
+
+[[discord.routes]]
 destination_key = "market-events"
 environment_variable = "MARKEITECH_DISCORD_MARKET_EVENTS_WEBHOOK"
 

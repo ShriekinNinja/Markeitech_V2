@@ -347,21 +347,35 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
 
 
 class SQLiteMetadataStore:
-    def __init__(self, config: PersistenceConfig) -> None:
+    def __init__(self, config: PersistenceConfig, *, read_only: bool = False) -> None:
         self._config = config
         self._path = Path(config.metadata_path)
-        self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._read_only = read_only
+        if not read_only:
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+        database = (
+            f"{self._path.resolve().as_uri()}?mode=ro" if read_only else str(self._path)
+        )
         self._connection = sqlite3.connect(
-            self._path,
+            database,
             timeout=config.sqlite_busy_timeout_ms / 1_000,
             isolation_level=None,
             check_same_thread=False,
+            uri=read_only,
         )
         self._connection.row_factory = sqlite3.Row
         self._lock = Lock()
         try:
-            self._configure()
-            self._migrate()
+            if read_only:
+                self._connection.execute("PRAGMA query_only = ON")
+                if self.schema_version != LATEST_SCHEMA_VERSION:
+                    raise RuntimeError(
+                        "read-only metadata requires current schema version "
+                        f"{LATEST_SCHEMA_VERSION}, found {self.schema_version}"
+                    )
+            else:
+                self._configure()
+                self._migrate()
         except BaseException:
             self._connection.close()
             raise
@@ -380,6 +394,10 @@ class SQLiteMetadataStore:
     def schema_version(self) -> int:
         row = self._connection.execute("PRAGMA user_version").fetchone()
         return int(row[0])
+
+    @property
+    def read_only(self) -> bool:
+        return self._read_only
 
     def save_checkpoint(self, checkpoint: StreamCheckpoint) -> None:
         with self._transaction() as connection:

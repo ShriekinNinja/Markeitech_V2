@@ -40,6 +40,7 @@ accidental disagreement.
 
 - [Active implementation roadmap](roadmap/implementation-roadmap.md)
 - [Runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
+- [Trading quality evidence plan](roadmap/trading-quality-evidence-plan.md)
 - [Detailed implementation history](roadmap/implementation-history.md)
 
 The roadmap is intentionally concise. The history retains completed slice detail
@@ -51,6 +52,7 @@ for investigation and context, but it does not reopen old stage gates.
 - [Operator context log guide](operations/operator-context-logs.md)
 - [Operator signal log guide](operations/operator-signal-logs.md)
 - [Persistence maintenance](operations/persistence-maintenance.md)
+- [Signal outcome audit](operations/signal-outcome-audit.md)
 
 ## Notes And Archive
 

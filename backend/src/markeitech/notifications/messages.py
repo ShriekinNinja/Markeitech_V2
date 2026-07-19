@@ -21,7 +21,7 @@ from markeitech.signals import (
 
 SYSTEM_HEALTH_DESTINATION = "system-health"
 MARKET_EVENTS_DESTINATION = "market-events"
-SIGNAL_LIFECYCLE_DESTINATION = "signal-lifecycle"
+ALERT_STREAM_DESTINATION = "alert-stream"
 _MAX_CONTENT = 2000
 
 
@@ -204,7 +204,7 @@ def build_location_narrative_notification(
             }
         )
     return _record(
-        destination=SIGNAL_LIFECYCLE_DESTINATION,
+        destination=ALERT_STREAM_DESTINATION,
         aggregate=f"{event.definition_id}:{event.instrument_id}",
         event_type=f"location.{event.episode_event.value}",
         identity=(
@@ -265,7 +265,7 @@ class ApproachingLocationNotifier:
         self._active_keys[snapshot.instrument_id] = key
         location_name = level.kind.value.replace("_", " ").title()
         return _record(
-            destination=SIGNAL_LIFECYCLE_DESTINATION,
+            destination=ALERT_STREAM_DESTINATION,
             aggregate=snapshot.instrument_id,
             event_type="location.approaching",
             identity=f"{snapshot.instrument_id}:{key}:{snapshot.as_of.isoformat()}",

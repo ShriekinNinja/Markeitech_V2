@@ -114,6 +114,20 @@ def test_migrations_are_idempotent_and_auditable(tmp_path: Path) -> None:
         assert [item["version"] for item in row] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 
+def test_read_only_store_loads_state_and_rejects_writes(tmp_path: Path) -> None:
+    path = tmp_path / "metadata.sqlite3"
+    settings = config(path)
+    expected = checkpoint()
+    with SQLiteMetadataStore(settings) as writable:
+        writable.save_checkpoint(expected)
+
+    with SQLiteMetadataStore(settings, read_only=True) as reader:
+        assert reader.read_only is True
+        assert reader.load_checkpoint(expected.stream_key) == expected
+        with pytest.raises(sqlite3.OperationalError, match="readonly"):
+            reader.save_checkpoint(expected)
+
+
 def test_newer_unknown_schema_fails_clearly(tmp_path: Path) -> None:
     path = tmp_path / "future.sqlite3"
     connection = sqlite3.connect(path)
