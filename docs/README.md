@@ -55,6 +55,14 @@ for investigation and context, but it does not reopen old stage gates.
 - [Reference set enrichment](operations/reference-set-enrichment.md)
 - [Signal outcome audit](operations/signal-outcome-audit.md)
 
+## Research
+
+- [Trading frameworks study](research/trading-frameworks-study.md)
+
+Research documents preserve sourced ideas, hypotheses, and unresolved questions.
+They are informative and do not define product behavior until an accepted
+decision or roadmap item promotes a tested result.
+
 ## Notes And Archive
 
 - [Markeitect notes](notes/markeitect-notes.md)
