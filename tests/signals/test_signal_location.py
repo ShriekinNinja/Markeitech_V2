@@ -16,6 +16,7 @@ from markeitech.analytics import (
     VolumeProfileSnapshot,
     VwapPosition,
 )
+from markeitech.domain.market_data import OneMinuteBar
 from markeitech.signals import (
     CommittedMarketContextBundle,
     LocationPolicyConfig,
@@ -43,6 +44,8 @@ def feature(
     close: Decimal = Decimal("100"),
     atr: Decimal | None = Decimal("10"),
     structural: bool = True,
+    support_price: Decimal | None = Decimal("99"),
+    resistance_price: Decimal | None = Decimal("101"),
     fvg: bool = True,
     profile: bool = True,
     vwap: bool = True,
@@ -51,21 +54,21 @@ def feature(
     support = (
         ContextLevel(
             kind=LevelKind.SWING_SUPPORT,
-            price=Decimal("99"),
+            price=support_price,
             observed_ts=AS_OF - timedelta(minutes=30),
             touches=2,
         )
-        if structural
+        if structural and support_price is not None
         else None
     )
     resistance = (
         ContextLevel(
             kind=LevelKind.SWING_RESISTANCE,
-            price=Decimal("101"),
+            price=resistance_price,
             observed_ts=AS_OF - timedelta(minutes=30),
             touches=2,
         )
-        if structural
+        if structural and resistance_price is not None
         else None
     )
     gaps = (
@@ -147,6 +150,8 @@ def bundle(
     close: Decimal = Decimal("100"),
     atr: Decimal | None = Decimal("10"),
     structural: bool = True,
+    support_price: Decimal | None = Decimal("99"),
+    resistance_price: Decimal | None = Decimal("101"),
     fvg: bool = True,
     profile: bool = True,
     vwap: bool = True,
@@ -167,6 +172,8 @@ def bundle(
                 close=close,
                 atr=atr,
                 structural=structural,
+                support_price=support_price,
+                resistance_price=resistance_price,
                 fvg=fvg,
                 profile=profile,
                 vwap=vwap,
@@ -291,6 +298,45 @@ def test_returns_not_at_location_when_sources_exist_but_price_is_outside() -> No
 
     assert result.status == LocationQualificationStatus.NOT_AT_LOCATION
     assert result.matches == ()
+
+
+def test_completed_bar_range_can_touch_location_after_close_has_departed() -> None:
+    observed_bar = OneMinuteBar(
+        instrument_id=INSTRUMENT_ID,
+        event_ts=AS_OF,
+        ts_init=AS_OF,
+        open_ts=AS_OF - timedelta(minutes=1),
+        close_ts=AS_OF,
+        open=Decimal("99"),
+        high=Decimal("101"),
+        low=Decimal("96"),
+        close=Decimal("97"),
+        volume=Decimal("100"),
+        buy_volume=Decimal("0"),
+        sell_volume=Decimal("0"),
+        unknown_volume=Decimal("100"),
+        source="ib",
+    )
+
+    result = qualify_location(
+        bundle(
+            close=Decimal("97"),
+            fvg=False,
+            profile=False,
+            vwap=False,
+            support_price=None,
+        ),
+        intraday_context_definition(),
+        SignalDirection.SHORT,
+        session_start=SESSION_START,
+        evaluation_bar=observed_bar,
+    )
+
+    assert result.status == LocationQualificationStatus.QUALIFIED
+    assert len(result.matches) == 2
+    assert all(item.zone.zone_kind == SignalLocationZoneKind.RESISTANCE for item in result.matches)
+    assert all(item.observed_price == Decimal("101") for item in result.matches)
+    assert all(item.distance == Decimal("0") for item in result.matches)
 
 
 def test_missing_current_clock_or_all_sources_fails_closed() -> None:

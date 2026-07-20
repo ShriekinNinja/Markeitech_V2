@@ -10,6 +10,7 @@ from markeitech.analytics import (
     MarketContextFeatureSnapshot,
 )
 from markeitech.domain.base import require_utc
+from markeitech.domain.market_data import OneMinuteBar
 from markeitech.signals.config import (
     LocationSourcePolicyConfig,
     SignalDefinitionConfig,
@@ -116,6 +117,7 @@ def qualify_location(
     direction: SignalDirection,
     *,
     session_start: datetime,
+    evaluation_bar: OneMinuteBar | None = None,
 ) -> LocationQualification:
     policy = definition.location_policy
     if policy is None:
@@ -133,6 +135,15 @@ def qualify_location(
                 f"missing_current_{definition.evaluation_timeframe.value}_location_clock",
             ),
         )
+    if evaluation_bar is not None:
+        if evaluation_bar.instrument_id != bundle.instrument_id:
+            raise ValueError("location evaluation bar instrument must match bundle")
+        if evaluation_bar.close_ts != bundle.evaluation_as_of:
+            raise ValueError("location evaluation bar must close at evaluation time")
+        if evaluation_bar.close != evaluation.snapshot.close:
+            raise ValueError("location evaluation bar close must match analytical snapshot")
+        if not evaluation_bar.is_complete or evaluation_bar.is_revision:
+            raise ValueError("location evaluation requires a complete canonical bar")
 
     derivation = derive_location_zones(
         bundle,
@@ -148,7 +159,11 @@ def qualify_location(
     for zone in derivation.zones:
         source_feature = features_by_id[zone.source_feature_id]
         source_policy = policy_by_source[zone.source_kind]
-        distance = _distance_to_zone(evaluation.snapshot.close, zone)
+        distance = (
+            _distance_from_range_to_zone(evaluation_bar.low, evaluation_bar.high, zone)
+            if evaluation_bar is not None
+            else _distance_to_zone(evaluation.snapshot.close, zone)
+        )
         tolerance = _tolerance(source_feature, source_policy)
         if tolerance is None:
             if distance > 0:
@@ -163,7 +178,11 @@ def qualify_location(
                 zone=zone,
                 evaluation_feature_id=evaluation.feature_id,
                 observed_ts=bundle.evaluation_as_of,
-                observed_price=evaluation.snapshot.close,
+                observed_price=(
+                    _range_match_price(evaluation_bar.low, evaluation_bar.high, zone)
+                    if evaluation_bar is not None
+                    else evaluation.snapshot.close
+                ),
                 distance=distance,
                 tolerance=tolerance,
                 fidelity=_combined_fidelity(
@@ -327,6 +346,30 @@ def _distance_to_zone(price: Decimal, zone: SignalLocationZone) -> Decimal:
     if price > zone.upper_price:
         return price - zone.upper_price
     return Decimal("0")
+
+
+def _distance_from_range_to_zone(
+    low: Decimal,
+    high: Decimal,
+    zone: SignalLocationZone,
+) -> Decimal:
+    if high < zone.lower_price:
+        return zone.lower_price - high
+    if low > zone.upper_price:
+        return low - zone.upper_price
+    return Decimal("0")
+
+
+def _range_match_price(
+    low: Decimal,
+    high: Decimal,
+    zone: SignalLocationZone,
+) -> Decimal:
+    if high < zone.lower_price:
+        return high
+    if low > zone.upper_price:
+        return low
+    return max(low, min(high, zone.lower_price))
 
 
 def _tolerance(

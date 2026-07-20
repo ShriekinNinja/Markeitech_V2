@@ -159,12 +159,13 @@ def build_location_narrative_notification(
     role: str,
 ) -> NotificationOutboxRecord | None:
     narrative = {
-        LocationEpisodeEventType.ENTERED: "ENTERED",
-        LocationEpisodeEventType.ACTIVE: "HOLDING",
-        LocationEpisodeEventType.FAVORABLE_DEPARTURE: "REJECTED",
+        LocationEpisodeEventType.ENTERED: "TOUCHED",
+        LocationEpisodeEventType.ACTIVE: "ENGAGED",
+        LocationEpisodeEventType.FAVORABLE_DEPARTURE: "DEPARTURE PENDING",
+        LocationEpisodeEventType.REJECTED: "REJECTION CONFIRMED",
         LocationEpisodeEventType.DEPARTURE_UNRESOLVED: "HOLDING",
-        LocationEpisodeEventType.EXIT_PENDING: "EXIT WARNING",
-        LocationEpisodeEventType.EXITED: "EXITED",
+        LocationEpisodeEventType.EXIT_PENDING: "ACCEPTANCE PENDING",
+        LocationEpisodeEventType.EXITED: "ACCEPTED THROUGH",
         LocationEpisodeEventType.REPLACED: "ROTATED",
     }.get(event.episode_event)
     if narrative is None or not event.location_matches:
@@ -321,6 +322,7 @@ class LocationNarrativeNotifier:
         if repeated and event.episode_event in {
             LocationEpisodeEventType.ACTIVE,
             LocationEpisodeEventType.DEPARTURE_UNRESOLVED,
+            LocationEpisodeEventType.REJECTED,
             LocationEpisodeEventType.EXIT_PENDING,
         }:
             return None
@@ -550,18 +552,24 @@ def _narrative_explanation(event: SignalEvaluationEvent, location_name: str) -> 
             f"Price remains engaged with {location_name} at {price_range}."
         ),
         LocationEpisodeEventType.FAVORABLE_DEPARTURE: (
-            f"Price rejected {location_name} at {price_range} and departed in {direction}."
+            f"Price departed {location_name} at {price_range} in {direction}; "
+            "another close is required to confirm rejection."
+        ),
+        LocationEpisodeEventType.REJECTED: (
+            f"Price rejected {location_name} at {price_range} with confirmed "
+            f"closes in {direction}."
         ),
         LocationEpisodeEventType.DEPARTURE_UNRESOLVED: (
             f"Price moved away from {location_name} at {price_range}, "
             "but the interaction remains unresolved."
         ),
         LocationEpisodeEventType.EXIT_PENDING: (
-            f"Price breached {location_name} at {price_range}; "
-            "confirmation is required before declaring an exit."
+            f"Price closed through {location_name} at {price_range}; "
+            "another close is required to confirm acceptance."
         ),
         LocationEpisodeEventType.EXITED: (
-            f"Price left {location_name} at {price_range}; the interaction ended."
+            f"Price was accepted through {location_name} at {price_range}; "
+            "the rejection thesis ended."
         ),
         LocationEpisodeEventType.REPLACED: (
             f"{location_name} at {price_range} replaced the prior decision area."

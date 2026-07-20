@@ -280,7 +280,7 @@ def test_repeated_holding_narrative_is_suppressed() -> None:
     assert record is not None
     assert record.destination_key == "alert-stream"
     assert record.payload["embeds"][0]["title"] == (
-        "Holding 5m Support — Nasdaq 100 Futures"
+        "Engaged 5m Support — Nasdaq 100 Futures"
     )
     assert record.payload["embeds"][0]["description"] == (
         "Price remains engaged with 5m Support at 29,950.00 – 29,955.00."

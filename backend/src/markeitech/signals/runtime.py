@@ -9,6 +9,7 @@ from threading import Condition, Thread
 from traceback import format_exc
 from typing import Protocol
 
+from markeitech.analytics import AnalyticsTimeframe
 from markeitech.domain.base import require_utc
 from markeitech.domain.market_data import OneMinuteBar
 from markeitech.persistence.contracts import NotificationOutboxRecord
@@ -50,6 +51,7 @@ from markeitech.signals.episode import (
     LocationEpisodeEventType,
     LocationEpisodeObservation,
     LocationEpisodeTracker,
+    LocationInteractionState,
 )
 from markeitech.signals.lifecycle import transition_signal
 from markeitech.signals.location import qualify_location
@@ -143,6 +145,7 @@ class SignalEvaluationEvent:
     observed_price: Decimal | None = None
     location_matches: tuple[SignalLocationMatch, ...] = ()
     reason_codes: tuple[str, ...] = ()
+    interaction_state: LocationInteractionState | None = None
 
 
 @dataclass(frozen=True)
@@ -542,6 +545,7 @@ class LiveSignalRuntime:
         direction = direction_decision.qualification.direction
         open_key = (definition_id, bundle.instrument_id)
         open_signal = self._open_signals.get(open_key)
+        evaluation_bar = self._evaluation_bar(bundle)
         if direction is None and open_signal is None:
             return SignalEvaluationEvent(
                 instrument_id=bundle.instrument_id,
@@ -581,14 +585,19 @@ class LiveSignalRuntime:
                 definition,
                 direction,
                 session_start=session_start,
+                evaluation_bar=evaluation_bar,
             )
         if anchor is None:
             raise RuntimeError("Direction decision did not expose a regime anchor")
         evaluation = bundle.feature(definition.evaluation_timeframe)
         observed_price = (
-            evaluation.snapshot.close
-            if evaluation is not None and evaluation.snapshot.as_of == bundle.evaluation_as_of
-            else None
+            evaluation_bar.close
+            if evaluation_bar is not None
+            else (
+                evaluation.snapshot.close
+                if evaluation is not None and evaluation.snapshot.as_of == bundle.evaluation_as_of
+                else None
+            )
         )
         episode_decision = self._episode_trackers[definition_id].evaluate(
             LocationEpisodeObservation(
@@ -598,6 +607,7 @@ class LiveSignalRuntime:
                 direction_regime_anchor=anchor,
                 evaluation_ts=bundle.evaluation_as_of,
                 observed_price=observed_price,
+                observed_bar=evaluation_bar,
                 qualification=location,
             )
         )
@@ -625,6 +635,7 @@ class LiveSignalRuntime:
                     LocationEpisodeEventType.ENTERED,
                     LocationEpisodeEventType.ACTIVE,
                     LocationEpisodeEventType.FAVORABLE_DEPARTURE,
+                    LocationEpisodeEventType.REJECTED,
                     LocationEpisodeEventType.DEPARTURE_UNRESOLVED,
                 }
             ),
@@ -656,6 +667,7 @@ class LiveSignalRuntime:
                 observed_price=observed_price,
                 location_matches=narrative_matches,
                 reason_codes=episode_decision.reason_codes,
+                interaction_state=episode_decision.interaction_state,
             )
         return SignalEvaluationEvent(
             instrument_id=bundle.instrument_id,
@@ -671,7 +683,26 @@ class LiveSignalRuntime:
             observed_price=observed_price,
             location_matches=narrative_matches,
             reason_codes=episode_decision.reason_codes,
+            interaction_state=episode_decision.interaction_state,
         )
+
+    def _evaluation_bar(
+        self,
+        bundle: CommittedMarketContextBundle,
+    ) -> OneMinuteBar | None:
+        if self._observation_store is None:
+            return None
+        bars = self._observation_store.bars(
+            bundle.instrument_id,
+            "ib",
+            through_ts=bundle.evaluation_as_of,
+        )
+        if not bars or bars[-1].close_ts != bundle.evaluation_as_of:
+            return None
+        evaluation = bundle.feature(AnalyticsTimeframe.ONE_MINUTE)
+        if evaluation is None or bars[-1].close != evaluation.snapshot.close:
+            return None
+        return bars[-1]
 
     def _persist_episode_decision(
         self,

@@ -10,6 +10,7 @@ from enum import StrEnum
 from pydantic import Field, field_validator, model_validator
 
 from markeitech.domain.base import VersionedDomainModel, require_utc
+from markeitech.domain.market_data import OneMinuteBar
 from markeitech.signals.config import SignalDefinitionConfig
 from markeitech.signals.contracts import (
     LocationQualification,
@@ -23,12 +24,26 @@ class LocationEpisodeEventType(StrEnum):
     ENTERED = "entered"
     ACTIVE = "active"
     FAVORABLE_DEPARTURE = "favorable_departure"
+    REJECTED = "rejected"
     DEPARTURE_UNRESOLVED = "departure_unresolved"
     EXIT_PENDING = "exit_pending"
     EXITED = "exited"
     REPLACED = "replaced"
     EVIDENCE_GAP = "evidence_gap"
     NO_EPISODE = "no_episode"
+
+
+class LocationInteractionState(StrEnum):
+    TOUCHED = "touched"
+    ENGAGED = "engaged"
+    DEPARTURE_PENDING = "departure_pending"
+    REJECTED = "rejected"
+    DEPARTURE_UNRESOLVED = "departure_unresolved"
+    ACCEPTANCE_PENDING = "acceptance_pending"
+    ACCEPTED_THROUGH = "accepted_through"
+    REPLACED = "replaced"
+    EVIDENCE_GAP = "evidence_gap"
+    OUTSIDE = "outside"
 
 
 class SignalLocationEpisode(VersionedDomainModel):
@@ -84,6 +99,7 @@ class LocationEpisodeObservation(VersionedDomainModel):
     direction_regime_anchor: str = Field(min_length=1)
     evaluation_ts: datetime
     observed_price: Decimal | None = Field(default=None, gt=0)
+    observed_bar: OneMinuteBar | None = None
     qualification: LocationQualification
 
     @field_validator("evaluation_ts")
@@ -108,6 +124,15 @@ class LocationEpisodeObservation(VersionedDomainModel):
             and self.observed_price is None
         ):
             raise ValueError("observed location evidence requires an evaluation price")
+        if self.observed_bar is not None:
+            if self.observed_bar.instrument_id != self.instrument_id:
+                raise ValueError("location observation bar must use one instrument")
+            if self.observed_bar.close_ts != self.evaluation_ts:
+                raise ValueError("location observation bar must close at evaluation time")
+            if self.observed_price != self.observed_bar.close:
+                raise ValueError("location observation price must equal bar close")
+            if not self.observed_bar.is_complete or self.observed_bar.is_revision:
+                raise ValueError("location observation requires a complete canonical bar")
         return self
 
 
@@ -119,11 +144,31 @@ class LocationEpisodeDecision:
     outside_confirmation_count: int
     reason_codes: tuple[str, ...] = ()
 
+    @property
+    def interaction_state(self) -> LocationInteractionState:
+        return {
+            LocationEpisodeEventType.ENTERED: LocationInteractionState.TOUCHED,
+            LocationEpisodeEventType.ACTIVE: LocationInteractionState.ENGAGED,
+            LocationEpisodeEventType.FAVORABLE_DEPARTURE: (
+                LocationInteractionState.DEPARTURE_PENDING
+            ),
+            LocationEpisodeEventType.REJECTED: LocationInteractionState.REJECTED,
+            LocationEpisodeEventType.DEPARTURE_UNRESOLVED: (
+                LocationInteractionState.DEPARTURE_UNRESOLVED
+            ),
+            LocationEpisodeEventType.EXIT_PENDING: LocationInteractionState.ACCEPTANCE_PENDING,
+            LocationEpisodeEventType.EXITED: LocationInteractionState.ACCEPTED_THROUGH,
+            LocationEpisodeEventType.REPLACED: LocationInteractionState.REPLACED,
+            LocationEpisodeEventType.EVIDENCE_GAP: LocationInteractionState.EVIDENCE_GAP,
+            LocationEpisodeEventType.NO_EPISODE: LocationInteractionState.OUTSIDE,
+        }[self.event_type]
+
 
 @dataclass
 class _InstrumentEpisodeState:
     active: SignalLocationEpisode | None = None
     outside_confirmation_count: int = 0
+    favorable_confirmation_count: int = 0
     last_observation: LocationEpisodeObservation | None = None
     last_decision: LocationEpisodeDecision | None = None
 
@@ -134,6 +179,7 @@ class LocationEpisodeTracker:
             raise ValueError("location episode tracker requires location policy")
         self._definition = definition
         self._exit_confirmation_bars = definition.location_policy.exit_confirmation_bars
+        self._rejection_confirmation_bars = definition.location_policy.rejection_confirmation_bars
         self._states: dict[str, _InstrumentEpisodeState] = {}
 
     def seed_active_episodes(self, episodes: tuple[SignalLocationEpisode, ...]) -> None:
@@ -180,6 +226,7 @@ class LocationEpisodeTracker:
             ended = active.episode_id
             state.active = None
             state.outside_confirmation_count = 0
+            state.favorable_confirmation_count = 0
             if observation.qualification.status == LocationQualificationStatus.QUALIFIED:
                 replacement = _new_episode(observation)
                 state.active = replacement
@@ -198,6 +245,7 @@ class LocationEpisodeTracker:
 
         if observation.qualification.status == LocationQualificationStatus.MISSING_EVIDENCE:
             state.outside_confirmation_count = 0
+            state.favorable_confirmation_count = 0
             return LocationEpisodeDecision(
                 LocationEpisodeEventType.EVIDENCE_GAP,
                 state.active,
@@ -210,6 +258,7 @@ class LocationEpisodeTracker:
                 entered = _new_episode(observation)
                 state.active = entered
                 state.outside_confirmation_count = 0
+                state.favorable_confirmation_count = 0
                 return LocationEpisodeDecision(
                     LocationEpisodeEventType.ENTERED,
                     entered,
@@ -218,16 +267,17 @@ class LocationEpisodeTracker:
                 )
             matched_zone_ids = {item.zone.zone_id for item in observation.qualification.matches}
             if matched_zone_ids & set(active.entry_zone_ids):
-                state.outside_confirmation_count = 0
-                return LocationEpisodeDecision(
-                    LocationEpisodeEventType.ACTIVE,
+                assert observation.observed_price is not None
+                return self._classify_active_close(
+                    state,
                     active,
-                    None,
-                    0,
+                    observation.observed_price,
+                    is_engaged=True,
                 )
             replacement = _new_episode(observation)
             state.active = replacement
             state.outside_confirmation_count = 0
+            state.favorable_confirmation_count = 0
             return LocationEpisodeDecision(
                 LocationEpisodeEventType.REPLACED,
                 replacement,
@@ -237,6 +287,7 @@ class LocationEpisodeTracker:
 
         if active is None:
             state.outside_confirmation_count = 0
+            state.favorable_confirmation_count = 0
             return LocationEpisodeDecision(
                 LocationEpisodeEventType.NO_EPISODE,
                 None,
@@ -245,18 +296,52 @@ class LocationEpisodeTracker:
             )
 
         assert observation.observed_price is not None
-        departure = _classify_departure(active, observation.observed_price)
+        return self._classify_active_close(
+            state,
+            active,
+            observation.observed_price,
+            is_engaged=False,
+        )
+
+    def _classify_active_close(
+        self,
+        state: _InstrumentEpisodeState,
+        active: SignalLocationEpisode,
+        observed_price: Decimal,
+        *,
+        is_engaged: bool,
+    ) -> LocationEpisodeDecision:
+        departure = _classify_departure(active, observed_price)
         if departure == LocationEpisodeEventType.FAVORABLE_DEPARTURE:
             state.outside_confirmation_count = 0
+            state.favorable_confirmation_count += 1
+            if state.favorable_confirmation_count >= self._rejection_confirmation_bars:
+                state.favorable_confirmation_count = self._rejection_confirmation_bars
+                return LocationEpisodeDecision(
+                    LocationEpisodeEventType.REJECTED,
+                    active,
+                    None,
+                    0,
+                    ("location_rejection_confirmed",),
+                )
             return LocationEpisodeDecision(
                 LocationEpisodeEventType.FAVORABLE_DEPARTURE,
                 active,
                 None,
                 0,
-                ("price_departed_entry_location_favorably",),
+                ("location_rejection_pending",),
             )
         if departure == LocationEpisodeEventType.DEPARTURE_UNRESOLVED:
             state.outside_confirmation_count = 0
+            state.favorable_confirmation_count = 0
+            if is_engaged:
+                return LocationEpisodeDecision(
+                    LocationEpisodeEventType.ACTIVE,
+                    active,
+                    None,
+                    0,
+                    ("price_remains_engaged_with_entry_location",),
+                )
             return LocationEpisodeDecision(
                 LocationEpisodeEventType.DEPARTURE_UNRESOLVED,
                 active,
@@ -265,6 +350,7 @@ class LocationEpisodeTracker:
                 ("price_departure_did_not_breach_entry_thesis",),
             )
 
+        state.favorable_confirmation_count = 0
         state.outside_confirmation_count += 1
         if state.outside_confirmation_count < self._exit_confirmation_bars:
             return LocationEpisodeDecision(
@@ -272,7 +358,7 @@ class LocationEpisodeTracker:
                 active,
                 None,
                 state.outside_confirmation_count,
-                ("location_adverse_breach_pending",),
+                ("location_acceptance_pending",),
             )
         state.active = None
         state.outside_confirmation_count = 0
@@ -281,7 +367,7 @@ class LocationEpisodeTracker:
             None,
             active.episode_id,
             self._exit_confirmation_bars,
-            ("location_adverse_breach_confirmed",),
+            ("location_acceptance_confirmed",),
         )
 
 

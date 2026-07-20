@@ -114,22 +114,26 @@ the signal is eligible for restoration.
 ## `SIGNAL_INVALIDATED`
 
 ```text
-SIGNAL_INVALIDATED | role=ACTIVE | NQU6.CME | definition=intraday_context | direction=LONG | from=ARMED | location=bullish_fvg@15m:30009.5-30027.75 | evidence=D:5,L:2;fidelity=reported | reason=location_adverse_breach_confirmed | as_of=2026-07-15T13:48:00+00:00 | signal=7ac1e4e9085d | transition=a963bc6b7fd1
+SIGNAL_INVALIDATED | role=ACTIVE | NQU6.CME | definition=intraday_context | direction=LONG | from=ARMED | location=bullish_fvg@15m:30009.5-30027.75 | evidence=D:5,L:2;fidelity=reported | reason=location_acceptance_confirmed | as_of=2026-07-15T13:48:00+00:00 | signal=7ac1e4e9085d | transition=a963bc6b7fd1
 ```
 
 Invalidation means the setup thesis ended before normal observation expiry. The
 terminal `reason` is essential:
 
-- `location_adverse_breach_confirmed` means configured consecutive closes
-  crossed beyond every original entry zone's adverse tolerated edge.
+- `location_acceptance_confirmed` means configured consecutive closes crossed
+  beyond every original entry zone's adverse tolerated edge, confirming
+  acceptance through the location rather than a valid rejection.
 - `location_episode_replaced` means a wholly disjoint qualified Location became
   the active opportunity.
 - Direction-regime invalidation requires a newly fully qualified opposite
   Direction. Neutral, conflicted, vetoed, or missing Direction blocks Trigger
   but does not emit this line.
 
-Favorable departure and unresolved displacement preserve the Armed signal and
-therefore do not emit a lifecycle transition line.
+Touch, engagement, departure-pending, confirmed rejection, and unresolved
+displacement are location-interaction narratives. They preserve the Armed
+signal and therefore do not emit a lifecycle transition line. A confirmed
+rejection remains Location evidence; Trigger still requires its configured
+Aggression method.
 
 ## `SIGNAL_TRIGGERED`
 

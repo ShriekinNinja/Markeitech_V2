@@ -7,6 +7,7 @@ from markeitech.signals import (
     LocationEpisodeEventType,
     LocationEpisodeObservation,
     LocationEpisodeTracker,
+    LocationInteractionState,
     LocationPolicyConfig,
     LocationQualification,
     LocationQualificationStatus,
@@ -390,7 +391,52 @@ def test_favorable_departure_preserves_episode_and_resets_adverse_confirmation(
     assert favorable.episode == entered.episode
     assert favorable.ended_episode_id is None
     assert favorable.outside_confirmation_count == 0
-    assert favorable.reason_codes == ("price_departed_entry_location_favorably",)
+    assert favorable.reason_codes == ("location_rejection_pending",)
+    assert favorable.interaction_state == LocationInteractionState.DEPARTURE_PENDING
+
+
+@pytest.mark.parametrize(
+    ("direction", "favorable_price"),
+    (
+        (SignalDirection.LONG, Decimal("102")),
+        (SignalDirection.SHORT, Decimal("98")),
+    ),
+)
+def test_rejection_requires_consecutive_favorable_closes(
+    direction: SignalDirection,
+    favorable_price: Decimal,
+) -> None:
+    tracker = LocationEpisodeTracker(intraday_context_definition())
+    entered = tracker.evaluate(
+        observation(
+            NOW,
+            LocationQualificationStatus.QUALIFIED,
+            anchors=("zone-a",),
+            direction=direction,
+        )
+    )
+    pending = tracker.evaluate(
+        observation(
+            NOW + timedelta(minutes=1),
+            LocationQualificationStatus.NOT_AT_LOCATION,
+            direction=direction,
+            observed_price=favorable_price,
+        )
+    )
+    rejected = tracker.evaluate(
+        observation(
+            NOW + timedelta(minutes=2),
+            LocationQualificationStatus.NOT_AT_LOCATION,
+            direction=direction,
+            observed_price=favorable_price,
+        )
+    )
+
+    assert entered.interaction_state == LocationInteractionState.TOUCHED
+    assert pending.event_type == LocationEpisodeEventType.FAVORABLE_DEPARTURE
+    assert rejected.event_type == LocationEpisodeEventType.REJECTED
+    assert rejected.interaction_state == LocationInteractionState.REJECTED
+    assert rejected.reason_codes == ("location_rejection_confirmed",)
 
 
 def test_unresolved_departure_preserves_episode_without_advancing_breach_count() -> None:
@@ -440,7 +486,9 @@ def test_adverse_breach_requires_confirmation_and_exposes_terminal_reason() -> N
     )
 
     assert pending.event_type == LocationEpisodeEventType.EXIT_PENDING
-    assert pending.reason_codes == ("location_adverse_breach_pending",)
+    assert pending.reason_codes == ("location_acceptance_pending",)
+    assert pending.interaction_state == LocationInteractionState.ACCEPTANCE_PENDING
     assert exited.event_type == LocationEpisodeEventType.EXITED
     assert exited.ended_episode_id == entered.episode.episode_id
-    assert exited.reason_codes == ("location_adverse_breach_confirmed",)
+    assert exited.reason_codes == ("location_acceptance_confirmed",)
+    assert exited.interaction_state == LocationInteractionState.ACCEPTED_THROUGH

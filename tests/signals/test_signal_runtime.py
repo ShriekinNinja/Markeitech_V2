@@ -575,7 +575,7 @@ def test_runtime_invalidates_only_after_confirmed_adverse_location_breach() -> N
     assert store.lifecycle_writes == 2
     assert runtime.snapshot.open_signal_count == 0
     assert next(iter(store.signals.values())).reason_codes[-1] == (
-        "location_adverse_breach_confirmed"
+        "location_acceptance_confirmed"
     )
 
 

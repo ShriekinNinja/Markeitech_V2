@@ -595,24 +595,31 @@ necessary hysteresis without adding a mutable Suspended lifecycle status.
 Status: accepted
 
 Do not invalidate an Armed episode merely because price is no longer near its
-entry zones. Classify departure against all original entry-zone bounds and the
-exact tolerances persisted at entry. Crossing beyond every zone on the expected
-side is favorable departure; remaining between the aggregate favorable and
-adverse edges is unresolved; crossing beyond every zone on the wrong side is an
-adverse breach.
+entry zones. Admit a touch from the complete canonical one-minute bar range, not
+only its close, so a candle that touches and closes away remains observable.
+Classify subsequent closes against all original entry-zone bounds and the exact
+tolerances persisted at entry. Crossing beyond every zone on the expected side
+is favorable departure; remaining between the aggregate favorable and adverse
+edges is unresolved; crossing beyond every zone on the wrong side is an adverse
+close through the location.
 
-Preserve the episode through favorable and unresolved departure. Require the
-configured `exit_confirmation_bars` consecutive adverse-breach observations
-before invalidation, resetting that count on favorable, unresolved, qualified,
-or missing evidence. Persist `location_adverse_breach_confirmed` as the terminal
-reason. A fully qualified opposite Direction remains a separate immediate
-invalidation path.
+Preserve the episode through favorable and unresolved departure. A favorable
+close begins `departure_pending`; only
+`rejection_confirmation_bars` consecutive favorable closes confirm rejection.
+Require `exit_confirmation_bars` consecutive adverse closes before declaring
+acceptance through the location and invalidating the rejection thesis. Reset
+either sequence when contradictory, engaged, unresolved, or missing evidence
+breaks it. Persist `location_acceptance_confirmed` as the terminal reason. A
+fully qualified opposite Direction remains a separate immediate invalidation
+path.
 
 Reason: Location describes where a setup became actionable, not a price magnet
 that must contain every subsequent bar. Generic absence confirmation erased
 valid setups precisely when price began moving in their intended direction.
-Using immutable entry geometry makes the distinction deterministic across live
-runtime, restart recovery, and future replay without inventing hindsight levels.
+Using immutable entry geometry and completed-bar evidence makes the distinction
+deterministic across live runtime, restart recovery, and future replay without
+inventing hindsight levels. A touch Arms the opportunity; confirmed rejection
+is location evidence and still does not substitute for Aggression at Trigger.
 
 ## DR-0055: Confirmation Observations Enter After Durable Commit
 

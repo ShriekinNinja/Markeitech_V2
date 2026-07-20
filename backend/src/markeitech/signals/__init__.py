@@ -61,6 +61,7 @@ from markeitech.signals.episode import (
     LocationEpisodeEventType,
     LocationEpisodeObservation,
     LocationEpisodeTracker,
+    LocationInteractionState,
     SignalLocationEpisode,
 )
 from markeitech.signals.lifecycle import transition_signal
@@ -129,6 +130,7 @@ __all__ = [
     "LocationEpisodeEventType",
     "LocationEpisodeObservation",
     "LocationEpisodeTracker",
+    "LocationInteractionState",
     "LocationQualification",
     "LocationQualificationStatus",
     "LocationSourceKind",

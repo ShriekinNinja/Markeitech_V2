@@ -37,6 +37,7 @@ class LocationSourcePolicyConfig(VersionedDomainModel):
 class LocationPolicyConfig(VersionedDomainModel):
     sources: tuple[LocationSourcePolicyConfig, ...] = Field(min_length=1)
     minimum_distinct_sources: int = Field(default=1, ge=1)
+    rejection_confirmation_bars: int = Field(default=2, ge=1, le=20)
     exit_confirmation_bars: int = Field(default=2, ge=1, le=20)
 
     @model_validator(mode="after")
@@ -221,6 +222,7 @@ class SignalRuntimeConfig(VersionedDomainModel):
 def intraday_context_definition() -> SignalDefinitionConfig:
     return SignalDefinitionConfig(
         definition_id="intraday_context",
+        algorithm_version="1.1",
         evaluation_timeframe=AnalyticsTimeframe.ONE_MINUTE,
         primary_direction_timeframes=(
             AnalyticsTimeframe.ONE_HOUR,
