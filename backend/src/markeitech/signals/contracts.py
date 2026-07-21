@@ -188,6 +188,56 @@ class SignalLocationMatch(VersionedDomainModel):
         return self
 
 
+class SignalLocationCluster(VersionedDomainModel):
+    instrument_id: str = Field(min_length=1)
+    direction: SignalDirection
+    lower_price: Decimal = Field(ge=0)
+    upper_price: Decimal = Field(gt=0)
+    matches: tuple[SignalLocationMatch, ...] = Field(min_length=1)
+    distinct_source_count: int = Field(ge=1)
+    distinct_timeframe_count: int = Field(ge=1)
+    exact_touch_count: int = Field(ge=0)
+    reported_match_count: int = Field(ge=0)
+    inferred_or_partial_match_count: int = Field(ge=0)
+    mean_normalized_distance: Decimal = Field(ge=0, le=1)
+
+    @model_validator(mode="after")
+    def _cluster_must_match_components(self) -> SignalLocationCluster:
+        if self.lower_price > self.upper_price:
+            raise ValueError("location cluster lower price cannot exceed upper price")
+        if any(item.zone.instrument_id != self.instrument_id for item in self.matches):
+            raise ValueError("location cluster matches must use one instrument")
+        if any(item.zone.direction != self.direction for item in self.matches):
+            raise ValueError("location cluster matches must use one direction")
+        if self.distinct_source_count != len({item.zone.source_kind for item in self.matches}):
+            raise ValueError("location cluster source count does not match contributors")
+        if self.distinct_timeframe_count != len({item.zone.timeframe for item in self.matches}):
+            raise ValueError("location cluster timeframe count does not match contributors")
+        if self.exact_touch_count != sum(item.distance == 0 for item in self.matches):
+            raise ValueError("location cluster exact-touch count does not match contributors")
+        if self.reported_match_count != sum(
+            item.fidelity == SignalEvidenceFidelity.REPORTED for item in self.matches
+        ):
+            raise ValueError("location cluster reported count does not match contributors")
+        if self.inferred_or_partial_match_count != sum(
+            item.fidelity in {SignalEvidenceFidelity.INFERRED, SignalEvidenceFidelity.PARTIAL}
+            for item in self.matches
+        ):
+            raise ValueError("location cluster inferred count does not match contributors")
+        return self
+
+    @property
+    def cluster_id(self) -> str:
+        return _canonical_hash(
+            {
+                "schema_version": self.schema_version,
+                "instrument_id": self.instrument_id,
+                "direction": self.direction.value,
+                "zone_ids": tuple(sorted(item.zone.zone_id for item in self.matches)),
+            }
+        )
+
+
 class SignalConfirmationContext(VersionedDomainModel):
     method: SignalConfirmationMethod
     window_started_ts: datetime
@@ -202,6 +252,8 @@ class SignalConfirmationContext(VersionedDomainModel):
 class LocationQualification(VersionedDomainModel):
     status: LocationQualificationStatus
     matches: tuple[SignalLocationMatch, ...] = ()
+    clusters: tuple[SignalLocationCluster, ...] = ()
+    selected_cluster_id: str | None = Field(default=None, pattern=_SHA256_PATTERN)
     is_degraded: bool = False
     reason_codes: tuple[str, ...] = Field(min_length=1)
 
@@ -214,6 +266,20 @@ class LocationQualification(VersionedDomainModel):
         zone_ids = [item.zone.zone_id for item in self.matches]
         if len(zone_ids) != len(set(zone_ids)):
             raise ValueError("location qualification cannot repeat a semantic zone")
+        cluster_ids = [item.cluster_id for item in self.clusters]
+        if len(cluster_ids) != len(set(cluster_ids)):
+            raise ValueError("location qualification cannot repeat a cluster")
+        if self.matches and self.clusters:
+            if self.selected_cluster_id is None:
+                raise ValueError("location matches require a selected cluster")
+            selected = next(
+                (item for item in self.clusters if item.cluster_id == self.selected_cluster_id),
+                None,
+            )
+            if selected is None or selected.matches != self.matches:
+                raise ValueError("selected location cluster must provide qualification matches")
+        elif self.selected_cluster_id is not None:
+            raise ValueError("empty location qualification cannot select a cluster")
         return self
 
 

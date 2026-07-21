@@ -36,6 +36,7 @@ from markeitech.persistence.contracts import (
 )
 from markeitech.persistence.feature_pipeline import CommittedFeatureRevision
 from markeitech.signals.contracts import SignalSnapshot, SignalStatus, SignalTransitionEvent
+from markeitech.signals.episode import LocationInteractionEvent
 
 if TYPE_CHECKING:
     from markeitech.context_events import (
@@ -46,7 +47,7 @@ if TYPE_CHECKING:
     )
 
 
-LATEST_SCHEMA_VERSION = 10
+LATEST_SCHEMA_VERSION = 11
 
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (
@@ -341,6 +342,28 @@ MIGRATIONS: tuple[tuple[int, str], ...] = (
             ON context_transition_events(kind, current_feature_id);
         CREATE INDEX context_event_lookup_idx
             ON context_transition_events(instrument_id, timeframe, occurred_ts_ns, event_id);
+        """,
+    ),
+    (
+        11,
+        """
+        CREATE TABLE location_interaction_events (
+            event_id BLOB PRIMARY KEY,
+            episode_id BLOB NOT NULL,
+            ended_episode_id BLOB,
+            definition_id TEXT NOT NULL,
+            instrument_id TEXT NOT NULL,
+            interaction_state TEXT NOT NULL,
+            occurred_ts_ns INTEGER NOT NULL,
+            event_json TEXT NOT NULL,
+            UNIQUE(episode_id, occurred_ts_ns)
+        );
+        CREATE INDEX location_interaction_episode_idx
+            ON location_interaction_events(episode_id, occurred_ts_ns);
+        CREATE INDEX location_interaction_lookup_idx
+            ON location_interaction_events(
+                instrument_id, definition_id, occurred_ts_ns DESC
+            );
         """,
     ),
 )
@@ -681,6 +704,7 @@ class SQLiteMetadataStore:
         event: SignalTransitionEvent,
         *,
         notification: NotificationOutboxRecord | None = None,
+        interaction: LocationInteractionEvent | None = None,
     ) -> SignalPersistenceOutcome:
         if candidate.status != SignalStatus.CANDIDATE:
             raise ValueError("initial signal snapshot must have candidate status")
@@ -694,9 +718,11 @@ class SQLiteMetadataStore:
         with self._transaction() as connection:
             candidate_outcome = _save_signal_candidate(connection, candidate)
             transition_outcome = _apply_signal_transition(connection, event, notification)
+            interaction_created = _save_location_interaction(connection, interaction)
             if (
                 candidate_outcome == SignalPersistenceOutcome.DUPLICATE
                 and transition_outcome == SignalPersistenceOutcome.DUPLICATE
+                and not interaction_created
             ):
                 return SignalPersistenceOutcome.DUPLICATE
             return SignalPersistenceOutcome.TRANSITIONED
@@ -709,6 +735,7 @@ class SQLiteMetadataStore:
         *,
         ended_notification: NotificationOutboxRecord | None = None,
         armed_notification: NotificationOutboxRecord | None = None,
+        interaction: LocationInteractionEvent | None = None,
     ) -> SignalPersistenceOutcome:
         if ended_event.to_status not in {SignalStatus.INVALIDATED, SignalStatus.EXPIRED}:
             raise ValueError("replaced signal must transition to a terminal status")
@@ -729,10 +756,11 @@ class SQLiteMetadataStore:
             ended_outcome = _apply_signal_transition(connection, ended_event, ended_notification)
             candidate_outcome = _save_signal_candidate(connection, candidate)
             armed_outcome = _apply_signal_transition(connection, armed_event, armed_notification)
+            interaction_created = _save_location_interaction(connection, interaction)
             if all(
                 outcome == SignalPersistenceOutcome.DUPLICATE
                 for outcome in (ended_outcome, candidate_outcome, armed_outcome)
-            ):
+            ) and not interaction_created:
                 return SignalPersistenceOutcome.DUPLICATE
             return SignalPersistenceOutcome.TRANSITIONED
 
@@ -741,10 +769,48 @@ class SQLiteMetadataStore:
         event: SignalTransitionEvent,
         *,
         notification: NotificationOutboxRecord | None = None,
+        interaction: LocationInteractionEvent | None = None,
     ) -> SignalPersistenceOutcome:
         _validate_signal_notification(event, notification)
         with self._transaction() as connection:
-            return _apply_signal_transition(connection, event, notification)
+            outcome = _apply_signal_transition(connection, event, notification)
+            interaction_created = _save_location_interaction(connection, interaction)
+            if outcome == SignalPersistenceOutcome.DUPLICATE and interaction_created:
+                return SignalPersistenceOutcome.TRANSITIONED
+            return outcome
+
+    def save_location_interaction(self, event: LocationInteractionEvent) -> bool:
+        with self._transaction() as connection:
+            return _save_location_interaction(connection, event)
+
+    def load_location_interactions(
+        self,
+        *,
+        episode_id: str | None = None,
+        instrument_id: str | None = None,
+        definition_id: str | None = None,
+    ) -> tuple[LocationInteractionEvent, ...]:
+        clauses: list[str] = []
+        values: list[object] = []
+        if episode_id is not None:
+            clauses.append("episode_id=?")
+            values.append(bytes.fromhex(episode_id))
+        if instrument_id is not None:
+            clauses.append("instrument_id=?")
+            values.append(instrument_id)
+        if definition_id is not None:
+            clauses.append("definition_id=?")
+            values.append(definition_id)
+        where = "" if not clauses else f" WHERE {' AND '.join(clauses)}"
+        with self._lock:
+            rows = self._connection.execute(
+                f"""
+                SELECT * FROM location_interaction_events{where}
+                ORDER BY occurred_ts_ns, event_id
+                """,
+                tuple(values),
+            ).fetchall()
+        return tuple(_row_to_location_interaction(row) for row in rows)
 
     def load_signal(self, signal_id: str) -> SignalSnapshot | None:
         with self._lock:
@@ -1717,6 +1783,49 @@ def _save_signal_candidate(
     return SignalPersistenceOutcome.DUPLICATE
 
 
+def _save_location_interaction(
+    connection: sqlite3.Connection,
+    event: LocationInteractionEvent | None,
+) -> bool:
+    if event is None:
+        return False
+    event_id = bytes.fromhex(event.event_id)
+    episode_id = bytes.fromhex(event.episode_id)
+    existing = connection.execute(
+        "SELECT * FROM location_interaction_events WHERE event_id=?",
+        (event_id,),
+    ).fetchone()
+    if existing is not None:
+        if _row_to_location_interaction(existing) != event:
+            raise ValueError("location interaction identity conflicts with different content")
+        return False
+    conflict = connection.execute(
+        """
+        SELECT * FROM location_interaction_events
+        WHERE episode_id=? AND occurred_ts_ns=?
+        """,
+        (episode_id, unix_ns_from_utc_datetime(event.occurred_ts)),
+    ).fetchone()
+    if conflict is not None:
+        raise ValueError("location interaction time conflicts with different state")
+    connection.execute(
+        """
+        INSERT INTO location_interaction_events VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            event_id,
+            episode_id,
+            None if event.ended_episode_id is None else bytes.fromhex(event.ended_episode_id),
+            event.definition_id,
+            event.instrument_id,
+            event.interaction_state.value,
+            unix_ns_from_utc_datetime(event.occurred_ts),
+            event.model_dump_json(),
+        ),
+    )
+    return True
+
+
 def _apply_signal_transition(
     connection: sqlite3.Connection,
     event: SignalTransitionEvent,
@@ -1851,6 +1960,24 @@ def _row_to_signal_transition(row: sqlite3.Row) -> SignalTransitionEvent:
         or row["to_status"] != event.to_status.value
     ):
         raise ValueError("stored signal transition metadata does not match event")
+    return event
+
+
+def _row_to_location_interaction(row: sqlite3.Row) -> LocationInteractionEvent:
+    event = LocationInteractionEvent.model_validate_json(row["event_json"])
+    ended_episode_id = (
+        None if row["ended_episode_id"] is None else bytes(row["ended_episode_id"]).hex()
+    )
+    if (
+        bytes(row["event_id"]) != bytes.fromhex(event.event_id)
+        or bytes(row["episode_id"]) != bytes.fromhex(event.episode_id)
+        or ended_episode_id != event.ended_episode_id
+        or row["definition_id"] != event.definition_id
+        or row["instrument_id"] != event.instrument_id
+        or row["interaction_state"] != event.interaction_state.value
+        or row["occurred_ts_ns"] != unix_ns_from_utc_datetime(event.occurred_ts)
+    ):
+        raise ValueError("stored location interaction metadata does not match event")
     return event
 
 

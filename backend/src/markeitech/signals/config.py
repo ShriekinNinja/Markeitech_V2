@@ -222,7 +222,7 @@ class SignalRuntimeConfig(VersionedDomainModel):
 def intraday_context_definition() -> SignalDefinitionConfig:
     return SignalDefinitionConfig(
         definition_id="intraday_context",
-        algorithm_version="1.1",
+        algorithm_version="1.2",
         evaluation_timeframe=AnalyticsTimeframe.ONE_MINUTE,
         primary_direction_timeframes=(
             AnalyticsTimeframe.ONE_HOUR,

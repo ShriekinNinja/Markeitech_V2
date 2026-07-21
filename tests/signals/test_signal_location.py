@@ -339,6 +339,54 @@ def test_completed_bar_range_can_touch_location_after_close_has_departed() -> No
     assert all(item.distance == Decimal("0") for item in result.matches)
 
 
+def test_confluence_must_exist_inside_one_coherent_price_cluster() -> None:
+    definition = intraday_context_definition()
+    assert definition.location_policy is not None
+    definition = definition.model_copy(
+        update={
+            "location_policy": definition.location_policy.model_copy(
+                update={"minimum_distinct_sources": 2}
+            )
+        }
+    )
+    observed_bar = OneMinuteBar(
+        instrument_id=INSTRUMENT_ID,
+        event_ts=AS_OF,
+        ts_init=AS_OF,
+        open_ts=AS_OF - timedelta(minutes=1),
+        close_ts=AS_OF,
+        open=Decimal("95"),
+        high=Decimal("100"),
+        low=Decimal("90"),
+        close=Decimal("100"),
+        volume=Decimal("100"),
+        buy_volume=Decimal("0"),
+        sell_volume=Decimal("0"),
+        unknown_volume=Decimal("100"),
+        source="ib",
+    )
+
+    result = qualify_location(
+        bundle(
+            close=Decimal("100"),
+            atr=Decimal("1"),
+            support_price=Decimal("90"),
+            resistance_price=None,
+            fvg=False,
+            vwap=False,
+        ),
+        definition,
+        SignalDirection.LONG,
+        session_start=SESSION_START,
+        evaluation_bar=observed_bar,
+    )
+
+    assert result.status == LocationQualificationStatus.INSUFFICIENT_CONFLUENCE
+    assert len(result.clusters) == 2
+    assert all(item.distinct_source_count == 1 for item in result.clusters)
+    assert len({item.zone.source_kind for item in result.matches}) == 1
+
+
 def test_missing_current_clock_or_all_sources_fails_closed() -> None:
     definition = intraday_context_definition()
     missing_clock = qualify_location(

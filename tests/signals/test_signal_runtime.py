@@ -25,6 +25,7 @@ from markeitech.signals import (
     LiveSignalRuntime,
     LiveSignalRuntimeStatus,
     LocationEpisodeEventType,
+    LocationInteractionState,
     LocationPolicyConfig,
     LocationQualificationStatus,
     LocationSourceKind,
@@ -159,6 +160,7 @@ def feature(
 class MemorySignalStore:
     def __init__(self) -> None:
         self.signals = {}
+        self.interactions = {}
         self.lifecycle_writes = 0
         self.notifications = []
 
@@ -170,10 +172,27 @@ class MemorySignalStore:
             if all(value is None or getattr(signal, key) == value for key, value in filters.items())
         )
 
+    def load_location_interactions(self, **filters):
+        values = tuple(self.interactions.values())
+        return tuple(
+            event
+            for event in values
+            if all(value is None or getattr(event, key) == value for key, value in filters.items())
+        )
+
+    def save_location_interaction(self, event):
+        existing = self.interactions.get(event.event_id)
+        if existing is not None and existing != event:
+            raise ValueError("conflicting interaction")
+        self.interactions[event.event_id] = event
+        return existing is None
+
     def save_signal_candidate_and_transition(self, candidate, event, **kwargs):
         self.signals[candidate.signal_id] = event.current
         self.lifecycle_writes += 1
         self.notifications.append(kwargs.get("notification"))
+        if interaction := kwargs.get("interaction"):
+            self.save_location_interaction(interaction)
 
     def replace_signal_with_armed_candidate(self, ended_event, candidate, armed_event, **kwargs):
         self.signals[ended_event.signal_id] = ended_event.current
@@ -182,11 +201,15 @@ class MemorySignalStore:
         self.notifications.extend(
             (kwargs.get("ended_notification"), kwargs.get("armed_notification"))
         )
+        if interaction := kwargs.get("interaction"):
+            self.save_location_interaction(interaction)
 
     def apply_signal_transition(self, event, **kwargs):
         self.signals[event.signal_id] = event.current
         self.lifecycle_writes += 1
         self.notifications.append(kwargs.get("notification"))
+        if interaction := kwargs.get("interaction"):
+            self.save_location_interaction(interaction)
 
 
 class FixedSessionResolver:
@@ -330,6 +353,9 @@ def test_runtime_rebuilds_from_warmup_then_arms_on_first_live_evaluation() -> No
     assert snapshot.open_signal_count == 1
     assert store.lifecycle_writes == 1
     assert {signal.status for signal in store.signals.values()} == {SignalStatus.ARMED}
+    assert {event.interaction_state for event in store.interactions.values()} == {
+        LocationInteractionState.TOUCHED
+    }
     assert len(store.notifications) == 1
     notification = store.notifications[0]
     assert notification.destination_key == "signal-lifecycle"

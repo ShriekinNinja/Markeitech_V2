@@ -35,6 +35,7 @@ from markeitech.signals.contracts import (
     SignalConfirmationContext,
     SignalConfirmationMethod,
     SignalDirection,
+    SignalLocationCluster,
     SignalLocationMatch,
     SignalSnapshot,
     SignalStatus,
@@ -51,7 +52,9 @@ from markeitech.signals.episode import (
     LocationEpisodeEventType,
     LocationEpisodeObservation,
     LocationEpisodeTracker,
+    LocationInteractionEvent,
     LocationInteractionState,
+    build_location_interaction_event,
 )
 from markeitech.signals.lifecycle import transition_signal
 from markeitech.signals.location import qualify_location
@@ -78,6 +81,7 @@ class SignalStateStore(Protocol):
         event: SignalTransitionEvent,
         *,
         notification: NotificationOutboxRecord | None = None,
+        interaction: LocationInteractionEvent | None = None,
     ) -> object: ...
 
     def replace_signal_with_armed_candidate(
@@ -88,6 +92,7 @@ class SignalStateStore(Protocol):
         *,
         ended_notification: NotificationOutboxRecord | None = None,
         armed_notification: NotificationOutboxRecord | None = None,
+        interaction: LocationInteractionEvent | None = None,
     ) -> object: ...
 
     def apply_signal_transition(
@@ -95,7 +100,18 @@ class SignalStateStore(Protocol):
         event: SignalTransitionEvent,
         *,
         notification: NotificationOutboxRecord | None = None,
+        interaction: LocationInteractionEvent | None = None,
     ) -> object: ...
+
+    def save_location_interaction(self, event: LocationInteractionEvent) -> bool: ...
+
+    def load_location_interactions(
+        self,
+        *,
+        episode_id: str | None = None,
+        instrument_id: str | None = None,
+        definition_id: str | None = None,
+    ) -> tuple[LocationInteractionEvent, ...]: ...
 
 
 class ProductSessionResolver(Protocol):
@@ -146,6 +162,7 @@ class SignalEvaluationEvent:
     location_matches: tuple[SignalLocationMatch, ...] = ()
     reason_codes: tuple[str, ...] = ()
     interaction_state: LocationInteractionState | None = None
+    location_cluster: SignalLocationCluster | None = None
 
 
 @dataclass(frozen=True)
@@ -396,8 +413,19 @@ class LiveSignalRuntime:
             self._direction_trackers[definition_id].seed_open_signals(
                 (*current, *suppressed), include_expired=True
             )
+            episodes = tuple(
+                restore_location_episode(signal) for signal in (*current, *suppressed)
+            )
+            latest_interactions = []
+            for episode in episodes:
+                history = self._store.load_location_interactions(
+                    episode_id=episode.episode_id
+                )
+                if history:
+                    latest_interactions.append(history[-1])
             self._episode_trackers[definition_id].seed_active_episodes(
-                tuple(restore_location_episode(signal) for signal in (*current, *suppressed))
+                episodes,
+                tuple(latest_interactions),
             )
             for signal in current:
                 self._open_signals[(definition_id, signal.instrument_id)] = signal
@@ -599,17 +627,26 @@ class LiveSignalRuntime:
                 else None
             )
         )
-        episode_decision = self._episode_trackers[definition_id].evaluate(
-            LocationEpisodeObservation(
-                definition_id=definition_id,
-                instrument_id=bundle.instrument_id,
-                direction=direction,
-                direction_regime_anchor=anchor,
-                evaluation_ts=bundle.evaluation_as_of,
-                observed_price=observed_price,
-                observed_bar=evaluation_bar,
-                qualification=location,
+        location_observation = LocationEpisodeObservation(
+            definition_id=definition_id,
+            instrument_id=bundle.instrument_id,
+            direction=direction,
+            direction_regime_anchor=anchor,
+            evaluation_ts=bundle.evaluation_as_of,
+            observed_price=observed_price,
+            observed_bar=evaluation_bar,
+            qualification=location,
+        )
+        episode_decision = self._episode_trackers[definition_id].evaluate(location_observation)
+        interaction = (
+            build_location_interaction_event(
+                definition,
+                episode_decision.episode,
+                location_observation,
+                episode_decision,
             )
+            if episode_decision.episode is not None and episode_decision.is_state_change
+            else None
         )
         persisted = self._persist_episode_decision(
             definition,
@@ -618,11 +655,20 @@ class LiveSignalRuntime:
             open_signal,
             bundle.evaluation_as_of,
             bundle,
+            interaction,
         )
         narrative_matches = (
             persisted.current.location_matches
             if persisted.current is not None and persisted.current.location_matches
             else location.matches
+        )
+        selected_cluster = next(
+            (
+                item
+                for item in location.clusters
+                if item.cluster_id == location.selected_cluster_id
+            ),
+            None,
         )
         gate = _ConfirmationGate(
             direction_status=direction_decision.qualification.status,
@@ -668,6 +714,7 @@ class LiveSignalRuntime:
                 location_matches=narrative_matches,
                 reason_codes=episode_decision.reason_codes,
                 interaction_state=episode_decision.interaction_state,
+                location_cluster=selected_cluster,
             )
         return SignalEvaluationEvent(
             instrument_id=bundle.instrument_id,
@@ -684,6 +731,7 @@ class LiveSignalRuntime:
             location_matches=narrative_matches,
             reason_codes=episode_decision.reason_codes,
             interaction_state=episode_decision.interaction_state,
+            location_cluster=selected_cluster,
         )
 
     def _evaluation_bar(
@@ -712,6 +760,7 @@ class LiveSignalRuntime:
         open_signal: SignalSnapshot | None,
         occurred_ts: datetime,
         bundle: CommittedMarketContextBundle,
+        interaction: LocationInteractionEvent | None,
     ) -> _PersistedSignalDecision:
         key = (definition.definition_id, bundle.instrument_id)
         if decision.episode is not None and (
@@ -731,6 +780,7 @@ class LiveSignalRuntime:
             self._save_candidate_and_transition(
                 setup.candidate,
                 setup.armed_transition,
+                interaction=interaction,
             )
             current = setup.armed_transition.current
             with self._condition:
@@ -751,6 +801,7 @@ class LiveSignalRuntime:
                 self._save_candidate_and_transition(
                     setup.candidate,
                     setup.armed_transition,
+                    interaction=interaction,
                 )
                 current = setup.armed_transition.current
                 with self._condition:
@@ -775,6 +826,7 @@ class LiveSignalRuntime:
                 ended,
                 setup.candidate,
                 setup.armed_transition,
+                interaction=interaction,
             )
             current = setup.armed_transition.current
             with self._condition:
@@ -787,6 +839,8 @@ class LiveSignalRuntime:
         if decision.event_type == LocationEpisodeEventType.EXITED:
             if open_signal is None:
                 if self._suppressed_episode_ids.get(key) == decision.ended_episode_id:
+                    if interaction is not None:
+                        self._store.save_location_interaction(interaction)
                     self._suppressed_episode_ids.pop(key, None)
                     self._confirmation_gates.pop(key, None)
                     return _PersistedSignalDecision(None)
@@ -797,7 +851,7 @@ class LiveSignalRuntime:
                 occurred_ts=occurred_ts,
                 reason_codes=decision.reason_codes,
             )
-            self._apply_signal_transition(ended)
+            self._apply_signal_transition(ended, interaction=interaction)
             with self._condition:
                 self._open_signals.pop(
                     (open_signal.definition_id, open_signal.instrument_id),
@@ -805,19 +859,28 @@ class LiveSignalRuntime:
                 )
                 self._lifecycle_write_count += 1
             return _PersistedSignalDecision(ended.current, (ended,))
+        if interaction is not None:
+            self._store.save_location_interaction(interaction)
         return _PersistedSignalDecision(open_signal)
 
     def _save_candidate_and_transition(
         self,
         candidate: SignalSnapshot,
         event: SignalTransitionEvent,
+        *,
+        interaction: LocationInteractionEvent | None = None,
     ) -> object:
         if self._notification_factory is None:
-            return self._store.save_signal_candidate_and_transition(candidate, event)
+            return self._store.save_signal_candidate_and_transition(
+                candidate,
+                event,
+                interaction=interaction,
+            )
         return self._store.save_signal_candidate_and_transition(
             candidate,
             event,
             notification=self._notification_factory(event),
+            interaction=interaction,
         )
 
     def _replace_signal_with_armed_candidate(
@@ -825,12 +888,15 @@ class LiveSignalRuntime:
         ended_event: SignalTransitionEvent,
         candidate: SignalSnapshot,
         armed_event: SignalTransitionEvent,
+        *,
+        interaction: LocationInteractionEvent | None = None,
     ) -> object:
         if self._notification_factory is None:
             return self._store.replace_signal_with_armed_candidate(
                 ended_event,
                 candidate,
                 armed_event,
+                interaction=interaction,
             )
         return self._store.replace_signal_with_armed_candidate(
             ended_event,
@@ -838,14 +904,21 @@ class LiveSignalRuntime:
             armed_event,
             ended_notification=self._notification_factory(ended_event),
             armed_notification=self._notification_factory(armed_event),
+            interaction=interaction,
         )
 
-    def _apply_signal_transition(self, event: SignalTransitionEvent) -> object:
+    def _apply_signal_transition(
+        self,
+        event: SignalTransitionEvent,
+        *,
+        interaction: LocationInteractionEvent | None = None,
+    ) -> object:
         if self._notification_factory is None:
-            return self._store.apply_signal_transition(event)
+            return self._store.apply_signal_transition(event, interaction=interaction)
         return self._store.apply_signal_transition(
             event,
             notification=self._notification_factory(event),
+            interaction=interaction,
         )
 
     def _confirmation_context(

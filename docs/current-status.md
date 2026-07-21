@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-07-17
+Last reviewed: 2026-07-21
 
 This page is the source of truth for implementation progress. It separates code
 that exists from behavior that has received live acceptance.
@@ -40,7 +40,7 @@ that exists from behavior that has received live acceptance.
 
 - Nautilus Parquet catalog for bulk time-series data
 - SQLite control plane for identities, checkpoints, recovery, features, signals,
-  transitions, and notification intents
+  transitions, location interactions, and notification intents
 - Serialized bounded catalog writes
 - Restart verification and checkpoint recovery
 - Retention and offline SQLite compaction tooling
@@ -65,7 +65,11 @@ that exists from behavior that has received live acceptance.
 - Direction-aligned location qualification
 - Repeatable location episode tracking
 - Soft Direction degradation preserves open regimes while blocking Trigger
-- Directional Location departure classification with confirmed adverse breach
+- Completed-bar Location touch detection plus explicit engagement, rejection,
+  and acceptance-through classification
+- Durable, restart-restored Location interaction events with transparent
+  cluster-quality components
+- Cluster-local source confluence and deterministic best-location selection
 - Restart restoration of verified open signal state
 - Bounded post-commit live feature composition and Direction/Location evaluation
 - Equal evaluation path for active and background instruments
@@ -75,6 +79,19 @@ that exists from behavior that has received live acceptance.
 - Concise lifecycle and runtime-health console projections
 
 ## Current Boundary
+
+Signal algorithm `1.2` retains completed-bar touches after the candle closes
+away, confirms rejection and acceptance through consecutive closes, and stores
+meaningful interaction changes as canonical SQLite events. Simultaneous levels
+are grouped into coherent price clusters; confluence must exist inside one
+cluster, and selection retains source diversity, timeframe diversity, exact
+touches, fidelity, normalized distance, and compactness as separate components.
+These semantics are deterministic-test complete and received mechanical live
+acceptance during the July 20 run. The same run did not show acceptable trading
+quality: 90 Armed signals produced 5 Triggers, while 54 signals were invalidated
+because another Location episode replaced them. The evidence and resulting
+decision to specify a distinct Markeitect Model are recorded in
+`docs/notes/2026-07-21-markeitect-model-handoff.md`.
 
 Stage 5D.3 has live evidence across the full Candidate, Armed, Invalidated, and
 Expired lifecycle. The managed bounded
@@ -186,7 +203,7 @@ LiveNode or canonical analytics path.
 ## Deliberately Deferred
 
 - Stage 5E composite scoring, suppression, and expiry refinement
-- Discord webhook delivery and scheduled reports
+- Scheduled Discord reports and relevance throttling
 - Options contract discovery, chain snapshots, and options-derived context
 - ML ranking and AI explanation
 - Strategy runtime

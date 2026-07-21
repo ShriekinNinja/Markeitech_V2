@@ -21,6 +21,7 @@ from markeitech.signals.contracts import (
     LocationSourceKind,
     SignalDirection,
     SignalEvidenceFidelity,
+    SignalLocationCluster,
     SignalLocationMatch,
     SignalLocationZone,
     SignalLocationZoneKind,
@@ -193,11 +194,14 @@ def qualify_location(
             )
         )
 
-    matched_sources = {item.zone.source_kind for item in matches}
+    clusters = cluster_location_matches(tuple(matches))
+    selected = _select_location_cluster(clusters)
+    selected_matches = () if selected is None else selected.matches
+    matched_sources = {item.zone.source_kind for item in selected_matches}
     if len(matched_sources) >= policy.minimum_distinct_sources:
         status = LocationQualificationStatus.QUALIFIED
         reasons.append("minimum_location_sources_met")
-    elif matches:
+    elif selected_matches:
         status = LocationQualificationStatus.INSUFFICIENT_CONFLUENCE
         reasons.append("minimum_location_sources_not_met")
     elif not derivation.available_source_kinds:
@@ -209,10 +213,101 @@ def qualify_location(
 
     return LocationQualification(
         status=status,
-        matches=tuple(matches),
+        matches=selected_matches,
+        clusters=clusters,
+        selected_cluster_id=None if selected is None else selected.cluster_id,
         is_degraded=degraded,
-        reason_codes=tuple(dict.fromkeys(reasons)),
+        reason_codes=tuple(
+            dict.fromkeys(
+                (
+                    *reasons,
+                    *(
+                        ()
+                        if selected is None
+                        else (
+                            f"location_clusters_{len(clusters)}",
+                            f"selected_cluster_sources_{selected.distinct_source_count}",
+                            f"selected_cluster_timeframes_{selected.distinct_timeframe_count}",
+                            f"selected_cluster_exact_touches_{selected.exact_touch_count}",
+                        )
+                    ),
+                )
+            )
+        ),
     )
+
+
+def cluster_location_matches(
+    matches: tuple[SignalLocationMatch, ...],
+) -> tuple[SignalLocationCluster, ...]:
+    if not matches:
+        return ()
+    ordered = sorted(
+        matches,
+        key=lambda item: (
+            item.zone.lower_price - item.tolerance,
+            item.zone.upper_price + item.tolerance,
+            item.zone.zone_id,
+        ),
+    )
+    groups: list[list[SignalLocationMatch]] = []
+    group_upper: Decimal | None = None
+    for match in ordered:
+        lower = match.zone.lower_price - match.tolerance
+        upper = match.zone.upper_price + match.tolerance
+        if group_upper is None or lower > group_upper:
+            groups.append([match])
+            group_upper = upper
+            continue
+        groups[-1].append(match)
+        group_upper = max(group_upper, upper)
+    return tuple(_location_cluster(tuple(group)) for group in groups)
+
+
+def _location_cluster(matches: tuple[SignalLocationMatch, ...]) -> SignalLocationCluster:
+    instrument_id = matches[0].zone.instrument_id
+    direction = matches[0].zone.direction
+    normalized_distances = tuple(
+        Decimal("0") if item.tolerance == 0 else item.distance / item.tolerance
+        for item in matches
+    )
+    return SignalLocationCluster(
+        instrument_id=instrument_id,
+        direction=direction,
+        lower_price=min(item.zone.lower_price - item.tolerance for item in matches),
+        upper_price=max(item.zone.upper_price + item.tolerance for item in matches),
+        matches=tuple(sorted(matches, key=lambda item: item.zone.zone_id)),
+        distinct_source_count=len({item.zone.source_kind for item in matches}),
+        distinct_timeframe_count=len({item.zone.timeframe for item in matches}),
+        exact_touch_count=sum(item.distance == 0 for item in matches),
+        reported_match_count=sum(
+            item.fidelity == SignalEvidenceFidelity.REPORTED for item in matches
+        ),
+        inferred_or_partial_match_count=sum(
+            item.fidelity in {SignalEvidenceFidelity.INFERRED, SignalEvidenceFidelity.PARTIAL}
+            for item in matches
+        ),
+        mean_normalized_distance=sum(normalized_distances, Decimal("0")) / len(matches),
+    )
+
+
+def _select_location_cluster(
+    clusters: tuple[SignalLocationCluster, ...],
+) -> SignalLocationCluster | None:
+    if not clusters:
+        return None
+    return sorted(
+        clusters,
+        key=lambda item: (
+            -item.distinct_source_count,
+            -item.distinct_timeframe_count,
+            -item.exact_touch_count,
+            -item.reported_match_count,
+            item.mean_normalized_distance,
+            item.upper_price - item.lower_price,
+            item.cluster_id,
+        ),
+    )[0]
 
 
 def _zones_from_feature(

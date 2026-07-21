@@ -105,13 +105,13 @@ def outbox(
 def test_migrations_are_idempotent_and_auditable(tmp_path: Path) -> None:
     path = tmp_path / "metadata.sqlite3"
     with SQLiteMetadataStore(config(path)) as first:
-        assert first.schema_version == 10
+        assert first.schema_version == 11
     with SQLiteMetadataStore(config(path)) as second:
-        assert second.schema_version == 10
+        assert second.schema_version == 11
         row = second._connection.execute(  # noqa: SLF001
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [item["version"] for item in row] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        assert [item["version"] for item in row] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 
 def test_read_only_store_loads_state_and_rejects_writes(tmp_path: Path) -> None:
@@ -167,7 +167,7 @@ def test_schema_one_upgrades_without_losing_checkpoint(tmp_path: Path) -> None:
     connection.close()
 
     with SQLiteMetadataStore(config(path)) as upgraded:
-        assert upgraded.schema_version == 10
+        assert upgraded.schema_version == 11
         assert upgraded.load_checkpoint(expected.stream_key) == expected
 
 
@@ -198,6 +198,9 @@ def test_schema_eight_feature_manifests_receive_durable_commit_order(
     connection = sqlite3.connect(path)
     connection.executescript(
         """
+        DROP INDEX location_interaction_lookup_idx;
+        DROP INDEX location_interaction_episode_idx;
+        DROP TABLE location_interaction_events;
         DROP INDEX context_event_lookup_idx;
         DROP INDEX context_event_current_feature_idx;
         DROP TABLE context_transition_events;

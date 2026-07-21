@@ -15,6 +15,9 @@ from markeitech.persistence import (
     SQLiteMetadataStore,
 )
 from markeitech.signals import (
+    LocationEpisodeEventType,
+    LocationInteractionEvent,
+    LocationInteractionState,
     LocationSourceKind,
     SignalDirection,
     SignalEvidenceFidelity,
@@ -59,6 +62,24 @@ def location_match() -> SignalLocationMatch:
         tolerance=Decimal("1"),
         fidelity=SignalEvidenceFidelity.INFERRED,
         reason_codes=("test_location_match",),
+    )
+
+
+def interaction(signal: SignalSnapshot) -> LocationInteractionEvent:
+    assert signal.location_episode_id is not None
+    return LocationInteractionEvent(
+        definition_id=signal.definition_id,
+        algorithm_version=signal.algorithm_version,
+        configuration_hash=signal.configuration_hash,
+        episode_id=signal.location_episode_id,
+        instrument_id=signal.instrument_id,
+        direction=signal.direction,
+        occurred_ts=signal.updated_ts,
+        event_type=LocationEpisodeEventType.ENTERED,
+        interaction_state=LocationInteractionState.TOUCHED,
+        observed_price=Decimal("100"),
+        entry_matches=(location_match(),),
+        reason_codes=("location_touched",),
     )
 
 
@@ -232,6 +253,30 @@ def test_transition_and_notification_commit_atomically_and_retry_idempotently(
         assert restarted.load_signal(signal.signal_id) == event.current
         assert restarted.load_signal_transitions(signal.signal_id) == (event,)
         assert restarted.load_outbox(OUTBOX_ID) == outbound
+
+
+def test_location_interaction_commits_with_initial_transition_and_retries_idempotently(
+    tmp_path: Path,
+) -> None:
+    signal = candidate()
+    event = armed_event(signal)
+    touched = interaction(signal)
+    path = tmp_path / "metadata.sqlite3"
+    with SQLiteMetadataStore(config(path)) as store:
+        assert (
+            store.save_signal_candidate_and_transition(signal, event, interaction=touched)
+            == SignalPersistenceOutcome.TRANSITIONED
+        )
+        assert (
+            store.save_signal_candidate_and_transition(signal, event, interaction=touched)
+            == SignalPersistenceOutcome.DUPLICATE
+        )
+
+    with SQLiteMetadataStore(config(path)) as restarted:
+        assert restarted.load_location_interactions(episode_id=touched.episode_id) == (touched,)
+        conflicting = touched.model_copy(update={"reason_codes": ("changed",)})
+        with pytest.raises(ValueError, match="conflicts with different content"):
+            restarted.save_location_interaction(conflicting)
 
 
 def test_transition_sequence_orders_equal_market_timestamps(tmp_path: Path) -> None:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -16,6 +16,7 @@ from markeitech.signals.contracts import (
     LocationQualification,
     LocationQualificationStatus,
     SignalDirection,
+    SignalLocationCluster,
     SignalLocationMatch,
 )
 
@@ -143,6 +144,8 @@ class LocationEpisodeDecision:
     ended_episode_id: str | None
     outside_confirmation_count: int
     reason_codes: tuple[str, ...] = ()
+    favorable_confirmation_count: int = 0
+    is_state_change: bool = True
 
     @property
     def interaction_state(self) -> LocationInteractionState:
@@ -164,6 +167,74 @@ class LocationEpisodeDecision:
         }[self.event_type]
 
 
+class LocationInteractionEvent(VersionedDomainModel):
+    definition_id: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
+    algorithm_version: str = Field(min_length=1)
+    configuration_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    episode_id: str = Field(pattern=r"^[0-9a-f]{64}$")
+    ended_episode_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    instrument_id: str = Field(min_length=1)
+    direction: SignalDirection
+    occurred_ts: datetime
+    event_type: LocationEpisodeEventType
+    interaction_state: LocationInteractionState
+    observed_price: Decimal | None = Field(default=None, gt=0)
+    observed_bar: OneMinuteBar | None = None
+    entry_matches: tuple[SignalLocationMatch, ...] = Field(min_length=1)
+    quality_clusters: tuple[SignalLocationCluster, ...] = ()
+    selected_cluster_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    favorable_confirmation_count: int = Field(default=0, ge=0)
+    adverse_confirmation_count: int = Field(default=0, ge=0)
+    reason_codes: tuple[str, ...] = Field(min_length=1)
+
+    @field_validator("occurred_ts")
+    @classmethod
+    def _occurred_timestamp_must_be_utc(cls, value: datetime) -> datetime:
+        return require_utc(value)
+
+    @model_validator(mode="after")
+    def _interaction_must_be_consistent(self) -> LocationInteractionEvent:
+        expected_state = LocationEpisodeDecision(
+            event_type=self.event_type,
+            episode=None,
+            ended_episode_id=None,
+            outside_confirmation_count=0,
+        ).interaction_state
+        if self.interaction_state != expected_state:
+            raise ValueError("location interaction state must match event type")
+        if any(item.zone.instrument_id != self.instrument_id for item in self.entry_matches):
+            raise ValueError("location interaction matches must use one instrument")
+        if any(item.zone.direction != self.direction for item in self.entry_matches):
+            raise ValueError("location interaction matches must use one direction")
+        if any(
+            item.instrument_id != self.instrument_id or item.direction != self.direction
+            for item in self.quality_clusters
+        ):
+            raise ValueError("location interaction clusters must match episode semantics")
+        if self.observed_bar is not None:
+            if self.observed_bar.instrument_id != self.instrument_id:
+                raise ValueError("location interaction bar must use one instrument")
+            if self.observed_bar.close_ts != self.occurred_ts:
+                raise ValueError("location interaction bar must close at occurrence time")
+        if self.selected_cluster_id is not None and self.selected_cluster_id not in {
+            item.cluster_id for item in self.quality_clusters
+        }:
+            raise ValueError("location interaction selected cluster is unavailable")
+        return self
+
+    @property
+    def event_id(self) -> str:
+        return _canonical_hash(
+            {
+                "schema_version": self.schema_version,
+                "definition_id": self.definition_id,
+                "episode_id": self.episode_id,
+                "occurred_ts": self.occurred_ts.isoformat(),
+                "interaction_state": self.interaction_state.value,
+            }
+        )
+
+
 @dataclass
 class _InstrumentEpisodeState:
     active: SignalLocationEpisode | None = None
@@ -171,6 +242,7 @@ class _InstrumentEpisodeState:
     favorable_confirmation_count: int = 0
     last_observation: LocationEpisodeObservation | None = None
     last_decision: LocationEpisodeDecision | None = None
+    last_interaction_state: LocationInteractionState | None = None
 
 
 class LocationEpisodeTracker:
@@ -182,15 +254,32 @@ class LocationEpisodeTracker:
         self._rejection_confirmation_bars = definition.location_policy.rejection_confirmation_bars
         self._states: dict[str, _InstrumentEpisodeState] = {}
 
-    def seed_active_episodes(self, episodes: tuple[SignalLocationEpisode, ...]) -> None:
+    def seed_active_episodes(
+        self,
+        episodes: tuple[SignalLocationEpisode, ...],
+        latest_interactions: tuple[LocationInteractionEvent, ...] = (),
+    ) -> None:
         if self._states:
             raise ValueError("location episode tracker can only seed before evaluation")
+        interactions = {item.episode_id: item for item in latest_interactions}
         for episode in episodes:
             if episode.definition_id != self._definition.definition_id:
                 raise ValueError("restored location episode definition does not match tracker")
             if episode.instrument_id in self._states:
                 raise ValueError("multiple active location episodes exist for one definition")
-            self._states[episode.instrument_id] = _InstrumentEpisodeState(active=episode)
+            interaction = interactions.get(episode.episode_id)
+            self._states[episode.instrument_id] = _InstrumentEpisodeState(
+                active=episode,
+                outside_confirmation_count=(
+                    0 if interaction is None else interaction.adverse_confirmation_count
+                ),
+                favorable_confirmation_count=(
+                    0 if interaction is None else interaction.favorable_confirmation_count
+                ),
+                last_interaction_state=(
+                    None if interaction is None else interaction.interaction_state
+                ),
+            )
 
     def evaluate(self, observation: LocationEpisodeObservation) -> LocationEpisodeDecision:
         if observation.definition_id != self._definition.definition_id:
@@ -208,9 +297,16 @@ class LocationEpisodeTracker:
                 assert state.last_decision is not None
                 return state.last_decision
 
+        previous_interaction_state = state.last_interaction_state
         decision = self._evaluate_new(state, observation)
+        decision = replace(
+            decision,
+            favorable_confirmation_count=state.favorable_confirmation_count,
+            is_state_change=decision.interaction_state != previous_interaction_state,
+        )
         state.last_observation = observation
         state.last_decision = decision
+        state.last_interaction_state = decision.interaction_state
         return decision
 
     def _evaluate_new(
@@ -238,7 +334,7 @@ class LocationEpisodeTracker:
                 )
             return LocationEpisodeDecision(
                 LocationEpisodeEventType.EXITED,
-                None,
+                active,
                 ended,
                 0,
             )
@@ -364,7 +460,7 @@ class LocationEpisodeTracker:
         state.outside_confirmation_count = 0
         return LocationEpisodeDecision(
             LocationEpisodeEventType.EXITED,
-            None,
+            active,
             active.episode_id,
             self._exit_confirmation_bars,
             ("location_acceptance_confirmed",),
@@ -402,6 +498,47 @@ def _classify_departure(
         if observed_price < min(favorable_edges):
             return LocationEpisodeEventType.FAVORABLE_DEPARTURE
     return LocationEpisodeEventType.DEPARTURE_UNRESOLVED
+
+
+def build_location_interaction_event(
+    definition: SignalDefinitionConfig,
+    episode: SignalLocationEpisode,
+    observation: LocationEpisodeObservation,
+    decision: LocationEpisodeDecision,
+) -> LocationInteractionEvent:
+    if episode.definition_id != definition.definition_id:
+        raise ValueError("location interaction episode must match definition")
+    if episode.instrument_id != observation.instrument_id:
+        raise ValueError("location interaction episode must match observation")
+    reasons = decision.reason_codes or (f"location_{decision.interaction_state.value}",)
+    quality_clusters = tuple(
+        item
+        for item in observation.qualification.clusters
+        if item.instrument_id == episode.instrument_id and item.direction == episode.direction
+    )
+    selected_cluster_id = observation.qualification.selected_cluster_id
+    if selected_cluster_id not in {item.cluster_id for item in quality_clusters}:
+        selected_cluster_id = None
+    return LocationInteractionEvent(
+        definition_id=definition.definition_id,
+        algorithm_version=definition.algorithm_version,
+        configuration_hash=definition.configuration_hash,
+        episode_id=episode.episode_id,
+        ended_episode_id=decision.ended_episode_id,
+        instrument_id=episode.instrument_id,
+        direction=episode.direction,
+        occurred_ts=observation.evaluation_ts,
+        event_type=decision.event_type,
+        interaction_state=decision.interaction_state,
+        observed_price=observation.observed_price,
+        observed_bar=observation.observed_bar,
+        entry_matches=episode.entry_matches,
+        quality_clusters=quality_clusters,
+        selected_cluster_id=selected_cluster_id,
+        favorable_confirmation_count=decision.favorable_confirmation_count,
+        adverse_confirmation_count=decision.outside_confirmation_count,
+        reason_codes=reasons,
+    )
 
 
 def _new_episode(observation: LocationEpisodeObservation) -> SignalLocationEpisode:

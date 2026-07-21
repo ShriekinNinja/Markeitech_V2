@@ -19,6 +19,7 @@ from markeitech.signals import (
     SignalLocationMatch,
     SignalLocationZone,
     SignalLocationZoneKind,
+    build_location_interaction_event,
     intraday_context_definition,
 )
 from pydantic import ValidationError
@@ -106,12 +107,23 @@ def test_enters_once_and_stays_active_while_any_entry_zone_overlaps() -> None:
             anchors=("zone-b", "zone-c"),
         )
     )
+    unchanged = tracker.evaluate(
+        observation(
+            NOW + timedelta(minutes=2),
+            LocationQualificationStatus.QUALIFIED,
+            anchors=("zone-a", "zone-b"),
+        )
+    )
 
     assert entered.event_type == LocationEpisodeEventType.ENTERED
+    assert entered.is_state_change
     assert entered.episode is not None
     assert active.event_type == LocationEpisodeEventType.ACTIVE
+    assert active.is_state_change
     assert active.episode == entered.episode
     assert active.ended_episode_id is None
+    assert unchanged.event_type == LocationEpisodeEventType.ACTIVE
+    assert not unchanged.is_state_change
 
 
 def test_disjoint_qualified_location_replaces_active_episode_immediately() -> None:
@@ -436,6 +448,44 @@ def test_rejection_requires_consecutive_favorable_closes(
     assert pending.event_type == LocationEpisodeEventType.FAVORABLE_DEPARTURE
     assert rejected.event_type == LocationEpisodeEventType.REJECTED
     assert rejected.interaction_state == LocationInteractionState.REJECTED
+    assert rejected.reason_codes == ("location_rejection_confirmed",)
+
+
+def test_restart_restores_pending_rejection_confirmation_progress() -> None:
+    definition = intraday_context_definition()
+    tracker = LocationEpisodeTracker(definition)
+    entered_observation = observation(
+        NOW,
+        LocationQualificationStatus.QUALIFIED,
+        anchors=("zone-a",),
+    )
+    entered = tracker.evaluate(entered_observation)
+    pending_observation = observation(
+        NOW + timedelta(minutes=1),
+        LocationQualificationStatus.NOT_AT_LOCATION,
+        observed_price=Decimal("102"),
+    )
+    pending = tracker.evaluate(pending_observation)
+    assert entered.episode is not None
+    pending_event = build_location_interaction_event(
+        definition,
+        entered.episode,
+        pending_observation,
+        pending,
+    )
+
+    restarted = LocationEpisodeTracker(definition)
+    restarted.seed_active_episodes((entered.episode,), (pending_event,))
+    rejected = restarted.evaluate(
+        observation(
+            NOW + timedelta(minutes=2),
+            LocationQualificationStatus.NOT_AT_LOCATION,
+            observed_price=Decimal("102"),
+        )
+    )
+
+    assert pending_event.favorable_confirmation_count == 1
+    assert rejected.event_type == LocationEpisodeEventType.REJECTED
     assert rejected.reason_codes == ("location_rejection_confirmed",)
 
 

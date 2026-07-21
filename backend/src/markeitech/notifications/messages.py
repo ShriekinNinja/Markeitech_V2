@@ -190,12 +190,31 @@ def build_location_narrative_notification(
             "value": _signal_locations(event.location_matches),
             "inline": False,
         },
+    ]
+    if event.location_cluster is not None:
+        cluster = event.location_cluster
+        fields.append(
+            {
+                "name": "Location quality",
+                "value": (
+                    f"Sources: **{cluster.distinct_source_count}**  •  "
+                    f"Timeframes: **{cluster.distinct_timeframe_count}**  •  "
+                    f"Exact touches: **{cluster.exact_touch_count}**\n"
+                    f"Reported matches: {cluster.reported_match_count}  •  "
+                    "Inferred/partial matches: "
+                    f"{cluster.inferred_or_partial_match_count}  •  "
+                    f"Mean distance: {cluster.mean_normalized_distance:.0%} of tolerance"
+                ),
+                "inline": False,
+            }
+        )
+    fields.append(
         {
             "name": "Evidence",
             "value": _signal_evidence_summary(event),
             "inline": False,
-        },
-    ]
+        }
+    )
     if event.reason_codes:
         fields.append(
             {

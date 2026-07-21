@@ -735,3 +735,30 @@ revisions, while restoring from the latest feature manifest can skip work after
 a crash between feature and context-event commits. An atomic detector
 checkpoint records the precise durable comparison boundary without duplicating
 analytics truth or producing startup noise.
+
+## DR-0059: Location Quality Is Clustered, Decomposed, And Durable
+
+Status: accepted
+
+Group simultaneously matched location evidence by overlapping price-and-
+tolerance intervals. Test minimum source confluence inside one coherent cluster;
+never qualify by combining unrelated locations merely because the same candle
+traversed both. Retain every cluster and contributor, select one deterministically
+by source diversity, timeframe diversity, exact touch count, reported fidelity,
+normalized distance, and compactness, and persist those components without
+collapsing them into one confidence score.
+
+Persist only meaningful location-interaction state changes in SQLite. The event
+retains immutable episode identity, entry geometry, completed canonical bar,
+quality clusters, confirmation progress, reason codes, and signal algorithm and
+configuration versions. Commit Touch and accepted-through interactions in the
+same transaction as their corresponding lifecycle changes. Exact retries are
+idempotent; conflicting content at the same episode time fails visibly. Restore
+pending rejection or acceptance counts from the latest durable event.
+
+Reason: Cross-timeframe levels can be individually valid while representing
+different auctions. Treating all nearby matches as one setup inflated apparent
+confluence and made later calibration opaque. Durable decomposed clusters let
+operators, audits, reference annotations, and future ML examine why a location
+was selected and what happened there without reverse-engineering Discord output
+or inventing state after restart.

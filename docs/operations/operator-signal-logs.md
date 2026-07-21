@@ -21,8 +21,9 @@ Discord keeps durable signal truth separate from advisory market narration:
   receives only persisted Armed, Triggered, Invalidated, and Expired lifecycle
   transitions.
 - `alert-stream`, configured by `MARKEITECH_DISCORD_ALERT_STREAM_WEBHOOK`,
-  receives proximity warnings and location narratives such as Entered, Holding,
-  Rejected, Exit Warning, Exited, and Rotated.
+  receives proximity warnings and location narratives such as Touched, Engaged,
+  Departure Pending, Rejection Confirmed, Acceptance Pending, Accepted Through,
+  and Rotated.
 
 An Alert Stream message may be valuable decision support, but it is not a
 signal transition. Moving these messages to a separate destination changes only
@@ -134,6 +135,14 @@ displacement are location-interaction narratives. They preserve the Armed
 signal and therefore do not emit a lifecycle transition line. A confirmed
 rejection remains Location evidence; Trigger still requires its configured
 Aggression method.
+
+Location-interaction state changes are nevertheless canonical research truth.
+SQLite retains the completed bar, immutable entry geometry, selected cluster,
+all alternate clusters, transparent component measurements, and confirmation
+progress. Repeated unchanged Engaged or Rejected observations are not written.
+The Discord `Location quality` field reports source count, timeframe count,
+exact touches, fidelity counts, and normalized distance; it is intentionally
+not a single confidence score.
 
 ## `SIGNAL_TRIGGERED`
 

@@ -13,6 +13,7 @@ from markeitech.persistence.contracts import (
     StreamCheckpoint,
 )
 from markeitech.signals.contracts import SignalSnapshot, SignalStatus, SignalTransitionEvent
+from markeitech.signals.episode import LocationInteractionEvent
 
 
 class TimeSeriesStore(Protocol):
@@ -88,6 +89,7 @@ class SignalStateStore(Protocol):
         event: SignalTransitionEvent,
         *,
         notification: NotificationOutboxRecord | None = None,
+        interaction: LocationInteractionEvent | None = None,
     ) -> SignalPersistenceOutcome: ...
 
     def replace_signal_with_armed_candidate(
@@ -98,6 +100,7 @@ class SignalStateStore(Protocol):
         *,
         ended_notification: NotificationOutboxRecord | None = None,
         armed_notification: NotificationOutboxRecord | None = None,
+        interaction: LocationInteractionEvent | None = None,
     ) -> SignalPersistenceOutcome: ...
 
     def apply_signal_transition(
@@ -105,6 +108,7 @@ class SignalStateStore(Protocol):
         event: SignalTransitionEvent,
         *,
         notification: NotificationOutboxRecord | None = None,
+        interaction: LocationInteractionEvent | None = None,
     ) -> SignalPersistenceOutcome: ...
 
     def load_signal(self, signal_id: str) -> SignalSnapshot | None: ...
@@ -118,3 +122,13 @@ class SignalStateStore(Protocol):
     ) -> tuple[SignalSnapshot, ...]: ...
 
     def load_signal_transitions(self, signal_id: str) -> tuple[SignalTransitionEvent, ...]: ...
+
+    def save_location_interaction(self, event: LocationInteractionEvent) -> bool: ...
+
+    def load_location_interactions(
+        self,
+        *,
+        episode_id: str | None = None,
+        instrument_id: str | None = None,
+        definition_id: str | None = None,
+    ) -> tuple[LocationInteractionEvent, ...]: ...
