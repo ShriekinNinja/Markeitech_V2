@@ -81,11 +81,15 @@ class NautilusParquetTimeSeriesStore:
         ]
         with self._write_lock:
             repairs = self._overlapping_groups(catalog_data)
+            if repairs and self._contains_all(validated, identities):
+                return identities
             self._catalog.write_data(
                 catalog_data,
                 skip_disjoint_check=bool(repairs),
             )
             for data_cls, identifier, bucket_start_ns, bucket_end_ns in repairs:
+                if data_cls in {QuoteTick, TradeTick}:
+                    continue
                 self._catalog.consolidate_data(
                     data_cls=data_cls,
                     identifier=identifier,
@@ -95,6 +99,41 @@ class NautilusParquetTimeSeriesStore:
                     deduplicate=True,
                 )
         return identities
+
+    def _contains_all(
+        self,
+        events: tuple[CatalogEvent, ...],
+        identities: tuple[PersistenceEventIdentity, ...],
+    ) -> bool:
+        expected = {identity.dedupe_key for identity in identities}
+        grouped: dict[tuple[type, str], list[CatalogEvent]] = defaultdict(list)
+        for event in events:
+            data_cls = (
+                CanonicalOneMinuteBarRecord
+                if isinstance(event, OneMinuteBar)
+                else type(event)
+            )
+            grouped[(data_cls, str(event.instrument_id))].append(event)
+
+        observed: set[str] = set()
+        for (data_cls, identifier), values in grouped.items():
+            start = min(_catalog_init_ns(value) for value in values)
+            end = max(_catalog_init_ns(value) for value in values) + 1
+            stored = self._catalog.query(
+                data_cls=data_cls,
+                identifiers=[identifier],
+                start=start,
+                end=end,
+            )
+            for item in stored:
+                value = item.data if isinstance(item, CustomData) else item
+                event = (
+                    record_to_canonical_bar(value)
+                    if isinstance(value, CanonicalOneMinuteBarRecord)
+                    else value
+                )
+                observed.add(self._identity(self._require_supported(event)).dedupe_key)
+        return expected <= observed
 
     def _overlapping_groups(
         self,
@@ -120,11 +159,13 @@ class NautilusParquetTimeSeriesStore:
 
     def query_trade_ticks(self, instrument_id: str) -> tuple[TradeTick, ...]:
         with self._write_lock:
-            return tuple(self._catalog.query(data_cls=TradeTick, identifiers=[instrument_id]))
+            stored = self._catalog.query(data_cls=TradeTick, identifiers=[instrument_id])
+        return tuple(self._deduplicate_native(stored))
 
     def query_quote_ticks(self, instrument_id: str) -> tuple[QuoteTick, ...]:
         with self._write_lock:
-            return tuple(self._catalog.query(data_cls=QuoteTick, identifiers=[instrument_id]))
+            stored = self._catalog.query(data_cls=QuoteTick, identifiers=[instrument_id])
+        return tuple(self._deduplicate_native(stored))
 
     def query_one_minute_bars(self, instrument_id: str) -> tuple[OneMinuteBar, ...]:
         with self._write_lock:
@@ -204,6 +245,27 @@ class NautilusParquetTimeSeriesStore:
         validated = tuple(self._require_supported(event) for event in events)
         return tuple(self._identity(event) for event in validated)
 
+    def _deduplicate_native(
+        self,
+        events: Sequence[TradeTick | QuoteTick],
+    ) -> tuple[TradeTick | QuoteTick, ...]:
+        unique: dict[str, TradeTick | QuoteTick] = {}
+        for event in events:
+            key = self._identity(event).dedupe_key
+            existing = unique.get(key)
+            if existing is None or int(event.ts_init) < int(existing.ts_init):
+                unique[key] = event
+        return tuple(
+            sorted(
+                unique.values(),
+                key=lambda event: (int(event.ts_init), self._identity(event).dedupe_key),
+            )
+        )
+
 
 def _shares_init_timestamp(identities: Sequence[PersistenceEventIdentity]) -> bool:
     return len({identity.init_ts_ns for identity in identities}) == 1
+
+
+def _catalog_init_ns(event: CatalogEvent) -> int:
+    return event.ts_init_ns if isinstance(event, OneMinuteBar) else int(event.ts_init)

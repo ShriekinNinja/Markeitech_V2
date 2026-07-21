@@ -762,3 +762,24 @@ confluence and made later calibration opaque. Durable decomposed clusters let
 operators, audits, reference annotations, and future ML examine why a location
 was selected and what happened there without reverse-engineering Discord output
 or inventing state after restart.
+
+## DR-0060: Native Tick Consolidation Is Outside The Live Critical Path
+
+Status: accepted
+
+Allow native trade and quote tick files to retain overlapping timestamp ranges
+when a restart contributes new logical events inside an already-written minute.
+The persistence coordinator removes committed identities before writing, exact
+crash retries verify the complete durable event set, and Markeitech catalog
+readers defensively deduplicate logical identities. Do not invoke Nautilus file
+consolidation from the live writer or bounded shutdown flush.
+
+Continue synchronous overlap consolidation for canonical bars because their
+volume is bounded and their catalog feeds startup gap recovery. Treat native
+tick consolidation as offline maintenance debt. A future direct Nautilus replay
+path must either run that maintenance first or preserve equivalent deduplication.
+
+Reason: Nautilus consolidation of partially overlapping high-frequency tick
+files can exceed the shutdown deadline even though every accepted event is
+already protected by the ingress journal. File layout optimization must not turn
+a durable, recoverable stop into a runtime failure.

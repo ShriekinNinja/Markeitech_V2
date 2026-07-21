@@ -196,6 +196,28 @@ def test_historical_live_overlap_writes_only_new_tail(
     assert len(catalog.query_trade_ticks("NQU6.CME")) == 3
 
 
+def test_new_tick_inside_committed_file_range_does_not_require_consolidation(
+    persistence: tuple[PersistenceConfig, NautilusParquetTimeSeriesStore, SQLiteMetadataStore],
+) -> None:
+    _, catalog, _ = persistence
+    first = trade_tick(1_000)
+    middle = trade_tick(2_000)
+    last = trade_tick(3_000)
+    coordinator(persistence).persist_closed_batch([first, last])
+
+    result = coordinator(persistence).persist_closed_batch([middle])
+
+    assert result.persisted_count == 1
+    assert result.duplicate_count == 0
+    stored = catalog.query_trade_ticks("NQU6.CME")
+    assert len(stored) == 3
+    assert {tick.trade_id for tick in stored} == {
+        first.trade_id,
+        middle.trade_id,
+        last.trade_id,
+    }
+
+
 @pytest.mark.parametrize(
     "point,expected_status",
     [

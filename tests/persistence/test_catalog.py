@@ -122,7 +122,7 @@ def test_catalog_keeps_instruments_isolated(store: NautilusParquetTimeSeriesStor
     assert len(store.query_trade_ticks("ESU6.CME")) == 1
 
 
-def test_distinct_ticks_with_shared_boundary_timestamp_are_consolidated(
+def test_distinct_ticks_with_shared_boundary_timestamp_remain_queryable(
     store: NautilusParquetTimeSeriesStore,
 ) -> None:
     first = trade_tick()
@@ -154,7 +154,41 @@ def test_distinct_ticks_with_shared_boundary_timestamp_are_consolidated(
         boundary.trade_id,
         second.trade_id,
     }
+    assert len(stored) == 3
+
+
+def test_exact_native_tick_retry_reuses_durable_catalog_data(
+    store: NautilusParquetTimeSeriesStore,
+) -> None:
+    values = [trade_tick(), trade_tick(offset_ns=1)]
+
+    first = store.write(values)
+    retried = store.write(values)
+
+    assert retried == first
+    stored = store.query_trade_ticks("NQU6.CME")
+    assert len(stored) == 2
+    assert {tick.trade_id for tick in stored} == {tick.trade_id for tick in values}
     assert len(store._catalog.get_intervals(TradeTick, "NQU6.CME")) == 1
+
+
+def test_partial_native_tick_overlap_is_deduplicated_on_read(
+    store: NautilusParquetTimeSeriesStore,
+) -> None:
+    first = trade_tick()
+    middle = trade_tick(offset_ns=1)
+    last = trade_tick(offset_ns=2)
+
+    store.write([first, last])
+    store.write([first, middle])
+
+    stored = store.query_trade_ticks("NQU6.CME")
+    assert len(stored) == 3
+    assert {tick.trade_id for tick in stored} == {
+        first.trade_id,
+        middle.trade_id,
+        last.trade_id,
+    }
 
 
 def test_empty_batch_is_harmless(store: NautilusParquetTimeSeriesStore) -> None:
@@ -182,6 +216,8 @@ class DetectingCatalog:
         self._active_writes = 0
         self.max_active_writes = 0
         self.fail = fail
+        self.intervals: list[tuple[int, int]] = []
+        self.consolidation_count = 0
 
     def write_data(self, data: list[object], **kwargs: object) -> None:
         if self.fail:
@@ -198,10 +234,36 @@ class DetectingCatalog:
         data_cls: type,
         identifier: str | None = None,
     ) -> list[tuple[int, int]]:
-        return []
+        return self.intervals
 
     def consolidate_data(self, *args: object, **kwargs: object) -> None:
-        return None
+        self.consolidation_count += 1
+
+    def query(
+        self,
+        data_cls: type,
+        identifiers: list[str] | None = None,
+        **kwargs: object,
+    ) -> list[object]:
+        return []
+
+
+def test_native_tick_overlap_does_not_run_synchronous_consolidation(
+    tmp_path: Path,
+) -> None:
+    catalog = DetectingCatalog()
+    catalog.intervals = [(INIT_NS, INIT_NS + 10)]
+    store = NautilusParquetTimeSeriesStore(
+        PersistenceConfig(
+            catalog_path=tmp_path / "catalog",
+            metadata_path=tmp_path / "metadata.sqlite3",
+        ),
+        catalog=catalog,
+    )
+
+    store.write([trade_tick(offset_ns=1)])
+
+    assert catalog.consolidation_count == 0
 
 
 def test_store_serializes_concurrent_catalog_writes(tmp_path: Path) -> None:

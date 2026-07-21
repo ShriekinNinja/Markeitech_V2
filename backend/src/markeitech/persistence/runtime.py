@@ -272,8 +272,25 @@ class PersistenceRuntime:
             if not stopped or not feature_stopped:
                 with self._lock:
                     self._status = PersistenceRuntimeStatus.FAILED
+                writer_snapshot = self.writer.snapshot
+                feature_snapshot = self.feature_writer_snapshot
                 self.metadata.close()
-                raise RuntimeError("persistence writers did not stop cleanly within timeout")
+                raise RuntimeError(
+                    "persistence writers did not stop cleanly within timeout: "
+                    f"catalog={writer_snapshot.status.value} "
+                    f"pending={writer_snapshot.pending_count} "
+                    f"error={writer_snapshot.last_error or 'none'}; "
+                    "feature="
+                    + (
+                        "disabled"
+                        if feature_snapshot is None
+                        else (
+                            f"{feature_snapshot.status.value} "
+                            f"pending={feature_snapshot.pending_count} "
+                            f"error={feature_snapshot.last_error or 'none'}"
+                        )
+                    )
+                )
         elif self.writer.snapshot.status not in {
             PersistenceWriterStatus.STOPPED,
             PersistenceWriterStatus.FAILED,

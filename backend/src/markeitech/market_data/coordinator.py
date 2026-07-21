@@ -34,6 +34,7 @@ class WarmupSnapshot:
 
 WarmupReadyHandler = Callable[[WarmupSnapshot], None]
 WarmupRetryHandler = Callable[[LiveNodeAction, int, int], None]
+WarmupFailureHandler = Callable[[BaseException], None]
 
 
 class StartupRecoveryHook(Protocol):
@@ -52,6 +53,7 @@ class WarmupCoordinator:
         startup_recovery: StartupRecoveryHook | None = None,
         max_warmup_attempts: int = 3,
         on_warmup_retry: WarmupRetryHandler | None = None,
+        on_warmup_failure: WarmupFailureHandler | None = None,
     ) -> None:
         if max_warmup_attempts < 1:
             raise ValueError("maximum warmup attempts must be positive")
@@ -61,6 +63,7 @@ class WarmupCoordinator:
         self._startup_recovery = startup_recovery
         self._max_warmup_attempts = max_warmup_attempts
         self._on_warmup_retry = on_warmup_retry
+        self._on_warmup_failure = on_warmup_failure
         self._state = WarmupState.IDLE
         self._historical_data: dict[str, list[Any]] = defaultdict(list)
         self._warmup_actions: deque[LiveNodeAction] = deque()
@@ -116,24 +119,29 @@ class WarmupCoordinator:
         )
 
     def _complete(self, action: LiveNodeAction, attempt: int, baseline: int) -> None:
-        if self._state != WarmupState.REQUESTING:
-            return
-        key = _warmup_key(action)
-        if self._active_warmup_attempt != (key, attempt):
-            return
-        bar_type = action.bar_type or ""
-        if len(self._historical_data[bar_type]) <= baseline:
-            if attempt >= self._max_warmup_attempts:
-                self._state = WarmupState.FAILED
-                raise RuntimeError(
-                    f"historical warmup returned no data for {bar_type} after "
-                    f"{attempt} attempts"
-                )
-            self._warmup_actions.appendleft(action)
-            if self._on_warmup_retry is not None:
-                self._on_warmup_retry(action, attempt + 1, self._max_warmup_attempts)
-        self._active_warmup_attempt = None
-        self._execute_next_warmup()
+        try:
+            if self._state != WarmupState.REQUESTING:
+                return
+            key = _warmup_key(action)
+            if self._active_warmup_attempt != (key, attempt):
+                return
+            bar_type = action.bar_type or ""
+            if len(self._historical_data[bar_type]) <= baseline:
+                if attempt >= self._max_warmup_attempts:
+                    self._state = WarmupState.FAILED
+                    raise RuntimeError(
+                        f"historical warmup returned no data for {bar_type} after "
+                        f"{attempt} attempts"
+                    )
+                self._warmup_actions.appendleft(action)
+                if self._on_warmup_retry is not None:
+                    self._on_warmup_retry(action, attempt + 1, self._max_warmup_attempts)
+            self._active_warmup_attempt = None
+            self._execute_next_warmup()
+        except BaseException as exc:
+            if self._on_warmup_failure is not None:
+                self._on_warmup_failure(exc)
+            raise
 
     def _start_recovery(self) -> None:
         if self._state != WarmupState.REQUESTING:

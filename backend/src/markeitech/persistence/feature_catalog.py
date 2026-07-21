@@ -165,11 +165,11 @@ class ParquetFeatureStore:
         self,
         features: Sequence[MarketContextFeatureSnapshot],
     ) -> dict[str, MarketContextFeatureSnapshot]:
-        instrument_ids = sorted({feature.snapshot.instrument_id for feature in features})
         wanted = {feature.feature_id for feature in features}
         existing: dict[str, MarketContextFeatureSnapshot] = {}
-        for instrument_id in instrument_ids:
-            for value in self._query_instrument(instrument_id):
+        partitions = sorted({self._partition(feature) for feature in features})
+        for partition in partitions:
+            for value in self._query_partition(partition):
                 if value.feature_id not in wanted:
                     continue
                 prior = existing.get(value.feature_id)
@@ -180,6 +180,23 @@ class ParquetFeatureStore:
                     )
                 existing[value.feature_id] = value
         return existing
+
+    def _query_partition(
+        self,
+        partition: Path,
+    ) -> tuple[MarketContextFeatureSnapshot, ...]:
+        values: dict[str, MarketContextFeatureSnapshot] = {}
+        for path in sorted(partition.glob("*.parquet")):
+            for record in _read_records(path):
+                value = record_to_feature(record)
+                prior = values.get(value.feature_id)
+                if prior is not None and not _same_feature(prior, value):
+                    raise ValueError(
+                        "feature partition contains conflicting persisted identity: "
+                        f"{value.feature_id}"
+                    )
+                values[value.feature_id] = value
+        return tuple(values.values())
 
     def _query_instrument(
         self,

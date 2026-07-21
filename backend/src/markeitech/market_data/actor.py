@@ -298,6 +298,9 @@ class MarkeitechMarketDataActor(Actor):
                 f"WARMUP_RETRY | {action.bar_type} | attempt={attempt}/{maximum} "
                 "| reason=empty_or_timed_out_response"
             ),
+            on_warmup_failure=lambda exc: self.log.error(
+                f"WARMUP_FAILED | {type(exc).__name__}: {exc}"
+            ),
         )
         enabled_instrument_ids = {
             action.instrument_id
