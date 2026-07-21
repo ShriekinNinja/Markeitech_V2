@@ -284,6 +284,13 @@ def test_loads_checked_in_example_config() -> None:
     assert config.instrument_registry.active_instrument_id == "NQU6.CME"
     assert len(config.instrument_registry.instruments) == 10
     assert config.persistence is not None
+    assert config.signals is not None
+    assert {item.definition_id for item in config.signals.definitions} == {
+        "intraday_context"
+    }
+    assert config.signals.enabled_definition_ids_by_instrument == {}
+    assert config.signals.enabled_definitions("NQU6.CME") == ()
+    assert config.signals.enabled_definitions("ESU6.CME") == ()
 
 
 @pytest.mark.parametrize(
@@ -304,6 +311,10 @@ def test_live_and_test_configs_have_explicit_instrument_scope(
 
     assert len(enabled) == expected_instruments
     assert config.instrument_registry.active_instrument_id == "NQU6.CME"
+    assert config.signals is not None
+    assert config.signals.enabled_definition_ids_by_instrument == {}
+    assert config.signals.enabled_definitions("NQU6.CME") == ()
+    assert config.signals.enabled_definitions("ESU6.CME") == ()
     if expected_instruments == 2:
         assert {
             runtime.contract.instrument_id
