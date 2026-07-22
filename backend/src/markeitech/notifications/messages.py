@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import NAMESPACE_URL, uuid5
 
-from markeitech.analytics import AnalyticsTimeframe, MarketContextSnapshot
+from markeitech.analytics import AnalyticsTimeframe, LevelKind, MarketContextSnapshot
 from markeitech.auction_pressure import (
     BarPressureProxySnapshot,
     SessionAuctionPressureSnapshot,
@@ -159,6 +159,7 @@ def build_operator_flow_notification(
     pressure: SessionAuctionPressureSnapshot,
     *,
     role: str,
+    previous_cvd: Decimal | None = None,
     occurred_ts: datetime | None = None,
 ) -> NotificationOutboxRecord:
     now = datetime.now(UTC) if occurred_ts is None else occurred_ts
@@ -166,6 +167,7 @@ def build_operator_flow_notification(
         "Unavailable" if pressure.delta_ratio is None else f"{pressure.delta_ratio:+.1%}"
     )
     role_name = "Active market" if role.upper() == "ACTIVE" else "Order-flow cohort"
+    cvd_change = _percentage_change(pressure.cvd, previous_cvd)
     return _record(
         destination=OPERATOR_FLOW_DESTINATION,
         aggregate=pressure.instrument_id,
@@ -197,7 +199,7 @@ def build_operator_flow_notification(
                     },
                     {
                         "name": "CVD",
-                        "value": f"**{pressure.cvd:+,.0f}**",
+                        "value": f"**{pressure.cvd:+,.0f}** ({cvd_change})",
                         "inline": True,
                     },
                     {
@@ -244,7 +246,7 @@ def build_large_trade_notification(
         embeds=(
             {
                 "title": f"Large {side.title()} — {_instrument_name(trade.instrument_id)}",
-                "description": "A classified trade met the configured large-print threshold.",
+                "description": "A classified print or rapid same-side burst met the threshold.",
                 "color": 0x2ECC71 if side == "BUY" else 0xE74C3C,
                 "fields": (
                     {
@@ -403,6 +405,8 @@ class ApproachingLocationNotifier:
             self._active_keys.pop(snapshot.instrument_id, None)
             return None
         level = min(candidates, key=lambda item: abs(snapshot.close - item.price))
+        if level.kind == LevelKind.SWING_SUPPORT:
+            return None
         distance = abs(snapshot.close - level.price)
         threshold = snapshot.atr_14 * self._atr_fraction
         key = f"{level.kind.value}:{level.price}"
@@ -451,6 +455,12 @@ class ApproachingLocationNotifier:
                 },
             ),
         )
+
+
+def _percentage_change(current: Decimal, previous: Decimal | None) -> str:
+    if previous is None or previous == 0:
+        return "n/a"
+    return f"{(current - previous) / abs(previous):+.1%}"
 
 
 class LocationNarrativeNotifier:

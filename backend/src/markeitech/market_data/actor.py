@@ -350,7 +350,9 @@ class MarkeitechMarketDataActor(Actor):
         self._operator_context_timer_started = False
         self._auction_pressure_accumulators = dict(auction_pressure_accumulators or {})
         self._auction_pressure_snapshots: dict[str, SessionAuctionPressureSnapshot] = {}
+        self._reported_cvd: dict[str, Decimal] = {}
         self._large_trade_thresholds = dict(large_trade_thresholds or {})
+        self._large_trade_clusters: dict[str, list[ClassifiedTrade]] = {}
         self._on_auction_pressure_report = on_auction_pressure_report
         self._on_large_trade_observation = on_large_trade_observation
         self._on_operator_context_report = on_operator_context_report
@@ -494,15 +496,24 @@ class MarkeitechMarketDataActor(Actor):
             if accumulator is not None:
                 self._auction_pressure_snapshots[event.instrument_id] = accumulator.observe(event)
             threshold = self._large_trade_thresholds.get(event.instrument_id)
-            if threshold is not None and is_large_trade_observation(event, threshold=threshold):
-                self.log.info(format_large_trade_observation(event, threshold=threshold))
+            observation = (
+                clustered_large_trade_observation(
+                    event,
+                    threshold=threshold,
+                    clusters=self._large_trade_clusters,
+                )
+                if threshold is not None
+                else None
+            )
+            if observation is not None:
+                self.log.info(format_large_trade_observation(observation, threshold=threshold))
                 if self._on_large_trade_observation is not None:
                     role = (
                         "ACTIVE"
                         if event.instrument_id == self._switch.snapshot.active_instrument_id
                         else "COHORT"
                     )
-                    self._on_large_trade_observation(event, threshold, role)
+                    self._on_large_trade_observation(observation, threshold, role)
         if self._external_market_data_sink is not None:
             self._external_market_data_sink(event)
         if (
@@ -589,9 +600,13 @@ class MarkeitechMarketDataActor(Actor):
                 if instrument_id == self._switch.snapshot.active_instrument_id
                 else "COHORT"
             )
-            self.log.info(format_auction_pressure(pressure, role=role))
+            previous_cvd = self._reported_cvd.get(instrument_id)
+            self.log.info(
+                format_auction_pressure(pressure, role=role, previous_cvd=previous_cvd)
+            )
             if self._on_auction_pressure_report is not None:
                 self._on_auction_pressure_report(pressure, role)
+            self._reported_cvd[instrument_id] = pressure.cvd
         self.log.info(f"OPERATOR_CONTEXT_COMPLETE | phase={phase.upper()}")
         if self._on_operator_context_report is not None:
             changed_instruments = {
@@ -703,13 +718,16 @@ def format_auction_pressure(
     snapshot: SessionAuctionPressureSnapshot,
     *,
     role: str,
+    previous_cvd: Decimal | None = None,
 ) -> str:
     delta_ratio = "n/a" if snapshot.delta_ratio is None else f"{snapshot.delta_ratio:.2%}"
+    cvd_change = _percentage_change(snapshot.cvd, previous_cvd)
     return (
         f"OPERATOR_FLOW | role={role} | {snapshot.instrument_id} "
         f"| trades={snapshot.trade_count} | buy_volume={snapshot.buy_volume} "
         f"| sell_volume={snapshot.sell_volume} | unknown_volume={snapshot.unknown_volume} "
-        f"| delta={snapshot.delta} | cvd={snapshot.cvd} | delta_ratio={delta_ratio} "
+        f"| delta={snapshot.delta} | cvd={snapshot.cvd} ({cvd_change}) "
+        f"| delta_ratio={delta_ratio} "
         f"| classified_ratio={snapshot.classified_volume_ratio:.2%} "
         f"| fidelity={snapshot.fidelity.value} | source={snapshot.source}:{snapshot.method} "
         f"| as_of={snapshot.as_of.isoformat()}"
@@ -737,6 +755,44 @@ def is_large_trade_observation(
     threshold: Decimal,
 ) -> bool:
     return trade.side.value != "unknown" and trade.trade.size >= threshold
+
+
+def clustered_large_trade_observation(
+    trade: ClassifiedTrade,
+    *,
+    threshold: Decimal,
+    clusters: dict[str, list[ClassifiedTrade]],
+    window: timedelta = timedelta(milliseconds=250),
+) -> ClassifiedTrade | None:
+    if trade.side.value == "unknown":
+        clusters.pop(trade.instrument_id, None)
+        return None
+    recent = clusters.get(trade.instrument_id, [])
+    cutoff = trade.event_ts - window
+    if recent and recent[-1].side == trade.side:
+        recent = [item for item in recent if item.event_ts >= cutoff]
+    else:
+        recent = []
+    recent.append(trade)
+    total_size = sum((item.trade.size for item in recent), Decimal("0"))
+    if total_size < threshold:
+        clusters[trade.instrument_id] = recent
+        return None
+    clusters.pop(trade.instrument_id, None)
+    if len(recent) == 1:
+        return trade
+    return trade.model_copy(
+        update={
+            "trade": trade.trade.model_copy(update={"size": total_size}),
+            "classification_reason": f"same_side_250ms_burst_{len(recent)}_prints",
+        }
+    )
+
+
+def _percentage_change(current: Decimal, previous: Decimal | None) -> str:
+    if previous is None or previous == 0:
+        return "n/a"
+    return f"{(current - previous) / abs(previous):+.1%}"
 
 
 def format_market_structure(

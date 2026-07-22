@@ -426,11 +426,18 @@ def build_prepared_market_data_live_node(
         ):
             persistence.metadata.enqueue(notification)
 
+    previous_cvd: dict[str, Any] = {}
+
     def enqueue_auction_pressure(pressure: Any, role: str) -> None:
         if persistence is not None and config.discord.enabled:
             persistence.metadata.enqueue(
-                build_operator_flow_notification(pressure, role=role)
+                build_operator_flow_notification(
+                    pressure,
+                    role=role,
+                    previous_cvd=previous_cvd.get(pressure.instrument_id),
+                )
             )
+            previous_cvd[pressure.instrument_id] = pressure.cvd
 
     def enqueue_large_trade(trade: Any, threshold: Any, role: str) -> None:
         if persistence is not None and config.discord.enabled:
