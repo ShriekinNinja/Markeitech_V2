@@ -22,6 +22,7 @@ from markeitech.auction_pressure import (
     build_bar_pressure_proxy,
 )
 from markeitech.domain.base import VersionedDomainModel
+from markeitech.markeitect_model import AggressionEpisodeTracker
 from markeitech.market_data.actions import build_livenode_action_plan
 from markeitech.market_data.actor import MarkeitechMarketDataActor
 from markeitech.market_data.config import MarketDataRuntimeConfig
@@ -34,8 +35,11 @@ from markeitech.market_data.nautilus import build_trading_node_config
 from markeitech.market_data.planner import build_market_data_plan
 from markeitech.notifications import (
     ApproachingLocationNotifier,
+    DirectionalBiasNotifier,
     DiscordOutboxDeliveryWorker,
     LocationNarrativeNotifier,
+    build_aggression_episode_notification,
+    build_context_transition_notification,
     build_health_notification,
     build_large_trade_notification,
     build_market_context_notifications,
@@ -371,7 +375,9 @@ def build_prepared_market_data_live_node(
         calculation_config=calculation_config,
     )
     approaching_notifier = ApproachingLocationNotifier()
+    directional_bias_notifier = DirectionalBiasNotifier()
     location_narrative_notifier = LocationNarrativeNotifier()
+    market_brief_as_of: dict[str, Any] = {}
 
     def enqueue_health(event: str, detail: str) -> None:
         if persistence is not None and config.discord.enabled:
@@ -391,13 +397,41 @@ def build_prepared_market_data_live_node(
     ) -> None:
         if persistence is None or not config.discord.enabled:
             return
+        for notification in directional_bias_notifier.observe(snapshots):
+            persistence.metadata.enqueue(notification)
+        eligible_instruments: set[str] = set()
+        for instrument_id in {snapshot.instrument_id for snapshot in snapshots}:
+            one_minute = next(
+                (
+                    snapshot
+                    for snapshot in snapshots
+                    if snapshot.instrument_id == instrument_id
+                    and snapshot.timeframe == AnalyticsTimeframe.ONE_MINUTE
+                ),
+                None,
+            )
+            if one_minute is None:
+                continue
+            if phase != "warmup" and one_minute.as_of.minute % 5:
+                continue
+            if market_brief_as_of.get(instrument_id) == one_minute.as_of:
+                continue
+            market_brief_as_of[instrument_id] = one_minute.as_of
+            eligible_instruments.add(instrument_id)
+        brief_snapshots = tuple(
+            snapshot
+            for snapshot in snapshots
+            if snapshot.instrument_id in eligible_instruments
+        )
+        if not brief_snapshots:
+            return
         bar_pressure = {}
         if signal_observations is not None:
-            for instrument_id in {snapshot.instrument_id for snapshot in snapshots}:
+            for instrument_id in eligible_instruments:
                 one_minute = next(
                     (
                         snapshot
-                        for snapshot in snapshots
+                        for snapshot in brief_snapshots
                         if snapshot.instrument_id == instrument_id
                         and snapshot.timeframe == AnalyticsTimeframe.ONE_MINUTE
                     ),
@@ -418,13 +452,20 @@ def build_prepared_market_data_live_node(
                 if proxy is not None:
                     bar_pressure[instrument_id] = proxy
         for notification in build_market_context_notifications(
-            snapshots,
+            brief_snapshots,
             phase=phase,
             active_instrument_id=active_instrument_id,
             pressure=pressure,
             bar_pressure=bar_pressure,
         ):
             persistence.metadata.enqueue(notification)
+
+    def enqueue_context_transition(event: Any) -> None:
+        if persistence is None or not config.discord.enabled:
+            return
+        if event.transition_kind == "trend_changed" and event.timeframe == "1m":
+            return
+        persistence.metadata.enqueue(build_context_transition_notification(event))
 
     previous_cvd: dict[str, Any] = {}
 
@@ -447,6 +488,12 @@ def build_prepared_market_data_live_node(
                     threshold=threshold,
                     role=role,
                 )
+            )
+
+    def enqueue_aggression_episode(episode: Any, role: str) -> None:
+        if persistence is not None and config.discord.enabled:
+            persistence.metadata.enqueue(
+                build_aggression_episode_notification(episode, role=role)
             )
 
     def enqueue_market_data_health(snapshot: Any) -> None:
@@ -515,8 +562,17 @@ def build_prepared_market_data_live_node(
             for runtime in config.instrument_registry.order_flow_runtimes
             if runtime.large_trade_threshold is not None
         },
+        "aggression_episode_trackers": {
+            runtime.contract.instrument_id: AggressionEpisodeTracker(
+                runtime.contract.instrument_id,
+                runtime.aggression_outcome,
+            )
+            for runtime in config.instrument_registry.order_flow_runtimes
+            if runtime.aggression_outcome is not None
+        },
         "on_auction_pressure_report": enqueue_auction_pressure,
         "on_large_trade_observation": enqueue_large_trade,
+        "on_aggression_episode": enqueue_aggression_episode,
         "on_operator_context_report": enqueue_context_report,
         "on_runtime_health": enqueue_health,
         "on_market_data_health": enqueue_market_data_health,
@@ -569,6 +625,7 @@ def build_prepared_market_data_live_node(
             node.trader.add_actor(
                 ContextEventProjectionActor(
                     dedupe_size=config.domain_events.operator_dedupe_size,
+                    on_context_event=enqueue_context_transition,
                 )
             )
         node.add_data_client_factory(config.data_client_name, data_client_factory)

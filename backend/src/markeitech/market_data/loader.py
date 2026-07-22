@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from markeitech.domain import (
+    AggressionOutcomeConfig,
     AnalysisProfile,
     CryptoContractConfig,
     EquityLikeContractConfig,
@@ -85,6 +86,11 @@ def _parse_instrument_runtime(raw: dict[str, Any]) -> InstrumentRuntimeConfig:
         priority=raw.get("priority", 100),
         large_trade_threshold=raw.get("large_trade_threshold"),
         large_trade_window_ms=raw.get("large_trade_window_ms", 250),
+        aggression_outcome=(
+            AggressionOutcomeConfig(**raw["aggression_outcome"])
+            if raw.get("aggression_outcome") is not None
+            else None
+        ),
         warmup=_parse_warmup(warmup_raw) if warmup_raw is not None else None,
     )
 

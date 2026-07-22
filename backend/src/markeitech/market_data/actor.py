@@ -12,6 +12,7 @@ from nautilus_trader.model.identifiers import ClientId, InstrumentId
 from markeitech.analytics import (
     AnalyticsReadinessSnapshot,
     AnalyticsReadinessStatus,
+    AnalyticsTimeframe,
     MarketContextSnapshot,
 )
 from markeitech.auction_pressure import (
@@ -20,6 +21,7 @@ from markeitech.auction_pressure import (
 )
 from markeitech.domain.events import ActiveInstrumentChangedEvent
 from markeitech.domain.market_data import ClassifiedTrade, OneMinuteBar
+from markeitech.markeitect_model import AggressionEpisode, AggressionEpisodeTracker
 from markeitech.market_data.actions import (
     LiveNodeAction,
     LiveNodeActionKind,
@@ -253,12 +255,14 @@ class MarkeitechMarketDataActor(Actor):
         ) = None,
         large_trade_thresholds: Mapping[str, Decimal] | None = None,
         large_trade_windows_ms: Mapping[str, int] | None = None,
+        aggression_episode_trackers: Mapping[str, AggressionEpisodeTracker] | None = None,
         on_auction_pressure_report: (
             Callable[[SessionAuctionPressureSnapshot, str], None] | None
         ) = None,
         on_large_trade_observation: (
             Callable[[ClassifiedTrade, Decimal, str], None] | None
         ) = None,
+        on_aggression_episode: Callable[[AggressionEpisode, str], None] | None = None,
         on_operator_context_report: (
             Callable[
                 [
@@ -355,8 +359,10 @@ class MarkeitechMarketDataActor(Actor):
         self._large_trade_thresholds = dict(large_trade_thresholds or {})
         self._large_trade_windows_ms = dict(large_trade_windows_ms or {})
         self._large_trade_clusters: dict[str, list[ClassifiedTrade]] = {}
+        self._aggression_episode_trackers = dict(aggression_episode_trackers or {})
         self._on_auction_pressure_report = on_auction_pressure_report
         self._on_large_trade_observation = on_large_trade_observation
+        self._on_aggression_episode = on_aggression_episode
         self._on_operator_context_report = on_operator_context_report
         self._on_runtime_health = on_runtime_health
         self._on_warmup_ready = on_warmup_ready
@@ -495,8 +501,14 @@ class MarkeitechMarketDataActor(Actor):
         self._health.observe(event)
         if isinstance(event, ClassifiedTrade):
             accumulator = self._auction_pressure_accumulators.get(event.instrument_id)
+            pressure = None
             if accumulator is not None:
-                self._auction_pressure_snapshots[event.instrument_id] = accumulator.observe(event)
+                pressure = accumulator.observe(event)
+                self._auction_pressure_snapshots[event.instrument_id] = pressure
+            tracker = self._aggression_episode_trackers.get(event.instrument_id)
+            if tracker is not None and pressure is not None:
+                for episode in tracker.observe(event, cvd=pressure.cvd):
+                    self._emit_aggression_episode(episode)
             threshold = self._large_trade_thresholds.get(event.instrument_id)
             observation = (
                 clustered_large_trade_observation(
@@ -519,6 +531,17 @@ class MarkeitechMarketDataActor(Actor):
                         else "COHORT"
                     )
                     self._on_large_trade_observation(observation, threshold, role)
+                if tracker is not None and pressure is not None:
+                    episode = tracker.open(
+                        observation,
+                        cvd=pressure.cvd,
+                        print_count=aggression_print_count(observation),
+                        location=self._nearest_aggression_location(
+                            observation.instrument_id,
+                            observation.trade.price,
+                        ),
+                    )
+                    self._emit_aggression_episode(episode)
         if self._external_market_data_sink is not None:
             self._external_market_data_sink(event)
         if (
@@ -532,6 +555,88 @@ class MarkeitechMarketDataActor(Actor):
         ):
             for snapshot in self._market_context.update_one_minute(event):
                 self._emit_market_context(snapshot, phase="live")
+
+    def _emit_aggression_episode(self, episode: AggressionEpisode) -> None:
+        role = (
+            "ACTIVE"
+            if episode.instrument_id == self._switch.snapshot.active_instrument_id
+            else "COHORT"
+        )
+        self.log.info(format_aggression_episode(episode, role=role))
+        if self._on_aggression_episode is not None:
+            self._on_aggression_episode(episode, role)
+
+    def _nearest_aggression_location(
+        self,
+        instrument_id: str,
+        price: Decimal,
+    ) -> tuple[str, Decimal] | None:
+        if self._market_context is None:
+            return None
+        snapshots = tuple(
+            item
+            for item in self._market_context.snapshots
+            if item.instrument_id == instrument_id
+        )
+        reference = next(
+            (
+                item
+                for item in snapshots
+                if item.timeframe == AnalyticsTimeframe.ONE_MINUTE
+            ),
+            None,
+        )
+        if reference is None:
+            return None
+        candidates: list[tuple[str, Decimal]] = []
+        structural_timeframes = {
+            AnalyticsTimeframe.FIFTEEN_MINUTES,
+            AnalyticsTimeframe.THIRTY_MINUTES,
+            AnalyticsTimeframe.ONE_HOUR,
+            AnalyticsTimeframe.DAILY,
+        }
+        for snapshot in snapshots:
+            if snapshot.timeframe not in structural_timeframes:
+                continue
+            for level in (snapshot.nearest_support, snapshot.nearest_resistance):
+                if level is not None:
+                    candidates.append(
+                        (
+                            f"{snapshot.timeframe.value}_{level.kind.value}",
+                            level.price,
+                        )
+                    )
+            for gap in snapshot.fair_value_gaps:
+                candidates.extend(
+                    (
+                        (
+                            f"{snapshot.timeframe.value}_{gap.direction.value}_fvg_lower",
+                            gap.lower,
+                        ),
+                        (
+                            f"{snapshot.timeframe.value}_{gap.direction.value}_fvg_upper",
+                            gap.upper,
+                        ),
+                    )
+                )
+        if reference.session_vwap is not None:
+            candidates.append(("session_vwap", reference.session_vwap))
+        for label, profile in (
+            ("current", reference.volume_profile),
+            ("prior", reference.prior_volume_profile),
+            ("london", reference.london_volume_profile),
+            ("new_york", reference.new_york_volume_profile),
+        ):
+            if profile is None:
+                continue
+            candidates.extend(
+                (
+                    (f"{label}_poc", profile.poc),
+                    (f"{label}_val", profile.value_area_low),
+                    (f"{label}_vah", profile.value_area_high),
+                )
+            )
+        return min(candidates, key=lambda item: abs(price - item[1])) if candidates else None
 
     def _analyze_warmup(self, snapshot: Any) -> None:
         self._on_warmup_ready(snapshot)
@@ -752,6 +857,32 @@ def format_large_trade_observation(
         f"| fidelity=inferred | source={trade.trade.source} "
         f"| as_of={trade.event_ts.isoformat()}"
     )
+
+
+def format_aggression_episode(episode: AggressionEpisode, *, role: str) -> str:
+    location = (
+        "none"
+        if episode.location_label is None
+        else f"{episode.location_label}:{episode.location_price}"
+    )
+    return (
+        f"MARKEITECH_MODEL | event=AGGRESSION_EPISODE | role={role} "
+        f"| outcome={episode.outcome.value.upper()} | {episode.instrument_id} "
+        f"| side={episode.side.value.upper()} | anchor={episode.anchor_price} "
+        f"| size={episode.observed_size} | prints={episode.print_count} "
+        f"| location={location} | price={episode.latest_price} "
+        f"| cvd_change={episode.cvd_change:+} "
+        f"| mfe={episode.max_favorable_excursion} "
+        f"| mae={episode.max_adverse_excursion} "
+        f"| reasons={','.join(episode.reason_codes)} | as_of={episode.as_of.isoformat()}"
+    )
+
+
+def aggression_print_count(trade: ClassifiedTrade) -> int:
+    parts = trade.classification_reason.split("_")
+    if len(parts) >= 2 and parts[-1] == "prints" and parts[-2].isdigit():
+        return int(parts[-2])
+    return 1
 
 
 def is_large_trade_observation(

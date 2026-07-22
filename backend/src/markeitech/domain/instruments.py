@@ -111,6 +111,20 @@ class InstrumentWarmupConfig(VersionedDomainModel):
         return self.lookback_sessions_by_timeframe.get(timeframe, self.lookback_sessions)
 
 
+class AggressionOutcomeConfig(VersionedDomainModel):
+    observation_window_seconds: int = Field(gt=0)
+    follow_through_points: Decimal = Field(gt=0)
+    trapped_points: Decimal = Field(gt=0)
+    absorption_points: Decimal = Field(ge=0)
+    max_open_episodes: int = Field(default=16, ge=1, le=256)
+
+    @model_validator(mode="after")
+    def _absorption_must_precede_terminal_moves(self) -> AggressionOutcomeConfig:
+        if self.absorption_points >= min(self.follow_through_points, self.trapped_points):
+            raise ValueError("absorption distance must be below terminal movement distances")
+        return self
+
+
 class InstrumentContractConfig(VersionedDomainModel):
     root_symbol: str = Field(min_length=1)
     exchange: str = Field(min_length=1)
@@ -240,6 +254,7 @@ class InstrumentRuntimeConfig(VersionedDomainModel):
     priority: int = Field(default=100, ge=0)
     large_trade_threshold: Decimal | None = Field(default=None, gt=0)
     large_trade_window_ms: int = Field(default=250, gt=0)
+    aggression_outcome: AggressionOutcomeConfig | None = None
     warmup: InstrumentWarmupConfig | None = Field(default_factory=InstrumentWarmupConfig)
 
     @model_validator(mode="after")
@@ -260,6 +275,10 @@ class InstrumentRuntimeConfig(VersionedDomainModel):
             and self.data_mode != InstrumentDataMode.TICK_BY_TICK
         ):
             raise ValueError("large trade thresholds require tick-by-tick data mode")
+        if self.aggression_outcome is not None and self.large_trade_threshold is None:
+            raise ValueError(
+                "aggression outcome configuration requires a large trade threshold"
+            )
         if self.role == InstrumentRole.DISABLED and self.data_mode != InstrumentDataMode.DISABLED:
             raise ValueError("disabled instruments must use disabled data mode")
         if self.role == InstrumentRole.DISABLED and self.warmup is not None:

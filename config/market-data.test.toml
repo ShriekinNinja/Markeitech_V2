@@ -150,6 +150,13 @@ priority = 0
 large_trade_threshold = 40
 large_trade_window_ms = 250
 
+[instruments.aggression_outcome]
+observation_window_seconds = 30
+follow_through_points = 4
+trapped_points = 4
+absorption_points = 1
+max_open_episodes = 16
+
 [instruments.contract]
 root_symbol = "NQ"
 exchange = "CME"
@@ -184,6 +191,13 @@ enabled = true
 priority = 20
 large_trade_threshold = 120
 large_trade_window_ms = 250
+
+[instruments.aggression_outcome]
+observation_window_seconds = 30
+follow_through_points = 1
+trapped_points = 1
+absorption_points = 0.25
+max_open_episodes = 16
 
 [instruments.contract]
 root_symbol = "ES"

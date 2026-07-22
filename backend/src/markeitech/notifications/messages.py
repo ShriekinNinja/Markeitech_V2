@@ -7,13 +7,15 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import NAMESPACE_URL, uuid5
 
-from markeitech.analytics import AnalyticsTimeframe, LevelKind, MarketContextSnapshot
+from markeitech.analytics import AnalyticsTimeframe, MarketContextSnapshot
 from markeitech.auction_pressure import (
     BarPressureProxySnapshot,
     SessionAuctionPressureSnapshot,
 )
 from markeitech.domain.market_data import ClassifiedTrade
+from markeitech.markeitect_model import AggressionEpisode, AggressionOutcome
 from markeitech.persistence import NotificationOutboxRecord
+from markeitech.runtime.events import CommittedContextTransitionNotice
 from markeitech.signals import (
     LocationEpisodeEventType,
     SignalEvaluationEvent,
@@ -82,15 +84,22 @@ def build_market_context_notifications(
     for instrument, values in grouped.items():
         by_timeframe = {value.timeframe: value for value in values}
         reference = by_timeframe.get(AnalyticsTimeframe.ONE_MINUTE, values[-1])
+        direction_reference = by_timeframe.get(AnalyticsTimeframe.FIVE_MINUTES)
+        direction_score = 0 if direction_reference is None else direction_reference.direction_score
+        direction_summary = (
+            "Unavailable until 5m analytics are ready"
+            if direction_reference is None
+            else (
+                f"**{_direction_name(direction_score)}**\n"
+                f"Score: {direction_score:+d} of 2"
+            )
+        )
         is_active = instrument == active_instrument_id
         role = "Primary market" if is_active else "Watchlist market"
         fields: list[dict[str, object]] = [
             {
-                "name": "Directional bias",
-                "value": (
-                    f"**{_direction_name(reference.direction_score)}**\n"
-                    f"Score: {reference.direction_score:+d} of 2"
-                ),
+                "name": "5m directional bias",
+                "value": direction_summary,
                 "inline": True,
             },
             {
@@ -139,7 +148,7 @@ def build_market_context_notifications(
                     {
                         "title": f"{_instrument_name(instrument)} — Market Brief",
                         "description": f"{role} • {phase.title()} update",
-                        "color": _direction_color(reference.direction_score),
+                        "color": _direction_color(direction_score),
                         "fields": tuple(fields),
                         "timestamp": now.isoformat(),
                         "footer": {
@@ -153,6 +162,122 @@ def build_market_context_notifications(
             )
         )
     return tuple(records)
+
+
+class DirectionalBiasNotifier:
+    def __init__(self) -> None:
+        self._scores: dict[str, int] = {}
+
+    def observe(
+        self,
+        snapshots: Sequence[MarketContextSnapshot],
+    ) -> tuple[NotificationOutboxRecord, ...]:
+        grouped: dict[str, list[MarketContextSnapshot]] = defaultdict(list)
+        for snapshot in snapshots:
+            grouped[snapshot.instrument_id].append(snapshot)
+        records: list[NotificationOutboxRecord] = []
+        for instrument_id, values in grouped.items():
+            by_timeframe = {value.timeframe: value for value in values}
+            reference = by_timeframe.get(AnalyticsTimeframe.FIVE_MINUTES)
+            if reference is None:
+                continue
+            price_reference = by_timeframe.get(AnalyticsTimeframe.ONE_MINUTE, reference)
+            previous = self._scores.get(instrument_id)
+            self._scores[instrument_id] = reference.direction_score
+            if previous is None or previous == reference.direction_score:
+                continue
+            records.append(
+                _record(
+                    destination=ALERT_STREAM_DESTINATION,
+                    aggregate=instrument_id,
+                    event_type="market.directional_bias.changed",
+                    identity=(
+                        f"{instrument_id}:{reference.as_of.isoformat()}:"
+                        f"{previous}:{reference.direction_score}"
+                    ),
+                    content="",
+                    now=reference.as_of,
+                    mention_here=True,
+                    embeds=(
+                        {
+                            "title": (
+                                f"Directional Bias Changed — "
+                                f"{_instrument_name(instrument_id)}"
+                            ),
+                            "description": (
+                                f"{_direction_name(previous)} → "
+                                f"**{_direction_name(reference.direction_score)}**"
+                            ),
+                            "color": _direction_color(reference.direction_score),
+                            "fields": (
+                                {
+                                    "name": "Trend map",
+                                    "value": _trend_map(by_timeframe),
+                                    "inline": False,
+                                },
+                                {
+                                    "name": "Value location",
+                                    "value": _profile_location_name(
+                                        reference.profile_location.value
+                                    ),
+                                    "inline": True,
+                                },
+                                {
+                                    "name": "Last price",
+                                    "value": _price(price_reference.close),
+                                    "inline": True,
+                                },
+                            ),
+                            "timestamp": reference.as_of.isoformat(),
+                            "footer": {"text": "Context change • Decision support"},
+                        },
+                    ),
+                )
+            )
+        return tuple(records)
+
+
+def build_context_transition_notification(
+    event: CommittedContextTransitionNotice,
+) -> NotificationOutboxRecord:
+    kind = event.transition_kind.replace("_", " ").title()
+    return _record(
+        destination=ALERT_STREAM_DESTINATION,
+        aggregate=event.instrument_id or event.aggregate_id,
+        event_type=f"market.context.{event.transition_kind}",
+        identity=event.dedupe_key,
+        content="",
+        now=event.occurred_ts,
+        mention_here=True,
+        embeds=(
+            {
+                "title": f"{kind} — {_instrument_name(event.instrument_id or '')}",
+                "description": (
+                    f"**{_timeframe_label(event.timeframe)}**: "
+                    f"{event.previous_value.replace('_', ' ').title()} → "
+                    f"**{event.current_value.replace('_', ' ').title()}**"
+                ),
+                "color": _context_transition_color(event),
+                "fields": (
+                    {
+                        "name": "Evidence fidelity",
+                        "value": (
+                            f"{event.previous_input_fidelity.title()} → "
+                            f"{event.current_input_fidelity.title()}"
+                        ),
+                        "inline": True,
+                    },
+                    {
+                        "name": "Commit sequence",
+                        "value": str(event.commit_sequence),
+                        "inline": True,
+                    },
+                ),
+                "timestamp": event.occurred_ts.isoformat(),
+                "footer": {"text": "Durable context transition • Decision support"},
+            },
+        ),
+    )
 
 
 def build_operator_flow_notification(
@@ -243,6 +368,7 @@ def build_large_trade_notification(
         identity=f"{trade.trade.dedupe_key}:{threshold}:{role}",
         content="",
         now=now,
+        mention_here=True,
         embeds=(
             {
                 "title": f"Large {side.title()} — {_instrument_name(trade.instrument_id)}",
@@ -278,6 +404,84 @@ def build_large_trade_notification(
                     "text": (
                         f"{trade.instrument_id} • Inferred from IB trade/quote data • "
                         "Observation only"
+                    )
+                },
+            },
+        ),
+    )
+
+
+def build_aggression_episode_notification(
+    episode: AggressionEpisode,
+    *,
+    role: str,
+    occurred_ts: datetime | None = None,
+) -> NotificationOutboxRecord:
+    now = datetime.now(UTC) if occurred_ts is None else occurred_ts
+    outcome = episode.outcome.value.replace("_", " ").title()
+    location = (
+        "No nearby mapped location"
+        if episode.location_label is None
+        else f"{episode.location_label.replace('_', ' ').title()}: "
+        f"{_price(episode.location_price)}"
+    )
+    return _record(
+        destination=OPERATOR_FLOW_DESTINATION,
+        aggregate=episode.instrument_id,
+        event_type=f"markeitect.aggression.{episode.outcome.value}",
+        identity=f"{episode.episode_id}:{episode.outcome.value}",
+        content="",
+        now=now,
+        mention_here=True,
+        embeds=(
+            {
+                "title": (
+                    f"{outcome} {episode.side.value.title()} Aggression — "
+                    f"{_instrument_name(episode.instrument_id)}"
+                ),
+                "description": "Observed effort and subsequent price/CVD response.",
+                "color": _aggression_episode_color(episode),
+                "fields": (
+                    {
+                        "name": "Aggression",
+                        "value": (
+                            f"Anchor: **{_price(episode.anchor_price)}**\n"
+                            f"Size: **{episode.observed_size:,.0f}** across "
+                            f"**{episode.print_count}** print(s)"
+                        ),
+                        "inline": True,
+                    },
+                    {
+                        "name": "Observed response",
+                        "value": (
+                            f"Last: **{_price(episode.latest_price)}**\n"
+                            f"CVD change: **{episode.cvd_change:+,.0f}**"
+                        ),
+                        "inline": True,
+                    },
+                    {
+                        "name": "Excursion",
+                        "value": (
+                            f"Favorable: **{episode.max_favorable_excursion:,.2f}**\n"
+                            f"Adverse: **{episode.max_adverse_excursion:,.2f}**"
+                        ),
+                        "inline": True,
+                    },
+                    {"name": "Nearest location", "value": location, "inline": False},
+                    {
+                        "name": "Evidence",
+                        "value": " • ".join(
+                            reason.replace("_", " ").title()
+                            for reason in episode.reason_codes
+                        ),
+                        "inline": False,
+                    },
+                ),
+                "timestamp": episode.as_of.isoformat(),
+                "footer": {
+                    "text": (
+                        f"{role.title()} • {episode.source.upper()} inferred flow • "
+                        "Observation, not a signal"
                     )
                 },
             },
@@ -392,24 +596,28 @@ class ApproachingLocationNotifier:
     def __init__(self, *, atr_fraction: Decimal = Decimal("0.25")) -> None:
         self._atr_fraction = atr_fraction
         self._active_keys: dict[str, str] = {}
+        self._snapshots: dict[
+            str,
+            dict[AnalyticsTimeframe, MarketContextSnapshot],
+        ] = defaultdict(dict)
 
     def observe(self, snapshot: MarketContextSnapshot) -> NotificationOutboxRecord | None:
-        if snapshot.timeframe != AnalyticsTimeframe.ONE_MINUTE or not snapshot.atr_14:
+        values = self._snapshots[snapshot.instrument_id]
+        values[snapshot.timeframe] = snapshot
+        reference = values.get(AnalyticsTimeframe.ONE_MINUTE)
+        if reference is None or not reference.atr_14:
             return None
-        candidates = tuple(
-            level
-            for level in (snapshot.nearest_support, snapshot.nearest_resistance)
-            if level is not None
-        )
+        candidates = _approaching_candidates(values)
         if not candidates:
             self._active_keys.pop(snapshot.instrument_id, None)
             return None
-        level = min(candidates, key=lambda item: abs(snapshot.close - item.price))
-        if level.kind == LevelKind.SWING_SUPPORT:
-            return None
-        distance = abs(snapshot.close - level.price)
-        threshold = snapshot.atr_14 * self._atr_fraction
-        key = f"{level.kind.value}:{level.price}"
+        label, level_price = min(
+            candidates,
+            key=lambda item: abs(reference.close - item[1]),
+        )
+        distance = abs(reference.close - level_price)
+        threshold = reference.atr_14 * self._atr_fraction
+        key = f"{label}:{level_price}"
         if distance > threshold:
             if distance > threshold * 2:
                 self._active_keys.pop(snapshot.instrument_id, None)
@@ -417,14 +625,15 @@ class ApproachingLocationNotifier:
         if self._active_keys.get(snapshot.instrument_id) == key:
             return None
         self._active_keys[snapshot.instrument_id] = key
-        location_name = level.kind.value.replace("_", " ").title()
+        location_name = _location_label(label)
         return _record(
             destination=ALERT_STREAM_DESTINATION,
             aggregate=snapshot.instrument_id,
             event_type="location.approaching",
             identity=f"{snapshot.instrument_id}:{key}:{snapshot.as_of.isoformat()}",
-            content=f"**Approaching {location_name} — {_instrument_name(snapshot.instrument_id)}**",
-            now=snapshot.as_of,
+            content="",
+            now=reference.as_of,
+            mention_here=True,
             embeds=(
                 {
                     "title": (
@@ -432,23 +641,21 @@ class ApproachingLocationNotifier:
                         f"{_instrument_name(snapshot.instrument_id)}"
                     ),
                     "description": "Price is nearing a meaningful market location.",
-                    "color": (
-                        0x2ECC71 if "support" in level.kind.value else 0xE74C3C
-                    ),
+                    "color": _location_color(label),
                     "fields": (
-                        {"name": "Last price", "value": _price(snapshot.close), "inline": True},
-                        {"name": "Level", "value": _price(level.price), "inline": True},
+                        {"name": "Last price", "value": _price(reference.close), "inline": True},
+                        {"name": "Level", "value": _price(level_price), "inline": True},
                         {"name": "Distance", "value": _price(distance), "inline": True},
                         {
                             "name": "Directional context",
                             "value": (
-                                f"{_direction_name(snapshot.direction_score)} "
-                                f"({snapshot.direction_score:+d})"
+                                f"{_direction_name(reference.direction_score)} "
+                                f"({reference.direction_score:+d})"
                             ),
                             "inline": False,
                         },
                     ),
-                    "timestamp": snapshot.as_of.isoformat(),
+                    "timestamp": reference.as_of.isoformat(),
                     "footer": {
                         "text": "Proximity threshold: 0.25 ATR • Warning only, not an entry"
                     },
@@ -497,9 +704,13 @@ def _record(
     content: str,
     now: datetime,
     embeds: tuple[dict[str, object], ...] = (),
+    mention_here: bool = False,
 ) -> NotificationOutboxRecord:
     digest = hashlib.sha256(identity.encode()).hexdigest()
     outbox_id = uuid5(NAMESPACE_URL, f"markeitech:discord:{destination}:{digest}")
+    message_content = "\n".join(
+        value for value in ("@here" if mention_here else "", content) if value
+    )
     return NotificationOutboxRecord(
         outbox_id=outbox_id,
         topic="discord",
@@ -508,8 +719,12 @@ def _record(
         event_type=event_type,
         event_schema_version="1.0",
         payload={
-            **({"content": content[:_MAX_CONTENT]} if content else {}),
-            "allowed_mentions": {"parse": []},
+            **(
+                {"content": message_content[:_MAX_CONTENT]}
+                if message_content
+                else {}
+            ),
+            "allowed_mentions": {"parse": ["everyone"] if mention_here else []},
             **({"embeds": _json_native_embeds(embeds)} if embeds else {}),
         },
         dedupe_key=f"discord:{destination}:{digest}",
@@ -539,12 +754,42 @@ def _direction_color(score: int) -> int:
     return 0xFFFFFF
 
 
+def _context_transition_color(event: CommittedContextTransitionNotice) -> int:
+    value = event.current_value.lower()
+    if value in {"bullish", "above"}:
+        return 0x2ECC71
+    if value in {"bearish", "below"}:
+        return 0xE74C3C
+    return 0xF1C40F
+
+
+def _location_color(label: str) -> int:
+    if any(token in label for token in ("support", "low", "val")):
+        return 0x2ECC71
+    if any(token in label for token in ("resistance", "high", "vah")):
+        return 0xE74C3C
+    return 0xF1C40F
+
+
 def _flow_color(delta: Decimal) -> int:
     if delta > 0:
         return 0x2ECC71
     if delta < 0:
         return 0xE74C3C
     return 0xFFFFFF
+
+
+def _aggression_episode_color(episode: AggressionEpisode) -> int:
+    if episode.outcome == AggressionOutcome.PENDING:
+        return 0xF1C40F
+    if episode.outcome in {AggressionOutcome.ABSORBED, AggressionOutcome.UNRESOLVED}:
+        return 0xFFFFFF
+    bullish = (
+        episode.side.value == "buy"
+        if episode.outcome == AggressionOutcome.WITH_FLOW
+        else episode.side.value == "sell"
+    )
+    return 0x2ECC71 if bullish else 0xE74C3C
 
 
 def _direction_name(score: int) -> str:
@@ -569,8 +814,110 @@ def _profile_location_name(value: str) -> str:
     return value.replace("_", " ").title()
 
 
+def _timeframe_label(value: str) -> str:
+    return {
+        "1m": "1m",
+        "5m": "5m",
+        "15m": "15m",
+        "30m": "30m",
+        "1h": "1h",
+        "1d": "Daily",
+    }.get(value, value)
+
+
+def _location_label(value: str) -> str:
+    label = value.replace("_", " ").title()
+    for rendered, preferred in (
+        ("1M", "1m"),
+        ("5M", "5m"),
+        ("15M", "15m"),
+        ("30M", "30m"),
+        ("1H", "1h"),
+    ):
+        label = label.replace(rendered, preferred)
+    return label
+
+
 def _price(value: Decimal | None) -> str:
     return "Unavailable" if value is None else f"{value:,.2f}"
+
+
+def _approaching_candidates(
+    values: Mapping[AnalyticsTimeframe, MarketContextSnapshot],
+) -> tuple[tuple[str, Decimal], ...]:
+    reference = values.get(AnalyticsTimeframe.ONE_MINUTE)
+    if reference is None:
+        return ()
+    candidates: list[tuple[str, Decimal]] = []
+    structural_timeframes = (
+        AnalyticsTimeframe.FIFTEEN_MINUTES,
+        AnalyticsTimeframe.THIRTY_MINUTES,
+        AnalyticsTimeframe.ONE_HOUR,
+        AnalyticsTimeframe.DAILY,
+    )
+    for timeframe in structural_timeframes:
+        snapshot = values.get(timeframe)
+        if snapshot is None:
+            continue
+        timeframe_label = timeframe.value
+        for level in (snapshot.nearest_support, snapshot.nearest_resistance):
+            if level is not None:
+                candidates.append(
+                    (f"{timeframe_label}_{level.kind.value}", level.price)
+                )
+        for gap in snapshot.fair_value_gaps:
+            candidates.extend(
+                (
+                    (f"{timeframe_label}_{gap.direction.value}_fvg_lower", gap.lower),
+                    (f"{timeframe_label}_{gap.direction.value}_fvg_upper", gap.upper),
+                )
+            )
+    if reference.session_vwap is not None:
+        candidates.append(("session_vwap", reference.session_vwap))
+    for label, profile in (
+        ("current", reference.volume_profile),
+        ("prior", reference.prior_volume_profile),
+        ("london", reference.london_volume_profile),
+        ("new_york", reference.new_york_volume_profile),
+    ):
+        if profile is None:
+            continue
+        candidates.extend(
+            (
+                (f"{label}_val", profile.value_area_low),
+                (f"{label}_poc", profile.poc),
+                (f"{label}_vah", profile.value_area_high),
+            )
+        )
+    for composite in reference.composite_volume_profiles:
+        profile = composite.profile
+        label = f"composite_{composite.session_count}s"
+        candidates.extend(
+            (
+                (f"{label}_val", profile.value_area_low),
+                (f"{label}_poc", profile.poc),
+                (f"{label}_vah", profile.value_area_high),
+            )
+        )
+    for label, value in (
+        ("prior_session_low", reference.prior_session_low),
+        ("prior_session_high", reference.prior_session_high),
+    ):
+        if value is not None:
+            candidates.append((label, value))
+    for label, range_value in (
+        ("london", reference.london_range),
+        ("new_york", reference.new_york_range),
+        ("london_or15", reference.london_opening_range_15),
+        ("london_or30", reference.london_opening_range_30),
+        ("new_york_or15", reference.new_york_opening_range_15),
+        ("new_york_or30", reference.new_york_opening_range_30),
+    ):
+        if range_value is not None:
+            candidates.extend(
+                ((f"{label}_low", range_value.low), (f"{label}_high", range_value.high))
+            )
+    return tuple(candidates)
 
 
 def _price_and_value(snapshot: MarketContextSnapshot) -> str:
@@ -590,7 +937,6 @@ def _trend_map(values: dict[AnalyticsTimeframe, MarketContextSnapshot]) -> str:
         AnalyticsTimeframe.THIRTY_MINUTES: "30 Minute",
         AnalyticsTimeframe.FIFTEEN_MINUTES: "15 Minute",
         AnalyticsTimeframe.FIVE_MINUTES: "5 Minute",
-        AnalyticsTimeframe.ONE_MINUTE: "1 Minute",
     }
     return "  •  ".join(
         f"**{label}:** {values[timeframe].trend.value.replace('_', ' ').title()}"

@@ -6,6 +6,8 @@ from markeitech.persistence import NotificationOutboxRecord
 from markeitech.signals import SignalStatus, SignalTransitionEvent
 
 SIGNAL_LIFECYCLE_DESTINATION = "signal-lifecycle"
+
+
 def build_signal_transition_notification(
     event: SignalTransitionEvent,
     *,
@@ -50,8 +52,8 @@ def build_signal_transition_notification(
         event_type="signal.transition",
         event_schema_version=event.schema_version,
         payload={
-            "content": f"**{title}**",
-            "allowed_mentions": {"parse": []},
+            "content": f"@here\n**{title}**",
+            "allowed_mentions": {"parse": ["everyone"]},
             "embeds": [
                 {
                     "title": title,

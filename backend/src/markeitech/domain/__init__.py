@@ -9,6 +9,7 @@ from markeitech.domain.events import (
     StrategyStateEvent,
 )
 from markeitech.domain.instruments import (
+    AggressionOutcomeConfig,
     AnalysisProfile,
     CryptoContractConfig,
     EquityLikeContractConfig,
@@ -42,6 +43,7 @@ from markeitech.domain.state import (
 )
 
 __all__ = [
+    "AggressionOutcomeConfig",
     "BarInterval",
     "ActiveInstrumentChangedEvent",
     "AnalysisProfile",

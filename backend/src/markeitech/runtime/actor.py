@@ -98,9 +98,15 @@ class OperatorEventProjectionActor(Actor):
 class ContextEventProjectionActor(Actor):
     """Projects durable context transitions without reading persistence."""
 
-    def __init__(self, *, dedupe_size: int) -> None:
+    def __init__(
+        self,
+        *,
+        dedupe_size: int,
+        on_context_event: Callable[[CommittedContextTransitionNotice], None] | None = None,
+    ) -> None:
         super().__init__()
         self._identities = BoundedEventIdentityWindow(dedupe_size)
+        self._on_context_event = on_context_event
 
     def on_start(self) -> None:
         self.msgbus.subscribe(MarkeitechBusTopic.CONTEXT_EVENT.value, self._on_context_event)
@@ -116,6 +122,8 @@ class ContextEventProjectionActor(Actor):
         if not self._identities.observe(event.dedupe_key):
             return
         self.log.info(render_context_transition_notice(event))
+        if self._on_context_event is not None:
+            self._on_context_event(event)
 
 
 def render_context_transition_notice(event: CommittedContextTransitionNotice) -> str:
