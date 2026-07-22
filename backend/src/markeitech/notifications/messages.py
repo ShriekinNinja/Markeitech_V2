@@ -12,6 +12,7 @@ from markeitech.auction_pressure import (
     BarPressureProxySnapshot,
     SessionAuctionPressureSnapshot,
 )
+from markeitech.domain.market_data import ClassifiedTrade
 from markeitech.persistence import NotificationOutboxRecord
 from markeitech.signals import (
     LocationEpisodeEventType,
@@ -22,6 +23,7 @@ from markeitech.signals import (
 SYSTEM_HEALTH_DESTINATION = "system-health"
 MARKET_EVENTS_DESTINATION = "market-events"
 ALERT_STREAM_DESTINATION = "alert-stream"
+OPERATOR_FLOW_DESTINATION = "operator-flow"
 _MAX_CONTENT = 2000
 
 
@@ -151,6 +153,134 @@ def build_market_context_notifications(
             )
         )
     return tuple(records)
+
+
+def build_operator_flow_notification(
+    pressure: SessionAuctionPressureSnapshot,
+    *,
+    role: str,
+    occurred_ts: datetime | None = None,
+) -> NotificationOutboxRecord:
+    now = datetime.now(UTC) if occurred_ts is None else occurred_ts
+    delta_ratio = (
+        "Unavailable" if pressure.delta_ratio is None else f"{pressure.delta_ratio:+.1%}"
+    )
+    role_name = "Active market" if role.upper() == "ACTIVE" else "Order-flow cohort"
+    return _record(
+        destination=OPERATOR_FLOW_DESTINATION,
+        aggregate=pressure.instrument_id,
+        event_type="market.order_flow.summary",
+        identity=f"{role}:{pressure.model_dump_json()}",
+        content="",
+        now=now,
+        embeds=(
+            {
+                "title": f"{_instrument_name(pressure.instrument_id)} — Order Flow",
+                "description": f"{role_name} • Product-session cumulative flow",
+                "color": _flow_color(pressure.delta),
+                "fields": (
+                    {
+                        "name": "Aggressive volume",
+                        "value": (
+                            f"Buy: **{pressure.buy_volume:,.0f}**\n"
+                            f"Sell: **{pressure.sell_volume:,.0f}**"
+                        ),
+                        "inline": True,
+                    },
+                    {
+                        "name": "Delta",
+                        "value": (
+                            f"Session: **{pressure.delta:+,.0f}**\n"
+                            f"Ratio: **{delta_ratio}**"
+                        ),
+                        "inline": True,
+                    },
+                    {
+                        "name": "CVD",
+                        "value": f"**{pressure.cvd:+,.0f}**",
+                        "inline": True,
+                    },
+                    {
+                        "name": "Classification quality",
+                        "value": (
+                            f"Coverage: **{pressure.classified_volume_ratio:.1%}**  •  "
+                            f"Fidelity: **{pressure.fidelity.value.title()}**\n"
+                            f"Trades: {pressure.classified_trade_count:,} classified / "
+                            f"{pressure.trade_count:,} total  •  "
+                            f"Unknown volume: {pressure.unknown_volume:,.0f}"
+                        ),
+                        "inline": False,
+                    },
+                ),
+                "timestamp": pressure.as_of.isoformat(),
+                "footer": {
+                    "text": (
+                        f"{pressure.instrument_id} • IB trade/quote classification • "
+                        "Observation only"
+                    )
+                },
+            },
+        ),
+    )
+
+
+def build_large_trade_notification(
+    trade: ClassifiedTrade,
+    *,
+    threshold: Decimal,
+    role: str,
+    occurred_ts: datetime | None = None,
+) -> NotificationOutboxRecord:
+    now = datetime.now(UTC) if occurred_ts is None else occurred_ts
+    side = trade.side.value.upper()
+    role_name = "Active" if role.upper() == "ACTIVE" else "Cohort"
+    return _record(
+        destination=OPERATOR_FLOW_DESTINATION,
+        aggregate=trade.instrument_id,
+        event_type="market.order_flow.large_trade",
+        identity=f"{trade.trade.dedupe_key}:{threshold}:{role}",
+        content="",
+        now=now,
+        embeds=(
+            {
+                "title": f"Large {side.title()} — {_instrument_name(trade.instrument_id)}",
+                "description": "A classified trade met the configured large-print threshold.",
+                "color": 0x2ECC71 if side == "BUY" else 0xE74C3C,
+                "fields": (
+                    {
+                        "name": "Trade",
+                        "value": (
+                            f"Price: **{_price(trade.trade.price)}**\n"
+                            f"Size: **{trade.trade.size:,.0f} contracts**"
+                        ),
+                        "inline": True,
+                    },
+                    {
+                        "name": "Threshold",
+                        "value": f"≥ {threshold:,.0f} contracts",
+                        "inline": True,
+                    },
+                    {
+                        "name": "Classification",
+                        "value": trade.classification_reason.replace("_", " ").title(),
+                        "inline": True,
+                    },
+                    {
+                        "name": "Instrument role",
+                        "value": role_name,
+                        "inline": True,
+                    },
+                ),
+                "timestamp": trade.event_ts.isoformat(),
+                "footer": {
+                    "text": (
+                        f"{trade.instrument_id} • Inferred from IB trade/quote data • "
+                        "Observation only"
+                    )
+                },
+            },
+        ),
+    )
 
 
 def build_location_narrative_notification(
@@ -395,6 +525,14 @@ def _direction_color(score: int) -> int:
     if score > 0:
         return 0x2ECC71
     if score < 0:
+        return 0xE74C3C
+    return 0xFFFFFF
+
+
+def _flow_color(delta: Decimal) -> int:
+    if delta > 0:
+        return 0x2ECC71
+    if delta < 0:
         return 0xE74C3C
     return 0xFFFFFF
 

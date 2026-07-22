@@ -57,6 +57,10 @@ destination_key = "market-events"
 environment_variable = "MARKEITECH_DISCORD_MARKET_EVENTS_WEBHOOK"
 
 [[discord.routes]]
+destination_key = "operator-flow"
+environment_variable = "MARKEITECH_DISCORD_OPERATOR_FLOW_WEBHOOK"
+
+[[discord.routes]]
 destination_key = "system-health"
 environment_variable = "MARKEITECH_DISCORD_RUNTIME_HEALTH_WEBHOOK"
 

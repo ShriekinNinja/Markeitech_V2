@@ -37,7 +37,9 @@ from markeitech.notifications import (
     DiscordOutboxDeliveryWorker,
     LocationNarrativeNotifier,
     build_health_notification,
+    build_large_trade_notification,
     build_market_context_notifications,
+    build_operator_flow_notification,
     build_signal_transition_notification,
 )
 from markeitech.persistence.calendar import PandasMarketSessionCalendar
@@ -424,6 +426,22 @@ def build_prepared_market_data_live_node(
         ):
             persistence.metadata.enqueue(notification)
 
+    def enqueue_auction_pressure(pressure: Any, role: str) -> None:
+        if persistence is not None and config.discord.enabled:
+            persistence.metadata.enqueue(
+                build_operator_flow_notification(pressure, role=role)
+            )
+
+    def enqueue_large_trade(trade: Any, threshold: Any, role: str) -> None:
+        if persistence is not None and config.discord.enabled:
+            persistence.metadata.enqueue(
+                build_large_trade_notification(
+                    trade,
+                    threshold=threshold,
+                    role=role,
+                )
+            )
+
     def enqueue_market_data_health(snapshot: Any) -> None:
         instrument_rows = "\n".join(
             f"**{item.instrument_id}:** "
@@ -485,6 +503,8 @@ def build_prepared_market_data_live_node(
             for runtime in config.instrument_registry.order_flow_runtimes
             if runtime.large_trade_threshold is not None
         },
+        "on_auction_pressure_report": enqueue_auction_pressure,
+        "on_large_trade_observation": enqueue_large_trade,
         "on_operator_context_report": enqueue_context_report,
         "on_runtime_health": enqueue_health,
         "on_market_data_health": enqueue_market_data_health,

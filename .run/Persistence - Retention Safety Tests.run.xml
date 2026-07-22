@@ -1,17 +1,20 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Persistence - Retention Safety Tests" type="PythonConfigurationType" factoryName="Python">
-    <module name="Markeitech" />
+    <module name="markeitech" />
+    <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
     <option name="SDK_HOME" value="" />
-    <option name="SDK_NAME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <option name="DEBUG_JUST_MY_CODE" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="RUN_TOOL" value="" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/.venv/bin/pytest" />
     <option name="PARAMETERS" value="-vv tests/persistence/test_retention.py tests/persistence/test_calendar.py::test_retention_cutoff_counts_only_completed_product_sessions tests/persistence/test_persistence_coordinator.py::test_metadata_pruning_removes_only_expired_identities_and_empty_batches tests/persistence/test_persistence_coordinator.py::test_metadata_pruning_refuses_incomplete_batches tests/persistence/test_runtime.py::test_runtime_runs_enabled_retention_before_accepting_work tests/persistence/test_runtime.py::test_enabled_retention_requires_explicit_calendar" />
     <option name="SHOW_COMMAND_LINE" value="false" />

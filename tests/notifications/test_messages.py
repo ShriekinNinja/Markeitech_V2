@@ -12,14 +12,19 @@ from markeitech.analytics import (
     VwapPosition,
 )
 from markeitech.auction_pressure import (
+    AuctionPressureFidelity,
     BarPressureDirection,
     BarPressureProxySnapshot,
+    SessionAuctionPressureSnapshot,
 )
+from markeitech.domain.market_data import CanonicalTradeTick, ClassifiedTrade, TradeSide
 from markeitech.notifications import (
     ApproachingLocationNotifier,
     LocationNarrativeNotifier,
     build_health_notification,
+    build_large_trade_notification,
     build_market_context_notifications,
+    build_operator_flow_notification,
 )
 from markeitech.signals import (
     DirectionQualificationStatus,
@@ -136,6 +141,74 @@ def test_market_context_routes_the_instrument_from_operator_lines() -> None:
         "Fair value gaps",
     ]
     assert embed["fields"][0]["value"] == "**Strong bullish alignment**\nScore: +2 of 2"
+
+
+def test_operator_flow_uses_a_readable_direction_colored_embed() -> None:
+    pressure = SessionAuctionPressureSnapshot(
+        instrument_id="NQU6.CME",
+        session_start=NOW - timedelta(hours=11),
+        session_end=NOW + timedelta(hours=12),
+        as_of=NOW,
+        source="ib",
+        fidelity=AuctionPressureFidelity.PARTIAL,
+        trade_count=120,
+        classified_trade_count=110,
+        unknown_trade_count=10,
+        buy_volume=Decimal("850"),
+        sell_volume=Decimal("1025"),
+        unknown_volume=Decimal("75"),
+        classification_reason_counts={"at_or_above_ask": 55, "at_or_below_bid": 55, "unknown": 10},
+    )
+
+    record = build_operator_flow_notification(
+        pressure,
+        role="ACTIVE",
+        occurred_ts=NOW,
+    )
+
+    assert record.destination_key == "operator-flow"
+    assert "content" not in record.payload
+    embed = record.payload["embeds"][0]
+    assert embed["title"] == "Nasdaq 100 Futures — Order Flow"
+    assert embed["description"] == "Active market • Product-session cumulative flow"
+    assert embed["color"] == 0xE74C3C
+    assert embed["fields"][0]["value"] == "Buy: **850**\nSell: **1,025**"
+    assert "Session: **-175**" in embed["fields"][1]["value"]
+    assert "Coverage: **96.2%**" in embed["fields"][3]["value"]
+    assert "Observation only" in embed["footer"]["text"]
+
+
+def test_large_trade_notification_states_observation_without_model_judgment() -> None:
+    tick = CanonicalTradeTick(
+        instrument_id="ESU6.CME",
+        event_ts=NOW,
+        ts_init=NOW,
+        price=Decimal("7520.25"),
+        size=Decimal("120"),
+    )
+    trade = ClassifiedTrade(
+        instrument_id=tick.instrument_id,
+        event_ts=NOW,
+        ts_init=NOW,
+        trade=tick,
+        side=TradeSide.SELL,
+        classification_reason="at_or_below_bid",
+    )
+
+    record = build_large_trade_notification(
+        trade,
+        threshold=Decimal("120"),
+        role="COHORT",
+        occurred_ts=NOW,
+    )
+
+    assert record.destination_key == "operator-flow"
+    embed = record.payload["embeds"][0]
+    assert embed["title"] == "Large Sell — S&P 500 Futures"
+    assert embed["color"] == 0xE74C3C
+    assert embed["fields"][0]["value"] == "Price: **7,520.25**\nSize: **120 contracts**"
+    assert embed["fields"][3]["value"] == "Cohort"
+    assert "trapped" not in str(record.payload).lower()
 
 
 def test_market_context_exposes_reported_bar_pressure_without_claiming_delta() -> None:

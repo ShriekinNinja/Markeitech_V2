@@ -324,6 +324,10 @@ def test_live_and_test_configs_have_explicit_instrument_scope(
     assert config.signals.enabled_definitions("NQU6.CME") == ()
     assert config.signals.enabled_definitions("ESU6.CME") == ()
     assert {
+        route.destination_key: route.environment_variable
+        for route in config.discord.routes
+    }["operator-flow"] == "MARKEITECH_DISCORD_OPERATOR_FLOW_WEBHOOK"
+    assert {
         runtime.contract.instrument_id: runtime.large_trade_threshold
         for runtime in config.instrument_registry.order_flow_runtimes
     } == {"NQU6.CME": 40, "ESU6.CME": 120}

@@ -252,6 +252,12 @@ class MarkeitechMarketDataActor(Actor):
             Mapping[str, SessionAuctionPressureAccumulator] | None
         ) = None,
         large_trade_thresholds: Mapping[str, Decimal] | None = None,
+        on_auction_pressure_report: (
+            Callable[[SessionAuctionPressureSnapshot, str], None] | None
+        ) = None,
+        on_large_trade_observation: (
+            Callable[[ClassifiedTrade, Decimal, str], None] | None
+        ) = None,
         on_operator_context_report: (
             Callable[
                 [
@@ -345,6 +351,8 @@ class MarkeitechMarketDataActor(Actor):
         self._auction_pressure_accumulators = dict(auction_pressure_accumulators or {})
         self._auction_pressure_snapshots: dict[str, SessionAuctionPressureSnapshot] = {}
         self._large_trade_thresholds = dict(large_trade_thresholds or {})
+        self._on_auction_pressure_report = on_auction_pressure_report
+        self._on_large_trade_observation = on_large_trade_observation
         self._on_operator_context_report = on_operator_context_report
         self._on_runtime_health = on_runtime_health
         self._on_warmup_ready = on_warmup_ready
@@ -488,6 +496,13 @@ class MarkeitechMarketDataActor(Actor):
             threshold = self._large_trade_thresholds.get(event.instrument_id)
             if threshold is not None and is_large_trade_observation(event, threshold=threshold):
                 self.log.info(format_large_trade_observation(event, threshold=threshold))
+                if self._on_large_trade_observation is not None:
+                    role = (
+                        "ACTIVE"
+                        if event.instrument_id == self._switch.snapshot.active_instrument_id
+                        else "COHORT"
+                    )
+                    self._on_large_trade_observation(event, threshold, role)
         if self._external_market_data_sink is not None:
             self._external_market_data_sink(event)
         if (
@@ -575,6 +590,8 @@ class MarkeitechMarketDataActor(Actor):
                 else "COHORT"
             )
             self.log.info(format_auction_pressure(pressure, role=role))
+            if self._on_auction_pressure_report is not None:
+                self._on_auction_pressure_report(pressure, role)
         self.log.info(f"OPERATOR_CONTEXT_COMPLETE | phase={phase.upper()}")
         if self._on_operator_context_report is not None:
             changed_instruments = {
