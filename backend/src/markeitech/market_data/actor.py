@@ -252,6 +252,7 @@ class MarkeitechMarketDataActor(Actor):
             Mapping[str, SessionAuctionPressureAccumulator] | None
         ) = None,
         large_trade_thresholds: Mapping[str, Decimal] | None = None,
+        large_trade_windows_ms: Mapping[str, int] | None = None,
         on_auction_pressure_report: (
             Callable[[SessionAuctionPressureSnapshot, str], None] | None
         ) = None,
@@ -352,6 +353,7 @@ class MarkeitechMarketDataActor(Actor):
         self._auction_pressure_snapshots: dict[str, SessionAuctionPressureSnapshot] = {}
         self._reported_cvd: dict[str, Decimal] = {}
         self._large_trade_thresholds = dict(large_trade_thresholds or {})
+        self._large_trade_windows_ms = dict(large_trade_windows_ms or {})
         self._large_trade_clusters: dict[str, list[ClassifiedTrade]] = {}
         self._on_auction_pressure_report = on_auction_pressure_report
         self._on_large_trade_observation = on_large_trade_observation
@@ -501,6 +503,9 @@ class MarkeitechMarketDataActor(Actor):
                     event,
                     threshold=threshold,
                     clusters=self._large_trade_clusters,
+                    window=timedelta(
+                        milliseconds=self._large_trade_windows_ms.get(event.instrument_id, 250)
+                    ),
                 )
                 if threshold is not None
                 else None

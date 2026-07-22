@@ -510,6 +510,11 @@ def build_prepared_market_data_live_node(
             for runtime in config.instrument_registry.order_flow_runtimes
             if runtime.large_trade_threshold is not None
         },
+        "large_trade_windows_ms": {
+            runtime.contract.instrument_id: runtime.large_trade_window_ms
+            for runtime in config.instrument_registry.order_flow_runtimes
+            if runtime.large_trade_threshold is not None
+        },
         "on_auction_pressure_report": enqueue_auction_pressure,
         "on_large_trade_observation": enqueue_large_trade,
         "on_operator_context_report": enqueue_context_report,

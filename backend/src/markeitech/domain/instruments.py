@@ -239,6 +239,7 @@ class InstrumentRuntimeConfig(VersionedDomainModel):
     enabled: bool = True
     priority: int = Field(default=100, ge=0)
     large_trade_threshold: Decimal | None = Field(default=None, gt=0)
+    large_trade_window_ms: int = Field(default=250, gt=0)
     warmup: InstrumentWarmupConfig | None = Field(default_factory=InstrumentWarmupConfig)
 
     @model_validator(mode="after")
