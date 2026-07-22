@@ -92,6 +92,29 @@ def test_switch_waits_for_trade_and_quote_then_promotes() -> None:
     ]
 
 
+def test_switch_between_retained_cohort_members_keeps_both_subscriptions() -> None:
+    target = SwitchTarget()
+    events: list[ActiveInstrumentChangedEvent] = []
+    switch = ActiveInstrumentSwitchCoordinator(
+        active_instrument_id="NQU6.CME",
+        enabled_instrument_ids={"NQU6.CME", "ESU6.CME"},
+        retained_tick_instrument_ids={"NQU6.CME", "ESU6.CME"},
+        data_client_name="IB",
+        target=target,
+        now=lambda: NOW,
+        runtime_ready=lambda: True,
+        on_changed=events.append,
+    )
+
+    switch.request_switch(request())
+    switch.observe_trade_tick("ESU6.CME")
+    event = switch.observe_quote_tick("ESU6.CME")
+
+    assert event is not None
+    assert event.active_instrument_id == "ESU6.CME"
+    assert target.calls == []
+
+
 def test_unrelated_ticks_do_not_ready_candidate() -> None:
     switch = coordinator(SwitchTarget())
     switch.request_switch(request())

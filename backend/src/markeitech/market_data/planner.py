@@ -91,7 +91,7 @@ def build_market_data_plan(registry: InstrumentRegistryConfig) -> MarketDataRunt
                 annotate_fvgs=runtime.warmup.annotate_fvgs,
             )
         )
-        if runtime.role == InstrumentRole.ACTIVE:
+        if runtime.data_mode == InstrumentDataMode.TICK_BY_TICK:
             subscriptions.extend(
                 [
                     PlannedSubscription(
@@ -109,8 +109,6 @@ def build_market_data_plan(registry: InstrumentRegistryConfig) -> MarketDataRunt
                 ]
             )
         elif runtime.role == InstrumentRole.BACKGROUND:
-            if runtime.data_mode != InstrumentDataMode.LIVE_1M_BARS:
-                raise ValueError("background instruments must track live 1m bars")
             subscriptions.append(
                 PlannedSubscription(
                     instrument_id=runtime.contract.instrument_id,

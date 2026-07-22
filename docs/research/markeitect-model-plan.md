@@ -1,6 +1,6 @@
 # Markeitect Model Implementation Plan
 
-Status: Proposed for review
+Status: In progress
 
 Started: 2026-07-21
 
@@ -50,29 +50,29 @@ simultaneously even when only one instrument is the current trading focus.
 
 ### Configuration
 
-- [ ] Define one active trading-focus instrument independently of data mode.
-- [ ] Add an explicit order-flow cohort containing NQ and ES.
-- [ ] Keep ordinary context instruments on reported 1m bars unless promoted.
+- [x] Define one active trading-focus instrument independently of data mode.
+- [x] Add an explicit order-flow cohort containing NQ and ES.
+- [x] Keep ordinary context instruments on reported 1m bars unless promoted.
 - [ ] Validate that every order-flow instrument has contract, entitlement,
   warmup, session, tick-size, and threshold configuration.
-- [ ] Keep runtime instrument switching available without discarding the cohort.
+- [x] Keep runtime instrument switching available without discarding the cohort.
 
 ### Provider And Runtime
 
 - [ ] Confirm IB/Nautilus can maintain simultaneous NQ and ES trade/quote
   subscriptions under current paper-data entitlements and pacing limits.
-- [ ] Subscribe to tick-by-tick trades for both cohort instruments.
-- [ ] Subscribe to the quote evidence required by the existing classifier for
+- [x] Subscribe to tick-by-tick trades for both cohort instruments.
+- [x] Subscribe to the quote evidence required by the existing classifier for
   both instruments.
-- [ ] Keep per-instrument bounded streams and health counters.
+- [x] Keep per-instrument bounded streams and health counters.
 - [ ] Expose missing, stale, delayed, conflicted, and degraded cohort evidence.
 - [ ] Preserve analytics/context operation when one cohort member degrades.
 
 ### Tests And Acceptance
 
-- [ ] Test independent NQ/ES stream identity and no cross-instrument mixing.
+- [x] Test independent NQ/ES stream identity and no cross-instrument mixing.
 - [ ] Test bounded queues, reconnect, duplicate data, and out-of-order events.
-- [ ] Test active-focus switching without subscription loss.
+- [x] Test active-focus switching without subscription loss.
 - [ ] Run a short paper session and confirm simultaneous classified flow.
 
 ### Acceptance Gate
@@ -87,15 +87,15 @@ Create reusable facts before detecting setups.
 
 ### Delta And CVD
 
-- [ ] Define canonical trade-side and signed-volume contracts.
-- [ ] Calculate per-trade signed volume.
+- [x] Define canonical trade-side and signed-volume contracts.
+- [x] Calculate per-trade signed volume.
 - [ ] Calculate completed-bar delta for configured windows.
-- [ ] Calculate session CVD with explicit product-session reset identity.
+- [x] Calculate session CVD with explicit product-session reset identity.
 - [ ] Calculate rolling delta and CVD change over configurable windows.
 - [ ] Retain CVD slope, acceleration, deceleration, reversal, and extremes as
   decomposed measurements.
-- [ ] Retain total, classified, unknown, bid, ask, and inferred volume.
-- [ ] Never calculate reported CVD from OHLCV bars.
+- [x] Retain total, classified, unknown, bid, ask, and inferred volume.
+- [x] Never calculate reported CVD from OHLCV bars.
 
 ### Price Response
 
@@ -107,8 +107,8 @@ Create reusable facts before detecting setups.
 
 ### Tests And Acceptance
 
-- [ ] Test buy/sell/unknown classification accounting.
-- [ ] Test CVD reset at the configured product-session boundary.
+- [x] Test buy/sell/unknown classification accounting.
+- [x] Test CVD reset at the configured product-session boundary.
 - [ ] Test retries, corrections, gaps, and partial coverage.
 - [ ] Test price-up/CVD-up, price-down/CVD-down, and divergent paths.
 - [ ] Compare selected calculations with OFS screenshots/recordings.
@@ -123,8 +123,8 @@ Create reusable facts before detecting setups.
 
 ### Detection
 
-- [ ] Add instrument-specific initial thresholds: NQ 40 and ES 120 contracts.
-- [ ] Detect individual classified trades meeting the threshold.
+- [x] Add instrument-specific initial thresholds: NQ 40 and ES 120 contracts.
+- [x] Detect individual classified trades meeting the threshold.
 - [ ] Detect repeated same-side activity within configurable time and price
   neighborhoods.
 - [ ] Keep individual trades and accumulated bursts semantically distinct.
@@ -142,7 +142,7 @@ Create reusable facts before detecting setups.
 
 ### Tests And Acceptance
 
-- [ ] Test exact threshold boundaries.
+- [x] Test exact threshold boundaries.
 - [ ] Test split prints, repeated bursts, opposite-side overlap, and quiet gaps.
 - [ ] Test instrument-specific threshold isolation.
 - [ ] Test restart and duplicate idempotency.

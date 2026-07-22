@@ -72,8 +72,8 @@ catalog_writer_queue_size = 10000
 catalog_batch_size = 1000
 persistence_batch_interval_seconds = 60
 journal_max_bytes = 536870912
-runtime_startup_timeout_seconds = 30
-runtime_shutdown_timeout_seconds = 30
+runtime_startup_timeout_seconds = 60
+runtime_shutdown_timeout_seconds = 60
 recovery_max_total_requests = 256
 recovery_provider_empty_confirmation_attempts = 2
 
@@ -145,6 +145,7 @@ data_mode = "tick_by_tick"
 analysis_profile = "active_tick"
 enabled = true
 priority = 0
+large_trade_threshold = 40
 
 [instruments.contract]
 root_symbol = "NQ"
@@ -174,10 +175,11 @@ volume_profile_composite_sessions = [2, 5]
 
 [[instruments]]
 role = "background"
-data_mode = "live_1m_bars"
+data_mode = "tick_by_tick"
 analysis_profile = "background_bar"
 enabled = true
 priority = 20
+large_trade_threshold = 120
 
 [instruments.contract]
 root_symbol = "ES"

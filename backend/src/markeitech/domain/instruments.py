@@ -238,6 +238,7 @@ class InstrumentRuntimeConfig(VersionedDomainModel):
     analysis_profile: AnalysisProfile
     enabled: bool = True
     priority: int = Field(default=100, ge=0)
+    large_trade_threshold: Decimal | None = Field(default=None, gt=0)
     warmup: InstrumentWarmupConfig | None = Field(default_factory=InstrumentWarmupConfig)
 
     @model_validator(mode="after")
@@ -248,9 +249,16 @@ class InstrumentRuntimeConfig(VersionedDomainModel):
             raise ValueError("enabled instruments require warmup configuration")
         if self.role == InstrumentRole.ACTIVE and self.data_mode != InstrumentDataMode.TICK_BY_TICK:
             raise ValueError("active instrument must use tick-by-tick data mode")
-        if self.role == InstrumentRole.BACKGROUND:
-            if self.data_mode != InstrumentDataMode.LIVE_1M_BARS:
-                raise ValueError("background instruments must use live 1m bar data mode")
+        if self.role == InstrumentRole.BACKGROUND and self.data_mode not in {
+            InstrumentDataMode.TICK_BY_TICK,
+            InstrumentDataMode.LIVE_1M_BARS,
+        }:
+            raise ValueError("background instruments must use tick-by-tick or live 1m bar data")
+        if (
+            self.large_trade_threshold is not None
+            and self.data_mode != InstrumentDataMode.TICK_BY_TICK
+        ):
+            raise ValueError("large trade thresholds require tick-by-tick data mode")
         if self.role == InstrumentRole.DISABLED and self.data_mode != InstrumentDataMode.DISABLED:
             raise ValueError("disabled instruments must use disabled data mode")
         if self.role == InstrumentRole.DISABLED and self.warmup is not None:
@@ -286,6 +294,14 @@ class InstrumentRegistryConfig(VersionedDomainModel):
             if instrument.contract.instrument_id == self.active_instrument_id:
                 return instrument
         raise RuntimeError("validated registry missing active runtime")
+
+    @property
+    def order_flow_runtimes(self) -> tuple[InstrumentRuntimeConfig, ...]:
+        return tuple(
+            instrument
+            for instrument in self.instruments
+            if instrument.enabled and instrument.data_mode == InstrumentDataMode.TICK_BY_TICK
+        )
 
 
 class NQContractConfig(FuturesContractConfig):

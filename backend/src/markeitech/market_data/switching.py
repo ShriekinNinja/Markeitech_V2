@@ -83,6 +83,7 @@ class ActiveInstrumentSwitchCoordinator:
         now: Callable[[], datetime],
         runtime_ready: Callable[[], bool],
         on_changed: Callable[[ActiveInstrumentChangedEvent], None],
+        retained_tick_instrument_ids: set[str] | None = None,
         readiness_timeout: timedelta = timedelta(seconds=10),
     ) -> None:
         if active_instrument_id not in enabled_instrument_ids:
@@ -90,6 +91,9 @@ class ActiveInstrumentSwitchCoordinator:
         if readiness_timeout <= timedelta(0):
             raise ValueError("readiness timeout must be positive")
         self._enabled_instrument_ids = frozenset(enabled_instrument_ids)
+        self._retained_tick_instrument_ids = frozenset(retained_tick_instrument_ids or set())
+        if not self._retained_tick_instrument_ids <= self._enabled_instrument_ids:
+            raise ValueError("retained tick instruments must be enabled")
         self._data_client_name = data_client_name
         self._target = target
         self._now = now
@@ -123,11 +127,12 @@ class ActiveInstrumentSwitchCoordinator:
             reason=request.reason,
             deadline=require_utc(self._now()) + self._readiness_timeout,
         )
-        try:
-            self._subscribe_candidate(request.target_instrument_id)
-        except Exception:
-            self._rollback_candidate("candidate_subscription_failed")
-            raise
+        if request.target_instrument_id not in self._retained_tick_instrument_ids:
+            try:
+                self._subscribe_candidate(request.target_instrument_id)
+            except Exception:
+                self._rollback_candidate("candidate_subscription_failed")
+                raise
         return self._snapshot
 
     def observe_trade_tick(self, instrument_id: str) -> ActiveInstrumentChangedEvent | None:
@@ -159,12 +164,13 @@ class ActiveInstrumentSwitchCoordinator:
         candidate = self._require_candidate()
         request_id = self._snapshot.request_id
         reason = self._snapshot.reason
-        try:
-            self._unsubscribe_ticks(previous)
-        except Exception:
-            self._repair_previous_active(previous)
-            self._rollback_candidate("previous_active_unsubscribe_failed")
-            raise
+        if previous not in self._retained_tick_instrument_ids:
+            try:
+                self._unsubscribe_ticks(previous)
+            except Exception:
+                self._repair_previous_active(previous)
+                self._rollback_candidate("previous_active_unsubscribe_failed")
+                raise
 
         event_ts = require_utc(self._now())
         event = ActiveInstrumentChangedEvent(
@@ -223,7 +229,7 @@ class ActiveInstrumentSwitchCoordinator:
 
     def _rollback_candidate(self, failure: str) -> None:
         candidate = self._snapshot.candidate_instrument_id
-        if candidate is not None:
+        if candidate is not None and candidate not in self._retained_tick_instrument_ids:
             self._best_effort_unsubscribe(candidate)
         active = self._snapshot.active_instrument_id
         self._snapshot = ActiveSwitchSnapshot(

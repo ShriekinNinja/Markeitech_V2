@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -82,8 +83,9 @@ def registry() -> InstrumentRegistryConfig:
             InstrumentRuntimeConfig(
                 contract=es_contract(),
                 role=InstrumentRole.BACKGROUND,
-                data_mode=InstrumentDataMode.LIVE_1M_BARS,
+                data_mode=InstrumentDataMode.TICK_BY_TICK,
                 analysis_profile=AnalysisProfile.BACKGROUND_BAR,
+                large_trade_threshold=Decimal("120"),
             ),
             InstrumentRuntimeConfig(
                 contract=spx_contract(),
@@ -112,7 +114,7 @@ def test_market_data_plan_warms_every_enabled_instrument() -> None:
         assert warmup.annotate_fvgs is True
 
 
-def test_market_data_plan_assigns_active_tick_and_background_bar_streams() -> None:
+def test_market_data_plan_assigns_cohort_ticks_and_background_bar_streams() -> None:
     plan = build_market_data_plan(registry())
 
     subscriptions = {
@@ -123,7 +125,8 @@ def test_market_data_plan_assigns_active_tick_and_background_bar_streams() -> No
     assert ("NQU6.CME", SubscriptionKind.BAR_1M) in subscriptions
     assert ("ESU6.CME", SubscriptionKind.BAR_1M) in subscriptions
     assert ("^SPX.CBOE", SubscriptionKind.BAR_1M) in subscriptions
-    assert ("ESU6.CME", SubscriptionKind.TICK_LAST) not in subscriptions
+    assert ("ESU6.CME", SubscriptionKind.TICK_LAST) in subscriptions
+    assert ("ESU6.CME", SubscriptionKind.TICK_BID_ASK) in subscriptions
     assert ("^SPX.CBOE", SubscriptionKind.TICK_BID_ASK) not in subscriptions
 
 
@@ -152,6 +155,16 @@ def test_nautilus_request_plan_maps_warmups_and_subscriptions() -> None:
         "NQU6.CME",
         NautilusIntentKind.SUBSCRIBE_BARS,
         "NQU6.CME-1-MINUTE-LAST-EXTERNAL",
+    ) in subscriptions
+    assert (
+        "ESU6.CME",
+        NautilusIntentKind.SUBSCRIBE_TRADE_TICKS,
+        None,
+    ) in subscriptions
+    assert (
+        "ESU6.CME",
+        NautilusIntentKind.SUBSCRIBE_QUOTE_TICKS,
+        None,
     ) in subscriptions
     assert (
         "ESU6.CME",

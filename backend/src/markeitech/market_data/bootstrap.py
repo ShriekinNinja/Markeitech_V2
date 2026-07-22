@@ -473,10 +473,18 @@ def build_prepared_market_data_live_node(
             if config.operator_context.enabled
             else None
         ),
-        "auction_pressure_accumulator": SessionAuctionPressureAccumulator(
-            config.instrument_registry.active_instrument_id,
-            session_calendar,
-        ),
+        "auction_pressure_accumulators": {
+            runtime.contract.instrument_id: SessionAuctionPressureAccumulator(
+                runtime.contract.instrument_id,
+                session_calendar,
+            )
+            for runtime in config.instrument_registry.order_flow_runtimes
+        },
+        "large_trade_thresholds": {
+            runtime.contract.instrument_id: runtime.large_trade_threshold
+            for runtime in config.instrument_registry.order_flow_runtimes
+            if runtime.large_trade_threshold is not None
+        },
         "on_operator_context_report": enqueue_context_report,
         "on_runtime_health": enqueue_health,
         "on_market_data_health": enqueue_market_data_health,

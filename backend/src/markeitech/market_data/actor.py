@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Protocol
@@ -248,7 +248,10 @@ class MarkeitechMarketDataActor(Actor):
         is_session_open: SessionOpenResolver | None = None,
         resolve_warmup_start: WarmupStartResolver | None = None,
         operator_context_report_interval: timedelta | None = timedelta(minutes=1),
-        auction_pressure_accumulator: SessionAuctionPressureAccumulator | None = None,
+        auction_pressure_accumulators: (
+            Mapping[str, SessionAuctionPressureAccumulator] | None
+        ) = None,
+        large_trade_thresholds: Mapping[str, Decimal] | None = None,
         on_operator_context_report: (
             Callable[
                 [
@@ -318,6 +321,15 @@ class MarkeitechMarketDataActor(Actor):
             now=lambda: self.clock.utc_now(),
             runtime_ready=lambda: self._warmup.state == WarmupState.LIVE,
             on_changed=self._handle_active_instrument_changed,
+            retained_tick_instrument_ids={
+                action.instrument_id
+                for action in action_plan.actions
+                if action.kind
+                in {
+                    LiveNodeActionKind.SUBSCRIBE_TRADE_TICKS,
+                    LiveNodeActionKind.SUBSCRIBE_QUOTE_TICKS,
+                }
+            },
         )
         self._external_market_data_sink = on_market_data_event
         self._native_market_data_sink = on_native_market_data_event
@@ -330,8 +342,9 @@ class MarkeitechMarketDataActor(Actor):
         self._operator_context = OperatorContextReporter()
         self._operator_context_report_interval = operator_context_report_interval
         self._operator_context_timer_started = False
-        self._auction_pressure_accumulator = auction_pressure_accumulator
-        self._auction_pressure_snapshot: SessionAuctionPressureSnapshot | None = None
+        self._auction_pressure_accumulators = dict(auction_pressure_accumulators or {})
+        self._auction_pressure_snapshots: dict[str, SessionAuctionPressureSnapshot] = {}
+        self._large_trade_thresholds = dict(large_trade_thresholds or {})
         self._on_operator_context_report = on_operator_context_report
         self._on_runtime_health = on_runtime_health
         self._on_warmup_ready = on_warmup_ready
@@ -468,8 +481,13 @@ class MarkeitechMarketDataActor(Actor):
 
     def _handle_market_data_event(self, event: Any) -> None:
         self._health.observe(event)
-        if isinstance(event, ClassifiedTrade) and self._auction_pressure_accumulator is not None:
-            self._auction_pressure_snapshot = self._auction_pressure_accumulator.observe(event)
+        if isinstance(event, ClassifiedTrade):
+            accumulator = self._auction_pressure_accumulators.get(event.instrument_id)
+            if accumulator is not None:
+                self._auction_pressure_snapshots[event.instrument_id] = accumulator.observe(event)
+            threshold = self._large_trade_thresholds.get(event.instrument_id)
+            if threshold is not None and is_large_trade_observation(event, threshold=threshold):
+                self.log.info(format_large_trade_observation(event, threshold=threshold))
         if self._external_market_data_sink is not None:
             self._external_market_data_sink(event)
         if (
@@ -547,11 +565,16 @@ class MarkeitechMarketDataActor(Actor):
         )
         for line in lines:
             self.log.info(line)
-        self.log.info(
-            format_classification_fidelity(
-                self._router.snapshot(self._switch.snapshot.active_instrument_id)
+        for instrument_id in self._auction_pressure_accumulators:
+            pressure = self._auction_pressure_snapshots.get(instrument_id)
+            if pressure is None:
+                continue
+            role = (
+                "ACTIVE"
+                if instrument_id == self._switch.snapshot.active_instrument_id
+                else "COHORT"
             )
-        )
+            self.log.info(format_auction_pressure(pressure, role=role))
         self.log.info(f"OPERATOR_CONTEXT_COMPLETE | phase={phase.upper()}")
         if self._on_operator_context_report is not None:
             changed_instruments = {
@@ -567,7 +590,7 @@ class MarkeitechMarketDataActor(Actor):
                 ),
                 phase,
                 self._switch.snapshot.active_instrument_id,
-                self._auction_pressure_snapshot,
+                self._auction_pressure_snapshots.get(self._switch.snapshot.active_instrument_id),
             )
 
     def _cancel_switch_timer(self) -> None:
@@ -657,6 +680,46 @@ def format_classification_fidelity(snapshot: InstrumentMarketDataSnapshot) -> st
         f"| unknown_volume={snapshot.unknown_volume} | classified_ratio={ratio:.2%} "
         f"| reasons={reasons or 'none'}"
     )
+
+
+def format_auction_pressure(
+    snapshot: SessionAuctionPressureSnapshot,
+    *,
+    role: str,
+) -> str:
+    delta_ratio = "n/a" if snapshot.delta_ratio is None else f"{snapshot.delta_ratio:.2%}"
+    return (
+        f"OPERATOR_FLOW | role={role} | {snapshot.instrument_id} "
+        f"| trades={snapshot.trade_count} | buy_volume={snapshot.buy_volume} "
+        f"| sell_volume={snapshot.sell_volume} | unknown_volume={snapshot.unknown_volume} "
+        f"| delta={snapshot.delta} | cvd={snapshot.cvd} | delta_ratio={delta_ratio} "
+        f"| classified_ratio={snapshot.classified_volume_ratio:.2%} "
+        f"| fidelity={snapshot.fidelity.value} | source={snapshot.source}:{snapshot.method} "
+        f"| as_of={snapshot.as_of.isoformat()}"
+    )
+
+
+def format_large_trade_observation(
+    trade: ClassifiedTrade,
+    *,
+    threshold: Decimal,
+) -> str:
+    return (
+        f"MARKEITECH_FLOW | event=LARGE_TRADE | {trade.instrument_id} "
+        f"| side={trade.side.value.upper()} | price={trade.trade.price} "
+        f"| size={trade.trade.size} | threshold={threshold} "
+        f"| classification={trade.classification_reason} "
+        f"| fidelity=inferred | source={trade.trade.source} "
+        f"| as_of={trade.event_ts.isoformat()}"
+    )
+
+
+def is_large_trade_observation(
+    trade: ClassifiedTrade,
+    *,
+    threshold: Decimal,
+) -> bool:
+    return trade.side.value != "unknown" and trade.trade.size >= threshold
 
 
 def format_market_structure(

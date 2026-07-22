@@ -12,12 +12,17 @@ from markeitech.analytics import (
     TrendState,
     VwapPosition,
 )
+from markeitech.auction_pressure import AuctionPressureFidelity, SessionAuctionPressureSnapshot
 from markeitech.domain import OneMinuteBar
+from markeitech.domain.market_data import CanonicalTradeTick, ClassifiedTrade, TradeSide
 from markeitech.market_data import NautilusActorActionTarget, conservative_warmup_start
 from markeitech.market_data.actor import (
     ActorStartupRecoveryHook,
+    format_auction_pressure,
+    format_large_trade_observation,
     format_market_context,
     format_market_structure,
+    is_large_trade_observation,
     should_update_market_context,
 )
 
@@ -164,6 +169,69 @@ def test_market_context_log_is_compact_and_human_scannable() -> None:
     assert "D/L[score=0 reasons=]" in structure
     assert "FVG[active=none]" in structure
     assert "\n" not in structure
+
+
+def test_order_flow_log_exposes_per_instrument_delta_cvd_and_fidelity() -> None:
+    as_of = datetime(2026, 7, 21, 14, 30, tzinfo=UTC)
+    snapshot = SessionAuctionPressureSnapshot(
+        instrument_id="ESU6.CME",
+        session_start=as_of - timedelta(hours=13, minutes=30),
+        session_end=as_of + timedelta(hours=9, minutes=30),
+        as_of=as_of,
+        source="ib",
+        fidelity=AuctionPressureFidelity.PARTIAL,
+        trade_count=3,
+        classified_trade_count=2,
+        unknown_trade_count=1,
+        buy_volume=Decimal("150"),
+        sell_volume=Decimal("120"),
+        unknown_volume=Decimal("30"),
+        classification_reason_counts={
+            "at_or_above_ask": 1,
+            "at_or_below_bid": 1,
+            "no_quote_available": 1,
+        },
+    )
+
+    message = format_auction_pressure(snapshot, role="COHORT")
+
+    assert message.startswith("OPERATOR_FLOW | role=COHORT | ESU6.CME")
+    assert "buy_volume=150 | sell_volume=120 | unknown_volume=30" in message
+    assert "delta=30 | cvd=30 | delta_ratio=11.11%" in message
+    assert "classified_ratio=90.00%" in message
+    assert "fidelity=partial | source=ib:quote_test_with_tick_rule" in message
+
+
+def test_large_trade_log_is_factual_and_instrument_specific() -> None:
+    event_ts = datetime(2026, 7, 21, 14, 31, tzinfo=UTC)
+    trade = CanonicalTradeTick(
+        instrument_id="NQU6.CME",
+        event_ts=event_ts,
+        ts_init=event_ts,
+        price=Decimal("29110.25"),
+        size=Decimal("40"),
+    )
+    classified = ClassifiedTrade(
+        instrument_id=trade.instrument_id,
+        event_ts=event_ts,
+        ts_init=event_ts,
+        trade=trade,
+        side=TradeSide.BUY,
+        classification_reason="at_or_above_ask",
+    )
+
+    message = format_large_trade_observation(classified, threshold=Decimal("40"))
+
+    assert message.startswith("MARKEITECH_FLOW | event=LARGE_TRADE | NQU6.CME")
+    assert "side=BUY | price=29110.25 | size=40 | threshold=40" in message
+    assert "fidelity=inferred | source=ib" in message
+    assert "trapped" not in message.lower()
+    assert is_large_trade_observation(classified, threshold=Decimal("40"))
+    assert not is_large_trade_observation(classified, threshold=Decimal("41"))
+    unknown = classified.model_copy(
+        update={"side": TradeSide.UNKNOWN, "classification_reason": "no_quote_available"}
+    )
+    assert not is_large_trade_observation(unknown, threshold=Decimal("40"))
 
 
 def test_market_context_log_rejects_unknown_phase() -> None:

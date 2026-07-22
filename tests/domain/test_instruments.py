@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 import pytest
 from markeitech.domain import (
@@ -251,6 +252,37 @@ def test_background_instrument_requires_live_1m_bar_mode() -> None:
             role=InstrumentRole.BACKGROUND,
             data_mode=InstrumentDataMode.HISTORICAL_WARMUP_ONLY,
             analysis_profile=AnalysisProfile.BACKGROUND_BAR,
+        )
+
+
+def test_background_instrument_can_join_order_flow_cohort() -> None:
+    runtime = InstrumentRuntimeConfig(
+        contract=es_contract(),
+        role=InstrumentRole.BACKGROUND,
+        data_mode=InstrumentDataMode.TICK_BY_TICK,
+        analysis_profile=AnalysisProfile.BACKGROUND_BAR,
+        large_trade_threshold=Decimal("120"),
+    )
+
+    registry = InstrumentRegistryConfig(
+        active_instrument_id="NQU6.CME",
+        instruments=(active_runtime(nq_contract()), runtime),
+    )
+
+    assert tuple(item.contract.instrument_id for item in registry.order_flow_runtimes) == (
+        "NQU6.CME",
+        "ESU6.CME",
+    )
+
+
+def test_large_trade_threshold_requires_tick_data() -> None:
+    with pytest.raises(ValidationError, match="thresholds require tick-by-tick"):
+        InstrumentRuntimeConfig(
+            contract=es_contract(),
+            role=InstrumentRole.BACKGROUND,
+            data_mode=InstrumentDataMode.LIVE_1M_BARS,
+            analysis_profile=AnalysisProfile.BACKGROUND_BAR,
+            large_trade_threshold=Decimal("120"),
         )
 
 

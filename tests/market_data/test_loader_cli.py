@@ -291,6 +291,14 @@ def test_loads_checked_in_example_config() -> None:
     assert config.signals.enabled_definition_ids_by_instrument == {}
     assert config.signals.enabled_definitions("NQU6.CME") == ()
     assert config.signals.enabled_definitions("ESU6.CME") == ()
+    order_flow = {
+        runtime.contract.instrument_id: runtime.large_trade_threshold
+        for runtime in config.instrument_registry.order_flow_runtimes
+    }
+    assert order_flow == {
+        "NQU6.CME": 40,
+        "ESU6.CME": 120,
+    }
 
 
 @pytest.mark.parametrize(
@@ -315,6 +323,10 @@ def test_live_and_test_configs_have_explicit_instrument_scope(
     assert config.signals.enabled_definition_ids_by_instrument == {}
     assert config.signals.enabled_definitions("NQU6.CME") == ()
     assert config.signals.enabled_definitions("ESU6.CME") == ()
+    assert {
+        runtime.contract.instrument_id: runtime.large_trade_threshold
+        for runtime in config.instrument_registry.order_flow_runtimes
+    } == {"NQU6.CME": 40, "ESU6.CME": 120}
     if expected_instruments == 2:
         assert {
             runtime.contract.instrument_id
