@@ -36,6 +36,7 @@ from markeitech.market_data.planner import build_market_data_plan
 from markeitech.notifications import (
     ApproachingLocationNotifier,
     DirectionalBiasNotifier,
+    DiscordDeliveryStatus,
     DiscordOutboxDeliveryWorker,
     LocationNarrativeNotifier,
     build_aggression_episode_notification,
@@ -68,6 +69,16 @@ from markeitech.signals import (
 )
 
 LIVE_NODE_START_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_IB"
+
+
+def _value_area_region(profile_location: str) -> str:
+    if profile_location == "below_value":
+        return "Below"
+    if profile_location == "above_value":
+        return "Above"
+    if profile_location == "unavailable":
+        return "Unavailable"
+    return "Inside"
 
 
 class LiveNodeLike(Protocol):
@@ -156,12 +167,6 @@ class PersistenceManagedLiveNode:
 
     def _start_runtimes(self) -> None:
         self.persistence.start()
-        if self.discord_delivery_worker is not None:
-            try:
-                self.discord_delivery_worker.start()
-            except Exception:
-                self.persistence.stop()
-                raise
         if self.signal_projection_writer is not None:
             self.signal_projection_writer.start()
         if self.signal_runtime is not None:
@@ -204,7 +209,8 @@ class PersistenceManagedLiveNode:
                     )
         if self.discord_delivery_worker is not None:
             try:
-                self.discord_delivery_worker.run_once()
+                if self.discord_delivery_worker.snapshot.status == DiscordDeliveryStatus.RUNNING:
+                    self.discord_delivery_worker.run_once()
                 self.discord_delivery_worker.stop(
                     self.persistence.config.runtime_shutdown_timeout_seconds
                 )
@@ -388,6 +394,12 @@ def build_prepared_market_data_live_node(
                     detail=detail,
                 )
             )
+            if (
+                event.startswith("ANALYTICS_")
+                and discord_delivery_worker is not None
+                and discord_delivery_worker.snapshot.status == DiscordDeliveryStatus.CREATED
+            ):
+                discord_delivery_worker.start()
 
     def enqueue_context_report(
         snapshots: tuple[Any, ...],
@@ -465,7 +477,31 @@ def build_prepared_market_data_live_node(
             return
         if event.transition_kind == "trend_changed" and event.timeframe == "1m":
             return
-        persistence.metadata.enqueue(build_context_transition_notification(event))
+        if event.transition_kind == "value_area_region_changed" and event.timeframe != "5m":
+            return
+        aligned_context = ()
+        if event.transition_kind == "value_area_region_changed":
+            aligned_context = tuple(
+                (
+                    snapshot.timeframe.value,
+                    _value_area_region(snapshot.profile_location.value),
+                )
+                for snapshot in market_context_engine.snapshots
+                if snapshot.instrument_id == event.instrument_id
+                and snapshot.timeframe
+                in {
+                    AnalyticsTimeframe.FIFTEEN_MINUTES,
+                    AnalyticsTimeframe.THIRTY_MINUTES,
+                    AnalyticsTimeframe.ONE_HOUR,
+                    AnalyticsTimeframe.DAILY,
+                }
+            )
+        persistence.metadata.enqueue(
+            build_context_transition_notification(
+                event,
+                aligned_context=aligned_context,
+            )
+        )
 
     previous_cvd: dict[str, Any] = {}
 
@@ -590,12 +626,15 @@ def build_prepared_market_data_live_node(
                 config.persistence.runtime_startup_timeout_seconds
             ),
         )
-        def persist_market_context(snapshot: Any) -> bool:
+        def persist_market_context(snapshot: Any, phase: str = "live") -> bool:
             accepted = persistence.feature_writer.submit(
                 market_context_engine.feature_for(snapshot)
             ) == FeatureSubmissionStatus.ACCEPTED
             if config.discord.enabled:
-                approaching = approaching_notifier.observe(snapshot)
+                approaching = approaching_notifier.observe(
+                    snapshot,
+                    notify=phase == "live",
+                )
                 if approaching is not None:
                     persistence.metadata.enqueue(approaching)
             return accepted

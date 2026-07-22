@@ -70,7 +70,7 @@ class NautilusActorApi(Protocol):
 WarmupStartResolver = Callable[[int, datetime], datetime]
 NativeMarketDataSink = Callable[[object], None]
 HistoricalBarSink = Callable[[OneMinuteBar], bool]
-MarketContextSink = Callable[[MarketContextSnapshot], None]
+MarketContextSink = Callable[[MarketContextSnapshot, str], None]
 
 
 class MarketContextEngineLike(Protocol):
@@ -652,28 +652,34 @@ class MarkeitechMarketDataActor(Actor):
                 raise RuntimeError(
                     "analytics warmup readiness is blocked: " + ", ".join(readiness.reason_codes)
                 )
-            if self._on_runtime_health is not None:
-                self._on_runtime_health(
-                    f"ANALYTICS_{readiness.status.value.upper()}",
-                    " | ".join(
-                        f"{item.instrument_id}={item.status.value}"
-                        for item in readiness.instruments
-                    ),
-                )
         if self._market_context is None:
+            self._emit_analytics_health()
             return
         contexts = self._market_context.initialize(snapshot.data_by_bar_type)
         for context in contexts:
             self._emit_market_context(context, phase="warmup")
         self._emit_operator_context(phase="warmup", force=True)
         self._start_operator_context_timer()
+        self._emit_analytics_health()
+
+    def _emit_analytics_health(self) -> None:
+        readiness = self._analytics_readiness_snapshot
+        if readiness is None or self._on_runtime_health is None:
+            return
+        self._on_runtime_health(
+            f"ANALYTICS_{readiness.status.value.upper()}",
+            " | ".join(
+                f"{item.instrument_id}={item.status.value}"
+                for item in readiness.instruments
+            ),
+        )
 
     def _emit_market_context(self, snapshot: MarketContextSnapshot, *, phase: str) -> None:
         self.log.debug(
             f"MARKET_CONTEXT_EVENT | phase={phase.upper()} | {snapshot.model_dump_json()}"
         )
         if self._on_market_context is not None:
-            self._on_market_context(snapshot)
+            self._on_market_context(snapshot, phase)
 
     def _start_operator_context_timer(self) -> None:
         if self._operator_context_report_interval is None or self._operator_context_timer_started:

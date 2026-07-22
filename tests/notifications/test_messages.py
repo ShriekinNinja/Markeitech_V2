@@ -333,6 +333,30 @@ def test_approaching_location_is_deduplicated_until_price_leaves() -> None:
     assert notifier.observe(snapshot) is None
 
 
+def test_approaching_location_warmup_observation_seeds_without_notifying() -> None:
+    snapshot = MarketContextSnapshot(
+        instrument_id="NQU6.CME",
+        timeframe=AnalyticsTimeframe.ONE_MINUTE,
+        as_of=NOW,
+        source="classified_ticks",
+        input_fidelity=AnalyticsInputFidelity.INFERRED,
+        bar_count=251,
+        close=Decimal("29999"),
+        atr_14=Decimal("10"),
+        session_open=Decimal("29900"),
+        session_high=Decimal("30020"),
+        session_low=Decimal("29880"),
+        session_range_position=Decimal("0.85"),
+        vwap_position=VwapPosition.ABOVE,
+        trend=TrendState.BULLISH,
+        trend_reason_codes=("test",),
+        direction_score=1,
+    )
+    notifier = ApproachingLocationNotifier()
+
+    assert notifier.observe(snapshot, notify=False) is None
+
+
 def test_repeated_holding_narrative_is_suppressed() -> None:
     event = SignalEvaluationEvent(
         instrument_id="NQU6.CME",

@@ -16,7 +16,7 @@ def build_signal_transition_notification(
     signal = event.current
     direction = signal.direction.value.title()
     state = event.to_status.value.title()
-    title = f"{direction} Setup {state} — {_instrument_name(signal.instrument_id)}"
+    title = f"{_instrument_name(signal.instrument_id)} — {direction} Setup {state}"
     fields = [
         {
             "name": "Lifecycle",
@@ -52,7 +52,7 @@ def build_signal_transition_notification(
         event_type="signal.transition",
         event_schema_version=event.schema_version,
         payload={
-            "content": f"@here\n**{title}**",
+            "content": f"**{title}**\n@here",
             "allowed_mentions": {"parse": ["everyone"]},
             "embeds": [
                 {

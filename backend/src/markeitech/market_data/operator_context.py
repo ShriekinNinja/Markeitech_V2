@@ -6,13 +6,20 @@ from typing import Any
 
 from markeitech.analytics import AnalyticsTimeframe, MarketContextSnapshot
 
-_TOP_DOWN_ORDER = (
+_SNAPSHOT_ORDER = (
     AnalyticsTimeframe.DAILY,
     AnalyticsTimeframe.ONE_HOUR,
+    AnalyticsTimeframe.THIRTY_MINUTES,
     AnalyticsTimeframe.FIFTEEN_MINUTES,
     AnalyticsTimeframe.FIVE_MINUTES,
-    AnalyticsTimeframe.THIRTY_MINUTES,
     AnalyticsTimeframe.ONE_MINUTE,
+)
+_TREND_TIMEFRAMES = (
+    AnalyticsTimeframe.DAILY,
+    AnalyticsTimeframe.ONE_HOUR,
+    AnalyticsTimeframe.THIRTY_MINUTES,
+    AnalyticsTimeframe.FIFTEEN_MINUTES,
+    AnalyticsTimeframe.FIVE_MINUTES,
 )
 _LEVEL_TIMEFRAMES = (
     AnalyticsTimeframe.DAILY,
@@ -49,7 +56,7 @@ class OperatorContextReporter:
         ):
             values = sorted(
                 grouped[instrument_id],
-                key=lambda value: _TOP_DOWN_ORDER.index(value.timeframe),
+                key=lambda value: _SNAPSHOT_ORDER.index(value.timeframe),
             )
             role = "ACTIVE" if instrument_id == active_instrument_id else "BACKGROUND"
             signature = (role, *(value.model_dump_json() for value in values))
@@ -71,7 +78,7 @@ def _instrument_lines(
     prefix = f"phase={phase.upper()} | role={role} | {reference.instrument_id}"
     trends = " ".join(
         f"{timeframe.value}={by_timeframe[timeframe].trend.value.upper()}"
-        for timeframe in _TOP_DOWN_ORDER
+        for timeframe in _TREND_TIMEFRAMES
         if timeframe in by_timeframe
     )
     levels = " ".join(

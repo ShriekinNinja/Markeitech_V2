@@ -176,8 +176,17 @@ class WarmupCoordinator:
         execute_livenode_action(
             action,
             self._target,
-            callback=lambda _request_id: self._execute_next_recovery(),
+            callback=lambda _request_id: self._complete_recovery(),
         )
+
+    def _complete_recovery(self) -> None:
+        try:
+            self._execute_next_recovery()
+        except BaseException as exc:
+            self._state = WarmupState.FAILED
+            if self._on_warmup_failure is not None:
+                self._on_warmup_failure(exc)
+            raise
 
     def _finish_warmup(self) -> None:
         if self._state != WarmupState.REQUESTING:
