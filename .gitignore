@@ -17,6 +17,5 @@ data/research/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
-.idea/misc.xml
-.idea/pyProjectModel.xml
+.idea/
 config/*.local.toml

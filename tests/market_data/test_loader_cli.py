@@ -318,7 +318,7 @@ def test_live_and_test_configs_have_explicit_instrument_scope(
     )
 
     assert len(enabled) == expected_instruments
-    assert config.instrument_registry.active_instrument_id == "NQU6.CME"
+    assert config.instrument_registry.active_instrument_id == "ESU6.CME"
     assert config.signals is not None
     assert config.signals.enabled_definition_ids_by_instrument == {}
     assert config.signals.enabled_definitions("NQU6.CME") == ()
@@ -330,7 +330,7 @@ def test_live_and_test_configs_have_explicit_instrument_scope(
     assert {
         runtime.contract.instrument_id: runtime.large_trade_threshold
         for runtime in config.instrument_registry.order_flow_runtimes
-    } == {"NQU6.CME": 40, "ESU6.CME": 120}
+    } == {"NQU6.CME": 250, "ESU6.CME": 500}
     if expected_instruments == 2:
         assert {
             runtime.contract.instrument_id

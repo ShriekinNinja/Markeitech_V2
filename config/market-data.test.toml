@@ -1,5 +1,5 @@
 [runtime]
-active_instrument_id = "NQU6.CME"
+active_instrument_id = "ESU6.CME"
 trader_id = "MARKEITECH-PAPER-001"
 data_client_name = "IB"
 data_only = true
@@ -142,12 +142,12 @@ bar_proxy_minimum_follow_through_atr_fraction = 0.15
 bar_proxy_minimum_pace_ratio = 1.10
 
 [[instruments]]
-role = "active"
+role = "background"
 data_mode = "tick_by_tick"
-analysis_profile = "active_tick"
+analysis_profile = "background_bar"
 enabled = true
-priority = 0
-large_trade_threshold = 100
+priority = 20
+large_trade_threshold = 250
 large_trade_window_ms = 250
 
 [instruments.aggression_outcome]
@@ -184,12 +184,12 @@ volume_profile_bin_size = 1
 volume_profile_composite_sessions = [2, 5]
 
 [[instruments]]
-role = "background"
+role = "active"
 data_mode = "tick_by_tick"
-analysis_profile = "background_bar"
+analysis_profile = "active_tick"
 enabled = true
-priority = 20
-large_trade_threshold = 200
+priority = 0
+large_trade_threshold = 500
 large_trade_window_ms = 250
 
 [instruments.aggression_outcome]
