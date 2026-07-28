@@ -20,6 +20,7 @@ from markeitech.notifications.messages import (
     build_location_narrative_notification,
     build_market_context_notifications,
     build_operator_flow_notification,
+    build_order_flow_alert_notification,
 )
 from markeitech.notifications.signals import (
     SIGNAL_LIFECYCLE_DESTINATION,
@@ -48,5 +49,6 @@ __all__ = [
     "build_large_trade_notification",
     "build_location_narrative_notification",
     "build_market_context_notifications",
+    "build_order_flow_alert_notification",
     "build_operator_flow_notification",
 ]

@@ -45,6 +45,7 @@ from markeitech.notifications import (
     build_large_trade_notification,
     build_market_context_notifications,
     build_operator_flow_notification,
+    build_order_flow_alert_notification,
     build_signal_transition_notification,
 )
 from markeitech.persistence.calendar import PandasMarketSessionCalendar
@@ -518,19 +519,19 @@ def build_prepared_market_data_live_node(
 
     def enqueue_large_trade(trade: Any, threshold: Any, role: str) -> None:
         if persistence is not None and config.discord.enabled:
-            persistence.metadata.enqueue(
-                build_large_trade_notification(
-                    trade,
-                    threshold=threshold,
-                    role=role,
-                )
+            detail = build_large_trade_notification(
+                trade,
+                threshold=threshold,
+                role=role,
             )
+            persistence.metadata.enqueue(detail)
+            persistence.metadata.enqueue(build_order_flow_alert_notification(detail))
 
     def enqueue_aggression_episode(episode: Any, role: str) -> None:
         if persistence is not None and config.discord.enabled:
-            persistence.metadata.enqueue(
-                build_aggression_episode_notification(episode, role=role)
-            )
+            detail = build_aggression_episode_notification(episode, role=role)
+            persistence.metadata.enqueue(detail)
+            persistence.metadata.enqueue(build_order_flow_alert_notification(detail))
 
     def enqueue_market_data_health(snapshot: Any) -> None:
         instrument_rows = "\n".join(

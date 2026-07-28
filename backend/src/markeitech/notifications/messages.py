@@ -382,7 +382,7 @@ def build_large_trade_notification(
         identity=f"{trade.trade.dedupe_key}:{threshold}:{role}",
         content="",
         now=now,
-        mention_here=True,
+        mention_here=False,
         embeds=(
             {
                 "title": f"{_instrument_name(trade.instrument_id)} — Large {side.title()}",
@@ -446,7 +446,7 @@ def build_aggression_episode_notification(
         identity=f"{episode.episode_id}:{episode.outcome.value}",
         content="",
         now=now,
-        mention_here=True,
+        mention_here=False,
         embeds=(
             {
                 "title": (
@@ -498,6 +498,36 @@ def build_aggression_episode_notification(
                         "Observation, not a signal"
                     )
                 },
+            },
+        ),
+    )
+
+
+def build_order_flow_alert_notification(
+    detail: NotificationOutboxRecord,
+    *,
+    occurred_ts: datetime | None = None,
+) -> NotificationOutboxRecord:
+    if detail.destination_key != OPERATOR_FLOW_DESTINATION:
+        raise ValueError("order-flow alert detail must target operator-flow")
+    now = detail.created_ts if occurred_ts is None else occurred_ts
+    source_embed = detail.payload["embeds"][0]
+    title = str(source_embed["title"])
+    return _record(
+        destination=ALERT_STREAM_DESTINATION,
+        aggregate=detail.aggregate_key,
+        event_type=f"{detail.event_type}.alert",
+        identity=f"{detail.dedupe_key}:alert-stream",
+        content="",
+        now=now,
+        mention_here=True,
+        embeds=(
+            {
+                "title": title,
+                "description": "Order-flow event detected. Full details are in Operator Flow.",
+                "color": int(source_embed.get("color", 0xFFFFFF)),
+                "timestamp": source_embed.get("timestamp", now.isoformat()),
+                "footer": {"text": "Order-flow alert • Observation only"},
             },
         ),
     )
@@ -673,13 +703,13 @@ class ApproachingLocationNotifier:
             )
         )
         return _record(
-            destination=ALERT_STREAM_DESTINATION,
+            destination=MARKET_EVENTS_DESTINATION,
             aggregate=snapshot.instrument_id,
             event_type="location.approaching",
             identity=f"{snapshot.instrument_id}:{key}:{snapshot.as_of.isoformat()}",
             content="",
             now=reference.as_of,
-            mention_here=True,
+            mention_here=False,
             embeds=(
                 {
                     "title": (

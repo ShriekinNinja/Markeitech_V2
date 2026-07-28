@@ -147,7 +147,7 @@ data_mode = "tick_by_tick"
 analysis_profile = "active_tick"
 enabled = true
 priority = 0
-large_trade_threshold = 40
+large_trade_threshold = 100
 large_trade_window_ms = 250
 
 [instruments.aggression_outcome]
@@ -189,7 +189,7 @@ data_mode = "tick_by_tick"
 analysis_profile = "background_bar"
 enabled = true
 priority = 20
-large_trade_threshold = 120
+large_trade_threshold = 200
 large_trade_window_ms = 250
 
 [instruments.aggression_outcome]

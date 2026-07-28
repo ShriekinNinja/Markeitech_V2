@@ -25,6 +25,7 @@ from markeitech.notifications import (
     build_large_trade_notification,
     build_market_context_notifications,
     build_operator_flow_notification,
+    build_order_flow_alert_notification,
 )
 from markeitech.signals import (
     DirectionQualificationStatus,
@@ -203,12 +204,20 @@ def test_large_trade_notification_states_observation_without_model_judgment() ->
     )
 
     assert record.destination_key == "operator-flow"
+    assert "@here" not in record.payload.get("content", "")
     embed = record.payload["embeds"][0]
-    assert embed["title"] == "Large Sell — S&P 500 Futures"
+    assert embed["title"] == "S&P 500 Futures — Large Sell"
     assert embed["color"] == 0xE74C3C
     assert embed["fields"][0]["value"] == "Price: **7,520.25**\nSize: **120 contracts**"
     assert embed["fields"][3]["value"] == "Cohort"
     assert "trapped" not in str(record.payload).lower()
+
+    alert = build_order_flow_alert_notification(record, occurred_ts=NOW)
+    assert alert.destination_key == "alert-stream"
+    assert "@here" in alert.payload["content"]
+    assert alert.payload["allowed_mentions"] == {"parse": ["everyone"]}
+    assert alert.payload["embeds"][0]["title"] == embed["title"]
+    assert "Full details are in Operator Flow" in alert.payload["embeds"][0]["description"]
 
 
 def test_market_context_exposes_reported_bar_pressure_without_claiming_delta() -> None:
@@ -326,10 +335,16 @@ def test_approaching_location_is_deduplicated_until_price_leaves() -> None:
         direction_score=1,
     )
     notifier = ApproachingLocationNotifier()
+    structural = snapshot.model_copy(
+        update={"timeframe": AnalyticsTimeframe.FIFTEEN_MINUTES}
+    )
 
+    assert notifier.observe(structural) is None
     record = notifier.observe(snapshot)
     assert record is not None
-    assert record.destination_key == "alert-stream"
+    assert record.destination_key == "market-events"
+    assert "@here" not in record.payload.get("content", "")
+    assert record.payload["allowed_mentions"] == {"parse": []}
     assert notifier.observe(snapshot) is None
 
 
