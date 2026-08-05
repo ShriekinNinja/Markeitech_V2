@@ -69,10 +69,10 @@ def build_system_node(config: SystemConfig) -> LiveNode:
     )
     node.add_actor_from_config(
         ImportableActorConfig(
-            actor_path="markeitech.system.actor:ReadinessActor",
-            config_path="markeitech.system.actor:ReadinessActorConfig",
+            actor_path="markeitech.system.actor:SystemControlActor",
+            config_path="markeitech.system.actor:SystemControlActorConfig",
             config={
-                "actor_id": "SYSTEM-READINESS",
+                "actor_id": "SYSTEM-CONTROL",
                 "instrument_ids": [str(value) for value in instrument_ids],
             },
         ),

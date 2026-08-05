@@ -36,6 +36,7 @@ accidental disagreement.
 - [Runtime architecture](architecture/runtime-architecture.md)
 - [Data contracts](architecture/data-contracts.md)
 - [V2 runtime messaging discovery](architecture/v2-runtime-messaging-discovery.md)
+- [V2 runtime control plane](architecture/v2-runtime-control-plane.md)
 
 ## Roadmap And History
 

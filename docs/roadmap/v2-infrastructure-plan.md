@@ -58,21 +58,24 @@
 
 ### Decision Gate 2
 
-- [ ] Define exactly what `STARTING`, `READY`, `DEGRADED`, `FAILED`, `STOPPING`, and `STOPPED`
-      mean.
-- [ ] Decide which conditions belong to Nautilus and which belong to Markeitech.
-- [ ] Decide whether readiness means connection only, instrument availability, live-data activity,
-      or another approved combination.
-- [ ] Decide who publishes each transition and who consumes it.
-- [ ] Obtain Markeitect approval.
+- [x] Define the honest initial state set: `STARTING`, `READY`, `FAILED`, and `STOPPING`.
+- [x] Defer `DEGRADED`, `RECOVERED`, and `STOPPED` until V2 can observe them truthfully.
+- [x] Decide which conditions belong to Nautilus and which belong to Markeitech.
+- [x] Define initial readiness as actor operation plus configured instrument availability, not
+      live-data activity.
+- [x] Make `SystemControlActor` the transition owner and keep consumers read-only.
+- [x] Obtain Markeitect approval and record the decision in
+      [`v2-runtime-control-plane.md`](../architecture/v2-runtime-control-plane.md).
 
 ### Implementation
 
-- [ ] Separate state detection from state consumers.
-- [ ] Publish approved lifecycle transitions through the Nautilus bus.
-- [ ] Make reasons and evidence visible for non-ready states.
-- [ ] Verify startup, normal stop, connection loss, and recovery behavior.
-- [ ] Review and commit.
+- [x] Separate state detection from state consumers.
+- [x] Publish approved lifecycle transitions through the Nautilus bus.
+- [x] Make reasons and evidence visible for every transition.
+- [x] Verify transition rules, deduplication, invalid paths, and early actor fault offline.
+- [x] Verify startup and normal stop during a user-operated live run.
+- [ ] Add connection loss and recovery only after an observable, approved condition exists.
+- [x] Review and commit.
 
 ## Stage 3: System Health Discord Projection
 
