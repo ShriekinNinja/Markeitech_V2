@@ -36,11 +36,17 @@ class LoggingConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class DiscordConfig:
+    request_timeout_seconds: int
+
+
+@dataclass(frozen=True, slots=True)
 class SystemConfig:
     schema_version: int
     runtime: RuntimeConfig
     ib: InteractiveBrokersConfig
     logging: LoggingConfig
+    discord: DiscordConfig
     instruments: tuple[InstrumentConfig, ...]
 
 
@@ -49,19 +55,25 @@ def load_system_config(path: str | Path) -> SystemConfig:
     with config_path.open("rb") as file:
         raw = tomllib.load(file)
 
-    _require_keys(raw, {"schema_version", "runtime", "ib", "logging", "instruments"}, "root")
+    _require_keys(
+        raw,
+        {"schema_version", "runtime", "ib", "logging", "discord", "instruments"},
+        "root",
+    )
     if raw["schema_version"] != 1:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
     ib = _load_ib(raw["ib"])
     logging = _load_logging(raw["logging"], config_path.parent)
+    discord = _load_discord(raw["discord"])
     instruments = _load_instruments(raw["instruments"])
     return SystemConfig(
         schema_version=raw["schema_version"],
         runtime=runtime,
         ib=ib,
         logging=logging,
+        discord=discord,
         instruments=instruments,
     )
 
@@ -126,6 +138,17 @@ def _load_logging(raw: Any, config_directory: Path) -> LoggingConfig:
     return LoggingConfig(
         directory=directory,
         file_name=_non_empty_string(values["file_name"], "logging.file_name"),
+    )
+
+
+def _load_discord(raw: Any) -> DiscordConfig:
+    values = _mapping(raw, "discord")
+    _require_keys(values, {"request_timeout_seconds"}, "discord")
+    return DiscordConfig(
+        request_timeout_seconds=_positive_int(
+            values["request_timeout_seconds"],
+            "discord.request_timeout_seconds",
+        ),
     )
 
 

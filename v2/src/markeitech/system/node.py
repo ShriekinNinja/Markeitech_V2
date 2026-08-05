@@ -77,4 +77,15 @@ def build_system_node(config: SystemConfig) -> LiveNode:
             },
         ),
     )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="markeitech.system.discord:DiscordHealthActor",
+            config_path="markeitech.system.discord:DiscordHealthActorConfig",
+            config={
+                "actor_id": "DISCORD-HEALTH",
+                "request_timeout_seconds": config.discord.request_timeout_seconds,
+                "webhook_env": "MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK",
+            },
+        ),
+    )
     return node

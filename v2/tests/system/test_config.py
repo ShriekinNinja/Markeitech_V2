@@ -27,6 +27,9 @@ request_timeout_seconds = 30
 directory = "../data/logs"
 file_name = "markeitech-v2.log"
 
+[discord]
+request_timeout_seconds = 5
+
 [[instruments]]
 id = "ESU6.CME"
 """
@@ -42,6 +45,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.ib.port == 4002
     assert config.logging.directory == tmp_path.parent / "data/logs"
     assert config.logging.file_name == "markeitech-v2.log"
+    assert config.discord.request_timeout_seconds == 5
     assert [instrument.id for instrument in config.instruments] == ["ESU6.CME"]
 
 

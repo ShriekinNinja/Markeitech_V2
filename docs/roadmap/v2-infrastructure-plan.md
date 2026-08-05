@@ -96,19 +96,22 @@ become a runtime dependency.
 
 ### Decision Gate 3
 
-- [ ] Inspect the Nautilus V2 actor and async facilities suitable for outbound HTTP.
-- [ ] Review the proposed delivery boundary and failure behavior.
-- [ ] Review the first card format and confirm which approved health transitions are sent.
-- [ ] Decide whether a startup test message is useful.
-- [ ] Obtain Markeitect approval.
+- [x] Inspect the Nautilus V2 actor and async facilities suitable for outbound HTTP.
+- [x] Use one actor-owned worker because the RC exposes no actor executor or running Python event
+      loop.
+- [x] Review the delivery boundary, bounded shutdown, and failure behavior.
+- [x] Send readable cards for `STARTING`, `READY`, `FAILED`, and best-effort `STOPPING`.
+- [x] Do not send a startup test message; the real `READY` transition proves delivery.
+- [x] Obtain Markeitect approval and record the decision in
+      [`v2-discord-health.md`](../architecture/v2-discord-health.md).
 
 ### Implementation
 
-- [ ] Implement one focused Discord health actor.
-- [ ] Keep webhook secrets out of source control, configuration files, messages, and logs.
-- [ ] Prove that unavailable or rejected Discord requests do not affect system readiness.
-- [ ] Verify readable delivery during a user-operated live run.
-- [ ] Review and commit.
+- [x] Implement one focused Discord health actor.
+- [x] Keep webhook secrets out of source control, actor configuration, messages, and logs.
+- [x] Prove offline that ordered delivery and rejected requests remain isolated from runtime state.
+- [x] Verify readable ordered delivery, including `STOPPING`, during a user-operated live run.
+- [x] Review and commit.
 
 ## Stage 4: Persistence Boundary
 

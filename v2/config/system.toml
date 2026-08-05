@@ -18,6 +18,9 @@ request_timeout_seconds = 30
 directory = "../data/logs"
 file_name = "markeitech-v2.log"
 
+[discord]
+request_timeout_seconds = 5
+
 [[instruments]]
 id = "ESU6.CME"
 
