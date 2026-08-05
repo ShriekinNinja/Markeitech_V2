@@ -1,6 +1,6 @@
 # V2 Persistence Boundary Discovery
 
-**Status:** Requirements and technology comparison complete; Decision Gate 4 is open.
+**Status:** Decision Gate 4 accepted on 2026-08-05; implementation awaiting live review.
 
 **Scope:** The current V2 runtime and NautilusTrader `2.0.0rc1` installed in `v2/.venv`.
 This document recommends a boundary. It does not approve or implement a database.
@@ -17,10 +17,10 @@ The storage decision should therefore stay split:
 2. revisit Nautilus catalog and streaming facilities only after market-data acquisition contracts
    and query requirements exist.
 
-The recommended first operational store is **SQLite**, behind one persistence owner. PostgreSQL is
-the expected comparison point when Markeitech gains concurrent writers, a separately deployed UI
-or service, or remote access. Redis, actor snapshots, logs, and Parquet are useful facilities, but
-none is a substitute for the current operational audit requirement.
+Markeitect selected **PostgreSQL from the start**, behind one narrow persistence boundary. This
+accepts the local service cost in exchange for a durable server-backed foundation that will not
+need replacement when separately deployed consumers arrive. Redis, actor snapshots, logs, and
+Parquet remain useful facilities, but none substitutes for the operational audit requirement.
 
 ## Current Durable-Information Inventory
 
@@ -83,24 +83,27 @@ chosen before Stage 7 and Stage 8 establish source, identity, volume, and read p
 | Local logs only | Insufficient | Already present; excellent diagnostics | Not structured state, weak queries, no uniqueness or migrations | Keep, not authoritative |
 | Nautilus actor/node state | Insufficient alone | Native component recovery | Snapshot semantics, not operational history | Use later where actor recovery requires it |
 | Redis/message streams | Unavailable and premature | External fan-out, retention, stream consumers | Python builder cannot attach the backing in this RC; not a relational source of truth | Defer |
-| SQLite | Best current fit | Transactional, local, zero service burden, queryable, tiny operational footprint | One-machine ownership; limited concurrent-write future | Recommend for first implementation |
-| PostgreSQL in Docker | Valid later | Concurrent clients, remote services, mature operations | Container, credentials, migrations, backups, and service availability before they are needed | Defer until a concrete trigger |
+| SQLite | Smallest current fit | Transactional, local, zero service burden, queryable | Requires replacement when separately deployed consumers arrive | Rejected by decision |
+| PostgreSQL in Docker | Accepted | Concurrent clients, remote services, mature transactions and queries | Local container, credentials, migrations, backup, and availability become owned infrastructure | Use for operational records |
 | Parquet/Feather | Best future market-data candidate | Efficient immutable columnar data and Nautilus-native facilities | Poor operational lifecycle semantics; requirements do not yet exist | Reserve for market data |
 
 ## Recommended Ownership
 
-Add one `OperationalPersistenceActor` only after Decision Gate 4 approval. It would:
+The accepted runtime adds one `OperationalPersistenceActor`. It:
 
 - subscribe to `markeitech.system.health` as a read-only consumer;
-- own the operational database connection and every write to the operational schema;
+- own every operational write while Nautilus is running;
 - move database work off the Nautilus event thread through one bounded actor-owned worker;
 - preserve event order;
 - expose failures through logs first, without redefining system state;
 - close and drain within a bounded stop period; and
 - never publish a second version of a health transition.
 
-No other actor should execute operational SQL. Read access should be added later through a separate
-query boundary when an actual consumer exists.
+The outer CLI performs only the process-boundary writes that no stopped actor can truthfully own:
+it initializes and migrates PostgreSQL before IB is built, opens the run immediately before
+`LiveNode.run()`, and records `STOPPED` only after the node returns cleanly. No other actor executes
+operational SQL. Read access should be added through a separate query boundary only when an actual
+consumer exists.
 
 ## Proposed Initial Records
 
@@ -144,23 +147,21 @@ Anything beyond these queries needs a new requirement rather than a speculative 
 - Create a migration ledger before the first production row.
 - Apply migrations before connecting to IB; a migration failure must prevent startup.
 - Keep operational records indefinitely initially. Their volume is negligible.
-- Keep the database under `v2/data/` and out of Git.
-- Back up with SQLite's consistent backup mechanism or while the runtime is stopped; do not copy a
-  live file casually.
-- Keep SQL and schema ownership narrow enough that a later PostgreSQL adapter is possible, but do
-  not build a generic storage framework now.
+- Keep PostgreSQL data in its named Docker volume and out of Git.
+- Define backup and restore operations before the database contains records that cannot be
+  reconstructed.
+- Keep SQL and schema ownership inside the operational persistence boundary; do not build a
+  generic storage framework.
 
-## Open Decisions For Markeitect
+## Accepted Decisions
 
-1. **Technology:** Accept SQLite for the first operational store, with PostgreSQL deferred until a
-   real concurrency or remote-service requirement appears?
-2. **Readiness:** Must the operational store be initialized before V2 may publish `READY`?
-3. **Mid-run failure:** Should a write failure initially be logged while the runtime continues, or
-   should it become the first approved `DEGRADED` condition?
-4. **Run closure:** Is `STOPPING` sufficient as the first terminal outcome, or must the CLI record a
-   post-node `STOPPED` result after Nautilus fully returns?
-
-No persistence implementation should begin until these four decisions are accepted.
+1. Use PostgreSQL from the start. Docker Compose owns the local service definition.
+2. PostgreSQL connectivity and migrations are mandatory before V2 can publish `READY` or connect
+   to IB.
+3. A mid-run persistence write failure is the first approved `DEGRADED` condition.
+4. `STOPPING` remains an actor event. The CLI records `STOPPED` only after `LiveNode.run()` returns
+   cleanly. A crash, forced kill, or failed terminal write leaves the run open and visibly
+   incomplete.
 
 ## References
 

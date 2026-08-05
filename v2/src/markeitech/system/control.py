@@ -9,6 +9,7 @@ from markeitech.system.messages import EvidenceValue, SystemHealthEvent
 class SystemHealthState(StrEnum):
     STARTING = "STARTING"
     READY = "READY"
+    DEGRADED = "DEGRADED"
     FAILED = "FAILED"
     STOPPING = "STOPPING"
 
@@ -24,13 +25,15 @@ _ALLOWED_TRANSITIONS: dict[SystemHealthState | None, frozenset[SystemHealthState
     SystemHealthState.STARTING: frozenset(
         {
             SystemHealthState.READY,
+            SystemHealthState.DEGRADED,
             SystemHealthState.FAILED,
             SystemHealthState.STOPPING,
         },
     ),
     SystemHealthState.READY: frozenset(
-        {SystemHealthState.FAILED, SystemHealthState.STOPPING},
+        {SystemHealthState.DEGRADED, SystemHealthState.FAILED, SystemHealthState.STOPPING},
     ),
+    SystemHealthState.DEGRADED: frozenset({SystemHealthState.FAILED, SystemHealthState.STOPPING}),
     SystemHealthState.FAILED: frozenset({SystemHealthState.STOPPING}),
     SystemHealthState.STOPPING: frozenset(),
 }

@@ -5,11 +5,13 @@ import os
 import subprocess
 from collections.abc import Sequence
 from pathlib import Path
+from uuid import uuid4
 
 from dotenv import load_dotenv
 
 from markeitech.system.config import load_system_config
 from markeitech.system.node import build_system_node
+from markeitech.system.persistence import OperationalStore
 
 IB_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_IB"
 V2_ROOT = Path(__file__).resolve().parents[3]
@@ -44,21 +46,33 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     load_dotenv(args.env_file, override=False)
     config = load_system_config(args.config)
-    node = build_system_node(config)
+    if args.connect is None:
+        build_system_node(config)
+        print(
+            "SYSTEM_BUILT"
+            f" | runtime={config.runtime.name}"
+            f" | instruments={len(config.instruments)}"
+            " | connected=false",
+        )
+        return 0
+    if args.connect != IB_CONFIRMATION:
+        parser.error(f"--connect must equal {IB_CONFIRMATION}")
+
+    store = OperationalStore.from_environment(
+        config.persistence.dsn_env,
+        config.persistence.connect_timeout_seconds,
+    )
+    store.initialize()
+    run_id = uuid4()
+    node = build_system_node(config, str(run_id))
+    store.start_run(config.runtime.name, run_id)
     caffeinate = _start_caffeinate() if args.keep_awake else None
     try:
-        if args.connect is None:
-            print(
-                "SYSTEM_BUILT"
-                f" | runtime={config.runtime.name}"
-                f" | instruments={len(config.instruments)}"
-                " | connected=false",
-            )
-            return 0
-        if args.connect != IB_CONFIRMATION:
-            parser.error(f"--connect must equal {IB_CONFIRMATION}")
-
         node.run()
+    except BaseException:
+        raise
+    else:
+        store.close_run(run_id, "STOPPED", "Nautilus LiveNode returned cleanly")
         return 0
     finally:
         if caffeinate is not None:

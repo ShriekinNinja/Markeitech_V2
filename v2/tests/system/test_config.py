@@ -30,6 +30,13 @@ file_name = "markeitech-v2.log"
 [discord]
 request_timeout_seconds = 5
 
+[persistence]
+dsn_env = "MARKEITECH_POSTGRES_DSN"
+connect_timeout_seconds = 5
+queue_capacity = 64
+result_poll_interval_ms = 250
+shutdown_timeout_seconds = 10
+
 [[instruments]]
 id = "ESU6.CME"
 """
@@ -46,6 +53,9 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.logging.directory == tmp_path.parent / "data/logs"
     assert config.logging.file_name == "markeitech-v2.log"
     assert config.discord.request_timeout_seconds == 5
+    assert config.persistence.dsn_env == "MARKEITECH_POSTGRES_DSN"
+    assert config.persistence.queue_capacity == 64
+    assert config.persistence.result_poll_interval_ms == 250
     assert [instrument.id for instrument in config.instruments] == ["ESU6.CME"]
 
 

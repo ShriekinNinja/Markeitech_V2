@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Markeitech V2" type="ShConfigurationType">
-    <option name="SCRIPT_TEXT" value="exec &quot;$PROJECT_DIR$/v2/.venv/bin/python&quot; -m markeitech.system.cli &quot;$PROJECT_DIR$/v2/config/system.toml&quot; --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake" />
+    <option name="SCRIPT_TEXT" value="docker compose --env-file &quot;$PROJECT_DIR$/v2/.env&quot; -f &quot;$PROJECT_DIR$/v2/compose.yaml&quot; up -d --wait postgres &amp;&amp; exec &quot;$PROJECT_DIR$/v2/.venv/bin/python&quot; -m markeitech.system.cli &quot;$PROJECT_DIR$/v2/config/system.toml&quot; --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />

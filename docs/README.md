@@ -53,6 +53,7 @@ for investigation and context, but it does not reopen old stage gates.
 
 ## Operations
 
+- [V2 operational PostgreSQL](operations/v2-postgresql.md)
 - [Interactive Brokers setup](operations/ib-setup.md)
 - [Operator context log guide](operations/operator-context-logs.md)
 - [Operator signal log guide](operations/operator-signal-logs.md)
@@ -73,6 +74,7 @@ decision or roadmap item promotes a tested result.
 - [Markeitect notes](notes/markeitect-notes.md)
 - [Original greenfield brief](archive/initial-greenfield-brief.md)
 - [Stage 0 project context](archive/stage-0-project-context.md)
+- [Preserved V1 current status](archive/v1-current-status.md)
 
 The archived greenfield brief is preserved as written. It explains the original
 direction and stage rationale, but its stage requirements and status statements

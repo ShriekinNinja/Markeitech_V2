@@ -9,6 +9,7 @@ description = "Markeitech runtime on the NautilusTrader v2 Rust core."
 requires-python = ">=3.13,<3.14"
 dependencies = [
   "nautilus_trader==2.0.0rc1",
+  "psycopg[binary]>=3.2,<4",
   "python-dotenv>=1.1,<2",
 ]
 
@@ -27,6 +28,7 @@ packages = ["src/markeitech"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = ["postgres: requires a disposable PostgreSQL database"]
 
 [tool.ruff]
 line-length = 100

@@ -52,7 +52,7 @@
 - [x] Implement only the approved minimum message vocabulary.
 - [x] Add contract and publication tests.
 - [x] Verify publication inside one offline `LiveNode`.
-- [ ] Review and commit.
+- [x] Review and commit.
 
 ## Stage 2: Runtime Control Plane
 
@@ -129,17 +129,18 @@ become a runtime dependency.
 - [x] Compare Nautilus persistence facilities with Markeitech-owned storage.
 - [x] Compare suitable local and server-backed database options using the approved requirements.
 - [x] Compare suitable market-data storage formats only when market-data requirements exist.
-- [ ] Decide ownership, schema migration, retention, and backup responsibilities.
-- [ ] Do not choose SQLite, PostgreSQL, Parquet, Redis, or Docker by default.
-- [ ] Obtain Markeitect approval.
+- [x] Decide ownership, schema migration, retention, and backup responsibilities.
+- [x] Do not choose SQLite, PostgreSQL, Parquet, Redis, or Docker by default.
+- [x] Obtain Markeitect approval: PostgreSQL for operational records; Parquet remains reserved for
+      future market-data requirements.
 
 ### Implementation
 
-- [ ] Implement one approved persistence owner.
-- [ ] Add schema versioning and migrations before storing production records.
-- [ ] Define idempotency and uniqueness behavior.
-- [ ] Prove restart reads and duplicate-write handling.
-- [ ] Review and commit.
+- [x] Implement one approved persistence owner.
+- [x] Add schema versioning and migrations before storing production records.
+- [x] Define idempotency and uniqueness behavior.
+- [x] Prove restart reads and duplicate-write handling against PostgreSQL.
+- [x] Review and commit.
 
 ## Stage 5: Actor Composition And Ownership
 

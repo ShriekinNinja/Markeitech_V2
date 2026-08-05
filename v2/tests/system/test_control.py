@@ -83,6 +83,30 @@ def test_control_plane_can_report_fault_before_stopping() -> None:
     assert stopping is not None and stopping.evidence["previous_state"] == "FAILED"
 
 
+def test_control_plane_degrades_after_runtime_persistence_failure() -> None:
+    machine = SystemHealthStateMachine()
+    machine.transition(
+        SystemHealthState.STARTING,
+        reason="evaluating prerequisites",
+        source="SYSTEM-CONTROL",
+    )
+    machine.transition(
+        SystemHealthState.READY,
+        reason="prerequisites available",
+        source="SYSTEM-CONTROL",
+    )
+
+    degraded = machine.transition(
+        SystemHealthState.DEGRADED,
+        reason="operational persistence is unavailable",
+        source="SYSTEM-CONTROL",
+        evidence={"persistence_error": "OperationalError"},
+    )
+
+    assert degraded is not None and degraded.state == "DEGRADED"
+    assert degraded.evidence["previous_state"] == "READY"
+
+
 def test_control_plane_can_report_fault_before_initial_evaluation() -> None:
     machine = SystemHealthStateMachine()
 

@@ -31,7 +31,7 @@ _ENVIRONMENTS = {
 }
 
 
-def build_system_node(config: SystemConfig) -> LiveNode:
+def build_system_node(config: SystemConfig, run_id: str | None = None) -> LiveNode:
     config.logging.directory.mkdir(parents=True, exist_ok=True)
     instrument_ids = [InstrumentId.from_str(item.id) for item in config.instruments]
     provider_config = InteractiveBrokersInstrumentProviderConfig(load_ids=set(instrument_ids))
@@ -74,6 +74,7 @@ def build_system_node(config: SystemConfig) -> LiveNode:
             config={
                 "actor_id": "SYSTEM-CONTROL",
                 "instrument_ids": [str(value) for value in instrument_ids],
+                "persistence_preflight_passed": run_id is not None,
             },
         ),
     )
@@ -88,4 +89,24 @@ def build_system_node(config: SystemConfig) -> LiveNode:
             },
         ),
     )
+    if run_id is not None:
+        node.add_actor_from_config(
+            ImportableActorConfig(
+                actor_path=(
+                    "markeitech.system.persistence:OperationalPersistenceActor"
+                ),
+                config_path=(
+                    "markeitech.system.persistence:OperationalPersistenceActorConfig"
+                ),
+                config={
+                    "actor_id": "OPERATIONAL-PERSISTENCE",
+                    "run_id": run_id,
+                    "dsn_env": config.persistence.dsn_env,
+                    "connect_timeout_seconds": config.persistence.connect_timeout_seconds,
+                    "queue_capacity": config.persistence.queue_capacity,
+                    "result_poll_interval_ms": config.persistence.result_poll_interval_ms,
+                    "shutdown_timeout_seconds": config.persistence.shutdown_timeout_seconds,
+                },
+            ),
+        )
     return node

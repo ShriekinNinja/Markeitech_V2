@@ -41,12 +41,22 @@ class DiscordConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class PersistenceConfig:
+    dsn_env: str
+    connect_timeout_seconds: int
+    queue_capacity: int
+    result_poll_interval_ms: int
+    shutdown_timeout_seconds: int
+
+
+@dataclass(frozen=True, slots=True)
 class SystemConfig:
     schema_version: int
     runtime: RuntimeConfig
     ib: InteractiveBrokersConfig
     logging: LoggingConfig
     discord: DiscordConfig
+    persistence: PersistenceConfig
     instruments: tuple[InstrumentConfig, ...]
 
 
@@ -57,7 +67,15 @@ def load_system_config(path: str | Path) -> SystemConfig:
 
     _require_keys(
         raw,
-        {"schema_version", "runtime", "ib", "logging", "discord", "instruments"},
+        {
+            "schema_version",
+            "runtime",
+            "ib",
+            "logging",
+            "discord",
+            "persistence",
+            "instruments",
+        },
         "root",
     )
     if raw["schema_version"] != 1:
@@ -67,6 +85,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
     ib = _load_ib(raw["ib"])
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
+    persistence = _load_persistence(raw["persistence"])
     instruments = _load_instruments(raw["instruments"])
     return SystemConfig(
         schema_version=raw["schema_version"],
@@ -74,6 +93,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         ib=ib,
         logging=logging,
         discord=discord,
+        persistence=persistence,
         instruments=instruments,
     )
 
@@ -148,6 +168,37 @@ def _load_discord(raw: Any) -> DiscordConfig:
         request_timeout_seconds=_positive_int(
             values["request_timeout_seconds"],
             "discord.request_timeout_seconds",
+        ),
+    )
+
+
+def _load_persistence(raw: Any) -> PersistenceConfig:
+    values = _mapping(raw, "persistence")
+    _require_keys(
+        values,
+        {
+            "dsn_env",
+            "connect_timeout_seconds",
+            "queue_capacity",
+            "result_poll_interval_ms",
+            "shutdown_timeout_seconds",
+        },
+        "persistence",
+    )
+    return PersistenceConfig(
+        dsn_env=_non_empty_string(values["dsn_env"], "persistence.dsn_env"),
+        connect_timeout_seconds=_positive_int(
+            values["connect_timeout_seconds"],
+            "persistence.connect_timeout_seconds",
+        ),
+        queue_capacity=_positive_int(values["queue_capacity"], "persistence.queue_capacity"),
+        result_poll_interval_ms=_positive_int(
+            values["result_poll_interval_ms"],
+            "persistence.result_poll_interval_ms",
+        ),
+        shutdown_timeout_seconds=_positive_int(
+            values["shutdown_timeout_seconds"],
+            "persistence.shutdown_timeout_seconds",
         ),
     )
 

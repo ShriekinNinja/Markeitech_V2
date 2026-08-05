@@ -21,6 +21,13 @@ file_name = "markeitech-v2.log"
 [discord]
 request_timeout_seconds = 5
 
+[persistence]
+dsn_env = "MARKEITECH_POSTGRES_DSN"
+connect_timeout_seconds = 5
+queue_capacity = 64
+result_poll_interval_ms = 250
+shutdown_timeout_seconds = 10
+
 [[instruments]]
 id = "ESU6.CME"
 

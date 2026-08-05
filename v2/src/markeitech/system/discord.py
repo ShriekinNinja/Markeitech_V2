@@ -28,6 +28,7 @@ _STOP = object()
 _STATE_COLORS = {
     SystemHealthState.STARTING.value: 0xF1C40F,
     SystemHealthState.READY.value: 0x2ECC71,
+    SystemHealthState.DEGRADED.value: 0xE67E22,
     SystemHealthState.FAILED.value: 0xE74C3C,
     SystemHealthState.STOPPING.value: 0x95A5A6,
 }
