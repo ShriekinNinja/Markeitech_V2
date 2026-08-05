@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
   "fastapi[standard]>=0.115",
-  "nautilus_trader[ib,docker]",
+  "nautilus_trader[ib,docker]==1.230.0",
   "pandas-market-calendars==5.4.0",
   "pydantic>=2.8",
   "pyarrow>=16",
@@ -28,6 +28,7 @@ markeitech-analytics-chart = "markeitech.analytics.chart_cli:main"
 markeitech-signal-audit = "markeitech.research.cli:main"
 markeitech-reference-set = "markeitech.research.reference_cli:main"
 markeitech-sqlite-compact = "markeitech.persistence.compact:main"
+markeitech-option-chain-probe = "markeitech.options.probe_cli:main"
 
 [dependency-groups]
 dev = [

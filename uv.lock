@@ -413,7 +413,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115" },
-    { name = "nautilus-trader", extras = ["ib", "docker"] },
+    { name = "nautilus-trader", extras = ["ib", "docker"], specifier = "==1.230.0" },
     { name = "pandas-market-calendars", specifier = "==5.4.0" },
     { name = "plotly", specifier = ">=6.9.0" },
     { name = "pyarrow", specifier = ">=16" },
