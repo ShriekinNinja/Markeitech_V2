@@ -39,6 +39,7 @@ accidental disagreement.
 - [V2 runtime control plane](architecture/v2-runtime-control-plane.md)
 - [V2 Discord system health](architecture/v2-discord-health.md)
 - [V2 persistence boundary discovery](architecture/v2-persistence-boundary-discovery.md)
+- [V2 actor composition discovery](architecture/v2-actor-composition-discovery.md)
 
 ## Roadmap And History
 

@@ -144,12 +144,15 @@ become a runtime dependency.
 
 ## Stage 5: Actor Composition And Ownership
 
+Discovery and the proposed decision are recorded in
+[`v2-actor-composition-discovery.md`](../architecture/v2-actor-composition-discovery.md).
+
 ### Decision Gate 5
 
-- [ ] List the actors currently required by approved runtime behavior.
-- [ ] Give every actor one responsibility and an explicit owner boundary.
-- [ ] Define configuration-driven enablement and required dependencies.
-- [ ] Decide how actors announce readiness without relying on startup timing.
+- [x] List the actors currently required by approved runtime behavior.
+- [x] Give every actor one responsibility and an explicit owner boundary.
+- [x] Define configuration-driven enablement and required dependencies.
+- [x] Decide how actors announce readiness without relying on startup timing.
 - [ ] Confirm that actors communicate through approved Nautilus facilities.
 - [ ] Obtain Markeitect approval.
 
