@@ -35,9 +35,11 @@ accidental disagreement.
 - [Decisions register](architecture/decisions-register.md)
 - [Runtime architecture](architecture/runtime-architecture.md)
 - [Data contracts](architecture/data-contracts.md)
+- [V2 runtime messaging discovery](architecture/v2-runtime-messaging-discovery.md)
 
 ## Roadmap And History
 
+- [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md)
 - [Active implementation roadmap](roadmap/implementation-roadmap.md)
 - [Runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
 - [Trading quality evidence plan](roadmap/trading-quality-evidence-plan.md)

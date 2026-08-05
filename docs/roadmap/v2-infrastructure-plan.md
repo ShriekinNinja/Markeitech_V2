@@ -33,10 +33,11 @@
 
 ### Discovery
 
-- [ ] Inspect NautilusTrader V2 message-bus APIs, topic behavior, and native event types.
-- [ ] Identify which lifecycle information Nautilus already publishes.
-- [ ] Identify the smallest gaps Markeitech must own.
-- [ ] Document findings without implementing a parallel bus.
+- [x] Inspect NautilusTrader V2 message-bus APIs, topic behavior, and native event types.
+- [x] Identify which lifecycle information Nautilus already publishes.
+- [x] Identify the smallest gaps Markeitech must own.
+- [x] Document findings without implementing a parallel bus in
+      [`v2-runtime-messaging-discovery.md`](../architecture/v2-runtime-messaging-discovery.md).
 
 ### Decision Gate 1
 
