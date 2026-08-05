@@ -5,7 +5,9 @@ import json
 import pytest
 
 from markeitech.system.messages import (
+    COMPONENT_FAILURE_SCHEMA_VERSION,
     SYSTEM_HEALTH_SCHEMA_VERSION,
+    ComponentFailureEvent,
     SystemHealthEvent,
 )
 
@@ -64,3 +66,41 @@ def test_system_health_event_copies_mutable_evidence() -> None:
 
     with pytest.raises(TypeError):
         event.evidence["instrument_count"] = 4  # type: ignore[index]
+
+
+def test_component_failure_event_round_trips_as_deterministic_json_text() -> None:
+    event = ComponentFailureEvent(
+        component="operational_persistence",
+        code="health_event_write_failed",
+        reason="operational persistence is unavailable",
+        evidence={"attempts": 3, "error_code": "OperationalError"},
+    )
+
+    encoded = event.to_signal_value()
+
+    assert encoded == json.dumps(json.loads(encoded), separators=(",", ":"), sort_keys=True)
+    assert ComponentFailureEvent.from_signal_value(encoded) == event
+
+
+@pytest.mark.parametrize(
+    "value, match",
+    [
+        ("not-json", "valid JSON text"),
+        ('{"component":"operational_persistence"}', "missing"),
+        (
+            json.dumps(
+                {
+                    "schema_version": COMPONENT_FAILURE_SCHEMA_VERSION + 1,
+                    "component": "operational_persistence",
+                    "code": "failed",
+                    "reason": "unavailable",
+                    "evidence": {},
+                },
+            ),
+            "unsupported component failure schema",
+        ),
+    ],
+)
+def test_component_failure_event_rejects_invalid_signal_values(value: str, match: str) -> None:
+    with pytest.raises(ValueError, match=match):
+        ComponentFailureEvent.from_signal_value(value)

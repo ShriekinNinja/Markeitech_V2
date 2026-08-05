@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from enum import StrEnum
 
-from markeitech.system.messages import EvidenceValue, SystemHealthEvent
+from markeitech.system.messages import ComponentFailureEvent, EvidenceValue, SystemHealthEvent
 
 
 class SystemHealthState(StrEnum):
@@ -73,3 +73,16 @@ class SystemHealthStateMachine:
         )
         self._state = target
         return event
+
+
+def component_failure_target(
+    failure: ComponentFailureEvent,
+    current_state: SystemHealthState | None,
+) -> SystemHealthState:
+    if current_state in {SystemHealthState.FAILED, SystemHealthState.STOPPING}:
+        return current_state
+    if failure.component == "operational_persistence":
+        if current_state in {None, SystemHealthState.STARTING}:
+            return SystemHealthState.FAILED
+        return SystemHealthState.DEGRADED
+    return SystemHealthState.FAILED

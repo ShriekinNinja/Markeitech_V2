@@ -37,6 +37,8 @@ connect_timeout_seconds = 5
 queue_capacity = 64
 result_poll_interval_ms = 250
 shutdown_timeout_seconds = 10
+write_max_attempts = 3
+write_retry_backoff_ms = 100
 
 [[instruments]]
 id = "ESU6.CME"
@@ -58,6 +60,8 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.persistence.dsn_env == "MARKEITECH_POSTGRES_DSN"
     assert config.persistence.queue_capacity == 64
     assert config.persistence.result_poll_interval_ms == 250
+    assert config.persistence.write_max_attempts == 3
+    assert config.persistence.write_retry_backoff_ms == 100
     assert [instrument.id for instrument in config.instruments] == ["ESU6.CME"]
 
 

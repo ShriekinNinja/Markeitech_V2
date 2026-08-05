@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import json
 import os
 from dataclasses import dataclass
 from queue import Empty, Full, Queue
-from threading import Thread
-from time import monotonic, time_ns
+from threading import Lock, Thread
+from time import monotonic, sleep, time_ns
 from typing import Protocol
 from uuid import UUID, uuid4
 
@@ -14,10 +13,14 @@ from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId
 from psycopg.types.json import Jsonb
 
-from markeitech.system.messages import SYSTEM_HEALTH_SIGNAL, SystemHealthEvent
+from markeitech.system.messages import (
+    COMPONENT_FAILURE_SIGNAL,
+    SYSTEM_HEALTH_SIGNAL,
+    ComponentFailureEvent,
+    SystemHealthEvent,
+)
 from markeitech.system.persistence_migrations import MIGRATIONS
 
-PERSISTENCE_FAILURE_SIGNAL = "markeitech.persistence.failure"
 PERSISTENCE_SCHEMA_VERSION = 1
 _MIGRATION_LOCK_ID = 4_873_274_823
 _RESULT_TIMER = "operational-persistence-results"
@@ -38,7 +41,21 @@ class PersistenceResult:
     sequence: int
     state: str
     stored: bool
+    attempts: int
     error_code: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class PersistenceWorkerStats:
+    accepted: int
+    stored: int
+    retry_attempts: int
+    failed: int
+    rejected: int
+
+    @property
+    def pending(self) -> int:
+        return self.accepted - self.stored - self.failed
 
 
 @dataclass(frozen=True, slots=True)
@@ -220,12 +237,23 @@ class PersistenceWorker:
         writer: HealthEventWriter,
         queue_capacity: int,
         shutdown_timeout_seconds: int,
+        write_max_attempts: int,
+        write_retry_backoff_ms: int,
     ) -> None:
         self._writer = writer
         self._shutdown_timeout_seconds = shutdown_timeout_seconds
+        self._write_max_attempts = write_max_attempts
+        self._write_retry_backoff_seconds = write_retry_backoff_ms / 1_000
         self._pending: Queue[HealthEventRecord | object] = Queue(maxsize=queue_capacity)
         self.results: Queue[PersistenceResult] = Queue()
         self._closed = False
+        self._stop_enqueued = False
+        self._counter_lock = Lock()
+        self._accepted = 0
+        self._stored = 0
+        self._retry_attempts = 0
+        self._failed = 0
+        self._rejected = 0
         self._thread = Thread(
             target=self._run,
             name="markeitech-operational-persistence",
@@ -237,24 +265,37 @@ class PersistenceWorker:
 
     def submit(self, record: HealthEventRecord) -> bool:
         if self._closed:
+            self._increment("_rejected")
             return False
         try:
             self._pending.put_nowait(record)
         except Full:
+            self._increment("_rejected")
             return False
+        self._increment("_accepted")
         return True
 
     def close(self) -> bool:
-        if self._closed:
-            return not self._thread.is_alive()
         self._closed = True
         deadline = monotonic() + self._shutdown_timeout_seconds
-        try:
-            self._pending.put(_STOP, timeout=max(0.0, deadline - monotonic()))
-        except Full:
-            return False
+        if not self._stop_enqueued:
+            try:
+                self._pending.put(_STOP, timeout=max(0.0, deadline - monotonic()))
+            except Full:
+                return False
+            self._stop_enqueued = True
         self._thread.join(timeout=max(0.0, deadline - monotonic()))
         return not self._thread.is_alive()
+
+    def snapshot(self) -> PersistenceWorkerStats:
+        with self._counter_lock:
+            return PersistenceWorkerStats(
+                accepted=self._accepted,
+                stored=self._stored,
+                retry_attempts=self._retry_attempts,
+                failed=self._failed,
+                rejected=self._rejected,
+            )
 
     def _run(self) -> None:
         while True:
@@ -263,27 +304,44 @@ class PersistenceWorker:
                 if item is _STOP:
                     return
                 assert isinstance(item, HealthEventRecord)
-                try:
-                    self._writer(item)
-                except Exception as exc:
-                    self.results.put(
-                        PersistenceResult(
-                            sequence=item.sequence,
-                            state=item.event.state,
-                            stored=False,
-                            error_code=type(exc).__name__,
-                        ),
-                    )
-                else:
-                    self.results.put(
-                        PersistenceResult(
-                            sequence=item.sequence,
-                            state=item.event.state,
-                            stored=True,
-                        ),
-                    )
+                self._write_with_retries(item)
             finally:
                 self._pending.task_done()
+
+    def _write_with_retries(self, record: HealthEventRecord) -> None:
+        for attempt in range(1, self._write_max_attempts + 1):
+            try:
+                self._writer(record)
+            except Exception as exc:
+                if attempt < self._write_max_attempts:
+                    self._increment("_retry_attempts")
+                    sleep(self._write_retry_backoff_seconds)
+                    continue
+                self._increment("_failed")
+                self.results.put(
+                    PersistenceResult(
+                        sequence=record.sequence,
+                        state=record.event.state,
+                        stored=False,
+                        attempts=attempt,
+                        error_code=type(exc).__name__,
+                    ),
+                )
+                return
+            self._increment("_stored")
+            self.results.put(
+                PersistenceResult(
+                    sequence=record.sequence,
+                    state=record.event.state,
+                    stored=True,
+                    attempts=attempt,
+                ),
+            )
+            return
+
+    def _increment(self, field_name: str) -> None:
+        with self._counter_lock:
+            setattr(self, field_name, getattr(self, field_name) + 1)
 
 
 class OperationalPersistenceActorConfig(DataActorConfig):
@@ -295,6 +353,8 @@ class OperationalPersistenceActorConfig(DataActorConfig):
         queue_capacity: int,
         result_poll_interval_ms: int,
         shutdown_timeout_seconds: int,
+        write_max_attempts: int,
+        write_retry_backoff_ms: int,
         actor_id: str | ActorId = "OPERATIONAL-PERSISTENCE",
     ) -> OperationalPersistenceActorConfig:
         resolved_actor_id = (
@@ -307,6 +367,8 @@ class OperationalPersistenceActorConfig(DataActorConfig):
         obj.queue_capacity = queue_capacity
         obj.result_poll_interval_ms = result_poll_interval_ms
         obj.shutdown_timeout_seconds = shutdown_timeout_seconds
+        obj.write_max_attempts = write_max_attempts
+        obj.write_retry_backoff_ms = write_retry_backoff_ms
         return obj
 
 
@@ -318,6 +380,8 @@ class OperationalPersistenceActor(DataActor):
         self._connect_timeout_seconds = config.connect_timeout_seconds
         self._queue_capacity = config.queue_capacity
         self._shutdown_timeout_seconds = config.shutdown_timeout_seconds
+        self._write_max_attempts = config.write_max_attempts
+        self._write_retry_backoff_ms = config.write_retry_backoff_ms
         self._result_poll_interval_ns = config.result_poll_interval_ms * 1_000_000
         self._worker: PersistenceWorker | None = None
         self._sequence = 0
@@ -338,6 +402,8 @@ class OperationalPersistenceActor(DataActor):
             store.write_health_event,
             self._queue_capacity,
             self._shutdown_timeout_seconds,
+            self._write_max_attempts,
+            self._write_retry_backoff_ms,
         )
         self._worker.start()
         self.subscribe_signal(SYSTEM_HEALTH_SIGNAL)
@@ -378,6 +444,7 @@ class OperationalPersistenceActor(DataActor):
         if self._worker is not None and not self._worker.close():
             self._report_failure("persistence_worker_timeout", "shutdown_timeout")
         self._drain_results(None)
+        self._log_summary()
 
     def on_dispose(self) -> None:
         if self._worker is not None:
@@ -397,9 +464,19 @@ class OperationalPersistenceActor(DataActor):
                     f" | state={result.state}",
                 )
             else:
-                self._report_failure("health_event_write_failed", result.error_code or "unknown")
+                self._report_failure(
+                    "health_event_write_failed",
+                    result.error_code or "unknown",
+                    evidence={"attempts": result.attempts, "sequence": result.sequence},
+                )
 
-    def _report_failure(self, reason: str, error_code: str) -> None:
+    def _report_failure(
+        self,
+        reason: str,
+        error_code: str,
+        *,
+        evidence: dict[str, str | int | float | bool | None] | None = None,
+    ) -> None:
         self.log.error(
             f"OPERATIONAL_PERSISTENCE_FAILED | reason={reason} | error={error_code}",
         )
@@ -407,10 +484,30 @@ class OperationalPersistenceActor(DataActor):
             return
         self._failure_published = True
         self.publish_signal(
-            PERSISTENCE_FAILURE_SIGNAL,
-            json.dumps(
-                {"reason": reason, "error_code": error_code, "run_id": str(self._run_id)},
-                separators=(",", ":"),
-                sort_keys=True,
-            ),
+            COMPONENT_FAILURE_SIGNAL,
+            ComponentFailureEvent(
+                component="operational_persistence",
+                code=reason,
+                reason="operational persistence is unavailable",
+                evidence={
+                    "error_code": error_code,
+                    "run_id": str(self._run_id),
+                    **(evidence or {}),
+                },
+            ).to_signal_value(),
+        )
+
+    def _log_summary(self) -> None:
+        if self._worker is None:
+            self.log.info(
+                "OPERATIONAL_PERSISTENCE_SUMMARY | accepted=0 | stored=0"
+                " | retries=0 | failed=0 | rejected=0 | pending=0",
+            )
+            return
+        stats = self._worker.snapshot()
+        self.log.info(
+            "OPERATIONAL_PERSISTENCE_SUMMARY"
+            f" | accepted={stats.accepted} | stored={stats.stored}"
+            f" | retries={stats.retry_attempts} | failed={stats.failed}"
+            f" | rejected={stats.rejected} | pending={stats.pending}",
         )

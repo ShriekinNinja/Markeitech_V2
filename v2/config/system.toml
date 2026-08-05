@@ -28,6 +28,8 @@ connect_timeout_seconds = 5
 queue_capacity = 64
 result_poll_interval_ms = 250
 shutdown_timeout_seconds = 10
+write_max_attempts = 3
+write_retry_backoff_ms = 100
 
 [[instruments]]
 id = "ESU6.CME"

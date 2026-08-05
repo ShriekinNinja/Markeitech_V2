@@ -79,6 +79,8 @@ def build_actor_plan(
                     "queue_capacity": config.persistence.queue_capacity,
                     "result_poll_interval_ms": config.persistence.result_poll_interval_ms,
                     "shutdown_timeout_seconds": config.persistence.shutdown_timeout_seconds,
+                    "write_max_attempts": config.persistence.write_max_attempts,
+                    "write_retry_backoff_ms": config.persistence.write_retry_backoff_ms,
                 },
             ),
         ),

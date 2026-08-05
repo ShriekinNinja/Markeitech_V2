@@ -1,13 +1,18 @@
 from __future__ import annotations
 
-import json
-
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, InstrumentId
 
-from markeitech.system.control import SystemHealthState, SystemHealthStateMachine
-from markeitech.system.messages import SYSTEM_HEALTH_SIGNAL
-from markeitech.system.persistence import PERSISTENCE_FAILURE_SIGNAL
+from markeitech.system.control import (
+    SystemHealthState,
+    SystemHealthStateMachine,
+    component_failure_target,
+)
+from markeitech.system.messages import (
+    COMPONENT_FAILURE_SIGNAL,
+    SYSTEM_HEALTH_SIGNAL,
+    ComponentFailureEvent,
+)
 
 _INITIAL_EVALUATION_ALERT = "system-control-initial-evaluation"
 _INITIAL_EVALUATION_DELAY_NS = 1_000_000
@@ -37,9 +42,13 @@ class SystemControlActor(DataActor):
         self._health = SystemHealthStateMachine()
         self._evaluation_started = False
         self._persistence_ready = config.operational_persistence_ready
+        self._component_failures_received = 0
+        self._malformed_failure_reports = 0
+        self._transitions_published = 0
+        self._duplicate_transitions_suppressed = 0
 
     def on_start(self) -> None:
-        self.subscribe_signal(PERSISTENCE_FAILURE_SIGNAL)
+        self.subscribe_signal(COMPONENT_FAILURE_SIGNAL)
         for instrument_id in sorted(self._expected, key=str):
             instrument = self.cache.instrument(instrument_id)
             if instrument is not None:
@@ -65,30 +74,37 @@ class SystemControlActor(DataActor):
             reason="system control actor is stopping",
             evidence=self._instrument_evidence(),
         )
-        self.unsubscribe_signal(PERSISTENCE_FAILURE_SIGNAL)
+        self.unsubscribe_signal(COMPONENT_FAILURE_SIGNAL)
+        self.log.info(
+            "SYSTEM_CONTROL_SUMMARY"
+            f" | component_failures={self._component_failures_received}"
+            f" | malformed={self._malformed_failure_reports}"
+            f" | transitions={self._transitions_published}"
+            f" | duplicates={self._duplicate_transitions_suppressed}",
+        )
 
     def on_signal(self, signal: Signal) -> None:
-        if signal.name != PERSISTENCE_FAILURE_SIGNAL:
+        if signal.name != COMPONENT_FAILURE_SIGNAL:
             return
+        self._component_failures_received += 1
         try:
-            failure = json.loads(signal.value)
-            reason = str(failure["reason"])
-            error_code = str(failure["error_code"])
-        except (KeyError, TypeError, json.JSONDecodeError):
-            reason = "invalid persistence failure event"
-            error_code = "invalid_payload"
-        startup_failure = self._health.state in {None, SystemHealthState.STARTING}
+            failure = ComponentFailureEvent.from_signal_value(signal.value)
+        except ValueError as exc:
+            self._malformed_failure_reports += 1
+            self.log.error(
+                "COMPONENT_FAILURE_REJECTED"
+                f" | reason=invalid_event | error={type(exc).__name__}",
+            )
+            return
+        target = component_failure_target(failure, self._health.state)
         self._publish_transition(
-            SystemHealthState.FAILED if startup_failure else SystemHealthState.DEGRADED,
-            reason=(
-                "operational persistence failed during startup"
-                if startup_failure
-                else "operational persistence is unavailable"
-            ),
+            target,
+            reason=failure.reason,
             evidence={
                 **self._instrument_evidence(),
-                "persistence_reason": reason,
-                "persistence_error": error_code,
+                "failed_component": failure.component,
+                "failure_code": failure.code,
+                **dict(failure.evidence),
             },
         )
 
@@ -137,7 +153,9 @@ class SystemControlActor(DataActor):
             evidence=evidence,
         )
         if event is None:
+            self._duplicate_transitions_suppressed += 1
             return
+        self._transitions_published += 1
         self.publish_signal(SYSTEM_HEALTH_SIGNAL, event.to_signal_value())
         self.log.info(
             f"SYSTEM_HEALTH | state={event.state} | reason={event.reason}"

@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from queue import Empty, Full, Queue
-from threading import Thread
+from threading import Lock, Thread
 from time import monotonic
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -50,6 +50,18 @@ class DiscordDeliveryResult:
     error_code: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class DiscordWorkerStats:
+    accepted: int
+    delivered: int
+    failed: int
+    rejected: int
+
+    @property
+    def pending(self) -> int:
+        return self.accepted - self.delivered - self.failed
+
+
 class DiscordDeliveryWorker:
     def __init__(
         self,
@@ -64,6 +76,12 @@ class DiscordDeliveryWorker:
         self._pending: Queue[DiscordDelivery | object] = Queue(maxsize=_QUEUE_CAPACITY)
         self.results: Queue[DiscordDeliveryResult] = Queue()
         self._closed = False
+        self._stop_enqueued = False
+        self._counter_lock = Lock()
+        self._accepted = 0
+        self._delivered = 0
+        self._failed = 0
+        self._rejected = 0
         self._thread = Thread(
             target=self._run,
             name="markeitech-discord-health",
@@ -75,24 +93,36 @@ class DiscordDeliveryWorker:
 
     def submit(self, delivery: DiscordDelivery) -> bool:
         if self._closed:
+            self._increment("_rejected")
             return False
         try:
             self._pending.put_nowait(delivery)
         except Full:
+            self._increment("_rejected")
             return False
+        self._increment("_accepted")
         return True
 
     def close(self) -> bool:
-        if self._closed:
-            return not self._thread.is_alive()
         self._closed = True
         deadline = monotonic() + self._timeout_seconds
-        try:
-            self._pending.put(_STOP, timeout=max(0.0, deadline - monotonic()))
-        except Full:
-            return False
+        if not self._stop_enqueued:
+            try:
+                self._pending.put(_STOP, timeout=max(0.0, deadline - monotonic()))
+            except Full:
+                return False
+            self._stop_enqueued = True
         self._thread.join(timeout=max(0.0, deadline - monotonic()))
         return not self._thread.is_alive()
+
+    def snapshot(self) -> DiscordWorkerStats:
+        with self._counter_lock:
+            return DiscordWorkerStats(
+                accepted=self._accepted,
+                delivered=self._delivered,
+                failed=self._failed,
+                rejected=self._rejected,
+            )
 
     def _run(self) -> None:
         while True:
@@ -101,9 +131,15 @@ class DiscordDeliveryWorker:
                 if item is _STOP:
                     return
                 assert isinstance(item, DiscordDelivery)
-                self.results.put(self._deliver(item))
+                result = self._deliver(item)
+                self._increment("_delivered" if result.delivered else "_failed")
+                self.results.put(result)
             finally:
                 self._pending.task_done()
+
+    def _increment(self, field_name: str) -> None:
+        with self._counter_lock:
+            setattr(self, field_name, getattr(self, field_name) + 1)
 
     def _deliver(self, delivery: DiscordDelivery) -> DiscordDeliveryResult:
         try:
@@ -150,6 +186,7 @@ class DiscordHealthActor(DataActor):
         self._webhook_env = config.webhook_env
         self._worker: DiscordDeliveryWorker | None = None
         self._subscribed = False
+        self._summary_logged = False
 
     def on_start(self) -> None:
         webhook_url = os.getenv(self._webhook_env, "").strip()
@@ -201,6 +238,7 @@ class DiscordHealthActor(DataActor):
             self.clock.cancel_timer(_RESULT_TIMER)
         self._close_worker()
         self._drain_results(None)
+        self._log_summary()
 
     def on_dispose(self) -> None:
         self._close_worker()
@@ -228,6 +266,24 @@ class DiscordHealthActor(DataActor):
                     f"DISCORD_HEALTH_DELIVERY_FAILED | state={result.state}"
                     f" | status={result.status} | error={result.error_code}",
                 )
+
+    def _log_summary(self) -> None:
+        if self._summary_logged:
+            return
+        self._summary_logged = True
+        if self._worker is None:
+            self.log.info(
+                "DISCORD_HEALTH_SUMMARY | accepted=0 | delivered=0"
+                " | failed=0 | rejected=0 | pending=0",
+            )
+            return
+        stats = self._worker.snapshot()
+        self.log.info(
+            "DISCORD_HEALTH_SUMMARY"
+            f" | accepted={stats.accepted} | delivered={stats.delivered}"
+            f" | failed={stats.failed} | rejected={stats.rejected}"
+            f" | pending={stats.pending}",
+        )
 
 
 def render_system_health_message(event: SystemHealthEvent, ts_event: int) -> bytes:

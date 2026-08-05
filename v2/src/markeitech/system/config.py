@@ -48,6 +48,8 @@ class PersistenceConfig:
     queue_capacity: int
     result_poll_interval_ms: int
     shutdown_timeout_seconds: int
+    write_max_attempts: int
+    write_retry_backoff_ms: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,6 +186,8 @@ def _load_persistence(raw: Any) -> PersistenceConfig:
             "queue_capacity",
             "result_poll_interval_ms",
             "shutdown_timeout_seconds",
+            "write_max_attempts",
+            "write_retry_backoff_ms",
         },
         "persistence",
     )
@@ -201,6 +205,14 @@ def _load_persistence(raw: Any) -> PersistenceConfig:
         shutdown_timeout_seconds=_positive_int(
             values["shutdown_timeout_seconds"],
             "persistence.shutdown_timeout_seconds",
+        ),
+        write_max_attempts=_positive_int(
+            values["write_max_attempts"],
+            "persistence.write_max_attempts",
+        ),
+        write_retry_backoff_ms=_non_negative_int(
+            values["write_retry_backoff_ms"],
+            "persistence.write_retry_backoff_ms",
         ),
     )
 

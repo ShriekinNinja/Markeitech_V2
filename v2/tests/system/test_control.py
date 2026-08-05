@@ -2,7 +2,21 @@ from __future__ import annotations
 
 import pytest
 
-from markeitech.system.control import SystemHealthState, SystemHealthStateMachine
+from markeitech.system.control import (
+    SystemHealthState,
+    SystemHealthStateMachine,
+    component_failure_target,
+)
+from markeitech.system.messages import ComponentFailureEvent
+
+
+def _failure(component: str = "operational_persistence") -> ComponentFailureEvent:
+    return ComponentFailureEvent(
+        component=component,
+        code="unavailable",
+        reason=f"{component} is unavailable",
+        evidence={},
+    )
 
 
 def test_control_plane_follows_the_approved_startup_and_stop_path() -> None:
@@ -130,3 +144,28 @@ def test_control_plane_does_not_advance_when_event_validation_fails() -> None:
         )
 
     assert machine.state is None
+
+
+def test_persistence_failure_is_fatal_during_startup_and_degradable_after_ready() -> None:
+    failure = _failure()
+
+    assert component_failure_target(failure, None) is SystemHealthState.FAILED
+    assert (
+        component_failure_target(failure, SystemHealthState.STARTING)
+        is SystemHealthState.FAILED
+    )
+    assert (
+        component_failure_target(failure, SystemHealthState.READY)
+        is SystemHealthState.DEGRADED
+    )
+    assert (
+        component_failure_target(failure, SystemHealthState.DEGRADED)
+        is SystemHealthState.DEGRADED
+    )
+
+
+def test_unknown_code_owned_component_failure_is_fatal() -> None:
+    assert (
+        component_failure_target(_failure("unknown_component"), SystemHealthState.READY)
+        is SystemHealthState.FAILED
+    )

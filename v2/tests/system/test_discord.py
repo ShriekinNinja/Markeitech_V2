@@ -65,6 +65,12 @@ def test_worker_preserves_order_and_reports_confirmed_delivery() -> None:
     assert [call[1]["body"] for call in calls] == [b'{"sequence":1}', b'{"sequence":2}']
     assert calls[0][0].endswith("?thread_id=42&wait=true")
     assert calls[0][1]["timeout_secs"] == 1
+    stats = worker.snapshot()
+    assert stats.accepted == 2
+    assert stats.delivered == 2
+    assert stats.failed == 0
+    assert stats.rejected == 0
+    assert stats.pending == 0
 
 
 def test_worker_reports_sanitized_failure_without_webhook_url() -> None:
@@ -84,3 +90,21 @@ def test_worker_reports_sanitized_failure_without_webhook_url() -> None:
     assert result.delivered is False
     assert result.error_code == "RuntimeError"
     assert "secret" not in repr(result)
+    stats = worker.snapshot()
+    assert stats.accepted == 1
+    assert stats.delivered == 0
+    assert stats.failed == 1
+    assert stats.pending == 0
+
+
+def test_worker_rejects_delivery_after_close_and_counts_it() -> None:
+    worker = DiscordDeliveryWorker(
+        "https://discord.test/api/webhooks/id/token",
+        1,
+        post=lambda *_args, **_kwargs: HttpResponse(200, b"{}"),
+    )
+    worker.start()
+    assert worker.close()
+
+    assert worker.submit(DiscordDelivery(state="READY", body=b"{}")) is False
+    assert worker.snapshot().rejected == 1

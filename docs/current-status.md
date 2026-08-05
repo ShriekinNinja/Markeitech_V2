@@ -47,11 +47,11 @@ Implementation is complete for review on branch `v2-stage-4-persistence-boundary
 - A crash, forced kill, or failed terminal write intentionally leaves an incomplete run.
 - Restart reads, duplicate handling, migrations, and clean closure pass against real PostgreSQL.
 
-Stage 4 is committed. One user-operated live acceptance run remains outstanding.
+Stage 4 is committed and live-accepted.
 
 ## Stage 5: Actor Composition
 
-Implementation is complete for review on branch `v2-stage-5-actor-composition`:
+Implementation is approved and committed on branch `v2-stage-5-actor-composition`:
 
 - A pure actor plan owns the complete static runtime topology.
 - System control and operational persistence are mandatory core actors.
@@ -63,7 +63,26 @@ Implementation is complete for review on branch `v2-stage-5-actor-composition`:
   system to `FAILED` or `DEGRADED`.
 - Dynamic plugins, actor removal, and generic readiness infrastructure remain deferred.
 
-Stage 5 still requires Markeitect code review and a user-operated live acceptance run.
+Stage 5 is committed and live-accepted.
+
+## Stage 6: Supervision And Failure Policy
+
+Implementation is approved and live-accepted on branch `v2-stage-6-supervision-policy`:
+
+- Component failures use one versioned internal signal contract.
+- Workers return sanitized results to their owning actors and never decide global health.
+- System control remains the sole owner of global `DEGRADED` and `FAILED` transitions.
+- PostgreSQL health-event writes use configured bounded attempts and backoff.
+- Exhausted PostgreSQL writes, queue rejection, and shutdown timeout report one structured
+  component failure without retaining unbounded work.
+- Discord remains optional and best effort; delivery failure never changes global health.
+- Persistence, Discord, and system control emit bounded lifetime counters at shutdown.
+- Both workers stop accepting work, drain accepted FIFO work within their timeout, and allow a
+  later cleanup attempt to finish after an initial timeout.
+- Recovery from `DEGRADED` to `READY` remains deliberately deferred until durable recovery
+  evidence is defined.
+
+Stage 6 is approved for commit.
 
 ## Explicit Boundaries
 
@@ -71,18 +90,16 @@ Stage 5 still requires Markeitect code review and a user-operated live acceptanc
   instrument definitions.
 - Nautilus Parquet facilities are reserved for future market-data requirements; no layout has been
   chosen.
-- Redis, external message streams, actor snapshots, general supervision, dynamic actor
+- Redis, external message streams, actor snapshots, dynamic actor
   composition, analytics, and trading models remain unimplemented.
 - V1 remains preserved for reference and reuse, but no V1 runtime behavior is implicitly active.
 
 ## Next Accepted Sequence
 
-After Stage 4 live acceptance and commit:
+After Stage 6 review and commit:
 
-1. Stage 5 defines actor composition and ownership.
-2. Stage 6 defines supervision and failure policy.
-3. Stage 7 defines provider and canonical data boundaries without analytics.
-4. Stage 8 defines live and historical data-acquisition ownership.
+1. Stage 7 defines provider and canonical data boundaries without analytics.
+2. Stage 8 defines live and historical data-acquisition ownership.
 
 The complete gated sequence is maintained in
 [`roadmap/v2-infrastructure-plan.md`](roadmap/v2-infrastructure-plan.md).

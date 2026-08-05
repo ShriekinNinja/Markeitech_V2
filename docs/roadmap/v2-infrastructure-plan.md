@@ -165,21 +165,24 @@ Discovery and the proposed decision are recorded in
 
 ## Stage 6: Supervision And Failure Policy
 
+The accepted policy and implementation boundary are recorded in
+[`v2-supervision-failure-policy.md`](../architecture/v2-supervision-failure-policy.md).
+
 ### Decision Gate 6
 
-- [ ] Define which failures are retryable, degradable, fatal, or operator-actionable.
-- [ ] Define timeout and retry ownership.
-- [ ] Define queue and backpressure expectations only where queues actually exist.
-- [ ] Define shutdown and work-draining guarantees.
-- [ ] Obtain Markeitect approval.
+- [x] Define which failures are retryable, degradable, fatal, or operator-actionable.
+- [x] Define timeout and retry ownership.
+- [x] Define queue and backpressure expectations only where queues actually exist.
+- [x] Define shutdown and work-draining guarantees.
+- [x] Obtain Markeitect approval.
 
 ### Implementation
 
-- [ ] Add only the approved health and supervision behavior.
-- [ ] Prevent silent actor failure.
-- [ ] Expose bounded counters for retries, failures, and dropped work.
-- [ ] Test failure, recovery, and shutdown paths.
-- [ ] Review and commit.
+- [x] Add only the approved health and supervision behavior.
+- [x] Prevent silent actor failure.
+- [x] Expose bounded counters for retries, failures, and dropped work.
+- [x] Test failure, recovery-boundary, and shutdown paths.
+- [x] Review and commit.
 
 ## Stage 7: Provider And Canonical Data Boundary
 
