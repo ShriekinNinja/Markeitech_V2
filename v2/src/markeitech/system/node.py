@@ -5,6 +5,7 @@ from nautilus_trader.adapters.interactive_brokers import (
     InteractiveBrokersDataClientFactory,
     InteractiveBrokersInstrumentProviderConfig,
     MarketDataType,
+    SymbologyMethod,
 )
 from nautilus_trader.common import (
     Environment,
@@ -25,26 +26,42 @@ _MARKET_DATA_TYPES = {
     "delayed_frozen": MarketDataType.DELAYED_FROZEN,
 }
 
+_SYMBOLOGY_METHODS = {
+    "raw": SymbologyMethod.RAW,
+    "simplified": SymbologyMethod.SIMPLIFIED,
+}
+
 _ENVIRONMENTS = {
     "live": Environment.LIVE,
     "sandbox": Environment.SANDBOX,
 }
 
 
-def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites) -> LiveNode:
-    config.logging.directory.mkdir(parents=True, exist_ok=True)
+def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataClientConfig:
     instrument_ids = [InstrumentId.from_str(item.id) for item in config.instruments]
-    provider_config = InteractiveBrokersInstrumentProviderConfig(load_ids=set(instrument_ids))
-    data_config = InteractiveBrokersDataClientConfig(
+    provider_config = InteractiveBrokersInstrumentProviderConfig(
+        symbology_method=_SYMBOLOGY_METHODS[config.ib.symbology_method],
+        load_ids=set(instrument_ids),
+        convert_exchange_to_mic_venue=config.ib.convert_exchange_to_mic_venue,
+    )
+    return InteractiveBrokersDataClientConfig(
         host=config.ib.host,
         port=config.ib.port,
         client_id=config.ib.client_id,
         use_regular_trading_hours=config.ib.use_regular_trading_hours,
         market_data_type=_MARKET_DATA_TYPES[config.ib.market_data_type],
+        ignore_quote_tick_size_updates=config.ib.ignore_quote_tick_size_updates,
         connection_timeout=config.ib.connection_timeout_seconds,
         request_timeout=config.ib.request_timeout_seconds,
+        handle_revised_bars=config.ib.handle_revised_bars,
+        batch_quotes=config.ib.batch_quotes,
         instrument_provider=provider_config,
     )
+
+
+def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites) -> LiveNode:
+    config.logging.directory.mkdir(parents=True, exist_ok=True)
+    data_config = build_ib_data_client_config(config)
 
     node = (
         LiveNode.builder(

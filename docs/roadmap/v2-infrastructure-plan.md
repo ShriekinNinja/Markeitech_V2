@@ -190,18 +190,20 @@ This stage concerns data transport and identity only. It does not define analyti
 
 ### Decision Gate 7
 
-- [ ] Inventory Nautilus native instrument and market-data types available from IB.
-- [ ] Decide which native types can flow through V2 unchanged.
-- [ ] Identify provider-specific details that must be preserved.
-- [ ] Decide whether any Markeitech-owned canonical contracts are actually needed.
-- [ ] Define timestamps, sessions, instrument identity, source, and fidelity semantics.
-- [ ] Obtain Markeitect approval.
+- [x] Inventory Nautilus native instrument and market-data types available from IB.
+- [x] Decide which native types can flow through V2 unchanged.
+- [x] Identify provider-specific details that must be preserved.
+- [x] Decide whether any Markeitech-owned canonical contracts are actually needed.
+- [x] Define timestamps, sessions, instrument identity, source, and fidelity semantics.
+- [x] Obtain Markeitect approval and record the decision in
+      [`v2-provider-data-boundary-discovery.md`](../architecture/v2-provider-data-boundary-discovery.md).
 
 ### Implementation
 
-- [ ] Implement the smallest approved provider boundary.
-- [ ] Preserve source data without inventing unavailable fidelity.
-- [ ] Test identity, timestamp, and source preservation.
+- [x] Implement the smallest approved provider boundary.
+- [x] Preserve source data without inventing unavailable fidelity.
+- [x] Test identity and source configuration while preserving native timestamps by avoiding a
+      transformation layer.
 - [ ] Review and commit.
 
 ## Stage 8: Data Acquisition Ownership

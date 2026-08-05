@@ -9,8 +9,13 @@ environment = "live"
 host = "127.0.0.1"
 port = 4002
 client_id = 20
+symbology_method = "simplified"
+convert_exchange_to_mic_venue = false
 market_data_type = "realtime"
 use_regular_trading_hours = false
+batch_quotes = true
+ignore_quote_tick_size_updates = false
+handle_revised_bars = false
 connection_timeout_seconds = 30
 request_timeout_seconds = 30
 

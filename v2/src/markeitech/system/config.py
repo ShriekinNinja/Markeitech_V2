@@ -18,8 +18,13 @@ class InteractiveBrokersConfig:
     host: str
     port: int
     client_id: int
+    symbology_method: str
+    convert_exchange_to_mic_venue: bool
     market_data_type: str
     use_regular_trading_hours: bool
+    batch_quotes: bool
+    ignore_quote_tick_size_updates: bool
+    handle_revised_bars: bool
     connection_timeout_seconds: int
     request_timeout_seconds: int
 
@@ -120,12 +125,23 @@ def _load_ib(raw: Any) -> InteractiveBrokersConfig:
         "host",
         "port",
         "client_id",
+        "symbology_method",
+        "convert_exchange_to_mic_venue",
         "market_data_type",
         "use_regular_trading_hours",
+        "batch_quotes",
+        "ignore_quote_tick_size_updates",
+        "handle_revised_bars",
         "connection_timeout_seconds",
         "request_timeout_seconds",
     }
     _require_keys(values, expected, "ib")
+    symbology_method = _non_empty_string(
+        values["symbology_method"],
+        "ib.symbology_method",
+    ).lower()
+    if symbology_method not in {"raw", "simplified"}:
+        raise ValueError(f"unsupported ib.symbology_method: {symbology_method!r}")
     market_data_type = _non_empty_string(
         values["market_data_type"],
         "ib.market_data_type",
@@ -136,10 +152,24 @@ def _load_ib(raw: Any) -> InteractiveBrokersConfig:
         host=_non_empty_string(values["host"], "ib.host"),
         port=_positive_int(values["port"], "ib.port"),
         client_id=_non_negative_int(values["client_id"], "ib.client_id"),
+        symbology_method=symbology_method,
+        convert_exchange_to_mic_venue=_bool(
+            values["convert_exchange_to_mic_venue"],
+            "ib.convert_exchange_to_mic_venue",
+        ),
         market_data_type=market_data_type,
         use_regular_trading_hours=_bool(
             values["use_regular_trading_hours"],
             "ib.use_regular_trading_hours",
+        ),
+        batch_quotes=_bool(values["batch_quotes"], "ib.batch_quotes"),
+        ignore_quote_tick_size_updates=_bool(
+            values["ignore_quote_tick_size_updates"],
+            "ib.ignore_quote_tick_size_updates",
+        ),
+        handle_revised_bars=_bool(
+            values["handle_revised_bars"],
+            "ib.handle_revised_bars",
         ),
         connection_timeout_seconds=_positive_int(
             values["connection_timeout_seconds"],

@@ -18,8 +18,13 @@ environment = "sandbox"
 host = "127.0.0.1"
 port = 4002
 client_id = 20
+symbology_method = "simplified"
+convert_exchange_to_mic_venue = false
 market_data_type = "realtime"
 use_regular_trading_hours = false
+batch_quotes = true
+ignore_quote_tick_size_updates = false
+handle_revised_bars = false
 connection_timeout_seconds = 30
 request_timeout_seconds = 30
 
@@ -53,6 +58,11 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
 
     assert config.runtime.name == "MARKEITECH-V2-TEST-001"
     assert config.ib.port == 4002
+    assert config.ib.symbology_method == "simplified"
+    assert config.ib.convert_exchange_to_mic_venue is False
+    assert config.ib.batch_quotes is True
+    assert config.ib.ignore_quote_tick_size_updates is False
+    assert config.ib.handle_revised_bars is False
     assert config.logging.directory == tmp_path.parent / "data/logs"
     assert config.logging.file_name == "markeitech-v2.log"
     assert config.discord.request_timeout_seconds == 5
@@ -78,4 +88,17 @@ def test_rejects_duplicate_instruments(tmp_path: Path) -> None:
     path.write_text(VALID_CONFIG + '\n[[instruments]]\nid = "ESU6.CME"\n')
 
     with pytest.raises(ValueError, match="duplicate instrument id: ESU6.CME"):
+        load_system_config(path)
+
+
+def test_rejects_unknown_ib_symbology_method(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'symbology_method = "simplified"',
+            'symbology_method = "guess"',
+        ),
+    )
+
+    with pytest.raises(ValueError, match="unsupported ib.symbology_method: 'guess'"):
         load_system_config(path)

@@ -1,6 +1,6 @@
 # V2 Provider And Canonical Data Boundary Discovery
 
-**Status:** Proposed at Decision Gate 7; no implementation approved.
+**Status:** Decision Gate 7 accepted; implementation awaiting review.
 
 **Scope:** NautilusTrader `2.0.0rc1` as installed in `v2/.venv`, the Interactive Brokers
 adapter, and the current ES and SPY instrument configuration. This stage concerns source facts,
@@ -191,7 +191,10 @@ dependency upgrade.
 
 ## Canonical Contract Decision
 
-No Markeitech-owned raw market-data contract is needed in Stage 7.
+No Markeitech-owned raw market-data contract is needed in Stage 7. This is a deferment, not a
+permanent prohibition: V2 may introduce one later when a concrete cross-provider, persistence, or
+analytics requirement cannot be represented safely by native Nautilus types plus acquisition
+context.
 
 Creating `MarkeitechTrade`, `MarkeitechBar`, or a generic provider envelope now would:
 
@@ -218,9 +221,9 @@ After approval, the smallest implementation is:
 5. Do not add subscriptions, historical requests, custom market-data classes, persistence tables,
    session analytics, or provider aliases.
 
-## Decision Gate 7
+## Accepted Decision
 
-Markeitect approval is required for these decisions:
+Markeitect approved these decisions:
 
 1. Keep IB simplified symbology and `convert_exchange_to_mic_venue = false` for the current
    single-provider runtime.
