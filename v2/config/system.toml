@@ -1,0 +1,25 @@
+schema_version = 1
+
+[runtime]
+name = "MARKEITECH-V2-PAPER-001"
+trader_id = "MARKEITECH-001"
+environment = "live"
+
+[ib]
+host = "127.0.0.1"
+port = 4002
+client_id = 20
+market_data_type = "realtime"
+use_regular_trading_hours = false
+connection_timeout_seconds = 30
+request_timeout_seconds = 30
+
+[logging]
+directory = "../data/logs"
+file_name = "markeitech-v2.log"
+
+[[instruments]]
+id = "ESU6.CME"
+
+[[instruments]]
+id = "SPY.ARCA"

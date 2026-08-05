@@ -12,10 +12,13 @@ data/catalog/
 data/runtime/
 data/backups/
 data/logs/
+v2/data/logs/
 data/charts/
 data/research/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
-.idea/
+.idea/*
+!.idea/runConfigurations/
+!.idea/runConfigurations/Markeitech_V2.xml
 config/*.local.toml
