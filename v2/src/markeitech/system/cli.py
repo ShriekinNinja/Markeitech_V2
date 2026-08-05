@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from dotenv import load_dotenv
 
+from markeitech.system.composition import StartupPrerequisites, validate_runtime_environment
 from markeitech.system.config import load_system_config
 from markeitech.system.node import build_system_node
 from markeitech.system.persistence import OperationalStore
@@ -47,7 +48,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     load_dotenv(args.env_file, override=False)
     config = load_system_config(args.config)
     if args.connect is None:
-        build_system_node(config)
+        build_system_node(
+            config,
+            StartupPrerequisites(
+                run_id=uuid4(),
+                operational_persistence_ready=True,
+            ),
+        )
         print(
             "SYSTEM_BUILT"
             f" | runtime={config.runtime.name}"
@@ -58,13 +65,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.connect != IB_CONFIRMATION:
         parser.error(f"--connect must equal {IB_CONFIRMATION}")
 
+    validate_runtime_environment(config, os.environ)
     store = OperationalStore.from_environment(
         config.persistence.dsn_env,
         config.persistence.connect_timeout_seconds,
     )
     store.initialize()
     run_id = uuid4()
-    node = build_system_node(config, str(run_id))
+    node = build_system_node(
+        config,
+        StartupPrerequisites(
+            run_id=run_id,
+            operational_persistence_ready=True,
+        ),
+    )
     store.start_run(config.runtime.name, run_id)
     caffeinate = _start_caffeinate() if args.keep_awake else None
     try:

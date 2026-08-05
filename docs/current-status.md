@@ -47,8 +47,23 @@ Implementation is complete for review on branch `v2-stage-4-persistence-boundary
 - A crash, forced kill, or failed terminal write intentionally leaves an incomplete run.
 - Restart reads, duplicate handling, migrations, and clean closure pass against real PostgreSQL.
 
-Stage 4 still requires Markeitect code review and one user-operated live acceptance run before it
-is committed as complete.
+Stage 4 is committed. One user-operated live acceptance run remains outstanding.
+
+## Stage 5: Actor Composition
+
+Implementation is complete for review on branch `v2-stage-5-actor-composition`:
+
+- A pure actor plan owns the complete static runtime topology.
+- System control and operational persistence are mandatory core actors.
+- Discord is explicitly enabled or disabled in typed configuration.
+- Enabled Discord requires its webhook before IB startup; later delivery failure remains isolated.
+- Actor and config import paths are code-owned rather than supplied through TOML.
+- Immutable startup prerequisites replace the transient persistence-ready signal.
+- Runtime persistence failure remains a separate fact; only system control may transition the
+  system to `FAILED` or `DEGRADED`.
+- Dynamic plugins, actor removal, and generic readiness infrastructure remain deferred.
+
+Stage 5 still requires Markeitect code review and a user-operated live acceptance run.
 
 ## Explicit Boundaries
 

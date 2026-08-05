@@ -37,6 +37,7 @@ class LoggingConfig:
 
 @dataclass(frozen=True, slots=True)
 class DiscordConfig:
+    enabled: bool
     request_timeout_seconds: int
 
 
@@ -163,8 +164,9 @@ def _load_logging(raw: Any, config_directory: Path) -> LoggingConfig:
 
 def _load_discord(raw: Any) -> DiscordConfig:
     values = _mapping(raw, "discord")
-    _require_keys(values, {"request_timeout_seconds"}, "discord")
+    _require_keys(values, {"enabled", "request_timeout_seconds"}, "discord")
     return DiscordConfig(
+        enabled=_bool(values["enabled"], "discord.enabled"),
         request_timeout_seconds=_positive_int(
             values["request_timeout_seconds"],
             "discord.request_timeout_seconds",

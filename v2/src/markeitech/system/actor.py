@@ -7,7 +7,7 @@ from nautilus_trader.model import ActorId, InstrumentId
 
 from markeitech.system.control import SystemHealthState, SystemHealthStateMachine
 from markeitech.system.messages import SYSTEM_HEALTH_SIGNAL
-from markeitech.system.persistence import PERSISTENCE_FAILURE_SIGNAL, PERSISTENCE_READY_SIGNAL
+from markeitech.system.persistence import PERSISTENCE_FAILURE_SIGNAL
 
 _INITIAL_EVALUATION_ALERT = "system-control-initial-evaluation"
 _INITIAL_EVALUATION_DELAY_NS = 1_000_000
@@ -17,7 +17,7 @@ class SystemControlActorConfig(DataActorConfig):
     def __new__(
         cls,
         instrument_ids: list[str],
-        persistence_preflight_passed: bool = False,
+        operational_persistence_ready: bool = False,
         actor_id: str | ActorId = "SYSTEM-CONTROL",
     ) -> SystemControlActorConfig:
         resolved_actor_id = (
@@ -25,7 +25,7 @@ class SystemControlActorConfig(DataActorConfig):
         )
         obj = super().__new__(cls, actor_id=resolved_actor_id)
         obj.instrument_ids = tuple(instrument_ids)
-        obj.persistence_preflight_passed = persistence_preflight_passed
+        obj.operational_persistence_ready = operational_persistence_ready
         return obj
 
 
@@ -36,11 +36,10 @@ class SystemControlActor(DataActor):
         self._available: set[InstrumentId] = set()
         self._health = SystemHealthStateMachine()
         self._evaluation_started = False
-        self._persistence_ready = config.persistence_preflight_passed
+        self._persistence_ready = config.operational_persistence_ready
 
     def on_start(self) -> None:
         self.subscribe_signal(PERSISTENCE_FAILURE_SIGNAL)
-        self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         for instrument_id in sorted(self._expected, key=str):
             instrument = self.cache.instrument(instrument_id)
             if instrument is not None:
@@ -67,13 +66,8 @@ class SystemControlActor(DataActor):
             evidence=self._instrument_evidence(),
         )
         self.unsubscribe_signal(PERSISTENCE_FAILURE_SIGNAL)
-        self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
 
     def on_signal(self, signal: Signal) -> None:
-        if signal.name == PERSISTENCE_READY_SIGNAL:
-            self._persistence_ready = True
-            self._publish_ready_if_complete()
-            return
         if signal.name != PERSISTENCE_FAILURE_SIGNAL:
             return
         try:
@@ -83,9 +77,14 @@ class SystemControlActor(DataActor):
         except (KeyError, TypeError, json.JSONDecodeError):
             reason = "invalid persistence failure event"
             error_code = "invalid_payload"
+        startup_failure = self._health.state in {None, SystemHealthState.STARTING}
         self._publish_transition(
-            SystemHealthState.DEGRADED,
-            reason="operational persistence is unavailable",
+            SystemHealthState.FAILED if startup_failure else SystemHealthState.DEGRADED,
+            reason=(
+                "operational persistence failed during startup"
+                if startup_failure
+                else "operational persistence is unavailable"
+            ),
             evidence={
                 **self._instrument_evidence(),
                 "persistence_reason": reason,

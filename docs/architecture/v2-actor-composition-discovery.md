@@ -1,6 +1,6 @@
 # V2 Actor Composition And Ownership Discovery
 
-**Status:** Discovery complete; Decision Gate 5 is open.
+**Status:** Decision Gate 5 accepted on 2026-08-05; implementation ready for review.
 
 **Scope:** Current V2 actors and the actor-registration facilities exposed by NautilusTrader
 `2.0.0rc1`. This document proposes composition rules; it does not change runtime behavior.
@@ -130,17 +130,17 @@ but the installed API does not document actor stop ordering as a dependency guar
 authoritative clean terminal fact remains the CLI's post-node `STOPPED` update. Stage 6 should
 decide whether best-effort `STOPPING` projections require any stronger shutdown coordination.
 
-## Decision Gate 5
+## Accepted Decisions
 
-1. Accept system control and operational persistence as non-disableable core actors?
-2. Accept Discord as the only currently optional actor, controlled by a typed `enabled` setting?
-   When enabled, a missing webhook fails pre-connection configuration validation; later delivery
-   failure remains isolated.
-3. Accept a small code-owned registry and pure actor plan instead of arbitrary TOML import paths or
-   a plugin framework?
-4. Replace the transient persistence-ready signal with immutable, preflighted startup
-   prerequisites while retaining the persistence-failure signal?
-5. Defer dynamic composition and generic actor-readiness protocols until a real component requires
-   them?
-
-No Stage 5 implementation should begin before these decisions are accepted.
+1. System control and operational persistence are non-disableable core actors.
+2. Discord is the only currently optional actor and uses a typed `enabled` setting. When enabled,
+   a missing webhook fails pre-connection configuration validation; later delivery failure remains
+   isolated.
+3. A small code-owned registry and pure actor plan own topology. TOML cannot supply arbitrary
+   Python import paths.
+4. Immutable preflighted startup prerequisites replace the transient persistence-ready signal.
+   Runtime persistence failures remain explicit facts consumed by system control.
+5. Dynamic composition and a generic actor-readiness protocol remain deferred until a real
+   component requires them.
+6. Instrument-definition requests remain temporarily in system control and transfer to the
+   approved acquisition owner in Stage 8.

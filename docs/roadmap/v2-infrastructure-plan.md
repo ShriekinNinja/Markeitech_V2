@@ -153,15 +153,15 @@ Discovery and the proposed decision are recorded in
 - [x] Give every actor one responsibility and an explicit owner boundary.
 - [x] Define configuration-driven enablement and required dependencies.
 - [x] Decide how actors announce readiness without relying on startup timing.
-- [ ] Confirm that actors communicate through approved Nautilus facilities.
-- [ ] Obtain Markeitect approval.
+- [x] Confirm that actors communicate through approved Nautilus facilities.
+- [x] Obtain Markeitect approval.
 
 ### Implementation
 
-- [ ] Build the approved composition mechanism.
-- [ ] Reject invalid or incomplete actor configurations before connection.
-- [ ] Test actors independently and together.
-- [ ] Review and commit.
+- [x] Build the approved composition mechanism.
+- [x] Reject invalid or incomplete actor configurations before connection.
+- [x] Test actors independently and together.
+- [x] Review and commit.
 
 ## Stage 6: Supervision And Failure Policy
 

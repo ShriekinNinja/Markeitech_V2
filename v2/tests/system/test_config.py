@@ -28,6 +28,7 @@ directory = "../data/logs"
 file_name = "markeitech-v2.log"
 
 [discord]
+enabled = true
 request_timeout_seconds = 5
 
 [persistence]
@@ -53,6 +54,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.logging.directory == tmp_path.parent / "data/logs"
     assert config.logging.file_name == "markeitech-v2.log"
     assert config.discord.request_timeout_seconds == 5
+    assert config.discord.enabled is True
     assert config.persistence.dsn_env == "MARKEITECH_POSTGRES_DSN"
     assert config.persistence.queue_capacity == 64
     assert config.persistence.result_poll_interval_ms == 250

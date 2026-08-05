@@ -19,6 +19,7 @@ directory = "../data/logs"
 file_name = "markeitech-v2.log"
 
 [discord]
+enabled = true
 request_timeout_seconds = 5
 
 [persistence]

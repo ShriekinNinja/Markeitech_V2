@@ -18,7 +18,6 @@ from markeitech.system.messages import SYSTEM_HEALTH_SIGNAL, SystemHealthEvent
 from markeitech.system.persistence_migrations import MIGRATIONS
 
 PERSISTENCE_FAILURE_SIGNAL = "markeitech.persistence.failure"
-PERSISTENCE_READY_SIGNAL = "markeitech.persistence.ready"
 PERSISTENCE_SCHEMA_VERSION = 1
 _MIGRATION_LOCK_ID = 4_873_274_823
 _RESULT_TIMER = "operational-persistence-results"
@@ -315,22 +314,31 @@ class OperationalPersistenceActor(DataActor):
     def __init__(self, config: OperationalPersistenceActorConfig) -> None:
         super().__init__(config)
         self._run_id = UUID(config.run_id)
-        self._store = OperationalStore.from_environment(
-            config.dsn_env,
-            config.connect_timeout_seconds,
-        )
-        self._store.check()
-        self._worker = PersistenceWorker(
-            self._store.write_health_event,
-            config.queue_capacity,
-            config.shutdown_timeout_seconds,
-        )
+        self._dsn_env = config.dsn_env
+        self._connect_timeout_seconds = config.connect_timeout_seconds
+        self._queue_capacity = config.queue_capacity
+        self._shutdown_timeout_seconds = config.shutdown_timeout_seconds
         self._result_poll_interval_ns = config.result_poll_interval_ms * 1_000_000
+        self._worker: PersistenceWorker | None = None
         self._sequence = 0
         self._subscribed = False
         self._failure_published = False
 
     def on_start(self) -> None:
+        try:
+            store = OperationalStore.from_environment(
+                self._dsn_env,
+                self._connect_timeout_seconds,
+            )
+            store.check()
+        except Exception as exc:
+            self._report_failure("runtime_connection_failed", type(exc).__name__)
+            raise
+        self._worker = PersistenceWorker(
+            store.write_health_event,
+            self._queue_capacity,
+            self._shutdown_timeout_seconds,
+        )
         self._worker.start()
         self.subscribe_signal(SYSTEM_HEALTH_SIGNAL)
         self._subscribed = True
@@ -340,12 +348,11 @@ class OperationalPersistenceActor(DataActor):
             callback=self._drain_results,
         )
         self.log.info(f"OPERATIONAL_PERSISTENCE_READY | run_id={self._run_id}")
-        self.publish_signal(
-            PERSISTENCE_READY_SIGNAL,
-            json.dumps({"run_id": str(self._run_id)}, separators=(",", ":")),
-        )
 
     def on_signal(self, signal: Signal) -> None:
+        if self._worker is None:
+            self._report_failure("persistence_worker_unavailable", "not_started")
+            return
         try:
             event = SystemHealthEvent.from_signal_value(signal.value)
         except ValueError as exc:
@@ -368,14 +375,17 @@ class OperationalPersistenceActor(DataActor):
             self._subscribed = False
         if _RESULT_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_RESULT_TIMER)
-        if not self._worker.close():
+        if self._worker is not None and not self._worker.close():
             self._report_failure("persistence_worker_timeout", "shutdown_timeout")
         self._drain_results(None)
 
     def on_dispose(self) -> None:
-        self._worker.close()
+        if self._worker is not None:
+            self._worker.close()
 
     def _drain_results(self, _event) -> None:  # noqa: ANN001
+        if self._worker is None:
+            return
         while True:
             try:
                 result = self._worker.results.get_nowait()

@@ -9,13 +9,13 @@ from nautilus_trader.adapters.interactive_brokers import (
 from nautilus_trader.common import (
     Environment,
     FileWriterConfig,
-    ImportableActorConfig,
     LoggerConfig,
     LogLevel,
 )
 from nautilus_trader.live import LiveNode
 from nautilus_trader.model import InstrumentId, TraderId
 
+from markeitech.system.composition import StartupPrerequisites, build_actor_plan
 from markeitech.system.config import SystemConfig
 
 _MARKET_DATA_TYPES = {
@@ -31,7 +31,7 @@ _ENVIRONMENTS = {
 }
 
 
-def build_system_node(config: SystemConfig, run_id: str | None = None) -> LiveNode:
+def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites) -> LiveNode:
     config.logging.directory.mkdir(parents=True, exist_ok=True)
     instrument_ids = [InstrumentId.from_str(item.id) for item in config.instruments]
     provider_config = InteractiveBrokersInstrumentProviderConfig(load_ids=set(instrument_ids))
@@ -67,46 +67,6 @@ def build_system_node(config: SystemConfig, run_id: str | None = None) -> LiveNo
         .add_data_client(None, InteractiveBrokersDataClientFactory(), data_config)
         .build()
     )
-    node.add_actor_from_config(
-        ImportableActorConfig(
-            actor_path="markeitech.system.actor:SystemControlActor",
-            config_path="markeitech.system.actor:SystemControlActorConfig",
-            config={
-                "actor_id": "SYSTEM-CONTROL",
-                "instrument_ids": [str(value) for value in instrument_ids],
-                "persistence_preflight_passed": run_id is not None,
-            },
-        ),
-    )
-    node.add_actor_from_config(
-        ImportableActorConfig(
-            actor_path="markeitech.system.discord:DiscordHealthActor",
-            config_path="markeitech.system.discord:DiscordHealthActorConfig",
-            config={
-                "actor_id": "DISCORD-HEALTH",
-                "request_timeout_seconds": config.discord.request_timeout_seconds,
-                "webhook_env": "MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK",
-            },
-        ),
-    )
-    if run_id is not None:
-        node.add_actor_from_config(
-            ImportableActorConfig(
-                actor_path=(
-                    "markeitech.system.persistence:OperationalPersistenceActor"
-                ),
-                config_path=(
-                    "markeitech.system.persistence:OperationalPersistenceActorConfig"
-                ),
-                config={
-                    "actor_id": "OPERATIONAL-PERSISTENCE",
-                    "run_id": run_id,
-                    "dsn_env": config.persistence.dsn_env,
-                    "connect_timeout_seconds": config.persistence.connect_timeout_seconds,
-                    "queue_capacity": config.persistence.queue_capacity,
-                    "result_poll_interval_ms": config.persistence.result_poll_interval_ms,
-                    "shutdown_timeout_seconds": config.persistence.shutdown_timeout_seconds,
-                },
-            ),
-        )
+    for registration in build_actor_plan(config, prerequisites):
+        node.add_actor_from_config(registration.config)
     return node
