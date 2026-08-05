@@ -41,17 +41,17 @@
 
 ### Decision Gate 1
 
-- [ ] Review the proposed distinction between commands, events, snapshots, and failures.
-- [ ] Review topic naming and ownership rules.
-- [ ] Review the minimum common metadata required on Markeitech-owned messages.
-- [ ] Decide whether custom contracts are needed for the first lifecycle slice.
-- [ ] Obtain Markeitect approval.
+- [x] Review the proposed distinction between commands, events, snapshots, and failures.
+- [x] Review topic naming and ownership rules.
+- [x] Review the minimum common metadata required on Markeitech-owned messages.
+- [x] Decide whether custom contracts are needed for the first lifecycle slice.
+- [x] Obtain Markeitect approval.
 
 ### Implementation
 
-- [ ] Implement only the approved minimum message vocabulary.
-- [ ] Add contract and publication tests.
-- [ ] Verify publication inside one live `LiveNode`.
+- [x] Implement only the approved minimum message vocabulary.
+- [x] Add contract and publication tests.
+- [x] Verify publication inside one offline `LiveNode`.
 - [ ] Review and commit.
 
 ## Stage 2: Runtime Control Plane

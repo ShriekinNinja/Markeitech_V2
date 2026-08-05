@@ -3,6 +3,8 @@ from __future__ import annotations
 from nautilus_trader.common import DataActor, DataActorConfig
 from nautilus_trader.model import ActorId, InstrumentId
 
+from markeitech.system.messages import SYSTEM_HEALTH_SIGNAL, SystemHealthEvent
+
 
 class ReadinessActorConfig(DataActorConfig):
     def __new__(
@@ -52,8 +54,17 @@ class ReadinessActor(DataActor):
             return
         self._ready = True
         instrument_ids = sorted(str(value) for value in self._available)
+        event = SystemHealthEvent(
+            state="READY",
+            reason="configured instrument definitions are available",
+            source=str(self.actor_id),
+            evidence={
+                "instrument_count": len(instrument_ids),
+                "instruments": ",".join(instrument_ids),
+            },
+        )
         self.publish_signal(
-            "system.ready",
-            {"instruments": instrument_ids},
+            SYSTEM_HEALTH_SIGNAL,
+            event.to_signal_value(),
         )
         self.log.info(f"SYSTEM_READY | instruments={','.join(instrument_ids)}")

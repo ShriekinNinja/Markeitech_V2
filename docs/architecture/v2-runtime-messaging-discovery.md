@@ -1,6 +1,6 @@
 # V2 Runtime Messaging Discovery
 
-**Status:** Discovery complete; Decision Gate 1 is open.
+**Status:** Discovery complete; Decision Gate 1 accepted on 2026-08-05.
 
 **Scope:** NautilusTrader `2.0.0rc1` as installed in `v2/.venv`. This document records
 available runtime communication facilities and their constraints. It does not approve a
@@ -162,9 +162,10 @@ Costs:
 - creates custom infrastructure around a changing pre-release API;
 - request-response Python contracts are not sufficiently exposed or typed yet.
 
-## Recommendation For Review
+## Accepted Decision
 
-Use **Option A** for the first lifecycle and Discord-health slice: one versioned JSON string carried
+Markeitect approved **Option A** for the first lifecycle and Discord-health slice: one versioned
+JSON string carried
 by actor signals. Keep the envelope deliberately small:
 
 - `schema_version`
@@ -174,9 +175,21 @@ by actor signals. Keep the envelope deliberately small:
 - `evidence`
 
 Use the `Signal` envelope's `name`, `ts_event`, and `ts_init` rather than duplicating them inside the
-payload. Before adoption, prove a string payload through two actors in one offline `LiveNode` and
-define how a late-starting consumer obtains the current state.
+payload.
 
-This is a recommendation, not an accepted decision. No contract or runtime implementation should
-begin until Markeitect approves Option A, B, or C and the minimum metadata.
+The approved signal name is `markeitech.system.health`. The actor that owns a runtime fact owns its
+publication. Consumers may project the event but must not redefine or republish system state.
 
+For V2 message vocabulary:
+
+- an **event** is an immutable fact that occurred;
+- a **snapshot** represents current state for recovery or a late consumer;
+- a **command** requests an action and is not part of this first contract;
+- a **failure** is an event outcome with evidence, not a separate transport mechanism.
+
+The first implementation proves string delivery through two actors in one offline `LiveNode`.
+Stage 2 must define how a late-starting consumer obtains the current state; transient signals alone
+do not solve that problem.
+
+Raw bus access, custom data, commands, snapshots, replay, and durability are not introduced by this
+decision.
