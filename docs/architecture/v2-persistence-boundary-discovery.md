@@ -1,0 +1,169 @@
+# V2 Persistence Boundary Discovery
+
+**Status:** Requirements and technology comparison complete; Decision Gate 4 is open.
+
+**Scope:** The current V2 runtime and NautilusTrader `2.0.0rc1` installed in `v2/.venv`.
+This document recommends a boundary. It does not approve or implement a database.
+
+## Executive Finding
+
+V2 currently has one small durable-information requirement: preserve an honest history of runtime
+runs and system-health transitions. It does not yet have an approved market-data retention
+requirement.
+
+The storage decision should therefore stay split:
+
+1. use a relational operational store for low-volume runtime history; and
+2. revisit Nautilus catalog and streaming facilities only after market-data acquisition contracts
+   and query requirements exist.
+
+The recommended first operational store is **SQLite**, behind one persistence owner. PostgreSQL is
+the expected comparison point when Markeitech gains concurrent writers, a separately deployed UI
+or service, or remote access. Redis, actor snapshots, logs, and Parquet are useful facilities, but
+none is a substitute for the current operational audit requirement.
+
+## Current Durable-Information Inventory
+
+| Information | Volume and writes | Required queries | Retention | Restart need | Recommendation |
+|---|---|---|---|---|---|
+| Runtime run identity and outcome | One row at start and one terminal update | Last run, incomplete runs, run duration and outcome | Indefinite; very small | Yes | Persist |
+| `SystemHealthEvent` transitions | A few append-only rows per run | Timeline by run, state, source, and time | Indefinite; very small | Yes | Persist |
+| Discord delivery attempts | Small but transport-specific | Only troubleshooting | Local logs are sufficient initially | No | Do not persist |
+| IB instrument definitions | Small and replaceable | Current definition by instrument | Provider/cache concern | Re-request on restart | Do not own yet |
+| TOML and environment configuration | One set per run | Reproduce effective configuration | Source and deployment concern | Reload from configuration | Do not copy into rows |
+| Runtime logs | Append-only diagnostic text | Incident investigation and live tail | File rotation policy | No state restoration | Keep as files |
+| Market ticks, bars, and books | Potentially high-volume streams | Not yet approved | Not yet approved | Not yet approved | Defer technology choice |
+| Future analytics and actor state | Unknown | Unknown | Unknown | Unknown | Out of scope until designed |
+
+The database must not become a second configuration source, a Discord outbox, an instrument
+master, or an accidental market-data warehouse during this stage.
+
+## Exact Nautilus Facilities Reviewed
+
+### Actor and node state
+
+Actors expose save/load lifecycle support, and `LiveNode` exposes state load/save configuration.
+This is appropriate for restoring a component snapshot. It does not provide an append-only,
+queryable history of runtime transitions, and it should not be stretched into one.
+
+### Cache configuration
+
+The installed `CacheConfig` includes cache capacities, encoding, startup flushing, market-data
+saving, and account-event persistence controls. Cache ownership is Nautilus runtime state. V2
+should not assume that enabling cache persistence creates the operational schema or queries listed
+above. Although Redis and PostgreSQL cache configuration types exist in the installed wheel, this
+RC's Python `LiveNode` builder does not expose a way to attach those backings.
+
+### Message-bus backing and external streams
+
+The installed `MessageBusConfig` describes stream prefixes, external streams, per-topic streams,
+filtering, trimming, and heartbeat behavior. Redis message-bus configuration types also exist, but
+this RC's Python builder does not expose a way to attach the egress/ingress backing. These
+facilities may become useful when Markeitech needs supported external event transport.
+
+They do not currently give ordinary Python actors a public raw message-bus API, and the approved
+system-health contract uses actor signals. Stage 4 should not introduce Redis or a custom bridge
+merely to turn a transient signal into an operational database. Redis streams are transport and
+bounded retention, not historical replay or a relational source of truth.
+
+### Parquet catalog and streaming writers
+
+`ParquetDataCatalog` supports native market data, custom data, queries, consolidation, and
+deduplication. `StreamingFeatherWriter` supports high-volume stream persistence and rotation.
+These are strong candidates for future immutable market-data and analytical datasets.
+
+They are a poor fit for transactional run closure, operational uniqueness constraints, schema
+migrations, and simple queries such as "show the latest incomplete run." No Parquet layout is
+chosen before Stage 7 and Stage 8 establish source, identity, volume, and read patterns.
+
+## Technology Comparison
+
+| Option | Current fit | Strengths | Costs and limits | Decision |
+|---|---|---|---|---|
+| Local logs only | Insufficient | Already present; excellent diagnostics | Not structured state, weak queries, no uniqueness or migrations | Keep, not authoritative |
+| Nautilus actor/node state | Insufficient alone | Native component recovery | Snapshot semantics, not operational history | Use later where actor recovery requires it |
+| Redis/message streams | Unavailable and premature | External fan-out, retention, stream consumers | Python builder cannot attach the backing in this RC; not a relational source of truth | Defer |
+| SQLite | Best current fit | Transactional, local, zero service burden, queryable, tiny operational footprint | One-machine ownership; limited concurrent-write future | Recommend for first implementation |
+| PostgreSQL in Docker | Valid later | Concurrent clients, remote services, mature operations | Container, credentials, migrations, backups, and service availability before they are needed | Defer until a concrete trigger |
+| Parquet/Feather | Best future market-data candidate | Efficient immutable columnar data and Nautilus-native facilities | Poor operational lifecycle semantics; requirements do not yet exist | Reserve for market data |
+
+## Recommended Ownership
+
+Add one `OperationalPersistenceActor` only after Decision Gate 4 approval. It would:
+
+- subscribe to `markeitech.system.health` as a read-only consumer;
+- own the operational database connection and every write to the operational schema;
+- move database work off the Nautilus event thread through one bounded actor-owned worker;
+- preserve event order;
+- expose failures through logs first, without redefining system state;
+- close and drain within a bounded stop period; and
+- never publish a second version of a health transition.
+
+No other actor should execute operational SQL. Read access should be added later through a separate
+query boundary when an actual consumer exists.
+
+## Proposed Initial Records
+
+### `runtime_runs`
+
+- `run_id`: generated UUID and primary key
+- `runtime_id`: configured Nautilus runtime identity
+- `started_at_ns`: process/run start time
+- `ended_at_ns`: nullable terminal time
+- `terminal_state`: nullable outcome known at closure
+- `terminal_reason`: nullable human-readable reason
+- `schema_version`: record contract version
+
+### `system_health_events`
+
+- `event_id`: generated primary key
+- `run_id`: foreign key to `runtime_runs`
+- `sequence`: monotonically increasing within the run
+- `signal_name`: `markeitech.system.health`
+- `state`, `reason`, `source`, and `evidence_json`: accepted event payload
+- `ts_event_ns` and `ts_init_ns`: Nautilus signal timestamps
+- `recorded_at_ns`: persistence timestamp
+- `schema_version`: event contract version
+
+A uniqueness rule on `(run_id, sequence)` provides idempotent insertion without changing the
+approved system-health message contract. The persistence owner creates the run identifier and
+sequence because no other current consumer needs them.
+
+## Queries The First Schema Must Prove
+
+- Return the latest run and whether it ended cleanly.
+- Return the ordered health timeline for one run.
+- Find runs with no terminal outcome.
+- Filter health events by state, source, and time range.
+- Retry an already accepted write without creating a duplicate row.
+
+Anything beyond these queries needs a new requirement rather than a speculative column.
+
+## Migration, Retention, And Backup
+
+- Create a migration ledger before the first production row.
+- Apply migrations before connecting to IB; a migration failure must prevent startup.
+- Keep operational records indefinitely initially. Their volume is negligible.
+- Keep the database under `v2/data/` and out of Git.
+- Back up with SQLite's consistent backup mechanism or while the runtime is stopped; do not copy a
+  live file casually.
+- Keep SQL and schema ownership narrow enough that a later PostgreSQL adapter is possible, but do
+  not build a generic storage framework now.
+
+## Open Decisions For Markeitect
+
+1. **Technology:** Accept SQLite for the first operational store, with PostgreSQL deferred until a
+   real concurrency or remote-service requirement appears?
+2. **Readiness:** Must the operational store be initialized before V2 may publish `READY`?
+3. **Mid-run failure:** Should a write failure initially be logged while the runtime continues, or
+   should it become the first approved `DEGRADED` condition?
+4. **Run closure:** Is `STOPPING` sufficient as the first terminal outcome, or must the CLI record a
+   post-node `STOPPED` result after Nautilus fully returns?
+
+No persistence implementation should begin until these four decisions are accepted.
+
+## References
+
+- [Nautilus cache](https://nautilustrader.io/docs/latest/concepts/cache/)
+- [Nautilus message bus](https://nautilustrader.io/docs/latest/concepts/message_bus/)
+- [Nautilus data and catalogs](https://nautilustrader.io/docs/latest/concepts/data/)

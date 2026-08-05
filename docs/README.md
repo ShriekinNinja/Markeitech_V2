@@ -38,6 +38,7 @@ accidental disagreement.
 - [V2 runtime messaging discovery](architecture/v2-runtime-messaging-discovery.md)
 - [V2 runtime control plane](architecture/v2-runtime-control-plane.md)
 - [V2 Discord system health](architecture/v2-discord-health.md)
+- [V2 persistence boundary discovery](architecture/v2-persistence-boundary-discovery.md)
 
 ## Roadmap And History
 

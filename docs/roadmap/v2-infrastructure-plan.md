@@ -117,16 +117,18 @@ become a runtime dependency.
 
 ### Requirements Before Technology
 
-- [ ] Inventory only the V2 information that must survive restart.
-- [ ] Classify each item by volume, write pattern, query pattern, retention, and recovery need.
-- [ ] Separate runtime/control records from future market data.
-- [ ] Decide what must never be persisted.
+- [x] Inventory only the V2 information that must survive restart.
+- [x] Classify each item by volume, write pattern, query pattern, retention, and recovery need.
+- [x] Separate runtime/control records from future market data.
+- [x] Decide what must never be persisted.
+- [x] Record findings and the recommendation in
+      [`v2-persistence-boundary-discovery.md`](../architecture/v2-persistence-boundary-discovery.md).
 
 ### Decision Gate 4
 
-- [ ] Compare Nautilus persistence facilities with Markeitech-owned storage.
-- [ ] Compare suitable local and server-backed database options using the approved requirements.
-- [ ] Compare suitable market-data storage formats only when market-data requirements exist.
+- [x] Compare Nautilus persistence facilities with Markeitech-owned storage.
+- [x] Compare suitable local and server-backed database options using the approved requirements.
+- [x] Compare suitable market-data storage formats only when market-data requirements exist.
 - [ ] Decide ownership, schema migration, retention, and backup responsibilities.
 - [ ] Do not choose SQLite, PostgreSQL, Parquet, Redis, or Docker by default.
 - [ ] Obtain Markeitect approval.
