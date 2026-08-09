@@ -9,8 +9,13 @@ from markeitech.system.control import (
     component_failure_target,
 )
 from markeitech.system.messages import (
+    ACQUISITION_STATUS_REQUEST_SIGNAL,
+    ACQUISITION_STATUS_SIGNAL,
     COMPONENT_FAILURE_SIGNAL,
+    INSTRUMENTS_READY,
     SYSTEM_HEALTH_SIGNAL,
+    AcquisitionStatusEvent,
+    AcquisitionStatusRequest,
     ComponentFailureEvent,
 )
 
@@ -44,29 +49,23 @@ class SystemControlActor(DataActor):
         self._persistence_ready = config.operational_persistence_ready
         self._component_failures_received = 0
         self._malformed_failure_reports = 0
+        self._acquisition_statuses_received = 0
+        self._malformed_acquisition_statuses = 0
         self._transitions_published = 0
         self._duplicate_transitions_suppressed = 0
 
     def on_start(self) -> None:
         self.subscribe_signal(COMPONENT_FAILURE_SIGNAL)
-        for instrument_id in sorted(self._expected, key=str):
-            instrument = self.cache.instrument(instrument_id)
-            if instrument is not None:
-                self._available.add(instrument_id)
-            else:
-                self.request_instrument(instrument_id)
+        self.subscribe_signal(ACQUISITION_STATUS_SIGNAL)
+        self.publish_signal(
+            ACQUISITION_STATUS_REQUEST_SIGNAL,
+            AcquisitionStatusRequest(requester=str(self.actor_id)).to_signal_value(),
+        )
         self.clock.set_time_alert_ns(
             _INITIAL_EVALUATION_ALERT,
             self.clock.timestamp_ns() + _INITIAL_EVALUATION_DELAY_NS,
             callback=self._begin_evaluation,
         )
-
-    def on_instrument(self, instrument) -> None:  # noqa: ANN001
-        instrument_id = instrument.id
-        if instrument_id in self._expected:
-            self._available.add(instrument_id)
-            self.log.info(f"INSTRUMENT_READY | instrument_id={instrument_id}")
-            self._publish_ready_if_complete()
 
     def on_stop(self) -> None:
         self._publish_transition(
@@ -75,15 +74,21 @@ class SystemControlActor(DataActor):
             evidence=self._instrument_evidence(),
         )
         self.unsubscribe_signal(COMPONENT_FAILURE_SIGNAL)
+        self.unsubscribe_signal(ACQUISITION_STATUS_SIGNAL)
         self.log.info(
             "SYSTEM_CONTROL_SUMMARY"
             f" | component_failures={self._component_failures_received}"
             f" | malformed={self._malformed_failure_reports}"
+            f" | acquisition_statuses={self._acquisition_statuses_received}"
+            f" | malformed_acquisition={self._malformed_acquisition_statuses}"
             f" | transitions={self._transitions_published}"
             f" | duplicates={self._duplicate_transitions_suppressed}",
         )
 
     def on_signal(self, signal: Signal) -> None:
+        if signal.name == ACQUISITION_STATUS_SIGNAL:
+            self._handle_acquisition_status(signal)
+            return
         if signal.name != COMPONENT_FAILURE_SIGNAL:
             return
         self._component_failures_received += 1
@@ -108,6 +113,37 @@ class SystemControlActor(DataActor):
             },
         )
 
+    def _handle_acquisition_status(self, signal: Signal) -> None:
+        self._acquisition_statuses_received += 1
+        try:
+            status = AcquisitionStatusEvent.from_signal_value(signal.value)
+        except ValueError as exc:
+            self._malformed_acquisition_statuses += 1
+            self.log.error(
+                f"ACQUISITION_STATUS_REJECTED | reason=invalid_event | error={type(exc).__name__}",
+            )
+            return
+        reported_expected = {
+            InstrumentId.from_str(value) for value in status.expected_instrument_ids
+        }
+        if reported_expected != self._expected:
+            self._malformed_acquisition_statuses += 1
+            self.log.error(
+                "ACQUISITION_STATUS_REJECTED | reason=instrument_set_mismatch",
+            )
+            return
+        self._available = {
+            InstrumentId.from_str(value) for value in status.available_instrument_ids
+        }
+        self.log.info(
+            f"ACQUISITION_STATUS_ACCEPTED | state={status.state}"
+            f" | available={len(self._available)}/{len(self._expected)}",
+        )
+        if not self._evaluation_started:
+            self._begin_evaluation(None)
+        if status.state == INSTRUMENTS_READY:
+            self._publish_ready_if_complete()
+
     def on_fault(self) -> None:
         self._publish_transition(
             SystemHealthState.FAILED,
@@ -123,6 +159,10 @@ class SystemControlActor(DataActor):
             SystemHealthState.STARTING,
             reason="evaluating runtime prerequisites",
             evidence=self._instrument_evidence(),
+        )
+        self.publish_signal(
+            ACQUISITION_STATUS_REQUEST_SIGNAL,
+            AcquisitionStatusRequest(requester=str(self.actor_id)).to_signal_value(),
         )
         self._publish_ready_if_complete()
 

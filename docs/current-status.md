@@ -99,6 +99,23 @@ Implementation is approved and committed on branch `v2-stage-7-provider-data-bou
 
 Stage 7 is committed and offline-verified.
 
+## Stage 8: Data Acquisition Ownership
+
+Stage 8A is implemented for review on branch `v2-stage-8-acquisition-ownership`:
+
+- `DataAcquisitionActor` is a mandatory core actor and the sole owner of provider-facing
+  instrument-definition requests.
+- It discovers definitions already present in the Nautilus cache and requests each missing
+  configured definition once.
+- A versioned acquisition status reports expected, available, and missing definitions.
+- `SystemControlActor` consumes acquisition status and remains the sole owner of global readiness.
+- A publish-on-start and post-start request handshake avoids depending on actor registration order.
+- This slice adds no live subscriptions, historical bars, persistence, pacing policy, recovery,
+  analytics, or trading behavior.
+
+Stage 8A passes offline contract, ownership, deduplication, composition, state-transition, and
+Nautilus bus-delivery tests. Live review remains pending.
+
 ## Explicit Boundaries
 
 - PostgreSQL does not contain market data, Discord deliveries, configuration, logs, or IB
@@ -113,10 +130,11 @@ Stage 7 is committed and offline-verified.
 
 ## Next Accepted Sequence
 
-Stage 8 now defines live and historical data-acquisition ownership. Stages 1 through 9 form the
-functional live runtime core; Stages 10 and 11 harden observability, tests, and upgrades. Market
-intelligence begins afterward with separately approved analytical entities, semantic events,
-rolling state, options context, ML, and an advisory AI observer.
+Stage 8A now owns instrument-definition acquisition. Remaining Stage 8 decisions still define
+live and historical acquisition behavior; none are implied by this slice. Stages 1 through 9 form
+the functional live runtime core; Stages 10 and 11 harden observability, tests, and upgrades.
+Market intelligence begins afterward with separately approved analytical entities, semantic
+events, rolling state, options context, ML, and an advisory AI observer.
 
 The complete gated sequence is maintained in
 [`roadmap/v2-infrastructure-plan.md`](roadmap/v2-infrastructure-plan.md).

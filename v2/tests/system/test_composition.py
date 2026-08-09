@@ -32,6 +32,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
 
     assert [registration.key for registration in plan] == [
         "system_control",
+        "data_acquisition",
         "discord_health",
         "operational_persistence",
     ]
@@ -46,6 +47,7 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
 
     assert [registration.key for registration in plan] == [
         "system_control",
+        "data_acquisition",
         "operational_persistence",
     ]
 

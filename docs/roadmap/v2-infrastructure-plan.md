@@ -205,9 +205,21 @@ This stage concerns data transport and identity only. It does not define analyti
       fidelity.
 - [x] Test identity and source configuration while preserving native timestamps by avoiding a
       transformation layer.
-- [ ] Review and commit.
+- [x] Review and commit.
 
 ## Stage 8: Data Acquisition Ownership
+
+### Stage 8A: Instrument Definition Ownership
+
+- [x] Make `DataAcquisitionActor` a mandatory core actor.
+- [x] Transfer provider-facing instrument-definition requests out of `SystemControlActor`.
+- [x] Define a versioned acquisition status and status-request contract.
+- [x] Track expected, available, and missing definitions without duplicate requests.
+- [x] Make status exchange safe across actor startup order through publish-on-start and a
+      post-start status request.
+- [x] Keep system health owned exclusively by `SystemControlActor`.
+- [x] Add no bars, historical requests, durable market-data storage, pacing policy, or analytics.
+- [ ] Review and commit Stage 8A.
 
 ### Decision Gate 8
 

@@ -10,8 +10,145 @@ SYSTEM_HEALTH_SIGNAL = "markeitech.system.health"
 SYSTEM_HEALTH_SCHEMA_VERSION = 1
 COMPONENT_FAILURE_SIGNAL = "markeitech.component.failure"
 COMPONENT_FAILURE_SCHEMA_VERSION = 1
+ACQUISITION_STATUS_SIGNAL = "markeitech.acquisition.status"
+ACQUISITION_STATUS_REQUEST_SIGNAL = "markeitech.acquisition.status.request"
+ACQUISITION_STATUS_SCHEMA_VERSION = 1
+ACQUISITION_STATUS_REQUEST_SCHEMA_VERSION = 1
+
+INSTRUMENTS_RESOLVING = "INSTRUMENTS_RESOLVING"
+INSTRUMENTS_READY = "INSTRUMENTS_READY"
+_ACQUISITION_STATES = {INSTRUMENTS_RESOLVING, INSTRUMENTS_READY}
 
 type EvidenceValue = str | int | float | bool | None
+
+
+@dataclass(frozen=True, slots=True)
+class AcquisitionStatusRequest:
+    requester: str
+    schema_version: int = ACQUISITION_STATUS_REQUEST_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.schema_version, int)
+            or isinstance(self.schema_version, bool)
+            or self.schema_version != ACQUISITION_STATUS_REQUEST_SCHEMA_VERSION
+        ):
+            raise ValueError(
+                f"unsupported acquisition status request schema: {self.schema_version}",
+            )
+        if not isinstance(self.requester, str) or not self.requester.strip():
+            raise ValueError("requester must be a non-empty string")
+        object.__setattr__(self, "requester", self.requester.strip())
+
+    def to_signal_value(self) -> str:
+        return json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "requester": self.requester,
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> AcquisitionStatusRequest:
+        payload = _load_exact_json_object(
+            value,
+            label="acquisition status request",
+            expected={"schema_version", "requester"},
+        )
+        return cls(
+            schema_version=payload["schema_version"],
+            requester=payload["requester"],
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class AcquisitionStatusEvent:
+    state: str
+    reason: str
+    source: str
+    expected_instrument_ids: tuple[str, ...]
+    available_instrument_ids: tuple[str, ...]
+    schema_version: int = ACQUISITION_STATUS_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.schema_version, int)
+            or isinstance(self.schema_version, bool)
+            or self.schema_version != ACQUISITION_STATUS_SCHEMA_VERSION
+        ):
+            raise ValueError(f"unsupported acquisition status schema: {self.schema_version}")
+        for field_name in ("state", "reason", "source"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{field_name} must be a non-empty string")
+        state = self.state.strip()
+        if state not in _ACQUISITION_STATES:
+            raise ValueError(f"unsupported acquisition state: {state!r}")
+        expected = _normalize_instrument_ids(
+            self.expected_instrument_ids,
+            "expected_instrument_ids",
+            require_values=True,
+        )
+        available = _normalize_instrument_ids(
+            self.available_instrument_ids,
+            "available_instrument_ids",
+            require_values=False,
+        )
+        if not set(available).issubset(expected):
+            raise ValueError("available instruments must be a subset of expected instruments")
+        complete = available == expected
+        if state == INSTRUMENTS_READY and not complete:
+            raise ValueError("INSTRUMENTS_READY requires every expected instrument")
+        if state == INSTRUMENTS_RESOLVING and complete:
+            raise ValueError("INSTRUMENTS_RESOLVING requires at least one missing instrument")
+        object.__setattr__(self, "state", state)
+        object.__setattr__(self, "reason", self.reason.strip())
+        object.__setattr__(self, "source", self.source.strip())
+        object.__setattr__(self, "expected_instrument_ids", expected)
+        object.__setattr__(self, "available_instrument_ids", available)
+
+    @property
+    def missing_instrument_ids(self) -> tuple[str, ...]:
+        return tuple(sorted(set(self.expected_instrument_ids) - set(self.available_instrument_ids)))
+
+    def to_signal_value(self) -> str:
+        return json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "state": self.state,
+                "reason": self.reason,
+                "source": self.source,
+                "expected_instrument_ids": self.expected_instrument_ids,
+                "available_instrument_ids": self.available_instrument_ids,
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> AcquisitionStatusEvent:
+        payload = _load_exact_json_object(
+            value,
+            label="acquisition status",
+            expected={
+                "schema_version",
+                "state",
+                "reason",
+                "source",
+                "expected_instrument_ids",
+                "available_instrument_ids",
+            },
+        )
+        return cls(
+            schema_version=payload["schema_version"],
+            state=payload["state"],
+            reason=payload["reason"],
+            source=payload["source"],
+            expected_instrument_ids=payload["expected_instrument_ids"],
+            available_instrument_ids=payload["available_instrument_ids"],
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,6 +271,26 @@ def _validate_evidence(evidence: Mapping[str, EvidenceValue]) -> None:
             raise ValueError(f"unsupported evidence value for {key!r}")
         if isinstance(value, float) and not isfinite(value):
             raise ValueError(f"non-finite evidence value for {key!r}")
+
+
+def _normalize_instrument_ids(
+    values: object,
+    label: str,
+    *,
+    require_values: bool,
+) -> tuple[str, ...]:
+    if not isinstance(values, (list, tuple)):
+        raise ValueError(f"{label} must be a list or tuple")
+    normalized: list[str] = []
+    for value in values:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{label} must contain non-empty strings")
+        normalized.append(value.strip())
+    if require_values and not normalized:
+        raise ValueError(f"{label} must not be empty")
+    if len(normalized) != len(set(normalized)):
+        raise ValueError(f"{label} must not contain duplicates")
+    return tuple(sorted(normalized))
 
 
 def _load_exact_json_object(

@@ -45,6 +45,18 @@ def build_actor_plan(
                 },
             ),
         ),
+        ActorRegistration(
+            key="data_acquisition",
+            actor_id="DATA-ACQUISITION",
+            config=ImportableActorConfig(
+                actor_path="markeitech.system.acquisition:DataAcquisitionActor",
+                config_path="markeitech.system.acquisition:DataAcquisitionActorConfig",
+                config={
+                    "actor_id": "DATA-ACQUISITION",
+                    "instrument_ids": instrument_ids,
+                },
+            ),
+        ),
     ]
     if config.discord.enabled:
         registrations.append(
