@@ -131,8 +131,8 @@ become a runtime dependency.
 - [x] Compare suitable market-data storage formats only when market-data requirements exist.
 - [x] Decide ownership, schema migration, retention, and backup responsibilities.
 - [x] Do not choose SQLite, PostgreSQL, Parquet, Redis, or Docker by default.
-- [x] Obtain Markeitect approval: PostgreSQL for operational records; Parquet remains reserved for
-      future market-data requirements.
+- [x] Obtain Markeitect approval: PostgreSQL for operational records; no raw market-data store is
+      selected.
 
 ### Implementation
 
@@ -201,7 +201,8 @@ This stage concerns data transport and identity only. It does not define analyti
 ### Implementation
 
 - [x] Implement the smallest approved provider boundary.
-- [x] Preserve source data without inventing unavailable fidelity.
+- [x] Pass native source data through unchanged without durable market-data storage or invented
+      fidelity.
 - [x] Test identity and source configuration while preserving native timestamps by avoiding a
       transformation layer.
 - [ ] Review and commit.
@@ -214,7 +215,17 @@ This stage concerns data transport and identity only. It does not define analyti
 - [ ] Define historical-request ownership.
 - [ ] Review IB pacing, retry, cancellation, and deduplication requirements.
 - [ ] Decide whether active and background instruments require different transport behavior.
+- [ ] Define the minimum historical warmup required for current live operation.
+- [ ] Confirm that reconstructable market data remains transient and is fetched again after
+      restart.
 - [ ] Obtain Markeitect approval.
+
+### Explicit Non-Goals
+
+- [x] No raw tick, quote, bar, book, or options-chain persistence.
+- [x] No Parquet catalog or market-data tables.
+- [x] No replay or backtesting requirements.
+- [x] No retention added for hypothetical future consumers.
 
 ### Implementation
 
@@ -278,7 +289,8 @@ This stage concerns data transport and identity only. It does not define analyti
 - [ ] Actors exchange approved messages through Nautilus facilities.
 - [ ] Readiness and failure states have precise meanings and evidence.
 - [ ] Required state survives restart through an approved persistence design.
-- [ ] Provider data retains identity, timing, source, and fidelity.
+- [ ] Provider data retains identity, timing, source, and fidelity while flowing through the live
+      runtime.
 - [ ] Acquisition is paced, deduplicated, observable, and recoverable.
 - [ ] Shutdown is clean and no required work is silently lost.
 - [ ] Discord health reporting is useful but never required for runtime operation.

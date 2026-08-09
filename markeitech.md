@@ -13,23 +13,22 @@ work.
 
 ## Current Product Direction
 
-- NQ is the first active market, with ES, indices, and equities central to the
-  intended watchlist workflow.
-- Options are the primary trade expression even while NQ and related markets
-  remain the first analytical focus. Options-chain ingestion and analysis are a
-  planned capability, not part of the current live runtime.
-- One runtime-switchable active instrument receives tick-by-tick data and
-  real-time analysis.
-- Every enabled instrument is warmed from historical data across configured
-  timeframes before live evaluation.
-- Background instruments are analytically important, not second-class. They
-  receive live 1-minute bars and may contribute context and signals.
-- Console output is the first operator surface. Discord webhooks are the next
-  delivery surface. A full UI is a later concern.
+- ES and SPY are the initial V2 instruments. Instrument roles, acquisition
+  cadence, and later watchlist behavior remain Stage 8 decisions.
+- Options are the primary intended trade expression. The long-term product goal
+  is a deterministic semantic-event stream, multidimensional rolling market
+  state, options context, and an advisory AI observer that suggests and explains
+  0DTE opportunities.
+- Native provider observations, deterministic facts, semantic events, persistent
+  entities, rolling state, model outputs, AI interpretations, and execution
+  authority remain separate boundaries.
+- Discord provides the first concise human projection. A full UI remains a later
+  concern.
 - Crypto product work is out of current scope. Provider-neutral support for
   continuous-session instruments may remain where it costs no product focus.
-- Live operation is the current priority. Deterministic replay and backtesting
-  remain required before systematic or automated execution is considered.
+- Live operation is the only current product path. Replay and backtesting are out
+  of scope until Markeitect explicitly reopens them and must not drive current
+  storage, contracts, or infrastructure.
 
 Keep analytical instruments distinct from trade-expression instruments. A
 signal derived from NQ, ES, SPX, volatility, or equity context may later inform
@@ -55,16 +54,17 @@ Maintain these invariants:
 - UTC timestamps internally and explicit IANA timezones for session logic
 - bounded queues and no blocking I/O in live data callbacks
 - provider-specific payloads contained within adapters
-- durable state written before dependent lifecycle progress is published
+- required durable state written before dependent lifecycle progress is published
 - deterministic, versioned analytics, evidence, signal definitions, and ML data
 - restart recovery that verifies persisted state before resuming evaluation
 - active and background instruments evaluated through the same analytical path
 - analytics independent of console, Discord, WebSocket, and UI transports
 - strategy or presentation failure must not stop ingestion
 
-Redis is optional coordination infrastructure, not a durability boundary or a
-current-stage requirement. SQLite owns transactional control-plane state and
-the Nautilus Parquet catalog owns bulk time-series data.
+PostgreSQL currently owns only operational run and system-health records. Redis,
+SQLite, Parquet, and raw market-data retention are not selected V2 infrastructure.
+Market data that IB can fetch again should not be stored without an approved live
+consumer and retention requirement.
 
 ## Evidence And Interpretation
 
@@ -72,18 +72,15 @@ Authoritative source data, derived evidence, and inferred evidence must remain
 distinguishable. Never represent inferred order flow as exchange-provided truth
 or fabricate historical delta from histogram data.
 
-The first formal decision model is Direction-Location-Aggression (DLA).
-Direction and Location use deterministic, persisted market-context evidence.
-Aggression will add bounded near-real-time confirmation. Signal lifecycle is:
+V2 analytics begin from a blank page after the runtime foundation is accepted.
+The intended intelligence path is deterministic measurement, typed analytical
+entities, semantic observations and interpretations, multidimensional rolling
+state, options context, narrow ML scores, and an advisory AI observer.
 
-`Candidate -> Armed -> Triggered`
-
-`Invalidated` and `Expired` are terminal states. A signal is decision support,
-not an order instruction.
-
-ML may later rank versioned deterministic evidence. AI may explain persisted
-evidence. Neither may become an unversioned source of market truth, control IB,
-or bypass explicit risk controls.
+ML may later rank versioned deterministic evidence. AI may synthesize evidence,
+surface contradictions, and suggest an options expression with triggers and
+invalidation. Neither may become an unversioned source of market truth, control
+IB, or bypass explicit risk controls.
 
 ## Quality And Validation
 

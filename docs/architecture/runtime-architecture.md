@@ -1,5 +1,9 @@
 # Runtime Architecture
 
+> **Legacy V1 architecture:** This document describes the preserved V1 runtime. It does not govern
+> Markeitech V2. Use `current-status.md`, accepted `v2-*` architecture documents, and the V2
+> infrastructure plan for active design.
+
 ## System Boundary
 
 NautilusTrader should be the primary system boundary for trading-domain runtime concerns:

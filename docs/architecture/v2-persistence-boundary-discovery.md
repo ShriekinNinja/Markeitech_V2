@@ -8,14 +8,14 @@ This document recommends a boundary. It does not approve or implement a database
 ## Executive Finding
 
 V2 currently has one small durable-information requirement: preserve an honest history of runtime
-runs and system-health transitions. It does not yet have an approved market-data retention
-requirement.
+runs and system-health transitions. Raw market-data retention is not approved. Replay and
+backtesting are outside current planning and must not justify speculative storage.
 
 The storage decision should therefore stay split:
 
 1. use a relational operational store for low-volume runtime history; and
-2. revisit Nautilus catalog and streaming facilities only after market-data acquisition contracts
-   and query requirements exist.
+2. fetch reconstructable market data from IB when the live runtime needs it, and revisit durable
+   market-data storage only after Markeitect approves a non-reconstructable live requirement.
 
 Markeitect selected **PostgreSQL from the start**, behind one narrow persistence boundary. This
 accepts the local service cost in exchange for a durable server-backed foundation that will not
@@ -70,11 +70,11 @@ bounded retention, not historical replay or a relational source of truth.
 
 `ParquetDataCatalog` supports native market data, custom data, queries, consolidation, and
 deduplication. `StreamingFeatherWriter` supports high-volume stream persistence and rotation.
-These are strong candidates for future immutable market-data and analytical datasets.
+These facilities remain technically available, but they are not selected V2 storage.
 
 They are a poor fit for transactional run closure, operational uniqueness constraints, schema
-migrations, and simple queries such as "show the latest incomplete run." No Parquet layout is
-chosen before Stage 7 and Stage 8 establish source, identity, volume, and read patterns.
+migrations, and simple queries such as "show the latest incomplete run." No Parquet layout or raw
+market-data retention policy will be designed without a separately approved live requirement.
 
 ## Technology Comparison
 
@@ -85,7 +85,7 @@ chosen before Stage 7 and Stage 8 establish source, identity, volume, and read p
 | Redis/message streams | Unavailable and premature | External fan-out, retention, stream consumers | Python builder cannot attach the backing in this RC; not a relational source of truth | Defer |
 | SQLite | Smallest current fit | Transactional, local, zero service burden, queryable | Requires replacement when separately deployed consumers arrive | Rejected by decision |
 | PostgreSQL in Docker | Accepted | Concurrent clients, remote services, mature transactions and queries | Local container, credentials, migrations, backup, and availability become owned infrastructure | Use for operational records |
-| Parquet/Feather | Best future market-data candidate | Efficient immutable columnar data and Nautilus-native facilities | Poor operational lifecycle semantics; requirements do not yet exist | Reserve for market data |
+| Parquet/Feather | Unselected | Efficient immutable columnar data and Nautilus-native facilities | No approved live retention consumer; replay/backtesting are out of scope | Do not introduce |
 
 ## Recommended Ownership
 

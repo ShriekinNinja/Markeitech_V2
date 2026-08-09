@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-05
+Last reviewed: 2026-08-09
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -82,24 +82,41 @@ Implementation is approved and live-accepted on branch `v2-stage-6-supervision-p
 - Recovery from `DEGRADED` to `READY` remains deliberately deferred until durable recovery
   evidence is defined.
 
-Stage 6 is approved for commit.
+Stage 6 is committed and live-accepted.
+
+## Stage 7: Provider And Canonical Data Boundary
+
+Implementation is approved and committed on branch `v2-stage-7-provider-data-boundary`:
+
+- Native Nautilus instruments and market-data objects remain the runtime transport contracts.
+- IB symbology, MIC conversion, quote batching, size-only quote updates, and revised-bar behavior
+  are explicit V2 configuration.
+- Provider context and request policy remain separate from high-volume native observations.
+- Native instrument identity, source fidelity, and timestamps are not rewritten.
+- Markeitech-owned market-data contracts remain possible later when a concrete requirement cannot
+  be represented safely by native types and acquisition context.
+- Preservation means honest live transit, not durable raw market-data retention.
+
+Stage 7 is committed and offline-verified.
 
 ## Explicit Boundaries
 
 - PostgreSQL does not contain market data, Discord deliveries, configuration, logs, or IB
   instrument definitions.
-- Nautilus Parquet facilities are reserved for future market-data requirements; no layout has been
-  chosen.
+- Reconstructable market data will be requested from IB when required by live operation rather
+  than retained speculatively.
+- Raw market-data persistence, Parquet, replay, and backtesting are outside current scope until
+  Markeitect explicitly reopens them.
 - Redis, external message streams, actor snapshots, dynamic actor
   composition, analytics, and trading models remain unimplemented.
 - V1 remains preserved for reference and reuse, but no V1 runtime behavior is implicitly active.
 
 ## Next Accepted Sequence
 
-After Stage 6 review and commit:
-
-1. Stage 7 defines provider and canonical data boundaries without analytics.
-2. Stage 8 defines live and historical data-acquisition ownership.
+Stage 8 now defines live and historical data-acquisition ownership. Stages 1 through 9 form the
+functional live runtime core; Stages 10 and 11 harden observability, tests, and upgrades. Market
+intelligence begins afterward with separately approved analytical entities, semantic events,
+rolling state, options context, ML, and an advisory AI observer.
 
 The complete gated sequence is maintained in
 [`roadmap/v2-infrastructure-plan.md`](roadmap/v2-infrastructure-plan.md).

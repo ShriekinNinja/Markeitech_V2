@@ -138,6 +138,10 @@ misleading.
 
 Unknown is valid information. V2 must not improve a field's apparent quality through naming.
 
+Preservation in this document means preserving meaning while native data moves through the live
+runtime. It does not mean durable retention. V2 currently stores no raw market data, and Stage 8
+must not add raw storage for replay, backtesting, or unspecified future use.
+
 ## Acquisition Context Boundary
 
 The Stage 8 acquisition owner should maintain context beside native data rather than inside a new
