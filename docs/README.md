@@ -42,6 +42,7 @@ accidental disagreement.
 - [V2 persistence boundary discovery](architecture/v2-persistence-boundary-discovery.md)
 - [V2 actor composition discovery](architecture/v2-actor-composition-discovery.md)
 - [V2 provider and canonical data boundary](architecture/v2-provider-data-boundary-discovery.md)
+- [V2 adaptive market-data plane](architecture/v2-adaptive-market-data-plane.md)
 
 Preserved V1 architecture remains available in
 [runtime architecture](architecture/runtime-architecture.md),

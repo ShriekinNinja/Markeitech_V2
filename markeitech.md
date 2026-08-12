@@ -13,9 +13,10 @@ work.
 
 ## Current Product Direction
 
-- ES and SPY are the initial V2 instruments. Instrument roles, acquisition
-  cadence, and later watchlist behavior remain Stage 8 decisions.
-- Options are the primary intended trade expression. The long-term product goal
+- ES and SPY are the initial V2 bootstrap instruments, not a permanent universe.
+  The observation universe, acquisition cadence, enabled analysis capabilities,
+  and temporary market focus may change while the system runs.
+- SPY and QQQ 0DTE options are the initial intended trade expressions. The long-term product goal
   is a deterministic semantic-event stream, multidimensional rolling market
   state, options context, and an advisory AI observer that suggests and explains
   0DTE opportunities.
@@ -57,7 +58,8 @@ Maintain these invariants:
 - required durable state written before dependent lifecycle progress is published
 - deterministic, versioned analytics, evidence, signal definitions, and ML data
 - restart recovery that verifies persisted state before resuming evaluation
-- active and background instruments evaluated through the same analytical path
+- provider-facing demand reconciled independently from analytical consumers
+- no fixed one-active-instrument limit on granular observation
 - analytics independent of console, Discord, WebSocket, and UI transports
 - strategy or presentation failure must not stop ingestion
 
@@ -78,9 +80,11 @@ entities, semantic observations and interpretations, multidimensional rolling
 state, options context, narrow ML scores, and an advisory AI observer.
 
 ML may later rank versioned deterministic evidence. AI may synthesize evidence,
-surface contradictions, and suggest an options expression with triggers and
-invalidation. Neither may become an unversioned source of market truth, control
-IB, or bypass explicit risk controls.
+surface contradictions, suggest an options expression with triggers and
+invalidation, and request policy-approved changes to observation focus,
+historical evidence, option snapshots, or analytical capabilities. It acts
+through typed intents and deterministic policy; it may not connect to IB,
+submit orders, invent evidence, or bypass explicit resource and risk controls.
 
 ## Quality And Validation
 

@@ -219,18 +219,56 @@ This stage concerns data transport and identity only. It does not define analyti
       post-start status request.
 - [x] Keep system health owned exclusively by `SystemControlActor`.
 - [x] Add no bars, historical requests, durable market-data storage, pacing policy, or analytics.
-- [ ] Review and commit Stage 8A.
+- [x] Review and commit Stage 8A.
 
 ### Decision Gate 8
 
 - [ ] Define live subscription ownership.
 - [ ] Define historical-request ownership.
 - [ ] Review IB pacing, retry, cancellation, and deduplication requirements.
-- [ ] Decide whether active and background instruments require different transport behavior.
-- [ ] Define the minimum historical warmup required for current live operation.
+- [ ] Define how feed demand, analytical capability, and temporary focus affect transport
+      behavior without imposing a fixed active/background hierarchy.
+- [ ] Define how approved capabilities declare and derive their own minimum historical evidence.
 - [ ] Confirm that reconstructable market data remains transient and is fetched again after
       restart.
 - [ ] Obtain Markeitect approval.
+
+Decision draft: [`v2-adaptive-market-data-plane.md`](../architecture/v2-adaptive-market-data-plane.md).
+
+### Stage 8B: Capability And Demand Model
+
+- [ ] Define trade universe, observation universe, active capabilities, and temporary focus as
+      independent concepts.
+- [ ] Define provider-neutral feed demand and capability requirement contracts.
+- [ ] Define policy-checked intent and observable acquisition lifecycle boundaries.
+- [ ] Verify installed Nautilus and IB behavior for multiple consumers, subscription
+      deduplication, and unsubscribe safety.
+- [ ] Define initial resource-budget dimensions without selecting arbitrary limits.
+- [x] Obtain Markeitect approval before implementation.
+
+### Stage 8C: Continuous Native-Stream Proof
+
+- [ ] Execute configurable native streams for multiple instruments through one logical demand
+      owner.
+- [ ] Prove first-observation state, deduplication, independent consumers, unsubscribe safety, and
+      bounded runtime state.
+- [ ] Use one minimal deterministic consumer as plumbing evidence, not as a trading model.
+
+### Stage 8D: Capability-Derived Historical Requests
+
+- [ ] Derive bounded historical requirements from approved capability declarations.
+- [ ] Prove pacing, ordering, completion, timeout, cancellation, and deduplication.
+
+### Stage 8E: Dynamic Control And Focus
+
+- [ ] Add policy-checked runtime intents for universe, capability, parameter, and focus changes.
+- [ ] Prove behavior with deterministic fixtures before an agent receives authority.
+
+### Stage 8F: Failure And Reconnect
+
+- [ ] Define stale observation, connection loss, partial availability, and resubscription.
+- [ ] Map truthful acquisition impairment into global health without duplicating Nautilus
+      reconnect ownership.
 
 ### Explicit Non-Goals
 
@@ -239,7 +277,7 @@ This stage concerns data transport and identity only. It does not define analyti
 - [x] No replay or backtesting requirements.
 - [x] No retention added for hypothetical future consumers.
 
-### Implementation
+### Remaining Stage 8 Implementation
 
 - [ ] Implement only approved acquisition coordination.
 - [ ] Prevent duplicate subscriptions and historical requests.

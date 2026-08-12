@@ -116,6 +116,12 @@ Stage 8A is implemented for review on branch `v2-stage-8-acquisition-ownership`:
 Stage 8A passes offline contract, ownership, deduplication, composition, state-transition, and
 Nautilus bus-delivery tests. Live review remains pending.
 
+Stage 8B's architecture direction is approved. It replaces V1's fixed active/background model
+with four independent concepts: trade universe, dynamic observation universe, active analytical
+capabilities, and temporary focus. The target is a broad continuous native market-data plane
+feeding deterministic analysis and semantic state, with a later advisory agent directing
+attention through policy-checked intents. No Stage 8B runtime behavior has been implemented.
+
 ## Explicit Boundaries
 
 - PostgreSQL does not contain market data, Discord deliveries, configuration, logs, or IB
