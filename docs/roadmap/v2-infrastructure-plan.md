@@ -239,12 +239,15 @@ Decision draft: [`v2-adaptive-market-data-plane.md`](../architecture/v2-adaptive
 
 - [ ] Define trade universe, observation universe, active capabilities, and temporary focus as
       independent concepts.
-- [ ] Define provider-neutral feed demand and capability requirement contracts.
+- [x] Define provider-neutral feed demand and capability requirement contracts.
 - [ ] Define policy-checked intent and observable acquisition lifecycle boundaries.
 - [ ] Verify installed Nautilus and IB behavior for multiple consumers, subscription
       deduplication, and unsubscribe safety.
 - [ ] Define initial resource-budget dimensions without selecting arbitrary limits.
 - [x] Obtain Markeitect approval before implementation.
+
+First contract batch is implemented for review. Focus leases, policy authorization, lifecycle
+events, resource budgets, and Nautilus/IB probes remain pending.
 
 ### Stage 8C: Continuous Native-Stream Proof
 

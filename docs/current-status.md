@@ -122,6 +122,11 @@ capabilities, and temporary focus. The target is a broad continuous native marke
 feeding deterministic analysis and semantic state, with a later advisory agent directing
 attention through policy-checked intents. No Stage 8B runtime behavior has been implemented.
 
+The first Stage 8B coding batch is ready for review: reusable analytical capability requirements,
+instrument-bound feed demand, explicit demand ownership, priority and optional expiry, acquisition
+lifecycle vocabulary, and pure multi-consumer provider-demand reconciliation. It has no actor,
+Nautilus subscription, historical request, timer, policy, or IB behavior.
+
 ## Explicit Boundaries
 
 - PostgreSQL does not contain market data, Discord deliveries, configuration, logs, or IB

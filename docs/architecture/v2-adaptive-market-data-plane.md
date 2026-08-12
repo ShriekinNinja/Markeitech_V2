@@ -1,7 +1,7 @@
 # V2 Adaptive Market-Data Plane
 
-**Status:** Stage 8B direction approved by Markeitect on 2026-08-12; contract implementation is
-pending.
+**Status:** Stage 8B direction approved by Markeitect on 2026-08-12. The first pure demand-contract
+batch is implemented for review; runtime integration remains pending.
 
 **Scope:** The intended live market-data and analysis control model. This document defines the
 destination and ownership boundaries before subscription code is added. It does not approve a
@@ -223,6 +223,19 @@ change attention at runtime.
 Define typed, provider-neutral concepts for observation demand, feed requirements, capability
 requirements, focus leases, resource budgets, and lifecycle facts. Verify installed Nautilus and
 IB subscription behavior before selecting the exact fan-out mechanism.
+
+The first contract batch now provides:
+
+- instrument-bound native feed requirements;
+- reusable, instrument-neutral capability feed and historical requirements;
+- bootstrap, operator, analyzer, and future-agent demand ownership;
+- bounded priority and optional UTC expiry;
+- pure reconciliation of multiple consumers into one logical provider demand;
+- safe removal and expiration while shared demand remains active; and
+- explicit acquisition lifecycle vocabulary without pretending runtime transitions exist yet.
+
+It does not yet provide focus leases, policy authorization, resource budgets, lifecycle events,
+actor wiring, provider calls, or historical execution.
 
 ### Stage 8C: Continuous native-stream proof
 
