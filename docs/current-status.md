@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-09
+Last reviewed: 2026-08-12
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -122,10 +122,22 @@ capabilities, and temporary focus. The target is a broad continuous native marke
 feeding deterministic analysis and semantic state, with a later advisory agent directing
 attention through policy-checked intents. No Stage 8B runtime behavior has been implemented.
 
-The first Stage 8B coding batch is ready for review: reusable analytical capability requirements,
-instrument-bound feed demand, explicit demand ownership, priority and optional expiry, acquisition
-lifecycle vocabulary, and pure multi-consumer provider-demand reconciliation. It has no actor,
-Nautilus subscription, historical request, timer, policy, or IB behavior.
+Stage 8B.1 is committed. Stage 8B.2 and 8B.3 are ready for review:
+
+- reusable analytical capability requirements and instrument-bound feed demand;
+- explicit demand ownership, priority, optional expiry, and lifecycle vocabulary;
+- pure multi-consumer provider-demand reconciliation;
+- one provider-neutral coordinator owning subscribe and unsubscribe lifetime;
+- one subscribe for shared demand and one unsubscribe only after the final consumer leaves;
+- retryable provider failures which are never reported as active;
+- native Nautilus translation for simple instrument, quote, trade, bar, status, and option-Greek
+  subscriptions; and
+- explicit deferral of richer book and option-chain subscription contracts.
+
+The installed compiled Nautilus core does not expose enough subscription reference-count state for
+an honest offline proof of duplicate-actor behavior. Stage 8C therefore retains the live proof of
+native callback distribution, first observation, IB behavior, and unsubscribe safety. No live IB
+run was performed for this batch.
 
 ## Explicit Boundaries
 

@@ -1,7 +1,8 @@
 # V2 Adaptive Market-Data Plane
 
-**Status:** Stage 8B direction approved by Markeitect on 2026-08-12. The first pure demand-contract
-batch is implemented for review; runtime integration remains pending.
+**Status:** Stage 8B direction approved by Markeitect on 2026-08-12. Demand contracts, logical
+subscription coordination, and native call translation are implemented for review. Actor wiring
+and live provider proof remain pending.
 
 **Scope:** The intended live market-data and analysis control model. This document defines the
 destination and ownership boundaries before subscription code is added. It does not approve a
@@ -119,10 +120,18 @@ Native Nautilus objects remain the high-volume transport contracts. They flow th
 DataEngine, cache, and actor handlers without Markeitech raw-data wrappers. Raw observations are
 not copied onto the semantic event stream and are not sent directly to an LLM.
 
-Analysis actors may subscribe to native data they consume. Provider demand, however, must remain
-coordinated through one logical acquisition owner. Stage 8 must verify the installed IB adapter's
-behavior for duplicate consumers rather than assume that all subscribe and unsubscribe operations
-are reference-counted identically.
+Provider subscriptions are owned by one logical acquisition coordinator. A consumer expresses
+demand to that owner and never independently cancels a provider feed. The coordinator collapses
+shared demand into one native subscribe call and performs one native unsubscribe only after the
+last consumer leaves.
+
+The installed NautilusTrader `2.0.0rc1` actor surface exposes paired native subscribe and
+unsubscribe methods for instruments, quotes, trades, bars, instrument status, option Greeks,
+books, and option chains. Its compiled Python boundary does not expose provider subscription
+reference counts or enough internal state to prove how duplicate actor subscriptions and
+independent unsubscriptions reach the IB adapter. Markeitech therefore does not rely on implicit
+provider deduplication. Stage 8C must still prove how independently implemented consumers receive
+the same native stream without wrapping raw observations.
 
 ## Analysis Plane
 
@@ -224,7 +233,7 @@ Define typed, provider-neutral concepts for observation demand, feed requirement
 requirements, focus leases, resource budgets, and lifecycle facts. Verify installed Nautilus and
 IB subscription behavior before selecting the exact fan-out mechanism.
 
-The first contract batch now provides:
+The implemented Stage 8B batches now provide:
 
 - instrument-bound native feed requirements;
 - reusable, instrument-neutral capability feed and historical requirements;
@@ -232,10 +241,17 @@ The first contract batch now provides:
 - bounded priority and optional UTC expiry;
 - pure reconciliation of multiple consumers into one logical provider demand;
 - safe removal and expiration while shared demand remains active; and
-- explicit acquisition lifecycle vocabulary without pretending runtime transitions exist yet.
+- explicit acquisition lifecycle vocabulary without pretending runtime transitions exist yet;
+- one logical coordinator which reconciles demand into provider subscription lifetimes;
+- exactly one subscribe for shared logical demand and one unsubscribe after its final consumer;
+- retryable, observable provider subscribe and unsubscribe failures;
+- native Nautilus translation for instruments, quotes, trades, bars, instrument status, and
+  per-contract option Greeks; and
+- explicit rejection of books and option chains until their richer native contracts are defined.
 
-It does not yet provide focus leases, policy authorization, resource budgets, lifecycle events,
-actor wiring, provider calls, or historical execution.
+It does not yet provide focus leases, policy authorization, resource budgets, actor message
+contracts, actor wiring, live provider evidence, first-observation evidence, or historical
+execution.
 
 ### Stage 8C: Continuous native-stream proof
 
@@ -264,10 +280,9 @@ health effects. Only then is adaptive acquisition complete enough for intelligen
 
 1. Whether the first demand contract represents raw feed requirements only or capabilities that
    expand into feed requirements. Recommendation: define both and keep them separate.
-2. Whether analysis consumers subscribe directly through Nautilus while acquisition reconciles
-   demand, or receive a custom fan-out from acquisition. Recommendation: prefer native Nautilus
-   subscriptions after proving IB deduplication and unsubscribe semantics; do not relay raw ticks
-   through string signals.
+2. How analysis consumers receive native callbacks while provider subscription lifetime remains
+   centralized. Stage 8C will test the native path first. Do not relay raw ticks through semantic
+   signals or introduce wrappers without evidence that the native path is insufficient.
 3. Which minimal bootstrap feeds make the future agent operational. This must be decided with the
    first actual intelligence consumer, not guessed from V1.
 4. The initial resource-budget dimensions: provider subscriptions, historical pacing, option-chain

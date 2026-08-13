@@ -1,3 +1,8 @@
+from markeitech.acquisition.coordinator import (
+    AcquisitionCoordinator,
+    AcquisitionLifecycleEvent,
+    SubscriptionPort,
+)
 from markeitech.acquisition.demand import (
     AcquisitionLifecycleState,
     CapabilityDeclaration,
@@ -12,8 +17,15 @@ from markeitech.acquisition.demand import (
     ObservationDemand,
     ProviderDemand,
 )
+from markeitech.acquisition.native import (
+    NativeSubscriptionActor,
+    NautilusSubscriptionPort,
+    UnsupportedNativeFeedError,
+)
 
 __all__ = [
+    "AcquisitionCoordinator",
+    "AcquisitionLifecycleEvent",
     "AcquisitionLifecycleState",
     "CapabilityDeclaration",
     "CapabilityFeedRequirement",
@@ -24,6 +36,10 @@ __all__ = [
     "DemandReconciler",
     "FeedKind",
     "FeedRequirement",
+    "NativeSubscriptionActor",
+    "NautilusSubscriptionPort",
     "ObservationDemand",
     "ProviderDemand",
+    "SubscriptionPort",
+    "UnsupportedNativeFeedError",
 ]

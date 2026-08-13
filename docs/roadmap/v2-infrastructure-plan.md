@@ -223,10 +223,10 @@ This stage concerns data transport and identity only. It does not define analyti
 
 ### Decision Gate 8
 
-- [ ] Define live subscription ownership.
+- [x] Define live subscription ownership.
 - [ ] Define historical-request ownership.
 - [ ] Review IB pacing, retry, cancellation, and deduplication requirements.
-- [ ] Define how feed demand, analytical capability, and temporary focus affect transport
+- [x] Define how feed demand and analytical capability affect transport
       behavior without imposing a fixed active/background hierarchy.
 - [ ] Define how approved capabilities declare and derive their own minimum historical evidence.
 - [ ] Confirm that reconstructable market data remains transient and is fetched again after
@@ -237,17 +237,19 @@ Decision draft: [`v2-adaptive-market-data-plane.md`](../architecture/v2-adaptive
 
 ### Stage 8B: Capability And Demand Model
 
-- [ ] Define trade universe, observation universe, active capabilities, and temporary focus as
+- [x] Define trade universe, observation universe, active capabilities, and temporary focus as
       independent concepts.
 - [x] Define provider-neutral feed demand and capability requirement contracts.
 - [ ] Define policy-checked intent and observable acquisition lifecycle boundaries.
-- [ ] Verify installed Nautilus and IB behavior for multiple consumers, subscription
-      deduplication, and unsubscribe safety.
+- [x] Characterize the installed Nautilus subscription surface and avoid relying on opaque
+      duplicate-subscription reference counting.
+- [ ] Prove native callback distribution and IB unsubscribe behavior in Stage 8C.
 - [ ] Define initial resource-budget dimensions without selecting arbitrary limits.
 - [x] Obtain Markeitect approval before implementation.
 
-First contract batch is implemented for review. Focus leases, policy authorization, lifecycle
-events, resource budgets, and Nautilus/IB probes remain pending.
+Demand contracts, the logical subscription coordinator, and native call translation are
+implemented for review. Focus leases, policy authorization, actor message contracts, resource
+budgets, and live Nautilus/IB proof remain pending.
 
 ### Stage 8C: Continuous Native-Stream Proof
 
@@ -282,9 +284,9 @@ events, resource budgets, and Nautilus/IB probes remain pending.
 
 ### Remaining Stage 8 Implementation
 
-- [ ] Implement only approved acquisition coordination.
-- [ ] Prevent duplicate subscriptions and historical requests.
-- [ ] Make request and subscription state observable.
+- [x] Implement approved live-subscription coordination as a provider-neutral core.
+- [x] Prevent duplicate live subscriptions and unsafe shared-demand cancellation.
+- [x] Make coordinator request and subscription state observable in typed results.
 - [ ] Verify connection loss and resubscription behavior.
 - [ ] Review and commit.
 
