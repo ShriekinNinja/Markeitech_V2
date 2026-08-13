@@ -30,8 +30,15 @@ class InteractiveBrokersConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class InstrumentConfig:
-    id: str
+class WatchlistMemberConfig:
+    instrument_id: str
+    owner_ids: tuple[str, ...]
+    capabilities: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class WatchlistConfig:
+    members: tuple[WatchlistMemberConfig, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,7 +87,11 @@ class SystemConfig:
     discord: DiscordConfig
     persistence: PersistenceConfig
     acquisition: AcquisitionConfig
-    instruments: tuple[InstrumentConfig, ...]
+    watchlist: WatchlistConfig
+
+    @property
+    def instrument_ids(self) -> tuple[str, ...]:
+        return tuple(member.instrument_id for member in self.watchlist.members)
 
 
 def load_system_config(path: str | Path) -> SystemConfig:
@@ -98,11 +109,11 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "discord",
             "persistence",
             "acquisition",
-            "instruments",
+            "watchlist",
         },
         "root",
     )
-    if raw["schema_version"] != 3:
+    if raw["schema_version"] != 4:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -110,8 +121,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
     persistence = _load_persistence(raw["persistence"])
-    instruments = _load_instruments(raw["instruments"])
-    acquisition = _load_acquisition(raw["acquisition"], instruments)
+    watchlist = _load_watchlist(raw["watchlist"])
+    acquisition = _load_acquisition(raw["acquisition"], watchlist)
     return SystemConfig(
         schema_version=raw["schema_version"],
         runtime=runtime,
@@ -120,7 +131,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         discord=discord,
         persistence=persistence,
         acquisition=acquisition,
-        instruments=instruments,
+        watchlist=watchlist,
     )
 
 
@@ -265,25 +276,49 @@ def _load_persistence(raw: Any) -> PersistenceConfig:
     )
 
 
-def _load_instruments(raw: Any) -> tuple[InstrumentConfig, ...]:
-    if not isinstance(raw, list) or not raw:
-        raise ValueError("instruments must be a non-empty array")
-    instruments: list[InstrumentConfig] = []
-    seen: set[str] = set()
-    for index, item in enumerate(raw):
-        values = _mapping(item, f"instruments[{index}]")
-        _require_keys(values, {"id"}, f"instruments[{index}]")
-        instrument_id = _non_empty_string(values["id"], f"instruments[{index}].id")
-        if instrument_id in seen:
-            raise ValueError(f"duplicate instrument id: {instrument_id}")
-        seen.add(instrument_id)
-        instruments.append(InstrumentConfig(id=instrument_id))
-    return tuple(instruments)
+def _load_watchlist(raw: Any) -> WatchlistConfig:
+    values = _mapping(raw, "watchlist")
+    _require_keys(values, {"members"}, "watchlist")
+    members_raw = values["members"]
+    if not isinstance(members_raw, list) or not members_raw:
+        raise ValueError("watchlist.members must be a non-empty array")
+    members: list[WatchlistMemberConfig] = []
+    seen_instruments: set[str] = set()
+    for index, item in enumerate(members_raw):
+        label = f"watchlist.members[{index}]"
+        member = _mapping(item, label)
+        _require_keys(member, {"instrument_id", "owner_ids", "capabilities"}, label)
+        instrument_id = _non_empty_string(
+            member["instrument_id"],
+            f"{label}.instrument_id",
+        )
+        if instrument_id in seen_instruments:
+            raise ValueError(f"duplicate watchlist instrument id: {instrument_id}")
+        seen_instruments.add(instrument_id)
+        owner_ids = _unique_non_empty_strings(member["owner_ids"], f"{label}.owner_ids")
+        capabilities = _unique_non_empty_strings(
+            member["capabilities"],
+            f"{label}.capabilities",
+        )
+        required_capabilities = {"top_of_book", "watchlist_last"}
+        if set(capabilities) != required_capabilities:
+            raise ValueError(
+                f"{label}.capabilities must contain exactly: "
+                f"{', '.join(sorted(required_capabilities))}",
+            )
+        members.append(
+            WatchlistMemberConfig(
+                instrument_id=instrument_id,
+                owner_ids=tuple(sorted(owner_ids)),
+                capabilities=tuple(sorted(capabilities)),
+            ),
+        )
+    return WatchlistConfig(members=tuple(members))
 
 
 def _load_acquisition(
     raw: Any,
-    instruments: tuple[InstrumentConfig, ...],
+    watchlist: WatchlistConfig,
 ) -> AcquisitionConfig:
     values = _mapping(raw, "acquisition")
     _require_keys(
@@ -298,7 +333,7 @@ def _load_acquisition(
     feeds_raw = values["bootstrap_feeds"]
     if not isinstance(feeds_raw, list) or not feeds_raw:
         raise ValueError("acquisition.bootstrap_feeds must be a non-empty array")
-    instrument_ids = {instrument.id for instrument in instruments}
+    instrument_ids = {member.instrument_id for member in watchlist.members}
     feeds: list[BootstrapFeedConfig] = []
     keys: set[tuple[str, str, str]] = set()
     for index, item in enumerate(feeds_raw):
@@ -358,6 +393,15 @@ def _non_empty_string(value: Any, label: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{label} must be a non-empty string")
     return value.strip()
+
+
+def _unique_non_empty_strings(value: Any, label: str) -> tuple[str, ...]:
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"{label} must be a non-empty array")
+    items = tuple(_non_empty_string(item, f"{label}[]") for item in value)
+    if len(set(items)) != len(items):
+        raise ValueError(f"{label} must contain unique values")
+    return items
 
 
 def _positive_int(value: Any, label: str) -> int:

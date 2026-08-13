@@ -38,7 +38,7 @@ _ENVIRONMENTS = {
 
 
 def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataClientConfig:
-    instrument_ids = [InstrumentId.from_str(item.id) for item in config.instruments]
+    instrument_ids = [InstrumentId.from_str(value) for value in config.instrument_ids]
     provider_config = InteractiveBrokersInstrumentProviderConfig(
         symbology_method=_SYMBOLOGY_METHODS[config.ib.symbology_method],
         load_ids=set(instrument_ids),

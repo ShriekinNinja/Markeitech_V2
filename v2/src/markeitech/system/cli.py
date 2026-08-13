@@ -58,7 +58,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             "SYSTEM_BUILT"
             f" | runtime={config.runtime.name}"
-            f" | instruments={len(config.instruments)}"
+            f" | instruments={len(config.instrument_ids)}"
             " | connected=false",
         )
         return 0

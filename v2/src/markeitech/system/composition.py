@@ -30,7 +30,7 @@ def build_actor_plan(
     if not prerequisites.operational_persistence_ready:
         raise ValueError("operational persistence must pass preflight before actor composition")
 
-    instrument_ids = [item.id for item in config.instruments]
+    instrument_ids = list(config.instrument_ids)
     registrations = [
         ActorRegistration(
             key="system_control",
@@ -73,7 +73,14 @@ def build_actor_plan(
                 config_path="markeitech.system.watchlist:WatchlistActorConfig",
                 config={
                     "actor_id": "WATCHLIST",
-                    "instrument_ids": instrument_ids,
+                    "members": [
+                        {
+                            "instrument_id": member.instrument_id,
+                            "owner_ids": list(member.owner_ids),
+                            "capabilities": list(member.capabilities),
+                        }
+                        for member in config.watchlist.members
+                    ],
                 },
             ),
         ),

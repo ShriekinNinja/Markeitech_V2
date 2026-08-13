@@ -13,9 +13,10 @@
 - Watchlist runtime state is bounded, immutable when exposed, timestamped, and protected from
   out-of-order replacement.
 - Consumer registration and observation completeness are separate facts.
-- Versioned membership and lifecycle message contracts exist but are not published or persisted
-  by the actor yet.
-- PostgreSQL currently stores runtime runs and system-health transitions only.
+- Versioned membership and lifecycle contracts are published and persisted with complete startup
+  and shutdown history.
+- PostgreSQL stores runtime runs, system-health transitions, and the approved operational event
+  families without raw market payloads.
 
 ## Approved Static Baseline
 
@@ -51,7 +52,8 @@ tables. Read-optimized projections may be added only for concrete query needs.
 3. [Implemented for live review] Gate system control, acquisition, and watchlist startup through a
    versioned persistence request/ready handshake. This closes the missing startup lifecycle without
    an arbitrary timer and preserves `REQUESTED`, `ACCEPTED`, and `SUBSCRIBED` before `ACTIVE`.
-4. Add dedicated static watchlist configuration with permanent configuration ownership.
+4. [Implemented for review] Add dedicated static watchlist configuration with permanent
+   configuration ownership.
 5. Define explicit Watchlist-to-Acquisition demand and outcome messaging.
 6. Remove duplicated bootstrap feed declarations and let Watchlist seed baseline demand.
 7. Approve and implement freshness/degradation policy without arbitrary thresholds.

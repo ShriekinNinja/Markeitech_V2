@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 3
+schema_version = 4
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -53,8 +53,10 @@ bootstrap_feeds = [
   { instrument_id = "ESU6.CME", kind = "trades", selector = "default" },
 ]
 
-[[instruments]]
-id = "ESU6.CME"
+[[watchlist.members]]
+instrument_id = "ESU6.CME"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
 """
 
 
@@ -89,7 +91,9 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     ]
     assert config.acquisition.native_consumer_probe_enabled is True
     assert config.acquisition.native_consumer_probe_unsubscribe_after_seconds == 15
-    assert [instrument.id for instrument in config.instruments] == ["ESU6.CME"]
+    assert config.instrument_ids == ("ESU6.CME",)
+    assert config.watchlist.members[0].owner_ids == ("config:system",)
+    assert config.watchlist.members[0].capabilities == ("top_of_book", "watchlist_last")
 
 
 def test_rejects_unknown_configuration(tmp_path: Path) -> None:
@@ -100,11 +104,16 @@ def test_rejects_unknown_configuration(tmp_path: Path) -> None:
         load_system_config(path)
 
 
-def test_rejects_duplicate_instruments(tmp_path: Path) -> None:
+def test_rejects_duplicate_watchlist_instruments(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG + '\n[[instruments]]\nid = "ESU6.CME"\n')
+    path.write_text(
+        VALID_CONFIG
+        + '\n[[watchlist.members]]\ninstrument_id = "ESU6.CME"\n'
+        + 'owner_ids = ["config:system"]\n'
+        + 'capabilities = ["top_of_book", "watchlist_last"]\n',
+    )
 
-    with pytest.raises(ValueError, match="duplicate instrument id: ESU6.CME"):
+    with pytest.raises(ValueError, match="duplicate watchlist instrument id: ESU6.CME"):
         load_system_config(path)
 
 
@@ -133,10 +142,10 @@ def test_rejects_duplicate_bootstrap_feed(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
     path.write_text(
         VALID_CONFIG.replace(
-            "]\n\n[[instruments]]",
+            "]\n\n[[watchlist.members]]",
             (
                 '  { instrument_id = "ESU6.CME", kind = "quotes", '
-                'selector = "default" },\n]\n\n[[instruments]]'
+                'selector = "default" },\n]\n\n[[watchlist.members]]'
             ),
             1,
         ),
@@ -156,4 +165,30 @@ def test_rejects_selector_for_feed_without_selector_semantics(tmp_path: Path) ->
     )
 
     with pytest.raises(ValueError, match="selector must be 'default' for quotes"):
+        load_system_config(path)
+
+
+def test_rejects_incomplete_watchlist_capabilities(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'capabilities = ["top_of_book", "watchlist_last"]',
+            'capabilities = ["top_of_book"]',
+        ),
+    )
+
+    with pytest.raises(ValueError, match="capabilities must contain exactly"):
+        load_system_config(path)
+
+
+def test_rejects_duplicate_watchlist_owners(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'owner_ids = ["config:system"]',
+            'owner_ids = ["config:system", "config:system"]',
+        ),
+    )
+
+    with pytest.raises(ValueError, match="owner_ids must contain unique values"):
         load_system_config(path)

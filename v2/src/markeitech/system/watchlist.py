@@ -23,7 +23,6 @@ _MAX_COUNTER = 2**63 - 1
 _STATIC_MEMBERSHIP_REVISION = 1
 _STATIC_MEMBERSHIP_EVENT_ID = "watchlist-membership:1"
 _STATIC_OWNER_ID = "config:system"
-_STATIC_CAPABILITIES = ("top_of_book", "watchlist_last")
 
 
 class ConsumerState(StrEnum):
@@ -213,14 +212,14 @@ class WatchlistState:
 class WatchlistActorConfig(DataActorConfig):
     def __new__(
         cls,
-        instrument_ids: list[str],
+        members: list[dict[str, object]],
         actor_id: str | ActorId = "WATCHLIST",
     ) -> WatchlistActorConfig:
         resolved_actor_id = (
             actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
         )
         obj = super().__new__(cls, actor_id=resolved_actor_id)
-        obj.instrument_ids = tuple(instrument_ids)
+        obj.members = tuple(members)
         return obj
 
 
@@ -229,7 +228,15 @@ class WatchlistActor(DataActor):
 
     def __init__(self, config: WatchlistActorConfig) -> None:
         super().__init__(config)
-        self._state = WatchlistState(config.instrument_ids)
+        self._members = tuple(
+            WatchlistMember(
+                instrument_id=str(member["instrument_id"]),
+                owner_ids=tuple(str(value) for value in member["owner_ids"]),
+                capabilities=tuple(str(value) for value in member["capabilities"]),
+            )
+            for member in config.members
+        )
+        self._state = WatchlistState(tuple(member.instrument_id for member in self._members))
         self._watchlist_observed_logged = False
         self._audit_started = False
         self._lifecycle_sequence = 0
@@ -354,14 +361,7 @@ class WatchlistActor(DataActor):
             membership_revision=_STATIC_MEMBERSHIP_REVISION,
             source=str(self.actor_id),
             reason="static configuration baseline established",
-            members=tuple(
-                WatchlistMember(
-                    instrument_id=instrument_id,
-                    capabilities=_STATIC_CAPABILITIES,
-                    owner_ids=(_STATIC_OWNER_ID,),
-                )
-                for instrument_id in self._state.instrument_ids
-            ),
+            members=self._members,
         )
         self.publish_signal(WATCHLIST_MEMBERSHIP_SIGNAL, membership.to_signal_value())
         self._publish_lifecycle(

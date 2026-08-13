@@ -1,4 +1,4 @@
-schema_version = 3
+schema_version = 4
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -58,26 +58,42 @@ bootstrap_feeds = [
   { instrument_id = "SOXL.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
 ]
 
-[[instruments]]
-id = "ESU6.CME"
+[[watchlist.members]]
+instrument_id = "ESU6.CME"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
 
-[[instruments]]
-id = "NQU6.CME"
+[[watchlist.members]]
+instrument_id = "NQU6.CME"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
 
-[[instruments]]
-id = "SPY.ARCA"
+[[watchlist.members]]
+instrument_id = "SPY.ARCA"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
 
-[[instruments]]
-id = "QQQ.NASDAQ"
+[[watchlist.members]]
+instrument_id = "QQQ.NASDAQ"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
 
-[[instruments]]
-id = "XLK.ARCA"
+[[watchlist.members]]
+instrument_id = "XLK.ARCA"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
 
-[[instruments]]
-id = "XLF.ARCA"
+[[watchlist.members]]
+instrument_id = "XLF.ARCA"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
 
-[[instruments]]
-id = "IWM.ARCA"
+[[watchlist.members]]
+instrument_id = "IWM.ARCA"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
 
-[[instruments]]
-id = "SOXL.ARCA"
+[[watchlist.members]]
+instrument_id = "SOXL.ARCA"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]

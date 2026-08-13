@@ -58,15 +58,22 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         {"instrument_id": "SOXL.ARCA", "kind": "bars", "selector": "5-SECOND-LAST-EXTERNAL"},
     ]
     watchlist = next(item for item in plan if item.key == "watchlist")
-    assert watchlist.config.config["instrument_ids"] == [
-        "ESU6.CME",
-        "NQU6.CME",
-        "SPY.ARCA",
-        "QQQ.NASDAQ",
-        "XLK.ARCA",
-        "XLF.ARCA",
-        "IWM.ARCA",
-        "SOXL.ARCA",
+    assert watchlist.config.config["members"] == [
+        {
+            "instrument_id": instrument_id,
+            "owner_ids": ["config:system"],
+            "capabilities": ["top_of_book", "watchlist_last"],
+        }
+        for instrument_id in [
+            "ESU6.CME",
+            "NQU6.CME",
+            "SPY.ARCA",
+            "QQQ.NASDAQ",
+            "XLK.ARCA",
+            "XLF.ARCA",
+            "IWM.ARCA",
+            "SOXL.ARCA",
+        ]
     ]
 
 

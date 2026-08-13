@@ -191,6 +191,13 @@ on its first write. No audit event includes raw quote or bar payloads. The start
 implemented for live review on branch
 `v2-stage-8e-startup-audit-closure`.
 
+The next configuration-ownership slice replaces the root instrument list with typed static
+watchlist members. Each member declares its provider instrument ID, permanent owner IDs, and the
+capabilities the current watchlist actually provides. System control, instrument-definition
+acquisition, the IB provider, actor composition, and membership audit all consume that one member
+set. Existing acquisition bootstrap feeds remain temporarily separate and are validated against
+the watchlist so live subscription behavior does not change in this slice.
+
 ## Explicit Boundaries
 
 - PostgreSQL currently contains runtime runs and system-health transitions. It is the accepted
