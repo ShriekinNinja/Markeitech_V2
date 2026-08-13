@@ -3,8 +3,51 @@ from __future__ import annotations
 from threading import Event
 from uuid import uuid4
 
+import pytest
+
 from markeitech.system.messages import SystemHealthEvent
-from markeitech.system.persistence import HealthEventRecord, PersistenceWorker
+from markeitech.system.persistence import (
+    HealthEventRecord,
+    OperationalEventRecord,
+    PersistenceWorker,
+)
+
+
+def test_operational_event_record_validates_durable_identity_and_timestamps() -> None:
+    record = OperationalEventRecord(
+        event_id=" watchlist-membership:1 ",
+        run_id=uuid4(),
+        sequence=1,
+        signal_name=" markeitech.watchlist.membership ",
+        event_type=" watchlist.membership ",
+        source=" WATCHLIST ",
+        correlation_id=" baseline:config ",
+        causation_id=None,
+        payload={"membership_revision": 1},
+        ts_event_ns=10,
+        ts_init_ns=11,
+        schema_version=1,
+    )
+
+    assert record.event_id == "watchlist-membership:1"
+    assert record.signal_name == "markeitech.watchlist.membership"
+    assert record.correlation_id == "baseline:config"
+    with pytest.raises(TypeError):
+        record.payload["membership_revision"] = 2  # type: ignore[index]
+
+    with pytest.raises(ValueError, match="sequence must be a positive integer"):
+        OperationalEventRecord(
+            event_id="watchlist-membership:2",
+            run_id=uuid4(),
+            sequence=0,
+            signal_name="markeitech.watchlist.membership",
+            event_type="watchlist.membership",
+            source="WATCHLIST",
+            payload={},
+            ts_event_ns=10,
+            ts_init_ns=11,
+            schema_version=1,
+        )
 
 
 def _record(sequence: int, state: str = "READY") -> HealthEventRecord:

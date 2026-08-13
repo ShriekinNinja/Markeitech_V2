@@ -44,7 +44,8 @@ tables. Read-optimized projections may be added only for concrete query needs.
 
 ## Remaining Static Sequence
 
-1. Add the generic operational-event schema, idempotent store boundary, and restart queries.
+1. [Implemented for review] Add the generic operational-event schema, idempotent store boundary,
+   and restart queries.
 2. Persist watchlist membership and lifecycle events before publishing them live.
 3. Add dedicated static watchlist configuration with permanent configuration ownership.
 4. Define explicit Watchlist-to-Acquisition demand and outcome messaging.

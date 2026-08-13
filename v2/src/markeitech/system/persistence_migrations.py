@@ -47,4 +47,35 @@ MIGRATIONS = (
                 ON system_health_events (source, ts_event_ns);
         """,
     ),
+    Migration(
+        version=2,
+        name="generic_operational_event_ledger",
+        sql="""
+            CREATE TABLE operational_events (
+                event_id TEXT NOT NULL,
+                run_id UUID NOT NULL REFERENCES runtime_runs(run_id),
+                sequence BIGINT NOT NULL,
+                signal_name TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                source TEXT NOT NULL,
+                correlation_id TEXT,
+                causation_id TEXT,
+                payload_json JSONB NOT NULL,
+                ts_event_ns BIGINT NOT NULL,
+                ts_init_ns BIGINT NOT NULL,
+                recorded_at_ns BIGINT NOT NULL,
+                schema_version INTEGER NOT NULL,
+                PRIMARY KEY (run_id, event_id),
+                UNIQUE (run_id, sequence)
+            );
+
+            CREATE INDEX operational_events_type_time_idx
+                ON operational_events (event_type, ts_event_ns);
+            CREATE INDEX operational_events_source_time_idx
+                ON operational_events (source, ts_event_ns);
+            CREATE INDEX operational_events_correlation_idx
+                ON operational_events (correlation_id)
+                WHERE correlation_id IS NOT NULL;
+        """,
+    ),
 )

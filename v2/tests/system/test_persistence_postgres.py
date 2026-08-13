@@ -6,7 +6,11 @@ from uuid import uuid4
 import pytest
 
 from markeitech.system.messages import SystemHealthEvent
-from markeitech.system.persistence import HealthEventRecord, OperationalStore
+from markeitech.system.persistence import (
+    HealthEventRecord,
+    OperationalEventRecord,
+    OperationalStore,
+)
 
 TEST_DSN_ENV = "MARKEITECH_TEST_POSTGRES_DSN"
 
@@ -35,14 +39,54 @@ def test_postgres_migrations_restart_reads_and_duplicate_event_write() -> None:
 
     store.write_health_event(record)
     store.write_health_event(record)
+    operational_record = OperationalEventRecord(
+        event_id="watchlist-membership:1",
+        run_id=run_id,
+        sequence=1,
+        signal_name="markeitech.watchlist.membership",
+        event_type="watchlist.membership",
+        source="WATCHLIST",
+        correlation_id="baseline:config",
+        causation_id=None,
+        payload={"membership_revision": 1, "instrument_count": 2},
+        ts_event_ns=102,
+        ts_init_ns=103,
+        schema_version=1,
+    )
+    store.write_operational_event(operational_record)
+    store.write_operational_event(operational_record)
+    with pytest.raises(RuntimeError, match="identity collision"):
+        store.write_operational_event(
+            OperationalEventRecord(
+                event_id=operational_record.event_id,
+                run_id=run_id,
+                sequence=operational_record.sequence,
+                signal_name=operational_record.signal_name,
+                event_type=operational_record.event_type,
+                source=operational_record.source,
+                correlation_id=operational_record.correlation_id,
+                causation_id=operational_record.causation_id,
+                payload={"membership_revision": 999},
+                ts_event_ns=operational_record.ts_event_ns,
+                ts_init_ns=operational_record.ts_init_ns,
+                schema_version=operational_record.schema_version,
+            ),
+        )
 
     restarted_store = OperationalStore(os.environ[TEST_DSN_ENV], connect_timeout_seconds=3)
     stored_run = restarted_store.load_run(run_id)
     stored_events = restarted_store.load_health_events(run_id)
+    stored_operational_events = restarted_store.load_operational_events(run_id)
     assert stored_run is not None and stored_run.terminal_state is None
     assert len(stored_events) == 1
     assert stored_events[0].sequence == 1
     assert stored_events[0].evidence == {"operational_persistence_ready": True}
+    assert len(stored_operational_events) == 1
+    assert stored_operational_events[0].event_id == "watchlist-membership:1"
+    assert stored_operational_events[0].payload == {
+        "membership_revision": 1,
+        "instrument_count": 2,
+    }
 
     restarted_store.close_run(run_id, "STOPPED", "integration test completed")
     closed_run = restarted_store.load_run(run_id)

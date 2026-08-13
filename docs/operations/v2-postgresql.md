@@ -10,6 +10,11 @@ PostgreSQL does not store raw ticks, quotes, bars, books, option-chain payloads,
 lines, or every internal callback. Raw market data remains transient. Its system-level handling,
 including requests, readiness, freshness, gaps, retries, and failures, is audited.
 
+Migration 2 adds the generic append-only `operational_events` ledger. Each event is idempotent by
+`(run_id, event_id)`, ordered within its run, schema-versioned, and retains source plus optional
+correlation and causation identity. A repeated identity with different content is corruption and
+must fail visibly. Specialized health history remains intact; raw market payloads remain excluded.
+
 ## Normal Operation
 
 The **Markeitech V2** PyCharm run configuration starts the local PostgreSQL service, waits until it

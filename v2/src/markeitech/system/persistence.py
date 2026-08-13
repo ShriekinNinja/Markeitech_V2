@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from queue import Empty, Full, Queue
 from threading import Lock, Thread
 from time import monotonic, sleep, time_ns
+from types import MappingProxyType
 from typing import Protocol
 from uuid import UUID, uuid4
 
@@ -77,6 +79,61 @@ class StoredHealthEvent:
     evidence: dict[str, object]
     ts_event_ns: int
     ts_init_ns: int
+
+
+@dataclass(frozen=True, slots=True)
+class OperationalEventRecord:
+    event_id: str
+    run_id: UUID
+    sequence: int
+    signal_name: str
+    event_type: str
+    source: str
+    payload: Mapping[str, object]
+    ts_event_ns: int
+    ts_init_ns: int
+    schema_version: int
+    correlation_id: str | None = None
+    causation_id: str | None = None
+
+    def __post_init__(self) -> None:
+        for field_name in ("event_id", "signal_name", "event_type", "source"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{field_name} must be a non-empty string")
+            object.__setattr__(self, field_name, value.strip())
+        for field_name in ("correlation_id", "causation_id"):
+            value = getattr(self, field_name)
+            if value is not None:
+                if not isinstance(value, str) or not value.strip():
+                    raise ValueError(f"{field_name} must be None or a non-empty string")
+                object.__setattr__(self, field_name, value.strip())
+        for field_name in ("sequence", "schema_version"):
+            value = getattr(self, field_name)
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                raise ValueError(f"{field_name} must be a positive integer")
+        for field_name in ("ts_event_ns", "ts_init_ns"):
+            value = getattr(self, field_name)
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                raise ValueError(f"{field_name} must be a non-negative integer")
+        if not isinstance(self.payload, Mapping):
+            raise ValueError("payload must be a mapping")
+        object.__setattr__(self, "payload", MappingProxyType(dict(self.payload)))
+
+
+@dataclass(frozen=True, slots=True)
+class StoredOperationalEvent:
+    event_id: str
+    sequence: int
+    signal_name: str
+    event_type: str
+    source: str
+    correlation_id: str | None
+    causation_id: str | None
+    payload: dict[str, object]
+    ts_event_ns: int
+    ts_init_ns: int
+    schema_version: int
 
 
 class HealthEventWriter(Protocol):
@@ -177,6 +234,50 @@ class OperationalStore:
                 ),
             )
 
+    def write_operational_event(self, record: OperationalEventRecord) -> None:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO operational_events (
+                    event_id, run_id, sequence, signal_name, event_type, source,
+                    correlation_id, causation_id, payload_json, ts_event_ns, ts_init_ns,
+                    recorded_at_ns, schema_version
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (run_id, event_id) DO NOTHING
+                """,
+                (
+                    record.event_id,
+                    record.run_id,
+                    record.sequence,
+                    record.signal_name,
+                    record.event_type,
+                    record.source,
+                    record.correlation_id,
+                    record.causation_id,
+                    Jsonb(dict(record.payload)),
+                    record.ts_event_ns,
+                    record.ts_init_ns,
+                    time_ns(),
+                    record.schema_version,
+                ),
+            )
+            if cursor.rowcount == 1:
+                return
+            existing = connection.execute(
+                """
+                SELECT run_id, sequence, signal_name, event_type, source,
+                       correlation_id, causation_id, payload_json, ts_event_ns,
+                       ts_init_ns, schema_version
+                FROM operational_events
+                WHERE run_id = %s AND event_id = %s
+                """,
+                (record.run_id, record.event_id),
+            ).fetchone()
+            if existing != _operational_identity(record):
+                raise RuntimeError(
+                    f"operational event identity collision: {record.event_id}",
+                )
+
     def load_run(self, run_id: UUID) -> RuntimeRunRecord | None:
         with self._connect() as connection:
             row = connection.execute(
@@ -224,11 +325,57 @@ class OperationalStore:
             for row in rows
         )
 
+    def load_operational_events(self, run_id: UUID) -> tuple[StoredOperationalEvent, ...]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT event_id, sequence, signal_name, event_type, source,
+                       correlation_id, causation_id, payload_json, ts_event_ns,
+                       ts_init_ns, schema_version
+                FROM operational_events
+                WHERE run_id = %s
+                ORDER BY sequence
+                """,
+                (run_id,),
+            ).fetchall()
+        return tuple(
+            StoredOperationalEvent(
+                event_id=row[0],
+                sequence=row[1],
+                signal_name=row[2],
+                event_type=row[3],
+                source=row[4],
+                correlation_id=row[5],
+                causation_id=row[6],
+                payload=row[7],
+                ts_event_ns=row[8],
+                ts_init_ns=row[9],
+                schema_version=row[10],
+            )
+            for row in rows
+        )
+
     def _connect(self):  # noqa: ANN202
         return psycopg.connect(
             self._dsn,
             connect_timeout=self._connect_timeout_seconds,
         )
+
+
+def _operational_identity(record: OperationalEventRecord) -> tuple[object, ...]:
+    return (
+        record.run_id,
+        record.sequence,
+        record.signal_name,
+        record.event_type,
+        record.source,
+        record.correlation_id,
+        record.causation_id,
+        dict(record.payload),
+        record.ts_event_ns,
+        record.ts_init_ns,
+        record.schema_version,
+    )
 
 
 class PersistenceWorker:
