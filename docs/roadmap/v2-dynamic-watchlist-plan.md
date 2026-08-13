@@ -227,10 +227,12 @@ Initial limits must be based on measured IB/runtime behavior, not invented const
 
 ### W2: Promote Watchlist to a core bounded state owner
 
-- [ ] Separate operational readiness from live field freshness.
+- [x] Separate native-consumer registration from whether required fields have been observed.
+- [ ] Define configurable live field-freshness policy; no arbitrary age threshold is approved yet.
 - [ ] Define versioned membership snapshot and lifecycle contracts.
-- [ ] Keep one latest record and bounded counters per member.
-- [ ] Replace proof-only logging with bounded summaries and state transitions.
+- [x] Keep one immutable latest snapshot, native event timestamps, and bounded counters per member.
+- [x] Prevent older callbacks from replacing newer latest-value state.
+- [x] Replace proof-only logging with bounded summaries and state transitions.
 - [ ] Define the durable intent, disposition, lifecycle, and membership-projection records.
 
 ### W3: Make configuration seed Watchlist
