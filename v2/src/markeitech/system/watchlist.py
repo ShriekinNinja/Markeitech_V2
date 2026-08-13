@@ -6,8 +6,22 @@ from enum import StrEnum
 from nautilus_trader.common import DataActor, DataActorConfig
 from nautilus_trader.model import ActorId, BarType, ClientId, InstrumentId
 
+from markeitech.system.messages import (
+    WATCHLIST_LIFECYCLE_SIGNAL,
+    WATCHLIST_MEMBERSHIP_SIGNAL,
+    WatchlistLifecycleEvent,
+    WatchlistMember,
+    WatchlistMembershipEvent,
+)
+
 _IB_CLIENT_ID = ClientId.from_str("IB")
 _MAX_COUNTER = 2**63 - 1
+_INITIAL_AUDIT_ALERT = "watchlist-initial-audit"
+_INITIAL_AUDIT_DELAY_NS = 1_000_000
+_STATIC_MEMBERSHIP_REVISION = 1
+_STATIC_MEMBERSHIP_EVENT_ID = "watchlist-membership:1"
+_STATIC_OWNER_ID = "config:system"
+_STATIC_CAPABILITIES = ("top_of_book", "watchlist_last")
 
 
 class ConsumerState(StrEnum):
@@ -215,6 +229,9 @@ class WatchlistActor(DataActor):
         super().__init__(config)
         self._state = WatchlistState(config.instrument_ids)
         self._watchlist_observed_logged = False
+        self._audit_started = False
+        self._lifecycle_sequence = 0
+        self._observed_before_audit: set[str] = set()
 
     def on_start(self) -> None:
         for value in self._state.instrument_ids:
@@ -222,6 +239,11 @@ class WatchlistActor(DataActor):
             self.subscribe_quotes(instrument_id, client_id=_IB_CLIENT_ID)
             self.subscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
         self._state.register_consumers()
+        self.clock.set_time_alert_ns(
+            _INITIAL_AUDIT_ALERT,
+            self.clock.timestamp_ns() + _INITIAL_AUDIT_DELAY_NS,
+            callback=self._publish_initial_audit,
+        )
         self.log.info(f"WATCHLIST_OPERATIONAL | instruments={len(self._state.instrument_ids)}")
 
     def on_quote(self, quote) -> None:  # noqa: ANN001
@@ -244,11 +266,18 @@ class WatchlistActor(DataActor):
         self._log_observation(instrument_id, became_observed)
 
     def on_stop(self) -> None:
+        if _INITIAL_AUDIT_ALERT in self.clock.timer_names():
+            self.clock.cancel_timer(_INITIAL_AUDIT_ALERT)
+        self._publish_initial_audit(None)
         for value in self._state.instrument_ids:
             instrument_id = InstrumentId.from_str(value)
             self.unsubscribe_quotes(instrument_id, client_id=_IB_CLIENT_ID)
             self.unsubscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
         self._state.detach_consumers()
+        self._publish_lifecycle(
+            "CONSUMERS_DETACHED",
+            reason="static watchlist native consumers detached",
+        )
         snapshot = self._state.snapshot()
         for state in snapshot.instruments:
             self.log.info(
@@ -285,11 +314,73 @@ class WatchlistActor(DataActor):
                 " | last_source=5s_bar_close"
                 f" | observed={self._state.observed_count}/{len(self._state.instrument_ids)}",
             )
+            if self._audit_started:
+                self._publish_instrument_observed(instrument_id)
+            else:
+                self._observed_before_audit.add(instrument_id)
         if self._state.is_observed and not self._watchlist_observed_logged:
             self._watchlist_observed_logged = True
             self.log.info(
                 f"WATCHLIST_OBSERVED | instruments={len(self._state.instrument_ids)}",
             )
+
+    def _publish_initial_audit(self, _event) -> None:  # noqa: ANN001
+        if self._audit_started:
+            return
+        self._audit_started = True
+        membership = WatchlistMembershipEvent(
+            event_id=_STATIC_MEMBERSHIP_EVENT_ID,
+            membership_revision=_STATIC_MEMBERSHIP_REVISION,
+            source=str(self.actor_id),
+            reason="static configuration baseline established",
+            members=tuple(
+                WatchlistMember(
+                    instrument_id=instrument_id,
+                    capabilities=_STATIC_CAPABILITIES,
+                    owner_ids=(_STATIC_OWNER_ID,),
+                )
+                for instrument_id in self._state.instrument_ids
+            ),
+        )
+        self.publish_signal(WATCHLIST_MEMBERSHIP_SIGNAL, membership.to_signal_value())
+        self._publish_lifecycle(
+            "CONFIGURED",
+            reason="static configuration baseline established",
+        )
+        self._publish_lifecycle(
+            "CONSUMERS_REGISTERED",
+            reason="static watchlist native consumers registered",
+        )
+        for instrument_id in sorted(self._observed_before_audit):
+            self._publish_instrument_observed(instrument_id)
+        self._observed_before_audit.clear()
+
+    def _publish_instrument_observed(self, instrument_id: str) -> None:
+        self._publish_lifecycle(
+            "INSTRUMENT_OBSERVED",
+            reason="required quote and bar-derived last observed",
+            instrument_id=instrument_id,
+        )
+
+    def _publish_lifecycle(
+        self,
+        state: str,
+        *,
+        reason: str,
+        instrument_id: str | None = None,
+    ) -> None:
+        self._lifecycle_sequence += 1
+        event = WatchlistLifecycleEvent(
+            event_id=f"watchlist-lifecycle:{self._lifecycle_sequence}",
+            membership_revision=_STATIC_MEMBERSHIP_REVISION,
+            state=state,
+            source=str(self.actor_id),
+            reason=reason,
+            instrument_id=instrument_id,
+            owner_id=_STATIC_OWNER_ID,
+            correlation_id=_STATIC_MEMBERSHIP_EVENT_ID,
+        )
+        self.publish_signal(WATCHLIST_LIFECYCLE_SIGNAL, event.to_signal_value())
 
 
 def _watchlist_bar_type(instrument_id: InstrumentId) -> BarType:

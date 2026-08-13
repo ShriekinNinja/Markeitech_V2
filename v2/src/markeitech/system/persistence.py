@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -16,10 +17,20 @@ from nautilus_trader.model import ActorId
 from psycopg.types.json import Jsonb
 
 from markeitech.system.messages import (
+    ACQUISITION_STATUS_REQUEST_SIGNAL,
+    ACQUISITION_STATUS_SIGNAL,
+    ACQUISITION_STREAM_SIGNAL,
     COMPONENT_FAILURE_SIGNAL,
     SYSTEM_HEALTH_SIGNAL,
+    WATCHLIST_LIFECYCLE_SIGNAL,
+    WATCHLIST_MEMBERSHIP_SIGNAL,
+    AcquisitionStatusEvent,
+    AcquisitionStatusRequest,
+    AcquisitionStreamEvent,
     ComponentFailureEvent,
     SystemHealthEvent,
+    WatchlistLifecycleEvent,
+    WatchlistMembershipEvent,
 )
 from markeitech.system.persistence_migrations import MIGRATIONS
 
@@ -136,8 +147,11 @@ class StoredOperationalEvent:
     schema_version: int
 
 
-class HealthEventWriter(Protocol):
-    def __call__(self, record: HealthEventRecord) -> None: ...
+type PersistedRecord = HealthEventRecord | OperationalEventRecord
+
+
+class EventWriter(Protocol):
+    def __call__(self, record: PersistedRecord) -> None: ...
 
 
 class OperationalStore:
@@ -381,7 +395,7 @@ def _operational_identity(record: OperationalEventRecord) -> tuple[object, ...]:
 class PersistenceWorker:
     def __init__(
         self,
-        writer: HealthEventWriter,
+        writer: EventWriter,
         queue_capacity: int,
         shutdown_timeout_seconds: int,
         write_max_attempts: int,
@@ -391,7 +405,7 @@ class PersistenceWorker:
         self._shutdown_timeout_seconds = shutdown_timeout_seconds
         self._write_max_attempts = write_max_attempts
         self._write_retry_backoff_seconds = write_retry_backoff_ms / 1_000
-        self._pending: Queue[HealthEventRecord | object] = Queue(maxsize=queue_capacity)
+        self._pending: Queue[PersistedRecord | object] = Queue(maxsize=queue_capacity)
         self.results: Queue[PersistenceResult] = Queue()
         self._closed = False
         self._stop_enqueued = False
@@ -410,7 +424,7 @@ class PersistenceWorker:
     def start(self) -> None:
         self._thread.start()
 
-    def submit(self, record: HealthEventRecord) -> bool:
+    def submit(self, record: PersistedRecord) -> bool:
         if self._closed:
             self._increment("_rejected")
             return False
@@ -450,12 +464,12 @@ class PersistenceWorker:
             try:
                 if item is _STOP:
                     return
-                assert isinstance(item, HealthEventRecord)
+                assert isinstance(item, HealthEventRecord | OperationalEventRecord)
                 self._write_with_retries(item)
             finally:
                 self._pending.task_done()
 
-    def _write_with_retries(self, record: HealthEventRecord) -> None:
+    def _write_with_retries(self, record: PersistedRecord) -> None:
         for attempt in range(1, self._write_max_attempts + 1):
             try:
                 self._writer(record)
@@ -468,7 +482,7 @@ class PersistenceWorker:
                 self.results.put(
                     PersistenceResult(
                         sequence=record.sequence,
-                        state=record.event.state,
+                        state=_record_state(record),
                         stored=False,
                         attempts=attempt,
                         error_code=type(exc).__name__,
@@ -479,7 +493,7 @@ class PersistenceWorker:
             self.results.put(
                 PersistenceResult(
                     sequence=record.sequence,
-                    state=record.event.state,
+                    state=_record_state(record),
                     stored=True,
                     attempts=attempt,
                 ),
@@ -532,7 +546,7 @@ class OperationalPersistenceActor(DataActor):
         self._result_poll_interval_ns = config.result_poll_interval_ms * 1_000_000
         self._worker: PersistenceWorker | None = None
         self._sequence = 0
-        self._subscribed = False
+        self._subscribed_signals: set[str] = set()
         self._failure_published = False
 
     def on_start(self) -> None:
@@ -546,15 +560,24 @@ class OperationalPersistenceActor(DataActor):
             self._report_failure("runtime_connection_failed", type(exc).__name__)
             raise
         self._worker = PersistenceWorker(
-            store.write_health_event,
+            lambda record: _write_record(store, record),
             self._queue_capacity,
             self._shutdown_timeout_seconds,
             self._write_max_attempts,
             self._write_retry_backoff_ms,
         )
         self._worker.start()
-        self.subscribe_signal(SYSTEM_HEALTH_SIGNAL)
-        self._subscribed = True
+        for signal_name in (
+            SYSTEM_HEALTH_SIGNAL,
+            COMPONENT_FAILURE_SIGNAL,
+            ACQUISITION_STATUS_REQUEST_SIGNAL,
+            ACQUISITION_STATUS_SIGNAL,
+            ACQUISITION_STREAM_SIGNAL,
+            WATCHLIST_MEMBERSHIP_SIGNAL,
+            WATCHLIST_LIFECYCLE_SIGNAL,
+        ):
+            self.subscribe_signal(signal_name)
+            self._subscribed_signals.add(signal_name)
         self.clock.set_timer_ns(
             _RESULT_TIMER,
             self._result_poll_interval_ns,
@@ -566,26 +589,19 @@ class OperationalPersistenceActor(DataActor):
         if self._worker is None:
             self._report_failure("persistence_worker_unavailable", "not_started")
             return
-        try:
-            event = SystemHealthEvent.from_signal_value(signal.value)
-        except ValueError as exc:
-            self._report_failure("invalid_system_health_event", type(exc).__name__)
-            return
         self._sequence += 1
-        record = HealthEventRecord(
-            run_id=self._run_id,
-            sequence=self._sequence,
-            event=event,
-            ts_event_ns=signal.ts_event,
-            ts_init_ns=signal.ts_init,
-        )
+        try:
+            record = _record_from_signal(self._run_id, self._sequence, signal)
+        except ValueError as exc:
+            self._report_failure("invalid_operational_event", type(exc).__name__)
+            return
         if not self._worker.submit(record):
             self._report_failure("persistence_queue_unavailable", "queue_full_or_closed")
 
     def on_stop(self) -> None:
-        if self._subscribed:
-            self.unsubscribe_signal(SYSTEM_HEALTH_SIGNAL)
-            self._subscribed = False
+        for signal_name in tuple(self._subscribed_signals):
+            self.unsubscribe_signal(signal_name)
+            self._subscribed_signals.remove(signal_name)
         if _RESULT_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_RESULT_TIMER)
         if self._worker is not None and not self._worker.close():
@@ -612,7 +628,7 @@ class OperationalPersistenceActor(DataActor):
                 )
             else:
                 self._report_failure(
-                    "health_event_write_failed",
+                    "operational_event_write_failed",
                     result.error_code or "unknown",
                     evidence={"attempts": result.attempts, "sequence": result.sequence},
                 )
@@ -658,3 +674,128 @@ class OperationalPersistenceActor(DataActor):
             f" | retries={stats.retry_attempts} | failed={stats.failed}"
             f" | rejected={stats.rejected} | pending={stats.pending}",
         )
+
+
+def _write_record(store: OperationalStore, record: PersistedRecord) -> None:
+    if isinstance(record, HealthEventRecord):
+        store.write_health_event(record)
+        return
+    store.write_operational_event(record)
+
+
+def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> PersistedRecord:
+    if signal.name == SYSTEM_HEALTH_SIGNAL:
+        return HealthEventRecord(
+            run_id=run_id,
+            sequence=sequence,
+            event=SystemHealthEvent.from_signal_value(signal.value),
+            ts_event_ns=signal.ts_event,
+            ts_init_ns=signal.ts_init,
+        )
+    if signal.name == WATCHLIST_MEMBERSHIP_SIGNAL:
+        event = WatchlistMembershipEvent.from_signal_value(signal.value)
+        return OperationalEventRecord(
+            event_id=event.event_id,
+            run_id=run_id,
+            sequence=sequence,
+            signal_name=signal.name,
+            event_type="watchlist.membership",
+            source=event.source,
+            correlation_id=event.event_id,
+            causation_id=None,
+            payload=json.loads(signal.value),
+            ts_event_ns=signal.ts_event,
+            ts_init_ns=signal.ts_init,
+            schema_version=event.schema_version,
+        )
+    if signal.name == WATCHLIST_LIFECYCLE_SIGNAL:
+        event = WatchlistLifecycleEvent.from_signal_value(signal.value)
+        return OperationalEventRecord(
+            event_id=event.event_id,
+            run_id=run_id,
+            sequence=sequence,
+            signal_name=signal.name,
+            event_type="watchlist.lifecycle",
+            source=event.source,
+            correlation_id=event.correlation_id,
+            causation_id=None,
+            payload=json.loads(signal.value),
+            ts_event_ns=signal.ts_event,
+            ts_init_ns=signal.ts_init,
+            schema_version=event.schema_version,
+        )
+    if signal.name == COMPONENT_FAILURE_SIGNAL:
+        event = ComponentFailureEvent.from_signal_value(signal.value)
+        return _generic_signal_record(
+            run_id,
+            sequence,
+            signal,
+            event_type="component.failure",
+            source=event.component,
+            schema_version=event.schema_version,
+        )
+    if signal.name == ACQUISITION_STATUS_REQUEST_SIGNAL:
+        event = AcquisitionStatusRequest.from_signal_value(signal.value)
+        return _generic_signal_record(
+            run_id,
+            sequence,
+            signal,
+            event_type="acquisition.status_request",
+            source=event.requester,
+            schema_version=event.schema_version,
+            correlation_id=f"acquisition-status-request:{sequence}",
+        )
+    if signal.name == ACQUISITION_STATUS_SIGNAL:
+        event = AcquisitionStatusEvent.from_signal_value(signal.value)
+        return _generic_signal_record(
+            run_id,
+            sequence,
+            signal,
+            event_type="acquisition.status",
+            source=event.source,
+            schema_version=event.schema_version,
+        )
+    if signal.name == ACQUISITION_STREAM_SIGNAL:
+        event = AcquisitionStreamEvent.from_signal_value(signal.value)
+        return _generic_signal_record(
+            run_id,
+            sequence,
+            signal,
+            event_type="acquisition.stream",
+            source=event.source,
+            schema_version=event.schema_version,
+            correlation_id=event.demand_id,
+        )
+    raise ValueError(f"unsupported operational signal: {signal.name}")
+
+
+def _generic_signal_record(
+    run_id: UUID,
+    sequence: int,
+    signal: Signal,
+    *,
+    event_type: str,
+    source: str,
+    schema_version: int,
+    correlation_id: str | None = None,
+) -> OperationalEventRecord:
+    return OperationalEventRecord(
+        event_id=f"operational:{sequence}",
+        run_id=run_id,
+        sequence=sequence,
+        signal_name=signal.name,
+        event_type=event_type,
+        source=source,
+        correlation_id=correlation_id,
+        causation_id=None,
+        payload=json.loads(signal.value),
+        ts_event_ns=signal.ts_event,
+        ts_init_ns=signal.ts_init,
+        schema_version=schema_version,
+    )
+
+
+def _record_state(record: PersistedRecord) -> str:
+    if isinstance(record, HealthEventRecord):
+        return record.event.state
+    return record.event_type

@@ -46,7 +46,10 @@ tables. Read-optimized projections may be added only for concrete query needs.
 
 1. [Implemented for review] Add the generic operational-event schema, idempotent store boundary,
    and restart queries.
-2. Persist watchlist membership and lifecycle events before publishing them live.
+2. [Implemented for review] Persist current acquisition control events plus watchlist membership
+   and lifecycle events through one ordered worker before treating them as accepted audit history.
+   Future one-shot startup publishers still require an explicit persistence-readiness handshake;
+   transient signal delivery is not durable by itself.
 3. Add dedicated static watchlist configuration with permanent configuration ownership.
 4. Define explicit Watchlist-to-Acquisition demand and outcome messaging.
 5. Remove duplicated bootstrap feed declarations and let Watchlist seed baseline demand.

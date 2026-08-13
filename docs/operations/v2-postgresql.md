@@ -15,6 +15,18 @@ Migration 2 adds the generic append-only `operational_events` ledger. Each event
 correlation and causation identity. A repeated identity with different content is corruption and
 must fail visibly. Specialized health history remains intact; raw market payloads remain excluded.
 
+The persistence actor consumes existing acquisition requests, acquisition status and stream
+lifecycle, component failures, and static watchlist membership and lifecycle signals through one
+ordered bounded worker. It records semantic control history only; native quote and bar callbacks
+remain outside PostgreSQL.
+
+Nautilus signals are transient rather than retained. The static watchlist schedules its initial
+membership audit after actor startup so persistence can subscribe first, and it deterministically
+flushes any instruments observed during that short boundary afterward. Existing acquisition
+status exchange repeats after startup through the control actor's scheduled request. A general
+component-to-persistence readiness handshake remains required before future actors may emit
+one-shot startup events that cannot be reconstructed or repeated.
+
 ## Normal Operation
 
 The **Markeitech V2** PyCharm run configuration starts the local PostgreSQL service, waits until it

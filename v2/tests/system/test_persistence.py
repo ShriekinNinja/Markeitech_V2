@@ -4,12 +4,25 @@ from threading import Event
 from uuid import uuid4
 
 import pytest
+from nautilus_trader.common import Signal
 
-from markeitech.system.messages import SystemHealthEvent
+from markeitech.system.messages import (
+    ACQUISITION_STATUS_REQUEST_SIGNAL,
+    ACQUISITION_STREAM_SIGNAL,
+    WATCHLIST_LIFECYCLE_SIGNAL,
+    WATCHLIST_MEMBERSHIP_SIGNAL,
+    AcquisitionStatusRequest,
+    AcquisitionStreamEvent,
+    SystemHealthEvent,
+    WatchlistLifecycleEvent,
+    WatchlistMember,
+    WatchlistMembershipEvent,
+)
 from markeitech.system.persistence import (
     HealthEventRecord,
     OperationalEventRecord,
     PersistenceWorker,
+    _record_from_signal,
 )
 
 
@@ -48,6 +61,138 @@ def test_operational_event_record_validates_durable_identity_and_timestamps() ->
             ts_init_ns=11,
             schema_version=1,
         )
+
+
+def test_worker_preserves_order_across_health_and_generic_operational_records() -> None:
+    run_id = uuid4()
+    stored: list[tuple[int, str]] = []
+    worker = PersistenceWorker(
+        lambda record: stored.append((record.sequence, type(record).__name__)),
+        queue_capacity=4,
+        shutdown_timeout_seconds=1,
+        write_max_attempts=1,
+        write_retry_backoff_ms=0,
+    )
+    worker.start()
+
+    assert worker.submit(_record(1, "STARTING"))
+    assert worker.submit(
+        OperationalEventRecord(
+            event_id="watchlist-membership:1",
+            run_id=run_id,
+            sequence=2,
+            signal_name=WATCHLIST_MEMBERSHIP_SIGNAL,
+            event_type="watchlist.membership",
+            source="WATCHLIST",
+            payload={"membership_revision": 1},
+            ts_event_ns=2,
+            ts_init_ns=2,
+            schema_version=1,
+        ),
+    )
+    assert worker.close()
+
+    assert stored == [
+        (1, "HealthEventRecord"),
+        (2, "OperationalEventRecord"),
+    ]
+
+
+def test_watchlist_signals_convert_to_auditable_records_without_market_payloads() -> None:
+    run_id = uuid4()
+    membership = WatchlistMembershipEvent(
+        event_id="watchlist-membership:1",
+        membership_revision=1,
+        source="WATCHLIST",
+        reason="static baseline",
+        members=(
+            WatchlistMember(
+                instrument_id="ESU6.CME",
+                capabilities=("top_of_book", "watchlist_last"),
+                owner_ids=("config:system",),
+            ),
+        ),
+    )
+    membership_record = _record_from_signal(
+        run_id,
+        1,
+        Signal(
+            name=WATCHLIST_MEMBERSHIP_SIGNAL,
+            value=membership.to_signal_value(),
+            ts_event=10,
+            ts_init=11,
+        ),
+    )
+    lifecycle = WatchlistLifecycleEvent(
+        event_id="watchlist-lifecycle:1",
+        membership_revision=1,
+        state="CONFIGURED",
+        source="WATCHLIST",
+        reason="static baseline",
+        owner_id="config:system",
+        correlation_id="watchlist-membership:1",
+    )
+    lifecycle_record = _record_from_signal(
+        run_id,
+        2,
+        Signal(
+            name=WATCHLIST_LIFECYCLE_SIGNAL,
+            value=lifecycle.to_signal_value(),
+            ts_event=12,
+            ts_init=13,
+        ),
+    )
+
+    assert isinstance(membership_record, OperationalEventRecord)
+    assert membership_record.event_type == "watchlist.membership"
+    assert membership_record.correlation_id == membership.event_id
+    assert "best_bid" not in membership_record.payload
+    assert isinstance(lifecycle_record, OperationalEventRecord)
+    assert lifecycle_record.event_type == "watchlist.lifecycle"
+    assert lifecycle_record.correlation_id == membership.event_id
+
+
+def test_existing_acquisition_intent_and_outcome_convert_to_audit_records() -> None:
+    run_id = uuid4()
+    request = AcquisitionStatusRequest(requester="SYSTEM-CONTROL")
+    request_record = _record_from_signal(
+        run_id,
+        1,
+        Signal(
+            name=ACQUISITION_STATUS_REQUEST_SIGNAL,
+            value=request.to_signal_value(),
+            ts_event=10,
+            ts_init=11,
+        ),
+    )
+    stream = AcquisitionStreamEvent(
+        state="SUBSCRIBED",
+        instrument_id="ESU6.CME",
+        feed_kind="quotes",
+        selector="default",
+        source="DATA-ACQUISITION",
+        demand_id="bootstrap:0:ESU6.CME/quotes/default",
+        consumer_ids=("bootstrap:0:ESU6.CME/quotes/default",),
+        detail="native subscription command issued",
+    )
+    stream_record = _record_from_signal(
+        run_id,
+        2,
+        Signal(
+            name=ACQUISITION_STREAM_SIGNAL,
+            value=stream.to_signal_value(),
+            ts_event=12,
+            ts_init=13,
+        ),
+    )
+
+    assert isinstance(request_record, OperationalEventRecord)
+    assert request_record.event_type == "acquisition.status_request"
+    assert request_record.source == "SYSTEM-CONTROL"
+    assert isinstance(stream_record, OperationalEventRecord)
+    assert stream_record.event_type == "acquisition.stream"
+    assert stream_record.correlation_id == stream.demand_id
+    assert "bid_price" not in stream_record.payload
 
 
 def _record(sequence: int, state: str = "READY") -> HealthEventRecord:

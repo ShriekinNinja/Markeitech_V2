@@ -178,6 +178,11 @@ Dynamic membership is explicitly deferred; the accepted stopping point is a live
 configuration-owned watchlist. The exact handoff is
 [`roadmap/v2-static-watchlist-handoff.md`](roadmap/v2-static-watchlist-handoff.md).
 
+The generic PostgreSQL operational ledger and store boundary are implemented. Current acquisition
+control events plus static watchlist membership and lifecycle events are wired through the same
+ordered bounded persistence worker for review. The watchlist deliberately delays its initial audit
+until persistence has subscribed and never includes raw quote or bar payloads.
+
 ## Explicit Boundaries
 
 - PostgreSQL currently contains runtime runs and system-health transitions. It is the accepted
