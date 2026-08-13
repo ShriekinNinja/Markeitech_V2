@@ -9,15 +9,45 @@ from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STATUS_SIGNAL,
     INSTRUMENTS_READY,
+    PERSISTENCE_READY_REQUEST_SIGNAL,
+    PERSISTENCE_READY_SIGNAL,
     SYSTEM_HEALTH_SIGNAL,
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
+    PersistenceReadyEvent,
+    PersistenceReadyRequest,
     SystemHealthEvent,
 )
 
 received = Event()
 ready_received = Event()
 received_events: list[SystemHealthEvent] = []
+
+
+class PersistenceReadyFixtureConfig(DataActorConfig):
+    def __new__(
+        cls,
+        actor_id: str | ActorId = "PERSISTENCE-READY-FIXTURE",
+    ) -> PersistenceReadyFixtureConfig:
+        resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
+        return super().__new__(cls, actor_id=resolved)
+
+
+class PersistenceReadyFixture(DataActor):
+    def on_start(self) -> None:
+        self.subscribe_signal(PERSISTENCE_READY_REQUEST_SIGNAL)
+        self._publish_ready()
+
+    def on_signal(self, signal: Signal) -> None:
+        PersistenceReadyRequest.from_signal_value(signal.value)
+        self._publish_ready()
+
+    def _publish_ready(self) -> None:
+        event = PersistenceReadyEvent(
+            source=str(self.actor_id),
+            run_id="36a468b3-df4b-49fa-809e-c60e8d19d9a0",
+        )
+        self.publish_signal(PERSISTENCE_READY_SIGNAL, event.to_signal_value())
 
 
 class HealthSubscriberConfig(DataActorConfig):

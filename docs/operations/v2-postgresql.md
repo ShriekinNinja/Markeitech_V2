@@ -20,12 +20,16 @@ lifecycle, component failures, and static watchlist membership and lifecycle sig
 ordered bounded worker. It records semantic control history only; native quote and bar callbacks
 remain outside PostgreSQL.
 
-Nautilus signals are transient rather than retained. The static watchlist schedules its initial
-membership audit after actor startup so persistence can subscribe first, and it deterministically
-flushes any instruments observed during that short boundary afterward. Existing acquisition
-status exchange repeats after startup through the control actor's scheduled request. A general
-component-to-persistence readiness handshake remains required before future actors may emit
-one-shot startup events that cannot be reconstructed or repeated.
+Nautilus signals are transient rather than retained. Runtime startup therefore has two persistence
+guarantees. Process preflight verifies PostgreSQL and migrations before the node is built. Inside
+the node, the persistence actor publishes a versioned readiness fact only after its worker is
+running, all audited signal subscriptions are installed, and its Nautilus `on_start` callback has
+returned. System control, acquisition, and watchlist actors request and wait for that fact before
+publishing startup events.
+
+This ordering preserves acquisition `REQUESTED`, `ACCEPTED`, and `SUBSCRIBED` events before the
+first market observation can produce `ACTIVE`. It does not turn readiness chatter or raw market
+callbacks into database records.
 
 ## Normal Operation
 
@@ -46,9 +50,11 @@ kept in the `v2_markeitech-postgres` Docker volume.
 Before connecting to IB, Markeitech:
 
 1. connects to PostgreSQL;
-2. applies pending versioned migrations under an advisory lock;
-3. confirms the persistence actor can connect; and
-4. opens the runtime run record.
+2. reapplies idempotent schema definitions under an advisory lock, repairing missing tables and
+   indexes even when their migration versions were already recorded;
+3. verifies every required table and column, failing startup on incompatible schema drift;
+4. confirms the persistence actor can connect; and
+5. opens the runtime run record.
 
 `READY` requires both configured instrument definitions and operational persistence readiness.
 During shutdown, the actor records `STOPPING`. The CLI records `STOPPED` only after Nautilus has

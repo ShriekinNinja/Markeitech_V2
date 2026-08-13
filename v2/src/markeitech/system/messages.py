@@ -10,6 +10,9 @@ SYSTEM_HEALTH_SIGNAL = "markeitech.system.health"
 SYSTEM_HEALTH_SCHEMA_VERSION = 1
 COMPONENT_FAILURE_SIGNAL = "markeitech.component.failure"
 COMPONENT_FAILURE_SCHEMA_VERSION = 1
+PERSISTENCE_READY_REQUEST_SIGNAL = "markeitech.persistence.ready.request"
+PERSISTENCE_READY_SIGNAL = "markeitech.persistence.ready"
+PERSISTENCE_READY_SCHEMA_VERSION = 1
 ACQUISITION_STATUS_SIGNAL = "markeitech.acquisition.status"
 ACQUISITION_STATUS_REQUEST_SIGNAL = "markeitech.acquisition.status.request"
 ACQUISITION_STATUS_SCHEMA_VERSION = 1
@@ -44,6 +47,72 @@ _WATCHLIST_LIFECYCLE_STATES = {
 }
 
 type EvidenceValue = str | int | float | bool | None
+
+
+@dataclass(frozen=True, slots=True)
+class PersistenceReadyRequest:
+    requester: str
+    schema_version: int = PERSISTENCE_READY_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _validate_schema_version(
+            self.schema_version,
+            PERSISTENCE_READY_SCHEMA_VERSION,
+            "persistence readiness request",
+        )
+        object.__setattr__(self, "requester", _required_text(self.requester, "requester"))
+
+    def to_signal_value(self) -> str:
+        return json.dumps(
+            {"schema_version": self.schema_version, "requester": self.requester},
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> PersistenceReadyRequest:
+        payload = _load_exact_json_object(
+            value,
+            label="persistence readiness request",
+            expected={"schema_version", "requester"},
+        )
+        return cls(**payload)  # type: ignore[arg-type]
+
+
+@dataclass(frozen=True, slots=True)
+class PersistenceReadyEvent:
+    source: str
+    run_id: str
+    schema_version: int = PERSISTENCE_READY_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _validate_schema_version(
+            self.schema_version,
+            PERSISTENCE_READY_SCHEMA_VERSION,
+            "persistence readiness",
+        )
+        object.__setattr__(self, "source", _required_text(self.source, "source"))
+        object.__setattr__(self, "run_id", _required_text(self.run_id, "run_id"))
+
+    def to_signal_value(self) -> str:
+        return json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "source": self.source,
+                "run_id": self.run_id,
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> PersistenceReadyEvent:
+        payload = _load_exact_json_object(
+            value,
+            label="persistence readiness",
+            expected={"schema_version", "source", "run_id"},
+        )
+        return cls(**payload)  # type: ignore[arg-type]
 
 
 @dataclass(frozen=True, slots=True)

@@ -15,7 +15,7 @@ MIGRATIONS = (
         version=1,
         name="operational_runtime_history",
         sql="""
-            CREATE TABLE runtime_runs (
+            CREATE TABLE IF NOT EXISTS runtime_runs (
                 run_id UUID PRIMARY KEY,
                 runtime_id TEXT NOT NULL,
                 started_at_ns BIGINT NOT NULL,
@@ -25,7 +25,7 @@ MIGRATIONS = (
                 schema_version INTEGER NOT NULL
             );
 
-            CREATE TABLE system_health_events (
+            CREATE TABLE IF NOT EXISTS system_health_events (
                 event_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                 run_id UUID NOT NULL REFERENCES runtime_runs(run_id),
                 sequence BIGINT NOT NULL,
@@ -41,9 +41,9 @@ MIGRATIONS = (
                 UNIQUE (run_id, sequence)
             );
 
-            CREATE INDEX system_health_events_state_time_idx
+            CREATE INDEX IF NOT EXISTS system_health_events_state_time_idx
                 ON system_health_events (state, ts_event_ns);
-            CREATE INDEX system_health_events_source_time_idx
+            CREATE INDEX IF NOT EXISTS system_health_events_source_time_idx
                 ON system_health_events (source, ts_event_ns);
         """,
     ),
@@ -51,7 +51,7 @@ MIGRATIONS = (
         version=2,
         name="generic_operational_event_ledger",
         sql="""
-            CREATE TABLE operational_events (
+            CREATE TABLE IF NOT EXISTS operational_events (
                 event_id TEXT NOT NULL,
                 run_id UUID NOT NULL REFERENCES runtime_runs(run_id),
                 sequence BIGINT NOT NULL,
@@ -69,13 +69,60 @@ MIGRATIONS = (
                 UNIQUE (run_id, sequence)
             );
 
-            CREATE INDEX operational_events_type_time_idx
+            CREATE INDEX IF NOT EXISTS operational_events_type_time_idx
                 ON operational_events (event_type, ts_event_ns);
-            CREATE INDEX operational_events_source_time_idx
+            CREATE INDEX IF NOT EXISTS operational_events_source_time_idx
                 ON operational_events (source, ts_event_ns);
-            CREATE INDEX operational_events_correlation_idx
+            CREATE INDEX IF NOT EXISTS operational_events_correlation_idx
                 ON operational_events (correlation_id)
                 WHERE correlation_id IS NOT NULL;
         """,
     ),
 )
+
+REQUIRED_SCHEMA_COLUMNS = {
+    "runtime_runs": frozenset(
+        {
+            "run_id",
+            "runtime_id",
+            "started_at_ns",
+            "ended_at_ns",
+            "terminal_state",
+            "terminal_reason",
+            "schema_version",
+        },
+    ),
+    "system_health_events": frozenset(
+        {
+            "event_id",
+            "run_id",
+            "sequence",
+            "signal_name",
+            "state",
+            "reason",
+            "source",
+            "evidence_json",
+            "ts_event_ns",
+            "ts_init_ns",
+            "recorded_at_ns",
+            "schema_version",
+        },
+    ),
+    "operational_events": frozenset(
+        {
+            "event_id",
+            "run_id",
+            "sequence",
+            "signal_name",
+            "event_type",
+            "source",
+            "correlation_id",
+            "causation_id",
+            "payload_json",
+            "ts_event_ns",
+            "ts_init_ns",
+            "recorded_at_ns",
+            "schema_version",
+        },
+    ),
+}

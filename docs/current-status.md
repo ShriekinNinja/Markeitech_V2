@@ -180,8 +180,16 @@ configuration-owned watchlist. The exact handoff is
 
 The generic PostgreSQL operational ledger and store boundary are implemented. Current acquisition
 control events plus static watchlist membership and lifecycle events are wired through the same
-ordered bounded persistence worker for review. The watchlist deliberately delays its initial audit
-until persistence has subscribed and never includes raw quote or bar payloads.
+ordered bounded persistence worker. A versioned request/ready handshake now gates system control,
+data acquisition, and watchlist startup until the in-node persistence worker is subscribed and
+its Nautilus startup callback has returned. This replaces the watchlist's timing-based startup
+delay and preserves acquisition
+`REQUESTED`, `ACCEPTED`, and `SUBSCRIBED` events before the first `ACTIVE` observation. PostgreSQL
+preflight reapplies idempotent schema definitions and verifies required tables and columns. A
+dropped applied-migration table is therefore recreated before runtime readiness instead of failing
+on its first write. No audit event includes raw quote or bar payloads. The startup-audit closure is
+implemented for live review on branch
+`v2-stage-8e-startup-audit-closure`.
 
 ## Explicit Boundaries
 

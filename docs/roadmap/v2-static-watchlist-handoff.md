@@ -48,14 +48,15 @@ tables. Read-optimized projections may be added only for concrete query needs.
    and restart queries.
 2. [Implemented for review] Persist current acquisition control events plus watchlist membership
    and lifecycle events through one ordered worker before treating them as accepted audit history.
-   Future one-shot startup publishers still require an explicit persistence-readiness handshake;
-   transient signal delivery is not durable by itself.
-3. Add dedicated static watchlist configuration with permanent configuration ownership.
-4. Define explicit Watchlist-to-Acquisition demand and outcome messaging.
-5. Remove duplicated bootstrap feed declarations and let Watchlist seed baseline demand.
-6. Approve and implement freshness/degradation policy without arbitrary thresholds.
-7. Resolve the 18 logical instruments to reviewed provider identities and futures contracts.
-8. Live-prove bounded operation, shared subscriptions, complete audit history, and shutdown.
+3. [Implemented for live review] Gate system control, acquisition, and watchlist startup through a
+   versioned persistence request/ready handshake. This closes the missing startup lifecycle without
+   an arbitrary timer and preserves `REQUESTED`, `ACCEPTED`, and `SUBSCRIBED` before `ACTIVE`.
+4. Add dedicated static watchlist configuration with permanent configuration ownership.
+5. Define explicit Watchlist-to-Acquisition demand and outcome messaging.
+6. Remove duplicated bootstrap feed declarations and let Watchlist seed baseline demand.
+7. Approve and implement freshness/degradation policy without arbitrary thresholds.
+8. Resolve the 18 logical instruments to reviewed provider identities and futures contracts.
+9. Live-prove bounded operation, shared subscriptions, complete audit history, and shutdown.
 
 ## Hard Stop
 

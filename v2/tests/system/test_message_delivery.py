@@ -75,7 +75,12 @@ def test_acquisition_status_publication_advances_control_to_ready() -> None:
             "instrument_ids": instrument_ids,
         },
     )
-    for actor in [control, acquisition]:
+    persistence = ImportableActorConfig(
+        actor_path="tests.system.message_actor_fixtures:PersistenceReadyFixture",
+        config_path="tests.system.message_actor_fixtures:PersistenceReadyFixtureConfig",
+        config={"actor_id": "PERSISTENCE-READY-FIXTURE"},
+    )
+    for actor in [control, acquisition, persistence]:
         node.add_actor_from_config(actor)
 
     try:

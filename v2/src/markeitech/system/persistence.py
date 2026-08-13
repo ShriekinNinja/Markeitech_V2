@@ -21,6 +21,8 @@ from markeitech.system.messages import (
     ACQUISITION_STATUS_SIGNAL,
     ACQUISITION_STREAM_SIGNAL,
     COMPONENT_FAILURE_SIGNAL,
+    PERSISTENCE_READY_REQUEST_SIGNAL,
+    PERSISTENCE_READY_SIGNAL,
     SYSTEM_HEALTH_SIGNAL,
     WATCHLIST_LIFECYCLE_SIGNAL,
     WATCHLIST_MEMBERSHIP_SIGNAL,
@@ -28,15 +30,19 @@ from markeitech.system.messages import (
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
     ComponentFailureEvent,
+    PersistenceReadyEvent,
+    PersistenceReadyRequest,
     SystemHealthEvent,
     WatchlistLifecycleEvent,
     WatchlistMembershipEvent,
 )
-from markeitech.system.persistence_migrations import MIGRATIONS
+from markeitech.system.persistence_migrations import MIGRATIONS, REQUIRED_SCHEMA_COLUMNS
 
 PERSISTENCE_SCHEMA_VERSION = 1
 _MIGRATION_LOCK_ID = 4_873_274_823
 _RESULT_TIMER = "operational-persistence-results"
+_READY_ALERT = "operational-persistence-ready"
+_READY_DELAY_NS = 1_000_000
 _STOP = object()
 
 
@@ -182,13 +188,45 @@ class OperationalStore:
                 cursor.execute("SELECT version FROM markeitech_schema_migrations")
                 applied = {row[0] for row in cursor.fetchall()}
                 for migration in MIGRATIONS:
-                    if migration.version in applied:
-                        continue
                     cursor.execute(migration.sql)
-                    cursor.execute(
-                        "INSERT INTO markeitech_schema_migrations (version, name) VALUES (%s, %s)",
-                        (migration.version, migration.name),
-                    )
+                    if migration.version not in applied:
+                        cursor.execute(
+                            """
+                            INSERT INTO markeitech_schema_migrations (version, name)
+                            VALUES (%s, %s)
+                            """,
+                            (migration.version, migration.name),
+                        )
+                self._verify_schema(cursor)
+
+    @staticmethod
+    def _verify_schema(cursor: psycopg.Cursor[object]) -> None:
+        cursor.execute(
+            """
+            SELECT table_name, column_name
+            FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = ANY(%s)
+            """,
+            (list(REQUIRED_SCHEMA_COLUMNS),),
+        )
+        actual: dict[str, set[str]] = {}
+        for table_name, column_name in cursor.fetchall():
+            actual.setdefault(str(table_name), set()).add(str(column_name))
+
+        problems: list[str] = []
+        for table_name, required_columns in REQUIRED_SCHEMA_COLUMNS.items():
+            actual_columns = actual.get(table_name)
+            if actual_columns is None:
+                problems.append(f"missing table {table_name}")
+                continue
+            missing_columns = sorted(required_columns - actual_columns)
+            if missing_columns:
+                problems.append(
+                    f"table {table_name} missing columns {', '.join(missing_columns)}",
+                )
+        if problems:
+            raise RuntimeError(f"PostgreSQL schema verification failed: {'; '.join(problems)}")
 
     def check(self) -> None:
         with self._connect() as connection:
@@ -575,6 +613,7 @@ class OperationalPersistenceActor(DataActor):
             ACQUISITION_STREAM_SIGNAL,
             WATCHLIST_MEMBERSHIP_SIGNAL,
             WATCHLIST_LIFECYCLE_SIGNAL,
+            PERSISTENCE_READY_REQUEST_SIGNAL,
         ):
             self.subscribe_signal(signal_name)
             self._subscribed_signals.add(signal_name)
@@ -583,9 +622,21 @@ class OperationalPersistenceActor(DataActor):
             self._result_poll_interval_ns,
             callback=self._drain_results,
         )
-        self.log.info(f"OPERATIONAL_PERSISTENCE_READY | run_id={self._run_id}")
+        self.clock.set_time_alert_ns(
+            _READY_ALERT,
+            self.clock.timestamp_ns() + _READY_DELAY_NS,
+            callback=self._announce_ready,
+        )
 
     def on_signal(self, signal: Signal) -> None:
+        if signal.name == PERSISTENCE_READY_REQUEST_SIGNAL:
+            try:
+                PersistenceReadyRequest.from_signal_value(signal.value)
+            except ValueError as exc:
+                self._report_failure("invalid_persistence_ready_request", type(exc).__name__)
+                return
+            self._publish_ready()
+            return
         if self._worker is None:
             self._report_failure("persistence_worker_unavailable", "not_started")
             return
@@ -598,12 +649,27 @@ class OperationalPersistenceActor(DataActor):
         if not self._worker.submit(record):
             self._report_failure("persistence_queue_unavailable", "queue_full_or_closed")
 
+    def _publish_ready(self) -> None:
+        self.publish_signal(
+            PERSISTENCE_READY_SIGNAL,
+            PersistenceReadyEvent(
+                source=str(self.actor_id),
+                run_id=str(self._run_id),
+            ).to_signal_value(),
+        )
+
+    def _announce_ready(self, _event) -> None:  # noqa: ANN001
+        self._publish_ready()
+        self.log.info(f"OPERATIONAL_PERSISTENCE_READY | run_id={self._run_id}")
+
     def on_stop(self) -> None:
         for signal_name in tuple(self._subscribed_signals):
             self.unsubscribe_signal(signal_name)
             self._subscribed_signals.remove(signal_name)
         if _RESULT_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_RESULT_TIMER)
+        if _READY_ALERT in self.clock.timer_names():
+            self.clock.cancel_timer(_READY_ALERT)
         if self._worker is not None and not self._worker.close():
             self._report_failure("persistence_worker_timeout", "shutdown_timeout")
         self._drain_results(None)

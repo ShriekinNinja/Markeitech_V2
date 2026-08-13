@@ -13,10 +13,14 @@ from markeitech.system.messages import (
     ACQUISITION_STATUS_SIGNAL,
     COMPONENT_FAILURE_SIGNAL,
     INSTRUMENTS_READY,
+    PERSISTENCE_READY_REQUEST_SIGNAL,
+    PERSISTENCE_READY_SIGNAL,
     SYSTEM_HEALTH_SIGNAL,
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
     ComponentFailureEvent,
+    PersistenceReadyEvent,
+    PersistenceReadyRequest,
 )
 
 _INITIAL_EVALUATION_ALERT = "system-control-initial-evaluation"
@@ -46,7 +50,9 @@ class SystemControlActor(DataActor):
         self._available: set[InstrumentId] = set()
         self._health = SystemHealthStateMachine()
         self._evaluation_started = False
-        self._persistence_ready = config.operational_persistence_ready
+        self._persistence_preflight_ready = config.operational_persistence_ready
+        self._persistence_ready = False
+        self._startup_released = False
         self._component_failures_received = 0
         self._malformed_failure_reports = 0
         self._acquisition_statuses_received = 0
@@ -57,14 +63,10 @@ class SystemControlActor(DataActor):
     def on_start(self) -> None:
         self.subscribe_signal(COMPONENT_FAILURE_SIGNAL)
         self.subscribe_signal(ACQUISITION_STATUS_SIGNAL)
+        self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.publish_signal(
-            ACQUISITION_STATUS_REQUEST_SIGNAL,
-            AcquisitionStatusRequest(requester=str(self.actor_id)).to_signal_value(),
-        )
-        self.clock.set_time_alert_ns(
-            _INITIAL_EVALUATION_ALERT,
-            self.clock.timestamp_ns() + _INITIAL_EVALUATION_DELAY_NS,
-            callback=self._begin_evaluation,
+            PERSISTENCE_READY_REQUEST_SIGNAL,
+            PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
         )
 
     def on_stop(self) -> None:
@@ -75,6 +77,7 @@ class SystemControlActor(DataActor):
         )
         self.unsubscribe_signal(COMPONENT_FAILURE_SIGNAL)
         self.unsubscribe_signal(ACQUISITION_STATUS_SIGNAL)
+        self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.log.info(
             "SYSTEM_CONTROL_SUMMARY"
             f" | component_failures={self._component_failures_received}"
@@ -86,7 +89,21 @@ class SystemControlActor(DataActor):
         )
 
     def on_signal(self, signal: Signal) -> None:
+        if signal.name == PERSISTENCE_READY_SIGNAL:
+            try:
+                PersistenceReadyEvent.from_signal_value(signal.value)
+            except ValueError as exc:
+                self.log.error(
+                    "PERSISTENCE_READY_REJECTED"
+                    f" | reason=invalid_event | error={type(exc).__name__}",
+                )
+                return
+            self._persistence_ready = True
+            self._release_startup()
+            return
         if signal.name == ACQUISITION_STATUS_SIGNAL:
+            if not self._startup_released:
+                return
             self._handle_acquisition_status(signal)
             return
         if signal.name != COMPONENT_FAILURE_SIGNAL:
@@ -111,6 +128,20 @@ class SystemControlActor(DataActor):
                 "failure_code": failure.code,
                 **dict(failure.evidence),
             },
+        )
+
+    def _release_startup(self) -> None:
+        if self._startup_released:
+            return
+        self._startup_released = True
+        self.publish_signal(
+            ACQUISITION_STATUS_REQUEST_SIGNAL,
+            AcquisitionStatusRequest(requester=str(self.actor_id)).to_signal_value(),
+        )
+        self.clock.set_time_alert_ns(
+            _INITIAL_EVALUATION_ALERT,
+            self.clock.timestamp_ns() + _INITIAL_EVALUATION_DELAY_NS,
+            callback=self._begin_evaluation,
         )
 
     def _handle_acquisition_status(self, signal: Signal) -> None:
@@ -211,4 +242,5 @@ class SystemControlActor(DataActor):
             "expected_instrument_count": len(expected),
             "expected_instruments": ",".join(expected),
             "operational_persistence_ready": self._persistence_ready,
+            "operational_persistence_preflight_ready": self._persistence_preflight_ready,
         }

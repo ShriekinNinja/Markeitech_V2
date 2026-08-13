@@ -91,3 +91,23 @@ def test_postgres_migrations_restart_reads_and_duplicate_event_write() -> None:
     restarted_store.close_run(run_id, "STOPPED", "integration test completed")
     closed_run = restarted_store.load_run(run_id)
     assert closed_run is not None and closed_run.terminal_state == "STOPPED"
+
+
+@pytest.mark.postgres
+@pytest.mark.skipif(not os.getenv(TEST_DSN_ENV), reason=f"{TEST_DSN_ENV} is not configured")
+def test_initialize_recreates_a_dropped_applied_migration_table() -> None:
+    store = OperationalStore(os.environ[TEST_DSN_ENV], connect_timeout_seconds=3)
+    store.initialize()
+    try:
+        with store._connect() as connection:  # noqa: SLF001 - schema recovery integration test
+            connection.execute("DROP TABLE operational_events")
+
+        store.initialize()
+    finally:
+        store.initialize()
+
+    with store._connect() as connection:  # noqa: SLF001 - schema integration test
+        table_name = connection.execute(
+            "SELECT to_regclass('operational_events')::text",
+        ).fetchone()
+    assert table_name == ("operational_events",)

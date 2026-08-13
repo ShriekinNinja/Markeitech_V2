@@ -10,6 +10,7 @@ from markeitech.system.messages import (
     COMPONENT_FAILURE_SCHEMA_VERSION,
     INSTRUMENTS_READY,
     INSTRUMENTS_RESOLVING,
+    PERSISTENCE_READY_SCHEMA_VERSION,
     SYSTEM_HEALTH_SCHEMA_VERSION,
     WATCHLIST_LIFECYCLE_SCHEMA_VERSION,
     WATCHLIST_MEMBERSHIP_SCHEMA_VERSION,
@@ -17,11 +18,33 @@ from markeitech.system.messages import (
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
     ComponentFailureEvent,
+    PersistenceReadyEvent,
+    PersistenceReadyRequest,
     SystemHealthEvent,
     WatchlistLifecycleEvent,
     WatchlistMember,
     WatchlistMembershipEvent,
 )
+
+
+def test_persistence_readiness_contracts_round_trip() -> None:
+    request = PersistenceReadyRequest(requester=" WATCHLIST ")
+    ready = PersistenceReadyEvent(
+        source=" OPERATIONAL-PERSISTENCE ",
+        run_id="36a468b3-df4b-49fa-809e-c60e8d19d9a0",
+    )
+
+    assert PersistenceReadyRequest.from_signal_value(request.to_signal_value()) == request
+    assert PersistenceReadyEvent.from_signal_value(ready.to_signal_value()) == ready
+    assert ready.schema_version == PERSISTENCE_READY_SCHEMA_VERSION
+
+
+def test_persistence_readiness_contracts_reject_unknown_fields() -> None:
+    payload = json.loads(PersistenceReadyRequest(requester="WATCHLIST").to_signal_value())
+    payload["unexpected"] = True
+
+    with pytest.raises(ValueError, match="unknown"):
+        PersistenceReadyRequest.from_signal_value(json.dumps(payload))
 
 
 def test_watchlist_membership_round_trips_with_sorted_effective_members() -> None:

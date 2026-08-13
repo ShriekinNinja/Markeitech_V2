@@ -3,12 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from nautilus_trader.common import DataActor, DataActorConfig
+from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, BarType, ClientId, InstrumentId
 
 from markeitech.system.messages import (
+    PERSISTENCE_READY_REQUEST_SIGNAL,
+    PERSISTENCE_READY_SIGNAL,
     WATCHLIST_LIFECYCLE_SIGNAL,
     WATCHLIST_MEMBERSHIP_SIGNAL,
+    PersistenceReadyEvent,
+    PersistenceReadyRequest,
     WatchlistLifecycleEvent,
     WatchlistMember,
     WatchlistMembershipEvent,
@@ -16,8 +20,6 @@ from markeitech.system.messages import (
 
 _IB_CLIENT_ID = ClientId.from_str("IB")
 _MAX_COUNTER = 2**63 - 1
-_INITIAL_AUDIT_ALERT = "watchlist-initial-audit"
-_INITIAL_AUDIT_DELAY_NS = 1_000_000
 _STATIC_MEMBERSHIP_REVISION = 1
 _STATIC_MEMBERSHIP_EVENT_ID = "watchlist-membership:1"
 _STATIC_OWNER_ID = "config:system"
@@ -232,18 +234,38 @@ class WatchlistActor(DataActor):
         self._audit_started = False
         self._lifecycle_sequence = 0
         self._observed_before_audit: set[str] = set()
+        self._startup_released = False
 
     def on_start(self) -> None:
+        self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
+        self.publish_signal(
+            PERSISTENCE_READY_REQUEST_SIGNAL,
+            PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
+        )
+
+    def on_signal(self, signal: Signal) -> None:
+        if signal.name != PERSISTENCE_READY_SIGNAL:
+            return
+        try:
+            PersistenceReadyEvent.from_signal_value(signal.value)
+        except ValueError as exc:
+            self.log.error(
+                "PERSISTENCE_READY_REJECTED"
+                f" | reason=invalid_event | error={type(exc).__name__}",
+            )
+            return
+        self._release_startup()
+
+    def _release_startup(self) -> None:
+        if self._startup_released:
+            return
+        self._startup_released = True
         for value in self._state.instrument_ids:
             instrument_id = InstrumentId.from_str(value)
             self.subscribe_quotes(instrument_id, client_id=_IB_CLIENT_ID)
             self.subscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
         self._state.register_consumers()
-        self.clock.set_time_alert_ns(
-            _INITIAL_AUDIT_ALERT,
-            self.clock.timestamp_ns() + _INITIAL_AUDIT_DELAY_NS,
-            callback=self._publish_initial_audit,
-        )
+        self._publish_initial_audit(None)
         self.log.info(f"WATCHLIST_OPERATIONAL | instruments={len(self._state.instrument_ids)}")
 
     def on_quote(self, quote) -> None:  # noqa: ANN001
@@ -266,18 +288,17 @@ class WatchlistActor(DataActor):
         self._log_observation(instrument_id, became_observed)
 
     def on_stop(self) -> None:
-        if _INITIAL_AUDIT_ALERT in self.clock.timer_names():
-            self.clock.cancel_timer(_INITIAL_AUDIT_ALERT)
-        self._publish_initial_audit(None)
-        for value in self._state.instrument_ids:
-            instrument_id = InstrumentId.from_str(value)
-            self.unsubscribe_quotes(instrument_id, client_id=_IB_CLIENT_ID)
-            self.unsubscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
-        self._state.detach_consumers()
-        self._publish_lifecycle(
-            "CONSUMERS_DETACHED",
-            reason="static watchlist native consumers detached",
-        )
+        self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
+        if self._startup_released:
+            for value in self._state.instrument_ids:
+                instrument_id = InstrumentId.from_str(value)
+                self.unsubscribe_quotes(instrument_id, client_id=_IB_CLIENT_ID)
+                self.unsubscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
+            self._state.detach_consumers()
+            self._publish_lifecycle(
+                "CONSUMERS_DETACHED",
+                reason="static watchlist native consumers detached",
+            )
         snapshot = self._state.snapshot()
         for state in snapshot.instruments:
             self.log.info(

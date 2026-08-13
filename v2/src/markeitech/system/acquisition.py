@@ -22,10 +22,14 @@ from markeitech.system.messages import (
     COMPONENT_FAILURE_SIGNAL,
     INSTRUMENTS_READY,
     INSTRUMENTS_RESOLVING,
+    PERSISTENCE_READY_REQUEST_SIGNAL,
+    PERSISTENCE_READY_SIGNAL,
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
     ComponentFailureEvent,
+    PersistenceReadyEvent,
+    PersistenceReadyRequest,
 )
 
 
@@ -113,9 +117,20 @@ class DataAcquisitionActor(DataActor):
         self._malformed_status_requests = 0
         self._statuses_published = 0
         self._failure_published = False
+        self._startup_released = False
 
     def on_start(self) -> None:
         self.subscribe_signal(ACQUISITION_STATUS_REQUEST_SIGNAL)
+        self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
+        self.publish_signal(
+            PERSISTENCE_READY_REQUEST_SIGNAL,
+            PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
+        )
+
+    def _release_startup(self) -> None:
+        if self._startup_released:
+            return
+        self._startup_released = True
         for instrument_id in sorted(self._tracker.expected, key=str):
             if self.cache.instrument(instrument_id) is not None:
                 self._tracker.observe(instrument_id)
@@ -126,6 +141,8 @@ class DataAcquisitionActor(DataActor):
         self._start_bootstrap_feeds_if_ready()
 
     def on_instrument(self, instrument) -> None:  # noqa: ANN001
+        if not self._startup_released:
+            return
         if self._tracker.observe(instrument.id):
             self._instruments_received += 1
             self.log.info(f"INSTRUMENT_ACQUIRED | instrument_id={instrument.id}")
@@ -135,7 +152,20 @@ class DataAcquisitionActor(DataActor):
             self._duplicate_instruments += 1
 
     def on_signal(self, signal: Signal) -> None:
+        if signal.name == PERSISTENCE_READY_SIGNAL:
+            try:
+                PersistenceReadyEvent.from_signal_value(signal.value)
+            except ValueError as exc:
+                self.log.error(
+                    "PERSISTENCE_READY_REJECTED"
+                    f" | reason=invalid_event | error={type(exc).__name__}",
+                )
+                return
+            self._release_startup()
+            return
         if signal.name != ACQUISITION_STATUS_REQUEST_SIGNAL:
+            return
+        if not self._startup_released:
             return
         self._status_requests += 1
         try:
@@ -164,11 +194,13 @@ class DataAcquisitionActor(DataActor):
         self._observe(str(status.instrument_id), FeedKind.INSTRUMENT_STATUS)
 
     def on_stop(self) -> None:
-        for demand in self._bootstrap_demands:
-            self._publish_lifecycle_events(
-                self._coordinator.cancel(demand.demand_id, now=self.clock.utc_now()),
-            )
+        if self._startup_released:
+            for demand in self._bootstrap_demands:
+                self._publish_lifecycle_events(
+                    self._coordinator.cancel(demand.demand_id, now=self.clock.utc_now()),
+                )
         self.unsubscribe_signal(ACQUISITION_STATUS_REQUEST_SIGNAL)
+        self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.log.info(
             "DATA_ACQUISITION_SUMMARY"
             f" | instrument_requests={self._instrument_requests}"
