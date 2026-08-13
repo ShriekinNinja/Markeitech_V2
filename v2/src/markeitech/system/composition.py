@@ -65,6 +65,18 @@ def build_actor_plan(
                 },
             ),
         ),
+        ActorRegistration(
+            key="watchlist",
+            actor_id="WATCHLIST",
+            config=ImportableActorConfig(
+                actor_path="markeitech.system.watchlist:WatchlistActor",
+                config_path="markeitech.system.watchlist:WatchlistActorConfig",
+                config={
+                    "actor_id": "WATCHLIST",
+                    "instrument_ids": instrument_ids,
+                },
+            ),
+        ),
     ]
     if config.acquisition.native_consumer_probe_enabled:
         registrations.append(

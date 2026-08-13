@@ -41,13 +41,43 @@ native_consumer_probe_enabled = false
 native_consumer_probe_unsubscribe_after_seconds = 15
 bootstrap_feeds = [
   { instrument_id = "ESU6.CME", kind = "quotes", selector = "default" },
-  { instrument_id = "ESU6.CME", kind = "trades", selector = "default" },
+  { instrument_id = "ESU6.CME", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
+  { instrument_id = "NQU6.CME", kind = "quotes", selector = "default" },
+  { instrument_id = "NQU6.CME", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
   { instrument_id = "SPY.ARCA", kind = "quotes", selector = "default" },
-  { instrument_id = "SPY.ARCA", kind = "trades", selector = "default" },
+  { instrument_id = "SPY.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
+  { instrument_id = "QQQ.NASDAQ", kind = "quotes", selector = "default" },
+  { instrument_id = "QQQ.NASDAQ", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
+  { instrument_id = "XLK.ARCA", kind = "quotes", selector = "default" },
+  { instrument_id = "XLK.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
+  { instrument_id = "XLF.ARCA", kind = "quotes", selector = "default" },
+  { instrument_id = "XLF.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
+  { instrument_id = "IWM.ARCA", kind = "quotes", selector = "default" },
+  { instrument_id = "IWM.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
+  { instrument_id = "SOXL.ARCA", kind = "quotes", selector = "default" },
+  { instrument_id = "SOXL.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
 ]
 
 [[instruments]]
 id = "ESU6.CME"
 
 [[instruments]]
+id = "NQU6.CME"
+
+[[instruments]]
 id = "SPY.ARCA"
+
+[[instruments]]
+id = "QQQ.NASDAQ"
+
+[[instruments]]
+id = "XLK.ARCA"
+
+[[instruments]]
+id = "XLF.ARCA"
+
+[[instruments]]
+id = "IWM.ARCA"
+
+[[instruments]]
+id = "SOXL.ARCA"

@@ -1,19 +1,22 @@
 # V2 Persistence Boundary Discovery
 
-**Status:** Decision Gate 4 accepted on 2026-08-05; implementation awaiting live review.
+**Status:** Initial Decision Gate 4 accepted on 2026-08-05; operational-audit scope expanded by
+Markeitect on 2026-08-13.
 
 **Scope:** The current V2 runtime and NautilusTrader `2.0.0rc1` installed in `v2/.venv`.
 This document recommends a boundary. It does not approve or implement a database.
 
 ## Executive Finding
 
-V2 currently has one small durable-information requirement: preserve an honest history of runtime
-runs and system-health transitions. Raw market-data retention is not approved. Replay and
-backtesting are outside current planning and must not justify speculative storage.
+V2 began with one small durable-information requirement: preserve an honest history of runtime
+runs and system-health transitions. The accepted long-term boundary is broader: PostgreSQL must
+preserve a full audit of meaningful system behavior. Raw market-data retention is not approved.
+Replay and backtesting are outside current planning and must not justify speculative storage.
 
 The storage decision should therefore stay split:
 
-1. use a relational operational store for low-volume runtime history; and
+1. use a relational operational store for durable system intent, decisions, lifecycle, and
+   outcomes; and
 2. fetch reconstructable market data from IB when the live runtime needs it, and revisit durable
    market-data storage only after Markeitect approves a non-reconstructable live requirement.
 
@@ -37,6 +40,31 @@ Parquet remain useful facilities, but none substitutes for the operational audit
 
 The database must not become a second configuration source, a Discord outbox, an instrument
 master, or an accidental market-data warehouse during this stage.
+
+## Durable Audit Invariant
+
+PostgreSQL is the authoritative audit ledger for meaningful system occurrences. As each V2
+component is introduced, its persistence contract must cover:
+
+- external and internal intents, including source, authority, correlation, and causation;
+- policy decisions and their reasons;
+- actor and component lifecycle transitions;
+- provider requests, acceptance, rejection, cancellation, retry, and failure outcomes;
+- subscription, freshness, readiness, degradation, and recovery transitions;
+- derived analytics, semantic market events, agent conclusions, and recommendations;
+- notification attempts and delivery outcomes; and
+- later risk, option-selection, and execution decisions and outcomes.
+
+This does not mean persisting every function call, log line, timer firing, or native callback.
+Those are implementation diagnostics, not domain history. The audit must be sufficient to answer
+what the system knew, requested, decided, changed, published, attempted, and observed as an
+outcome, in order and with stable identities.
+
+Raw ticks, quotes, bars, books, option-chain payloads, and other provider market observations stay
+outside PostgreSQL. Their operational handling is still audited through bounded facts such as
+request identity, first observation, watermark, count, freshness, gap, and terminal outcome.
+Derived semantic events are system outputs and therefore belong in the audit even when their
+evidence originated in transient market data.
 
 ## Exact Nautilus Facilities Reviewed
 
@@ -105,7 +133,7 @@ it initializes and migrates PostgreSQL before IB is built, opens the run immedia
 operational SQL. Read access should be added through a separate query boundary only when an actual
 consumer exists.
 
-## Proposed Initial Records
+## Implemented Initial Records
 
 ### `runtime_runs`
 
@@ -141,6 +169,10 @@ sequence because no other current consumer needs them.
 - Retry an already accepted write without creating a duplicate row.
 
 Anything beyond these queries needs a new requirement rather than a speculative column.
+
+This restriction governed the initial schema only. New components now require explicit audit
+records under the durable-audit invariant above; they must not be squeezed into the health-event
+table or omitted merely because the first schema was intentionally narrow.
 
 ## Migration, Retention, And Backup
 

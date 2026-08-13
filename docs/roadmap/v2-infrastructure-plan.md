@@ -209,6 +209,11 @@ This stage concerns data transport and identity only. It does not define analyti
 
 ## Stage 8: Data Acquisition Ownership
 
+The approved direction for a configuration-seeded, runtime-dynamic observation universe and the
+core `WatchlistActor` relationship with acquisition is staged in
+[`v2-dynamic-watchlist-plan.md`](v2-dynamic-watchlist-plan.md). Its POC closes before historical
+acquisition begins.
+
 ### Stage 8A: Instrument Definition Ownership
 
 - [x] Make `DataAcquisitionActor` a mandatory core actor.
@@ -285,6 +290,15 @@ budgets, and live Nautilus/IB proof remain pending.
 - [x] No Parquet catalog or market-data tables.
 - [x] No replay or backtesting requirements.
 - [x] No retention added for hypothetical future consumers.
+
+### Cross-Cutting Operational Audit
+
+- [ ] Treat PostgreSQL as the authoritative audit ledger for every meaningful system intent,
+      decision, lifecycle transition, publication, attempt, and outcome added in Stage 8 onward.
+- [ ] Give each audited occurrence stable identity, ordering, timestamps, source, correlation,
+      causation, schema version, and idempotent write behavior where applicable.
+- [ ] Audit market-data control and health facts without persisting raw market-data payloads.
+- [ ] Do not mistake ordinary logs, function calls, or native callbacks for durable domain events.
 
 ### Remaining Stage 8 Implementation
 

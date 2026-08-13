@@ -33,6 +33,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
     assert [registration.key for registration in plan] == [
         "system_control",
         "data_acquisition",
+        "watchlist",
         "discord_health",
         "operational_persistence",
     ]
@@ -40,9 +41,32 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
     acquisition = next(item for item in plan if item.key == "data_acquisition")
     assert acquisition.config.config["bootstrap_feeds"] == [
         {"instrument_id": "ESU6.CME", "kind": "quotes", "selector": "default"},
-        {"instrument_id": "ESU6.CME", "kind": "trades", "selector": "default"},
+        {"instrument_id": "ESU6.CME", "kind": "bars", "selector": "5-SECOND-LAST-EXTERNAL"},
+        {"instrument_id": "NQU6.CME", "kind": "quotes", "selector": "default"},
+        {"instrument_id": "NQU6.CME", "kind": "bars", "selector": "5-SECOND-LAST-EXTERNAL"},
         {"instrument_id": "SPY.ARCA", "kind": "quotes", "selector": "default"},
-        {"instrument_id": "SPY.ARCA", "kind": "trades", "selector": "default"},
+        {"instrument_id": "SPY.ARCA", "kind": "bars", "selector": "5-SECOND-LAST-EXTERNAL"},
+        {"instrument_id": "QQQ.NASDAQ", "kind": "quotes", "selector": "default"},
+        {"instrument_id": "QQQ.NASDAQ", "kind": "bars", "selector": "5-SECOND-LAST-EXTERNAL"},
+        {"instrument_id": "XLK.ARCA", "kind": "quotes", "selector": "default"},
+        {"instrument_id": "XLK.ARCA", "kind": "bars", "selector": "5-SECOND-LAST-EXTERNAL"},
+        {"instrument_id": "XLF.ARCA", "kind": "quotes", "selector": "default"},
+        {"instrument_id": "XLF.ARCA", "kind": "bars", "selector": "5-SECOND-LAST-EXTERNAL"},
+        {"instrument_id": "IWM.ARCA", "kind": "quotes", "selector": "default"},
+        {"instrument_id": "IWM.ARCA", "kind": "bars", "selector": "5-SECOND-LAST-EXTERNAL"},
+        {"instrument_id": "SOXL.ARCA", "kind": "quotes", "selector": "default"},
+        {"instrument_id": "SOXL.ARCA", "kind": "bars", "selector": "5-SECOND-LAST-EXTERNAL"},
+    ]
+    watchlist = next(item for item in plan if item.key == "watchlist")
+    assert watchlist.config.config["instrument_ids"] == [
+        "ESU6.CME",
+        "NQU6.CME",
+        "SPY.ARCA",
+        "QQQ.NASDAQ",
+        "XLK.ARCA",
+        "XLF.ARCA",
+        "IWM.ARCA",
+        "SOXL.ARCA",
     ]
 
 
@@ -55,6 +79,7 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
     assert [registration.key for registration in plan] == [
         "system_control",
         "data_acquisition",
+        "watchlist",
         "operational_persistence",
     ]
 

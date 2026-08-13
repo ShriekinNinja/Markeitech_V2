@@ -29,7 +29,13 @@ def test_maps_provider_boundary_to_installed_ib_config() -> None:
     assert provider_config.convert_exchange_to_mic_venue is False
     assert {str(instrument_id) for instrument_id in provider_config.load_ids} == {
         "ESU6.CME",
+        "NQU6.CME",
         "SPY.ARCA",
+        "QQQ.NASDAQ",
+        "XLK.ARCA",
+        "XLF.ARCA",
+        "IWM.ARCA",
+        "SOXL.ARCA",
     }
 
 

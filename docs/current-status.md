@@ -163,10 +163,22 @@ runtime profile. It adds no custom market-data envelope, fan-out, persistence, a
 fallback implementation. Offline tests cover configuration, composition, logical deduplication,
 lifecycle meaning, first observation, cancellation, retry, and native call mapping.
 
+The subsequent scalable-watchlist POC registered a core `WatchlistActor` for eight instruments.
+IB delivered native best-bid/ask updates and external five-second bars to the actor while
+`DataAcquisitionActor` anchored the shared provider subscriptions. Broad tick-by-tick `AllLast`
+requests reached IB limit `10190`, so tick trades remain a focus-only capability rather than a
+baseline watchlist feed. The accepted POC retains bounded readiness transitions and shutdown
+summaries; temporary per-update logs were removed after live review.
+
 ## Explicit Boundaries
 
-- PostgreSQL does not contain market data, Discord deliveries, configuration, logs, or IB
-  instrument definitions.
+- PostgreSQL currently contains runtime runs and system-health transitions. It is the accepted
+  durable audit ledger for all future meaningful system intents, decisions, lifecycle changes,
+  publications, attempts, and outcomes.
+- PostgreSQL does not contain raw ticks, quotes, bars, books, or option-chain payloads. Market-data
+  requests, readiness, freshness, gaps, retries, and failures are system events and must be
+  audited as their owning components are implemented.
+- Ordinary diagnostic logs and individual internal callbacks remain outside PostgreSQL.
 - Reconstructable market data will be requested from IB when required by live operation rather
   than retained speculatively.
 - Raw market-data persistence, Parquet, replay, and backtesting are outside current scope until

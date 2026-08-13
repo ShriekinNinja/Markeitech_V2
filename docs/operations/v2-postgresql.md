@@ -2,8 +2,13 @@
 
 ## Purpose
 
-PostgreSQL stores only V2 operational history: runtime runs and system-health transitions. It does
-not store market data, Discord deliveries, configuration, logs, or IB instrument definitions.
+The implemented schema currently stores runtime runs and system-health transitions. PostgreSQL is
+the accepted V2 audit ledger: every new component must durably record its meaningful intents,
+decisions, lifecycle transitions, publications, attempts, and outcomes.
+
+PostgreSQL does not store raw ticks, quotes, bars, books, option-chain payloads, ordinary log
+lines, or every internal callback. Raw market data remains transient. Its system-level handling,
+including requests, readiness, freshness, gaps, retries, and failures, is audited.
 
 ## Normal Operation
 
