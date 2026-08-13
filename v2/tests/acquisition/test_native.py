@@ -12,14 +12,16 @@ from markeitech.acquisition import (
 
 class RecordingActor:
     def __init__(self) -> None:
-        self.calls: list[tuple[str, str, dict]] = []
+        self.calls: list[tuple[str, str, str | None, dict]] = []
 
     def __getattr__(self, name: str):  # noqa: ANN204
         if not name.startswith(("subscribe_", "unsubscribe_")):
             raise AttributeError(name)
 
-        def record(value, *, params=None) -> None:  # noqa: ANN001
-            self.calls.append((name, str(value), params or {}))
+        def record(value, *, client_id=None, params=None) -> None:  # noqa: ANN001
+            self.calls.append(
+                (name, str(value), None if client_id is None else str(client_id), params or {}),
+            )
 
         return record
 
@@ -43,8 +45,8 @@ def test_simple_requirements_map_to_native_actor_calls(kind: FeedKind, suffix: s
     port.unsubscribe(requirement)
 
     assert actor.calls == [
-        (f"subscribe_{suffix}", "SPY.ARCA", {"source": "test"}),
-        (f"unsubscribe_{suffix}", "SPY.ARCA", {"source": "test"}),
+        (f"subscribe_{suffix}", "SPY.ARCA", "IB", {"source": "test"}),
+        (f"unsubscribe_{suffix}", "SPY.ARCA", "IB", {"source": "test"}),
     ]
 
 
@@ -57,8 +59,8 @@ def test_bar_selector_maps_to_native_bar_type() -> None:
     port.unsubscribe(requirement)
 
     assert actor.calls == [
-        ("subscribe_bars", "SPY.ARCA-5-MINUTE-LAST-EXTERNAL", {}),
-        ("unsubscribe_bars", "SPY.ARCA-5-MINUTE-LAST-EXTERNAL", {}),
+        ("subscribe_bars", "SPY.ARCA-5-MINUTE-LAST-EXTERNAL", "IB", {}),
+        ("unsubscribe_bars", "SPY.ARCA-5-MINUTE-LAST-EXTERNAL", "IB", {}),
     ]
 
 

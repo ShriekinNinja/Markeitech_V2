@@ -32,6 +32,7 @@ class DemandOwnerKind(StrEnum):
 class AcquisitionLifecycleState(StrEnum):
     REQUESTED = "REQUESTED"
     ACCEPTED = "ACCEPTED"
+    SUBSCRIBED = "SUBSCRIBED"
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
     REJECTED = "REJECTED"

@@ -54,6 +54,14 @@ def build_actor_plan(
                 config={
                     "actor_id": "DATA-ACQUISITION",
                     "instrument_ids": instrument_ids,
+                    "bootstrap_feeds": [
+                        {
+                            "instrument_id": feed.instrument_id,
+                            "kind": feed.kind,
+                            "selector": feed.selector,
+                        }
+                        for feed in config.acquisition.bootstrap_feeds
+                    ],
                 },
             ),
         ),

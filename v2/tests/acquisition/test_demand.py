@@ -204,6 +204,7 @@ def test_owner_kinds_and_lifecycle_vocabulary_are_explicit() -> None:
     assert {state.value for state in AcquisitionLifecycleState} == {
         "REQUESTED",
         "ACCEPTED",
+        "SUBSCRIBED",
         "ACTIVE",
         "COMPLETED",
         "REJECTED",

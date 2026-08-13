@@ -1,8 +1,7 @@
 # V2 Adaptive Market-Data Plane
 
-**Status:** Stage 8B direction approved by Markeitect on 2026-08-12. Demand contracts, logical
-subscription coordination, and native call translation are implemented for review. Actor wiring
-and live provider proof remain pending.
+**Status:** Stage 8B is committed. Stage 8C's configured native-stream wiring is implemented for
+review; live provider proof remains pending.
 
 **Scope:** The intended live market-data and analysis control model. This document defines the
 destination and ownership boundaries before subscription code is added. It does not approve a
@@ -259,6 +258,23 @@ Run configurable continuous native market data for multiple instruments through 
 owner and one minimal deterministic consumer. Prove demand deduplication, first observation,
 independent consumers, unsubscribe safety, and bounded state. This is architecture proof, not a
 trading model.
+
+The first Stage 8C batch now:
+
+- declares bootstrap feeds explicitly in configuration rather than deriving them from instrument
+  membership;
+- activates those feeds only after every configured instrument definition is available;
+- routes native subscribe and unsubscribe commands exclusively through `DataAcquisitionActor`;
+- uses that actor as the first minimal native consumer without wrapping or persisting observations;
+- distinguishes a successful subscription command (`SUBSCRIBED`) from first native data
+  (`ACTIVE`);
+- publishes versioned, demand-correlated lifecycle facts and bounded shutdown counters; and
+- configures quote and trade proof streams for ES and SPY without treating that list as a permanent
+  observation universe.
+
+The installed actor API does not expose a local-callback-only subscription method. Independent
+consumer fan-out therefore remains a deliberate live/runtime experiment after the single-owner
+path is accepted. The current batch makes no claim that this behavior has been proven against IB.
 
 ### Stage 8D: Capability-derived historical requests
 

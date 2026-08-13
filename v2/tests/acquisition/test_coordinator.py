@@ -53,14 +53,14 @@ def test_shared_consumers_create_one_subscription_and_last_cancel_stops_it() -> 
     assert [event.state for event in first] == [
         AcquisitionLifecycleState.REQUESTED,
         AcquisitionLifecycleState.ACCEPTED,
-        AcquisitionLifecycleState.ACTIVE,
+        AcquisitionLifecycleState.SUBSCRIBED,
     ]
     assert [event.state for event in second] == [
         AcquisitionLifecycleState.REQUESTED,
         AcquisitionLifecycleState.ACCEPTED,
     ]
     assert len(port.subscribed) == 1
-    assert coordinator.active_provider_demands[0].consumer_ids == (
+    assert coordinator.subscribed_provider_demands[0].consumer_ids == (
         "consumer-a",
         "consumer-b",
     )
@@ -103,12 +103,12 @@ def test_failed_subscribe_is_not_recorded_active_and_can_be_retried() -> None:
 
     assert events[-1].state is AcquisitionLifecycleState.FAILED
     assert events[-1].detail == "provider subscribe failed: RuntimeError"
-    assert coordinator.active_provider_demands == ()
+    assert coordinator.subscribed_provider_demands == ()
     assert len(coordinator.demands) == 1
 
     port.fail_subscribe = False
     assert [event.state for event in coordinator.reconcile(now=NOW)] == [
-        AcquisitionLifecycleState.ACTIVE,
+        AcquisitionLifecycleState.SUBSCRIBED,
     ]
 
 
@@ -124,13 +124,13 @@ def test_failed_unsubscribe_remains_active_for_retry() -> None:
         AcquisitionLifecycleState.CANCELED,
         AcquisitionLifecycleState.FAILED,
     ]
-    assert len(coordinator.active_provider_demands) == 1
+    assert len(coordinator.subscribed_provider_demands) == 1
 
     port.fail_unsubscribe = False
     assert [event.state for event in coordinator.reconcile(now=NOW)] == [
         AcquisitionLifecycleState.COMPLETED,
     ]
-    assert coordinator.active_provider_demands == ()
+    assert coordinator.subscribed_provider_demands == ()
 
 
 def test_duplicate_request_is_idempotent_and_retries_only_when_not_active() -> None:
@@ -152,7 +152,7 @@ def test_duplicate_request_is_idempotent_and_retries_only_when_not_active() -> N
 
     assert [event.state for event in pending.request(demand, now=NOW)] == [
         AcquisitionLifecycleState.REQUESTED,
-        AcquisitionLifecycleState.ACTIVE,
+        AcquisitionLifecycleState.SUBSCRIBED,
     ]
 
 
@@ -178,14 +178,30 @@ def test_changed_requirement_waits_for_successful_old_unsubscribe() -> None:
 
     assert events[-1].state is AcquisitionLifecycleState.FAILED
     assert len(port.subscribed) == 1
-    assert coordinator.active_provider_demands[0].requirement == old.requirement
+    assert coordinator.subscribed_provider_demands[0].requirement == old.requirement
 
     port.fail_unsubscribe = False
     events = coordinator.reconcile(now=NOW)
 
     assert [event.state for event in events] == [
         AcquisitionLifecycleState.COMPLETED,
-        AcquisitionLifecycleState.ACTIVE,
+        AcquisitionLifecycleState.SUBSCRIBED,
     ]
     assert len(port.subscribed) == 2
-    assert coordinator.active_provider_demands[0].requirement == changed.requirement
+    assert coordinator.subscribed_provider_demands[0].requirement == changed.requirement
+
+
+def test_first_native_observation_is_the_only_transition_to_active() -> None:
+    port = RecordingSubscriptionPort()
+    coordinator = AcquisitionCoordinator(port)
+    demand = _demand("consumer")
+    events = coordinator.request(demand, now=NOW)
+
+    assert events[-1].state is AcquisitionLifecycleState.SUBSCRIBED
+    first = coordinator.observe(demand.requirement.stream_key)
+
+    assert first is not None
+    assert first.state is AcquisitionLifecycleState.ACTIVE
+    assert first.detail == "first native observation received"
+    assert coordinator.observe(demand.requirement.stream_key) is None
+    assert coordinator.observe(("SPY.ARCA", "quotes", "default")) is None

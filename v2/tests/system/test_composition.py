@@ -37,6 +37,13 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "operational_persistence",
     ]
     assert len({registration.actor_id for registration in plan}) == len(plan)
+    acquisition = next(item for item in plan if item.key == "data_acquisition")
+    assert acquisition.config.config["bootstrap_feeds"] == [
+        {"instrument_id": "ESU6.CME", "kind": "quotes", "selector": "default"},
+        {"instrument_id": "ESU6.CME", "kind": "trades", "selector": "default"},
+        {"instrument_id": "SPY.ARCA", "kind": "quotes", "selector": "default"},
+        {"instrument_id": "SPY.ARCA", "kind": "trades", "selector": "default"},
+    ]
 
 
 def test_actor_plan_omits_disabled_discord_but_never_core() -> None:

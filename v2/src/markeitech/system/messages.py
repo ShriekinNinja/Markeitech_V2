@@ -14,12 +14,102 @@ ACQUISITION_STATUS_SIGNAL = "markeitech.acquisition.status"
 ACQUISITION_STATUS_REQUEST_SIGNAL = "markeitech.acquisition.status.request"
 ACQUISITION_STATUS_SCHEMA_VERSION = 1
 ACQUISITION_STATUS_REQUEST_SCHEMA_VERSION = 1
+ACQUISITION_STREAM_SIGNAL = "markeitech.acquisition.stream"
+ACQUISITION_STREAM_SCHEMA_VERSION = 1
 
 INSTRUMENTS_RESOLVING = "INSTRUMENTS_RESOLVING"
 INSTRUMENTS_READY = "INSTRUMENTS_READY"
 _ACQUISITION_STATES = {INSTRUMENTS_RESOLVING, INSTRUMENTS_READY}
+_ACQUISITION_STREAM_STATES = {
+    "REQUESTED",
+    "ACCEPTED",
+    "SUBSCRIBED",
+    "ACTIVE",
+    "COMPLETED",
+    "REJECTED",
+    "FAILED",
+    "CANCELED",
+    "EXPIRED",
+}
 
 type EvidenceValue = str | int | float | bool | None
+
+
+@dataclass(frozen=True, slots=True)
+class AcquisitionStreamEvent:
+    state: str
+    instrument_id: str
+    feed_kind: str
+    selector: str
+    source: str
+    demand_id: str | None
+    consumer_ids: tuple[str, ...]
+    detail: str
+    schema_version: int = ACQUISITION_STREAM_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.schema_version, int)
+            or isinstance(self.schema_version, bool)
+            or self.schema_version != ACQUISITION_STREAM_SCHEMA_VERSION
+        ):
+            raise ValueError(f"unsupported acquisition stream schema: {self.schema_version}")
+        for field_name in (
+            "instrument_id",
+            "feed_kind",
+            "selector",
+            "source",
+            "detail",
+        ):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{field_name} must be a non-empty string")
+            object.__setattr__(self, field_name, value.strip())
+        if not isinstance(self.state, str) or self.state.strip() not in _ACQUISITION_STREAM_STATES:
+            raise ValueError(f"unsupported acquisition stream state: {self.state!r}")
+        object.__setattr__(self, "state", self.state.strip())
+        consumers = _normalize_text_values(self.consumer_ids, "consumer_ids")
+        object.__setattr__(self, "consumer_ids", consumers)
+        if self.demand_id is not None:
+            if not isinstance(self.demand_id, str) or not self.demand_id.strip():
+                raise ValueError("demand_id must be None or a non-empty string")
+            object.__setattr__(self, "demand_id", self.demand_id.strip())
+
+    def to_signal_value(self) -> str:
+        return json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "state": self.state,
+                "instrument_id": self.instrument_id,
+                "feed_kind": self.feed_kind,
+                "selector": self.selector,
+                "source": self.source,
+                "demand_id": self.demand_id,
+                "consumer_ids": self.consumer_ids,
+                "detail": self.detail,
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> AcquisitionStreamEvent:
+        payload = _load_exact_json_object(
+            value,
+            label="acquisition stream",
+            expected={
+                "schema_version",
+                "state",
+                "instrument_id",
+                "feed_kind",
+                "selector",
+                "source",
+                "demand_id",
+                "consumer_ids",
+                "detail",
+            },
+        )
+        return cls(**payload)  # type: ignore[arg-type]
 
 
 @dataclass(frozen=True, slots=True)
@@ -288,6 +378,19 @@ def _normalize_instrument_ids(
         normalized.append(value.strip())
     if require_values and not normalized:
         raise ValueError(f"{label} must not be empty")
+    if len(normalized) != len(set(normalized)):
+        raise ValueError(f"{label} must not contain duplicates")
+    return tuple(sorted(normalized))
+
+
+def _normalize_text_values(values: object, label: str) -> tuple[str, ...]:
+    if not isinstance(values, (list, tuple)):
+        raise ValueError(f"{label} must be a list or tuple")
+    normalized: list[str] = []
+    for value in values:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{label} must contain non-empty strings")
+        normalized.append(value.strip())
     if len(normalized) != len(set(normalized)):
         raise ValueError(f"{label} must not contain duplicates")
     return tuple(sorted(normalized))

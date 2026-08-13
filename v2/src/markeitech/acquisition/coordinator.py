@@ -35,15 +35,20 @@ class AcquisitionCoordinator:
     def __init__(self, subscription_port: SubscriptionPort) -> None:
         self._subscription_port = subscription_port
         self._reconciler = DemandReconciler()
-        self._active: dict[StreamKey, ProviderDemand] = {}
+        self._subscribed: dict[StreamKey, ProviderDemand] = {}
+        self._observed: set[StreamKey] = set()
 
     @property
     def demands(self) -> tuple[ObservationDemand, ...]:
         return self._reconciler.demands
 
     @property
-    def active_provider_demands(self) -> tuple[ProviderDemand, ...]:
-        return tuple(self._active[key] for key in sorted(self._active))
+    def subscribed_provider_demands(self) -> tuple[ProviderDemand, ...]:
+        return tuple(self._subscribed[key] for key in sorted(self._subscribed))
+
+    @property
+    def observed_stream_keys(self) -> tuple[StreamKey, ...]:
+        return tuple(sorted(self._observed))
 
     def request(
         self,
@@ -116,6 +121,18 @@ class AcquisitionCoordinator:
         events.extend(self.reconcile(now=now))
         return tuple(events)
 
+    def observe(self, stream_key: StreamKey) -> AcquisitionLifecycleEvent | None:
+        subscribed = self._subscribed.get(stream_key)
+        if subscribed is None or stream_key in self._observed:
+            return None
+        self._observed.add(stream_key)
+        return self._event(
+            AcquisitionLifecycleState.ACTIVE,
+            subscribed.requirement,
+            consumer_ids=subscribed.consumer_ids,
+            detail="first native observation received",
+        )
+
     def reconcile(self, *, now: datetime) -> tuple[AcquisitionLifecycleEvent, ...]:
         desired = {
             demand.requirement.stream_key: demand
@@ -125,33 +142,34 @@ class AcquisitionCoordinator:
 
         changed = {
             key
-            for key in self._active.keys() & desired.keys()
-            if self._active[key].requirement != desired[key].requirement
+            for key in self._subscribed.keys() & desired.keys()
+            if self._subscribed[key].requirement != desired[key].requirement
         }
-        for key in sorted((self._active.keys() - desired.keys()) | changed):
-            active = self._active[key]
+        for key in sorted((self._subscribed.keys() - desired.keys()) | changed):
+            subscribed = self._subscribed[key]
             try:
-                self._subscription_port.unsubscribe(active.requirement)
+                self._subscription_port.unsubscribe(subscribed.requirement)
             except Exception as exc:  # Provider ports define their own exception types.
                 events.append(
-                    self._provider_failure(active, "unsubscribe", exc),
+                    self._provider_failure(subscribed, "unsubscribe", exc),
                 )
             else:
-                del self._active[key]
+                del self._subscribed[key]
+                self._observed.discard(key)
                 events.append(
                     self._event(
                         AcquisitionLifecycleState.COMPLETED,
-                        active.requirement,
-                        consumer_ids=active.consumer_ids,
+                        subscribed.requirement,
+                        consumer_ids=subscribed.consumer_ids,
                         detail="provider subscription stopped",
                     ),
                 )
 
         for key in sorted(desired):
             provider_demand = desired[key]
-            if key in self._active:
-                if self._active[key].requirement == provider_demand.requirement:
-                    self._active[key] = provider_demand
+            if key in self._subscribed:
+                if self._subscribed[key].requirement == provider_demand.requirement:
+                    self._subscribed[key] = provider_demand
                 continue
             try:
                 self._subscription_port.subscribe(provider_demand.requirement)
@@ -160,13 +178,13 @@ class AcquisitionCoordinator:
                     self._provider_failure(provider_demand, "subscribe", exc),
                 )
             else:
-                self._active[key] = provider_demand
+                self._subscribed[key] = provider_demand
                 events.append(
                     self._event(
-                        AcquisitionLifecycleState.ACTIVE,
+                        AcquisitionLifecycleState.SUBSCRIBED,
                         provider_demand.requirement,
                         consumer_ids=provider_demand.consumer_ids,
-                        detail="provider subscription active",
+                        detail="native subscription command issued",
                     ),
                 )
         return tuple(events)

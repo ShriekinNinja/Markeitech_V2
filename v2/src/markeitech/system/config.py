@@ -35,6 +35,18 @@ class InstrumentConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class BootstrapFeedConfig:
+    instrument_id: str
+    kind: str
+    selector: str
+
+
+@dataclass(frozen=True, slots=True)
+class AcquisitionConfig:
+    bootstrap_feeds: tuple[BootstrapFeedConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class LoggingConfig:
     directory: Path
     file_name: str
@@ -65,6 +77,7 @@ class SystemConfig:
     logging: LoggingConfig
     discord: DiscordConfig
     persistence: PersistenceConfig
+    acquisition: AcquisitionConfig
     instruments: tuple[InstrumentConfig, ...]
 
 
@@ -82,11 +95,12 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "logging",
             "discord",
             "persistence",
+            "acquisition",
             "instruments",
         },
         "root",
     )
-    if raw["schema_version"] != 1:
+    if raw["schema_version"] != 2:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -95,6 +109,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
     discord = _load_discord(raw["discord"])
     persistence = _load_persistence(raw["persistence"])
     instruments = _load_instruments(raw["instruments"])
+    acquisition = _load_acquisition(raw["acquisition"], instruments)
     return SystemConfig(
         schema_version=raw["schema_version"],
         runtime=runtime,
@@ -102,6 +117,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         logging=logging,
         discord=discord,
         persistence=persistence,
+        acquisition=acquisition,
         instruments=instruments,
     )
 
@@ -261,6 +277,45 @@ def _load_instruments(raw: Any) -> tuple[InstrumentConfig, ...]:
         seen.add(instrument_id)
         instruments.append(InstrumentConfig(id=instrument_id))
     return tuple(instruments)
+
+
+def _load_acquisition(
+    raw: Any,
+    instruments: tuple[InstrumentConfig, ...],
+) -> AcquisitionConfig:
+    values = _mapping(raw, "acquisition")
+    _require_keys(values, {"bootstrap_feeds"}, "acquisition")
+    feeds_raw = values["bootstrap_feeds"]
+    if not isinstance(feeds_raw, list) or not feeds_raw:
+        raise ValueError("acquisition.bootstrap_feeds must be a non-empty array")
+    instrument_ids = {instrument.id for instrument in instruments}
+    feeds: list[BootstrapFeedConfig] = []
+    keys: set[tuple[str, str, str]] = set()
+    for index, item in enumerate(feeds_raw):
+        label = f"acquisition.bootstrap_feeds[{index}]"
+        feed = _mapping(item, label)
+        _require_keys(feed, {"instrument_id", "kind", "selector"}, label)
+        instrument_id = _non_empty_string(feed["instrument_id"], f"{label}.instrument_id")
+        if instrument_id not in instrument_ids:
+            raise ValueError(f"{label}.instrument_id must reference a configured instrument")
+        kind = _non_empty_string(feed["kind"], f"{label}.kind").lower()
+        if kind not in {"instrument", "quotes", "trades", "bars", "instrument_status"}:
+            raise ValueError(f"unsupported {label}.kind: {kind!r}")
+        selector = _non_empty_string(feed["selector"], f"{label}.selector")
+        if kind != "bars" and selector != "default":
+            raise ValueError(f"{label}.selector must be 'default' for {kind}")
+        key = (instrument_id, kind, selector)
+        if key in keys:
+            raise ValueError(f"duplicate bootstrap feed: {'/'.join(key)}")
+        keys.add(key)
+        feeds.append(
+            BootstrapFeedConfig(
+                instrument_id=instrument_id,
+                kind=kind,
+                selector=selector,
+            ),
+        )
+    return AcquisitionConfig(bootstrap_feeds=tuple(feeds))
 
 
 def _require_keys(values: dict[str, Any], expected: set[str], label: str) -> None:

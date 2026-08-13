@@ -139,6 +139,23 @@ an honest offline proof of duplicate-actor behavior. Stage 8C therefore retains 
 native callback distribution, first observation, IB behavior, and unsubscribe safety. No live IB
 run was performed for this batch.
 
+Stage 8C's first implementation batch is ready for review on branch
+`v2-stage-8c-continuous-native-stream`:
+
+- standalone configuration schema 2 explicitly declares bootstrap native feeds;
+- the proof profile requests quotes and trades for configured ES and SPY;
+- no feed is inferred merely from observation-universe membership;
+- `DataAcquisitionActor` starts streams only after instrument-definition readiness;
+- lifecycle facts distinguish `REQUESTED`, `ACCEPTED`, `SUBSCRIBED`, and first-observed `ACTIVE`;
+- each demand remains correlated through its stable demand ID;
+- raw observations remain native, transient, unwrapped, and unpersisted; and
+- shutdown cancels each bootstrap demand while the coordinator protects shared subscriptions.
+
+Offline tests prove configuration, composition, deduplication, lifecycle meaning, first-observation
+transition, cancellation, retry, and native call mapping. A Markeitect-run live review must still
+prove ES/SPY first observations and clean IB unsubscription. Cross-actor native fan-out is not yet
+claimed.
+
 ## Explicit Boundaries
 
 - PostgreSQL does not contain market data, Discord deliveries, configuration, logs, or IB

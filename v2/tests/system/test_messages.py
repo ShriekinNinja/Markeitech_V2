@@ -6,15 +6,64 @@ import pytest
 
 from markeitech.system.messages import (
     ACQUISITION_STATUS_SCHEMA_VERSION,
+    ACQUISITION_STREAM_SCHEMA_VERSION,
     COMPONENT_FAILURE_SCHEMA_VERSION,
     INSTRUMENTS_READY,
     INSTRUMENTS_RESOLVING,
     SYSTEM_HEALTH_SCHEMA_VERSION,
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
+    AcquisitionStreamEvent,
     ComponentFailureEvent,
     SystemHealthEvent,
 )
+
+
+def test_acquisition_stream_event_round_trips_with_demand_identity() -> None:
+    event = AcquisitionStreamEvent(
+        state="SUBSCRIBED",
+        instrument_id="ESU6.CME",
+        feed_kind="trades",
+        selector="default",
+        source="DATA-ACQUISITION",
+        demand_id="bootstrap:0:ESU6.CME/trades/default",
+        consumer_ids=("bootstrap:0:ESU6.CME/trades/default",),
+        detail="native subscription command issued",
+    )
+
+    encoded = event.to_signal_value()
+
+    assert AcquisitionStreamEvent.from_signal_value(encoded) == event
+    assert json.loads(encoded)["schema_version"] == ACQUISITION_STREAM_SCHEMA_VERSION
+
+
+def test_acquisition_stream_event_allows_stream_level_event_without_demand_id() -> None:
+    event = AcquisitionStreamEvent(
+        state="ACTIVE",
+        instrument_id="SPY.ARCA",
+        feed_kind="quotes",
+        selector="default",
+        source="DATA-ACQUISITION",
+        demand_id=None,
+        consumer_ids=("bootstrap:2:SPY.ARCA/quotes/default",),
+        detail="first native observation received",
+    )
+
+    assert AcquisitionStreamEvent.from_signal_value(event.to_signal_value()) == event
+
+
+def test_acquisition_stream_event_rejects_unknown_lifecycle_state() -> None:
+    with pytest.raises(ValueError, match="unsupported acquisition stream state"):
+        AcquisitionStreamEvent(
+            state="FLOWING_MAYBE",
+            instrument_id="SPY.ARCA",
+            feed_kind="quotes",
+            selector="default",
+            source="DATA-ACQUISITION",
+            demand_id=None,
+            consumer_ids=(),
+            detail="ambiguous lifecycle",
+        )
 
 
 def test_acquisition_status_request_round_trips_as_deterministic_json_text() -> None:
