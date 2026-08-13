@@ -16,6 +16,10 @@ ACQUISITION_STATUS_SCHEMA_VERSION = 1
 ACQUISITION_STATUS_REQUEST_SCHEMA_VERSION = 1
 ACQUISITION_STREAM_SIGNAL = "markeitech.acquisition.stream"
 ACQUISITION_STREAM_SCHEMA_VERSION = 1
+WATCHLIST_MEMBERSHIP_SIGNAL = "markeitech.watchlist.membership"
+WATCHLIST_MEMBERSHIP_SCHEMA_VERSION = 1
+WATCHLIST_LIFECYCLE_SIGNAL = "markeitech.watchlist.lifecycle"
+WATCHLIST_LIFECYCLE_SCHEMA_VERSION = 1
 
 INSTRUMENTS_RESOLVING = "INSTRUMENTS_RESOLVING"
 INSTRUMENTS_READY = "INSTRUMENTS_READY"
@@ -31,8 +35,190 @@ _ACQUISITION_STREAM_STATES = {
     "CANCELED",
     "EXPIRED",
 }
+_WATCHLIST_LIFECYCLE_STATES = {
+    "CONFIGURED",
+    "CONSUMERS_REGISTERED",
+    "INSTRUMENT_OBSERVED",
+    "OBSERVATION_DEGRADED",
+    "CONSUMERS_DETACHED",
+}
 
 type EvidenceValue = str | int | float | bool | None
+
+
+@dataclass(frozen=True, slots=True)
+class WatchlistMember:
+    instrument_id: str
+    capabilities: tuple[str, ...]
+    owner_ids: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "instrument_id",
+            _required_text(self.instrument_id, "instrument_id"),
+        )
+        object.__setattr__(
+            self,
+            "capabilities",
+            _normalize_required_text_values(self.capabilities, "capabilities"),
+        )
+        object.__setattr__(
+            self,
+            "owner_ids",
+            _normalize_required_text_values(self.owner_ids, "owner_ids"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "instrument_id": self.instrument_id,
+            "capabilities": self.capabilities,
+            "owner_ids": self.owner_ids,
+        }
+
+    @classmethod
+    def from_dict(cls, value: object) -> WatchlistMember:
+        payload = _exact_object(
+            value,
+            label="watchlist member",
+            expected={"instrument_id", "capabilities", "owner_ids"},
+        )
+        return cls(**payload)  # type: ignore[arg-type]
+
+
+@dataclass(frozen=True, slots=True)
+class WatchlistMembershipEvent:
+    event_id: str
+    membership_revision: int
+    source: str
+    reason: str
+    members: tuple[WatchlistMember, ...]
+    schema_version: int = WATCHLIST_MEMBERSHIP_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _validate_schema_version(
+            self.schema_version,
+            WATCHLIST_MEMBERSHIP_SCHEMA_VERSION,
+            "watchlist membership",
+        )
+        object.__setattr__(self, "event_id", _required_text(self.event_id, "event_id"))
+        object.__setattr__(self, "source", _required_text(self.source, "source"))
+        object.__setattr__(self, "reason", _required_text(self.reason, "reason"))
+        _validate_positive_int(self.membership_revision, "membership_revision")
+        if not isinstance(self.members, (list, tuple)) or not self.members:
+            raise ValueError("members must contain at least one WatchlistMember")
+        members = tuple(
+            member if isinstance(member, WatchlistMember) else WatchlistMember.from_dict(member)
+            for member in self.members
+        )
+        instrument_ids = [member.instrument_id for member in members]
+        if len(instrument_ids) != len(set(instrument_ids)):
+            raise ValueError("members must not contain duplicate instruments")
+        object.__setattr__(
+            self,
+            "members",
+            tuple(sorted(members, key=lambda item: item.instrument_id)),
+        )
+
+    def to_signal_value(self) -> str:
+        return json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "event_id": self.event_id,
+                "membership_revision": self.membership_revision,
+                "source": self.source,
+                "reason": self.reason,
+                "members": [member.to_dict() for member in self.members],
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> WatchlistMembershipEvent:
+        payload = _load_exact_json_object(
+            value,
+            label="watchlist membership",
+            expected={
+                "schema_version",
+                "event_id",
+                "membership_revision",
+                "source",
+                "reason",
+                "members",
+            },
+        )
+        return cls(**payload)  # type: ignore[arg-type]
+
+
+@dataclass(frozen=True, slots=True)
+class WatchlistLifecycleEvent:
+    event_id: str
+    membership_revision: int
+    state: str
+    source: str
+    reason: str
+    instrument_id: str | None = None
+    owner_id: str | None = None
+    correlation_id: str | None = None
+    schema_version: int = WATCHLIST_LIFECYCLE_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _validate_schema_version(
+            self.schema_version,
+            WATCHLIST_LIFECYCLE_SCHEMA_VERSION,
+            "watchlist lifecycle",
+        )
+        object.__setattr__(self, "event_id", _required_text(self.event_id, "event_id"))
+        object.__setattr__(self, "source", _required_text(self.source, "source"))
+        object.__setattr__(self, "reason", _required_text(self.reason, "reason"))
+        _validate_positive_int(self.membership_revision, "membership_revision")
+        state = _required_text(self.state, "state")
+        if state not in _WATCHLIST_LIFECYCLE_STATES:
+            raise ValueError(f"unsupported watchlist lifecycle state: {state!r}")
+        object.__setattr__(self, "state", state)
+        for field_name in ("instrument_id", "owner_id", "correlation_id"):
+            value = getattr(self, field_name)
+            if value is not None:
+                object.__setattr__(self, field_name, _required_text(value, field_name))
+        if state == "INSTRUMENT_OBSERVED" and self.instrument_id is None:
+            raise ValueError("INSTRUMENT_OBSERVED requires instrument_id")
+
+    def to_signal_value(self) -> str:
+        return json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "event_id": self.event_id,
+                "membership_revision": self.membership_revision,
+                "state": self.state,
+                "source": self.source,
+                "reason": self.reason,
+                "instrument_id": self.instrument_id,
+                "owner_id": self.owner_id,
+                "correlation_id": self.correlation_id,
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> WatchlistLifecycleEvent:
+        payload = _load_exact_json_object(
+            value,
+            label="watchlist lifecycle",
+            expected={
+                "schema_version",
+                "event_id",
+                "membership_revision",
+                "state",
+                "source",
+                "reason",
+                "instrument_id",
+                "owner_id",
+                "correlation_id",
+            },
+        )
+        return cls(**payload)  # type: ignore[arg-type]
 
 
 @dataclass(frozen=True, slots=True)
@@ -394,6 +580,45 @@ def _normalize_text_values(values: object, label: str) -> tuple[str, ...]:
     if len(normalized) != len(set(normalized)):
         raise ValueError(f"{label} must not contain duplicates")
     return tuple(sorted(normalized))
+
+
+def _normalize_required_text_values(values: object, label: str) -> tuple[str, ...]:
+    normalized = _normalize_text_values(values, label)
+    if not normalized:
+        raise ValueError(f"{label} must not be empty")
+    return normalized
+
+
+def _required_text(value: object, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a non-empty string")
+    return value.strip()
+
+
+def _validate_positive_int(value: object, label: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        raise ValueError(f"{label} must be a positive integer")
+
+
+def _validate_schema_version(value: object, expected: int, label: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool) or value != expected:
+        raise ValueError(f"unsupported {label} schema: {value}")
+
+
+def _exact_object(value: object, *, label: str, expected: set[str]) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} must be an object")
+    actual = set(value)
+    if actual != expected:
+        missing = expected - actual
+        unknown = actual - expected
+        details: list[str] = []
+        if missing:
+            details.append(f"missing: {', '.join(sorted(missing))}")
+        if unknown:
+            details.append(f"unknown: {', '.join(sorted(unknown))}")
+        raise ValueError(f"invalid {label} fields ({'; '.join(details)})")
+    return value
 
 
 def _load_exact_json_object(

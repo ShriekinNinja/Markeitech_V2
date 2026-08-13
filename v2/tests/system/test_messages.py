@@ -11,12 +11,118 @@ from markeitech.system.messages import (
     INSTRUMENTS_READY,
     INSTRUMENTS_RESOLVING,
     SYSTEM_HEALTH_SCHEMA_VERSION,
+    WATCHLIST_LIFECYCLE_SCHEMA_VERSION,
+    WATCHLIST_MEMBERSHIP_SCHEMA_VERSION,
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
     ComponentFailureEvent,
     SystemHealthEvent,
+    WatchlistLifecycleEvent,
+    WatchlistMember,
+    WatchlistMembershipEvent,
 )
+
+
+def test_watchlist_membership_round_trips_with_sorted_effective_members() -> None:
+    event = WatchlistMembershipEvent(
+        event_id="watchlist-membership:1",
+        membership_revision=1,
+        source="WATCHLIST",
+        reason="configured baseline established",
+        members=(
+            WatchlistMember(
+                instrument_id="SPY.ARCA",
+                capabilities=("watchlist_last", "top_of_book"),
+                owner_ids=("config:system",),
+            ),
+            WatchlistMember(
+                instrument_id="ESU6.CME",
+                capabilities=("top_of_book", "watchlist_last"),
+                owner_ids=("config:system",),
+            ),
+        ),
+    )
+
+    encoded = event.to_signal_value()
+    decoded = WatchlistMembershipEvent.from_signal_value(encoded)
+
+    assert decoded == event
+    assert decoded.schema_version == WATCHLIST_MEMBERSHIP_SCHEMA_VERSION
+    assert [member.instrument_id for member in decoded.members] == ["ESU6.CME", "SPY.ARCA"]
+    assert decoded.members[0].capabilities == ("top_of_book", "watchlist_last")
+
+
+def test_watchlist_membership_rejects_duplicate_instruments_and_empty_ownership() -> None:
+    member = WatchlistMember(
+        instrument_id="ESU6.CME",
+        capabilities=("top_of_book",),
+        owner_ids=("config:system",),
+    )
+    with pytest.raises(ValueError, match="duplicate instruments"):
+        WatchlistMembershipEvent(
+            event_id="watchlist-membership:1",
+            membership_revision=1,
+            source="WATCHLIST",
+            reason="invalid duplicate",
+            members=(member, member),
+        )
+    with pytest.raises(ValueError, match="owner_ids must not be empty"):
+        WatchlistMember(
+            instrument_id="ESU6.CME",
+            capabilities=("top_of_book",),
+            owner_ids=(),
+        )
+
+
+def test_watchlist_lifecycle_round_trips_with_audit_identity() -> None:
+    event = WatchlistLifecycleEvent(
+        event_id="watchlist-lifecycle:7",
+        membership_revision=1,
+        state="INSTRUMENT_OBSERVED",
+        source="WATCHLIST",
+        reason="required quote and bar-derived last observed",
+        instrument_id="ESU6.CME",
+        owner_id="config:system",
+        correlation_id="watchlist-membership:1",
+    )
+
+    encoded = event.to_signal_value()
+
+    assert WatchlistLifecycleEvent.from_signal_value(encoded) == event
+    assert json.loads(encoded)["schema_version"] == WATCHLIST_LIFECYCLE_SCHEMA_VERSION
+
+
+def test_watchlist_lifecycle_rejects_unknown_state_and_incomplete_observation() -> None:
+    values = {
+        "event_id": "watchlist-lifecycle:7",
+        "membership_revision": 1,
+        "source": "WATCHLIST",
+        "reason": "test",
+    }
+    with pytest.raises(ValueError, match="unsupported watchlist lifecycle state"):
+        WatchlistLifecycleEvent(state="MAYBE_ACTIVE", **values)
+    with pytest.raises(ValueError, match="requires instrument_id"):
+        WatchlistLifecycleEvent(state="INSTRUMENT_OBSERVED", **values)
+
+
+def test_watchlist_contracts_reject_unknown_fields_and_schema_versions() -> None:
+    lifecycle = WatchlistLifecycleEvent(
+        event_id="watchlist-lifecycle:1",
+        membership_revision=1,
+        state="CONFIGURED",
+        source="WATCHLIST",
+        reason="baseline configured",
+    )
+    payload = json.loads(lifecycle.to_signal_value())
+    payload["unexpected"] = True
+    with pytest.raises(ValueError, match="unknown"):
+        WatchlistLifecycleEvent.from_signal_value(json.dumps(payload))
+
+    payload.pop("unexpected")
+    payload["schema_version"] = WATCHLIST_LIFECYCLE_SCHEMA_VERSION + 1
+    with pytest.raises(ValueError, match="unsupported watchlist lifecycle schema"):
+        WatchlistLifecycleEvent.from_signal_value(json.dumps(payload))
 
 
 def test_acquisition_stream_event_round_trips_with_demand_identity() -> None:
