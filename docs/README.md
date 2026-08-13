@@ -63,6 +63,7 @@ for investigation and context, but it does not reopen old stage gates.
 ## Operations
 
 - [V2 operational PostgreSQL](operations/v2-postgresql.md)
+- [V2 static watchlist handoff](roadmap/v2-static-watchlist-handoff.md)
 - [Interactive Brokers setup](operations/ib-setup.md)
 - [Operator context log guide](operations/operator-context-logs.md)
 - [Operator signal log guide](operations/operator-signal-logs.md)

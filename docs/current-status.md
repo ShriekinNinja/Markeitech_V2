@@ -170,6 +170,14 @@ requests reached IB limit `10190`, so tick trades remain a focus-only capability
 baseline watchlist feed. The accepted POC retains bounded readiness transitions and shutdown
 summaries; temporary per-update logs were removed after live review.
 
+The actor is now a bounded core state owner with immutable versioned snapshots, native event
+timestamps, separate registration and observation state, and out-of-order protection. Versioned
+membership and lifecycle contracts are implemented and tested but are intentionally not published
+or persisted yet. The next accepted slice creates their generic PostgreSQL audit boundary first.
+Dynamic membership is explicitly deferred; the accepted stopping point is a live-proven static,
+configuration-owned watchlist. The exact handoff is
+[`roadmap/v2-static-watchlist-handoff.md`](roadmap/v2-static-watchlist-handoff.md).
+
 ## Explicit Boundaries
 
 - PostgreSQL currently contains runtime runs and system-health transitions. It is the accepted

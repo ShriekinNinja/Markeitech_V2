@@ -3,6 +3,11 @@
 **Status:** Architecture plan for Markeitect review. No dynamic watchlist behavior is implemented
 by this document.
 
+**Approved stopping boundary:** Complete and live-prove the static configuration-owned watchlist,
+then stop before W5 dynamic membership. See
+[`v2-static-watchlist-handoff.md`](v2-static-watchlist-handoff.md) for the exact implementation
+state and remaining order.
+
 ## Objective
 
 Make `WatchlistActor` a mandatory core actor and the owner of Markeitech's effective observation
@@ -252,6 +257,8 @@ Initial limits must be based on measured IB/runtime behavior, not invented const
 - [ ] Prove detach-before-release ordering under normal and failure paths.
 
 ### W5: Add dynamic membership
+
+**Deferred by Markeitect. Do not begin without new explicit approval.**
 
 - [ ] Support add, update, release, focus, and lease expiry intents.
 - [ ] Persist each intent and deterministic disposition in PostgreSQL with idempotent identity.
