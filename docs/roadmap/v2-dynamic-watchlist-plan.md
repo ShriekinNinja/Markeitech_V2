@@ -233,28 +233,30 @@ Initial limits must be based on measured IB/runtime behavior, not invented const
 ### W2: Promote Watchlist to a core bounded state owner
 
 - [x] Separate native-consumer registration from whether required fields have been observed.
-- [ ] Define configurable live field-freshness policy; no arbitrary age threshold is approved yet.
+- [ ] Define session-aware live field-freshness policy; elapsed-time thresholds remain deferred.
 - [x] Define versioned membership snapshot and lifecycle contracts.
 - [x] Keep one immutable latest snapshot, native event timestamps, and bounded counters per member.
 - [x] Prevent older callbacks from replacing newer latest-value state.
 - [x] Replace proof-only logging with bounded summaries and state transitions.
-- [ ] Define the durable intent, disposition, lifecycle, and membership-projection records.
+- [x] Persist static demand, acquisition outcome, lifecycle, and membership records.
 
 ### W3: Make configuration seed Watchlist
 
-- [ ] Add a dedicated baseline watchlist configuration section.
-- [ ] Verify every screenshot instrument and canonical provider identity.
-- [ ] Add logical futures roots plus explicit contract-resolution policy.
-- [ ] Remove duplicated bootstrap subscription declarations from system configuration.
-- [ ] Have Watchlist create logical baseline demand through acquisition.
+- [x] Add a dedicated baseline watchlist configuration section.
+- [x] Map every screenshot instrument to a Nautilus IB simplified provider identity.
+- [x] Configure explicit September 2026 futures contracts; automatic rolling remains deferred.
+- [x] Remove duplicated bootstrap subscription declarations from system configuration.
+- [x] Have Watchlist create logical baseline demand through acquisition.
 
 ### W4: Define Watchlist-Acquisition messaging
 
-- [ ] Define versioned demand, acceptance, rejection, release, and detachment contracts.
-- [ ] Make acquisition expand capabilities into exact native feeds.
+- [x] Define versioned static demand plus acquisition outcome contracts for request, acceptance,
+      rejection/failure, release, and provider detachment.
+- [x] Expand approved static capabilities into exact native feed demands while Acquisition remains
+      the sole provider-subscription owner.
 - [ ] Prove shared claims do not duplicate provider subscriptions.
 - [ ] Prove one owner expiry does not remove another owner's data.
-- [ ] Prove detach-before-release ordering under normal and failure paths.
+- [x] Enforce actor stop ordering so Watchlist detaches and releases before Acquisition stops.
 
 ### W5: Add dynamic membership
 

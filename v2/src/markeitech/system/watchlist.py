@@ -7,12 +7,16 @@ from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, BarType, ClientId, InstrumentId
 
 from markeitech.system.messages import (
+    ACQUISITION_STREAM_SIGNAL,
     PERSISTENCE_READY_REQUEST_SIGNAL,
     PERSISTENCE_READY_SIGNAL,
+    WATCHLIST_DEMAND_SIGNAL,
     WATCHLIST_LIFECYCLE_SIGNAL,
     WATCHLIST_MEMBERSHIP_SIGNAL,
+    AcquisitionStreamEvent,
     PersistenceReadyEvent,
     PersistenceReadyRequest,
+    WatchlistDemandEvent,
     WatchlistLifecycleEvent,
     WatchlistMember,
     WatchlistMembershipEvent,
@@ -242,23 +246,30 @@ class WatchlistActor(DataActor):
         self._lifecycle_sequence = 0
         self._observed_before_audit: set[str] = set()
         self._startup_released = False
+        self._demands = _watchlist_demands(self._members)
+        self._subscribed_demand_ids: set[str] = set()
+        self._attached_demand_ids: set[str] = set()
+        self._degraded_demand_ids: set[str] = set()
 
     def on_start(self) -> None:
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
+        self.subscribe_signal(ACQUISITION_STREAM_SIGNAL)
         self.publish_signal(
             PERSISTENCE_READY_REQUEST_SIGNAL,
             PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
         )
 
     def on_signal(self, signal: Signal) -> None:
+        if signal.name == ACQUISITION_STREAM_SIGNAL:
+            self._handle_acquisition_outcome(signal.value)
+            return
         if signal.name != PERSISTENCE_READY_SIGNAL:
             return
         try:
             PersistenceReadyEvent.from_signal_value(signal.value)
         except ValueError as exc:
             self.log.error(
-                "PERSISTENCE_READY_REJECTED"
-                f" | reason=invalid_event | error={type(exc).__name__}",
+                f"PERSISTENCE_READY_REJECTED | reason=invalid_event | error={type(exc).__name__}",
             )
             return
         self._release_startup()
@@ -267,13 +278,13 @@ class WatchlistActor(DataActor):
         if self._startup_released:
             return
         self._startup_released = True
-        for value in self._state.instrument_ids:
-            instrument_id = InstrumentId.from_str(value)
-            self.subscribe_quotes(instrument_id, client_id=_IB_CLIENT_ID)
-            self.subscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
-        self._state.register_consumers()
         self._publish_initial_audit(None)
-        self.log.info(f"WATCHLIST_OPERATIONAL | instruments={len(self._state.instrument_ids)}")
+        for demand in self._demands:
+            self.publish_signal(WATCHLIST_DEMAND_SIGNAL, demand.to_signal_value())
+        self.log.info(
+            f"WATCHLIST_DEMANDS_PUBLISHED | instruments={len(self._state.instrument_ids)}"
+            f" | demands={len(self._demands)}",
+        )
 
     def on_quote(self, quote) -> None:  # noqa: ANN001
         instrument_id = str(quote.instrument_id)
@@ -296,11 +307,25 @@ class WatchlistActor(DataActor):
 
     def on_stop(self) -> None:
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
+        self.unsubscribe_signal(ACQUISITION_STREAM_SIGNAL)
         if self._startup_released:
-            for value in self._state.instrument_ids:
-                instrument_id = InstrumentId.from_str(value)
-                self.unsubscribe_quotes(instrument_id, client_id=_IB_CLIENT_ID)
-                self.unsubscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
+            for demand in reversed(self._demands):
+                if demand.demand_id in self._attached_demand_ids:
+                    self._detach_consumer(demand)
+                self.publish_signal(
+                    WATCHLIST_DEMAND_SIGNAL,
+                    WatchlistDemandEvent(
+                        demand_id=demand.demand_id,
+                        action="RELEASE",
+                        instrument_id=demand.instrument_id,
+                        capability=demand.capability,
+                        feed_kind=demand.feed_kind,
+                        selector=demand.selector,
+                        owner_id=demand.owner_id,
+                        purpose="static watchlist shutdown",
+                        priority=demand.priority,
+                    ).to_signal_value(),
+                )
             self._state.detach_consumers()
             self._publish_lifecycle(
                 "CONSUMERS_DETACHED",
@@ -368,10 +393,6 @@ class WatchlistActor(DataActor):
             "CONFIGURED",
             reason="static configuration baseline established",
         )
-        self._publish_lifecycle(
-            "CONSUMERS_REGISTERED",
-            reason="static watchlist native consumers registered",
-        )
         for instrument_id in sorted(self._observed_before_audit):
             self._publish_instrument_observed(instrument_id)
         self._observed_before_audit.clear()
@@ -403,9 +424,112 @@ class WatchlistActor(DataActor):
         )
         self.publish_signal(WATCHLIST_LIFECYCLE_SIGNAL, event.to_signal_value())
 
+    def _handle_acquisition_outcome(self, value: str) -> None:
+        try:
+            event = AcquisitionStreamEvent.from_signal_value(value)
+        except ValueError as exc:
+            self.log.error(
+                f"ACQUISITION_OUTCOME_REJECTED | reason=invalid_event | error={type(exc).__name__}",
+            )
+            return
+        demand_ids = set(event.consumer_ids)
+        if event.demand_id is not None:
+            demand_ids.add(event.demand_id)
+        relevant = [demand for demand in self._demands if demand.demand_id in demand_ids]
+        if not relevant:
+            return
+        if event.state == "SUBSCRIBED":
+            for demand in relevant:
+                self._subscribed_demand_ids.add(demand.demand_id)
+                if demand.demand_id not in self._attached_demand_ids:
+                    self._attach_consumer(demand)
+                    self._attached_demand_ids.add(demand.demand_id)
+            if len(self._subscribed_demand_ids) == len(self._demands):
+                if self._state.register_consumers():
+                    self._publish_lifecycle(
+                        "CONSUMERS_REGISTERED",
+                        reason="all static watchlist acquisition demands subscribed",
+                    )
+                    self.log.info(
+                        f"WATCHLIST_OPERATIONAL | instruments={len(self._state.instrument_ids)}",
+                    )
+            return
+        if event.state in {"REJECTED", "FAILED", "EXPIRED"}:
+            for demand in relevant:
+                if demand.demand_id in self._degraded_demand_ids:
+                    continue
+                self._degraded_demand_ids.add(demand.demand_id)
+                self._publish_lifecycle(
+                    "OBSERVATION_DEGRADED",
+                    reason=(
+                        f"required {demand.capability} acquisition outcome was "
+                        f"{event.state.lower()}"
+                    ),
+                    instrument_id=demand.instrument_id,
+                )
+            return
+        if event.state == "ACTIVE":
+            for demand in relevant:
+                if demand.demand_id not in self._degraded_demand_ids:
+                    continue
+                self._degraded_demand_ids.remove(demand.demand_id)
+                self._publish_lifecycle(
+                    "OBSERVATION_RECOVERED",
+                    reason=f"required {demand.capability} stream produced an observation",
+                    instrument_id=demand.instrument_id,
+                )
+
+    def _attach_consumer(self, demand: WatchlistDemandEvent) -> None:
+        instrument_id = InstrumentId.from_str(demand.instrument_id)
+        if demand.feed_kind == "quotes":
+            self.subscribe_quotes(instrument_id, client_id=_IB_CLIENT_ID)
+            return
+        if demand.feed_kind == "bars":
+            self.subscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
+            return
+        raise ValueError(f"unsupported watchlist feed: {demand.feed_kind}")
+
+    def _detach_consumer(self, demand: WatchlistDemandEvent) -> None:
+        instrument_id = InstrumentId.from_str(demand.instrument_id)
+        if demand.feed_kind == "quotes":
+            self.unsubscribe_quotes(instrument_id, client_id=_IB_CLIENT_ID)
+            return
+        if demand.feed_kind == "bars":
+            self.unsubscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
+            return
+        raise ValueError(f"unsupported watchlist feed: {demand.feed_kind}")
+
 
 def _watchlist_bar_type(instrument_id: InstrumentId) -> BarType:
     return BarType.from_str(f"{instrument_id}-5-SECOND-LAST-EXTERNAL")
+
+
+def _watchlist_demands(
+    members: tuple[WatchlistMember, ...],
+) -> tuple[WatchlistDemandEvent, ...]:
+    demands: list[WatchlistDemandEvent] = []
+    for member in members:
+        for capability in member.capabilities:
+            feed_kind, selector = {
+                "top_of_book": ("quotes", "default"),
+                "watchlist_last": ("bars", "5-SECOND-LAST-EXTERNAL"),
+            }[capability]
+            demands.append(
+                WatchlistDemandEvent(
+                    demand_id=(
+                        f"watchlist:{_STATIC_MEMBERSHIP_REVISION}:"
+                        f"{member.instrument_id}/{feed_kind}/{selector}"
+                    ),
+                    action="REQUEST",
+                    instrument_id=member.instrument_id,
+                    capability=capability,
+                    feed_kind=feed_kind,
+                    selector=selector,
+                    owner_id=_STATIC_OWNER_ID,
+                    purpose=f"static watchlist {capability}",
+                ),
+            )
+    return tuple(sorted(demands, key=lambda item: item.demand_id))
 
 
 def _timestamp_ns(value: int) -> int:

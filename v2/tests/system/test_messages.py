@@ -21,10 +21,37 @@ from markeitech.system.messages import (
     PersistenceReadyEvent,
     PersistenceReadyRequest,
     SystemHealthEvent,
+    WatchlistDemandEvent,
     WatchlistLifecycleEvent,
     WatchlistMember,
     WatchlistMembershipEvent,
 )
+
+
+def test_watchlist_demand_round_trip_and_validation() -> None:
+    event = WatchlistDemandEvent(
+        demand_id="watchlist:1:ESU6.CME/quotes/default",
+        action="REQUEST",
+        instrument_id="ESU6.CME",
+        capability="top_of_book",
+        feed_kind="quotes",
+        selector="default",
+        owner_id="config:system",
+        purpose="static watchlist top_of_book",
+    )
+
+    assert WatchlistDemandEvent.from_signal_value(event.to_signal_value()) == event
+    with pytest.raises(ValueError, match="unsupported watchlist demand action"):
+        WatchlistDemandEvent(
+            demand_id=event.demand_id,
+            action="MAYBE",
+            instrument_id=event.instrument_id,
+            capability=event.capability,
+            feed_kind=event.feed_kind,
+            selector=event.selector,
+            owner_id=event.owner_id,
+            purpose=event.purpose,
+        )
 
 
 def test_persistence_readiness_contracts_round_trip() -> None:

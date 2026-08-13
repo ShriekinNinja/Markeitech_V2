@@ -3,8 +3,12 @@ from __future__ import annotations
 import pytest
 from nautilus_trader.model import InstrumentId
 
-from markeitech.system.acquisition import InstrumentDefinitionTracker
-from markeitech.system.messages import INSTRUMENTS_READY, INSTRUMENTS_RESOLVING
+from markeitech.system.acquisition import InstrumentDefinitionTracker, _observation_demand
+from markeitech.system.messages import (
+    INSTRUMENTS_READY,
+    INSTRUMENTS_RESOLVING,
+    WatchlistDemandEvent,
+)
 
 
 def test_tracker_owns_definition_request_deduplication_and_readiness() -> None:
@@ -31,3 +35,26 @@ def test_tracker_rejects_empty_or_duplicate_configuration(
 ) -> None:
     with pytest.raises(ValueError):
         InstrumentDefinitionTracker(instrument_ids)
+
+
+def test_watchlist_contract_maps_to_acquisition_demand() -> None:
+    event = WatchlistDemandEvent(
+        demand_id="watchlist:1:ESU6.CME/bars/5-SECOND-LAST-EXTERNAL",
+        action="REQUEST",
+        instrument_id="ESU6.CME",
+        capability="watchlist_last",
+        feed_kind="bars",
+        selector="5-SECOND-LAST-EXTERNAL",
+        owner_id="config:system",
+        purpose="static watchlist last",
+    )
+
+    demand = _observation_demand(event)
+
+    assert demand.demand_id == event.demand_id
+    assert demand.owner.kind.value == "watchlist"
+    assert demand.requirement.stream_key == (
+        "ESU6.CME",
+        "bars",
+        "5-SECOND-LAST-EXTERNAL",
+    )

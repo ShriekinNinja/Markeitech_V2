@@ -24,6 +24,7 @@ class FeedKind(StrEnum):
 
 class DemandOwnerKind(StrEnum):
     BOOTSTRAP = "bootstrap"
+    WATCHLIST = "watchlist"
     OPERATOR = "operator"
     ANALYZER = "analyzer"
     AGENT = "agent"

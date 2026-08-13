@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from threading import Event
+from threading import Event, Thread
 from uuid import uuid4
 
 import pytest
@@ -9,11 +9,13 @@ from nautilus_trader.common import Signal
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STREAM_SIGNAL,
+    WATCHLIST_DEMAND_SIGNAL,
     WATCHLIST_LIFECYCLE_SIGNAL,
     WATCHLIST_MEMBERSHIP_SIGNAL,
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
     SystemHealthEvent,
+    WatchlistDemandEvent,
     WatchlistLifecycleEvent,
     WatchlistMember,
     WatchlistMembershipEvent,
@@ -142,6 +144,26 @@ def test_watchlist_signals_convert_to_auditable_records_without_market_payloads(
             ts_init=13,
         ),
     )
+    demand = WatchlistDemandEvent(
+        demand_id="watchlist:1:ESU6.CME/quotes/default",
+        action="REQUEST",
+        instrument_id="ESU6.CME",
+        capability="top_of_book",
+        feed_kind="quotes",
+        selector="default",
+        owner_id="config:system",
+        purpose="static watchlist top_of_book",
+    )
+    demand_record = _record_from_signal(
+        run_id,
+        3,
+        Signal(
+            name=WATCHLIST_DEMAND_SIGNAL,
+            value=demand.to_signal_value(),
+            ts_event=14,
+            ts_init=15,
+        ),
+    )
 
     assert isinstance(membership_record, OperationalEventRecord)
     assert membership_record.event_type == "watchlist.membership"
@@ -150,6 +172,10 @@ def test_watchlist_signals_convert_to_auditable_records_without_market_payloads(
     assert isinstance(lifecycle_record, OperationalEventRecord)
     assert lifecycle_record.event_type == "watchlist.lifecycle"
     assert lifecycle_record.correlation_id == membership.event_id
+    assert isinstance(demand_record, OperationalEventRecord)
+    assert demand_record.event_type == "watchlist.demand"
+    assert demand_record.correlation_id == demand.demand_id
+    assert "best_bid" not in demand_record.payload
 
 
 def test_existing_acquisition_intent_and_outcome_convert_to_audit_records() -> None:
@@ -171,8 +197,8 @@ def test_existing_acquisition_intent_and_outcome_convert_to_audit_records() -> N
         feed_kind="quotes",
         selector="default",
         source="DATA-ACQUISITION",
-        demand_id="bootstrap:0:ESU6.CME/quotes/default",
-        consumer_ids=("bootstrap:0:ESU6.CME/quotes/default",),
+        demand_id="watchlist:1:ESU6.CME/quotes/default",
+        consumer_ids=("watchlist:1:ESU6.CME/quotes/default",),
         detail="native subscription command issued",
     )
     stream_record = _record_from_signal(
@@ -289,7 +315,7 @@ def test_persistence_worker_retries_a_write_within_the_configured_bound() -> Non
     assert stats.pending == 0
 
 
-def test_persistence_worker_rejects_when_bounded_queue_is_full() -> None:
+def test_persistence_worker_applies_backpressure_when_bounded_queue_is_full() -> None:
     release = Event()
     entered = Event()
 
@@ -308,13 +334,24 @@ def test_persistence_worker_rejects_when_bounded_queue_is_full() -> None:
     assert worker.submit(_record(1))
     assert entered.wait(timeout=1)
     assert worker.submit(_record(2))
-    assert worker.submit(_record(3)) is False
+
+    submitted = Event()
+
+    def submit_third() -> None:
+        assert worker.submit(_record(3))
+        submitted.set()
+
+    submitter = Thread(target=submit_third)
+    submitter.start()
+    assert not submitted.wait(timeout=0.05)
     release.set()
+    submitter.join(timeout=1)
+    assert submitted.is_set()
     assert worker.close()
     stats = worker.snapshot()
-    assert stats.accepted == 2
-    assert stats.stored == 2
-    assert stats.rejected == 1
+    assert stats.accepted == 3
+    assert stats.stored == 3
+    assert stats.rejected == 0
     assert stats.pending == 0
 
 

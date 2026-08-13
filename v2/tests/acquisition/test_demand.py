@@ -197,6 +197,7 @@ def test_rejects_expired_demand_and_duplicate_identity_with_different_meaning() 
 def test_owner_kinds_and_lifecycle_vocabulary_are_explicit() -> None:
     assert {kind.value for kind in DemandOwnerKind} == {
         "bootstrap",
+        "watchlist",
         "operator",
         "analyzer",
         "agent",

@@ -1,4 +1,4 @@
-schema_version = 4
+schema_version = 5
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -39,25 +39,6 @@ write_retry_backoff_ms = 100
 [acquisition]
 native_consumer_probe_enabled = false
 native_consumer_probe_unsubscribe_after_seconds = 15
-bootstrap_feeds = [
-  { instrument_id = "ESU6.CME", kind = "quotes", selector = "default" },
-  { instrument_id = "ESU6.CME", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
-  { instrument_id = "NQU6.CME", kind = "quotes", selector = "default" },
-  { instrument_id = "NQU6.CME", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
-  { instrument_id = "SPY.ARCA", kind = "quotes", selector = "default" },
-  { instrument_id = "SPY.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
-  { instrument_id = "QQQ.NASDAQ", kind = "quotes", selector = "default" },
-  { instrument_id = "QQQ.NASDAQ", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
-  { instrument_id = "XLK.ARCA", kind = "quotes", selector = "default" },
-  { instrument_id = "XLK.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
-  { instrument_id = "XLF.ARCA", kind = "quotes", selector = "default" },
-  { instrument_id = "XLF.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
-  { instrument_id = "IWM.ARCA", kind = "quotes", selector = "default" },
-  { instrument_id = "IWM.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
-  { instrument_id = "SOXL.ARCA", kind = "quotes", selector = "default" },
-  { instrument_id = "SOXL.ARCA", kind = "bars", selector = "5-SECOND-LAST-EXTERNAL" },
-]
-
 [[watchlist.members]]
 instrument_id = "ESU6.CME"
 owner_ids = ["config:system"]
@@ -65,6 +46,16 @@ capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "NQU6.CME"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
+
+[[watchlist.members]]
+instrument_id = "YMU6.CBOT"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
+
+[[watchlist.members]]
+instrument_id = "CLU6.NYMEX"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
@@ -79,21 +70,61 @@ owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
-instrument_id = "XLK.ARCA"
+instrument_id = "^SPX.CBOE"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
-instrument_id = "XLF.ARCA"
+instrument_id = "^VIX.CBOE"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
-instrument_id = "IWM.ARCA"
+instrument_id = "NVDA.NASDAQ"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
-instrument_id = "SOXL.ARCA"
+instrument_id = "AAPL.NASDAQ"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
+
+[[watchlist.members]]
+instrument_id = "GOOGL.NASDAQ"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
+
+[[watchlist.members]]
+instrument_id = "MSFT.NASDAQ"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
+
+[[watchlist.members]]
+instrument_id = "AMZN.NASDAQ"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
+
+[[watchlist.members]]
+instrument_id = "TSM.NYSE"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
+
+[[watchlist.members]]
+instrument_id = "AVGO.NASDAQ"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
+
+[[watchlist.members]]
+instrument_id = "SPCX.NASDAQ"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
+
+[[watchlist.members]]
+instrument_id = "META.NASDAQ"
+owner_ids = ["config:system"]
+capabilities = ["top_of_book", "watchlist_last"]
+
+[[watchlist.members]]
+instrument_id = "TSLA.NASDAQ"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]

@@ -10,6 +10,25 @@ from markeitech.system.config import SystemConfig
 from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
 
 
+def _watchlist_feeds(config: SystemConfig) -> list[dict[str, str]]:
+    feeds: list[dict[str, str]] = []
+    for member in config.watchlist.members:
+        capabilities = set(member.capabilities)
+        if "top_of_book" in capabilities:
+            feeds.append(
+                {"instrument_id": member.instrument_id, "kind": "quotes", "selector": "default"},
+            )
+        if "watchlist_last" in capabilities:
+            feeds.append(
+                {
+                    "instrument_id": member.instrument_id,
+                    "kind": "bars",
+                    "selector": "5-SECOND-LAST-EXTERNAL",
+                },
+            )
+    return feeds
+
+
 @dataclass(frozen=True, slots=True)
 class StartupPrerequisites:
     run_id: UUID
@@ -46,26 +65,6 @@ def build_actor_plan(
             ),
         ),
         ActorRegistration(
-            key="data_acquisition",
-            actor_id="DATA-ACQUISITION",
-            config=ImportableActorConfig(
-                actor_path="markeitech.system.acquisition:DataAcquisitionActor",
-                config_path="markeitech.system.acquisition:DataAcquisitionActorConfig",
-                config={
-                    "actor_id": "DATA-ACQUISITION",
-                    "instrument_ids": instrument_ids,
-                    "bootstrap_feeds": [
-                        {
-                            "instrument_id": feed.instrument_id,
-                            "kind": feed.kind,
-                            "selector": feed.selector,
-                        }
-                        for feed in config.acquisition.bootstrap_feeds
-                    ],
-                },
-            ),
-        ),
-        ActorRegistration(
             key="watchlist",
             actor_id="WATCHLIST",
             config=ImportableActorConfig(
@@ -84,6 +83,18 @@ def build_actor_plan(
                 },
             ),
         ),
+        ActorRegistration(
+            key="data_acquisition",
+            actor_id="DATA-ACQUISITION",
+            config=ImportableActorConfig(
+                actor_path="markeitech.system.acquisition:DataAcquisitionActor",
+                config_path="markeitech.system.acquisition:DataAcquisitionActorConfig",
+                config={
+                    "actor_id": "DATA-ACQUISITION",
+                    "instrument_ids": instrument_ids,
+                },
+            ),
+        ),
     ]
     if config.acquisition.native_consumer_probe_enabled:
         registrations.append(
@@ -91,23 +102,13 @@ def build_actor_plan(
                 key="native_consumer_probe",
                 actor_id="NATIVE-CONSUMER-PROBE",
                 config=ImportableActorConfig(
-                    actor_path=(
-                        "markeitech.system.native_consumer_probe:NativeConsumerProbeActor"
-                    ),
+                    actor_path=("markeitech.system.native_consumer_probe:NativeConsumerProbeActor"),
                     config_path=(
-                        "markeitech.system.native_consumer_probe:"
-                        "NativeConsumerProbeActorConfig"
+                        "markeitech.system.native_consumer_probe:NativeConsumerProbeActorConfig"
                     ),
                     config={
                         "actor_id": "NATIVE-CONSUMER-PROBE",
-                        "feeds": [
-                            {
-                                "instrument_id": feed.instrument_id,
-                                "kind": feed.kind,
-                                "selector": feed.selector,
-                            }
-                            for feed in config.acquisition.bootstrap_feeds
-                        ],
+                        "feeds": _watchlist_feeds(config),
                         "unsubscribe_after_seconds": (
                             config.acquisition.native_consumer_probe_unsubscribe_after_seconds
                         ),
@@ -137,9 +138,7 @@ def build_actor_plan(
             actor_id="OPERATIONAL-PERSISTENCE",
             config=ImportableActorConfig(
                 actor_path="markeitech.system.persistence:OperationalPersistenceActor",
-                config_path=(
-                    "markeitech.system.persistence:OperationalPersistenceActorConfig"
-                ),
+                config_path=("markeitech.system.persistence:OperationalPersistenceActorConfig"),
                 config={
                     "actor_id": "OPERATIONAL-PERSISTENCE",
                     "run_id": str(prerequisites.run_id),

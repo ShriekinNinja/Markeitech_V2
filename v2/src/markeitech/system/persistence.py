@@ -24,6 +24,7 @@ from markeitech.system.messages import (
     PERSISTENCE_READY_REQUEST_SIGNAL,
     PERSISTENCE_READY_SIGNAL,
     SYSTEM_HEALTH_SIGNAL,
+    WATCHLIST_DEMAND_SIGNAL,
     WATCHLIST_LIFECYCLE_SIGNAL,
     WATCHLIST_MEMBERSHIP_SIGNAL,
     AcquisitionStatusEvent,
@@ -33,6 +34,7 @@ from markeitech.system.messages import (
     PersistenceReadyEvent,
     PersistenceReadyRequest,
     SystemHealthEvent,
+    WatchlistDemandEvent,
     WatchlistLifecycleEvent,
     WatchlistMembershipEvent,
 )
@@ -466,11 +468,10 @@ class PersistenceWorker:
         if self._closed:
             self._increment("_rejected")
             return False
-        try:
-            self._pending.put_nowait(record)
-        except Full:
-            self._increment("_rejected")
-            return False
+        # Operational events are sparse control-plane data and must not be dropped
+        # when startup or shutdown briefly fills the bounded queue. Backpressure is
+        # preferable to creating holes in the audit sequence.
+        self._pending.put(record)
         self._increment("_accepted")
         return True
 
@@ -611,6 +612,7 @@ class OperationalPersistenceActor(DataActor):
             ACQUISITION_STATUS_REQUEST_SIGNAL,
             ACQUISITION_STATUS_SIGNAL,
             ACQUISITION_STREAM_SIGNAL,
+            WATCHLIST_DEMAND_SIGNAL,
             WATCHLIST_MEMBERSHIP_SIGNAL,
             WATCHLIST_LIFECYCLE_SIGNAL,
             PERSISTENCE_READY_REQUEST_SIGNAL,
@@ -689,8 +691,7 @@ class OperationalPersistenceActor(DataActor):
                 return
             if result.stored:
                 self.log.info(
-                    f"OPERATIONAL_EVENT_STORED | sequence={result.sequence}"
-                    f" | state={result.state}",
+                    f"OPERATIONAL_EVENT_STORED | sequence={result.sequence} | state={result.state}",
                 )
             else:
                 self._report_failure(
@@ -773,6 +774,17 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             ts_event_ns=signal.ts_event,
             ts_init_ns=signal.ts_init,
             schema_version=event.schema_version,
+        )
+    if signal.name == WATCHLIST_DEMAND_SIGNAL:
+        event = WatchlistDemandEvent.from_signal_value(signal.value)
+        return _generic_signal_record(
+            run_id,
+            sequence,
+            signal,
+            event_type="watchlist.demand",
+            source=event.owner_id,
+            schema_version=event.schema_version,
+            correlation_id=event.demand_id,
         )
     if signal.name == WATCHLIST_LIFECYCLE_SIGNAL:
         event = WatchlistLifecycleEvent.from_signal_value(signal.value)

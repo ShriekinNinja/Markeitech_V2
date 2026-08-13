@@ -24,12 +24,14 @@ from markeitech.system.messages import (
     INSTRUMENTS_RESOLVING,
     PERSISTENCE_READY_REQUEST_SIGNAL,
     PERSISTENCE_READY_SIGNAL,
+    WATCHLIST_DEMAND_SIGNAL,
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
     ComponentFailureEvent,
     PersistenceReadyEvent,
     PersistenceReadyRequest,
+    WatchlistDemandEvent,
 )
 
 
@@ -86,7 +88,6 @@ class DataAcquisitionActorConfig(DataActorConfig):
     def __new__(
         cls,
         instrument_ids: list[str],
-        bootstrap_feeds: list[dict[str, str]] | None = None,
         actor_id: str | ActorId = "DATA-ACQUISITION",
     ) -> DataAcquisitionActorConfig:
         resolved_actor_id = (
@@ -94,7 +95,6 @@ class DataAcquisitionActorConfig(DataActorConfig):
         )
         obj = super().__new__(cls, actor_id=resolved_actor_id)
         obj.instrument_ids = tuple(instrument_ids)
-        obj.bootstrap_feeds = tuple(bootstrap_feeds or ())
         return obj
 
 
@@ -102,12 +102,10 @@ class DataAcquisitionActor(DataActor):
     def __init__(self, config: DataAcquisitionActorConfig) -> None:
         super().__init__(config)
         self._tracker = InstrumentDefinitionTracker(config.instrument_ids)
-        self._bootstrap_demands = _build_bootstrap_demands(config.bootstrap_feeds)
-        self._bootstrap_stream_keys = frozenset(
-            demand.requirement.stream_key for demand in self._bootstrap_demands
-        )
+        self._expected_instrument_ids = frozenset(config.instrument_ids)
+        self._pending_demands: dict[str, WatchlistDemandEvent] = {}
+        self._managed_stream_keys: set[tuple[str, str, str]] = set()
         self._coordinator = AcquisitionCoordinator(NautilusSubscriptionPort(self))
-        self._feeds_started = False
         self._observation_counts: Counter[tuple[str, str, str]] = Counter()
         self._lifecycle_counts: Counter[str] = Counter()
         self._instrument_requests = 0
@@ -122,6 +120,7 @@ class DataAcquisitionActor(DataActor):
     def on_start(self) -> None:
         self.subscribe_signal(ACQUISITION_STATUS_REQUEST_SIGNAL)
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
+        self.subscribe_signal(WATCHLIST_DEMAND_SIGNAL)
         self.publish_signal(
             PERSISTENCE_READY_REQUEST_SIGNAL,
             PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
@@ -138,7 +137,7 @@ class DataAcquisitionActor(DataActor):
             self.request_instrument(instrument_id)
             self._instrument_requests += 1
         self._publish_status()
-        self._start_bootstrap_feeds_if_ready()
+        self._start_pending_demands_if_ready()
 
     def on_instrument(self, instrument) -> None:  # noqa: ANN001
         if not self._startup_released:
@@ -147,11 +146,14 @@ class DataAcquisitionActor(DataActor):
             self._instruments_received += 1
             self.log.info(f"INSTRUMENT_ACQUIRED | instrument_id={instrument.id}")
             self._publish_status()
-            self._start_bootstrap_feeds_if_ready()
+            self._start_pending_demands_if_ready()
         elif instrument.id in self._tracker.expected:
             self._duplicate_instruments += 1
 
     def on_signal(self, signal: Signal) -> None:
+        if signal.name == WATCHLIST_DEMAND_SIGNAL:
+            self._handle_watchlist_demand(signal.value)
+            return
         if signal.name == PERSISTENCE_READY_SIGNAL:
             try:
                 PersistenceReadyEvent.from_signal_value(signal.value)
@@ -195,12 +197,13 @@ class DataAcquisitionActor(DataActor):
 
     def on_stop(self) -> None:
         if self._startup_released:
-            for demand in self._bootstrap_demands:
+            for demand in tuple(self._coordinator.demands):
                 self._publish_lifecycle_events(
                     self._coordinator.cancel(demand.demand_id, now=self.clock.utc_now()),
                 )
         self.unsubscribe_signal(ACQUISITION_STATUS_REQUEST_SIGNAL)
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
+        self.unsubscribe_signal(WATCHLIST_DEMAND_SIGNAL)
         self.log.info(
             "DATA_ACQUISITION_SUMMARY"
             f" | instrument_requests={self._instrument_requests}"
@@ -241,11 +244,33 @@ class DataAcquisitionActor(DataActor):
             f"/{len(status.expected_instrument_ids)}",
         )
 
-    def _start_bootstrap_feeds_if_ready(self) -> None:
-        if self._feeds_started or self._tracker.missing:
+    def _handle_watchlist_demand(self, value: str) -> None:
+        try:
+            event = WatchlistDemandEvent.from_signal_value(value)
+            if event.instrument_id not in self._expected_instrument_ids:
+                raise ValueError("demand instrument is outside configured acquisition scope")
+            _observation_demand(event)
+        except ValueError as exc:
+            self.log.error(
+                f"WATCHLIST_DEMAND_REJECTED | reason=invalid_event | error={type(exc).__name__}",
+            )
             return
-        self._feeds_started = True
-        for demand in self._bootstrap_demands:
+        if event.action == "RELEASE":
+            self._pending_demands.pop(event.demand_id, None)
+            self._publish_lifecycle_events(
+                self._coordinator.cancel(event.demand_id, now=self.clock.utc_now()),
+            )
+            return
+        self._pending_demands[event.demand_id] = event
+        self._start_pending_demands_if_ready()
+
+    def _start_pending_demands_if_ready(self) -> None:
+        if not self._startup_released or self._tracker.missing:
+            return
+        for demand_id in sorted(tuple(self._pending_demands)):
+            event = self._pending_demands.pop(demand_id)
+            demand = _observation_demand(event)
+            self._managed_stream_keys.add(demand.requirement.stream_key)
             self._publish_lifecycle_events(
                 self._coordinator.request(demand, now=self.clock.utc_now()),
             )
@@ -257,7 +282,7 @@ class DataAcquisitionActor(DataActor):
         selector: str = "default",
     ) -> None:
         stream_key = (instrument_id, kind.value, selector)
-        if stream_key not in self._bootstrap_stream_keys:
+        if stream_key not in self._managed_stream_keys:
             return
         self._observation_counts[stream_key] += 1
         event = self._coordinator.observe(stream_key)
@@ -291,24 +316,15 @@ class DataAcquisitionActor(DataActor):
             )
 
 
-def _build_bootstrap_demands(
-    feeds: tuple[dict[str, str], ...],
-) -> tuple[ObservationDemand, ...]:
-    demands: list[ObservationDemand] = []
-    for index, feed in enumerate(feeds):
-        kind = FeedKind(feed["kind"])
-        requirement = FeedRequirement(
-            instrument_id=feed["instrument_id"],
-            kind=kind,
-            selector=feed["selector"],
-        )
-        demands.append(
-            ObservationDemand(
-                demand_id=f"bootstrap:{index}:{'/'.join(requirement.stream_key)}",
-                owner=DemandOwner(DemandOwnerKind.BOOTSTRAP, "system-config"),
-                requirement=requirement,
-                priority=50,
-                purpose="configured bootstrap native stream",
-            ),
-        )
-    return tuple(demands)
+def _observation_demand(event: WatchlistDemandEvent) -> ObservationDemand:
+    return ObservationDemand(
+        demand_id=event.demand_id,
+        owner=DemandOwner(DemandOwnerKind.WATCHLIST, event.owner_id),
+        requirement=FeedRequirement(
+            instrument_id=event.instrument_id,
+            kind=FeedKind(event.feed_kind),
+            selector=event.selector,
+        ),
+        priority=event.priority,
+        purpose=event.purpose,
+    )

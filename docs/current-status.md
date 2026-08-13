@@ -172,8 +172,8 @@ summaries; temporary per-update logs were removed after live review.
 
 The actor is now a bounded core state owner with immutable versioned snapshots, native event
 timestamps, separate registration and observation state, and out-of-order protection. Versioned
-membership and lifecycle contracts are implemented and tested but are intentionally not published
-or persisted yet. The next accepted slice creates their generic PostgreSQL audit boundary first.
+membership and lifecycle contracts are published and persisted through the generic PostgreSQL
+audit boundary.
 Dynamic membership is explicitly deferred; the accepted stopping point is a live-proven static,
 configuration-owned watchlist. The exact handoff is
 [`roadmap/v2-static-watchlist-handoff.md`](roadmap/v2-static-watchlist-handoff.md).
@@ -191,12 +191,18 @@ on its first write. No audit event includes raw quote or bar payloads. The start
 implemented for live review on branch
 `v2-stage-8e-startup-audit-closure`.
 
-The next configuration-ownership slice replaces the root instrument list with typed static
+The configuration-ownership slice replaces the root instrument list with typed static
 watchlist members. Each member declares its provider instrument ID, permanent owner IDs, and the
 capabilities the current watchlist actually provides. System control, instrument-definition
 acquisition, the IB provider, actor composition, and membership audit all consume that one member
-set. Existing acquisition bootstrap feeds remain temporarily separate and are validated against
-the watchlist so live subscription behavior does not change in this slice.
+set. The subsequent static completion removes duplicated bootstrap feeds: Watchlist
+capabilities now publish stable demand contracts, Acquisition alone owns provider subscription
+lifetime, and Watchlist attaches native observers only after subscription outcomes. Demand,
+provider outcome, degradation, recovery, and release are operational audit facts; raw market
+observations remain memory-only. Session-unaware elapsed-time staleness is deliberately deferred.
+The complete 18-member baseline is now configured through Nautilus IB simplified `load_ids`, with
+required startup resolution and explicit September 2026 ES, NQ, YM, and CL contracts. This mapping
+is ready for live proof; automatic futures rolling is not implied.
 
 ## Explicit Boundaries
 

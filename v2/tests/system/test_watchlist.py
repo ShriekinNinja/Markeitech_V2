@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from markeitech.system.watchlist import ConsumerState, ObservationState, WatchlistState
+from markeitech.system.messages import WatchlistMember
+from markeitech.system.watchlist import (
+    ConsumerState,
+    ObservationState,
+    WatchlistState,
+    _watchlist_demands,
+)
 
 INSTRUMENTS = (
     "ESU6.CME",
@@ -56,10 +62,7 @@ def test_becomes_observed_only_after_quote_and_bar_for_every_instrument() -> Non
     snapshot = state.snapshot()
     assert state.is_observed is True
     assert snapshot.observation_state == ObservationState.OBSERVED
-    assert all(
-        item.observation_state == ObservationState.OBSERVED
-        for item in snapshot.instruments
-    )
+    assert all(item.observation_state == ObservationState.OBSERVED for item in snapshot.instruments)
 
 
 def test_snapshot_is_immutable_and_ordered() -> None:
@@ -117,3 +120,22 @@ def test_detach_changes_operational_state_without_erasing_observations() -> None
     snapshot = state.snapshot()
     assert snapshot.operational is False
     assert snapshot.observation_state == ObservationState.OBSERVED
+
+
+def test_static_members_derive_stable_capability_demands() -> None:
+    demands = _watchlist_demands(
+        (
+            WatchlistMember(
+                instrument_id="ESU6.CME",
+                owner_ids=("config:system",),
+                capabilities=("top_of_book", "watchlist_last"),
+            ),
+        ),
+    )
+
+    assert sorted((item.capability, item.feed_kind, item.selector) for item in demands) == [
+        ("top_of_book", "quotes", "default"),
+        ("watchlist_last", "bars", "5-SECOND-LAST-EXTERNAL"),
+    ]
+    assert all(item.action == "REQUEST" for item in demands)
+    assert len({item.demand_id for item in demands}) == 2

@@ -19,6 +19,8 @@ ACQUISITION_STATUS_SCHEMA_VERSION = 1
 ACQUISITION_STATUS_REQUEST_SCHEMA_VERSION = 1
 ACQUISITION_STREAM_SIGNAL = "markeitech.acquisition.stream"
 ACQUISITION_STREAM_SCHEMA_VERSION = 1
+WATCHLIST_DEMAND_SIGNAL = "markeitech.watchlist.demand"
+WATCHLIST_DEMAND_SCHEMA_VERSION = 1
 WATCHLIST_MEMBERSHIP_SIGNAL = "markeitech.watchlist.membership"
 WATCHLIST_MEMBERSHIP_SCHEMA_VERSION = 1
 WATCHLIST_LIFECYCLE_SIGNAL = "markeitech.watchlist.lifecycle"
@@ -43,8 +45,10 @@ _WATCHLIST_LIFECYCLE_STATES = {
     "CONSUMERS_REGISTERED",
     "INSTRUMENT_OBSERVED",
     "OBSERVATION_DEGRADED",
+    "OBSERVATION_RECOVERED",
     "CONSUMERS_DETACHED",
 }
+_WATCHLIST_DEMAND_ACTIONS = {"REQUEST", "RELEASE"}
 
 type EvidenceValue = str | int | float | bool | None
 
@@ -151,6 +155,89 @@ class WatchlistMember:
             value,
             label="watchlist member",
             expected={"instrument_id", "capabilities", "owner_ids"},
+        )
+        return cls(**payload)  # type: ignore[arg-type]
+
+
+@dataclass(frozen=True, slots=True)
+class WatchlistDemandEvent:
+    demand_id: str
+    action: str
+    instrument_id: str
+    capability: str
+    feed_kind: str
+    selector: str
+    owner_id: str
+    purpose: str
+    priority: int = 50
+    schema_version: int = WATCHLIST_DEMAND_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _validate_schema_version(
+            self.schema_version,
+            WATCHLIST_DEMAND_SCHEMA_VERSION,
+            "watchlist demand",
+        )
+        for field_name in (
+            "demand_id",
+            "instrument_id",
+            "capability",
+            "feed_kind",
+            "selector",
+            "owner_id",
+            "purpose",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _required_text(getattr(self, field_name), field_name),
+            )
+        action = _required_text(self.action, "action")
+        if action not in _WATCHLIST_DEMAND_ACTIONS:
+            raise ValueError(f"unsupported watchlist demand action: {action!r}")
+        object.__setattr__(self, "action", action)
+        if (
+            not isinstance(self.priority, int)
+            or isinstance(self.priority, bool)
+            or not 0 <= self.priority <= 100
+        ):
+            raise ValueError("priority must be an integer from 0 through 100")
+
+    def to_signal_value(self) -> str:
+        return json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "demand_id": self.demand_id,
+                "action": self.action,
+                "instrument_id": self.instrument_id,
+                "capability": self.capability,
+                "feed_kind": self.feed_kind,
+                "selector": self.selector,
+                "owner_id": self.owner_id,
+                "purpose": self.purpose,
+                "priority": self.priority,
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> WatchlistDemandEvent:
+        payload = _load_exact_json_object(
+            value,
+            label="watchlist demand",
+            expected={
+                "schema_version",
+                "demand_id",
+                "action",
+                "instrument_id",
+                "capability",
+                "feed_kind",
+                "selector",
+                "owner_id",
+                "purpose",
+                "priority",
+            },
         )
         return cls(**payload)  # type: ignore[arg-type]
 

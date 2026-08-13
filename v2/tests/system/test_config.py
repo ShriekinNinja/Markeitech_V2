@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 4
+schema_version = 5
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -48,11 +48,6 @@ write_retry_backoff_ms = 100
 [acquisition]
 native_consumer_probe_enabled = true
 native_consumer_probe_unsubscribe_after_seconds = 15
-bootstrap_feeds = [
-  { instrument_id = "ESU6.CME", kind = "quotes", selector = "default" },
-  { instrument_id = "ESU6.CME", kind = "trades", selector = "default" },
-]
-
 [[watchlist.members]]
 instrument_id = "ESU6.CME"
 owner_ids = ["config:system"]
@@ -82,13 +77,6 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.persistence.result_poll_interval_ms == 250
     assert config.persistence.write_max_attempts == 3
     assert config.persistence.write_retry_backoff_ms == 100
-    assert [
-        (feed.instrument_id, feed.kind, feed.selector)
-        for feed in config.acquisition.bootstrap_feeds
-    ] == [
-        ("ESU6.CME", "quotes", "default"),
-        ("ESU6.CME", "trades", "default"),
-    ]
     assert config.acquisition.native_consumer_probe_enabled is True
     assert config.acquisition.native_consumer_probe_unsubscribe_after_seconds == 15
     assert config.instrument_ids == ("ESU6.CME",)
@@ -130,41 +118,16 @@ def test_rejects_unknown_ib_symbology_method(tmp_path: Path) -> None:
         load_system_config(path)
 
 
-def test_rejects_bootstrap_feed_for_unconfigured_instrument(tmp_path: Path) -> None:
-    path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("ESU6.CME\", kind", "NQU6.CME\", kind", 1))
-
-    with pytest.raises(ValueError, match="must reference a configured instrument"):
-        load_system_config(path)
-
-
-def test_rejects_duplicate_bootstrap_feed(tmp_path: Path) -> None:
+def test_rejects_removed_bootstrap_feed_configuration(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
     path.write_text(
         VALID_CONFIG.replace(
-            "]\n\n[[watchlist.members]]",
-            (
-                '  { instrument_id = "ESU6.CME", kind = "quotes", '
-                'selector = "default" },\n]\n\n[[watchlist.members]]'
-            ),
-            1,
+            "native_consumer_probe_enabled = true",
+            "native_consumer_probe_enabled = true\nbootstrap_feeds = []",
         ),
     )
 
-    with pytest.raises(ValueError, match="duplicate bootstrap feed"):
-        load_system_config(path)
-
-
-def test_rejects_selector_for_feed_without_selector_semantics(tmp_path: Path) -> None:
-    path = tmp_path / "system.toml"
-    path.write_text(
-        VALID_CONFIG.replace(
-            'kind = "quotes", selector = "default"',
-            'kind = "quotes", selector = "fast"',
-        ),
-    )
-
-    with pytest.raises(ValueError, match="selector must be 'default' for quotes"):
+    with pytest.raises(ValueError, match="acquisition has unknown keys: bootstrap_feeds"):
         load_system_config(path)
 
 
