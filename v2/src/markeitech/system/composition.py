@@ -66,6 +66,36 @@ def build_actor_plan(
             ),
         ),
     ]
+    if config.acquisition.native_consumer_probe_enabled:
+        registrations.append(
+            ActorRegistration(
+                key="native_consumer_probe",
+                actor_id="NATIVE-CONSUMER-PROBE",
+                config=ImportableActorConfig(
+                    actor_path=(
+                        "markeitech.system.native_consumer_probe:NativeConsumerProbeActor"
+                    ),
+                    config_path=(
+                        "markeitech.system.native_consumer_probe:"
+                        "NativeConsumerProbeActorConfig"
+                    ),
+                    config={
+                        "actor_id": "NATIVE-CONSUMER-PROBE",
+                        "feeds": [
+                            {
+                                "instrument_id": feed.instrument_id,
+                                "kind": feed.kind,
+                                "selector": feed.selector,
+                            }
+                            for feed in config.acquisition.bootstrap_feeds
+                        ],
+                        "unsubscribe_after_seconds": (
+                            config.acquisition.native_consumer_probe_unsubscribe_after_seconds
+                        ),
+                    },
+                ),
+            ),
+        )
     if config.discord.enabled:
         registrations.append(
             ActorRegistration(

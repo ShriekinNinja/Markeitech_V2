@@ -134,15 +134,15 @@ Stage 8B.1 is committed. Stage 8B.2 and 8B.3 are ready for review:
   subscriptions; and
 - explicit deferral of richer book and option-chain subscription contracts.
 
-The installed compiled Nautilus core does not expose enough subscription reference-count state for
-an honest offline proof of duplicate-actor behavior. Stage 8C therefore retains the live proof of
-native callback distribution, first observation, IB behavior, and unsubscribe safety. No live IB
-run was performed for this batch.
+The installed compiled Nautilus core did not expose enough subscription reference-count state for
+an honest offline proof of duplicate-actor behavior, so Stage 8C completed that proof against a
+live IB connection.
 
-Stage 8C's first implementation batch is ready for review on branch
+Stage 8C is complete on branch
 `v2-stage-8c-continuous-native-stream`:
 
-- standalone configuration schema 2 explicitly declares bootstrap native feeds;
+- standalone configuration schema 3 explicitly declares bootstrap native feeds and the bounded
+  probe controls;
 - the proof profile requests quotes and trades for configured ES and SPY;
 - no feed is inferred merely from observation-universe membership;
 - `DataAcquisitionActor` starts streams only after instrument-definition readiness;
@@ -151,10 +151,17 @@ Stage 8C's first implementation batch is ready for review on branch
 - raw observations remain native, transient, unwrapped, and unpersisted; and
 - shutdown cancels each bootstrap demand while the coordinator protects shared subscriptions.
 
-Offline tests prove configuration, composition, deduplication, lifecycle meaning, first-observation
-transition, cancellation, retry, and native call mapping. A Markeitect-run live review must still
-prove ES/SPY first observations and clean IB unsubscription. Cross-actor native fan-out is not yet
-claimed.
+The live proof registered a temporary `NativeConsumerProbeActor` for those same native quote and
+trade streams. Both actors received all four streams. Eight actor-level subscribe commands became
+four provider subscriptions. The probe then unsubscribed after 15 seconds with 72 observations,
+while `DataAcquisitionActor` continued to 464 observations before shutdown. Provider
+unsubscription occurred only during final shutdown. This proves native multi-actor delivery,
+provider deduplication, and subscription lifetime safety for this path.
+
+The diagnostic probe remains available behind explicit configuration but is disabled in the normal
+runtime profile. It adds no custom market-data envelope, fan-out, persistence, analytics, or
+fallback implementation. Offline tests cover configuration, composition, logical deduplication,
+lifecycle meaning, first observation, cancellation, retry, and native call mapping.
 
 ## Explicit Boundaries
 

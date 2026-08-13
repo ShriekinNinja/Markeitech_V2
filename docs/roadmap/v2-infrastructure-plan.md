@@ -258,8 +258,9 @@ budgets, and live Nautilus/IB proof remain pending.
 - [x] Prove first-observation state, logical deduplication, final-consumer cancellation, retry, and
       bounded runtime counters offline.
 - [x] Use the acquisition actor as one minimal native consumer, not as a trading model.
-- [ ] Live-prove ES/SPY quote and trade observations, IB unsubscribe behavior, and clean shutdown.
-- [ ] Determine the safe cross-actor native fan-out mechanism without wrapping raw observations or
+- [x] Add a temporary bounded native consumer probe without wrappers, persistence, or analytics.
+- [x] Live-prove ES/SPY quote and trade observations, IB unsubscribe behavior, and clean shutdown.
+- [x] Determine the safe cross-actor native fan-out mechanism without wrapping raw observations or
       allowing independent consumers to cancel provider subscriptions.
 
 ### Stage 8D: Capability-Derived Historical Requests

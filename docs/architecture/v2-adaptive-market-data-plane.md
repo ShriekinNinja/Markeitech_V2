@@ -1,7 +1,7 @@
 # V2 Adaptive Market-Data Plane
 
-**Status:** Stage 8B is committed. Stage 8C's configured native-stream wiring is implemented for
-review; live provider proof remains pending.
+**Status:** Stage 8C is complete, including live native multi-actor delivery and subscription
+lifetime proof against IB.
 
 **Scope:** The intended live market-data and analysis control model. This document defines the
 destination and ownership boundaries before subscription code is added. It does not approve a
@@ -272,9 +272,14 @@ The first Stage 8C batch now:
 - configures quote and trade proof streams for ES and SPY without treating that list as a permanent
   observation universe.
 
-The installed actor API does not expose a local-callback-only subscription method. Independent
-consumer fan-out therefore remains a deliberate live/runtime experiment after the single-owner
-path is accepted. The current batch makes no claim that this behavior has been proven against IB.
+The live experiment proved the native path. A temporary `NativeConsumerProbeActor` and
+`DataAcquisitionActor` both received ES/SPY quote and trade callbacks. Nautilus collapsed eight
+actor-level subscribe commands into four provider subscriptions. When the probe unsubscribed,
+acquisition continued receiving native observations and the provider feeds remained active until
+final shutdown. Independent analysis actors may therefore consume native Nautilus callbacks
+without a Markeitech market-data wrapper or custom fan-out. Logical demand authorization and the
+provider-lifetime anchor remain owned by acquisition. The diagnostic probe is disabled in the
+normal runtime profile but preserved for explicit verification.
 
 ### Stage 8D: Capability-derived historical requests
 
@@ -296,9 +301,8 @@ health effects. Only then is adaptive acquisition complete enough for intelligen
 
 1. Whether the first demand contract represents raw feed requirements only or capabilities that
    expand into feed requirements. Recommendation: define both and keep them separate.
-2. How analysis consumers receive native callbacks while provider subscription lifetime remains
-   centralized. Stage 8C will test the native path first. Do not relay raw ticks through semantic
-   signals or introduce wrappers without evidence that the native path is insufficient.
+2. Resolved in Stage 8C: analysis consumers register for native callbacks while acquisition anchors
+   provider lifetime. Do not relay raw ticks through semantic signals or introduce wrappers.
 3. Which minimal bootstrap feeds make the future agent operational. This must be decided with the
    first actual intelligence consumer, not guessed from V1.
 4. The initial resource-budget dimensions: provider subscriptions, historical pacing, option-chain

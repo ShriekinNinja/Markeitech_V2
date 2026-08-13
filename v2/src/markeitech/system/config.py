@@ -44,6 +44,8 @@ class BootstrapFeedConfig:
 @dataclass(frozen=True, slots=True)
 class AcquisitionConfig:
     bootstrap_feeds: tuple[BootstrapFeedConfig, ...]
+    native_consumer_probe_enabled: bool
+    native_consumer_probe_unsubscribe_after_seconds: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,7 +102,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 2:
+    if raw["schema_version"] != 3:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -284,7 +286,15 @@ def _load_acquisition(
     instruments: tuple[InstrumentConfig, ...],
 ) -> AcquisitionConfig:
     values = _mapping(raw, "acquisition")
-    _require_keys(values, {"bootstrap_feeds"}, "acquisition")
+    _require_keys(
+        values,
+        {
+            "bootstrap_feeds",
+            "native_consumer_probe_enabled",
+            "native_consumer_probe_unsubscribe_after_seconds",
+        },
+        "acquisition",
+    )
     feeds_raw = values["bootstrap_feeds"]
     if not isinstance(feeds_raw, list) or not feeds_raw:
         raise ValueError("acquisition.bootstrap_feeds must be a non-empty array")
@@ -315,7 +325,17 @@ def _load_acquisition(
                 selector=selector,
             ),
         )
-    return AcquisitionConfig(bootstrap_feeds=tuple(feeds))
+    return AcquisitionConfig(
+        bootstrap_feeds=tuple(feeds),
+        native_consumer_probe_enabled=_bool(
+            values["native_consumer_probe_enabled"],
+            "acquisition.native_consumer_probe_enabled",
+        ),
+        native_consumer_probe_unsubscribe_after_seconds=_positive_int(
+            values["native_consumer_probe_unsubscribe_after_seconds"],
+            "acquisition.native_consumer_probe_unsubscribe_after_seconds",
+        ),
+    )
 
 
 def _require_keys(values: dict[str, Any], expected: set[str], label: str) -> None:

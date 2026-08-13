@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 2
+schema_version = 3
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -46,6 +46,8 @@ write_max_attempts = 3
 write_retry_backoff_ms = 100
 
 [acquisition]
+native_consumer_probe_enabled = true
+native_consumer_probe_unsubscribe_after_seconds = 15
 bootstrap_feeds = [
   { instrument_id = "ESU6.CME", kind = "quotes", selector = "default" },
   { instrument_id = "ESU6.CME", kind = "trades", selector = "default" },
@@ -85,6 +87,8 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         ("ESU6.CME", "quotes", "default"),
         ("ESU6.CME", "trades", "default"),
     ]
+    assert config.acquisition.native_consumer_probe_enabled is True
+    assert config.acquisition.native_consumer_probe_unsubscribe_after_seconds == 15
     assert [instrument.id for instrument in config.instruments] == ["ESU6.CME"]
 
 

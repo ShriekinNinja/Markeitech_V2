@@ -1,4 +1,4 @@
-schema_version = 2
+schema_version = 3
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -37,6 +37,8 @@ write_max_attempts = 3
 write_retry_backoff_ms = 100
 
 [acquisition]
+native_consumer_probe_enabled = false
+native_consumer_probe_unsubscribe_after_seconds = 15
 bootstrap_feeds = [
   { instrument_id = "ESU6.CME", kind = "quotes", selector = "default" },
   { instrument_id = "ESU6.CME", kind = "trades", selector = "default" },
