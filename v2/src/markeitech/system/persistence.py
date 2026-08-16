@@ -474,10 +474,11 @@ class PersistenceWorker:
         if self._closed:
             self._increment("_rejected")
             return False
-        # Operational events are sparse control-plane data and must not be dropped
-        # when startup or shutdown briefly fills the bounded queue. Backpressure is
-        # preferable to creating holes in the audit sequence.
-        self._pending.put(record)
+        try:
+            self._pending.put_nowait(record)
+        except Full:
+            self._increment("_rejected")
+            return False
         self._increment("_accepted")
         return True
 
@@ -657,7 +658,17 @@ class OperationalPersistenceActor(DataActor):
             self._report_failure("invalid_operational_event", type(exc).__name__)
             return
         if not self._worker.submit(record):
-            self._report_failure("persistence_queue_unavailable", "queue_full_or_closed")
+            stats = self._worker.snapshot()
+            self._report_failure(
+                "persistence_admission_rejected",
+                "queue_full_or_closed",
+                evidence={
+                    "rejected_sequence": record.sequence,
+                    "accepted": stats.accepted,
+                    "pending": stats.pending,
+                    "rejected": stats.rejected,
+                },
+            )
 
     def _publish_ready(self) -> None:
         self.publish_signal(

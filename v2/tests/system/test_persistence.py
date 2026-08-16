@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from threading import Event, Thread
+from threading import Event
 from uuid import uuid4
 
 import pytest
@@ -391,7 +391,7 @@ def test_persistence_worker_retries_a_write_within_the_configured_bound() -> Non
     assert stats.pending == 0
 
 
-def test_persistence_worker_applies_backpressure_when_bounded_queue_is_full() -> None:
+def test_persistence_worker_rejects_without_blocking_when_bounded_queue_is_full() -> None:
     release = Event()
     entered = Event()
 
@@ -410,24 +410,19 @@ def test_persistence_worker_applies_backpressure_when_bounded_queue_is_full() ->
     assert worker.submit(_record(1))
     assert entered.wait(timeout=1)
     assert worker.submit(_record(2))
+    assert worker.submit(_record(3)) is False
 
-    submitted = Event()
+    saturated = worker.snapshot()
+    assert saturated.accepted == 2
+    assert saturated.rejected == 1
+    assert saturated.pending == 2
 
-    def submit_third() -> None:
-        assert worker.submit(_record(3))
-        submitted.set()
-
-    submitter = Thread(target=submit_third)
-    submitter.start()
-    assert not submitted.wait(timeout=0.05)
     release.set()
-    submitter.join(timeout=1)
-    assert submitted.is_set()
     assert worker.close()
     stats = worker.snapshot()
-    assert stats.accepted == 3
-    assert stats.stored == 3
-    assert stats.rejected == 0
+    assert stats.accepted == 2
+    assert stats.stored == 2
+    assert stats.rejected == 1
     assert stats.pending == 0
 
 

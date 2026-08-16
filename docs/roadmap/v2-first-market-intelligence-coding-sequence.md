@@ -350,7 +350,7 @@ runtime mutability and optimization eligibility.
 
 ### Stage 9A Implementation Record
 
-Implemented on branch `v2-stage-9a-session-evidence-health` for review:
+Completed and accepted at commit `ce9076e`:
 
 - local `pandas-market-calendars` schedules with configured SPXW GTH/RTH/Curb phases;
 - per-instrument calendar ownership in the static watchlist;
@@ -364,6 +364,9 @@ The first parameters are typed, validated, startup-configurable, and versioned i
 Runtime mutation remains deferred until the typed intent, authorization, effective-time, expiry,
 rollback, and audit mechanism exists. See
 [`../architecture/v2-session-evidence-health.md`](../architecture/v2-session-evidence-health.md).
+
+Stage 9B begins only after the Priority 0 runtime-safety gate in
+[`v2-backlog.md`](v2-backlog.md) is live-accepted.
 
 ## Accepted Decisions Before Coding
 

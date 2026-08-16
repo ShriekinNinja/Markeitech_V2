@@ -256,7 +256,7 @@ The detailed sequence and gates are maintained in
 
 ## Stage 9A: Session And Evidence Truth
 
-Stage 9A is implemented for review on branch `v2-stage-9a-session-evidence-health`:
+Stage 9A is complete and accepted at commit `ce9076e`:
 
 - `pandas-market-calendars` supplies local exchange schedules, holiday rules, DST handling, and
   early-close dates.
@@ -280,4 +280,6 @@ Stage 9A is implemented for review on branch `v2-stage-9a-session-evidence-healt
 
 The detailed ownership and semantics are recorded in
 [`architecture/v2-session-evidence-health.md`](architecture/v2-session-evidence-health.md).
-Live IB acceptance remains Markeitect-owned and has not been run for this batch.
+
+Before Stage 9B, the runtime is passing through the short Priority 0 persistence-safety gate in
+[`roadmap/v2-backlog.md`](roadmap/v2-backlog.md). This does not reopen Stage 9A's product scope.
