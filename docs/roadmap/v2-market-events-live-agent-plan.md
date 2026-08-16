@@ -541,6 +541,12 @@ durability precedes dependent lifecycle publication. Restart restores only still
 expires obsolete leases/opportunities. Demand reconciles after reconnect. Agent failure never
 erases deterministic state. Shutdown is bounded and honest about unfinished work.
 
+Across every stage, runtime composition is event-driven rather than startup-sequenced. Actors may
+start and report in any order; readiness is the convergence of independently evidenced component
+states. A failed capability remains bounded, observable, and retryable under configuration while
+unrelated capabilities continue. No actor may rely on sleeps, arbitrary ordering delays, or nested
+framework mutation from another actor's synchronous callback.
+
 ## Observability And Operator Experience
 
 Rotating files remain the diagnostic stream; high-volume observations are summarized by default.

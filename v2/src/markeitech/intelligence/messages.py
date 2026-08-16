@@ -1,0 +1,166 @@
+from __future__ import annotations
+
+import json
+from dataclasses import asdict, dataclass
+
+SESSION_STATE_SIGNAL = "markeitech.session.state"
+SESSION_STATE_SCHEMA_VERSION = 1
+EVIDENCE_HEALTH_SIGNAL = "markeitech.evidence.health"
+EVIDENCE_HEALTH_SCHEMA_VERSION = 1
+
+EVIDENCE_STATES = {
+    "NOT_EVALUATED",
+    "DORMANT",
+    "HEALTHY",
+    "DEGRADED",
+    "STALE",
+    "UNAVAILABLE",
+    "UNSUPPORTED",
+}
+EVIDENCE_FIDELITIES = {"REPORTED", "DERIVED", "INFERRED", "PARTIAL", "UNAVAILABLE"}
+
+
+@dataclass(frozen=True, slots=True)
+class SessionStateEvent:
+    event_id: str
+    calendar_id: str
+    schedule_version: str
+    timezone: str
+    trade_date: str | None
+    phase: str
+    previous_phase: str | None
+    is_open: bool
+    phase_open_ns: int | None
+    phase_close_ns: int | None
+    next_transition_ns: int | None
+    source: str
+    reason: str
+    revision: int
+    schema_version: int = SESSION_STATE_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _schema(self.schema_version, SESSION_STATE_SCHEMA_VERSION, "session state")
+        for field in (
+            "event_id",
+            "calendar_id",
+            "schedule_version",
+            "timezone",
+            "source",
+            "reason",
+        ):
+            _text(getattr(self, field), field)
+        _phase(self.phase, "phase")
+        if self.previous_phase is not None:
+            _phase(self.previous_phase, "previous_phase")
+        if self.is_open != (self.phase != "CLOSED"):
+            raise ValueError("is_open must agree with phase")
+        _positive(self.revision, "revision")
+        for field in ("phase_open_ns", "phase_close_ns", "next_transition_ns"):
+            _optional_ns(getattr(self, field), field)
+
+    def to_signal_value(self) -> str:
+        return json.dumps(asdict(self), separators=(",", ":"), sort_keys=True)
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> SessionStateEvent:
+        return cls(**_payload(value, set(cls.__dataclass_fields__)))
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceHealthEvent:
+    event_id: str
+    instrument_id: str
+    calendar_id: str
+    feed_kind: str
+    selector: str
+    state: str
+    previous_state: str | None
+    reason: str
+    fidelity: str
+    subscription_state: str
+    event_ts_ns: int | None
+    receive_ts_ns: int | None
+    evaluated_ts_ns: int
+    age_ms: int | None
+    session_phase: str | None
+    session_trade_date: str | None
+    session_alignment: str
+    source: str
+    policy_version: str
+    revision: int
+    schema_version: int = EVIDENCE_HEALTH_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _schema(self.schema_version, EVIDENCE_HEALTH_SCHEMA_VERSION, "evidence health")
+        for field in (
+            "event_id",
+            "instrument_id",
+            "calendar_id",
+            "feed_kind",
+            "selector",
+            "reason",
+            "subscription_state",
+            "session_alignment",
+            "source",
+            "policy_version",
+        ):
+            _text(getattr(self, field), field)
+        if self.state not in EVIDENCE_STATES:
+            raise ValueError(f"unsupported evidence state: {self.state!r}")
+        if self.previous_state is not None and self.previous_state not in EVIDENCE_STATES:
+            raise ValueError(f"unsupported previous evidence state: {self.previous_state!r}")
+        if self.fidelity not in EVIDENCE_FIDELITIES:
+            raise ValueError(f"unsupported evidence fidelity: {self.fidelity!r}")
+        if self.session_phase is not None:
+            _phase(self.session_phase, "session_phase")
+        _positive(self.revision, "revision")
+        _optional_ns(self.event_ts_ns, "event_ts_ns")
+        _optional_ns(self.receive_ts_ns, "receive_ts_ns")
+        _optional_ns(self.evaluated_ts_ns, "evaluated_ts_ns", optional=False)
+        if self.age_ms is not None and self.age_ms < 0:
+            raise ValueError("age_ms must be non-negative")
+
+    def to_signal_value(self) -> str:
+        return json.dumps(asdict(self), separators=(",", ":"), sort_keys=True)
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> EvidenceHealthEvent:
+        return cls(**_payload(value, set(cls.__dataclass_fields__)))
+
+
+def _payload(value: str, expected: set[str]) -> dict[str, object]:
+    try:
+        payload = json.loads(value)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("signal value must be valid JSON") from exc
+    if not isinstance(payload, dict) or set(payload) != expected:
+        raise ValueError("signal payload fields do not match the contract")
+    return payload
+
+
+def _text(value: object, label: str) -> None:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a non-empty string")
+
+
+def _schema(actual: int, expected: int, label: str) -> None:
+    if actual != expected:
+        raise ValueError(f"unsupported {label} schema: {actual}")
+
+
+def _phase(value: object, label: str) -> None:
+    _text(value, label)
+    if value != str(value).upper():
+        raise ValueError(f"{label} must be uppercase")
+
+
+def _positive(value: object, label: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        raise ValueError(f"{label} must be a positive integer")
+
+
+def _optional_ns(value: object, label: str, *, optional: bool = True) -> None:
+    if value is None and optional:
+        return
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise ValueError(f"{label} must be a non-negative integer")

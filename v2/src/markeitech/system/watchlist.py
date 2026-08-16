@@ -27,6 +27,7 @@ _MAX_COUNTER = 2**63 - 1
 _STATIC_MEMBERSHIP_REVISION = 1
 _STATIC_MEMBERSHIP_EVENT_ID = "watchlist-membership:1"
 _STATIC_OWNER_ID = "config:system"
+_CONSUMER_RETRY_TIMER = "watchlist-consumer-registration-retry"
 
 
 class ConsumerState(StrEnum):
@@ -217,6 +218,7 @@ class WatchlistActorConfig(DataActorConfig):
     def __new__(
         cls,
         members: list[dict[str, object]],
+        consumer_retry_interval_ms: int,
         actor_id: str | ActorId = "WATCHLIST",
     ) -> WatchlistActorConfig:
         resolved_actor_id = (
@@ -224,6 +226,7 @@ class WatchlistActorConfig(DataActorConfig):
         )
         obj = super().__new__(cls, actor_id=resolved_actor_id)
         obj.members = tuple(members)
+        obj.consumer_retry_interval_ms = consumer_retry_interval_ms
         return obj
 
 
@@ -235,6 +238,7 @@ class WatchlistActor(DataActor):
         self._members = tuple(
             WatchlistMember(
                 instrument_id=str(member["instrument_id"]),
+                calendar_id=str(member["calendar_id"]),
                 owner_ids=tuple(str(value) for value in member["owner_ids"]),
                 capabilities=tuple(str(value) for value in member["capabilities"]),
             )
@@ -247,13 +251,16 @@ class WatchlistActor(DataActor):
         self._observed_before_audit: set[str] = set()
         self._startup_released = False
         self._demands = _watchlist_demands(self._members)
+        self._consumer_retry_interval_ns = config.consumer_retry_interval_ms * 1_000_000
         self._subscribed_demand_ids: set[str] = set()
         self._attached_demand_ids: set[str] = set()
+        self._attachment_failure_ids: set[str] = set()
         self._degraded_demand_ids: set[str] = set()
 
     def on_start(self) -> None:
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.subscribe_signal(ACQUISITION_STREAM_SIGNAL)
+        self._reconcile_consumer_attachments(None)
         self.publish_signal(
             PERSISTENCE_READY_REQUEST_SIGNAL,
             PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
@@ -279,6 +286,9 @@ class WatchlistActor(DataActor):
             return
         self._startup_released = True
         self._publish_initial_audit(None)
+        for demand in self._demands:
+            if demand.demand_id in self._attachment_failure_ids:
+                self._publish_attachment_degraded(demand)
         for demand in self._demands:
             self.publish_signal(WATCHLIST_DEMAND_SIGNAL, demand.to_signal_value())
         self.log.info(
@@ -308,6 +318,8 @@ class WatchlistActor(DataActor):
     def on_stop(self) -> None:
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.unsubscribe_signal(ACQUISITION_STREAM_SIGNAL)
+        if _CONSUMER_RETRY_TIMER in self.clock.timer_names():
+            self.clock.cancel_timer(_CONSUMER_RETRY_TIMER)
         if self._startup_released:
             for demand in reversed(self._demands):
                 if demand.demand_id in self._attached_demand_ids:
@@ -441,18 +453,7 @@ class WatchlistActor(DataActor):
         if event.state == "SUBSCRIBED":
             for demand in relevant:
                 self._subscribed_demand_ids.add(demand.demand_id)
-                if demand.demand_id not in self._attached_demand_ids:
-                    self._attach_consumer(demand)
-                    self._attached_demand_ids.add(demand.demand_id)
-            if len(self._subscribed_demand_ids) == len(self._demands):
-                if self._state.register_consumers():
-                    self._publish_lifecycle(
-                        "CONSUMERS_REGISTERED",
-                        reason="all static watchlist acquisition demands subscribed",
-                    )
-                    self.log.info(
-                        f"WATCHLIST_OPERATIONAL | instruments={len(self._state.instrument_ids)}",
-                    )
+            self._mark_operational_if_ready()
             return
         if event.state in {"REJECTED", "FAILED", "EXPIRED"}:
             for demand in relevant:
@@ -479,6 +480,71 @@ class WatchlistActor(DataActor):
                     instrument_id=demand.instrument_id,
                 )
 
+    def _reconcile_consumer_attachments(self, _event) -> None:  # noqa: ANN001
+        for demand in self._demands:
+            if demand.demand_id in self._attached_demand_ids:
+                continue
+            try:
+                self._attach_consumer(demand)
+            except Exception as exc:  # noqa: BLE001
+                first_failure = demand.demand_id not in self._attachment_failure_ids
+                self._attachment_failure_ids.add(demand.demand_id)
+                if first_failure:
+                    self.log.error(
+                        "WATCHLIST_CONSUMER_REGISTRATION_FAILED"
+                        f" | demand_id={demand.demand_id}"
+                        f" | error={type(exc).__name__}: {exc}",
+                    )
+                    if self._audit_started:
+                        self._publish_attachment_degraded(demand)
+                continue
+            self._attached_demand_ids.add(demand.demand_id)
+            if demand.demand_id in self._attachment_failure_ids:
+                self._attachment_failure_ids.remove(demand.demand_id)
+                self.log.info(
+                    f"WATCHLIST_CONSUMER_REGISTRATION_RECOVERED | demand_id={demand.demand_id}",
+                )
+                if self._audit_started:
+                    self._publish_lifecycle(
+                        "OBSERVATION_RECOVERED",
+                        reason=f"local {demand.capability} consumer registration recovered",
+                        instrument_id=demand.instrument_id,
+                    )
+        if len(self._attached_demand_ids) == len(self._demands):
+            if _CONSUMER_RETRY_TIMER in self.clock.timer_names():
+                self.clock.cancel_timer(_CONSUMER_RETRY_TIMER)
+        elif _CONSUMER_RETRY_TIMER not in self.clock.timer_names():
+            self.clock.set_timer_ns(
+                _CONSUMER_RETRY_TIMER,
+                self._consumer_retry_interval_ns,
+                callback=self._reconcile_consumer_attachments,
+            )
+        self._mark_operational_if_ready()
+
+    def _publish_attachment_degraded(self, demand: WatchlistDemandEvent) -> None:
+        self._publish_lifecycle(
+            "OBSERVATION_DEGRADED",
+            reason=f"local {demand.capability} consumer registration failed; retrying",
+            instrument_id=demand.instrument_id,
+        )
+
+    def _mark_operational_if_ready(self) -> None:
+        expected = {demand.demand_id for demand in self._demands}
+        if not _consumer_registration_ready(
+            expected,
+            self._attached_demand_ids,
+            self._subscribed_demand_ids,
+        ):
+            return
+        if self._state.register_consumers():
+            self._publish_lifecycle(
+                "CONSUMERS_REGISTERED",
+                reason="all acquisition demands subscribed and local consumers registered",
+            )
+            self.log.info(
+                f"WATCHLIST_OPERATIONAL | instruments={len(self._state.instrument_ids)}",
+            )
+
     def _attach_consumer(self, demand: WatchlistDemandEvent) -> None:
         instrument_id = InstrumentId.from_str(demand.instrument_id)
         if demand.feed_kind == "quotes":
@@ -502,6 +568,14 @@ class WatchlistActor(DataActor):
 
 def _watchlist_bar_type(instrument_id: InstrumentId) -> BarType:
     return BarType.from_str(f"{instrument_id}-5-SECOND-LAST-EXTERNAL")
+
+
+def _consumer_registration_ready(
+    expected: set[str],
+    attached: set[str],
+    subscribed: set[str],
+) -> bool:
+    return bool(expected) and expected.issubset(attached) and expected.issubset(subscribed)
 
 
 def _watchlist_demands(

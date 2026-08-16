@@ -16,12 +16,18 @@ def _watchlist_feeds(config: SystemConfig) -> list[dict[str, str]]:
         capabilities = set(member.capabilities)
         if "top_of_book" in capabilities:
             feeds.append(
-                {"instrument_id": member.instrument_id, "kind": "quotes", "selector": "default"},
+                {
+                    "instrument_id": member.instrument_id,
+                    "calendar_id": member.calendar_id,
+                    "kind": "quotes",
+                    "selector": "default",
+                },
             )
         if "watchlist_last" in capabilities:
             feeds.append(
                 {
                     "instrument_id": member.instrument_id,
+                    "calendar_id": member.calendar_id,
                     "kind": "bars",
                     "selector": "5-SECOND-LAST-EXTERNAL",
                 },
@@ -65,6 +71,72 @@ def build_actor_plan(
             ),
         ),
         ActorRegistration(
+            key="session_state",
+            actor_id="SESSION-STATE",
+            config=ImportableActorConfig(
+                actor_path="markeitech.intelligence.actors:SessionStateActor",
+                config_path="markeitech.intelligence.actors:SessionStateActorConfig",
+                config={
+                    "actor_id": "SESSION-STATE",
+                    "evaluation_interval_ms": config.sessions.evaluation_interval_ms,
+                    "calendars": [
+                        {
+                            "calendar_id": calendar.calendar_id,
+                            "provider_calendar": calendar.provider_calendar,
+                            "timezone": calendar.timezone,
+                            "schedule_version": calendar.schedule_version,
+                            "phases": [
+                                {
+                                    "name": phase.name,
+                                    "start": phase.start,
+                                    "end": phase.end,
+                                    "start_day_offset": phase.start_day_offset,
+                                }
+                                for phase in calendar.phases
+                            ],
+                            "overrides": [
+                                {
+                                    "trade_date": override.trade_date,
+                                    "phase": override.phase,
+                                    "start": override.start,
+                                    "end": override.end,
+                                    "start_day_offset": override.start_day_offset,
+                                }
+                                for override in calendar.overrides
+                            ],
+                        }
+                        for calendar in config.sessions.calendars
+                    ],
+                },
+            ),
+        ),
+        ActorRegistration(
+            key="evidence_health",
+            actor_id="EVIDENCE-HEALTH",
+            config=ImportableActorConfig(
+                actor_path="markeitech.intelligence.actors:EvidenceHealthActor",
+                config_path="markeitech.intelligence.actors:EvidenceHealthActorConfig",
+                config={
+                    "actor_id": "EVIDENCE-HEALTH",
+                    "feeds": _watchlist_feeds(config),
+                    "evaluation_interval_ms": config.evidence_health.evaluation_interval_ms,
+                    "consumer_retry_interval_ms": (
+                        config.evidence_health.consumer_retry_interval_ms
+                    ),
+                    "policies": [
+                        {
+                            "feed_kind": policy.feed_kind,
+                            "selector": policy.selector,
+                            "fresh_for_ms": policy.fresh_for_ms,
+                            "stale_after_ms": policy.stale_after_ms,
+                            "unavailable_after_ms": policy.unavailable_after_ms,
+                        }
+                        for policy in config.evidence_health.policies
+                    ],
+                },
+            ),
+        ),
+        ActorRegistration(
             key="watchlist",
             actor_id="WATCHLIST",
             config=ImportableActorConfig(
@@ -72,9 +144,11 @@ def build_actor_plan(
                 config_path="markeitech.system.watchlist:WatchlistActorConfig",
                 config={
                     "actor_id": "WATCHLIST",
+                    "consumer_retry_interval_ms": config.watchlist.consumer_retry_interval_ms,
                     "members": [
                         {
                             "instrument_id": member.instrument_id,
+                            "calendar_id": member.calendar_id,
                             "owner_ids": list(member.owner_ids),
                             "capabilities": list(member.capabilities),
                         }

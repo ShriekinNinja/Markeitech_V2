@@ -1,4 +1,4 @@
-schema_version = 5
+schema_version = 6
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -39,92 +39,232 @@ write_retry_backoff_ms = 100
 [acquisition]
 native_consumer_probe_enabled = false
 native_consumer_probe_unsubscribe_after_seconds = 15
+
+[sessions]
+evaluation_interval_ms = 1000
+
+[[sessions.calendars]]
+calendar_id = "cboe_spxw"
+provider_calendar = "CBOE_Index_Options"
+timezone = "America/New_York"
+schedule_version = "cboe-2026.1"
+
+[[sessions.calendars.phases]]
+name = "GTH"
+start = "20:15"
+end = "09:25"
+start_day_offset = -1
+
+[[sessions.calendars.phases]]
+name = "RTH"
+start = "09:30"
+end = "16:15"
+start_day_offset = 0
+
+[[sessions.calendars.phases]]
+name = "CURB"
+start = "16:15"
+end = "17:00"
+start_day_offset = 0
+
+[[sessions.calendars.overrides]]
+trade_date = "2026-01-19"
+phase = "GTH"
+start = "20:15"
+end = "11:30"
+start_day_offset = -1
+
+[[sessions.calendars.overrides]]
+trade_date = "2026-02-16"
+phase = "GTH"
+start = "20:15"
+end = "11:30"
+start_day_offset = -1
+
+[[sessions.calendars.overrides]]
+trade_date = "2026-05-25"
+phase = "GTH"
+start = "20:15"
+end = "11:30"
+start_day_offset = -1
+
+[[sessions.calendars.overrides]]
+trade_date = "2026-06-19"
+phase = "GTH"
+start = "20:15"
+end = "11:30"
+start_day_offset = -1
+
+[[sessions.calendars.overrides]]
+trade_date = "2026-07-03"
+phase = "GTH"
+start = "20:15"
+end = "11:30"
+start_day_offset = -1
+
+[[sessions.calendars.overrides]]
+trade_date = "2026-09-07"
+phase = "GTH"
+start = "20:15"
+end = "11:30"
+start_day_offset = -1
+
+[[sessions.calendars.overrides]]
+trade_date = "2026-11-26"
+phase = "GTH"
+start = "20:15"
+end = "11:30"
+start_day_offset = -1
+
+[[sessions.calendars]]
+calendar_id = "us_equities"
+provider_calendar = "NYSE"
+timezone = "America/New_York"
+schedule_version = "pmc-5.4"
+phases = []
+overrides = []
+
+[[sessions.calendars]]
+calendar_id = "cme_equity"
+provider_calendar = "CME_Equity"
+timezone = "America/New_York"
+schedule_version = "pmc-5.4"
+phases = []
+overrides = []
+
+[[sessions.calendars]]
+calendar_id = "cme_energy"
+provider_calendar = "CMEGlobex_EnergyAndMetals"
+timezone = "America/New_York"
+schedule_version = "pmc-5.4"
+phases = []
+overrides = []
+
+[evidence_health]
+evaluation_interval_ms = 1000
+consumer_retry_interval_ms = 1000
+
+[[evidence_health.policies]]
+feed_kind = "quotes"
+selector = "default"
+fresh_for_ms = 2000
+stale_after_ms = 5000
+unavailable_after_ms = 15000
+
+[[evidence_health.policies]]
+feed_kind = "bars"
+selector = "5-SECOND-LAST-EXTERNAL"
+fresh_for_ms = 7000
+stale_after_ms = 15000
+unavailable_after_ms = 30000
+
+[watchlist]
+consumer_retry_interval_ms = 1000
+
 [[watchlist.members]]
 instrument_id = "ESU6.CME"
+calendar_id = "cme_equity"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "NQU6.CME"
+calendar_id = "cme_equity"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "YMU6.CBOT"
+calendar_id = "cme_equity"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "CLU6.NYMEX"
+calendar_id = "cme_energy"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "SPY.ARCA"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "QQQ.NASDAQ"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "^SPX.CBOE"
+calendar_id = "cboe_spxw"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "^VIX.CBOE"
+calendar_id = "cboe_spxw"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "NVDA.NASDAQ"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "AAPL.NASDAQ"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "GOOGL.NASDAQ"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "MSFT.NASDAQ"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "AMZN.NASDAQ"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "TSM.NYSE"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "AVGO.NASDAQ"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "SPCX.NASDAQ"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "META.NASDAQ"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "TSLA.NASDAQ"
+calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]

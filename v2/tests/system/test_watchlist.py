@@ -7,6 +7,7 @@ from markeitech.system.watchlist import (
     ConsumerState,
     ObservationState,
     WatchlistState,
+    _consumer_registration_ready,
     _watchlist_demands,
 )
 
@@ -127,6 +128,7 @@ def test_static_members_derive_stable_capability_demands() -> None:
         (
             WatchlistMember(
                 instrument_id="ESU6.CME",
+                calendar_id="cme_equity",
                 owner_ids=("config:system",),
                 capabilities=("top_of_book", "watchlist_last"),
             ),
@@ -139,3 +141,25 @@ def test_static_members_derive_stable_capability_demands() -> None:
     ]
     assert all(item.action == "REQUEST" for item in demands)
     assert len({item.demand_id for item in demands}) == 2
+
+
+@pytest.mark.parametrize(
+    ("attached", "subscribed", "expected_ready"),
+    [
+        (set(), set(), False),
+        ({"quotes"}, set(), False),
+        (set(), {"quotes"}, False),
+        ({"quotes", "bars"}, {"quotes"}, False),
+        ({"quotes"}, {"quotes", "bars"}, False),
+        ({"quotes", "bars"}, {"quotes", "bars"}, True),
+    ],
+)
+def test_consumer_readiness_is_independent_of_event_arrival_order(
+    attached: set[str],
+    subscribed: set[str],
+    expected_ready: bool,
+) -> None:
+    assert (
+        _consumer_registration_ready({"quotes", "bars"}, attached, subscribed)
+        is expected_ready
+    )

@@ -1,0 +1,1 @@
+"""Deterministic market-intelligence foundations."""

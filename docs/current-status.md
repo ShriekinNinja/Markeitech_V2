@@ -197,9 +197,11 @@ capabilities the current watchlist actually provides. System control, instrument
 acquisition, the IB provider, actor composition, and membership audit all consume that one member
 set. The subsequent static completion removes duplicated bootstrap feeds: Watchlist
 capabilities now publish stable demand contracts, Acquisition alone owns provider subscription
-lifetime, and Watchlist attaches native observers only after subscription outcomes. Demand,
-provider outcome, degradation, recovery, and release are operational audit facts; raw market
-observations remain memory-only. Session-unaware elapsed-time staleness is deliberately deferred.
+lifetime, and each consumer registers its own native Nautilus handlers during actor startup.
+Provider subscription outcomes and local consumer readiness converge independently in either
+order. Demand, provider outcome, degradation, recovery, and release are operational audit facts;
+raw market observations remain memory-only. Session-unaware elapsed-time staleness is deliberately
+deferred.
 The complete 18-member baseline is now configured through Nautilus IB simplified `load_ids`, with
 required startup resolution and explicit September 2026 ES, NQ, YM, and CL contracts. This mapping
 is ready for live proof; automatic futures rolling is not implied.
@@ -251,3 +253,31 @@ carrying explicit future mutability and optimization metadata.
 
 The detailed sequence and gates are maintained in
 [`roadmap/v2-first-market-intelligence-coding-sequence.md`](roadmap/v2-first-market-intelligence-coding-sequence.md).
+
+## Stage 9A: Session And Evidence Truth
+
+Stage 9A is implemented for review on branch `v2-stage-9a-session-evidence-health`:
+
+- `pandas-market-calendars` supplies local exchange schedules, holiday rules, DST handling, and
+  early-close dates.
+- Typed startup configuration maps every watchlist member to one of four versioned calendars and
+  defines SPXW GTH/RTH/Curb phases plus explicit exceptional-session overrides.
+- `SessionStateActor` owns session/trade-date truth and publishes only initial or changed state.
+- `EvidenceHealthActor` consumes acquisition lifecycle facts and independently observes the same
+  native Nautilus quote and five-second-bar streams.
+- Configured freshness policies distinguish not-yet-evaluated, dormant, healthy, degraded, stale,
+  and unavailable evidence without treating a closed market as failed or confusing observation
+  age with source fidelity.
+- Consumer registration occurs outside nested signal dispatch. Local attachment failures are
+  isolated, explicitly unavailable, and retried on configurable cadence; unrelated actors keep
+  operating.
+- Runtime readiness converges from local registration and acquisition events in either order; it
+  does not rely on actor order, sleeps, or a prescribed startup sequence.
+- Session and evidence transitions are stored in the existing PostgreSQL operational ledger; raw
+  market observations remain memory-only.
+- Offline tests cover calendar boundaries, DST, holidays, early closes, freshness transitions,
+  strict wire contracts, actor composition, and persistence conversion.
+
+The detailed ownership and semantics are recorded in
+[`architecture/v2-session-evidence-health.md`](architecture/v2-session-evidence-health.md).
+Live IB acceptance remains Markeitect-owned and has not been run for this batch.

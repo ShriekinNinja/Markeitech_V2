@@ -10,6 +10,24 @@ analytics, monitoring infrastructure, dynamic actors, or a generic plugin framew
 Each component owns its local work and reports structured failures. `SystemControlActor`
 remains the sole owner of global runtime health.
 
+## Event-Driven Isolation Invariant
+
+Runtime components must not depend on actor registration order, arbitrary delays, or a prescribed
+startup sequence. Each actor registers its own handlers during its Nautilus lifecycle, consumes
+immutable state/events idempotently, and converges whenever its dependencies become available.
+
+A component failure may degrade the capability it owns, but must not stop unrelated components or
+silently discard future work. The owner keeps failed work bounded and retryable under configurable
+policy, publishes failure and recovery facts, and continues accepting work whenever doing so is
+safe. Recovery is triggered by dependency/state changes or explicit retry policy, never by an
+assumption that another actor "should be ready by now."
+
+Nautilus callbacks must not recursively perform framework mutations which require a second mutable
+borrow of actor state. In particular, a signal handler may update local state and publish facts, but
+native data-handler registration belongs to actor lifecycle/recovery callbacks outside nested
+signal dispatch. Tests must vary event order and duplicate delivery so the same converged state is
+reached regardless of which independent component reports first.
+
 ## Failure Classes
 
 | Class | Meaning | Runtime response |

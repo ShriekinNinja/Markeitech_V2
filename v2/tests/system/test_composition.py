@@ -32,6 +32,8 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
 
     assert [registration.key for registration in plan] == [
         "system_control",
+        "session_state",
+        "evidence_health",
         "watchlist",
         "data_acquisition",
         "discord_health",
@@ -44,9 +46,19 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "instrument_ids": list(_config().instrument_ids),
     }
     watchlist = next(item for item in plan if item.key == "watchlist")
+    assert watchlist.config.config["consumer_retry_interval_ms"] == 1000
     assert watchlist.config.config["members"] == [
         {
             "instrument_id": instrument_id,
+            "calendar_id": (
+                "cme_equity"
+                if instrument_id in {"ESU6.CME", "NQU6.CME", "YMU6.CBOT"}
+                else "cme_energy"
+                if instrument_id == "CLU6.NYMEX"
+                else "cboe_spxw"
+                if instrument_id in {"^SPX.CBOE", "^VIX.CBOE"}
+                else "us_equities"
+            ),
             "owner_ids": ["config:system"],
             "capabilities": ["top_of_book", "watchlist_last"],
         }
@@ -71,6 +83,8 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
             "TSLA.NASDAQ",
         ]
     ]
+    evidence = next(item for item in plan if item.key == "evidence_health")
+    assert evidence.config.config["consumer_retry_interval_ms"] == 1000
 
 
 def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
@@ -81,6 +95,8 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
 
     assert [registration.key for registration in plan] == [
         "system_control",
+        "session_state",
+        "evidence_health",
         "watchlist",
         "data_acquisition",
         "operational_persistence",
@@ -112,6 +128,7 @@ def test_actor_plan_adds_enabled_native_consumer_probe() -> None:
     assert len(probe.config.config["feeds"]) == 36
     assert probe.config.config["feeds"][0] == {
         "instrument_id": "ESU6.CME",
+        "calendar_id": "cme_equity",
         "kind": "quotes",
         "selector": "default",
     }

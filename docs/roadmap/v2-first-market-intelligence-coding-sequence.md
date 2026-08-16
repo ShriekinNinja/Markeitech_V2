@@ -348,6 +348,23 @@ Every session definition and freshness threshold in this batch must be supplied 
 configuration. Initial values may be startup-only, but their contracts must already declare future
 runtime mutability and optimization eligibility.
 
+### Stage 9A Implementation Record
+
+Implemented on branch `v2-stage-9a-session-evidence-health` for review:
+
+- local `pandas-market-calendars` schedules with configured SPXW GTH/RTH/Curb phases;
+- per-instrument calendar ownership in the static watchlist;
+- authoritative session-state and evidence-health actors;
+- native quote and five-second-bar freshness observation without duplicate logical demand;
+- strict versioned session/evidence wire contracts;
+- transition-only PostgreSQL operational audit; and
+- offline calendar, freshness, contract, composition, and persistence tests.
+
+The first parameters are typed, validated, startup-configurable, and versioned in emitted state.
+Runtime mutation remains deferred until the typed intent, authorization, effective-time, expiry,
+rollback, and audit mechanism exists. See
+[`../architecture/v2-session-evidence-health.md`](../architecture/v2-session-evidence-health.md).
+
 ## Accepted Decisions Before Coding
 
 1. **Opportunity identity:** an opportunity is identified by its target exposure, direction,

@@ -16,6 +16,12 @@ from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId
 from psycopg.types.json import Jsonb
 
+from markeitech.intelligence.messages import (
+    EVIDENCE_HEALTH_SIGNAL,
+    SESSION_STATE_SIGNAL,
+    EvidenceHealthEvent,
+    SessionStateEvent,
+)
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STATUS_SIGNAL,
@@ -615,6 +621,8 @@ class OperationalPersistenceActor(DataActor):
             WATCHLIST_DEMAND_SIGNAL,
             WATCHLIST_MEMBERSHIP_SIGNAL,
             WATCHLIST_LIFECYCLE_SIGNAL,
+            SESSION_STATE_SIGNAL,
+            EVIDENCE_HEALTH_SIGNAL,
             PERSISTENCE_READY_REQUEST_SIGNAL,
         ):
             self.subscribe_signal(signal_name)
@@ -843,6 +851,38 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             source=event.source,
             schema_version=event.schema_version,
             correlation_id=event.demand_id,
+        )
+    if signal.name == SESSION_STATE_SIGNAL:
+        event = SessionStateEvent.from_signal_value(signal.value)
+        return OperationalEventRecord(
+            event_id=event.event_id,
+            run_id=run_id,
+            sequence=sequence,
+            signal_name=signal.name,
+            event_type="session.state",
+            source=event.source,
+            correlation_id=f"session:{event.calendar_id}:{event.trade_date or 'unknown'}",
+            causation_id=None,
+            payload=json.loads(signal.value),
+            ts_event_ns=signal.ts_event,
+            ts_init_ns=signal.ts_init,
+            schema_version=event.schema_version,
+        )
+    if signal.name == EVIDENCE_HEALTH_SIGNAL:
+        event = EvidenceHealthEvent.from_signal_value(signal.value)
+        return OperationalEventRecord(
+            event_id=event.event_id,
+            run_id=run_id,
+            sequence=sequence,
+            signal_name=signal.name,
+            event_type="evidence.health",
+            source=event.source,
+            correlation_id=(f"evidence:{event.instrument_id}:{event.feed_kind}:{event.selector}"),
+            causation_id=None,
+            payload=json.loads(signal.value),
+            ts_event_ns=signal.ts_event,
+            ts_init_ns=signal.ts_init,
+            schema_version=event.schema_version,
         )
     raise ValueError(f"unsupported operational signal: {signal.name}")
 

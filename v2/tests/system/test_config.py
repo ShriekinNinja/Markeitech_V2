@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 5
+schema_version = 6
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -48,8 +48,42 @@ write_retry_backoff_ms = 100
 [acquisition]
 native_consumer_probe_enabled = true
 native_consumer_probe_unsubscribe_after_seconds = 15
+
+[sessions]
+evaluation_interval_ms = 1000
+
+[[sessions.calendars]]
+calendar_id = "cme_equity"
+provider_calendar = "CME_Equity"
+timezone = "America/New_York"
+schedule_version = "test-1"
+phases = []
+overrides = []
+
+[evidence_health]
+evaluation_interval_ms = 1000
+consumer_retry_interval_ms = 1000
+
+[[evidence_health.policies]]
+feed_kind = "quotes"
+selector = "default"
+fresh_for_ms = 2000
+stale_after_ms = 5000
+unavailable_after_ms = 15000
+
+[[evidence_health.policies]]
+feed_kind = "bars"
+selector = "5-SECOND-LAST-EXTERNAL"
+fresh_for_ms = 7000
+stale_after_ms = 15000
+unavailable_after_ms = 30000
+
+[watchlist]
+consumer_retry_interval_ms = 1000
+
 [[watchlist.members]]
 instrument_id = "ESU6.CME"
+calendar_id = "cme_equity"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 """
@@ -79,7 +113,11 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.persistence.write_retry_backoff_ms == 100
     assert config.acquisition.native_consumer_probe_enabled is True
     assert config.acquisition.native_consumer_probe_unsubscribe_after_seconds == 15
+    assert config.sessions.calendars[0].calendar_id == "cme_equity"
+    assert config.evidence_health.policies[0].fresh_for_ms == 2000
+    assert config.evidence_health.consumer_retry_interval_ms == 1000
     assert config.instrument_ids == ("ESU6.CME",)
+    assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
     assert config.watchlist.members[0].capabilities == ("top_of_book", "watchlist_last")
 
@@ -97,6 +135,7 @@ def test_rejects_duplicate_watchlist_instruments(tmp_path: Path) -> None:
     path.write_text(
         VALID_CONFIG
         + '\n[[watchlist.members]]\ninstrument_id = "ESU6.CME"\n'
+        + 'calendar_id = "cme_equity"\n'
         + 'owner_ids = ["config:system"]\n'
         + 'capabilities = ["top_of_book", "watchlist_last"]\n',
     )
@@ -154,4 +193,45 @@ def test_rejects_duplicate_watchlist_owners(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ValueError, match="owner_ids must contain unique values"):
+        load_system_config(path)
+
+
+def test_rejects_missing_evidence_policy_for_a_watchlist_feed(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    bars_policy = """
+[[evidence_health.policies]]
+feed_kind = "bars"
+selector = "5-SECOND-LAST-EXTERNAL"
+fresh_for_ms = 7000
+stale_after_ms = 15000
+unavailable_after_ms = 30000
+"""
+    path.write_text(VALID_CONFIG.replace(bars_policy, ""))
+
+    with pytest.raises(
+        ValueError,
+        match="watchlist feeds lack evidence-health policies: bars/5-SECOND-LAST-EXTERNAL",
+    ):
+        load_system_config(path)
+
+
+def test_rejects_session_override_for_an_undefined_phase(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            "phases = []\noverrides = []",
+            """
+phases = []
+
+[[sessions.calendars.overrides]]
+trade_date = "2026-08-17"
+phase = "GTH"
+start = "20:15"
+end = "09:25"
+start_day_offset = -1
+""",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="overrides reference undefined phases: GTH"):
         load_system_config(path)

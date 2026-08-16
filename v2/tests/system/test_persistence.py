@@ -6,6 +6,12 @@ from uuid import uuid4
 import pytest
 from nautilus_trader.common import Signal
 
+from markeitech.intelligence.messages import (
+    EVIDENCE_HEALTH_SIGNAL,
+    SESSION_STATE_SIGNAL,
+    EvidenceHealthEvent,
+    SessionStateEvent,
+)
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STREAM_SIGNAL,
@@ -110,6 +116,7 @@ def test_watchlist_signals_convert_to_auditable_records_without_market_payloads(
         members=(
             WatchlistMember(
                 instrument_id="ESU6.CME",
+                calendar_id="cme_equity",
                 capabilities=("top_of_book", "watchlist_last"),
                 owner_ids=("config:system",),
             ),
@@ -219,6 +226,75 @@ def test_existing_acquisition_intent_and_outcome_convert_to_audit_records() -> N
     assert stream_record.event_type == "acquisition.stream"
     assert stream_record.correlation_id == stream.demand_id
     assert "bid_price" not in stream_record.payload
+
+
+def test_session_and_evidence_transitions_convert_to_audit_records() -> None:
+    run_id = uuid4()
+    session = SessionStateEvent(
+        event_id="session:cboe_spxw:1",
+        calendar_id="cboe_spxw",
+        schedule_version="cboe-spxw-v1",
+        timezone="America/New_York",
+        trade_date="2026-08-17",
+        phase="GTH",
+        previous_phase="CLOSED",
+        is_open=True,
+        phase_open_ns=10,
+        phase_close_ns=20,
+        next_transition_ns=20,
+        source="SESSION-STATE",
+        reason="session phase changed",
+        revision=1,
+    )
+    evidence = EvidenceHealthEvent(
+        event_id="evidence:SPX.CBOE/quotes/default:1",
+        instrument_id="SPX.CBOE",
+        calendar_id="cboe_spxw",
+        feed_kind="quotes",
+        selector="default",
+        state="HEALTHY",
+        previous_state="DEGRADED",
+        reason="observation is fresh",
+        fidelity="REPORTED",
+        subscription_state="SUBSCRIBED",
+        event_ts_ns=30,
+        receive_ts_ns=31,
+        evaluated_ts_ns=32,
+        age_ms=1,
+        session_phase="GTH",
+        session_trade_date="2026-08-17",
+        session_alignment="IN_SESSION",
+        source="EVIDENCE-HEALTH",
+        policy_version="quotes/default:2000-5000-15000ms",
+        revision=1,
+    )
+
+    session_record = _record_from_signal(
+        run_id,
+        1,
+        Signal(
+            name=SESSION_STATE_SIGNAL,
+            value=session.to_signal_value(),
+            ts_event=40,
+            ts_init=41,
+        ),
+    )
+    evidence_record = _record_from_signal(
+        run_id,
+        2,
+        Signal(
+            name=EVIDENCE_HEALTH_SIGNAL,
+            value=evidence.to_signal_value(),
+            ts_event=42,
+            ts_init=43,
+        ),
+    )
+
+    assert session_record.event_type == "session.state"
+    assert session_record.correlation_id == "session:cboe_spxw:2026-08-17"
+    assert evidence_record.event_type == "evidence.health"
+    assert evidence_record.correlation_id == "evidence:SPX.CBOE:quotes:default"
+    assert evidence_record.payload["state"] == "HEALTHY"
 
 
 def _record(sequence: int, state: str = "READY") -> HealthEventRecord:

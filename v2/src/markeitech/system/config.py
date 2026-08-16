@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tomllib
 from dataclasses import dataclass
+from datetime import date, time
 from pathlib import Path
 from typing import Any
 
@@ -32,12 +33,14 @@ class InteractiveBrokersConfig:
 @dataclass(frozen=True, slots=True)
 class WatchlistMemberConfig:
     instrument_id: str
+    calendar_id: str
     owner_ids: tuple[str, ...]
     capabilities: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
 class WatchlistConfig:
+    consumer_retry_interval_ms: int
     members: tuple[WatchlistMemberConfig, ...]
 
 
@@ -45,6 +48,55 @@ class WatchlistConfig:
 class AcquisitionConfig:
     native_consumer_probe_enabled: bool
     native_consumer_probe_unsubscribe_after_seconds: int
+
+
+@dataclass(frozen=True, slots=True)
+class SessionPhaseConfig:
+    name: str
+    start: str
+    end: str
+    start_day_offset: int
+
+
+@dataclass(frozen=True, slots=True)
+class SessionOverrideConfig:
+    trade_date: str
+    phase: str
+    start: str
+    end: str
+    start_day_offset: int
+
+
+@dataclass(frozen=True, slots=True)
+class SessionCalendarConfig:
+    calendar_id: str
+    provider_calendar: str
+    timezone: str
+    schedule_version: str
+    phases: tuple[SessionPhaseConfig, ...]
+    overrides: tuple[SessionOverrideConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class SessionsConfig:
+    evaluation_interval_ms: int
+    calendars: tuple[SessionCalendarConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EvidencePolicyConfig:
+    feed_kind: str
+    selector: str
+    fresh_for_ms: int
+    stale_after_ms: int
+    unavailable_after_ms: int
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceHealthConfig:
+    evaluation_interval_ms: int
+    consumer_retry_interval_ms: int
+    policies: tuple[EvidencePolicyConfig, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +132,8 @@ class SystemConfig:
     persistence: PersistenceConfig
     acquisition: AcquisitionConfig
     watchlist: WatchlistConfig
+    sessions: SessionsConfig
+    evidence_health: EvidenceHealthConfig
 
     @property
     def instrument_ids(self) -> tuple[str, ...]:
@@ -102,10 +156,12 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "persistence",
             "acquisition",
             "watchlist",
+            "sessions",
+            "evidence_health",
         },
         "root",
     )
-    if raw["schema_version"] != 5:
+    if raw["schema_version"] != 6:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -115,6 +171,29 @@ def load_system_config(path: str | Path) -> SystemConfig:
     persistence = _load_persistence(raw["persistence"])
     watchlist = _load_watchlist(raw["watchlist"])
     acquisition = _load_acquisition(raw["acquisition"], watchlist)
+    sessions = _load_sessions(raw["sessions"])
+    evidence_health = _load_evidence_health(raw["evidence_health"])
+    known_calendars = {calendar.calendar_id for calendar in sessions.calendars}
+    unknown_calendars = sorted(
+        {member.calendar_id for member in watchlist.members} - known_calendars,
+    )
+    if unknown_calendars:
+        raise ValueError(
+            f"watchlist references unknown calendars: {', '.join(unknown_calendars)}",
+        )
+    available_policies = {
+        (policy.feed_kind, policy.selector) for policy in evidence_health.policies
+    }
+    required_policies: set[tuple[str, str]] = set()
+    for member in watchlist.members:
+        if "top_of_book" in member.capabilities:
+            required_policies.add(("quotes", "default"))
+        if "watchlist_last" in member.capabilities:
+            required_policies.add(("bars", "5-SECOND-LAST-EXTERNAL"))
+    missing_policies = sorted(required_policies - available_policies)
+    if missing_policies:
+        formatted = ", ".join(f"{kind}/{selector}" for kind, selector in missing_policies)
+        raise ValueError(f"watchlist feeds lack evidence-health policies: {formatted}")
     return SystemConfig(
         schema_version=raw["schema_version"],
         runtime=runtime,
@@ -124,6 +203,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
         persistence=persistence,
         acquisition=acquisition,
         watchlist=watchlist,
+        sessions=sessions,
+        evidence_health=evidence_health,
     )
 
 
@@ -270,7 +351,7 @@ def _load_persistence(raw: Any) -> PersistenceConfig:
 
 def _load_watchlist(raw: Any) -> WatchlistConfig:
     values = _mapping(raw, "watchlist")
-    _require_keys(values, {"members"}, "watchlist")
+    _require_keys(values, {"consumer_retry_interval_ms", "members"}, "watchlist")
     members_raw = values["members"]
     if not isinstance(members_raw, list) or not members_raw:
         raise ValueError("watchlist.members must be a non-empty array")
@@ -279,7 +360,11 @@ def _load_watchlist(raw: Any) -> WatchlistConfig:
     for index, item in enumerate(members_raw):
         label = f"watchlist.members[{index}]"
         member = _mapping(item, label)
-        _require_keys(member, {"instrument_id", "owner_ids", "capabilities"}, label)
+        _require_keys(
+            member,
+            {"instrument_id", "calendar_id", "owner_ids", "capabilities"},
+            label,
+        )
         instrument_id = _non_empty_string(
             member["instrument_id"],
             f"{label}.instrument_id",
@@ -301,11 +386,211 @@ def _load_watchlist(raw: Any) -> WatchlistConfig:
         members.append(
             WatchlistMemberConfig(
                 instrument_id=instrument_id,
+                calendar_id=_non_empty_string(member["calendar_id"], f"{label}.calendar_id"),
                 owner_ids=tuple(sorted(owner_ids)),
                 capabilities=tuple(sorted(capabilities)),
             ),
         )
-    return WatchlistConfig(members=tuple(members))
+    return WatchlistConfig(
+        consumer_retry_interval_ms=_positive_int(
+            values["consumer_retry_interval_ms"],
+            "watchlist.consumer_retry_interval_ms",
+        ),
+        members=tuple(members),
+    )
+
+
+def _load_sessions(raw: Any) -> SessionsConfig:
+    values = _mapping(raw, "sessions")
+    _require_keys(values, {"evaluation_interval_ms", "calendars"}, "sessions")
+    calendars_raw = values["calendars"]
+    if not isinstance(calendars_raw, list) or not calendars_raw:
+        raise ValueError("sessions.calendars must be a non-empty array")
+    calendars: list[SessionCalendarConfig] = []
+    seen: set[str] = set()
+    for index, item in enumerate(calendars_raw):
+        label = f"sessions.calendars[{index}]"
+        calendar = _mapping(item, label)
+        _require_keys(
+            calendar,
+            {
+                "calendar_id",
+                "provider_calendar",
+                "timezone",
+                "schedule_version",
+                "phases",
+                "overrides",
+            },
+            label,
+        )
+        calendar_id = _non_empty_string(calendar["calendar_id"], f"{label}.calendar_id")
+        if calendar_id in seen:
+            raise ValueError(f"duplicate session calendar id: {calendar_id}")
+        seen.add(calendar_id)
+        phases = _load_session_phases(calendar["phases"], f"{label}.phases")
+        overrides = _load_session_overrides(calendar["overrides"], f"{label}.overrides")
+        phase_names = {phase.name for phase in phases}
+        unknown_override_phases = sorted(
+            {override.phase for override in overrides} - phase_names,
+        )
+        if unknown_override_phases:
+            raise ValueError(
+                f"{label}.overrides reference undefined phases: "
+                f"{', '.join(unknown_override_phases)}",
+            )
+        calendars.append(
+            SessionCalendarConfig(
+                calendar_id=calendar_id,
+                provider_calendar=_non_empty_string(
+                    calendar["provider_calendar"],
+                    f"{label}.provider_calendar",
+                ),
+                timezone=_non_empty_string(calendar["timezone"], f"{label}.timezone"),
+                schedule_version=_non_empty_string(
+                    calendar["schedule_version"],
+                    f"{label}.schedule_version",
+                ),
+                phases=phases,
+                overrides=overrides,
+            ),
+        )
+    return SessionsConfig(
+        evaluation_interval_ms=_positive_int(
+            values["evaluation_interval_ms"],
+            "sessions.evaluation_interval_ms",
+        ),
+        calendars=tuple(calendars),
+    )
+
+
+def _load_session_phases(raw: Any, label: str) -> tuple[SessionPhaseConfig, ...]:
+    if not isinstance(raw, list):
+        raise ValueError(f"{label} must be an array")
+    phases: list[SessionPhaseConfig] = []
+    seen: set[str] = set()
+    for index, item in enumerate(raw):
+        item_label = f"{label}[{index}]"
+        phase = _mapping(item, item_label)
+        _require_keys(phase, {"name", "start", "end", "start_day_offset"}, item_label)
+        name = _non_empty_string(phase["name"], f"{item_label}.name").upper()
+        if name == "CLOSED":
+            raise ValueError(f"{item_label}.name cannot use reserved phase CLOSED")
+        if name in seen:
+            raise ValueError(f"duplicate session phase: {name}")
+        seen.add(name)
+        phases.append(
+            SessionPhaseConfig(
+                name=name,
+                start=_clock_time(phase["start"], f"{item_label}.start"),
+                end=_clock_time(phase["end"], f"{item_label}.end"),
+                start_day_offset=_small_day_offset(
+                    phase["start_day_offset"],
+                    f"{item_label}.start_day_offset",
+                ),
+            ),
+        )
+    return tuple(phases)
+
+
+def _load_session_overrides(raw: Any, label: str) -> tuple[SessionOverrideConfig, ...]:
+    if not isinstance(raw, list):
+        raise ValueError(f"{label} must be an array")
+    overrides: list[SessionOverrideConfig] = []
+    seen: set[tuple[str, str]] = set()
+    for index, item in enumerate(raw):
+        item_label = f"{label}[{index}]"
+        override = _mapping(item, item_label)
+        _require_keys(
+            override,
+            {"trade_date", "phase", "start", "end", "start_day_offset"},
+            item_label,
+        )
+        trade_date = _iso_date(override["trade_date"], f"{item_label}.trade_date")
+        phase = _non_empty_string(override["phase"], f"{item_label}.phase").upper()
+        identity = (trade_date, phase)
+        if identity in seen:
+            raise ValueError(f"duplicate session override: {trade_date}/{phase}")
+        seen.add(identity)
+        overrides.append(
+            SessionOverrideConfig(
+                trade_date=trade_date,
+                phase=phase,
+                start=_clock_time(override["start"], f"{item_label}.start"),
+                end=_clock_time(override["end"], f"{item_label}.end"),
+                start_day_offset=_small_day_offset(
+                    override["start_day_offset"],
+                    f"{item_label}.start_day_offset",
+                ),
+            ),
+        )
+    return tuple(overrides)
+
+
+def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
+    values = _mapping(raw, "evidence_health")
+    _require_keys(
+        values,
+        {"evaluation_interval_ms", "consumer_retry_interval_ms", "policies"},
+        "evidence_health",
+    )
+    policies_raw = values["policies"]
+    if not isinstance(policies_raw, list) or not policies_raw:
+        raise ValueError("evidence_health.policies must be a non-empty array")
+    policies: list[EvidencePolicyConfig] = []
+    seen: set[tuple[str, str]] = set()
+    for index, item in enumerate(policies_raw):
+        label = f"evidence_health.policies[{index}]"
+        policy = _mapping(item, label)
+        _require_keys(
+            policy,
+            {
+                "feed_kind",
+                "selector",
+                "fresh_for_ms",
+                "stale_after_ms",
+                "unavailable_after_ms",
+            },
+            label,
+        )
+        feed_kind = _non_empty_string(policy["feed_kind"], f"{label}.feed_kind").lower()
+        if feed_kind not in {"quotes", "bars"}:
+            raise ValueError(f"unsupported evidence feed kind: {feed_kind}")
+        selector = _non_empty_string(policy["selector"], f"{label}.selector")
+        identity = (feed_kind, selector)
+        if identity in seen:
+            raise ValueError(f"duplicate evidence policy: {feed_kind}/{selector}")
+        seen.add(identity)
+        fresh = _positive_int(policy["fresh_for_ms"], f"{label}.fresh_for_ms")
+        stale = _positive_int(policy["stale_after_ms"], f"{label}.stale_after_ms")
+        unavailable = _positive_int(
+            policy["unavailable_after_ms"],
+            f"{label}.unavailable_after_ms",
+        )
+        if not fresh < stale < unavailable:
+            raise ValueError(
+                f"{label} thresholds must satisfy fresh_for_ms < stale_after_ms"
+                " < unavailable_after_ms",
+            )
+        policies.append(
+            EvidencePolicyConfig(
+                feed_kind=feed_kind,
+                selector=selector,
+                fresh_for_ms=fresh,
+                stale_after_ms=stale,
+                unavailable_after_ms=unavailable,
+            ),
+        )
+    return EvidenceHealthConfig(
+        evaluation_interval_ms=_positive_int(
+            values["evaluation_interval_ms"],
+            "evidence_health.evaluation_interval_ms",
+        ),
+        consumer_retry_interval_ms=_positive_int(
+            values["consumer_retry_interval_ms"],
+            "evidence_health.consumer_retry_interval_ms",
+        ),
+        policies=tuple(policies),
+    )
 
 
 def _load_acquisition(
@@ -373,6 +658,31 @@ def _positive_int(value: Any, label: str) -> int:
 def _non_negative_int(value: Any, label: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         raise ValueError(f"{label} must be a non-negative integer")
+    return value
+
+
+def _clock_time(value: Any, label: str) -> str:
+    text = _non_empty_string(value, label)
+    try:
+        parsed = time.fromisoformat(text)
+    except ValueError as exc:
+        raise ValueError(f"{label} must be an ISO local time") from exc
+    if parsed.second or parsed.microsecond or parsed.tzinfo is not None:
+        raise ValueError(f"{label} must use HH:MM precision without a timezone")
+    return parsed.strftime("%H:%M")
+
+
+def _iso_date(value: Any, label: str) -> str:
+    text = _non_empty_string(value, label)
+    try:
+        return date.fromisoformat(text).isoformat()
+    except ValueError as exc:
+        raise ValueError(f"{label} must be an ISO date") from exc
+
+
+def _small_day_offset(value: Any, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or not -7 <= value <= 7:
+        raise ValueError(f"{label} must be an integer from -7 through 7")
     return value
 
 

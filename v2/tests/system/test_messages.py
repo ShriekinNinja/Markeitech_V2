@@ -83,11 +83,13 @@ def test_watchlist_membership_round_trips_with_sorted_effective_members() -> Non
         members=(
             WatchlistMember(
                 instrument_id="SPY.ARCA",
+                calendar_id="us_equities",
                 capabilities=("watchlist_last", "top_of_book"),
                 owner_ids=("config:system",),
             ),
             WatchlistMember(
                 instrument_id="ESU6.CME",
+                calendar_id="cme_equity",
                 capabilities=("top_of_book", "watchlist_last"),
                 owner_ids=("config:system",),
             ),
@@ -106,6 +108,7 @@ def test_watchlist_membership_round_trips_with_sorted_effective_members() -> Non
 def test_watchlist_membership_rejects_duplicate_instruments_and_empty_ownership() -> None:
     member = WatchlistMember(
         instrument_id="ESU6.CME",
+        calendar_id="cme_equity",
         capabilities=("top_of_book",),
         owner_ids=("config:system",),
     )
@@ -120,6 +123,7 @@ def test_watchlist_membership_rejects_duplicate_instruments_and_empty_ownership(
     with pytest.raises(ValueError, match="owner_ids must not be empty"):
         WatchlistMember(
             instrument_id="ESU6.CME",
+            calendar_id="cme_equity",
             capabilities=("top_of_book",),
             owner_ids=(),
         )

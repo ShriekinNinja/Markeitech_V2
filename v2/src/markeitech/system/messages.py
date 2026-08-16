@@ -122,6 +122,7 @@ class PersistenceReadyEvent:
 @dataclass(frozen=True, slots=True)
 class WatchlistMember:
     instrument_id: str
+    calendar_id: str
     capabilities: tuple[str, ...]
     owner_ids: tuple[str, ...]
 
@@ -130,6 +131,11 @@ class WatchlistMember:
             self,
             "instrument_id",
             _required_text(self.instrument_id, "instrument_id"),
+        )
+        object.__setattr__(
+            self,
+            "calendar_id",
+            _required_text(self.calendar_id, "calendar_id"),
         )
         object.__setattr__(
             self,
@@ -145,6 +151,7 @@ class WatchlistMember:
     def to_dict(self) -> dict[str, object]:
         return {
             "instrument_id": self.instrument_id,
+            "calendar_id": self.calendar_id,
             "capabilities": self.capabilities,
             "owner_ids": self.owner_ids,
         }
@@ -154,7 +161,7 @@ class WatchlistMember:
         payload = _exact_object(
             value,
             label="watchlist member",
-            expected={"instrument_id", "capabilities", "owner_ids"},
+            expected={"instrument_id", "calendar_id", "capabilities", "owner_ids"},
         )
         return cls(**payload)  # type: ignore[arg-type]
 
