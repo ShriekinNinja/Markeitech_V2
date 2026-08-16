@@ -11,8 +11,8 @@ fixed instrument list, warmup plan, analytical model, options strategy, or autom
 
 Markeitech is intended to observe an open-ended market universe, turn native market observations
 into deterministic measurements and semantic events, maintain rolling system-wide market state,
-and let an advisory agent direct attention toward evidence useful for concrete SPY or QQQ 0DTE
-trade proposals.
+and let an advisory agent direct attention toward a ranked set of concurrent SPXW, SPY, and QQQ
+0DTE opportunities.
 
 SPY, QQQ, SPX, ES, and NQ are initial examples, not an architectural whitelist. Other equities,
 indexes, futures, volatility products, sectors, rates, commodities, options, or later providers
@@ -41,7 +41,7 @@ Policy-checked observation and analysis intents
         +----> acquisition, options, and analysis owners
         |
         v
-Concrete 0DTE trade proposal for operator review
+Concurrent 0DTE opportunity set for operator review
 ```
 
 The agent directs the machinery. It does not replace deterministic analysis, subscribe directly
@@ -54,8 +54,10 @@ V2. Replace it with four independent concepts.
 
 ### Trade universe
 
-Products through which a thesis may be expressed. The initial target is SPY and QQQ 0DTE options.
-This does not imply that either underlying must always be the highest-fidelity observation source.
+Products through which a thesis may be expressed. The initial configurable seed is SPXW, SPY, and
+QQQ 0DTE options. It is not an architectural whitelist, and no product is globally preferred.
+Several opportunities and expression candidates may coexist. This does not imply that an option's
+underlying must always be the highest-fidelity observation source.
 
 ### Observation universe
 
@@ -207,7 +209,7 @@ change attention at runtime.
 | Attention and analysis intents | Advisory agent or operator |
 | Intent authorization and resource limits | Deterministic policy component |
 | Option-chain acquisition and interpretation | Later approved options components |
-| Concrete trade proposal | Advisory agent using typed evidence |
+| Concurrent opportunity ranking and trade proposals | Advisory agent using typed evidence |
 | Order execution | Absent until separately designed and approved |
 
 ## Resource And Safety Rules

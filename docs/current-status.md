@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-08-16
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -223,11 +223,31 @@ is ready for live proof; automatic futures rolling is not implied.
 
 ## Next Accepted Sequence
 
-Stage 8A now owns instrument-definition acquisition. Remaining Stage 8 decisions still define
-live and historical acquisition behavior; none are implied by this slice. Stages 1 through 9 form
-the functional live runtime core; Stages 10 and 11 harden observability, tests, and upgrades.
-Market intelligence begins afterward with separately approved analytical entities, semantic
-events, rolling state, options context, ML, and an advisory AI observer.
+The static watchlist and live acquisition ownership foundation are complete. Dynamic watchlist
+membership remains intentionally deferred. Market intelligence design is now in review on branch
+`v2-stage-9-market-intelligence-design`.
 
-The complete gated sequence is maintained in
-[`roadmap/v2-infrastructure-plan.md`](roadmap/v2-infrastructure-plan.md).
+The authoritative proposed coding order is:
+
+1. session and calendar ownership;
+2. evidence-health contracts;
+3. historical dependency execution;
+4. baseline metric contracts;
+5. entities and rolling state;
+6. first semantic events;
+7. bounded options-data proof;
+8. cross-instrument state;
+9. richer analytics; and
+10. the live advisory agent.
+
+The agent maintains a plural opportunity set. No instrument is globally preferred, and the
+initial SPXW/SPY/QQQ expression universe remains configurable and expandable. All variable market,
+analysis, policy, and resource parameters follow the charter's configuration and optimization
+principle.
+
+The pre-coding design gate is accepted: opportunities are target-exposure and episode based rather
+than source-instrument or contract based, and first-batch parameters are startup-configurable while
+carrying explicit future mutability and optimization metadata.
+
+The detailed sequence and gates are maintained in
+[`roadmap/v2-first-market-intelligence-coding-sequence.md`](roadmap/v2-first-market-intelligence-coding-sequence.md).

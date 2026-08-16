@@ -33,9 +33,10 @@ V2 invariant. V2 distinguishes the trade universe, dynamic observation
 universe, active analytical capabilities, and temporary focus. Multiple
 instruments may receive granular continuous data when justified and supported.
 
-SPY and QQQ 0DTE options are the initial trade-expression target. SPY, QQQ,
-SPX, ES, and NQ are useful initial evidence examples, not a complete or fixed
-observation universe. Crypto is not a current product priority.
+SPXW, SPY, and QQQ 0DTE options form the initial configurable trade-expression universe. No
+instrument is preferred by implementation or configuration. The agent may maintain and rank
+multiple simultaneous opportunities. SPY, QQQ, SPX, ES, and NQ are useful initial evidence
+examples, not a complete or fixed observation universe. Crypto is not a current product priority.
 
 Analytical capabilities declare the native feeds and historical evidence they
 require. The acquisition owner expands approved demand, coordinates provider
@@ -96,6 +97,21 @@ ML may later rank, classify, or calibrate deterministic evidence. AI may synthes
 state and issue typed, policy-checked intents for observation and analysis. Neither may silently
 alter canonical data, invent evidence, control the IB connection, or bypass reviewed resource and
 risk boundaries.
+
+## Configuration And Optimization
+
+Do not hide a tunable market or operational decision in implementation code. Variable thresholds,
+windows, weights, instruments, sessions, budgets, limits, cadences, and selection rules must be
+typed, scoped, validated, versioned configuration with explicit defaults and units.
+
+Every optimization-eligible parameter must declare its authorized range, mutability boundary,
+source, effective time, and audit behavior. Runtime adjustment must use a typed, policy-checked
+intent with expiry and rollback semantics; models do not receive arbitrary configuration access.
+
+Keep true invariants in code: evidence honesty, schema and type integrity, source identity,
+authorization, audit, and execution prohibitions. The authoritative full rule is the
+[Configuration And Optimization Principle](../markeitech.md#configuration-and-optimization-principle)
+in the project charter.
 
 ## Operator Validation
 

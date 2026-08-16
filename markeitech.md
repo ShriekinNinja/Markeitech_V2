@@ -16,10 +16,10 @@ work.
 - ES and SPY are the initial V2 bootstrap instruments, not a permanent universe.
   The observation universe, acquisition cadence, enabled analysis capabilities,
   and temporary market focus may change while the system runs.
-- SPY and QQQ 0DTE options are the initial intended trade expressions. The long-term product goal
-  is a deterministic semantic-event stream, multidimensional rolling market
-  state, options context, and an advisory AI observer that suggests and explains
-  0DTE opportunities.
+- SPXW, SPY, and QQQ 0DTE options form the initial configurable expression universe. No expression
+  instrument is globally preferred. The long-term product goal is a deterministic semantic-event
+  stream, multidimensional rolling market state, options context, and an advisory AI observer that
+  maintains, ranks, and explains multiple concurrent 0DTE opportunities.
 - Native provider observations, deterministic facts, semantic events, persistent
   entities, rolling state, model outputs, AI interpretations, and execution
   authority remain separate boundaries.
@@ -62,6 +62,37 @@ Maintain these invariants:
 - no fixed one-active-instrument limit on granular observation
 - analytics independent of console, Discord, WebSocket, and UI transports
 - strategy or presentation failure must not stop ingestion
+
+## Configuration And Optimization Principle
+
+Do not encode variable market assumptions, analytical thresholds, instrument preferences, timing
+windows, scoring weights, policy choices, or resource budgets as hidden constants.
+
+Anything which may reasonably vary by instrument, asset class, session, regime, market condition,
+data quality, infrastructure capacity, operator preference, experiment, or future model
+optimization must be explicit, typed, scoped, bounded, versioned configuration. Each such
+parameter must define:
+
+- a stable identity, meaning, unit, and type;
+- an explicit documented default rather than an unexplained magic number;
+- its scope, such as global, capability, asset class, instrument, contract, session, or regime;
+- validation and an authorized minimum/maximum envelope;
+- whether it is startup-only, between-session mutable, safely runtime mutable, operator-controlled,
+  policy-controlled, or optimization-eligible;
+- its source, such as default, checked-in configuration, operator, deterministic policy, model, or
+  experiment;
+- version and effective time so every result can identify the parameters which produced it; and
+- safe rejection, expiry, rollback, and audit behavior where runtime changes are allowed.
+
+Design optimization-ready interfaces even when the first implementation reads startup
+configuration only. Models and agents may propose or apply changes only through typed,
+policy-checked intents within authorized envelopes and resource budgets. They may not mutate
+arbitrary configuration, rewrite history, bypass validation, or silently change live behavior.
+
+This principle does not make system truth negotiable. Schema integrity, type safety, evidence
+honesty, source identity, authorization boundaries, audit requirements, and the prohibition on
+unauthorized execution remain code-enforced invariants. Tunable limits belong in configuration;
+the enforcement of those limits belongs in deterministic code.
 
 PostgreSQL currently owns only operational run and system-health records. Redis,
 SQLite, Parquet, and raw market-data retention are not selected V2 infrastructure.

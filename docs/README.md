@@ -52,6 +52,8 @@ Preserved V1 architecture remains available in
 ## Roadmap And History
 
 - [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md)
+- [V2 market events and live-agent requirements](roadmap/v2-market-events-live-agent-plan.md)
+- [First market-intelligence coding sequence](roadmap/v2-first-market-intelligence-coding-sequence.md)
 - [Active implementation roadmap](roadmap/implementation-roadmap.md)
 - [Runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
 - [Trading quality evidence plan](roadmap/trading-quality-evidence-plan.md)
@@ -73,6 +75,7 @@ for investigation and context, but it does not reopen old stage gates.
 
 ## Research
 
+- [Market-analysis specialist brief](research/market-analysis-specialist-brief.md)
 - [Trading frameworks study](research/trading-frameworks-study.md)
 - [Semantic events, AI observer, and options intelligence baseline](research/semantic-events-ai-options-baseline.md)
 
