@@ -55,12 +55,14 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
                 if instrument_id in {"ESU6.CME", "NQU6.CME", "YMU6.CBOT"}
                 else "cme_energy"
                 if instrument_id == "CLU6.NYMEX"
-                else "cboe_spxw"
-                if instrument_id in {"^SPX.CBOE", "^VIX.CBOE"}
                 else "us_equities"
             ),
             "owner_ids": ["config:system"],
-            "capabilities": ["top_of_book", "watchlist_last"],
+            "capabilities": (
+                ["watchlist_last"]
+                if instrument_id in {"^SPX.CBOE", "^VIX.CBOE"}
+                else ["top_of_book", "watchlist_last"]
+            ),
         }
         for instrument_id in [
             "ESU6.CME",
@@ -125,7 +127,7 @@ def test_actor_plan_adds_enabled_native_consumer_probe() -> None:
     plan = build_actor_plan(config, _prerequisites())
 
     probe = next(item for item in plan if item.key == "native_consumer_probe")
-    assert len(probe.config.config["feeds"]) == 36
+    assert len(probe.config.config["feeds"]) == 34
     assert probe.config.config["feeds"][0] == {
         "instrument_id": "ESU6.CME",
         "calendar_id": "cme_equity",

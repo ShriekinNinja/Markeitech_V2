@@ -14,7 +14,14 @@ They block Stage 9B.
 - [x] Reject unaccepted persistence work explicitly, report the affected sequence and bounded
       counters, and degrade through the existing component-failure path.
 - [x] Preserve FIFO processing and retry behavior for every record accepted by the worker.
-- [ ] Review and live-accept the non-blocking persistence behavior before Stage 9B.
+- [x] Batch accepted records into bounded PostgreSQL transactions instead of opening one
+      connection and transaction per event.
+- [x] Reserve configured queue capacity for system-health and component-failure records.
+- [x] Validate configured normal capacity against the deterministic startup event envelope.
+- [x] Prevent admission pressure from producing an invalid terminal-to-starting health transition.
+- [x] Review and live-accept the non-blocking persistence behavior before Stage 9B. The
+      2026-08-17 mega-clean boot stored all 490 accepted records with zero retries, failures,
+      rejections, pending records, sequence gaps, or duplicates.
 
 ## Priority 1: Reliability Before Unattended Intelligence
 
@@ -23,7 +30,8 @@ before an unattended advisory agent can be trusted.
 
 - [ ] Add provider-subscription retry and recovery ownership after an initial acquisition failure;
       retries must be event/timer driven and must not block unrelated streams.
-- [ ] Permit system health to recover from `DEGRADED` to `READY` when current evidence proves the
+- [ ] Publish explicit component-recovery evidence and permit system health to recover from
+      `DEGRADED` to `READY` when current evidence proves the
       failed dependency has recovered.
 - [ ] Replace the single lifetime persistence-failure latch with bounded transition/deduplication
       semantics so a later distinct failure remains observable without creating an event storm.
@@ -33,6 +41,13 @@ before an unattended advisory agent can be trusted.
       and evidence-health actors.
 - [ ] Verify connection loss, provider recovery, and resubscription behavior in a controlled live
       acceptance run.
+- [ ] Decide whether learned evidence-recency profiles need age-based prior decay in addition to
+      policy-version isolation and exponentially weighted live updates.
+- [ ] Add configurable evidence-health transition hysteresis or persistence windows. The
+      2026-08-17 clean run learned valid quote cadences, but the configured two-second hard fresh
+      floor still produced 13 brief `HEALTHY -> DEGRADED` transitions on naturally intermittent
+      overnight ES, YM, and CL quotes; all recovered automatically. Keep thresholds, confirmation
+      duration, and recovery behavior configurable and optimization-ready.
 
 ## Priority 2: Runtime Hardening
 
@@ -60,7 +75,7 @@ before an unattended advisory agent can be trusted.
 ## Product Sequence
 
 - [x] **Stage 9A:** session/calendar ownership and evidence-health truth.
-- [ ] **Critical hardening gate:** live-accept Priority 0 persistence behavior.
+- [x] **Critical hardening gate:** live-accept Priority 0 persistence behavior.
 - [ ] **Stage 9B:** historical dependency execution.
 - [ ] **Stage 9C:** baseline deterministic metric contracts.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.

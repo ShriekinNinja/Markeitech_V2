@@ -55,6 +55,37 @@ def test_postgres_migrations_restart_reads_and_duplicate_event_write() -> None:
     )
     store.write_operational_event(operational_record)
     store.write_operational_event(operational_record)
+    profile_payload = {
+        "instrument_id": "ESU6.CME",
+        "feed_kind": "quotes",
+        "selector": "default",
+        "provider_id": "IB",
+        "session_phase": "RTH",
+        "policy_version": "test-policy-v1",
+        "sample_count": 25,
+        "mean_interval_ms": 950.0,
+        "variance_ms2": 22500.0,
+        "last_observed_ns": 1_000_000_000,
+        "fresh_for_ms": 2000,
+        "stale_after_ms": 5000,
+        "unavailable_after_ms": 15000,
+        "source": "EVIDENCE-HEALTH",
+        "schema_version": 1,
+    }
+    store.write_operational_event(
+        OperationalEventRecord(
+            event_id="evidence-profile:test:25",
+            run_id=run_id,
+            sequence=2,
+            signal_name="markeitech.evidence.recency_profile",
+            event_type="evidence.recency_profile",
+            source="EVIDENCE-HEALTH",
+            payload=profile_payload,
+            ts_event_ns=104,
+            ts_init_ns=105,
+            schema_version=1,
+        ),
+    )
     with pytest.raises(RuntimeError, match="identity collision"):
         store.write_operational_event(
             OperationalEventRecord(
@@ -77,16 +108,26 @@ def test_postgres_migrations_restart_reads_and_duplicate_event_write() -> None:
     stored_run = restarted_store.load_run(run_id)
     stored_events = restarted_store.load_health_events(run_id)
     stored_operational_events = restarted_store.load_operational_events(run_id)
+    stored_profiles = restarted_store.load_evidence_recency_profiles("IB")
     assert stored_run is not None and stored_run.terminal_state is None
     assert len(stored_events) == 1
     assert stored_events[0].sequence == 1
     assert stored_events[0].evidence == {"operational_persistence_ready": True}
-    assert len(stored_operational_events) == 1
+    assert len(stored_operational_events) == 2
     assert stored_operational_events[0].event_id == "watchlist-membership:1"
     assert stored_operational_events[0].payload == {
         "membership_revision": 1,
         "instrument_count": 2,
     }
+    stored_profile = next(
+        item
+        for item in stored_profiles
+        if item["instrument_id"] == "ESU6.CME"
+        and item["session_phase"] == "RTH"
+        and item["policy_version"] == "test-policy-v1"
+    )
+    assert stored_profile["sample_count"] == 25
+    assert stored_profile["fresh_for_ms"] == 2000
 
     restarted_store.close_run(run_id, "STOPPED", "integration test completed")
     closed_run = restarted_store.load_run(run_id)

@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-17
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -281,5 +281,22 @@ Stage 9A is complete and accepted at commit `ce9076e`:
 The detailed ownership and semantics are recorded in
 [`architecture/v2-session-evidence-health.md`](architecture/v2-session-evidence-health.md).
 
-Before Stage 9B, the runtime is passing through the short Priority 0 persistence-safety gate in
-[`roadmap/v2-backlog.md`](roadmap/v2-backlog.md). This does not reopen Stage 9A's product scope.
+The corrective Stage 9A/Priority 0 persistence-safety gate is implemented and live-accepted. The
+2026-08-17 mega-clean boot recreated PostgreSQL from an empty volume, applied all migrations,
+reached `READY`, and shut down cleanly. It stored all 490 accepted records with no retries,
+failures, rejections, pending records, sequence gaps, or duplicates. The batch writes PostgreSQL in
+bounded transactions, reserves critical audit capacity, validates startup capacity, suppresses
+repeated identical persistence-failure logs, and prevents recoverable queue pressure from creating
+the invalid `FAILED -> STARTING` transition. Queue admission remains non-blocking and rejected
+payloads remain an explicit audit gap.
+
+Evidence recency now supports configurable, persisted adaptive quote profiles keyed by instrument,
+feed, selector, provider, session phase, and policy version. Profiles checkpoint compact derived
+statistics only; raw observations remain transient. SPX/VIX use cash-session, bar-derived-last
+expectations, and Watchlist observation truth now follows each instrument's declared capabilities.
+Acquisition retains provider subscription lifetime ownership during shutdown.
+
+The same acceptance run proved profile learning for ES, NQ, YM, and CL. Brief overnight quote
+freshness transitions showed that the configurable two-second hard fresh floor is still sensitive
+to natural delivery pauses. Transition hysteresis or persistence windows are tracked as Priority 1
+calibration; this does not block Stage 9B.

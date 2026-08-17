@@ -71,12 +71,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         config.persistence.connect_timeout_seconds,
     )
     store.initialize()
+    recency_profiles = store.load_evidence_recency_profiles(
+        config.evidence_health.provider_id,
+    )
     run_id = uuid4()
     node = build_system_node(
         config,
         StartupPrerequisites(
             run_id=run_id,
             operational_persistence_ready=True,
+            evidence_recency_profiles=recency_profiles,
         ),
     )
     store.start_run(config.runtime.name, run_id)

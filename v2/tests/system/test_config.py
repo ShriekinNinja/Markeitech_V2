@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 6
+schema_version = 7
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -40,6 +40,8 @@ request_timeout_seconds = 5
 dsn_env = "MARKEITECH_POSTGRES_DSN"
 connect_timeout_seconds = 5
 queue_capacity = 64
+critical_queue_reserve = 8
+write_batch_size = 16
 result_poll_interval_ms = 250
 shutdown_timeout_seconds = 10
 write_max_attempts = 3
@@ -63,6 +65,8 @@ overrides = []
 [evidence_health]
 evaluation_interval_ms = 1000
 consumer_retry_interval_ms = 1000
+provider_id = "IB"
+profile_checkpoint_samples = 25
 
 [[evidence_health.policies]]
 feed_kind = "quotes"
@@ -70,6 +74,18 @@ selector = "default"
 fresh_for_ms = 2000
 stale_after_ms = 5000
 unavailable_after_ms = 15000
+adaptive = true
+minimum_samples = 20
+decay_factor = 0.95
+fresh_stddev_multiplier = 2.0
+stale_stddev_multiplier = 4.0
+unavailable_stddev_multiplier = 8.0
+min_fresh_ms = 2000
+max_fresh_ms = 15000
+min_stale_ms = 5000
+max_stale_ms = 45000
+min_unavailable_ms = 15000
+max_unavailable_ms = 120000
 
 [[evidence_health.policies]]
 feed_kind = "bars"
@@ -77,6 +93,18 @@ selector = "5-SECOND-LAST-EXTERNAL"
 fresh_for_ms = 7000
 stale_after_ms = 15000
 unavailable_after_ms = 30000
+adaptive = false
+minimum_samples = 20
+decay_factor = 0.95
+fresh_stddev_multiplier = 2.0
+stale_stddev_multiplier = 4.0
+unavailable_stddev_multiplier = 8.0
+min_fresh_ms = 5000
+max_fresh_ms = 10000
+min_stale_ms = 10000
+max_stale_ms = 20000
+min_unavailable_ms = 20000
+max_unavailable_ms = 60000
 
 [watchlist]
 consumer_retry_interval_ms = 1000
@@ -108,6 +136,8 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.discord.enabled is True
     assert config.persistence.dsn_env == "MARKEITECH_POSTGRES_DSN"
     assert config.persistence.queue_capacity == 64
+    assert config.persistence.critical_queue_reserve == 8
+    assert config.persistence.write_batch_size == 16
     assert config.persistence.result_poll_interval_ms == 250
     assert config.persistence.write_max_attempts == 3
     assert config.persistence.write_retry_backoff_ms == 100
@@ -170,7 +200,7 @@ def test_rejects_removed_bootstrap_feed_configuration(tmp_path: Path) -> None:
         load_system_config(path)
 
 
-def test_rejects_incomplete_watchlist_capabilities(tmp_path: Path) -> None:
+def test_accepts_feed_specific_watchlist_capabilities(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
     path.write_text(
         VALID_CONFIG.replace(
@@ -179,8 +209,9 @@ def test_rejects_incomplete_watchlist_capabilities(tmp_path: Path) -> None:
         ),
     )
 
-    with pytest.raises(ValueError, match="capabilities must contain exactly"):
-        load_system_config(path)
+    config = load_system_config(path)
+
+    assert config.watchlist.members[0].capabilities == ("top_of_book",)
 
 
 def test_rejects_duplicate_watchlist_owners(tmp_path: Path) -> None:
@@ -205,6 +236,18 @@ selector = "5-SECOND-LAST-EXTERNAL"
 fresh_for_ms = 7000
 stale_after_ms = 15000
 unavailable_after_ms = 30000
+adaptive = false
+minimum_samples = 20
+decay_factor = 0.95
+fresh_stddev_multiplier = 2.0
+stale_stddev_multiplier = 4.0
+unavailable_stddev_multiplier = 8.0
+min_fresh_ms = 5000
+max_fresh_ms = 10000
+min_stale_ms = 10000
+max_stale_ms = 20000
+min_unavailable_ms = 20000
+max_unavailable_ms = 60000
 """
     path.write_text(VALID_CONFIG.replace(bars_policy, ""))
 

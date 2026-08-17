@@ -44,6 +44,7 @@ def test_clean_connected_run_is_closed_only_after_node_returns(monkeypatch) -> N
     node = Mock()
     sequence: list[str] = []
     store.start_run.side_effect = lambda *_args: sequence.append("start")
+    store.load_evidence_recency_profiles.return_value = ()
     node.run.side_effect = lambda: sequence.append("run")
     store.close_run.side_effect = lambda *_args: sequence.append("close")
     monkeypatch.setattr(
@@ -72,6 +73,7 @@ def test_clean_connected_run_is_closed_only_after_node_returns(monkeypatch) -> N
 def test_unclean_connected_run_remains_open(monkeypatch) -> None:
     store = Mock()
     node = Mock()
+    store.load_evidence_recency_profiles.return_value = ()
     node.run.side_effect = RuntimeError("node failed")
     monkeypatch.setattr(
         "markeitech.system.cli.OperationalStore.from_environment",

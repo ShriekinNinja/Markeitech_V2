@@ -75,8 +75,12 @@ def test_worker_preserves_order_across_health_and_generic_operational_records() 
     run_id = uuid4()
     stored: list[tuple[int, str]] = []
     worker = PersistenceWorker(
-        lambda record: stored.append((record.sequence, type(record).__name__)),
+        lambda records: stored.extend(
+            (record.sequence, type(record).__name__) for record in records
+        ),
         queue_capacity=4,
+        critical_queue_reserve=0,
+        write_batch_size=4,
         shutdown_timeout_seconds=1,
         write_max_attempts=1,
         write_retry_backoff_ms=0,
@@ -315,8 +319,10 @@ def _record(sequence: int, state: str = "READY") -> HealthEventRecord:
 def test_persistence_worker_preserves_accepted_order_and_drains_on_close() -> None:
     stored: list[int] = []
     worker = PersistenceWorker(
-        lambda record: stored.append(record.sequence),
+        lambda records: stored.extend(record.sequence for record in records),
         queue_capacity=4,
+        critical_queue_reserve=0,
+        write_batch_size=4,
         shutdown_timeout_seconds=1,
         write_max_attempts=3,
         write_retry_backoff_ms=0,
@@ -335,7 +341,8 @@ def test_persistence_worker_preserves_accepted_order_and_drains_on_close() -> No
 def test_persistence_worker_reports_write_failure_without_dying() -> None:
     attempted: list[int] = []
 
-    def write(record: HealthEventRecord) -> None:
+    def write(records: tuple[HealthEventRecord, ...]) -> None:
+        record = records[0]
         attempted.append(record.sequence)
         if record.sequence == 1:
             raise RuntimeError("database unavailable")
@@ -343,6 +350,8 @@ def test_persistence_worker_reports_write_failure_without_dying() -> None:
     worker = PersistenceWorker(
         write,
         queue_capacity=4,
+        critical_queue_reserve=0,
+        write_batch_size=1,
         shutdown_timeout_seconds=1,
         write_max_attempts=1,
         write_retry_backoff_ms=0,
@@ -363,7 +372,7 @@ def test_persistence_worker_reports_write_failure_without_dying() -> None:
 def test_persistence_worker_retries_a_write_within_the_configured_bound() -> None:
     attempts = 0
 
-    def eventually_write(_record: HealthEventRecord) -> None:
+    def eventually_write(_records: tuple[HealthEventRecord, ...]) -> None:
         nonlocal attempts
         attempts += 1
         if attempts < 3:
@@ -372,6 +381,8 @@ def test_persistence_worker_retries_a_write_within_the_configured_bound() -> Non
     worker = PersistenceWorker(
         eventually_write,
         queue_capacity=1,
+        critical_queue_reserve=0,
+        write_batch_size=1,
         shutdown_timeout_seconds=1,
         write_max_attempts=3,
         write_retry_backoff_ms=0,
@@ -395,13 +406,15 @@ def test_persistence_worker_rejects_without_blocking_when_bounded_queue_is_full(
     release = Event()
     entered = Event()
 
-    def blocked_write(_record: HealthEventRecord) -> None:
+    def blocked_write(_records: tuple[HealthEventRecord, ...]) -> None:
         entered.set()
         release.wait(timeout=2)
 
     worker = PersistenceWorker(
         blocked_write,
         queue_capacity=1,
+        critical_queue_reserve=0,
+        write_batch_size=1,
         shutdown_timeout_seconds=2,
         write_max_attempts=1,
         write_retry_backoff_ms=0,
@@ -430,13 +443,15 @@ def test_persistence_worker_can_finish_after_an_initial_close_timeout() -> None:
     release = Event()
     entered = Event()
 
-    def blocked_write(_record: HealthEventRecord) -> None:
+    def blocked_write(_records: tuple[HealthEventRecord, ...]) -> None:
         entered.set()
         release.wait(timeout=2)
 
     worker = PersistenceWorker(
         blocked_write,
         queue_capacity=1,
+        critical_queue_reserve=0,
+        write_batch_size=1,
         shutdown_timeout_seconds=0.05,
         write_max_attempts=1,
         write_retry_backoff_ms=0,
@@ -449,3 +464,25 @@ def test_persistence_worker_can_finish_after_an_initial_close_timeout() -> None:
     release.set()
     assert worker.close() is True
     assert worker.snapshot().pending == 0
+
+
+def test_persistence_worker_reserves_capacity_for_critical_records() -> None:
+    stored: list[int] = []
+    worker = PersistenceWorker(
+        lambda records: stored.extend(record.sequence for record in records),
+        queue_capacity=3,
+        critical_queue_reserve=1,
+        write_batch_size=3,
+        shutdown_timeout_seconds=1,
+        write_max_attempts=1,
+        write_retry_backoff_ms=0,
+    )
+
+    assert worker.submit(_record(1))
+    assert worker.submit(_record(2))
+    assert worker.submit(_record(3)) is False
+    assert worker.submit(_record(4), critical=True)
+    worker.start()
+    assert worker.close()
+
+    assert stored == [1, 2, 4]

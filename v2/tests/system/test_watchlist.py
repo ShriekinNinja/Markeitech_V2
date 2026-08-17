@@ -66,6 +66,16 @@ def test_becomes_observed_only_after_quote_and_bar_for_every_instrument() -> Non
     assert all(item.observation_state == ObservationState.OBSERVED for item in snapshot.instruments)
 
 
+def test_feed_specific_instrument_is_observed_when_its_declared_capability_arrives() -> None:
+    state = WatchlistState(
+        ("^SPX.CBOE",),
+        {"^SPX.CBOE": frozenset({"watchlist_last"})},
+    )
+
+    assert state.observe_bar("^SPX.CBOE", "7800.00", 1) is True
+    assert state.is_observed is True
+
+
 def test_snapshot_is_immutable_and_ordered() -> None:
     state = WatchlistState(("SPY.ARCA", "ESU6.CME"))
     state.register_consumers()
@@ -159,7 +169,4 @@ def test_consumer_readiness_is_independent_of_event_arrival_order(
     subscribed: set[str],
     expected_ready: bool,
 ) -> None:
-    assert (
-        _consumer_registration_ready({"quotes", "bars"}, attached, subscribed)
-        is expected_ready
-    )
+    assert _consumer_registration_ready({"quotes", "bars"}, attached, subscribed) is expected_ready

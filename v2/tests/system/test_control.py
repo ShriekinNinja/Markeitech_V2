@@ -150,17 +150,10 @@ def test_persistence_failure_is_fatal_during_startup_and_degradable_after_ready(
     failure = _failure()
 
     assert component_failure_target(failure, None) is SystemHealthState.FAILED
+    assert component_failure_target(failure, SystemHealthState.STARTING) is SystemHealthState.FAILED
+    assert component_failure_target(failure, SystemHealthState.READY) is SystemHealthState.DEGRADED
     assert (
-        component_failure_target(failure, SystemHealthState.STARTING)
-        is SystemHealthState.FAILED
-    )
-    assert (
-        component_failure_target(failure, SystemHealthState.READY)
-        is SystemHealthState.DEGRADED
-    )
-    assert (
-        component_failure_target(failure, SystemHealthState.DEGRADED)
-        is SystemHealthState.DEGRADED
+        component_failure_target(failure, SystemHealthState.DEGRADED) is SystemHealthState.DEGRADED
     )
 
 

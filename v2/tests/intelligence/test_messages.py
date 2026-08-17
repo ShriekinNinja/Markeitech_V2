@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from markeitech.intelligence.messages import EvidenceHealthEvent, SessionStateEvent
+from markeitech.intelligence.messages import (
+    EvidenceHealthEvent,
+    EvidenceRecencyProfileEvent,
+    SessionStateEvent,
+)
 
 
 def test_session_state_round_trip() -> None:
@@ -72,6 +76,28 @@ def test_evidence_health_round_trip() -> None:
     )
 
     assert EvidenceHealthEvent.from_signal_value(event.to_signal_value()) == event
+
+
+def test_evidence_recency_profile_round_trip() -> None:
+    event = EvidenceRecencyProfileEvent(
+        event_id="evidence-profile:SPY.ARCA:quotes:default:IB:RTH:25",
+        instrument_id="SPY.ARCA",
+        feed_kind="quotes",
+        selector="default",
+        provider_id="IB",
+        session_phase="RTH",
+        policy_version="quotes-v1",
+        sample_count=25,
+        mean_interval_ms=950.0,
+        variance_ms2=22500.0,
+        last_observed_ns=1_000_000_000,
+        fresh_for_ms=2000,
+        stale_after_ms=5000,
+        unavailable_after_ms=15000,
+        source="EVIDENCE-HEALTH",
+    )
+
+    assert EvidenceRecencyProfileEvent.from_signal_value(event.to_signal_value()) == event
 
 
 @pytest.mark.parametrize("state", ["NOT_EVALUATED", "DORMANT"])

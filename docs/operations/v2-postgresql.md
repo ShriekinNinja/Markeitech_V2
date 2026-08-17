@@ -15,10 +15,16 @@ Migration 2 adds the generic append-only `operational_events` ledger. Each event
 correlation and causation identity. A repeated identity with different content is corruption and
 must fail visibly. Specialized health history remains intact; raw market payloads remain excluded.
 
+Migration 3 adds `evidence_recency_profiles`. This is compact derived control state rather than raw
+market data: one current profile per instrument, feed, selector, provider, session phase, and policy
+version. Profiles let evidence health resume with observed delivery cadence after restart while
+policy-version isolation prevents incompatible settings from silently reusing old learning.
+
 The persistence actor consumes existing acquisition requests, acquisition status and stream
-lifecycle, component failures, and static watchlist membership and lifecycle signals through one
-ordered bounded worker. It records semantic control history only; native quote and bar callbacks
-remain outside PostgreSQL.
+lifecycle, component failures, evidence recency checkpoints, and static watchlist membership and
+lifecycle signals through one ordered bounded worker. The worker writes bounded batches in one
+transaction and reserves configured admission capacity for health and failure records. It records
+semantic control history only; native quote and bar callbacks remain outside PostgreSQL.
 
 Nautilus signals are transient rather than retained. Runtime startup therefore has two persistence
 guarantees. Process preflight verifies PostgreSQL and migrations before the node is built. Inside
@@ -64,8 +70,11 @@ write.
 ## Failure Behavior
 
 - Startup database failure prevents IB startup and prevents `READY`.
-- Mid-run queue or write failure is reported once to the control actor.
-- The control actor publishes `DEGRADED`; the persistence actor never defines system state.
+- Normal admissions cannot consume the queue capacity reserved for health and failure records.
+- A persistence admission rejection is reported once to the control actor and produces
+  `DEGRADED`; the persistence actor never defines system state.
+- An unresolved persistence failure prevents a later readiness evaluation from overwriting the
+  degraded or failed state.
 - Accepted writes drain in order during bounded shutdown.
 - Duplicate `(run_id, sequence)` writes are ignored by a PostgreSQL uniqueness constraint.
 

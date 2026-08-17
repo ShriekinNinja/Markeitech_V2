@@ -18,6 +18,7 @@ _ALLOWED_TRANSITIONS: dict[SystemHealthState | None, frozenset[SystemHealthState
     None: frozenset(
         {
             SystemHealthState.STARTING,
+            SystemHealthState.DEGRADED,
             SystemHealthState.FAILED,
             SystemHealthState.STOPPING,
         },
@@ -33,7 +34,9 @@ _ALLOWED_TRANSITIONS: dict[SystemHealthState | None, frozenset[SystemHealthState
     SystemHealthState.READY: frozenset(
         {SystemHealthState.DEGRADED, SystemHealthState.FAILED, SystemHealthState.STOPPING},
     ),
-    SystemHealthState.DEGRADED: frozenset({SystemHealthState.FAILED, SystemHealthState.STOPPING}),
+    SystemHealthState.DEGRADED: frozenset(
+        {SystemHealthState.READY, SystemHealthState.FAILED, SystemHealthState.STOPPING},
+    ),
     SystemHealthState.FAILED: frozenset({SystemHealthState.STOPPING}),
     SystemHealthState.STOPPING: frozenset(),
 }
@@ -82,6 +85,8 @@ def component_failure_target(
     if current_state in {SystemHealthState.FAILED, SystemHealthState.STOPPING}:
         return current_state
     if failure.component == "operational_persistence":
+        if failure.code == "persistence_admission_rejected":
+            return SystemHealthState.DEGRADED
         if current_state in {None, SystemHealthState.STARTING}:
             return SystemHealthState.FAILED
         return SystemHealthState.DEGRADED

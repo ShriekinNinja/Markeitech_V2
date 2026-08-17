@@ -70,6 +70,8 @@ class WatchlistSnapshot:
 
 @dataclass(slots=True)
 class WatchlistInstrumentState:
+    require_quote: bool = True
+    require_last: bool = True
     best_bid: str | None = None
     best_ask: str | None = None
     last: str | None = None
@@ -83,9 +85,13 @@ class WatchlistInstrumentState:
     def observation_state(self) -> ObservationState:
         has_quote = self.best_bid is not None and self.best_ask is not None
         has_last = self.last is not None
-        if has_quote and has_last:
+        requirements = (
+            (not self.require_quote or has_quote),
+            (not self.require_last or has_last),
+        )
+        if all(requirements):
             return ObservationState.OBSERVED
-        if has_quote or has_last:
+        if (self.require_quote and has_quote) or (self.require_last and has_last):
             return ObservationState.PARTIAL
         return ObservationState.UNOBSERVED
 
@@ -107,14 +113,26 @@ class WatchlistInstrumentState:
 class WatchlistState:
     SCHEMA_VERSION = 1
 
-    def __init__(self, instrument_ids: tuple[str, ...]) -> None:
+    def __init__(
+        self,
+        instrument_ids: tuple[str, ...],
+        capabilities_by_instrument: dict[str, frozenset[str]] | None = None,
+    ) -> None:
         if not instrument_ids:
             raise ValueError("watchlist requires at least one instrument")
         if len(set(instrument_ids)) != len(instrument_ids):
             raise ValueError("watchlist instruments must be unique")
-        self._instruments = {
-            instrument_id: WatchlistInstrumentState() for instrument_id in instrument_ids
-        }
+        capabilities_by_instrument = capabilities_by_instrument or {}
+        self._instruments = {}
+        for instrument_id in instrument_ids:
+            capabilities = capabilities_by_instrument.get(
+                instrument_id,
+                frozenset({"top_of_book", "watchlist_last"}),
+            )
+            self._instruments[instrument_id] = WatchlistInstrumentState(
+                require_quote="top_of_book" in capabilities,
+                require_last="watchlist_last" in capabilities,
+            )
         self._consumer_state = ConsumerState.DETACHED
         self._sequence = 0
 
@@ -244,7 +262,10 @@ class WatchlistActor(DataActor):
             )
             for member in config.members
         )
-        self._state = WatchlistState(tuple(member.instrument_id for member in self._members))
+        self._state = WatchlistState(
+            tuple(member.instrument_id for member in self._members),
+            {member.instrument_id: frozenset(member.capabilities) for member in self._members},
+        )
         self._watchlist_observed_logged = False
         self._audit_started = False
         self._lifecycle_sequence = 0
@@ -322,8 +343,6 @@ class WatchlistActor(DataActor):
             self.clock.cancel_timer(_CONSUMER_RETRY_TIMER)
         if self._startup_released:
             for demand in reversed(self._demands):
-                if demand.demand_id in self._attached_demand_ids:
-                    self._detach_consumer(demand)
                 self.publish_signal(
                     WATCHLIST_DEMAND_SIGNAL,
                     WatchlistDemandEvent(
@@ -412,7 +431,7 @@ class WatchlistActor(DataActor):
     def _publish_instrument_observed(self, instrument_id: str) -> None:
         self._publish_lifecycle(
             "INSTRUMENT_OBSERVED",
-            reason="required quote and bar-derived last observed",
+            reason="all configured watchlist capabilities observed",
             instrument_id=instrument_id,
         )
 
@@ -552,16 +571,6 @@ class WatchlistActor(DataActor):
             return
         if demand.feed_kind == "bars":
             self.subscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
-            return
-        raise ValueError(f"unsupported watchlist feed: {demand.feed_kind}")
-
-    def _detach_consumer(self, demand: WatchlistDemandEvent) -> None:
-        instrument_id = InstrumentId.from_str(demand.instrument_id)
-        if demand.feed_kind == "quotes":
-            self.unsubscribe_quotes(instrument_id, client_id=_IB_CLIENT_ID)
-            return
-        if demand.feed_kind == "bars":
-            self.unsubscribe_bars(_watchlist_bar_type(instrument_id), client_id=_IB_CLIENT_ID)
             return
         raise ValueError(f"unsupported watchlist feed: {demand.feed_kind}")
 

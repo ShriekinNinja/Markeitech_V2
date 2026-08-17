@@ -24,7 +24,8 @@ persistence is ready, and then publishes only phase or trade-date transitions.
 - registers its independent native Nautilus handlers during actor startup, outside nested signal
   dispatch;
 - records event and receive timestamps in bounded memory;
-- evaluates configurable freshness thresholds; and
+- evaluates configurable cold-start and adaptive freshness thresholds;
+- learns bounded per-instrument receive-cadence profiles for eligible streams; and
 - publishes only health-state transitions.
 
 `DataAcquisitionActor` and the acquisition coordinator remain the owners of Markeitech logical
@@ -32,6 +33,8 @@ demand and its audited provider state. Each consuming actor registers its own na
 handler as Nautilus requires; the DataEngine owns routing and physical subscription sharing.
 Consumers do not publish additional Markeitech demand. Handler registration failure is isolated to
 that consumer and retried under configurable policy without delaying unrelated actors.
+Consumer actors do not issue provider teardown during actor shutdown. Acquisition owns logical
+demand release and provider cancellation; Nautilus owns local actor-handler cleanup.
 
 ## Session Configuration
 
@@ -86,6 +89,18 @@ Every transition carries instrument, calendar, feed kind, selector, subscription
 receive timestamps, evaluated age, session phase/trade date/alignment, policy version, source, and
 revision. Quote and bar thresholds are startup-configurable and validated in milliseconds.
 
+Quote silence is not treated as a universal fixed heartbeat. Adaptive profiles are isolated by
+instrument, feed, selector, provider, session phase, and policy version. Learning occurs only when
+the session and subscription are active and the previous evidence state was healthy or degrading;
+stale, unavailable, reconnecting, and closed-session intervals do not train the profile. A
+configured minimum sample count protects cold start. Effective thresholds are derived from an
+exponentially weighted interval mean and variance, then clamped to configured hard minimums and
+maximums. Five-second bars retain cadence-based fixed policy in the current configuration.
+
+SPX and VIX cash indexes currently declare bar-derived last only and use cash-session expectations.
+The SPXW option session remains separately configured for future option contracts; an extended
+option session does not imply that the cash index publishes the same underlying feed overnight.
+
 ## Persistence
 
 Session and evidence-health transitions use the existing ordered `operational_events` PostgreSQL
@@ -93,9 +108,13 @@ ledger:
 
 - `markeitech.session.state` becomes `session.state`;
 - `markeitech.evidence.health` becomes `evidence.health`.
+- `markeitech.evidence.recency_profile` becomes `evidence.recency_profile`.
 
-No new table is required because these are immutable operational facts with versioned payloads.
-Raw quotes, bars, and per-update callbacks remain transient and are not written to PostgreSQL.
+The latest compact learned profile is also upserted into `evidence_recency_profiles` for restart
+bootstrap. Checkpoints occur at configured sample intervals and graceful shutdown, never per tick.
+The immutable ledger preserves profile-change lineage while the profile table supplies current
+state. Raw quotes, bars, and per-update callbacks remain transient and are not written to
+PostgreSQL.
 
 ## Current Limits
 
@@ -103,7 +122,6 @@ Raw quotes, bars, and per-update callbacks remain transient and are not written 
   measured timing requirements justify the added mechanism.
 - The first health owner covers configured native quotes and external five-second bars only.
 - Health state is transition-oriented, not yet a queryable read model.
-- Session and health events are durable within a run; durable analytical state and restart
-  restoration belong to later stages.
+- Adaptive recency state restores across runs; it is health policy, not analytical market state.
 - Real IB acceptance is run by Markeitect. Offline coverage proves DST, holidays, early closes,
   freshness thresholds, wire contracts, composition, and persistence mapping.

@@ -6,11 +6,13 @@ from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId
 
 from markeitech.acquisition import FeedKind, FeedRequirement, NautilusSubscriptionPort
-from markeitech.intelligence.evidence import EvidencePolicy, assess_evidence
+from markeitech.intelligence.evidence import EvidencePolicy, RecencyProfile, assess_evidence
 from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
+    EVIDENCE_RECENCY_PROFILE_SIGNAL,
     SESSION_STATE_SIGNAL,
     EvidenceHealthEvent,
+    EvidenceRecencyProfileEvent,
     SessionStateEvent,
 )
 from markeitech.intelligence.session import SessionCalendar, definition_from_config
@@ -129,6 +131,9 @@ class EvidenceHealthActorConfig(DataActorConfig):
         policies: list[dict[str, object]],
         evaluation_interval_ms: int,
         consumer_retry_interval_ms: int,
+        provider_id: str,
+        profile_checkpoint_samples: int,
+        recency_profiles: list[dict[str, object]],
         actor_id: str | ActorId = "EVIDENCE-HEALTH",
     ) -> EvidenceHealthActorConfig:
         resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
@@ -137,6 +142,9 @@ class EvidenceHealthActorConfig(DataActorConfig):
         obj.policies = tuple(policies)
         obj.evaluation_interval_ms = evaluation_interval_ms
         obj.consumer_retry_interval_ms = consumer_retry_interval_ms
+        obj.provider_id = provider_id
+        obj.profile_checkpoint_samples = profile_checkpoint_samples
+        obj.recency_profiles = tuple(recency_profiles)
         return obj
 
 
@@ -162,11 +170,25 @@ class EvidenceHealthActor(DataActor):
                 fresh_for_ms=int(item["fresh_for_ms"]),
                 stale_after_ms=int(item["stale_after_ms"]),
                 unavailable_after_ms=int(item["unavailable_after_ms"]),
+                adaptive=bool(item["adaptive"]),
+                minimum_samples=int(item["minimum_samples"]),
+                decay_factor=float(item["decay_factor"]),
+                fresh_stddev_multiplier=float(item["fresh_stddev_multiplier"]),
+                stale_stddev_multiplier=float(item["stale_stddev_multiplier"]),
+                unavailable_stddev_multiplier=float(item["unavailable_stddev_multiplier"]),
+                min_fresh_ms=int(item["min_fresh_ms"]),
+                max_fresh_ms=int(item["max_fresh_ms"]),
+                min_stale_ms=int(item["min_stale_ms"]),
+                max_stale_ms=int(item["max_stale_ms"]),
+                min_unavailable_ms=int(item["min_unavailable_ms"]),
+                max_unavailable_ms=int(item["max_unavailable_ms"]),
             )
             for item in config.policies
         }
         self._interval_ns = config.evaluation_interval_ms * 1_000_000
         self._consumer_retry_interval_ns = config.consumer_retry_interval_ms * 1_000_000
+        self._provider_id = config.provider_id
+        self._profile_checkpoint_samples = config.profile_checkpoint_samples
         self._port = NautilusSubscriptionPort(self)
         self._event_ts: dict[tuple[str, str, str], int] = {}
         self._receive_ts: dict[tuple[str, str, str], int] = {}
@@ -175,6 +197,23 @@ class EvidenceHealthActor(DataActor):
         }
         self._session_by_calendar: dict[str, SessionStateEvent] = {}
         self._states: dict[tuple[str, str, str], str] = {}
+        self._profiles: dict[tuple[str, str, str, str, str, str], RecencyProfile] = {}
+        self._dirty_profiles: set[tuple[str, str, str, str, str, str]] = set()
+        for item in config.recency_profiles:
+            key = (
+                str(item["instrument_id"]),
+                str(item["feed_kind"]),
+                str(item["selector"]),
+                str(item["provider_id"]),
+                str(item["session_phase"]),
+                str(item["policy_version"]),
+            )
+            self._profiles[key] = RecencyProfile(
+                sample_count=int(item["sample_count"]),
+                mean_interval_ms=float(item["mean_interval_ms"]),
+                variance_ms2=float(item["variance_ms2"]),
+                last_observed_ns=int(item["last_observed_ns"]),
+            )
         self._revisions: defaultdict[tuple[str, str, str], int] = defaultdict(int)
         self._attached_stream_keys: set[tuple[str, str, str]] = set()
         self._attachment_failure_keys: set[tuple[str, str, str]] = set()
@@ -240,6 +279,8 @@ class EvidenceHealthActor(DataActor):
             self._observe(key, bar.ts_event)
 
     def on_stop(self) -> None:
+        for profile_key in sorted(self._dirty_profiles):
+            self._publish_profile(profile_key)
         for signal_name in (
             PERSISTENCE_READY_SIGNAL,
             ACQUISITION_STREAM_SIGNAL,
@@ -250,9 +291,6 @@ class EvidenceHealthActor(DataActor):
             self.clock.cancel_timer(_EVIDENCE_TIMER)
         if _EVIDENCE_CONSUMER_RETRY_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_EVIDENCE_CONSUMER_RETRY_TIMER)
-        for requirement in reversed(self._requirements):
-            if requirement.stream_key in self._attached_stream_keys:
-                self._port.unsubscribe(requirement)
         self.log.info(
             f"EVIDENCE_HEALTH_STOPPED | streams={len(self._requirements)}"
             f" | transitions={sum(self._revisions.values())}",
@@ -305,6 +343,8 @@ class EvidenceHealthActor(DataActor):
         receive_ts_ns = self.clock.timestamp_ns()
         if event_ts_ns < self._event_ts.get(key, -1):
             return
+        previous_receive_ts_ns = self._receive_ts.get(key)
+        self._learn_recency(key, previous_receive_ts_ns, receive_ts_ns)
         self._event_ts[key] = event_ts_ns
         self._receive_ts[key] = receive_ts_ns
         self._evaluate_key(key, receive_ts_ns)
@@ -319,11 +359,13 @@ class EvidenceHealthActor(DataActor):
         policy = self._policy_by_stream[(feed_kind, selector)]
         calendar_id = self._calendar_by_instrument[instrument_id]
         session = self._session_by_calendar.get(calendar_id)
+        profile_key = self._profile_key(key, session)
+        effective_policy = policy.effective(self._profiles.get(profile_key))
         effective_subscription_state = (
             "FAILED" if key in self._attachment_failure_keys else self._subscription_states[key]
         )
         assessment = assess_evidence(
-            policy,
+            effective_policy,
             evaluated_ts_ns=now_ns,
             receive_ts_ns=self._receive_ts.get(key),
             subscription_state=effective_subscription_state,
@@ -364,6 +406,75 @@ class EvidenceHealthActor(DataActor):
             f"EVIDENCE_HEALTH | instrument={instrument_id} | feed={feed_kind}/{selector}"
             f" | state={previous or 'UNINITIALIZED'}->{event.state}"
             f" | age_ms={event.age_ms} | session={event.session_phase or 'UNKNOWN'}"
+            f" | thresholds_ms={effective_policy.fresh_for_ms}/"
+            f"{effective_policy.stale_after_ms}/{effective_policy.unavailable_after_ms}"
             f" | reason={event.reason}",
         )
         self._states[key] = assessment.state
+
+    def _learn_recency(
+        self,
+        key: tuple[str, str, str],
+        previous_receive_ts_ns: int | None,
+        receive_ts_ns: int,
+    ) -> None:
+        instrument_id, feed_kind, selector = key
+        policy = self._policy_by_stream[(feed_kind, selector)]
+        calendar_id = self._calendar_by_instrument[instrument_id]
+        session = self._session_by_calendar.get(calendar_id)
+        if (
+            not policy.adaptive
+            or previous_receive_ts_ns is None
+            or session is None
+            or not session.is_open
+            or self._subscription_states[key] not in {"SUBSCRIBED", "ACTIVE"}
+            or self._states.get(key) not in {"HEALTHY", "DEGRADED"}
+        ):
+            return
+        profile_key = self._profile_key(key, session)
+        assert profile_key is not None
+        profile = self._profiles.setdefault(profile_key, RecencyProfile())
+        interval_ms = max(0, (receive_ts_ns - previous_receive_ts_ns) // 1_000_000)
+        profile.observe(interval_ms, receive_ts_ns, policy.decay_factor)
+        self._dirty_profiles.add(profile_key)
+        if profile.sample_count % self._profile_checkpoint_samples == 0:
+            self._publish_profile(profile_key)
+
+    def _profile_key(
+        self,
+        key: tuple[str, str, str],
+        session: SessionStateEvent | None,
+    ) -> tuple[str, str, str, str, str, str] | None:
+        if session is None:
+            return None
+        policy = self._policy_by_stream[(key[1], key[2])]
+        return (*key, self._provider_id, session.phase, policy.version)
+
+    def _publish_profile(self, key: tuple[str, str, str, str, str, str]) -> None:
+        profile = self._profiles[key]
+        instrument_id, feed_kind, selector, provider_id, session_phase, policy_version = key
+        policy = self._policy_by_stream[(feed_kind, selector)]
+        effective = policy.effective(profile)
+        assert profile.last_observed_ns is not None
+        event = EvidenceRecencyProfileEvent(
+            event_id=(
+                f"evidence-profile:{instrument_id}:{feed_kind}:{selector}:"
+                f"{provider_id}:{session_phase}:{profile.sample_count}"
+            ),
+            instrument_id=instrument_id,
+            feed_kind=feed_kind,
+            selector=selector,
+            provider_id=provider_id,
+            session_phase=session_phase,
+            policy_version=policy_version,
+            sample_count=profile.sample_count,
+            mean_interval_ms=profile.mean_interval_ms,
+            variance_ms2=profile.variance_ms2,
+            last_observed_ns=profile.last_observed_ns,
+            fresh_for_ms=effective.fresh_for_ms,
+            stale_after_ms=effective.stale_after_ms,
+            unavailable_after_ms=effective.unavailable_after_ms,
+            source=str(self.actor_id),
+        )
+        self.publish_signal(EVIDENCE_RECENCY_PROFILE_SIGNAL, event.to_signal_value())
+        self._dirty_profiles.discard(key)

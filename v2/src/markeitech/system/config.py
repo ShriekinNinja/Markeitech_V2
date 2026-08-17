@@ -90,12 +90,26 @@ class EvidencePolicyConfig:
     fresh_for_ms: int
     stale_after_ms: int
     unavailable_after_ms: int
+    adaptive: bool
+    minimum_samples: int
+    decay_factor: float
+    fresh_stddev_multiplier: float
+    stale_stddev_multiplier: float
+    unavailable_stddev_multiplier: float
+    min_fresh_ms: int
+    max_fresh_ms: int
+    min_stale_ms: int
+    max_stale_ms: int
+    min_unavailable_ms: int
+    max_unavailable_ms: int
 
 
 @dataclass(frozen=True, slots=True)
 class EvidenceHealthConfig:
     evaluation_interval_ms: int
     consumer_retry_interval_ms: int
+    provider_id: str
+    profile_checkpoint_samples: int
     policies: tuple[EvidencePolicyConfig, ...]
 
 
@@ -116,6 +130,8 @@ class PersistenceConfig:
     dsn_env: str
     connect_timeout_seconds: int
     queue_capacity: int
+    critical_queue_reserve: int
+    write_batch_size: int
     result_poll_interval_ms: int
     shutdown_timeout_seconds: int
     write_max_attempts: int
@@ -161,7 +177,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 6:
+    if raw["schema_version"] != 7:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -194,6 +210,14 @@ def load_system_config(path: str | Path) -> SystemConfig:
     if missing_policies:
         formatted = ", ".join(f"{kind}/{selector}" for kind, selector in missing_policies)
         raise ValueError(f"watchlist feeds lack evidence-health policies: {formatted}")
+    feed_count = sum(len(member.capabilities) for member in watchlist.members)
+    minimum_normal_capacity = feed_count * 4 + len(watchlist.members) * 2 + 16
+    normal_capacity = persistence.queue_capacity - persistence.critical_queue_reserve
+    if normal_capacity < minimum_normal_capacity:
+        raise ValueError(
+            "persistence normal queue capacity is below the configured startup event envelope: "
+            f"capacity={normal_capacity}, required={minimum_normal_capacity}",
+        )
     return SystemConfig(
         schema_version=raw["schema_version"],
         runtime=runtime,
@@ -316,6 +340,8 @@ def _load_persistence(raw: Any) -> PersistenceConfig:
             "dsn_env",
             "connect_timeout_seconds",
             "queue_capacity",
+            "critical_queue_reserve",
+            "write_batch_size",
             "result_poll_interval_ms",
             "shutdown_timeout_seconds",
             "write_max_attempts",
@@ -323,13 +349,28 @@ def _load_persistence(raw: Any) -> PersistenceConfig:
         },
         "persistence",
     )
+    queue_capacity = _positive_int(values["queue_capacity"], "persistence.queue_capacity")
+    critical_queue_reserve = _non_negative_int(
+        values["critical_queue_reserve"],
+        "persistence.critical_queue_reserve",
+    )
+    write_batch_size = _positive_int(
+        values["write_batch_size"],
+        "persistence.write_batch_size",
+    )
+    if critical_queue_reserve >= queue_capacity:
+        raise ValueError("persistence.critical_queue_reserve must be smaller than queue_capacity")
+    if write_batch_size > queue_capacity:
+        raise ValueError("persistence.write_batch_size must not exceed queue_capacity")
     return PersistenceConfig(
         dsn_env=_non_empty_string(values["dsn_env"], "persistence.dsn_env"),
         connect_timeout_seconds=_positive_int(
             values["connect_timeout_seconds"],
             "persistence.connect_timeout_seconds",
         ),
-        queue_capacity=_positive_int(values["queue_capacity"], "persistence.queue_capacity"),
+        queue_capacity=queue_capacity,
+        critical_queue_reserve=critical_queue_reserve,
+        write_batch_size=write_batch_size,
         result_poll_interval_ms=_positive_int(
             values["result_poll_interval_ms"],
             "persistence.result_poll_interval_ms",
@@ -377,11 +418,12 @@ def _load_watchlist(raw: Any) -> WatchlistConfig:
             member["capabilities"],
             f"{label}.capabilities",
         )
-        required_capabilities = {"top_of_book", "watchlist_last"}
-        if set(capabilities) != required_capabilities:
+        supported_capabilities = {"top_of_book", "watchlist_last"}
+        unknown_capabilities = set(capabilities) - supported_capabilities
+        if unknown_capabilities:
             raise ValueError(
-                f"{label}.capabilities must contain exactly: "
-                f"{', '.join(sorted(required_capabilities))}",
+                f"{label}.capabilities contains unsupported values: "
+                f"{', '.join(sorted(unknown_capabilities))}",
             )
         members.append(
             WatchlistMemberConfig(
@@ -530,7 +572,13 @@ def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
     values = _mapping(raw, "evidence_health")
     _require_keys(
         values,
-        {"evaluation_interval_ms", "consumer_retry_interval_ms", "policies"},
+        {
+            "evaluation_interval_ms",
+            "consumer_retry_interval_ms",
+            "provider_id",
+            "profile_checkpoint_samples",
+            "policies",
+        },
         "evidence_health",
     )
     policies_raw = values["policies"]
@@ -549,6 +597,18 @@ def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
                 "fresh_for_ms",
                 "stale_after_ms",
                 "unavailable_after_ms",
+                "adaptive",
+                "minimum_samples",
+                "decay_factor",
+                "fresh_stddev_multiplier",
+                "stale_stddev_multiplier",
+                "unavailable_stddev_multiplier",
+                "min_fresh_ms",
+                "max_fresh_ms",
+                "min_stale_ms",
+                "max_stale_ms",
+                "min_unavailable_ms",
+                "max_unavailable_ms",
             },
             label,
         )
@@ -571,6 +631,42 @@ def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
                 f"{label} thresholds must satisfy fresh_for_ms < stale_after_ms"
                 " < unavailable_after_ms",
             )
+        minimums = (
+            _positive_int(policy["min_fresh_ms"], f"{label}.min_fresh_ms"),
+            _positive_int(policy["min_stale_ms"], f"{label}.min_stale_ms"),
+            _positive_int(policy["min_unavailable_ms"], f"{label}.min_unavailable_ms"),
+        )
+        maximums = (
+            _positive_int(policy["max_fresh_ms"], f"{label}.max_fresh_ms"),
+            _positive_int(policy["max_stale_ms"], f"{label}.max_stale_ms"),
+            _positive_int(
+                policy["max_unavailable_ms"],
+                f"{label}.max_unavailable_ms",
+            ),
+        )
+        if not minimums[0] < minimums[1] < minimums[2]:
+            raise ValueError(f"{label} minimum adaptive thresholds must be increasing")
+        if not maximums[0] < maximums[1] < maximums[2]:
+            raise ValueError(f"{label} maximum adaptive thresholds must be increasing")
+        if any(minimum > maximum for minimum, maximum in zip(minimums, maximums, strict=True)):
+            raise ValueError(f"{label} adaptive threshold minimum exceeds maximum")
+        decay_factor = _unit_float(policy["decay_factor"], f"{label}.decay_factor")
+        multipliers = (
+            _positive_float(
+                policy["fresh_stddev_multiplier"],
+                f"{label}.fresh_stddev_multiplier",
+            ),
+            _positive_float(
+                policy["stale_stddev_multiplier"],
+                f"{label}.stale_stddev_multiplier",
+            ),
+            _positive_float(
+                policy["unavailable_stddev_multiplier"],
+                f"{label}.unavailable_stddev_multiplier",
+            ),
+        )
+        if not multipliers[0] < multipliers[1] < multipliers[2]:
+            raise ValueError(f"{label} adaptive standard-deviation multipliers must increase")
         policies.append(
             EvidencePolicyConfig(
                 feed_kind=feed_kind,
@@ -578,6 +674,21 @@ def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
                 fresh_for_ms=fresh,
                 stale_after_ms=stale,
                 unavailable_after_ms=unavailable,
+                adaptive=_bool(policy["adaptive"], f"{label}.adaptive"),
+                minimum_samples=_positive_int(
+                    policy["minimum_samples"],
+                    f"{label}.minimum_samples",
+                ),
+                decay_factor=decay_factor,
+                fresh_stddev_multiplier=multipliers[0],
+                stale_stddev_multiplier=multipliers[1],
+                unavailable_stddev_multiplier=multipliers[2],
+                min_fresh_ms=minimums[0],
+                max_fresh_ms=maximums[0],
+                min_stale_ms=minimums[1],
+                max_stale_ms=maximums[1],
+                min_unavailable_ms=minimums[2],
+                max_unavailable_ms=maximums[2],
             ),
         )
     return EvidenceHealthConfig(
@@ -588,6 +699,11 @@ def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
         consumer_retry_interval_ms=_positive_int(
             values["consumer_retry_interval_ms"],
             "evidence_health.consumer_retry_interval_ms",
+        ),
+        provider_id=_non_empty_string(values["provider_id"], "evidence_health.provider_id"),
+        profile_checkpoint_samples=_positive_int(
+            values["profile_checkpoint_samples"],
+            "evidence_health.profile_checkpoint_samples",
         ),
         policies=tuple(policies),
     )
@@ -638,6 +754,19 @@ def _non_empty_string(value: Any, label: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{label} must be a non-empty string")
     return value.strip()
+
+
+def _positive_float(value: Any, label: str) -> float:
+    if not isinstance(value, int | float) or isinstance(value, bool) or value <= 0:
+        raise ValueError(f"{label} must be a positive number")
+    return float(value)
+
+
+def _unit_float(value: Any, label: str) -> float:
+    result = _positive_float(value, label)
+    if result >= 1:
+        raise ValueError(f"{label} must be less than 1")
+    return result
 
 
 def _unique_non_empty_strings(value: Any, label: str) -> tuple[str, ...]:

@@ -53,6 +53,7 @@ class SystemControlActor(DataActor):
         self._persistence_preflight_ready = config.operational_persistence_ready
         self._persistence_ready = False
         self._startup_released = False
+        self._unresolved_component_failure = False
         self._component_failures_received = 0
         self._malformed_failure_reports = 0
         self._acquisition_statuses_received = 0
@@ -114,11 +115,11 @@ class SystemControlActor(DataActor):
         except ValueError as exc:
             self._malformed_failure_reports += 1
             self.log.error(
-                "COMPONENT_FAILURE_REJECTED"
-                f" | reason=invalid_event | error={type(exc).__name__}",
+                f"COMPONENT_FAILURE_REJECTED | reason=invalid_event | error={type(exc).__name__}",
             )
             return
         target = component_failure_target(failure, self._health.state)
+        self._unresolved_component_failure = True
         self._publish_transition(
             target,
             reason=failure.reason,
@@ -186,11 +187,12 @@ class SystemControlActor(DataActor):
         if self._evaluation_started:
             return
         self._evaluation_started = True
-        self._publish_transition(
-            SystemHealthState.STARTING,
-            reason="evaluating runtime prerequisites",
-            evidence=self._instrument_evidence(),
-        )
+        if self._health.state is None:
+            self._publish_transition(
+                SystemHealthState.STARTING,
+                reason="evaluating runtime prerequisites",
+                evidence=self._instrument_evidence(),
+            )
         self.publish_signal(
             ACQUISITION_STATUS_REQUEST_SIGNAL,
             AcquisitionStatusRequest(requester=str(self.actor_id)).to_signal_value(),
@@ -202,6 +204,7 @@ class SystemControlActor(DataActor):
             not self._evaluation_started
             or not self._persistence_ready
             or self._available != self._expected
+            or self._unresolved_component_failure
         ):
             return
         self._publish_transition(

@@ -18,8 +18,10 @@ from psycopg.types.json import Jsonb
 
 from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
+    EVIDENCE_RECENCY_PROFILE_SIGNAL,
     SESSION_STATE_SIGNAL,
     EvidenceHealthEvent,
+    EvidenceRecencyProfileEvent,
     SessionStateEvent,
 )
 from markeitech.system.messages import (
@@ -164,8 +166,8 @@ class StoredOperationalEvent:
 type PersistedRecord = HealthEventRecord | OperationalEventRecord
 
 
-class EventWriter(Protocol):
-    def __call__(self, record: PersistedRecord) -> None: ...
+class BatchEventWriter(Protocol):
+    def __call__(self, records: tuple[PersistedRecord, ...]) -> None: ...
 
 
 class OperationalStore:
@@ -269,35 +271,60 @@ class OperationalStore:
                 raise RuntimeError(f"runtime run could not be closed exactly once: {run_id}")
 
     def write_health_event(self, record: HealthEventRecord) -> None:
+        self.write_records((record,))
+
+    def write_operational_event(self, record: OperationalEventRecord) -> None:
+        self.write_records((record,))
+
+    def write_records(self, records: tuple[PersistedRecord, ...]) -> None:
+        if not records:
+            return
+        recorded_at_ns = time_ns()
+        with self._connect() as connection, connection.cursor() as cursor:
+            for record in records:
+                if isinstance(record, HealthEventRecord):
+                    self._write_health_event(cursor, record, recorded_at_ns)
+                else:
+                    self._write_operational_event(cursor, record, recorded_at_ns)
+
+    @staticmethod
+    def _write_health_event(
+        cursor: psycopg.Cursor[object],
+        record: HealthEventRecord,
+        recorded_at_ns: int,
+    ) -> None:
         event = record.event
-        with self._connect() as connection:
-            connection.execute(
-                """
+        cursor.execute(
+            """
                 INSERT INTO system_health_events (
                     run_id, sequence, signal_name, state, reason, source, evidence_json,
                     ts_event_ns, ts_init_ns, recorded_at_ns, schema_version
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (run_id, sequence) DO NOTHING
                 """,
-                (
-                    record.run_id,
-                    record.sequence,
-                    SYSTEM_HEALTH_SIGNAL,
-                    event.state,
-                    event.reason,
-                    event.source,
-                    Jsonb(dict(event.evidence)),
-                    record.ts_event_ns,
-                    record.ts_init_ns,
-                    time_ns(),
-                    event.schema_version,
-                ),
-            )
+            (
+                record.run_id,
+                record.sequence,
+                SYSTEM_HEALTH_SIGNAL,
+                event.state,
+                event.reason,
+                event.source,
+                Jsonb(dict(event.evidence)),
+                record.ts_event_ns,
+                record.ts_init_ns,
+                recorded_at_ns,
+                event.schema_version,
+            ),
+        )
 
-    def write_operational_event(self, record: OperationalEventRecord) -> None:
-        with self._connect() as connection:
-            cursor = connection.execute(
-                """
+    @staticmethod
+    def _write_operational_event(
+        cursor: psycopg.Cursor[object],
+        record: OperationalEventRecord,
+        recorded_at_ns: int,
+    ) -> None:
+        cursor.execute(
+            """
                 INSERT INTO operational_events (
                     event_id, run_id, sequence, signal_name, event_type, source,
                     correlation_id, causation_id, payload_json, ts_event_ns, ts_init_ns,
@@ -305,38 +332,98 @@ class OperationalStore:
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (run_id, event_id) DO NOTHING
                 """,
-                (
-                    record.event_id,
-                    record.run_id,
-                    record.sequence,
-                    record.signal_name,
-                    record.event_type,
-                    record.source,
-                    record.correlation_id,
-                    record.causation_id,
-                    Jsonb(dict(record.payload)),
-                    record.ts_event_ns,
-                    record.ts_init_ns,
-                    time_ns(),
-                    record.schema_version,
-                ),
-            )
-            if cursor.rowcount == 1:
-                return
-            existing = connection.execute(
-                """
+            (
+                record.event_id,
+                record.run_id,
+                record.sequence,
+                record.signal_name,
+                record.event_type,
+                record.source,
+                record.correlation_id,
+                record.causation_id,
+                Jsonb(dict(record.payload)),
+                record.ts_event_ns,
+                record.ts_init_ns,
+                recorded_at_ns,
+                record.schema_version,
+            ),
+        )
+        if cursor.rowcount == 1:
+            if record.event_type == "evidence.recency_profile":
+                OperationalStore._upsert_evidence_recency_profile(
+                    cursor,
+                    record,
+                    recorded_at_ns,
+                )
+            return
+        cursor.execute(
+            """
                 SELECT run_id, sequence, signal_name, event_type, source,
                        correlation_id, causation_id, payload_json, ts_event_ns,
                        ts_init_ns, schema_version
                 FROM operational_events
                 WHERE run_id = %s AND event_id = %s
                 """,
-                (record.run_id, record.event_id),
-            ).fetchone()
-            if existing != _operational_identity(record):
-                raise RuntimeError(
-                    f"operational event identity collision: {record.event_id}",
-                )
+            (record.run_id, record.event_id),
+        )
+        existing = cursor.fetchone()
+        if existing != _operational_identity(record):
+            raise RuntimeError(
+                f"operational event identity collision: {record.event_id}",
+            )
+
+    @staticmethod
+    def _upsert_evidence_recency_profile(
+        cursor: psycopg.Cursor[object],
+        record: OperationalEventRecord,
+        updated_at_ns: int,
+    ) -> None:
+        payload = record.payload
+        cursor.execute(
+            """
+            INSERT INTO evidence_recency_profiles (
+                instrument_id, feed_kind, selector, provider_id, session_phase,
+                policy_version, sample_count, mean_interval_ms, variance_ms2,
+                last_observed_ns, fresh_for_ms, stale_after_ms,
+                unavailable_after_ms, source_run_id, updated_at_ns, schema_version
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            )
+            ON CONFLICT (
+                instrument_id, feed_kind, selector, provider_id,
+                session_phase, policy_version
+            ) DO UPDATE SET
+                sample_count = EXCLUDED.sample_count,
+                mean_interval_ms = EXCLUDED.mean_interval_ms,
+                variance_ms2 = EXCLUDED.variance_ms2,
+                last_observed_ns = EXCLUDED.last_observed_ns,
+                fresh_for_ms = EXCLUDED.fresh_for_ms,
+                stale_after_ms = EXCLUDED.stale_after_ms,
+                unavailable_after_ms = EXCLUDED.unavailable_after_ms,
+                source_run_id = EXCLUDED.source_run_id,
+                updated_at_ns = EXCLUDED.updated_at_ns,
+                schema_version = EXCLUDED.schema_version
+            WHERE EXCLUDED.sample_count >= evidence_recency_profiles.sample_count
+            """,
+            (
+                payload["instrument_id"],
+                payload["feed_kind"],
+                payload["selector"],
+                payload["provider_id"],
+                payload["session_phase"],
+                payload["policy_version"],
+                payload["sample_count"],
+                payload["mean_interval_ms"],
+                payload["variance_ms2"],
+                payload["last_observed_ns"],
+                payload["fresh_for_ms"],
+                payload["stale_after_ms"],
+                payload["unavailable_after_ms"],
+                record.run_id,
+                updated_at_ns,
+                record.schema_version,
+            ),
+        )
 
     def load_run(self, run_id: UUID) -> RuntimeRunRecord | None:
         with self._connect() as connection:
@@ -415,6 +502,40 @@ class OperationalStore:
             for row in rows
         )
 
+    def load_evidence_recency_profiles(
+        self,
+        provider_id: str,
+    ) -> tuple[dict[str, object], ...]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT instrument_id, feed_kind, selector, provider_id, session_phase,
+                       policy_version, sample_count, mean_interval_ms, variance_ms2,
+                       last_observed_ns, fresh_for_ms, stale_after_ms,
+                       unavailable_after_ms
+                FROM evidence_recency_profiles
+                WHERE provider_id = %s
+                ORDER BY instrument_id, feed_kind, selector, session_phase, policy_version
+                """,
+                (provider_id,),
+            ).fetchall()
+        fields = (
+            "instrument_id",
+            "feed_kind",
+            "selector",
+            "provider_id",
+            "session_phase",
+            "policy_version",
+            "sample_count",
+            "mean_interval_ms",
+            "variance_ms2",
+            "last_observed_ns",
+            "fresh_for_ms",
+            "stale_after_ms",
+            "unavailable_after_ms",
+        )
+        return tuple(dict(zip(fields, row, strict=True)) for row in rows)
+
     def _connect(self):  # noqa: ANN202
         return psycopg.connect(
             self._dsn,
@@ -441,13 +562,17 @@ def _operational_identity(record: OperationalEventRecord) -> tuple[object, ...]:
 class PersistenceWorker:
     def __init__(
         self,
-        writer: EventWriter,
+        writer: BatchEventWriter,
         queue_capacity: int,
+        critical_queue_reserve: int,
+        write_batch_size: int,
         shutdown_timeout_seconds: int,
         write_max_attempts: int,
         write_retry_backoff_ms: int,
     ) -> None:
         self._writer = writer
+        self._normal_capacity = queue_capacity - critical_queue_reserve
+        self._write_batch_size = write_batch_size
         self._shutdown_timeout_seconds = shutdown_timeout_seconds
         self._write_max_attempts = write_max_attempts
         self._write_retry_backoff_seconds = write_retry_backoff_ms / 1_000
@@ -470,8 +595,11 @@ class PersistenceWorker:
     def start(self) -> None:
         self._thread.start()
 
-    def submit(self, record: PersistedRecord) -> bool:
+    def submit(self, record: PersistedRecord, *, critical: bool = False) -> bool:
         if self._closed:
+            self._increment("_rejected")
+            return False
+        if not critical and self._pending.qsize() >= self._normal_capacity:
             self._increment("_rejected")
             return False
         try:
@@ -507,48 +635,65 @@ class PersistenceWorker:
     def _run(self) -> None:
         while True:
             item = self._pending.get()
-            try:
-                if item is _STOP:
-                    return
-                assert isinstance(item, HealthEventRecord | OperationalEventRecord)
-                self._write_with_retries(item)
-            finally:
+            if item is _STOP:
                 self._pending.task_done()
+                return
+            assert isinstance(item, HealthEventRecord | OperationalEventRecord)
+            records = [item]
+            stop_after_batch = False
+            while len(records) < self._write_batch_size:
+                try:
+                    candidate = self._pending.get_nowait()
+                except Empty:
+                    break
+                if candidate is _STOP:
+                    self._pending.task_done()
+                    stop_after_batch = True
+                    break
+                assert isinstance(candidate, HealthEventRecord | OperationalEventRecord)
+                records.append(candidate)
+            self._write_with_retries(tuple(records))
+            for _ in records:
+                self._pending.task_done()
+            if stop_after_batch:
+                return
 
-    def _write_with_retries(self, record: PersistedRecord) -> None:
+    def _write_with_retries(self, records: tuple[PersistedRecord, ...]) -> None:
         for attempt in range(1, self._write_max_attempts + 1):
             try:
-                self._writer(record)
+                self._writer(records)
             except Exception as exc:
                 if attempt < self._write_max_attempts:
                     self._increment("_retry_attempts")
                     sleep(self._write_retry_backoff_seconds)
                     continue
-                self._increment("_failed")
+                self._increment("_failed", len(records))
+                for record in records:
+                    self.results.put(
+                        PersistenceResult(
+                            sequence=record.sequence,
+                            state=_record_state(record),
+                            stored=False,
+                            attempts=attempt,
+                            error_code=type(exc).__name__,
+                        ),
+                    )
+                return
+            self._increment("_stored", len(records))
+            for record in records:
                 self.results.put(
                     PersistenceResult(
                         sequence=record.sequence,
                         state=_record_state(record),
-                        stored=False,
+                        stored=True,
                         attempts=attempt,
-                        error_code=type(exc).__name__,
                     ),
                 )
-                return
-            self._increment("_stored")
-            self.results.put(
-                PersistenceResult(
-                    sequence=record.sequence,
-                    state=_record_state(record),
-                    stored=True,
-                    attempts=attempt,
-                ),
-            )
             return
 
-    def _increment(self, field_name: str) -> None:
+    def _increment(self, field_name: str, amount: int = 1) -> None:
         with self._counter_lock:
-            setattr(self, field_name, getattr(self, field_name) + 1)
+            setattr(self, field_name, getattr(self, field_name) + amount)
 
 
 class OperationalPersistenceActorConfig(DataActorConfig):
@@ -558,6 +703,8 @@ class OperationalPersistenceActorConfig(DataActorConfig):
         dsn_env: str,
         connect_timeout_seconds: int,
         queue_capacity: int,
+        critical_queue_reserve: int,
+        write_batch_size: int,
         result_poll_interval_ms: int,
         shutdown_timeout_seconds: int,
         write_max_attempts: int,
@@ -572,6 +719,8 @@ class OperationalPersistenceActorConfig(DataActorConfig):
         obj.dsn_env = dsn_env
         obj.connect_timeout_seconds = connect_timeout_seconds
         obj.queue_capacity = queue_capacity
+        obj.critical_queue_reserve = critical_queue_reserve
+        obj.write_batch_size = write_batch_size
         obj.result_poll_interval_ms = result_poll_interval_ms
         obj.shutdown_timeout_seconds = shutdown_timeout_seconds
         obj.write_max_attempts = write_max_attempts
@@ -586,6 +735,8 @@ class OperationalPersistenceActor(DataActor):
         self._dsn_env = config.dsn_env
         self._connect_timeout_seconds = config.connect_timeout_seconds
         self._queue_capacity = config.queue_capacity
+        self._critical_queue_reserve = config.critical_queue_reserve
+        self._write_batch_size = config.write_batch_size
         self._shutdown_timeout_seconds = config.shutdown_timeout_seconds
         self._write_max_attempts = config.write_max_attempts
         self._write_retry_backoff_ms = config.write_retry_backoff_ms
@@ -594,6 +745,7 @@ class OperationalPersistenceActor(DataActor):
         self._sequence = 0
         self._subscribed_signals: set[str] = set()
         self._failure_published = False
+        self._reported_failures: set[tuple[str, str]] = set()
 
     def on_start(self) -> None:
         try:
@@ -606,8 +758,10 @@ class OperationalPersistenceActor(DataActor):
             self._report_failure("runtime_connection_failed", type(exc).__name__)
             raise
         self._worker = PersistenceWorker(
-            lambda record: _write_record(store, record),
+            store.write_records,
             self._queue_capacity,
+            self._critical_queue_reserve,
+            self._write_batch_size,
             self._shutdown_timeout_seconds,
             self._write_max_attempts,
             self._write_retry_backoff_ms,
@@ -624,6 +778,7 @@ class OperationalPersistenceActor(DataActor):
             WATCHLIST_LIFECYCLE_SIGNAL,
             SESSION_STATE_SIGNAL,
             EVIDENCE_HEALTH_SIGNAL,
+            EVIDENCE_RECENCY_PROFILE_SIGNAL,
             PERSISTENCE_READY_REQUEST_SIGNAL,
         ):
             self.subscribe_signal(signal_name)
@@ -657,7 +812,7 @@ class OperationalPersistenceActor(DataActor):
         except ValueError as exc:
             self._report_failure("invalid_operational_event", type(exc).__name__)
             return
-        if not self._worker.submit(record):
+        if not self._worker.submit(record, critical=_is_critical_record(record)):
             stats = self._worker.snapshot()
             self._report_failure(
                 "persistence_admission_rejected",
@@ -726,9 +881,12 @@ class OperationalPersistenceActor(DataActor):
         *,
         evidence: dict[str, str | int | float | bool | None] | None = None,
     ) -> None:
-        self.log.error(
-            f"OPERATIONAL_PERSISTENCE_FAILED | reason={reason} | error={error_code}",
-        )
+        identity = (reason, error_code)
+        if identity not in self._reported_failures:
+            self._reported_failures.add(identity)
+            self.log.error(
+                f"OPERATIONAL_PERSISTENCE_FAILED | reason={reason} | error={error_code}",
+            )
         if self._failure_published:
             return
         self._failure_published = True
@@ -767,6 +925,12 @@ def _write_record(store: OperationalStore, record: PersistedRecord) -> None:
         store.write_health_event(record)
         return
     store.write_operational_event(record)
+
+
+def _is_critical_record(record: PersistedRecord) -> bool:
+    return isinstance(record, HealthEventRecord) or (
+        isinstance(record, OperationalEventRecord) and record.event_type == "component.failure"
+    )
 
 
 def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> PersistedRecord:
@@ -889,6 +1053,25 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             event_type="evidence.health",
             source=event.source,
             correlation_id=(f"evidence:{event.instrument_id}:{event.feed_kind}:{event.selector}"),
+            causation_id=None,
+            payload=json.loads(signal.value),
+            ts_event_ns=signal.ts_event,
+            ts_init_ns=signal.ts_init,
+            schema_version=event.schema_version,
+        )
+    if signal.name == EVIDENCE_RECENCY_PROFILE_SIGNAL:
+        event = EvidenceRecencyProfileEvent.from_signal_value(signal.value)
+        return OperationalEventRecord(
+            event_id=event.event_id,
+            run_id=run_id,
+            sequence=sequence,
+            signal_name=signal.name,
+            event_type="evidence.recency_profile",
+            source=event.source,
+            correlation_id=(
+                f"evidence-profile:{event.instrument_id}:{event.feed_kind}:"
+                f"{event.selector}:{event.provider_id}:{event.session_phase}"
+            ),
             causation_id=None,
             payload=json.loads(signal.value),
             ts_event_ns=signal.ts_event,

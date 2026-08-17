@@ -7,6 +7,8 @@ SESSION_STATE_SIGNAL = "markeitech.session.state"
 SESSION_STATE_SCHEMA_VERSION = 1
 EVIDENCE_HEALTH_SIGNAL = "markeitech.evidence.health"
 EVIDENCE_HEALTH_SCHEMA_VERSION = 1
+EVIDENCE_RECENCY_PROFILE_SIGNAL = "markeitech.evidence.recency_profile"
+EVIDENCE_RECENCY_PROFILE_SCHEMA_VERSION = 1
 
 EVIDENCE_STATES = {
     "NOT_EVALUATED",
@@ -125,6 +127,57 @@ class EvidenceHealthEvent:
 
     @classmethod
     def from_signal_value(cls, value: str) -> EvidenceHealthEvent:
+        return cls(**_payload(value, set(cls.__dataclass_fields__)))
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceRecencyProfileEvent:
+    event_id: str
+    instrument_id: str
+    feed_kind: str
+    selector: str
+    provider_id: str
+    session_phase: str
+    policy_version: str
+    sample_count: int
+    mean_interval_ms: float
+    variance_ms2: float
+    last_observed_ns: int
+    fresh_for_ms: int
+    stale_after_ms: int
+    unavailable_after_ms: int
+    source: str
+    schema_version: int = EVIDENCE_RECENCY_PROFILE_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _schema(
+            self.schema_version,
+            EVIDENCE_RECENCY_PROFILE_SCHEMA_VERSION,
+            "evidence recency profile",
+        )
+        for field in (
+            "event_id",
+            "instrument_id",
+            "feed_kind",
+            "selector",
+            "provider_id",
+            "session_phase",
+            "policy_version",
+            "source",
+        ):
+            _text(getattr(self, field), field)
+        _positive(self.sample_count, "sample_count")
+        _optional_ns(self.last_observed_ns, "last_observed_ns", optional=False)
+        if self.mean_interval_ms < 0 or self.variance_ms2 < 0:
+            raise ValueError("recency profile statistics must be non-negative")
+        if not 0 < self.fresh_for_ms < self.stale_after_ms < self.unavailable_after_ms:
+            raise ValueError("recency profile thresholds must be positive and increasing")
+
+    def to_signal_value(self) -> str:
+        return json.dumps(asdict(self), separators=(",", ":"), sort_keys=True)
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> EvidenceRecencyProfileEvent:
         return cls(**_payload(value, set(cls.__dataclass_fields__)))
 
 

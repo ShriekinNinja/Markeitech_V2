@@ -39,6 +39,7 @@ def _watchlist_feeds(config: SystemConfig) -> list[dict[str, str]]:
 class StartupPrerequisites:
     run_id: UUID
     operational_persistence_ready: bool
+    evidence_recency_profiles: tuple[dict[str, object], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,6 +124,11 @@ def build_actor_plan(
                     "consumer_retry_interval_ms": (
                         config.evidence_health.consumer_retry_interval_ms
                     ),
+                    "provider_id": config.evidence_health.provider_id,
+                    "profile_checkpoint_samples": (
+                        config.evidence_health.profile_checkpoint_samples
+                    ),
+                    "recency_profiles": list(prerequisites.evidence_recency_profiles),
                     "policies": [
                         {
                             "feed_kind": policy.feed_kind,
@@ -130,6 +136,18 @@ def build_actor_plan(
                             "fresh_for_ms": policy.fresh_for_ms,
                             "stale_after_ms": policy.stale_after_ms,
                             "unavailable_after_ms": policy.unavailable_after_ms,
+                            "adaptive": policy.adaptive,
+                            "minimum_samples": policy.minimum_samples,
+                            "decay_factor": policy.decay_factor,
+                            "fresh_stddev_multiplier": policy.fresh_stddev_multiplier,
+                            "stale_stddev_multiplier": policy.stale_stddev_multiplier,
+                            "unavailable_stddev_multiplier": (policy.unavailable_stddev_multiplier),
+                            "min_fresh_ms": policy.min_fresh_ms,
+                            "max_fresh_ms": policy.max_fresh_ms,
+                            "min_stale_ms": policy.min_stale_ms,
+                            "max_stale_ms": policy.max_stale_ms,
+                            "min_unavailable_ms": policy.min_unavailable_ms,
+                            "max_unavailable_ms": policy.max_unavailable_ms,
                         }
                         for policy in config.evidence_health.policies
                     ],
@@ -219,6 +237,8 @@ def build_actor_plan(
                     "dsn_env": config.persistence.dsn_env,
                     "connect_timeout_seconds": config.persistence.connect_timeout_seconds,
                     "queue_capacity": config.persistence.queue_capacity,
+                    "critical_queue_reserve": config.persistence.critical_queue_reserve,
+                    "write_batch_size": config.persistence.write_batch_size,
                     "result_poll_interval_ms": config.persistence.result_poll_interval_ms,
                     "shutdown_timeout_seconds": config.persistence.shutdown_timeout_seconds,
                     "write_max_attempts": config.persistence.write_max_attempts,

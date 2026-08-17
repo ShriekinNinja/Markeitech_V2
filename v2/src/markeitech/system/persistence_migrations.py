@@ -78,6 +78,37 @@ MIGRATIONS = (
                 WHERE correlation_id IS NOT NULL;
         """,
     ),
+    Migration(
+        version=3,
+        name="evidence_recency_profiles",
+        sql="""
+            CREATE TABLE IF NOT EXISTS evidence_recency_profiles (
+                instrument_id TEXT NOT NULL,
+                feed_kind TEXT NOT NULL,
+                selector TEXT NOT NULL,
+                provider_id TEXT NOT NULL,
+                session_phase TEXT NOT NULL,
+                policy_version TEXT NOT NULL,
+                sample_count BIGINT NOT NULL,
+                mean_interval_ms DOUBLE PRECISION NOT NULL,
+                variance_ms2 DOUBLE PRECISION NOT NULL,
+                last_observed_ns BIGINT NOT NULL,
+                fresh_for_ms BIGINT NOT NULL,
+                stale_after_ms BIGINT NOT NULL,
+                unavailable_after_ms BIGINT NOT NULL,
+                source_run_id UUID NOT NULL REFERENCES runtime_runs(run_id),
+                updated_at_ns BIGINT NOT NULL,
+                schema_version INTEGER NOT NULL,
+                PRIMARY KEY (
+                    instrument_id, feed_kind, selector, provider_id,
+                    session_phase, policy_version
+                )
+            );
+
+            CREATE INDEX IF NOT EXISTS evidence_recency_profiles_updated_idx
+                ON evidence_recency_profiles (updated_at_ns);
+        """,
+    ),
 )
 
 REQUIRED_SCHEMA_COLUMNS = {
@@ -122,6 +153,26 @@ REQUIRED_SCHEMA_COLUMNS = {
             "ts_event_ns",
             "ts_init_ns",
             "recorded_at_ns",
+            "schema_version",
+        },
+    ),
+    "evidence_recency_profiles": frozenset(
+        {
+            "instrument_id",
+            "feed_kind",
+            "selector",
+            "provider_id",
+            "session_phase",
+            "policy_version",
+            "sample_count",
+            "mean_interval_ms",
+            "variance_ms2",
+            "last_observed_ns",
+            "fresh_for_ms",
+            "stale_after_ms",
+            "unavailable_after_ms",
+            "source_run_id",
+            "updated_at_ns",
             "schema_version",
         },
     ),
