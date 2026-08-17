@@ -1,0 +1,97 @@
+name: Markeitech V2 CI
+
+on:
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v2-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.8.15"
+
+jobs:
+  lint:
+    name: V2 Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: v2/uv.lock
+      - name: Install locked V2 environment
+        run: uv sync --project v2 --locked --dev
+      - name: Run Ruff
+        run: uv run --project v2 ruff check v2/src v2/tests
+
+  offline-tests:
+    name: V2 Offline Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: v2/uv.lock
+      - name: Install locked V2 environment
+        run: uv sync --project v2 --locked --dev
+      - name: Run offline V2 tests
+        run: uv run --project v2 pytest -q v2/tests -m "not postgres"
+
+  postgres-tests:
+    name: V2 PostgreSQL Integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: markeitech_ci
+          POSTGRES_USER: markeitech_ci
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U markeitech_ci -d markeitech_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      MARKEITECH_TEST_POSTGRES_DSN: postgresql://markeitech_ci:ci-only-password@127.0.0.1:5432/markeitech_ci
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: v2/uv.lock
+      - name: Install locked V2 environment
+        run: uv sync --project v2 --locked --dev
+      - name: Run PostgreSQL integration tests
+        run: uv run --project v2 pytest -q v2/tests -m postgres
