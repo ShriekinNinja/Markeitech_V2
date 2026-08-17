@@ -5,6 +5,9 @@ from pathlib import Path
 from unittest.mock import Mock
 
 from markeitech.system.cli import V2_ROOT, _start_caffeinate, main
+from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
+
+POSTGRES_DSN_ENV = "MARKEITECH_POSTGRES_DSN"
 
 
 def test_default_env_file_is_owned_by_v2() -> None:
@@ -39,10 +42,14 @@ def test_caffeinate_tracks_the_system_process(monkeypatch) -> None:
     popen.assert_called_once_with(["/usr/bin/caffeinate", "-dimsu", "-w", "1234"])
 
 
-def test_clean_connected_run_is_closed_only_after_node_returns(monkeypatch) -> None:
+def test_clean_connected_run_is_closed_only_after_node_returns(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
     store = Mock()
     node = Mock()
     sequence: list[str] = []
+    _set_synthetic_runtime_environment(monkeypatch)
     store.start_run.side_effect = lambda *_args: sequence.append("start")
     store.load_evidence_recency_profiles.return_value = ()
     node.run.side_effect = lambda: sequence.append("run")
@@ -56,6 +63,8 @@ def test_clean_connected_run_is_closed_only_after_node_returns(monkeypatch) -> N
     result = main(
         [
             str(V2_ROOT / "config/system.toml"),
+            "--env-file",
+            str(tmp_path / "missing.env"),
             "--connect",
             "I_UNDERSTAND_THIS_CONNECTS_TO_IB",
         ],
@@ -70,9 +79,10 @@ def test_clean_connected_run_is_closed_only_after_node_returns(monkeypatch) -> N
     )
 
 
-def test_unclean_connected_run_remains_open(monkeypatch) -> None:
+def test_unclean_connected_run_remains_open(tmp_path: Path, monkeypatch) -> None:
     store = Mock()
     node = Mock()
+    _set_synthetic_runtime_environment(monkeypatch)
     store.load_evidence_recency_profiles.return_value = ()
     node.run.side_effect = RuntimeError("node failed")
     monkeypatch.setattr(
@@ -85,6 +95,8 @@ def test_unclean_connected_run_remains_open(monkeypatch) -> None:
         main(
             [
                 str(V2_ROOT / "config/system.toml"),
+                "--env-file",
+                str(tmp_path / "missing.env"),
                 "--connect",
                 "I_UNDERSTAND_THIS_CONNECTS_TO_IB",
             ],
@@ -95,3 +107,14 @@ def test_unclean_connected_run_remains_open(monkeypatch) -> None:
         raise AssertionError("expected node failure")
 
     store.close_run.assert_not_called()
+
+
+def _set_synthetic_runtime_environment(monkeypatch) -> None:
+    monkeypatch.setenv(
+        POSTGRES_DSN_ENV,
+        "postgresql://ci-user:ci-password@127.0.0.1:5432/ci-database",
+    )
+    monkeypatch.setenv(
+        SYSTEM_HEALTH_WEBHOOK_ENV,
+        "https://discord.invalid/api/webhooks/ci-placeholder",
+    )
