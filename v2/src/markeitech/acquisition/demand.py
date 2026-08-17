@@ -24,10 +24,21 @@ class FeedKind(StrEnum):
 
 class HistoricalWindow(StrEnum):
     PREVIOUS_RTH = "previous_rth"
+    PREVIOUS_GTH_OVERNIGHT = "previous_gth_overnight"
+    CURRENT_OVERNIGHT = "current_overnight"
+    CURRENT_RTH = "current_rth"
+    CURRENT_GTH = "current_gth"
+    CURB = "curb"
+    PREMARKET = "premarket"
+    POWER_HOUR = "power_hour"
     OVERNIGHT = "overnight"
     SESSION_TO_DATE = "session_to_date"
     OPENING_RANGE = "opening_range"
+    NAMED_PHASE_SLICE = "named_phase_slice"
+    PREVIOUS_SESSIONS = "previous_sessions"
     RECENT_COMPLETED = "recent_completed"
+    ANCHORED_INTERVAL = "anchored_interval"
+    SYNCHRONIZED_INTERVAL = "synchronized_interval"
 
 
 class DemandOwnerKind(StrEnum):

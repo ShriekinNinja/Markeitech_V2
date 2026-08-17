@@ -12,6 +12,10 @@ resource policy, executes through Nautilus, and returns an immutable transient r
 This stage does not define EMA, opening-range, VWAP, profile, trend, or signal formulas. Stage 9C
 owns those meanings. Stage 9B only makes their input dependencies expressible and executable.
 
+The complete product-wide request vocabulary is maintained in
+[`../market-intelligence-request-catalog.md`](../market-intelligence-request-catalog.md). Stage 9B
+must remain compatible with that destination even where execution is deferred to later stages.
+
 ## Non-Negotiable Rules
 
 1. Analytical actors never call IB or Nautilus historical request methods directly.
@@ -54,10 +58,23 @@ accepted.
 | Window | Meaning | Typical future use |
 |---|---|---|
 | `previous_rth` | Previous completed regular session | Prior OHLC/close, prior-session references |
-| `overnight` | Accepted overnight phase through current RTH open or now | Overnight high/low and gap |
-| `session_to_date` | Current session phase open through last completed interval | VWAP, session range, efficiency |
-| `opening_range` | Exact configured opening-range interval | OR5, OR15, extensions |
-| `recent_completed` | Last bounded number of completed bars before `as_of` | Volatility, trend, EMA warmup |
+| `previous_gth_overnight` | Previous completed global/overnight phase | Prior global-session evidence |
+| `current_overnight` | Current overnight phase through now or RTH open | Overnight high/low and gap |
+| `current_rth` | Current regular session through last completed interval | RTH range and participation |
+| `current_gth` | Current global session through last completed interval | SPXW GTH evidence |
+| `curb` | Exact accepted curb phase | Product-specific post-RTH evidence |
+| `premarket` | Configured premarket phase | Cash-product premarket context |
+| `power_hour` | Configurable final regular-session segment | Durable prior-session summaries |
+| `session_to_date` | Current named session phase through last completed interval | Generic session calculations |
+| `opening_range` | Configurable duration from authoritative phase open | Opening-range families |
+| `named_phase_slice` | Configurable offsets inside a named phase | Any approved session segment |
+| `previous_sessions` | Bounded previous N completed sessions | Baselines and structure |
+| `recent_completed` | Last bounded number of completed bars before `as_of` | Rolling measurements |
+| `anchored_interval` | Exact interval from an approved event/entity anchor | Anchored calculations |
+| `synchronized_interval` | Common UTC bounds across instruments | Cross-market comparisons |
+
+`overnight` remains as a compatibility-neutral generic phase name where a market does not use the
+GTH vocabulary. The exact configured calendar phase remains authoritative.
 
 Each requirement contains:
 

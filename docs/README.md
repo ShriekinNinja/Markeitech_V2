@@ -32,6 +32,7 @@ accidental disagreement.
 - [Project charter](../markeitech.md)
 - [Current status](current-status.md)
 - [Development guidelines](development-guidelines.md)
+- [Market intelligence request catalog](market-intelligence-request-catalog.md)
 
 ## Architecture
 
