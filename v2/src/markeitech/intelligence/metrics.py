@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from decimal import Decimal
 from enum import StrEnum
 from math import isfinite
 from types import MappingProxyType
@@ -12,8 +13,8 @@ from markeitech.acquisition import (
     CapabilityHistoricalRequirement,
 )
 
-type MetricParameterValue = str | int | float | bool
-type MetricScalarValue = str | int | float | bool
+type MetricParameterValue = str | int | float | Decimal | bool
+type MetricScalarValue = str | int | float | Decimal | bool
 type MetricKey = tuple[str, int]
 
 
@@ -268,6 +269,7 @@ class MetricValue:
     unit: str
     effective_ts_ns: int
     observed_ts_ns: int
+    received_ts_ns: int
     calculated_ts_ns: int
     published_ts_ns: int
     health: MetricHealth
@@ -285,8 +287,23 @@ class MetricValue:
         _positive_int(self.metric_version, "metric_version")
         _positive_int(self.parameter_version, "parameter_version")
         _positive_int(self.revision, "revision")
-        for field in ("effective_ts_ns", "observed_ts_ns", "calculated_ts_ns", "published_ts_ns"):
+        for field in (
+            "effective_ts_ns",
+            "observed_ts_ns",
+            "received_ts_ns",
+            "calculated_ts_ns",
+            "published_ts_ns",
+        ):
             _timestamp(getattr(self, field), field)
+        if not (
+            self.observed_ts_ns
+            <= self.received_ts_ns
+            <= self.calculated_ts_ns
+            <= self.published_ts_ns
+        ):
+            raise ValueError(
+                "metric timestamps must satisfy observed <= received <= calculated <= published",
+            )
         if not isinstance(self.health, MetricHealth):
             raise ValueError("health must be a MetricHealth")
         if not isinstance(self.fidelity, MetricFidelity):
@@ -419,9 +436,11 @@ def _parameter_values(
     result: dict[str, MetricParameterValue] = {}
     for key, value in values.items():
         normalized = _required_text(key, "parameter key")
-        if not isinstance(value, str | int | float | bool):
+        if not isinstance(value, str | int | float | Decimal | bool):
             raise ValueError(f"unsupported parameter value for {normalized!r}")
         if isinstance(value, float) and not isfinite(value):
+            raise ValueError(f"non-finite parameter value for {normalized!r}")
+        if isinstance(value, Decimal) and not value.is_finite():
             raise ValueError(f"non-finite parameter value for {normalized!r}")
         result[normalized] = value
     return dict(sorted(result.items()))
@@ -429,9 +448,10 @@ def _parameter_values(
 
 def _is_number(value: object) -> bool:
     return (
-        isinstance(value, int | float)
+        isinstance(value, int | float | Decimal)
         and not isinstance(value, bool)
         and (not isinstance(value, float) or isfinite(value))
+        and (not isinstance(value, Decimal) or value.is_finite())
     )
 
 
