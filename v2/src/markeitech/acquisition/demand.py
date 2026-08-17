@@ -132,6 +132,7 @@ class CapabilityHistoricalRequirement:
     window: HistoricalWindow
     minimum_observations: int
     maximum_observations: int
+    window_parameters: Mapping[str, RequirementParameter] | None = None
     parameters: Mapping[str, RequirementParameter] | None = None
 
     def __post_init__(self) -> None:
@@ -156,6 +157,11 @@ class CapabilityHistoricalRequirement:
             raise ValueError(
                 "maximum_observations must be an integer not below minimum_observations",
             )
+        object.__setattr__(
+            self,
+            "window_parameters",
+            MappingProxyType(_validated_parameters(self.window_parameters or {})),
+        )
         object.__setattr__(
             self,
             "parameters",

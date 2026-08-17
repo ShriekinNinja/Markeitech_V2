@@ -64,6 +64,7 @@ poll_interval_ms = 100
 
 [historical.probe]
 enabled = false
+actor_ids = ["HISTORICAL-PROBE-A", "HISTORICAL-PROBE-B"]
 instrument_id = "ESU6.CME"
 selector = "1-MINUTE-LAST-EXTERNAL"
 window = "recent_completed"
@@ -166,6 +167,10 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.historical.maximum_in_flight_requests == 1
     assert config.historical.probe.instrument_id == "ESU6.CME"
     assert config.historical.probe.enabled is False
+    assert config.historical.probe.actor_ids == (
+        "HISTORICAL-PROBE-A",
+        "HISTORICAL-PROBE-B",
+    )
     assert config.sessions.calendars[0].calendar_id == "cme_equity"
     assert config.evidence_health.policies[0].fresh_for_ms == 2000
     assert config.evidence_health.consumer_retry_interval_ms == 1000

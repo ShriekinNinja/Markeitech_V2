@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 from nautilus_trader.model import InstrumentId
 
@@ -8,6 +10,8 @@ from markeitech.acquisition import (
     HistoricalDependencyDemandEvent,
     HistoricalResourcePolicy,
 )
+from markeitech.acquisition.historical_windows import HistoricalWindowResolver
+from markeitech.intelligence.session import SessionCalendar, definition_from_config
 from markeitech.system.acquisition import (
     InstrumentDefinitionTracker,
     _compile_historical_demand,
@@ -93,3 +97,56 @@ def test_recent_completed_historical_demand_excludes_forming_bar() -> None:
     assert request.start_ns == 2 * 60_000_000_000
     assert request.end_ns == 12 * 60_000_000_000 - 1
     assert request.limit == 10
+
+
+def test_session_owned_historical_demand_compiles_authoritative_bounds() -> None:
+    event = HistoricalDependencyDemandEvent(
+        demand_id="probe:ES:rth",
+        consumer_id="probe",
+        capability_id="probe",
+        capability_version=1,
+        instrument_id="ESU6.CME",
+        selector="5-MINUTE-LAST-EXTERNAL",
+        window="current_rth",
+        minimum_observations=5,
+        maximum_observations=100,
+        priority=10,
+        purpose="acceptance",
+        as_of_ns=int(datetime(2026, 8, 17, 14, 43, 27, tzinfo=UTC).timestamp() * 1_000_000_000),
+        window_parameters={"phase": "RTH"},
+    )
+    calendar = SessionCalendar(
+        definition_from_config(
+            {
+                "calendar_id": "cme_equity",
+                "provider_calendar": "CME_Equity",
+                "timezone": "America/New_York",
+                "schedule_version": "test-1",
+                "phases": [
+                    {
+                        "name": "RTH",
+                        "start": "09:30",
+                        "end": "16:00",
+                        "start_day_offset": 0,
+                    },
+                ],
+                "overrides": [],
+            },
+        ),
+    )
+    compiler = HistoricalDependencyCompiler(HistoricalResourcePolicy(8, 500, 1_000))
+
+    request = _compile_historical_demand(
+        event,
+        compiler,
+        resolver=HistoricalWindowResolver(),
+        calendar=calendar,
+    )
+
+    assert request.window.value == "current_rth"
+    assert request.start_ns == int(
+        datetime(2026, 8, 17, 13, 30, tzinfo=UTC).timestamp() * 1_000_000_000,
+    )
+    assert request.end_ns == int(
+        datetime(2026, 8, 17, 14, 40, tzinfo=UTC).timestamp() * 1_000_000_000,
+    ) - 1

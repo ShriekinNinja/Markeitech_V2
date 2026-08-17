@@ -55,6 +55,7 @@ poll_interval_ms = 100
 
 [historical.probe]
 enabled = true
+actor_ids = ["HISTORICAL-PROBE-A", "HISTORICAL-PROBE-B"]
 instrument_id = "ESU6.CME"
 selector = "1-MINUTE-LAST-EXTERNAL"
 window = "recent_completed"

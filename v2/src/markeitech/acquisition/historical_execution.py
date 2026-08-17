@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from typing import Protocol
 
@@ -12,6 +12,7 @@ from markeitech.acquisition.historical import (
 
 class HistoricalExecutionState(StrEnum):
     QUEUED = "QUEUED"
+    SHARED = "SHARED"
     SUBMITTED = "SUBMITTED"
     RETRY_SCHEDULED = "RETRY_SCHEDULED"
     COMPLETED = "COMPLETED"
@@ -142,6 +143,13 @@ class HistoricalExecutionCoordinator:
     def active_request_ids(self) -> tuple[str, ...]:
         return tuple(sorted(self._active))
 
+    def request_for(self, request_id: str) -> HistoricalRequest | None:
+        pending = self._pending.get(request_id)
+        if pending is not None:
+            return pending.request
+        active = self._active.get(request_id)
+        return None if active is None else active.request
+
     def enqueue(
         self,
         requests: tuple[HistoricalRequest, ...],
@@ -151,7 +159,30 @@ class HistoricalExecutionCoordinator:
         _non_negative_int(now_ns, "now_ns")
         events: list[HistoricalExecutionEvent] = []
         for request in requests:
-            if request.request_id in self._pending or request.request_id in self._active:
+            existing = self.request_for(request.request_id)
+            if existing is not None:
+                merged = _merge_requests(existing, request)
+                pending = self._pending.get(request.request_id)
+                if pending is not None:
+                    pending.request = merged
+                    attempt = pending.attempt
+                else:
+                    active = self._active[request.request_id]
+                    active.request = merged
+                    attempt = active.attempt
+                if merged.dependencies != existing.dependencies:
+                    events.append(
+                        self._event(
+                            merged,
+                            HistoricalExecutionState.SHARED,
+                            attempt,
+                            now_ns,
+                            detail=(
+                                "consumer dependency attached to shared provider request; "
+                                f"consumers={len(merged.dependencies)}"
+                            ),
+                        ),
+                    )
                 continue
             if request.request_id in self._terminal:
                 raise HistoricalExecutionError(
@@ -443,6 +474,30 @@ def _required_text(value: object, label: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{label} must be a non-empty string")
     return value.strip()
+
+
+def _merge_requests(
+    existing: HistoricalRequest,
+    incoming: HistoricalRequest,
+) -> HistoricalRequest:
+    if existing.request_key != incoming.request_key or existing.request_id != incoming.request_id:
+        raise HistoricalExecutionError("shared historical request identity does not match")
+    dependencies = tuple(
+        sorted(
+            {*existing.dependencies, *incoming.dependencies},
+            key=lambda item: (
+                item.consumer_id,
+                item.capability_id,
+                item.capability_version,
+                item.requirement_index,
+            ),
+        ),
+    )
+    return replace(
+        existing,
+        priority=max(existing.priority, incoming.priority),
+        dependencies=dependencies,
+    )
 
 
 def _positive_int(value: object, label: str) -> None:

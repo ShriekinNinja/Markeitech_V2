@@ -51,6 +51,14 @@ class SessionSnapshot:
 
 
 @dataclass(frozen=True, slots=True)
+class SessionWindow:
+    trade_date: date
+    phase: str
+    start_ns: int
+    end_ns: int
+
+
+@dataclass(frozen=True, slots=True)
 class _Window:
     trade_date: date
     phase: str
@@ -101,6 +109,20 @@ class SessionCalendar:
             phase_open_ns=None,
             phase_close_ns=None,
             next_transition_ns=next_transition,
+        )
+
+    def windows(self, start: date, end: date) -> tuple[SessionWindow, ...]:
+        """Return immutable phase windows for inclusive local trade dates."""
+        if end < start:
+            raise ValueError("end must not be before start")
+        return tuple(
+            SessionWindow(
+                trade_date=item.trade_date,
+                phase=item.phase,
+                start_ns=_to_ns(item.start),
+                end_ns=_to_ns(item.end),
+            )
+            for item in self._windows(start, end)
         )
 
     def _windows(self, start: date, end: date) -> tuple[_Window, ...]:
@@ -184,4 +206,9 @@ def definition_from_config(value: dict[str, object]) -> CalendarDefinition:
 
 
 def _to_ns(value: datetime) -> int:
-    return int(value.astimezone(UTC).timestamp() * 1_000_000_000)
+    delta = value.astimezone(UTC) - datetime(1970, 1, 1, tzinfo=UTC)
+    return (
+        delta.days * 86_400 * 1_000_000_000
+        + delta.seconds * 1_000_000_000
+        + delta.microseconds * 1_000
+    )

@@ -1,18 +1,19 @@
 # V2 Historical Dependency Execution
 
-**Status:** Stage 9B design and implementation contract.
+**Status:** Stage 9B implemented and live-accepted on 2026-08-17.
 
 ## Current Implementation Slice
 
-The first provider-backed acceptance path is implemented but disabled by default. It proves:
+The provider-backed acceptance path is implemented. It proves:
 
 - a consumer-owned dependency intent published on the Nautilus signal bus;
-- deterministic compilation into an exact `recent_completed` bar request;
+- deterministic compilation of every catalog window into exact UTC bounds;
+- session-aware resolution from the same authoritative calendars used by session state;
 - bounded, single-lane execution through `DataAcquisitionActor.request_bars`;
 - response validation against the requested instrument, bar specification, bounds, ordering, and
   observation limit before completion;
 - transient delivery of the immutable historical batch through Nautilus custom data;
-- independent consumer readiness publication; and
+- one shared provider request with independent readiness for every consumer; and
 - PostgreSQL audit of demand, execution lifecycle, and readiness without raw bars.
 
 The single provider lane is intentional. Nautilus' actor callback returns the bar sequence without a
@@ -20,22 +21,37 @@ request identifier, so concurrent native requests cannot yet be correlated hones
 after local timeout or cancellation are ignored and audited in runtime logs rather than attached to
 another request.
 
-The acceptance consumer is `HistoricalDependencyProbeActor`. It is configured under
-`historical.probe`, remains off during normal runs, and currently accepts only
-`window = "recent_completed"`. Session-owned windows remain blocked until the session-bound resolver
-supplies their exact intervals.
+The acceptance consumers are two independently registered `HistoricalDependencyProbeActor`
+instances configured under `historical.probe.actor_ids`. They deliberately publish the same logical
+dependency. The request identity excludes consumer identity, so acquisition submits one provider
+request, emits `SHARED` when the second consumer attaches, delivers one transient batch, and emits
+one readiness result per consumer.
+
+`HistoricalWindowResolver` accepts explicit policy only. It uses configured session phases for
+RTH/GTH/curb/premarket/overnight windows, configured durations for opening range and power hour,
+configured offsets for named slices, configured counts for previous sessions, and exact supplied
+UTC bounds for anchored and synchronized intervals. It never invents a phase, duration, offset,
+count, or anchor.
 
 To run the live acceptance once, set `historical.probe.enabled = true`. Expected evidence is:
 
-- `HISTORICAL_PROBE_DEMAND`;
+- two `HISTORICAL_PROBE_DEMAND` records with different consumer IDs;
+- one `QUEUED`/`SUBMITTED` provider lifecycle plus one `SHARED` attachment;
 - `HISTORICAL_EXECUTION` transitions ending in `COMPLETED` or an honest terminal failure;
 - `HISTORICAL_PROBE_BATCH` for the transient payload;
 - `HISTORICAL_RESPONSE_ACCEPTED` with the exact bar type, count, and first/last event timestamps;
-- `HISTORICAL_PROBE_READINESS` with `READY` or `DEGRADED`; and
+- two `HISTORICAL_PROBE_READINESS` records with independent `READY` or `DEGRADED` state; and
 - corresponding `historical.dependency_demand`, `historical.execution`, and
   `historical.readiness` rows in `operational_events`.
 
 No raw bar array belongs in those PostgreSQL rows.
+
+Final live acceptance used two independent probe actors against one identical ES one-minute
+dependency. The runtime emitted one `QUEUED`, one `SUBMITTED`, one `SHARED`, one accepted provider
+response with 10/10 observations, one `COMPLETED`, and two independent `READY` results. Both
+consumers received the same immutable batch and request ID. Watchlist observations, evidence-health
+evaluation, Discord health, and operational persistence continued throughout; PostgreSQL stored the
+two demand facts, execution lifecycle, and two readiness facts without raw bars.
 
 ## Purpose
 
@@ -118,7 +134,19 @@ Each requirement contains:
 - `window`: one catalog window;
 - `minimum_observations`: readiness threshold for that consumer;
 - `maximum_observations`: provider request and memory ceiling; and
+- `window_parameters`: immutable resolver policy, separate from provider behavior; and
 - `parameters`: immutable provider-neutral request parameters.
+
+Supported resolver policy is explicit:
+
+| Window family | Required `window_parameters` |
+|---|---|
+| `recent_completed` | `observation_count` (the demand adapter derives it from the configured maximum when omitted) |
+| `previous_rth`, `previous_gth_overnight`, current phase aliases, `curb`, `premarket`, `overnight`, `session_to_date` | `phase` |
+| `opening_range`, `power_hour` | `phase`, `duration_minutes` |
+| `named_phase_slice` | `phase`, `start_offset_minutes`, `end_offset_minutes` |
+| `previous_sessions` | `phase`, `session_count` |
+| `anchored_interval`, `synchronized_interval` | `start_ns`, `end_ns` |
 
 `minimum_observations` and `maximum_observations` are intentionally distinct. A response can be
 usable but incomplete, and two consumers sharing one request may reach different readiness states.
@@ -197,7 +225,8 @@ Stage 9B configuration will own:
 - timeout and retry count/backoff;
 - shutdown cancellation timeout;
 - allowed historical feed kinds and selectors; and
-- catalog window parameters such as opening-range duration.
+- catalog window parameters such as phase, opening-range duration, previous-session count, and
+  explicit anchors.
 
 Instrument configuration selects capabilities; capabilities declare dependencies. Instruments do
 not duplicate raw request recipes. Stage 9C introduces parameter records with `dynamic`, bounds,

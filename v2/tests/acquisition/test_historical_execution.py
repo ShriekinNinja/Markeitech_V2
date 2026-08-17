@@ -127,6 +127,28 @@ def test_completion_fans_out_one_batch_with_independent_readiness() -> None:
     )
 
 
+def test_identical_active_requests_share_provider_call_and_merge_consumers() -> None:
+    port = RecordingHistoricalPort()
+    coordinator = _coordinator(port)
+    first = _request("shared", dependencies=(_dependency("metric:a", 2),))
+    second = _request("shared", dependencies=(_dependency("metric:b", 4),))
+
+    coordinator.enqueue((first,), now_ns=1)
+    shared = coordinator.enqueue((second,), now_ns=2)
+    completed = coordinator.complete("shared", ("a", "b", "c"), now_ns=3)
+
+    assert port.submitted == ["shared"]
+    assert [event.state for event in shared.events] == [HistoricalExecutionState.SHARED]
+    assert tuple(result.dependency.consumer_id for result in completed.results) == (
+        "metric:a",
+        "metric:b",
+    )
+    assert tuple(result.state for result in completed.results) == (
+        HistoricalReadinessState.READY,
+        HistoricalReadinessState.DEGRADED,
+    )
+
+
 def test_submission_failure_retries_after_backoff_without_blocking_queue() -> None:
     port = RecordingHistoricalPort()
     port.fail_submissions = 1

@@ -53,6 +53,7 @@ class AcquisitionConfig:
 @dataclass(frozen=True, slots=True)
 class HistoricalProbeConfig:
     enabled: bool
+    actor_ids: tuple[str, ...]
     instrument_id: str
     selector: str
     window: str
@@ -820,6 +821,7 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
         probe_values,
         {
             "enabled",
+            "actor_ids",
             "instrument_id",
             "selector",
             "window",
@@ -855,8 +857,12 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
     if instrument_id not in {member.instrument_id for member in watchlist.members}:
         raise ValueError("historical.probe.instrument_id must be in the configured watchlist")
     window = _non_empty_string(probe_values["window"], "historical.probe.window")
-    if window != "recent_completed":
-        raise ValueError("historical.probe.window currently supports recent_completed only")
+    actor_ids = _unique_non_empty_strings(
+        probe_values["actor_ids"],
+        "historical.probe.actor_ids",
+    )
+    if not actor_ids:
+        raise ValueError("historical.probe.actor_ids must be non-empty")
     return HistoricalConfig(
         maximum_plan_requests=maximum_plan_requests,
         maximum_observations_per_request=maximum_per_request,
@@ -878,6 +884,7 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
         ),
         probe=HistoricalProbeConfig(
             enabled=_bool(probe_values["enabled"], "historical.probe.enabled"),
+            actor_ids=actor_ids,
             instrument_id=instrument_id,
             selector=_non_empty_string(probe_values["selector"], "historical.probe.selector"),
             window=window,

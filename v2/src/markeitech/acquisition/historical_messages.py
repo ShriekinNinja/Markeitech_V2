@@ -16,6 +16,7 @@ HISTORICAL_BATCH_TYPE_NAME = "MarkeitechHistoricalBatch"
 
 _EXECUTION_STATES = {
     "QUEUED",
+    "SHARED",
     "SUBMITTED",
     "RETRY_SCHEDULED",
     "COMPLETED",
@@ -40,6 +41,7 @@ class HistoricalDependencyDemandEvent:
     priority: int
     purpose: str
     as_of_ns: int
+    window_parameters: Mapping[str, RequirementParameter] | None = None
     parameters: Mapping[str, RequirementParameter] | None = None
     schema_version: int = HISTORICAL_SCHEMA_VERSION
 
@@ -65,12 +67,18 @@ class HistoricalDependencyDemandEvent:
         HistoricalWindow(self.window)
         object.__setattr__(
             self,
+            "window_parameters",
+            MappingProxyType(_parameters(self.window_parameters or {})),
+        )
+        object.__setattr__(
+            self,
             "parameters",
             MappingProxyType(_parameters(self.parameters or {})),
         )
 
     def to_signal_value(self) -> str:
         payload = _as_payload(self)
+        payload["window_parameters"] = dict(self.window_parameters or {})
         payload["parameters"] = dict(self.parameters or {})
         return json.dumps(payload, separators=(",", ":"), sort_keys=True)
 

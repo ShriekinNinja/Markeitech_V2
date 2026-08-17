@@ -29,7 +29,6 @@ from markeitech.acquisition import (
     HistoricalRequest,
     HistoricalResourcePolicy,
     HistoricalWindow,
-    HistoricalWindowBounds,
     NautilusHistoricalPort,
     NautilusSubscriptionPort,
     ObservationDemand,
@@ -38,6 +37,11 @@ from markeitech.acquisition.historical_native import (
     HistoricalResponseMismatch,
     validate_historical_bars,
 )
+from markeitech.acquisition.historical_windows import (
+    HistoricalWindowParameters,
+    HistoricalWindowResolver,
+)
+from markeitech.intelligence.session import SessionCalendar, definition_from_config
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STATUS_SIGNAL,
@@ -114,6 +118,8 @@ class DataAcquisitionActorConfig(DataActorConfig):
         cls,
         instrument_ids: list[str],
         historical: dict[str, int],
+        calendars: list[dict[str, object]],
+        instrument_calendars: dict[str, str],
         actor_id: str | ActorId = "DATA-ACQUISITION",
     ) -> DataAcquisitionActorConfig:
         resolved_actor_id = (
@@ -122,6 +128,8 @@ class DataAcquisitionActorConfig(DataActorConfig):
         obj = super().__new__(cls, actor_id=resolved_actor_id)
         obj.instrument_ids = tuple(instrument_ids)
         obj.historical = dict(historical)
+        obj.calendars = tuple(dict(value) for value in calendars)
+        obj.instrument_calendars = dict(instrument_calendars)
         return obj
 
 
@@ -141,6 +149,12 @@ class DataAcquisitionActor(DataActor):
                 maximum_total_observations=historical["maximum_total_observations"],
             ),
         )
+        self._historical_window_resolver = HistoricalWindowResolver()
+        self._historical_calendars = {
+            definition.calendar_id: SessionCalendar(definition)
+            for definition in (definition_from_config(value) for value in config.calendars)
+        }
+        self._instrument_calendars = dict(config.instrument_calendars)
         self._historical = HistoricalExecutionCoordinator(
             NautilusHistoricalPort(self),
             HistoricalExecutionPolicy(
@@ -390,11 +404,23 @@ class DataAcquisitionActor(DataActor):
         for demand_id in sorted(tuple(self._pending_historical_demands)):
             event = self._pending_historical_demands.pop(demand_id)
             try:
-                request = _compile_historical_demand(event, self._historical_compiler)
-                self._historical_requests[request.request_id] = request
-                self._publish_historical_update(
-                    self._historical.enqueue((request,), now_ns=self.clock.timestamp_ns()),
+                request = _compile_historical_demand(
+                    event,
+                    self._historical_compiler,
+                    resolver=self._historical_window_resolver,
+                    calendar=self._historical_calendars[
+                        self._instrument_calendars[event.instrument_id]
+                    ],
                 )
+                update = self._historical.enqueue(
+                    (request,),
+                    now_ns=self.clock.timestamp_ns(),
+                )
+                current = self._historical.request_for(request.request_id)
+                if current is None:
+                    raise RuntimeError("historical coordinator lost an enqueued request")
+                self._historical_requests[request.request_id] = current
+                self._publish_historical_update(update)
             except ValueError as exc:
                 self.log.error(
                     "HISTORICAL_DEMAND_REJECTED"
@@ -538,18 +564,27 @@ def _observation_demand(event: WatchlistDemandEvent) -> ObservationDemand:
 def _compile_historical_demand(
     event: HistoricalDependencyDemandEvent,
     compiler: HistoricalDependencyCompiler,
+    *,
+    resolver: HistoricalWindowResolver | None = None,
+    calendar: SessionCalendar | None = None,
 ) -> HistoricalRequest:
     window = HistoricalWindow(event.window)
-    if window is not HistoricalWindow.RECENT_COMPLETED:
-        raise ValueError("only recent_completed bounds are available without session ownership")
     interval_ns = BarType.from_str(
         f"{event.instrument_id}-{event.selector}",
     ).spec.get_interval_ns()
-    completed_boundary_ns = event.as_of_ns - (event.as_of_ns % interval_ns)
-    bounds = HistoricalWindowBounds(
-        window=window,
-        start_ns=completed_boundary_ns - event.maximum_observations * interval_ns,
-        end_ns=completed_boundary_ns - 1,
+    resolved_parameters = dict(event.window_parameters or {})
+    if window is HistoricalWindow.RECENT_COMPLETED and not resolved_parameters:
+        resolved_parameters = {"observation_count": event.maximum_observations}
+    try:
+        policy = HistoricalWindowParameters(**resolved_parameters)
+    except TypeError as exc:
+        raise ValueError("invalid historical window parameters") from exc
+    bounds = (resolver or HistoricalWindowResolver()).resolve(
+        window,
+        calendar=calendar,
+        selector_interval_ns=interval_ns,
+        as_of_ns=event.as_of_ns,
+        parameters={window: policy},
     )
     capability = CapabilityDeclaration(
         capability_id=event.capability_id,
@@ -561,6 +596,7 @@ def _compile_historical_demand(
                 window=window,
                 minimum_observations=event.minimum_observations,
                 maximum_observations=event.maximum_observations,
+                window_parameters=event.window_parameters,
                 parameters=event.parameters,
             ),
         ),

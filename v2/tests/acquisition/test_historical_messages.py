@@ -21,6 +21,7 @@ def test_historical_signal_contracts_round_trip_without_market_data() -> None:
         priority=10,
         purpose="acceptance",
         as_of_ns=100,
+        window_parameters={"observation_count": 10},
         parameters={"dynamic": False},
     )
     execution = HistoricalExecutionEventMessage(
@@ -61,5 +62,6 @@ def test_historical_signal_contracts_round_trip_without_market_data() -> None:
         HistoricalExecutionEventMessage.from_signal_value(execution.to_signal_value()) == execution
     )
     assert HistoricalReadinessEvent.from_signal_value(readiness.to_signal_value()) == readiness
+    assert demand.window_parameters == {"observation_count": 10}
     assert "observations" not in execution.to_signal_value()
     assert "bars" not in readiness.to_signal_value()

@@ -28,6 +28,7 @@ def _capability(*, maximum: int = 80) -> CapabilityDeclaration:
                 window=HistoricalWindow.SESSION_TO_DATE,
                 minimum_observations=20,
                 maximum_observations=maximum,
+                window_parameters={"phase": "RTH"},
                 parameters={"regular_hours": True},
             ),
         ),
@@ -75,6 +76,7 @@ def test_compiles_exact_bounded_request_with_lineage() -> None:
     assert request.end_ns == 200
     assert request.limit == 80
     assert request.parameters == {"regular_hours": True}
+    assert _capability().historical_requirements[0].window_parameters == {"phase": "RTH"}
     assert request.dependencies[0].minimum_observations == 20
     assert request.dependencies[0].capability_id == "session_vwap"
     assert request.request_id.startswith("historical:")
