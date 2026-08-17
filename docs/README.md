@@ -43,6 +43,7 @@ accidental disagreement.
 - [V2 actor composition discovery](architecture/v2-actor-composition-discovery.md)
 - [V2 provider and canonical data boundary](architecture/v2-provider-data-boundary-discovery.md)
 - [V2 adaptive market-data plane](architecture/v2-adaptive-market-data-plane.md)
+- [V2 historical dependency execution](architecture/v2-historical-dependency-execution.md)
 
 Preserved V1 architecture remains available in
 [runtime architecture](architecture/runtime-architecture.md),

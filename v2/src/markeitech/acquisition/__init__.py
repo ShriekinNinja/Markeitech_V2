@@ -14,8 +14,18 @@ from markeitech.acquisition.demand import (
     DemandReconciler,
     FeedKind,
     FeedRequirement,
+    HistoricalWindow,
     ObservationDemand,
     ProviderDemand,
+)
+from markeitech.acquisition.historical import (
+    HistoricalCapabilityBinding,
+    HistoricalDependencyCompiler,
+    HistoricalDependencyRef,
+    HistoricalPlanningError,
+    HistoricalRequest,
+    HistoricalResourcePolicy,
+    HistoricalWindowBounds,
 )
 from markeitech.acquisition.native import (
     NativeSubscriptionActor,
@@ -36,6 +46,14 @@ __all__ = [
     "DemandReconciler",
     "FeedKind",
     "FeedRequirement",
+    "HistoricalCapabilityBinding",
+    "HistoricalDependencyCompiler",
+    "HistoricalDependencyRef",
+    "HistoricalPlanningError",
+    "HistoricalRequest",
+    "HistoricalResourcePolicy",
+    "HistoricalWindow",
+    "HistoricalWindowBounds",
     "NativeSubscriptionActor",
     "NautilusSubscriptionPort",
     "ObservationDemand",
