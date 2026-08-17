@@ -184,10 +184,87 @@ def build_actor_plan(
                 config={
                     "actor_id": "DATA-ACQUISITION",
                     "instrument_ids": instrument_ids,
+                    "instrument_calendars": {
+                        member.instrument_id: member.calendar_id
+                        for member in config.watchlist.members
+                    },
+                    "calendars": [
+                        {
+                            "calendar_id": calendar.calendar_id,
+                            "provider_calendar": calendar.provider_calendar,
+                            "timezone": calendar.timezone,
+                            "schedule_version": calendar.schedule_version,
+                            "phases": [
+                                {
+                                    "name": phase.name,
+                                    "start": phase.start,
+                                    "end": phase.end,
+                                    "start_day_offset": phase.start_day_offset,
+                                }
+                                for phase in calendar.phases
+                            ],
+                            "overrides": [
+                                {
+                                    "trade_date": override.trade_date,
+                                    "phase": override.phase,
+                                    "start": override.start,
+                                    "end": override.end,
+                                    "start_day_offset": override.start_day_offset,
+                                }
+                                for override in calendar.overrides
+                            ],
+                        }
+                        for calendar in config.sessions.calendars
+                    ],
+                    "historical": {
+                        "maximum_plan_requests": config.historical.maximum_plan_requests,
+                        "maximum_observations_per_request": (
+                            config.historical.maximum_observations_per_request
+                        ),
+                        "maximum_total_observations": (
+                            config.historical.maximum_total_observations
+                        ),
+                        "maximum_outstanding_requests": (
+                            config.historical.maximum_outstanding_requests
+                        ),
+                        "maximum_in_flight_requests": (
+                            config.historical.maximum_in_flight_requests
+                        ),
+                        "timeout_seconds": config.historical.timeout_seconds,
+                        "maximum_attempts": config.historical.maximum_attempts,
+                        "retry_backoff_ms": config.historical.retry_backoff_ms,
+                        "poll_interval_ms": config.historical.poll_interval_ms,
+                    },
                 },
             ),
         ),
     ]
+    if config.historical.probe.enabled:
+        probe = config.historical.probe
+        registrations.extend(
+            ActorRegistration(
+                key=f"historical_dependency_probe:{index}",
+                actor_id=actor_id,
+                config=ImportableActorConfig(
+                    actor_path=(
+                        "markeitech.system.historical_probe:HistoricalDependencyProbeActor"
+                    ),
+                    config_path=(
+                        "markeitech.system.historical_probe:HistoricalDependencyProbeActorConfig"
+                    ),
+                    config={
+                        "actor_id": actor_id,
+                        "instrument_id": probe.instrument_id,
+                        "selector": probe.selector,
+                        "window": probe.window,
+                        "minimum_observations": probe.minimum_observations,
+                        "maximum_observations": probe.maximum_observations,
+                        "priority": probe.priority,
+                    },
+                ),
+            )
+            for index, actor_id in enumerate(probe.actor_ids, start=1)
+        )
     if config.acquisition.native_consumer_probe_enabled:
         registrations.append(
             ActorRegistration(

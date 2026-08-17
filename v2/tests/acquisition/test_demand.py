@@ -15,6 +15,7 @@ from markeitech.acquisition import (
     DemandReconciler,
     FeedKind,
     FeedRequirement,
+    HistoricalWindow,
     ObservationDemand,
 )
 
@@ -71,7 +72,9 @@ def test_capability_declares_feed_requirements_without_becoming_provider_demand(
             CapabilityHistoricalRequirement(
                 kind=FeedKind.BARS,
                 selector="5-MINUTE-LAST",
+                window=HistoricalWindow.RECENT_COMPLETED,
                 minimum_observations=50,
+                maximum_observations=60,
             ),
         ),
     )
@@ -96,7 +99,9 @@ def test_capability_can_be_historical_only() -> None:
             CapabilityHistoricalRequirement(
                 kind=FeedKind.BARS,
                 selector="1-DAY-LAST",
+                window=HistoricalWindow.PREVIOUS_RTH,
                 minimum_observations=20,
+                maximum_observations=20,
             ),
         ),
     )

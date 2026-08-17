@@ -36,15 +36,30 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "evidence_health",
         "watchlist",
         "data_acquisition",
+        "historical_dependency_probe:1",
+        "historical_dependency_probe:2",
         "discord_health",
         "operational_persistence",
     ]
     assert len({registration.actor_id for registration in plan}) == len(plan)
     acquisition = next(item for item in plan if item.key == "data_acquisition")
-    assert acquisition.config.config == {
-        "actor_id": "DATA-ACQUISITION",
-        "instrument_ids": list(_config().instrument_ids),
+    assert acquisition.config.config["actor_id"] == "DATA-ACQUISITION"
+    assert acquisition.config.config["instrument_ids"] == list(_config().instrument_ids)
+    assert acquisition.config.config["historical"] == {
+        "maximum_plan_requests": 64,
+        "maximum_observations_per_request": 5000,
+        "maximum_total_observations": 20000,
+        "maximum_outstanding_requests": 64,
+        "maximum_in_flight_requests": 1,
+        "timeout_seconds": 30,
+        "maximum_attempts": 3,
+        "retry_backoff_ms": 500,
+        "poll_interval_ms": 100,
     }
+    assert acquisition.config.config["instrument_calendars"]["ESU6.CME"] == "cme_equity"
+    assert {
+        value["calendar_id"] for value in acquisition.config.config["calendars"]
+    } == {"cboe_spxw", "us_equities", "cme_equity", "cme_energy"}
     watchlist = next(item for item in plan if item.key == "watchlist")
     assert watchlist.config.config["consumer_retry_interval_ms"] == 1000
     assert watchlist.config.config["members"] == [
@@ -101,6 +116,8 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "evidence_health",
         "watchlist",
         "data_acquisition",
+        "historical_dependency_probe:1",
+        "historical_dependency_probe:2",
         "operational_persistence",
     ]
 
@@ -115,6 +132,34 @@ def test_actor_plan_omits_disabled_native_consumer_probe() -> None:
     plan = build_actor_plan(config, _prerequisites())
 
     assert "native_consumer_probe" not in {registration.key for registration in plan}
+
+
+def test_actor_plan_adds_enabled_historical_dependency_probe() -> None:
+    config = _config()
+    config = replace(
+        config,
+        historical=replace(
+            config.historical,
+            probe=replace(config.historical.probe, enabled=True),
+        ),
+    )
+
+    plan = build_actor_plan(config, _prerequisites())
+
+    probes = [item for item in plan if item.key.startswith("historical_dependency_probe:")]
+    assert [probe.actor_id for probe in probes] == [
+        "HISTORICAL-PROBE-A",
+        "HISTORICAL-PROBE-B",
+    ]
+    assert probes[0].config.config == {
+        "actor_id": "HISTORICAL-PROBE-A",
+        "instrument_id": "ESU6.CME",
+        "selector": "1-MINUTE-LAST-EXTERNAL",
+        "window": "recent_completed",
+        "minimum_observations": 5,
+        "maximum_observations": 10,
+        "priority": 10,
+    }
 
 
 def test_actor_plan_adds_enabled_native_consumer_probe() -> None:

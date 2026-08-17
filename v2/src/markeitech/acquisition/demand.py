@@ -22,6 +22,25 @@ class FeedKind(StrEnum):
     OPTION_CHAIN = "option_chain"
 
 
+class HistoricalWindow(StrEnum):
+    PREVIOUS_RTH = "previous_rth"
+    PREVIOUS_GTH_OVERNIGHT = "previous_gth_overnight"
+    CURRENT_OVERNIGHT = "current_overnight"
+    CURRENT_RTH = "current_rth"
+    CURRENT_GTH = "current_gth"
+    CURB = "curb"
+    PREMARKET = "premarket"
+    POWER_HOUR = "power_hour"
+    OVERNIGHT = "overnight"
+    SESSION_TO_DATE = "session_to_date"
+    OPENING_RANGE = "opening_range"
+    NAMED_PHASE_SLICE = "named_phase_slice"
+    PREVIOUS_SESSIONS = "previous_sessions"
+    RECENT_COMPLETED = "recent_completed"
+    ANCHORED_INTERVAL = "anchored_interval"
+    SYNCHRONIZED_INTERVAL = "synchronized_interval"
+
+
 class DemandOwnerKind(StrEnum):
     BOOTSTRAP = "bootstrap"
     WATCHLIST = "watchlist"
@@ -110,19 +129,39 @@ class CapabilityFeedRequirement:
 class CapabilityHistoricalRequirement:
     kind: FeedKind
     selector: str
+    window: HistoricalWindow
     minimum_observations: int
+    maximum_observations: int
+    window_parameters: Mapping[str, RequirementParameter] | None = None
     parameters: Mapping[str, RequirementParameter] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.kind, FeedKind):
             raise ValueError("kind must be a FeedKind")
+        if self.kind is not FeedKind.BARS:
+            raise ValueError("Stage 9B supports historical bar requirements only")
         object.__setattr__(self, "selector", _required_text(self.selector, "selector"))
+        if not isinstance(self.window, HistoricalWindow):
+            raise ValueError("window must be a HistoricalWindow")
         if (
             not isinstance(self.minimum_observations, int)
             or isinstance(self.minimum_observations, bool)
             or self.minimum_observations <= 0
         ):
             raise ValueError("minimum_observations must be a positive integer")
+        if (
+            not isinstance(self.maximum_observations, int)
+            or isinstance(self.maximum_observations, bool)
+            or self.maximum_observations < self.minimum_observations
+        ):
+            raise ValueError(
+                "maximum_observations must be an integer not below minimum_observations",
+            )
+        object.__setattr__(
+            self,
+            "window_parameters",
+            MappingProxyType(_validated_parameters(self.window_parameters or {})),
+        )
         object.__setattr__(
             self,
             "parameters",

@@ -1,5 +1,18 @@
 # Interactive Brokers Setup
 
+## Authoritative References
+
+Consult the [NautilusTrader V2 nightly Interactive Brokers Python API reference](https://nautechsystems.github.io/nautilus_docs/python-api-nightly/adapters/interactive_brokers.html)
+before changing IB configuration, instrument discovery, market-data subscriptions, historical
+requests, execution, factories, or gateway behavior. It documents the Rust-backed V2 adapter and
+is the primary IB API reference for Markeitech V2.
+
+The [latest stable Python API reference](https://nautechsystems.github.io/nautilus_docs/python-api-latest/adapters/interactive_brokers.html#module-nautilus_trader.adapters.interactive_brokers)
+currently documents the v1 Python/`ibapi` adapter and is secondary historical context only. Always
+cross-check the V2 reference against Markeitech's pinned Nautilus release, installed public
+signatures, and live behavior. Do not assume a parameter or method from one adapter generation is
+accepted or interpreted identically by another.
+
 ## Current Posture
 
 Interactive Brokers connectivity is implemented behind a manual-only smoke command. No live connection is made by automated tests or the default configuration.

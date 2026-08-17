@@ -76,7 +76,9 @@ before an unattended advisory agent can be trusted.
 
 - [x] **Stage 9A:** session/calendar ownership and evidence-health truth.
 - [x] **Critical hardening gate:** live-accept Priority 0 persistence behavior.
-- [ ] **Stage 9B:** historical dependency execution.
+- [x] **Stage 9B:** historical dependency execution. Live-accepted 2026-08-17 with one shared
+      provider request, two independent consumers/readiness results, continuing unrelated runtime
+      activity, and lifecycle-only PostgreSQL persistence.
 - [ ] **Stage 9C:** baseline deterministic metric contracts.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
 - [ ] **Stage 9E:** first quiet semantic market events.
