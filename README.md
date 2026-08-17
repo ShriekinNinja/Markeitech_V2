@@ -1,10 +1,9 @@
 # Markeitech
 
-Markeitech is a live-first market-analysis and decision-support system for
-discretionary index trading, with options as the primary trade expression. It
-runs a NautilusTrader `LiveNode` against Interactive Brokers, warms multiple
-underlying instruments across configured timeframes, persists deterministic
-market context, and evaluates versioned Direction and Location signal evidence.
+Markeitech is a live-first market-intelligence and decision-support system for discretionary
+index trading, with SPY and QQQ 0DTE options as the initial trade expressions. V2 runs a
+NautilusTrader `LiveNode` against Interactive Brokers and is building an adaptive multi-instrument
+data plane for deterministic analysis, semantic events, rolling market state, and advisory AI.
 
 The system is data-only and read-only. Trading execution is intentionally not
 implemented.
@@ -27,24 +26,19 @@ implemented.
 
 ## Current State
 
-Implemented foundations include:
+Implemented V2 foundations include:
 
-- one runtime-switchable active tick-by-tick instrument
-- multiple background instruments receiving live 1-minute bars
-- timeframe-specific historical warmup and restart recovery
-- canonical market events with explicit contract and source identity
-- Parquet time-series persistence with SQLite transactional metadata
-- deterministic multi-timeframe context, session levels, FVGs, and profiles
-- human-readable active-first operator context logs
-- durable, restart-safe signal lifecycle persistence
-- live post-commit Direction and Location evaluation for active and background
-  instruments
+- a clean NautilusTrader `2.0.0rc1` live runtime and IB paper-data connection
+- explicit provider and native market-data boundaries
+- PostgreSQL operational run and system-health records
+- actor-owned system control, Discord health projection, and operational persistence
+- dedicated instrument-definition acquisition ownership
+- versioned actor contracts with bounded supervision and failure policy
 
-The current product slice closes signal-runtime and classification-fidelity
-debt, then establishes a durable event backbone for multiple Nautilus actors.
-See [current status](docs/current-status.md) for the exact boundary and known
-validation debt. Options-chain ingestion and analysis are an explicit future
-roadmap track rather than part of the current runtime.
+Stage 8 is defining adaptive acquisition: an open-ended observation universe, continuous native
+market streams, capability-derived historical requirements, and policy-checked runtime focus.
+No V1 analytics or trading model is implicitly active. See
+[current status](docs/current-status.md) for the exact implemented boundary.
 
 ## Requirements
 
@@ -56,39 +50,19 @@ roadmap track rather than part of the current runtime.
 ## Setup And Checks
 
 ```bash
-uv sync
-uv run pytest
-uv run ruff check .
-uv run black --check .
-uv run markeitech-market-data-plan config/market-data.example.toml
+uv sync --project v2
+uv run --project v2 pytest -q v2/tests
+uv run --project v2 ruff check v2/src v2/tests
 ```
-
-The API skeleton can be started with:
-
-```bash
-uv run fastapi dev backend/src/markeitech/api.py
-```
-
-It exposes `GET /health` and `GET /readiness`.
 
 ## Interactive Brokers Runs
 
-Real IB connections require a local untracked configuration and explicit
-confirmation. The continuous paper-data command is:
+Real IB connections require TWS or IB Gateway, the configured environment, and explicit
+confirmation. The V2 command is:
 
 ```bash
-uv run markeitech-market-data-smoke \
-  config/market-data.local.toml \
-  --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
-```
-
-Duration-limited acceptance runs use:
-
-```bash
-uv run markeitech-market-data-acceptance \
-  config/market-data.local.toml \
-  --duration 300 \
-  --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
+uv run --project v2 markeitech-system v2/config/system.toml \
+  --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB
 ```
 
 Shared PyCharm run configurations are available under `.run/`. Review
@@ -96,14 +70,13 @@ Shared PyCharm run configurations are available under `.run/`. Review
 
 ## Configuration
 
-Use `config/market-data.example.toml` as the tracked template and keep local
-credentials, account identifiers, and machine-specific settings out of Git.
+Use `v2/config/system.toml` for tracked runtime policy and `v2/.env` for local secrets and
+machine-specific values that must remain outside Git.
 
 The operating posture requires:
 
-- an explicit active instrument
 - explicit-expiry futures contracts
-- configured background instruments
+- a configured bootstrap instrument universe
 - UTC API timestamps and explicit session timezones
 - read-only/data-only IB access
 - no execution configuration

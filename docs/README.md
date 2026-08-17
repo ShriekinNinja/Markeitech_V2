@@ -11,14 +11,17 @@ When documents disagree, use this order:
    invariants.
 2. [`current-status.md`](current-status.md) records implemented, current, and
    next work plus validation debt.
-3. The [decisions register](architecture/decisions-register.md) records accepted
-   architectural decisions and their rationale.
-4. [Runtime architecture](architecture/runtime-architecture.md) and
-   [data contracts](architecture/data-contracts.md) describe implemented design.
-5. The [implementation roadmap](roadmap/implementation-roadmap.md) expresses
-   future intent and may change through review.
-6. Operations documents describe how to run and inspect the system.
-7. Notes and archive documents are informative, not normative.
+3. Accepted V2 architecture documents and the
+   [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md) govern the active runtime.
+4. Accepted V2 architecture documents describe implemented V2 design.
+5. The legacy [runtime architecture](architecture/runtime-architecture.md),
+   [data contracts](architecture/data-contracts.md),
+   [implementation roadmap](roadmap/implementation-roadmap.md), and
+   [decisions register](architecture/decisions-register.md) preserve V1 intent and history; they do
+   not override accepted V2 decisions.
+6. Future roadmaps express future intent and may change through review.
+7. Operations documents describe how to run and inspect the system.
+8. Notes and archive documents are informative, not normative.
 
 Implementation and tests remain the final evidence when a descriptive document
 has not yet been updated. Correct the document rather than preserving an
@@ -33,11 +36,24 @@ accidental disagreement.
 ## Architecture
 
 - [Decisions register](architecture/decisions-register.md)
-- [Runtime architecture](architecture/runtime-architecture.md)
-- [Data contracts](architecture/data-contracts.md)
+- [V2 runtime messaging discovery](architecture/v2-runtime-messaging-discovery.md)
+- [V2 runtime control plane](architecture/v2-runtime-control-plane.md)
+- [V2 Discord system health](architecture/v2-discord-health.md)
+- [V2 persistence boundary discovery](architecture/v2-persistence-boundary-discovery.md)
+- [V2 actor composition discovery](architecture/v2-actor-composition-discovery.md)
+- [V2 provider and canonical data boundary](architecture/v2-provider-data-boundary-discovery.md)
+- [V2 adaptive market-data plane](architecture/v2-adaptive-market-data-plane.md)
+
+Preserved V1 architecture remains available in
+[runtime architecture](architecture/runtime-architecture.md),
+[data contracts](architecture/data-contracts.md), and the
+[legacy decisions register](architecture/decisions-register.md).
 
 ## Roadmap And History
 
+- [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md)
+- [V2 market events and live-agent requirements](roadmap/v2-market-events-live-agent-plan.md)
+- [First market-intelligence coding sequence](roadmap/v2-first-market-intelligence-coding-sequence.md)
 - [Active implementation roadmap](roadmap/implementation-roadmap.md)
 - [Runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
 - [Trading quality evidence plan](roadmap/trading-quality-evidence-plan.md)
@@ -48,6 +64,9 @@ for investigation and context, but it does not reopen old stage gates.
 
 ## Operations
 
+- [GitHub workflow](operations/github-workflow.md)
+- [V2 operational PostgreSQL](operations/v2-postgresql.md)
+- [V2 static watchlist handoff](roadmap/v2-static-watchlist-handoff.md)
 - [Interactive Brokers setup](operations/ib-setup.md)
 - [Operator context log guide](operations/operator-context-logs.md)
 - [Operator signal log guide](operations/operator-signal-logs.md)
@@ -57,7 +76,9 @@ for investigation and context, but it does not reopen old stage gates.
 
 ## Research
 
+- [Market-analysis specialist brief](research/market-analysis-specialist-brief.md)
 - [Trading frameworks study](research/trading-frameworks-study.md)
+- [Semantic events, AI observer, and options intelligence baseline](research/semantic-events-ai-options-baseline.md)
 
 Research documents preserve sourced ideas, hypotheses, and unresolved questions.
 They are informative and do not define product behavior until an accepted
@@ -68,6 +89,7 @@ decision or roadmap item promotes a tested result.
 - [Markeitect notes](notes/markeitect-notes.md)
 - [Original greenfield brief](archive/initial-greenfield-brief.md)
 - [Stage 0 project context](archive/stage-0-project-context.md)
+- [Preserved V1 current status](archive/v1-current-status.md)
 
 The archived greenfield brief is preserved as written. It explains the original
 direction and stage rationale, but its stage requirements and status statements

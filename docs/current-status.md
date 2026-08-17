@@ -1,227 +1,302 @@
 # Current Status
 
-Last reviewed: 2026-07-21
+Last reviewed: 2026-08-17
 
-This page is the source of truth for implementation progress. It separates code
-that exists from behavior that has received live acceptance.
+This page is the source of truth for current implementation progress. Markeitech V2 is the active
+system. The preserved V1 status is available in
+[`archive/v1-current-status.md`](archive/v1-current-status.md) and does not define V2 behavior.
 
 ## Operating Posture
 
-- Live-first discretionary decision support
-- Interactive Brokers paper account in read-only/data-only mode
-- Explicit-expiry NQ as the first active instrument
-- One active tick-by-tick instrument plus live 1-minute background instruments
-- Console-first operator workflow
-- No automated execution
-- No active crypto product work
-- Options are the primary manual trade expression; chain ingestion is deferred
+- V2 is a clean runtime foundation on NautilusTrader `2.0.0rc1`.
+- Interactive Brokers paper trading is the current provider connection.
+- The system provides observation and decision support only; automated execution is absent.
+- Components communicate through approved Nautilus actor facilities.
+- Each actor owns one responsibility and consumers do not redefine source facts.
+- Previous analytics, indicators, levels, signals, models, and trading assumptions are not active
+  V2 requirements.
+- Markeitect approves architecture decisions before implementation proceeds.
 
-## Implemented
+## Live-Accepted Foundation
 
-### Domain And Configuration
+- Isolated V2 Python project, configuration, environment, dependencies, and runtime logs.
+- One PyCharm **Markeitech V2** run configuration with macOS caffeination.
+- Nautilus `LiveNode` construction and clean shutdown.
+- Interactive Brokers connection through TWS paper trading.
+- Configured ES and SPY instrument-definition resolution.
+- Versioned system-health signal contract.
+- `SystemControlActor` with honest `STARTING`, `READY`, `FAILED`, and `STOPPING` ownership.
+- Read-only Discord projection of system-health transitions.
+- Discord failure isolation and bounded worker shutdown.
 
-- Versioned canonical contracts for instruments, bars, trades, quotes, context,
-  features, and signals
-- Explicit active/background roles and guarded runtime switching
-- Contract identity and session-aware configuration validation
-- Timeframe-specific analytical warmup plans
+## Stage 4: Operational Persistence
 
-### Live Market Data
+Implementation is complete for review on branch `v2-stage-4-persistence-boundary`:
 
-- NautilusTrader `LiveNode` with the Interactive Brokers adapter
-- Historical warmup for every enabled instrument
-- Active-instrument tick-by-tick subscriptions
-- Background live 1-minute bars
-- Bounded normalization and event handoff
-- Duration-limited acceptance runs and continuous paper-data runs
-- Recovery planning, stale-data handling, and observable shutdown
+- PostgreSQL is the accepted operational source of truth.
+- Docker Compose owns the local PostgreSQL service and persistent volume.
+- The existing PyCharm run configuration starts PostgreSQL and waits for health before Markeitech.
+- Versioned migrations run under a PostgreSQL advisory lock before IB startup.
+- Every runtime receives a UUID run record.
+- `OperationalPersistenceActor` is the sole writer while Nautilus runs.
+- System-health events are stored in order with database-enforced idempotency.
+- `READY` requires both instrument definitions and operational persistence readiness.
+- Mid-run persistence failure produces the first approved `DEGRADED` transition.
+- `STOPPING` remains actor-owned; the CLI records `STOPPED` only after `LiveNode.run()` returns
+  cleanly.
+- A crash, forced kill, or failed terminal write intentionally leaves an incomplete run.
+- Restart reads, duplicate handling, migrations, and clean closure pass against real PostgreSQL.
 
-### Persistence And Recovery
+Stage 4 is committed and live-accepted.
 
-- Nautilus Parquet catalog for bulk time-series data
-- SQLite control plane for identities, checkpoints, recovery, features, signals,
-  transitions, location interactions, and notification intents
-- Serialized bounded catalog writes
-- Restart verification and checkpoint recovery
-- Retention and offline SQLite compaction tooling
+## Stage 5: Actor Composition
 
-### Analytics
+Implementation is approved and committed on branch `v2-stage-5-actor-composition`:
 
-- Multi-timeframe EMA, trend, VWAP, support/resistance, FVG, and session context
-- Prior-session and named-session levels
-- Current, prior, named-session, and composite volume profiles
-- Timeframe-specific deep warmup, including daily and hourly analytical context
-- Deterministic Direction and Location scores with reason codes
-- Active-first, bounded, change-aware operator context logs
-- Versioned durable feature snapshots
+- A pure actor plan owns the complete static runtime topology.
+- System control and operational persistence are mandatory core actors.
+- Discord is explicitly enabled or disabled in typed configuration.
+- Enabled Discord requires its webhook before IB startup; later delivery failure remains isolated.
+- Actor and config import paths are code-owned rather than supplied through TOML.
+- Immutable startup prerequisites replace the transient persistence-ready signal.
+- Runtime persistence failure remains a separate fact; only system control may transition the
+  system to `FAILED` or `DEGRADED`.
+- Dynamic plugins, actor removal, and generic readiness infrastructure remain deferred.
 
-### Signals
+Stage 5 is committed and live-accepted.
 
-- Versioned signal definitions and stable semantic identity
-- Candidate, Armed, Triggered, Invalidated, and Expired contracts
-- Append-only, hash-chained SQLite lifecycle persistence
-- Atomic signal transition and notification-intent persistence
-- Direction regime tracking
-- Direction-aligned location qualification
-- Repeatable location episode tracking
-- Soft Direction degradation preserves open regimes while blocking Trigger
-- Completed-bar Location touch detection plus explicit engagement, rejection,
-  and acceptance-through classification
-- Durable, restart-restored Location interaction events with transparent
-  cluster-quality components
-- Cluster-local source confluence and deterministic best-location selection
-- Restart restoration of verified open signal state
-- Bounded post-commit live feature composition and Direction/Location evaluation
-- Equal evaluation path for active and background instruments
-- Durable role-selected Aggression and follow-through evaluation
-- Atomic Armed-to-Triggered and Armed-to-Expired lifecycle transitions
-- Restart-stable expiry suppression for unchanged Location episodes
-- Concise lifecycle and runtime-health console projections
+## Stage 6: Supervision And Failure Policy
 
-## Current Boundary
+Implementation is approved and live-accepted on branch `v2-stage-6-supervision-policy`:
 
-Signal algorithm `1.2` retains completed-bar touches after the candle closes
-away, confirms rejection and acceptance through consecutive closes, and stores
-meaningful interaction changes as canonical SQLite events. Simultaneous levels
-are grouped into coherent price clusters; confluence must exist inside one
-cluster, and selection retains source diversity, timeframe diversity, exact
-touches, fidelity, normalized distance, and compactness as separate components.
-These semantics are deterministic-test complete and received mechanical live
-acceptance during the July 20 run. The same run did not show acceptable trading
-quality: 90 Armed signals produced 5 Triggers, while 54 signals were invalidated
-because another Location episode replaced them. The evidence and resulting
-decision to specify a distinct Markeitect Model are recorded in
-`docs/notes/2026-07-21-markeitect-model-handoff.md`.
+- Component failures use one versioned internal signal contract.
+- Workers return sanitized results to their owning actors and never decide global health.
+- System control remains the sole owner of global `DEGRADED` and `FAILED` transitions.
+- PostgreSQL health-event writes use configured bounded attempts and backoff.
+- Exhausted PostgreSQL writes, queue rejection, and shutdown timeout report one structured
+  component failure without retaining unbounded work.
+- Discord remains optional and best effort; delivery failure never changes global health.
+- Persistence, Discord, and system control emit bounded lifetime counters at shutdown.
+- Both workers stop accepting work, drain accepted FIFO work within their timeout, and allow a
+  later cleanup attempt to finish after an initial timeout.
+- Recovery from `DEGRADED` to `READY` remains deliberately deferred until durable recovery
+  evidence is defined.
 
-Stage 5D.3 has live evidence across the full Candidate, Armed, Invalidated, and
-Expired lifecycle. The managed bounded
-consumer restores verified signal state, evaluates durably committed feature
-and Aggression evidence, persists transitions atomically, and projects concise
-signal events plus runtime health. Its corrected legacy recovery path has also
-survived live restart. The 2026-07-16 run exposed a valid expired-episode exit
-which terminated the signal consumer; its deterministic repair and adverse,
-Direction-change, and restart regressions are complete for review but still
-require live acceptance.
+Stage 6 is committed and live-accepted.
 
-Stage 5D.4 is active. Signal-runtime failures retain phase, input identity, last
-successful commit sequence, exception, and traceback. The 2026-07-16 failure
-provided live acceptance for those diagnostics: it identified ES feature commit
-sequence 3693, the last successful sequence 3692, and the exact location-episode
-exception. Active trade classification uses bounded event-time quote history
-and accounts for every classified or rejected observation; its short-run live
-evidence is promising but not a full-session calibration.
+## Stage 7: Provider And Canonical Data Boundary
 
-The first event-spine vertical slice is also test-complete. Durable feature
-revisions become compact versioned notices, cross a bounded thread-safe bridge,
-and publish on the Nautilus event-loop thread to a dedicated operator projection
-actor. Bus rejection is explicitly counted but cannot invalidate already-
-committed evidence or the existing critical signal handoff. Live publication
-is now observed for active and background features. One idempotently repeated
-feature notice exposed and produced a bounded consumer-deduplication fix.
-Graceful shutdown counters remain the next acceptance evidence because the
-review run ended without entering Nautilus's logged stopping lifecycle.
+Implementation is approved and committed on branch `v2-stage-7-provider-data-boundary`:
 
-The same short 2026-07-16 run classified 64 of 66 active NQ trades and 91 of 94
-volume units, reporting a 96.81% classified-volume ratio with explicit reasons
-for the remaining two observations. This is strong evidence for the corrected
-event-time classifier, but it is not yet full-session Aggression calibration.
+- Native Nautilus instruments and market-data objects remain the runtime transport contracts.
+- IB symbology, MIC conversion, quote batching, size-only quote updates, and revised-bar behavior
+  are explicit V2 configuration.
+- Provider context and request policy remain separate from high-volume native observations.
+- Native instrument identity, source fidelity, and timestamps are not rewritten.
+- Markeitech-owned market-data contracts remain possible later when a concrete requirement cannot
+  be represented safely by native types and acquisition context.
+- Preservation means honest live transit, not durable raw market-data retention.
 
-Context Event semantics, durable recovery, and live runtime wiring are
-deterministic-test complete for review. Immutable contracts and a pure ordered detector cover
-trend and coarse value-area region transitions, suppress initial, duplicate,
-stale, and same-timestamp correction output, and break comparison across
-unavailable evidence. SQLite schema 10 atomically commits emitted transitions
-with a compact detector checkpoint; no-change revisions still advance the
-checkpoint. The existing bounded feature-writer thread owns ordered processing;
-startup seeds new streams from their latest feature and reconciles only durable
-checkpoint gaps without historical projection. Newly committed transitions
-cross the event bridge to a dedicated non-blocking projection actor. Live
-transition publication is observed; restart acceptance remains outstanding.
+Stage 7 is committed and offline-verified.
 
-The same 2026-07-16 signal failure exposed a delayed containment problem. The
-stopped signal consumer left its critical feature handoff undrained. After the
-2,048-revision capacity filled, feature persistence failed closed at commit
-sequence 5747 around 16:08 UTC. Raw tick and canonical bar persistence plus
-in-memory operator context continued until shutdown around 18:25 UTC. This was
-not observed raw-data loss; it was a signal outage followed by feature and
-projection loss. A deterministic containment correction is complete for review:
-signal failure immediately closes the critical handoff, retains the failed
-revision, and projects pending, capacity, high-water, rejection, and closed
-state. The next feature batch then fails immediately rather than filling a dead
-queue for hours. Durable signal catch-up remains a separately reviewed design
-because retroactive setup semantics are not yet defined.
+## Stage 8: Data Acquisition Ownership
 
-The 2026-07-15 run separated operational success from trading usefulness. The
-LiveNode, market-data ingestion, persistence, recovery, analytics, and operator
-context continued through London and New York observation. The initial Fabio
-Direction-Location-Aggression definition armed and expired setups, but produced
-no Triggered transition and its output did not pass Markeitect's discretionary
-trading-usefulness review. The lifecycle implementation is retained as a
-deterministic shadow setup family; it is not a trusted trading signal.
+Stage 8A is implemented for review on branch `v2-stage-8-acquisition-ownership`:
 
-The same run exposed an observability defect. At 15:30:08 UTC the signal runtime
-reported `FAILED` after 889 revisions, 676 evaluations, 47 lifecycle writes,
-221 confirmation evaluations, and 12 expirations, while the main LiveNode and
-analytics continued. The heartbeat did not include the underlying exception.
-Failure-cause visibility and classified-tick fidelity accounting are therefore
-the first Stage 5D.4 acceptance gates.
+- `DataAcquisitionActor` is a mandatory core actor and the sole owner of provider-facing
+  instrument-definition requests.
+- It discovers definitions already present in the Nautilus cache and requests each missing
+  configured definition once.
+- A versioned acquisition status reports expected, available, and missing definitions.
+- `SystemControlActor` consumes acquisition status and remains the sole owner of global readiness.
+- A publish-on-start and post-start request handshake avoids depending on actor registration order.
+- This slice adds no live subscriptions, historical bars, persistence, pacing policy, recovery,
+  analytics, or trading behavior.
 
-An experimental, manually invoked Plotly analytics chart is available on the
-current branch. It reads persisted evidence and does not participate in the
-LiveNode or canonical analytics path.
+Stage 8A passes offline contract, ownership, deduplication, composition, state-transition, and
+Nautilus bus-delivery tests. Live review remains pending.
 
-## Validation Debt
+Stage 8B's architecture direction is approved. It replaces V1's fixed active/background model
+with four independent concepts: trade universe, dynamic observation universe, active analytical
+capabilities, and temporary focus. The target is a broad continuous native market-data plane
+feeding deterministic analysis and semantic state, with a later advisory agent directing
+attention through policy-checked intents. No Stage 8B runtime behavior has been implemented.
 
-- NQ live operation has been exercised more thoroughly than ES, indices, and
-  equities. Broader provider and contract coverage remains an acceptance task.
-- Signal failure diagnostics have live acceptance. Event-time trade
-  classification has healthy short-run evidence but not a full-session
-  calibration.
-- The 2026-07-15 run classified only a small fraction of observed trade volume.
-  Corrected timestamp alignment and explicit unclassified reasons need new live
-  evidence before delta, CVD, or tick Aggression can be trusted.
-- The committed-feature event bridge and operator consumer have reviewed live
-  publication evidence; graceful shutdown-health evidence remains outstanding.
-- Context-transition persistence and restart restoration are deterministic-test
-  complete and connected to the live event actor. Live transition publication
-  is observed; live restart acceptance remains outstanding.
-- Fail-fast signal-consumer containment and queue-health projection are
-  deterministic-test complete for review. Durable committed-revision catch-up
-  remains outstanding and cannot silently invent retroactive signal semantics.
-- Stage 5D.3 has deterministic active, background, expiry, race-order, and
-  restart tests plus live Armed and Expired evidence, but no live Triggered
-  evidence and no trading-usefulness acceptance.
-- Tick gaps and damaged tick windows are observable; their effect on future
-  Aggression confidence still needs an explicit policy.
-- Selected profile, FVG, session, and context values have been compared with
-  external charts. The full analytical system has not been independently
-  calibrated across many sessions and regimes.
-- Replay and backtest reproducibility remain designed obligations rather than a
-  completed runtime.
-- The frontend is only a skeleton and is not part of the present operator path.
+Stage 8B.1 is committed. Stage 8B.2 and 8B.3 are ready for review:
 
-## Deliberately Deferred
+- reusable analytical capability requirements and instrument-bound feed demand;
+- explicit demand ownership, priority, optional expiry, and lifecycle vocabulary;
+- pure multi-consumer provider-demand reconciliation;
+- one provider-neutral coordinator owning subscribe and unsubscribe lifetime;
+- one subscribe for shared demand and one unsubscribe only after the final consumer leaves;
+- retryable provider failures which are never reported as active;
+- native Nautilus translation for simple instrument, quote, trade, bar, status, and option-Greek
+  subscriptions; and
+- explicit deferral of richer book and option-chain subscription contracts.
 
-- Stage 5E composite scoring, suppression, and expiry refinement
-- Scheduled Discord reports and relevance throttling
-- Options contract discovery, chain snapshots, and options-derived context
-- ML ranking and AI explanation
-- Strategy runtime
-- Replay and backtesting implementation
-- WebSocket gateway and UI
-- Execution and risk controls
-- Redis coordination unless a demonstrated runtime need appears
+The installed compiled Nautilus core did not expose enough subscription reference-count state for
+an honest offline proof of duplicate-actor behavior, so Stage 8C completed that proof against a
+live IB connection.
 
-## Acceptance Evidence
+Stage 8C is complete on branch
+`v2-stage-8c-continuous-native-stream`:
 
-The continuous live context runtime has completed warmup, emitted context for
-active and background instruments, survived operator restarts, and continued
-running during live observation. On 2026-07-14, Markeitect followed a Direction
-change from `+2` to `-1` over roughly 45 minutes and used that context in a
-profitable discretionary puts trade. On 2026-07-15, the broader runtime and
-analytics remained useful throughout extended live observation, while the first
-Fabio signal definition did not provide useful trading guidance and its managed
-consumer later failed without a causal operator message.
+- standalone configuration schema 3 explicitly declares bootstrap native feeds and the bounded
+  probe controls;
+- the proof profile requests quotes and trades for configured ES and SPY;
+- no feed is inferred merely from observation-universe membership;
+- `DataAcquisitionActor` starts streams only after instrument-definition readiness;
+- lifecycle facts distinguish `REQUESTED`, `ACCEPTED`, `SUBSCRIBED`, and first-observed `ACTIVE`;
+- each demand remains correlated through its stable demand ID;
+- raw observations remain native, transient, unwrapped, and unpersisted; and
+- shutdown cancels each bootstrap demand while the coordinator protects shared subscriptions.
 
-That observation is evidence that the operator projection can be useful. It is
-not statistical validation, signal calibration, or evidence for automation.
+The live proof registered a temporary `NativeConsumerProbeActor` for those same native quote and
+trade streams. Both actors received all four streams. Eight actor-level subscribe commands became
+four provider subscriptions. The probe then unsubscribed after 15 seconds with 72 observations,
+while `DataAcquisitionActor` continued to 464 observations before shutdown. Provider
+unsubscription occurred only during final shutdown. This proves native multi-actor delivery,
+provider deduplication, and subscription lifetime safety for this path.
+
+The diagnostic probe remains available behind explicit configuration but is disabled in the normal
+runtime profile. It adds no custom market-data envelope, fan-out, persistence, analytics, or
+fallback implementation. Offline tests cover configuration, composition, logical deduplication,
+lifecycle meaning, first observation, cancellation, retry, and native call mapping.
+
+The subsequent scalable-watchlist POC registered a core `WatchlistActor` for eight instruments.
+IB delivered native best-bid/ask updates and external five-second bars to the actor while
+`DataAcquisitionActor` anchored the shared provider subscriptions. Broad tick-by-tick `AllLast`
+requests reached IB limit `10190`, so tick trades remain a focus-only capability rather than a
+baseline watchlist feed. The accepted POC retains bounded readiness transitions and shutdown
+summaries; temporary per-update logs were removed after live review.
+
+The actor is now a bounded core state owner with immutable versioned snapshots, native event
+timestamps, separate registration and observation state, and out-of-order protection. Versioned
+membership and lifecycle contracts are published and persisted through the generic PostgreSQL
+audit boundary.
+Dynamic membership is explicitly deferred; the accepted stopping point is a live-proven static,
+configuration-owned watchlist. The exact handoff is
+[`roadmap/v2-static-watchlist-handoff.md`](roadmap/v2-static-watchlist-handoff.md).
+
+The generic PostgreSQL operational ledger and store boundary are implemented. Current acquisition
+control events plus static watchlist membership and lifecycle events are wired through the same
+ordered bounded persistence worker. A versioned request/ready handshake now gates system control,
+data acquisition, and watchlist startup until the in-node persistence worker is subscribed and
+its Nautilus startup callback has returned. This replaces the watchlist's timing-based startup
+delay and preserves acquisition
+`REQUESTED`, `ACCEPTED`, and `SUBSCRIBED` events before the first `ACTIVE` observation. PostgreSQL
+preflight reapplies idempotent schema definitions and verifies required tables and columns. A
+dropped applied-migration table is therefore recreated before runtime readiness instead of failing
+on its first write. No audit event includes raw quote or bar payloads. The startup-audit closure is
+implemented for live review on branch
+`v2-stage-8e-startup-audit-closure`.
+
+The configuration-ownership slice replaces the root instrument list with typed static
+watchlist members. Each member declares its provider instrument ID, permanent owner IDs, and the
+capabilities the current watchlist actually provides. System control, instrument-definition
+acquisition, the IB provider, actor composition, and membership audit all consume that one member
+set. The subsequent static completion removes duplicated bootstrap feeds: Watchlist
+capabilities now publish stable demand contracts, Acquisition alone owns provider subscription
+lifetime, and each consumer registers its own native Nautilus handlers during actor startup.
+Provider subscription outcomes and local consumer readiness converge independently in either
+order. Demand, provider outcome, degradation, recovery, and release are operational audit facts;
+raw market observations remain memory-only. Session-unaware elapsed-time staleness is deliberately
+deferred.
+The complete 18-member baseline is now configured through Nautilus IB simplified `load_ids`, with
+required startup resolution and explicit September 2026 ES, NQ, YM, and CL contracts. This mapping
+is ready for live proof; automatic futures rolling is not implied.
+
+## Explicit Boundaries
+
+- PostgreSQL currently contains runtime runs and system-health transitions. It is the accepted
+  durable audit ledger for all future meaningful system intents, decisions, lifecycle changes,
+  publications, attempts, and outcomes.
+- PostgreSQL does not contain raw ticks, quotes, bars, books, or option-chain payloads. Market-data
+  requests, readiness, freshness, gaps, retries, and failures are system events and must be
+  audited as their owning components are implemented.
+- Ordinary diagnostic logs and individual internal callbacks remain outside PostgreSQL.
+- Reconstructable market data will be requested from IB when required by live operation rather
+  than retained speculatively.
+- Raw market-data persistence, Parquet, replay, and backtesting are outside current scope until
+  Markeitect explicitly reopens them.
+- Redis, external message streams, actor snapshots, dynamic actor
+  composition, analytics, and trading models remain unimplemented.
+- V1 remains preserved for reference and reuse, but no V1 runtime behavior is implicitly active.
+
+## Next Accepted Sequence
+
+The static watchlist and live acquisition ownership foundation are complete. Dynamic watchlist
+membership remains intentionally deferred. Market intelligence design is now in review on branch
+`v2-stage-9-market-intelligence-design`.
+
+The authoritative proposed coding order is:
+
+1. session and calendar ownership;
+2. evidence-health contracts;
+3. historical dependency execution;
+4. baseline metric contracts;
+5. entities and rolling state;
+6. first semantic events;
+7. bounded options-data proof;
+8. cross-instrument state;
+9. richer analytics; and
+10. the live advisory agent.
+
+The agent maintains a plural opportunity set. No instrument is globally preferred, and the
+initial SPXW/SPY/QQQ expression universe remains configurable and expandable. All variable market,
+analysis, policy, and resource parameters follow the charter's configuration and optimization
+principle.
+
+The pre-coding design gate is accepted: opportunities are target-exposure and episode based rather
+than source-instrument or contract based, and first-batch parameters are startup-configurable while
+carrying explicit future mutability and optimization metadata.
+
+The detailed sequence and gates are maintained in
+[`roadmap/v2-first-market-intelligence-coding-sequence.md`](roadmap/v2-first-market-intelligence-coding-sequence.md).
+
+## Stage 9A: Session And Evidence Truth
+
+Stage 9A is complete and accepted at commit `ce9076e`:
+
+- `pandas-market-calendars` supplies local exchange schedules, holiday rules, DST handling, and
+  early-close dates.
+- Typed startup configuration maps every watchlist member to one of four versioned calendars and
+  defines SPXW GTH/RTH/Curb phases plus explicit exceptional-session overrides.
+- `SessionStateActor` owns session/trade-date truth and publishes only initial or changed state.
+- `EvidenceHealthActor` consumes acquisition lifecycle facts and independently observes the same
+  native Nautilus quote and five-second-bar streams.
+- Configured freshness policies distinguish not-yet-evaluated, dormant, healthy, degraded, stale,
+  and unavailable evidence without treating a closed market as failed or confusing observation
+  age with source fidelity.
+- Consumer registration occurs outside nested signal dispatch. Local attachment failures are
+  isolated, explicitly unavailable, and retried on configurable cadence; unrelated actors keep
+  operating.
+- Runtime readiness converges from local registration and acquisition events in either order; it
+  does not rely on actor order, sleeps, or a prescribed startup sequence.
+- Session and evidence transitions are stored in the existing PostgreSQL operational ledger; raw
+  market observations remain memory-only.
+- Offline tests cover calendar boundaries, DST, holidays, early closes, freshness transitions,
+  strict wire contracts, actor composition, and persistence conversion.
+
+The detailed ownership and semantics are recorded in
+[`architecture/v2-session-evidence-health.md`](architecture/v2-session-evidence-health.md).
+
+The corrective Stage 9A/Priority 0 persistence-safety gate is implemented and live-accepted. The
+2026-08-17 mega-clean boot recreated PostgreSQL from an empty volume, applied all migrations,
+reached `READY`, and shut down cleanly. It stored all 490 accepted records with no retries,
+failures, rejections, pending records, sequence gaps, or duplicates. The batch writes PostgreSQL in
+bounded transactions, reserves critical audit capacity, validates startup capacity, suppresses
+repeated identical persistence-failure logs, and prevents recoverable queue pressure from creating
+the invalid `FAILED -> STARTING` transition. Queue admission remains non-blocking and rejected
+payloads remain an explicit audit gap.
+
+Evidence recency now supports configurable, persisted adaptive quote profiles keyed by instrument,
+feed, selector, provider, session phase, and policy version. Profiles checkpoint compact derived
+statistics only; raw observations remain transient. SPX/VIX use cash-session, bar-derived-last
+expectations, and Watchlist observation truth now follows each instrument's declared capabilities.
+Acquisition retains provider subscription lifetime ownership during shutdown.
+
+The same acceptance run proved profile learning for ES, NQ, YM, and CL. Brief overnight quote
+freshness transitions showed that the configurable two-second hard fresh floor is still sensitive
+to natural delivery pauses. Transition hysteresis or persistence windows are tracked as Priority 1
+calibration; this does not block Stage 9B.

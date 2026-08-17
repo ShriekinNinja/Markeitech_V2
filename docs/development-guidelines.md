@@ -9,40 +9,40 @@ Markeitech serves a discretionary operator first. Optimize for trustworthy
 context, inspectable evidence, useful timing, and recovery rather than HFT
 latency or automated execution.
 
-Separate the market used to form a thesis from the instrument used to express
-the trade. NQ and correlated markets may provide Direction, Location, and later
-Aggression while Markeitect expresses the decision through an option. Do not
-force options contracts into the active/background market-data role model until
-their distinct chain, expiry, strike, liquidity, and Greek semantics are
-designed.
+Separate the markets used to form a thesis from the instrument used to express
+the trade. Underlyings, indexes, futures, volatility, sectors, and other context
+may inform an options decision without becoming the traded product. Options
+require distinct chain, expiry, strike, liquidity, and Greek semantics.
 
 The current priority order is:
 
 1. dependable live operation
 2. human-readable console signals and analysis
 3. Discord webhook delivery and reports
-4. replay and backtest validation
-5. strategy runtime and research workflows
-6. gateway and UI
-7. execution only after explicit risk design and approval
+4. strategy runtime, ML, and agent research workflows
+5. gateway and UI
+6. execution only after explicit risk design and approval
 
-This ordering is a product priority, not permission to make replay impossible.
-Live and replay paths should share deterministic domain logic where practical.
+Replay and backtesting are outside current scope until Markeitect explicitly
+reopens them. Do not add storage or abstractions for that hypothetical path.
 
 ## Instrument Model
 
-Exactly one instrument is logically active at a time and receives tick-by-tick
-data. It can be switched during runtime through a guarded handoff.
+Do not encode V1's one-active-instrument and background-1-minute-bar model as a
+V2 invariant. V2 distinguishes the trade universe, dynamic observation
+universe, active analytical capabilities, and temporary focus. Multiple
+instruments may receive granular continuous data when justified and supported.
 
-All enabled instruments warm up across configured analytical timeframes before
-live evaluation. Background instruments receive live 1-minute bars and use the
-same analytics and signal definitions as the active instrument when evidence is
-available. Active status affects data cadence and operator emphasis, not the
-importance or correctness of background analysis.
+SPXW, SPY, and QQQ 0DTE options form the initial configurable trade-expression universe. No
+instrument is preferred by implementation or configuration. The agent may maintain and rank
+multiple simultaneous opportunities. SPY, QQQ, SPX, ES, and NQ are useful initial evidence
+examples, not a complete or fixed observation universe. Crypto is not a current product priority.
 
-NQ is the first active focus. ES, index, and equity context are important to
-index trading. Crypto was useful for an early continuous-market connectivity
-test but is not an active product priority.
+Analytical capabilities declare the native feeds and historical evidence they
+require. The acquisition owner expands approved demand, coordinates provider
+requests, and publishes honest lifecycle facts. An agent may later request
+policy-approved changes to focus and capability activation, but does not call
+IB or own deterministic analysis.
 
 ## Runtime Ownership
 
@@ -50,9 +50,9 @@ Prefer NautilusTrader for instruments, market-data models, actors, message-bus
 integration, clocks, lifecycle, and provider adapters. Extend it through narrow
 Markeitech boundaries when the product requires semantics Nautilus does not own.
 
-Do not pursue framework purity at the expense of clear ownership. The feature
-catalog, SQLite control plane, DLA analytics, durable signal lifecycle, and
-operator projections are legitimate Markeitech responsibilities.
+Do not pursue framework purity at the expense of clear ownership. Product-specific analytical
+entities, semantic events, rolling state, agent policy, and operator projections may be
+legitimate Markeitech responsibilities after their requirements are approved.
 
 Only one component may own a subscription or canonical stream. Native IB access
 is allowed only for a capability Nautilus does not expose and must share the
@@ -64,33 +64,28 @@ same contract, timestamp, source, health, persistence, and deduplication rules.
 - Store time in UTC and apply explicit IANA timezones for market sessions.
 - Distinguish historical, live, restored, derived, and inferred evidence.
 - Do not silently fill gaps or invent trade direction from unsupported data.
-- Treat completed bars as durable analytical facts; treat in-progress state as
-  replaceable runtime state.
-- Advance dependent state only after the evidence it references is committed.
+- Treat completed bars as immutable observations within one live runtime unless an approved
+  provider-revision policy says otherwise.
+- Do not require durable raw market data or feature history without an approved live consumer.
 - Version feature definitions, signal definitions, schemas, and future ML data.
 
 Because Markeitech is not HFT, isolated missing ticks need not halt bar-based
 analysis. They must remain observable and lower the confidence or fidelity of
 tick-sensitive aggression evidence.
 
-## Analytics And Signals
+## Analytics And Intelligence
 
 Analytics must be deterministic and transport-neutral. Console, Discord, a
 future gateway, and a future UI consume projections; they do not calculate
 market truth.
 
-The first formal model is DLA:
+V2 analytics begin from a blank page. Do not reactivate V1's DLA model, signal lifecycle,
+indicators, or thresholds implicitly. New capabilities must declare their inputs, warmup,
+fidelity, configuration, outputs, and resource cost before implementation.
 
-- Direction describes the broader market condition.
-- Location identifies repeatable, evidence-backed areas of interest.
-- Aggression will assess bounded near-real-time confirmation.
-
-Current signal state progresses monotonically from Candidate to Armed to
-Triggered, with Invalidated and Expired terminal states. Signal identity must be
-stable across ordinary feature refreshes and anchored to a market-semantic
-episode rather than a timestamp alone.
-
-No signal is an order instruction. Do not infer product validation from one
+Semantic events should represent meaningful changes rather than duplicate raw observations.
+Rolling state, ML outputs, and agent interpretations must retain evidence lineage. No event,
+score, or agent proposal is an order instruction. Do not infer product validation from one
 profitable trade, one screenshot, or one live session.
 
 ## ML And AI
@@ -98,10 +93,25 @@ profitable trade, one screenshot, or one live session.
 Build deterministic features and labels before training models. Persist the
 feature definition and model identity with every inference.
 
-ML may later rank, classify, or calibrate deterministic candidates. AI may
-summarize and explain persisted evidence for an operator. Neither may silently
-alter canonical data, invent evidence, control the IB connection, or bypass
-reviewed signal and risk boundaries.
+ML may later rank, classify, or calibrate deterministic evidence. AI may synthesize live semantic
+state and issue typed, policy-checked intents for observation and analysis. Neither may silently
+alter canonical data, invent evidence, control the IB connection, or bypass reviewed resource and
+risk boundaries.
+
+## Configuration And Optimization
+
+Do not hide a tunable market or operational decision in implementation code. Variable thresholds,
+windows, weights, instruments, sessions, budgets, limits, cadences, and selection rules must be
+typed, scoped, validated, versioned configuration with explicit defaults and units.
+
+Every optimization-eligible parameter must declare its authorized range, mutability boundary,
+source, effective time, and audit behavior. Runtime adjustment must use a typed, policy-checked
+intent with expiry and rollback semantics; models do not receive arbitrary configuration access.
+
+Keep true invariants in code: evidence honesty, schema and type integrity, source identity,
+authorization, audit, and execution prohibitions. The authoritative full rule is the
+[Configuration And Optimization Principle](../markeitech.md#configuration-and-optimization-principle)
+in the project charter.
 
 ## Operator Validation
 

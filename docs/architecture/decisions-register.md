@@ -1,5 +1,9 @@
 # Decisions Register
 
+> **Legacy V1 record:** This register preserves accepted V1 decisions and rationale. It does not
+> govern Markeitech V2 unless a decision is explicitly restated in an accepted V2 architecture
+> document. The project charter, current status, and accepted V2 documents take precedence.
+
 This register records architecture decisions that should not drift silently.
 
 Decision status records architectural acceptance, not implementation progress.

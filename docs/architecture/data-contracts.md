@@ -1,5 +1,8 @@
 # Data Contracts
 
+> **Legacy V1 contracts:** This document describes preserved V1 schemas and behavior. It does not
+> govern Markeitech V2, whose analytics and semantic-event contracts have not yet been designed.
+
 Stage 1 implements domain contracts under `backend/src/markeitech/domain`.
 
 These contracts are intentionally pure backend schemas and deterministic helpers. They do not connect to Interactive Brokers, NautilusTrader live nodes, persistence, WebSockets, frontend code, or strategy workers.

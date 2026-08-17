@@ -1,5 +1,8 @@
 # Implementation Roadmap
 
+> **Legacy V1 roadmap:** This document preserves previous implementation intent. It does not govern
+> Markeitech V2. Use `v2-infrastructure-plan.md` and `current-status.md` for active work.
+
 This roadmap describes current future intent. Completed slice details live in
 the [implementation history](implementation-history.md), while exact progress
 lives in [current status](../current-status.md).
