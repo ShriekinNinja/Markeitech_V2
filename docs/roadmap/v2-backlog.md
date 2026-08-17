@@ -72,6 +72,61 @@ before an unattended advisory agent can be trusted.
       deployment.
 - [ ] Archive remaining V1-only operational documentation clearly without deleting preserved work.
 
+## Options-Flow Evidence Track
+
+The manually downloaded BlackBoxStocks feed is optional vendor-curated context, not a consolidated
+options tape, live execution source, or directional signal. Its measured limitations and proposed
+contracts are documented in
+[`../research/v2-options-flow-specialist-report.md`](../research/v2-options-flow-specialist-report.md).
+
+### Evidence And Provenance Gate
+
+- [ ] Confirm that the active subscription and market-data terms permit internal machine analysis,
+      source retention, normalized derivatives, model/agent use, and derived-event projection.
+- [ ] Approve whether original exports may be retained outside Git and PostgreSQL, with explicit
+      access controls and retention. Until then, `v2/data/OptionsFlow.csv` remains untracked.
+- [ ] Capture the export timezone, download timestamp, schema/version identity, and complete active
+      BlackBox filter profile with every future artifact.
+- [ ] Decide whether to pursue a supported licensed API or richer source containing stable trade/
+      correction identity, NBBO-at-print, venue, condition, strategy linkage, and precise time.
+
+### Isolated Source Contract
+
+- [ ] Define immutable source-artifact, source-row, and provider-neutral normalized-observation
+      contracts without presenting a manually imported file as live evidence.
+- [ ] Preserve decimal/raw source values, partial contract identity, unknown-timezone state,
+      sentinel/correction states, exact-date 0DTE derivation, and explicit fidelity.
+- [ ] Add deterministic artifact/row/equivalence identities, same-artifact idempotency, overlap
+      detection, and honest ambiguity where cross-file deduplication is impossible.
+- [ ] Implement a pure bounded BlackBox CSV adapter and quality summary with fixtures for schema
+      drift, duplicate-looking prints, orange/red rows, missing side, zero spot/IV, and the audited
+      20,271-row sample.
+- [ ] Keep raw rows out of PostgreSQL. Audit artifact lifecycle and quality summaries only after
+      the source contract is accepted.
+
+### Product Integration Gates
+
+- [ ] **Stage 9F:** join normalized flow only with canonical option identity, fresh NBBO/quotes,
+      chain/Greeks/OI, named underlying reference, session state, and quote-quality evidence before
+      making moneyness, affordability, liquidity, or expression-quality claims.
+- [ ] **Stage 9H:** add reviewed rolling concentration, repeated-contract activity, relative
+      premium/size, surface/time/session cohorts, and flow-versus-underlying-response analytics.
+      Keep calls/puts, ask/above-ask, sweep/block, late/cancel, 0DTE, contract, and underlying
+      dimensions separate; do not collapse them into a folklore bullish/bearish score.
+- [ ] **Stage 9I:** expose options-flow evidence to the advisory agent only after source freshness,
+      completeness, filter bias, missing fields, and conflicting evidence remain visible. The feed
+      stays optional and can never be a mandatory readiness dependency.
+- [ ] **Stage 9K:** evaluate and optimize eligible thresholds only with leakage-safe temporal data,
+      explicit outcomes, versioned parameters, and policy bounds. Two sessions are insufficient.
+
+### Explicit Non-Goals
+
+- [ ] Do not build a live actor, raw-row PostgreSQL table, full-chain subscription, Discord stream,
+      agent tool, or directional score in the first source-contract slice.
+- [ ] Do not infer opening/closing intent, customer/dealer identity, complete strategy, consolidated
+      volume, executable price, or market-wide sentiment from the current export.
+- [ ] Do not let options-flow work reorder or weaken the accepted Stage 9 product sequence.
+
 ## Product Sequence
 
 - [x] **Stage 9A:** session/calendar ownership and evidence-health truth.
