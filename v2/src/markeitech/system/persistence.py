@@ -16,6 +16,14 @@ from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId
 from psycopg.types.json import Jsonb
 
+from markeitech.acquisition import (
+    HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
+    HISTORICAL_EXECUTION_SIGNAL,
+    HISTORICAL_READINESS_SIGNAL,
+    HistoricalDependencyDemandEvent,
+    HistoricalExecutionEventMessage,
+    HistoricalReadinessEvent,
+)
 from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
     EVIDENCE_RECENCY_PROFILE_SIGNAL,
@@ -780,6 +788,9 @@ class OperationalPersistenceActor(DataActor):
             EVIDENCE_HEALTH_SIGNAL,
             EVIDENCE_RECENCY_PROFILE_SIGNAL,
             PERSISTENCE_READY_REQUEST_SIGNAL,
+            HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
+            HISTORICAL_EXECUTION_SIGNAL,
+            HISTORICAL_READINESS_SIGNAL,
         ):
             self.subscribe_signal(signal_name)
             self._subscribed_signals.add(signal_name)
@@ -952,6 +963,49 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             event_type="watchlist.membership",
             source=event.source,
             correlation_id=event.event_id,
+            causation_id=None,
+            payload=json.loads(signal.value),
+            ts_event_ns=signal.ts_event,
+            ts_init_ns=signal.ts_init,
+            schema_version=event.schema_version,
+        )
+    if signal.name == HISTORICAL_DEPENDENCY_DEMAND_SIGNAL:
+        event = HistoricalDependencyDemandEvent.from_signal_value(signal.value)
+        return _generic_signal_record(
+            run_id,
+            sequence,
+            signal,
+            event_type="historical.dependency_demand",
+            source=event.consumer_id,
+            schema_version=event.schema_version,
+            correlation_id=event.demand_id,
+        )
+    if signal.name == HISTORICAL_EXECUTION_SIGNAL:
+        event = HistoricalExecutionEventMessage.from_signal_value(signal.value)
+        return OperationalEventRecord(
+            event_id=event.event_id,
+            run_id=run_id,
+            sequence=sequence,
+            signal_name=signal.name,
+            event_type="historical.execution",
+            source=event.source,
+            correlation_id=event.request_id,
+            causation_id=None,
+            payload=json.loads(signal.value),
+            ts_event_ns=signal.ts_event,
+            ts_init_ns=signal.ts_init,
+            schema_version=event.schema_version,
+        )
+    if signal.name == HISTORICAL_READINESS_SIGNAL:
+        event = HistoricalReadinessEvent.from_signal_value(signal.value)
+        return OperationalEventRecord(
+            event_id=event.event_id,
+            run_id=run_id,
+            sequence=sequence,
+            signal_name=signal.name,
+            event_type="historical.readiness",
+            source=event.source,
+            correlation_id=event.request_id,
             causation_id=None,
             payload=json.loads(signal.value),
             ts_event_ns=signal.ts_event,

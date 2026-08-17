@@ -2,6 +2,41 @@
 
 **Status:** Stage 9B design and implementation contract.
 
+## Current Implementation Slice
+
+The first provider-backed acceptance path is implemented but disabled by default. It proves:
+
+- a consumer-owned dependency intent published on the Nautilus signal bus;
+- deterministic compilation into an exact `recent_completed` bar request;
+- bounded, single-lane execution through `DataAcquisitionActor.request_bars`;
+- response validation against the requested instrument, bar specification, bounds, ordering, and
+  observation limit before completion;
+- transient delivery of the immutable historical batch through Nautilus custom data;
+- independent consumer readiness publication; and
+- PostgreSQL audit of demand, execution lifecycle, and readiness without raw bars.
+
+The single provider lane is intentional. Nautilus' actor callback returns the bar sequence without a
+request identifier, so concurrent native requests cannot yet be correlated honestly. Late responses
+after local timeout or cancellation are ignored and audited in runtime logs rather than attached to
+another request.
+
+The acceptance consumer is `HistoricalDependencyProbeActor`. It is configured under
+`historical.probe`, remains off during normal runs, and currently accepts only
+`window = "recent_completed"`. Session-owned windows remain blocked until the session-bound resolver
+supplies their exact intervals.
+
+To run the live acceptance once, set `historical.probe.enabled = true`. Expected evidence is:
+
+- `HISTORICAL_PROBE_DEMAND`;
+- `HISTORICAL_EXECUTION` transitions ending in `COMPLETED` or an honest terminal failure;
+- `HISTORICAL_PROBE_BATCH` for the transient payload;
+- `HISTORICAL_RESPONSE_ACCEPTED` with the exact bar type, count, and first/last event timestamps;
+- `HISTORICAL_PROBE_READINESS` with `READY` or `DEGRADED`; and
+- corresponding `historical.dependency_demand`, `historical.execution`, and
+  `historical.readiness` rows in `operational_events`.
+
+No raw bar array belongs in those PostgreSQL rows.
+
 ## Purpose
 
 Stage 9B gives analytical capabilities exact, bounded historical evidence without allowing them to

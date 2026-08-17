@@ -3,7 +3,16 @@ from __future__ import annotations
 import pytest
 from nautilus_trader.model import InstrumentId
 
-from markeitech.system.acquisition import InstrumentDefinitionTracker, _observation_demand
+from markeitech.acquisition import (
+    HistoricalDependencyCompiler,
+    HistoricalDependencyDemandEvent,
+    HistoricalResourcePolicy,
+)
+from markeitech.system.acquisition import (
+    InstrumentDefinitionTracker,
+    _compile_historical_demand,
+    _observation_demand,
+)
 from markeitech.system.messages import (
     INSTRUMENTS_READY,
     INSTRUMENTS_RESOLVING,
@@ -58,3 +67,29 @@ def test_watchlist_contract_maps_to_acquisition_demand() -> None:
         "bars",
         "5-SECOND-LAST-EXTERNAL",
     )
+
+
+def test_recent_completed_historical_demand_excludes_forming_bar() -> None:
+    event = HistoricalDependencyDemandEvent(
+        demand_id="probe:ES",
+        consumer_id="probe",
+        capability_id="probe",
+        capability_version=1,
+        instrument_id="ESU6.CME",
+        selector="1-MINUTE-LAST-EXTERNAL",
+        window="recent_completed",
+        minimum_observations=5,
+        maximum_observations=10,
+        priority=10,
+        purpose="acceptance",
+        as_of_ns=12 * 60_000_000_000 + 30_000_000_000,
+    )
+    compiler = HistoricalDependencyCompiler(
+        HistoricalResourcePolicy(8, 100, 500),
+    )
+
+    request = _compile_historical_demand(event, compiler)
+
+    assert request.start_ns == 2 * 60_000_000_000
+    assert request.end_ns == 12 * 60_000_000_000 - 1
+    assert request.limit == 10

@@ -184,10 +184,54 @@ def build_actor_plan(
                 config={
                     "actor_id": "DATA-ACQUISITION",
                     "instrument_ids": instrument_ids,
+                    "historical": {
+                        "maximum_plan_requests": config.historical.maximum_plan_requests,
+                        "maximum_observations_per_request": (
+                            config.historical.maximum_observations_per_request
+                        ),
+                        "maximum_total_observations": (
+                            config.historical.maximum_total_observations
+                        ),
+                        "maximum_outstanding_requests": (
+                            config.historical.maximum_outstanding_requests
+                        ),
+                        "maximum_in_flight_requests": (
+                            config.historical.maximum_in_flight_requests
+                        ),
+                        "timeout_seconds": config.historical.timeout_seconds,
+                        "maximum_attempts": config.historical.maximum_attempts,
+                        "retry_backoff_ms": config.historical.retry_backoff_ms,
+                        "poll_interval_ms": config.historical.poll_interval_ms,
+                    },
                 },
             ),
         ),
     ]
+    if config.historical.probe.enabled:
+        probe = config.historical.probe
+        registrations.append(
+            ActorRegistration(
+                key="historical_dependency_probe",
+                actor_id="HISTORICAL-DEPENDENCY-PROBE",
+                config=ImportableActorConfig(
+                    actor_path=(
+                        "markeitech.system.historical_probe:HistoricalDependencyProbeActor"
+                    ),
+                    config_path=(
+                        "markeitech.system.historical_probe:HistoricalDependencyProbeActorConfig"
+                    ),
+                    config={
+                        "actor_id": "HISTORICAL-DEPENDENCY-PROBE",
+                        "instrument_id": probe.instrument_id,
+                        "selector": probe.selector,
+                        "window": probe.window,
+                        "minimum_observations": probe.minimum_observations,
+                        "maximum_observations": probe.maximum_observations,
+                        "priority": probe.priority,
+                    },
+                ),
+            ),
+        )
     if config.acquisition.native_consumer_probe_enabled:
         registrations.append(
             ActorRegistration(

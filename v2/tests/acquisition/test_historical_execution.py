@@ -95,6 +95,7 @@ def test_single_lane_queues_by_priority_and_dispatches_after_completion() -> Non
         HistoricalExecutionState.QUEUED,
         HistoricalExecutionState.SUBMITTED,
     ]
+    assert all(event.detail for event in update.events)
     assert port.submitted == ["high"]
     assert coordinator.pending_request_ids == ("low",)
     assert coordinator.active_request_ids == ("high",)

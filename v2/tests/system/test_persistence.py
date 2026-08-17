@@ -6,6 +6,14 @@ from uuid import uuid4
 import pytest
 from nautilus_trader.common import Signal
 
+from markeitech.acquisition import (
+    HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
+    HISTORICAL_EXECUTION_SIGNAL,
+    HISTORICAL_READINESS_SIGNAL,
+    HistoricalDependencyDemandEvent,
+    HistoricalExecutionEventMessage,
+    HistoricalReadinessEvent,
+)
 from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
     SESSION_STATE_SIGNAL,
@@ -230,6 +238,81 @@ def test_existing_acquisition_intent_and_outcome_convert_to_audit_records() -> N
     assert stream_record.event_type == "acquisition.stream"
     assert stream_record.correlation_id == stream.demand_id
     assert "bid_price" not in stream_record.payload
+
+
+def test_historical_lifecycle_is_audited_without_raw_bars() -> None:
+    run_id = uuid4()
+    demand = HistoricalDependencyDemandEvent(
+        demand_id="probe:ES",
+        consumer_id="HISTORICAL-PROBE",
+        capability_id="historical.acceptance_probe",
+        capability_version=1,
+        instrument_id="ESU6.CME",
+        selector="1-MINUTE-LAST-EXTERNAL",
+        window="recent_completed",
+        minimum_observations=5,
+        maximum_observations=10,
+        priority=10,
+        purpose="acceptance",
+        as_of_ns=100,
+    )
+    execution = HistoricalExecutionEventMessage(
+        event_id="request:SUBMITTED:1",
+        request_id="request",
+        state="SUBMITTED",
+        attempt=1,
+        instrument_id="ESU6.CME",
+        selector="1-MINUTE-LAST-EXTERNAL",
+        window="recent_completed",
+        start_ns=10,
+        end_ns=20,
+        limit=10,
+        consumer_ids=("HISTORICAL-PROBE",),
+        occurred_at_ns=30,
+        source="DATA-ACQUISITION",
+        detail="provider request submitted",
+    )
+    readiness = HistoricalReadinessEvent(
+        event_id="request:HISTORICAL-PROBE:READY",
+        request_id="request",
+        consumer_id="HISTORICAL-PROBE",
+        capability_id="historical.acceptance_probe",
+        capability_version=1,
+        state="READY",
+        instrument_id="ESU6.CME",
+        selector="1-MINUTE-LAST-EXTERNAL",
+        window="recent_completed",
+        minimum_observations=5,
+        observed_count=10,
+        completed_at_ns=40,
+        source="DATA-ACQUISITION",
+        reason="minimum observations satisfied",
+    )
+    records = tuple(
+        _record_from_signal(
+            run_id,
+            sequence,
+            Signal(name=name, value=event.to_signal_value(), ts_event=50, ts_init=51),
+        )
+        for sequence, (name, event) in enumerate(
+            (
+                (HISTORICAL_DEPENDENCY_DEMAND_SIGNAL, demand),
+                (HISTORICAL_EXECUTION_SIGNAL, execution),
+                (HISTORICAL_READINESS_SIGNAL, readiness),
+            ),
+            start=1,
+        )
+    )
+
+    assert tuple(record.event_type for record in records) == (
+        "historical.dependency_demand",
+        "historical.execution",
+        "historical.readiness",
+    )
+    assert records[0].correlation_id == "probe:ES"
+    assert records[1].correlation_id == "request"
+    assert all("bars" not in record.payload for record in records)
+    assert all("observations" not in record.payload for record in records)
 
 
 def test_session_and_evidence_transitions_convert_to_audit_records() -> None:

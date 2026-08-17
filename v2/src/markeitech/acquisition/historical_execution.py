@@ -69,6 +69,14 @@ class HistoricalBatch:
     def observation_count(self) -> int:
         return len(self.observations)
 
+    @property
+    def ts_event(self) -> int:
+        return self.request.end_ns
+
+    @property
+    def ts_init(self) -> int:
+        return self.received_at_ns
+
 
 @dataclass(frozen=True, slots=True)
 class HistoricalDependencyResult:
@@ -294,7 +302,7 @@ class HistoricalExecutionCoordinator:
                     now_ns=now_ns,
                     terminal_state=HistoricalExecutionState.FAILED,
                     readiness_state=HistoricalReadinessState.FAILED,
-                    detail=f"provider submission failed: {type(exc).__name__}",
+                    detail=f"provider submission failed: {type(exc).__name__}: {exc}",
                 )
                 events.extend(update.events)
                 continue
@@ -394,9 +402,16 @@ class HistoricalExecutionCoordinator:
         state: HistoricalExecutionState,
         attempt: int,
         now_ns: int,
-        detail: str = "",
+        detail: str | None = None,
     ) -> HistoricalExecutionEvent:
-        return HistoricalExecutionEvent(request.request_id, state, attempt, now_ns, detail)
+        resolved_detail = detail or f"historical request {state.value.lower().replace('_', ' ')}"
+        return HistoricalExecutionEvent(
+            request.request_id,
+            state,
+            attempt,
+            now_ns,
+            resolved_detail,
+        )
 
     @staticmethod
     def _readiness_result(

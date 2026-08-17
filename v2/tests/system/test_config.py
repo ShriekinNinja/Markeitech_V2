@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 7
+schema_version = 8
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -50,6 +50,26 @@ write_retry_backoff_ms = 100
 [acquisition]
 native_consumer_probe_enabled = true
 native_consumer_probe_unsubscribe_after_seconds = 15
+
+[historical]
+maximum_plan_requests = 8
+maximum_observations_per_request = 100
+maximum_total_observations = 500
+maximum_outstanding_requests = 8
+maximum_in_flight_requests = 1
+timeout_seconds = 30
+maximum_attempts = 3
+retry_backoff_ms = 500
+poll_interval_ms = 100
+
+[historical.probe]
+enabled = false
+instrument_id = "ESU6.CME"
+selector = "1-MINUTE-LAST-EXTERNAL"
+window = "recent_completed"
+minimum_observations = 5
+maximum_observations = 10
+priority = 10
 
 [sessions]
 evaluation_interval_ms = 1000
@@ -143,6 +163,9 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.persistence.write_retry_backoff_ms == 100
     assert config.acquisition.native_consumer_probe_enabled is True
     assert config.acquisition.native_consumer_probe_unsubscribe_after_seconds == 15
+    assert config.historical.maximum_in_flight_requests == 1
+    assert config.historical.probe.instrument_id == "ESU6.CME"
+    assert config.historical.probe.enabled is False
     assert config.sessions.calendars[0].calendar_id == "cme_equity"
     assert config.evidence_health.policies[0].fresh_for_ms == 2000
     assert config.evidence_health.consumer_retry_interval_ms == 1000

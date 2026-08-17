@@ -51,6 +51,31 @@ class AcquisitionConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class HistoricalProbeConfig:
+    enabled: bool
+    instrument_id: str
+    selector: str
+    window: str
+    minimum_observations: int
+    maximum_observations: int
+    priority: int
+
+
+@dataclass(frozen=True, slots=True)
+class HistoricalConfig:
+    maximum_plan_requests: int
+    maximum_observations_per_request: int
+    maximum_total_observations: int
+    maximum_outstanding_requests: int
+    maximum_in_flight_requests: int
+    timeout_seconds: int
+    maximum_attempts: int
+    retry_backoff_ms: int
+    poll_interval_ms: int
+    probe: HistoricalProbeConfig
+
+
+@dataclass(frozen=True, slots=True)
 class SessionPhaseConfig:
     name: str
     start: str
@@ -147,6 +172,7 @@ class SystemConfig:
     discord: DiscordConfig
     persistence: PersistenceConfig
     acquisition: AcquisitionConfig
+    historical: HistoricalConfig
     watchlist: WatchlistConfig
     sessions: SessionsConfig
     evidence_health: EvidenceHealthConfig
@@ -171,13 +197,14 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "discord",
             "persistence",
             "acquisition",
+            "historical",
             "watchlist",
             "sessions",
             "evidence_health",
         },
         "root",
     )
-    if raw["schema_version"] != 7:
+    if raw["schema_version"] != 8:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -187,6 +214,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
     persistence = _load_persistence(raw["persistence"])
     watchlist = _load_watchlist(raw["watchlist"])
     acquisition = _load_acquisition(raw["acquisition"], watchlist)
+    historical = _load_historical(raw["historical"], watchlist)
     sessions = _load_sessions(raw["sessions"])
     evidence_health = _load_evidence_health(raw["evidence_health"])
     known_calendars = {calendar.calendar_id for calendar in sessions.calendars}
@@ -226,6 +254,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         discord=discord,
         persistence=persistence,
         acquisition=acquisition,
+        historical=historical,
         watchlist=watchlist,
         sessions=sessions,
         evidence_health=evidence_health,
@@ -730,6 +759,131 @@ def _load_acquisition(
         native_consumer_probe_unsubscribe_after_seconds=_positive_int(
             values["native_consumer_probe_unsubscribe_after_seconds"],
             "acquisition.native_consumer_probe_unsubscribe_after_seconds",
+        ),
+    )
+
+
+def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
+    values = _mapping(raw, "historical")
+    _require_keys(
+        values,
+        {
+            "maximum_plan_requests",
+            "maximum_observations_per_request",
+            "maximum_total_observations",
+            "maximum_outstanding_requests",
+            "maximum_in_flight_requests",
+            "timeout_seconds",
+            "maximum_attempts",
+            "retry_backoff_ms",
+            "poll_interval_ms",
+            "probe",
+        },
+        "historical",
+    )
+    maximum_plan_requests = _positive_int(
+        values["maximum_plan_requests"],
+        "historical.maximum_plan_requests",
+    )
+    maximum_per_request = _positive_int(
+        values["maximum_observations_per_request"],
+        "historical.maximum_observations_per_request",
+    )
+    maximum_total = _positive_int(
+        values["maximum_total_observations"],
+        "historical.maximum_total_observations",
+    )
+    if maximum_total < maximum_per_request:
+        raise ValueError(
+            "historical.maximum_total_observations must not be below "
+            "maximum_observations_per_request",
+        )
+    maximum_outstanding = _positive_int(
+        values["maximum_outstanding_requests"],
+        "historical.maximum_outstanding_requests",
+    )
+    if maximum_outstanding > maximum_plan_requests:
+        raise ValueError(
+            "historical.maximum_outstanding_requests must not exceed maximum_plan_requests",
+        )
+    maximum_in_flight = _positive_int(
+        values["maximum_in_flight_requests"],
+        "historical.maximum_in_flight_requests",
+    )
+    if maximum_in_flight != 1:
+        raise ValueError(
+            "historical.maximum_in_flight_requests must be 1 until the provider "
+            "exposes reliable request correlation",
+        )
+    probe_values = _mapping(values["probe"], "historical.probe")
+    _require_keys(
+        probe_values,
+        {
+            "enabled",
+            "instrument_id",
+            "selector",
+            "window",
+            "minimum_observations",
+            "maximum_observations",
+            "priority",
+        },
+        "historical.probe",
+    )
+    minimum = _positive_int(
+        probe_values["minimum_observations"],
+        "historical.probe.minimum_observations",
+    )
+    maximum = _positive_int(
+        probe_values["maximum_observations"],
+        "historical.probe.maximum_observations",
+    )
+    if maximum < minimum:
+        raise ValueError(
+            "historical.probe.maximum_observations must not be below minimum_observations",
+        )
+    if maximum > maximum_per_request:
+        raise ValueError(
+            "historical.probe.maximum_observations exceeds the per-request policy",
+        )
+    priority = _non_negative_int(probe_values["priority"], "historical.probe.priority")
+    if priority > 100:
+        raise ValueError("historical.probe.priority must be from 0 through 100")
+    instrument_id = _non_empty_string(
+        probe_values["instrument_id"],
+        "historical.probe.instrument_id",
+    )
+    if instrument_id not in {member.instrument_id for member in watchlist.members}:
+        raise ValueError("historical.probe.instrument_id must be in the configured watchlist")
+    window = _non_empty_string(probe_values["window"], "historical.probe.window")
+    if window != "recent_completed":
+        raise ValueError("historical.probe.window currently supports recent_completed only")
+    return HistoricalConfig(
+        maximum_plan_requests=maximum_plan_requests,
+        maximum_observations_per_request=maximum_per_request,
+        maximum_total_observations=maximum_total,
+        maximum_outstanding_requests=maximum_outstanding,
+        maximum_in_flight_requests=maximum_in_flight,
+        timeout_seconds=_positive_int(values["timeout_seconds"], "historical.timeout_seconds"),
+        maximum_attempts=_positive_int(
+            values["maximum_attempts"],
+            "historical.maximum_attempts",
+        ),
+        retry_backoff_ms=_positive_int(
+            values["retry_backoff_ms"],
+            "historical.retry_backoff_ms",
+        ),
+        poll_interval_ms=_positive_int(
+            values["poll_interval_ms"],
+            "historical.poll_interval_ms",
+        ),
+        probe=HistoricalProbeConfig(
+            enabled=_bool(probe_values["enabled"], "historical.probe.enabled"),
+            instrument_id=instrument_id,
+            selector=_non_empty_string(probe_values["selector"], "historical.probe.selector"),
+            window=window,
+            minimum_observations=minimum,
+            maximum_observations=maximum,
+            priority=priority,
         ),
     )
 

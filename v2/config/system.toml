@@ -1,4 +1,4 @@
-schema_version = 7
+schema_version = 8
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -41,6 +41,26 @@ write_retry_backoff_ms = 100
 [acquisition]
 native_consumer_probe_enabled = false
 native_consumer_probe_unsubscribe_after_seconds = 15
+
+[historical]
+maximum_plan_requests = 64
+maximum_observations_per_request = 5000
+maximum_total_observations = 20000
+maximum_outstanding_requests = 64
+maximum_in_flight_requests = 1
+timeout_seconds = 30
+maximum_attempts = 3
+retry_backoff_ms = 500
+poll_interval_ms = 100
+
+[historical.probe]
+enabled = true
+instrument_id = "ESU6.CME"
+selector = "1-MINUTE-LAST-EXTERNAL"
+window = "recent_completed"
+minimum_observations = 5
+maximum_observations = 10
+priority = 10
 
 [sessions]
 evaluation_interval_ms = 1000

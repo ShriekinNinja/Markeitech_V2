@@ -36,6 +36,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "evidence_health",
         "watchlist",
         "data_acquisition",
+        "historical_dependency_probe",
         "discord_health",
         "operational_persistence",
     ]
@@ -44,6 +45,17 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
     assert acquisition.config.config == {
         "actor_id": "DATA-ACQUISITION",
         "instrument_ids": list(_config().instrument_ids),
+        "historical": {
+            "maximum_plan_requests": 64,
+            "maximum_observations_per_request": 5000,
+            "maximum_total_observations": 20000,
+            "maximum_outstanding_requests": 64,
+            "maximum_in_flight_requests": 1,
+            "timeout_seconds": 30,
+            "maximum_attempts": 3,
+            "retry_backoff_ms": 500,
+            "poll_interval_ms": 100,
+        },
     }
     watchlist = next(item for item in plan if item.key == "watchlist")
     assert watchlist.config.config["consumer_retry_interval_ms"] == 1000
@@ -101,6 +113,7 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "evidence_health",
         "watchlist",
         "data_acquisition",
+        "historical_dependency_probe",
         "operational_persistence",
     ]
 
@@ -115,6 +128,30 @@ def test_actor_plan_omits_disabled_native_consumer_probe() -> None:
     plan = build_actor_plan(config, _prerequisites())
 
     assert "native_consumer_probe" not in {registration.key for registration in plan}
+
+
+def test_actor_plan_adds_enabled_historical_dependency_probe() -> None:
+    config = _config()
+    config = replace(
+        config,
+        historical=replace(
+            config.historical,
+            probe=replace(config.historical.probe, enabled=True),
+        ),
+    )
+
+    plan = build_actor_plan(config, _prerequisites())
+
+    probe = next(item for item in plan if item.key == "historical_dependency_probe")
+    assert probe.config.config == {
+        "actor_id": "HISTORICAL-DEPENDENCY-PROBE",
+        "instrument_id": "ESU6.CME",
+        "selector": "1-MINUTE-LAST-EXTERNAL",
+        "window": "recent_completed",
+        "minimum_observations": 5,
+        "maximum_observations": 10,
+        "priority": 10,
+    }
 
 
 def test_actor_plan_adds_enabled_native_consumer_probe() -> None:
