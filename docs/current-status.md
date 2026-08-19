@@ -226,8 +226,9 @@ is ready for live proof; automatic futures rolling is not implied.
 ## Next Accepted Sequence
 
 The static watchlist and live acquisition ownership foundation are complete. Dynamic watchlist
-membership remains intentionally deferred. Stages 9A through 9C are live-accepted; Stage 9D is the
-next product slice.
+membership remains intentionally deferred. Stages 9A through the first Stage 9C runtime family are
+live-accepted. A proposed Stage 9C session-measurement extension now precedes Stage 9D so entity
+contracts are shaped by proven bar/session inputs rather than assumptions.
 
 The authoritative proposed coding order is:
 
@@ -323,6 +324,8 @@ PostgreSQL stored 464 operational records and 3 system-health records, matching 
 runtime's 467 accepted/stored total with no failures or pending writes. Numerical metric values and
 raw quotes remain intentionally transient.
 
-The next accepted slice is Stage 9D: session entities, bounded rolling state, and durable compact
-summaries. Its entity definitions and persistence boundaries still require Markeitect review
-before implementation.
+The next proposed slice is the Stage 9C session-measurement extension documented in
+[`roadmap/v2-stage-9c-session-measurements-plan.md`](roadmap/v2-stage-9c-session-measurements-plan.md).
+It closes the completed-bar, session/prior-session, opening-range, gap, power-hour, volatility,
+efficiency, and compression input gap before Stage 9D entity design. No runtime code begins until
+Markeitect reviews that plan.

@@ -169,6 +169,12 @@ provider-neutral contract are documented in
       native quote acquisition, evidence-qualified bounded publication, honest closed-session
       nulls, exact metric/evidence counter reconciliation, no calculation failures, and complete
       operational/system-health persistence reconciliation.
+- [ ] **Stage 9C session-measurement extension:** complete the accepted baseline with
+      per-measurement resolution dependencies and normalized completed-bar inputs;
+      session/prior-session, overnight/gap, opening-range, power-hour, volatility,
+      directional-efficiency, and compression inputs before entity design. No universal base
+      timeframe or automatic resolution pyramid is permitted. Follow the reviewed plan in
+      [`v2-stage-9c-session-measurements-plan.md`](v2-stage-9c-session-measurements-plan.md).
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.
