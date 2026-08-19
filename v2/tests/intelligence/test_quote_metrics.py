@@ -3,8 +3,10 @@ from __future__ import annotations
 from decimal import Decimal
 
 import pytest
+from nautilus_trader.model import CustomData, DataType
 
 from markeitech.intelligence import (
+    METRIC_VALUE_TYPE_NAME,
     QUOTE_ABSOLUTE_SPREAD_METRIC_ID,
     QUOTE_MIDPOINT_METRIC_ID,
     QUOTE_RELATIVE_SPREAD_METRIC_ID,
@@ -108,6 +110,16 @@ def test_healthy_two_sided_quote_produces_exact_decimal_metrics() -> None:
     assert all(value.fidelity is MetricFidelity.DERIVED for value in values.values())
     assert all(value.evidence_refs == ("quote:ESU6.CME:100",) for value in values.values())
     assert all(value.missing_reasons == () for value in values.values())
+
+
+def test_metric_value_uses_native_custom_data_without_serializing_raw_quote() -> None:
+    value = _calculate(_quote())[QUOTE_MIDPOINT_METRIC_ID]
+    data_type = DataType(METRIC_VALUE_TYPE_NAME)
+
+    published = CustomData(data_type, value)
+
+    assert published.data_type == data_type
+    assert published.data is value
 
 
 def test_locked_quote_is_valid_and_has_zero_spread() -> None:

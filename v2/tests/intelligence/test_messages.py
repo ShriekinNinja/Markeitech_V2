@@ -4,6 +4,8 @@ import pytest
 
 from markeitech.intelligence.messages import (
     EvidenceHealthEvent,
+    EvidenceHealthSnapshot,
+    EvidenceHealthSnapshotRequest,
     EvidenceRecencyProfileEvent,
     SessionStateEvent,
 )
@@ -76,6 +78,22 @@ def test_evidence_health_round_trip() -> None:
     )
 
     assert EvidenceHealthEvent.from_signal_value(event.to_signal_value()) == event
+
+    request = EvidenceHealthSnapshotRequest(
+        requester="QUOTE-QUALITY-METRICS",
+        instrument_ids=("SPY.ARCA",),
+        feed_kind="quotes",
+        selector="default",
+    )
+    snapshot = EvidenceHealthSnapshot(
+        requester=request.requester,
+        source="EVIDENCE-HEALTH",
+        events=(event,),
+        snapshot_ts_ns=4,
+    )
+
+    assert EvidenceHealthSnapshotRequest.from_signal_value(request.to_signal_value()) == request
+    assert EvidenceHealthSnapshot.from_signal_value(snapshot.to_signal_value()) == snapshot
 
 
 def test_evidence_recency_profile_round_trip() -> None:

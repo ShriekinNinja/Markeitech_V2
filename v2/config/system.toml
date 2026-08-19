@@ -1,4 +1,4 @@
-schema_version = 8
+schema_version = 9
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -206,6 +206,16 @@ min_stale_ms = 10000
 max_stale_ms = 20000
 min_unavailable_ms = 20000
 max_unavailable_ms = 60000
+
+[metrics.quote_quality]
+enabled = true
+required_watchlist_capability = "top_of_book"
+parameter_version = 1
+minimum_update_interval_ms = 250
+maximum_output_age_ms = 15000
+demand_retry_interval_ms = 1000
+evidence_snapshot_retry_interval_ms = 1000
+priority = 50
 
 [watchlist]
 consumer_retry_interval_ms = 1000

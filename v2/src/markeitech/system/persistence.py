@@ -36,6 +36,7 @@ from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STATUS_SIGNAL,
     ACQUISITION_STREAM_SIGNAL,
+    ANALYTICAL_DEMAND_SIGNAL,
     COMPONENT_FAILURE_SIGNAL,
     PERSISTENCE_READY_REQUEST_SIGNAL,
     PERSISTENCE_READY_SIGNAL,
@@ -46,6 +47,7 @@ from markeitech.system.messages import (
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
+    AnalyticalDemandEvent,
     ComponentFailureEvent,
     PersistenceReadyEvent,
     PersistenceReadyRequest,
@@ -782,6 +784,7 @@ class OperationalPersistenceActor(DataActor):
             ACQUISITION_STATUS_SIGNAL,
             ACQUISITION_STREAM_SIGNAL,
             WATCHLIST_DEMAND_SIGNAL,
+            ANALYTICAL_DEMAND_SIGNAL,
             WATCHLIST_MEMBERSHIP_SIGNAL,
             WATCHLIST_LIFECYCLE_SIGNAL,
             SESSION_STATE_SIGNAL,
@@ -1019,6 +1022,17 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             sequence,
             signal,
             event_type="watchlist.demand",
+            source=event.owner_id,
+            schema_version=event.schema_version,
+            correlation_id=event.demand_id,
+        )
+    if signal.name == ANALYTICAL_DEMAND_SIGNAL:
+        event = AnalyticalDemandEvent.from_signal_value(signal.value)
+        return _generic_signal_record(
+            run_id,
+            sequence,
+            signal,
+            event_type="analytics.demand",
             source=event.owner_id,
             schema_version=event.schema_version,
             correlation_id=event.demand_id,

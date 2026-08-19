@@ -1,7 +1,6 @@
 # V2 Baseline Metric Contracts
 
-**Status:** Stage 9C contracts and the first pure quote-quality calculations are implemented;
-runtime publication is not yet implemented.
+**Status:** Stage 9C is implemented and live-accepted as of 2026-08-19.
 
 ## Purpose
 
@@ -155,9 +154,9 @@ Future runtime behavior must distinguish:
 | Compact prior-session summary | Stage 9D persistence decision |
 | Every numerical metric update | Not a PostgreSQL event and not a Discord message |
 
-## First Runtime Slice After Review
+## First Runtime Slice
 
-The next Stage 9C batch should review and implement only the smallest reusable metric family:
+The first Stage 9C runtime batch implements only the smallest reusable metric family:
 
 1. choose exact decision questions from the accepted catalog;
 2. define formula and parameter registry entries;
@@ -168,8 +167,8 @@ The next Stage 9C batch should review and implement only the smallest reusable m
 7. compare live values with an independent operator reference; and
 8. add persistence only for an explicitly approved compact summary.
 
-No formula, timeframe, lookback, threshold, cadence, instrument preference, or storage policy is
-selected by this contract slice.
+No trading threshold, instrument preference, or durable numerical storage policy is selected by
+this runtime slice.
 
 ## First Pure Metric Family: Quote Quality
 
@@ -200,18 +199,72 @@ it as a percentage later without changing its analytical identity.
 
 These are evidence and arithmetic invariants, not trading thresholds. The caller must explicitly
 provide `minimum_update_interval_ms` and `maximum_output_age_ms` through
-`QuoteMetricCatalogPolicy`; the catalog defines no hidden defaults. Runtime TOML ownership is
-deferred until the actor exists so configuration cannot claim to control code that is not running.
+`QuoteMetricCatalogPolicy`; the catalog defines no hidden defaults. Runtime TOML now owns these
+policies through `[metrics.quote_quality]`:
+
+- `minimum_update_interval_ms = 250`, bounding publication to at most four metric snapshots per
+  second per instrument;
+- `maximum_output_age_ms = 15000`, carried in the metric resource contract rather than interpreted
+  as a trading threshold;
+- explicit parameter version, demand priority, and bounded demand/evidence retry intervals; and
+- capability-based scope (`top_of_book`), so instruments are selected from watchlist configuration
+  rather than hard-coded in the actor.
+
+Every value remains configurable and versioned. Later optimization may change only parameters
+explicitly admitted by an approved mutation policy.
+
+### Runtime Data Flow
+
+1. `QuoteQualityMetricsActor` declares one analyzer-owned quote observation demand per selected
+   instrument.
+2. `DataAcquisitionActor` validates it and sends it through the existing `DemandReconciler`.
+   Identical watchlist and analyzer requirements collapse into one provider subscription.
+3. The metric actor consumes native Nautilus `QuoteTick` callbacks; it does not receive republished
+   raw quotes through Markeitech signals.
+4. The actor requests an explicit current evidence snapshot and also listens for later evidence
+   transitions. Bounded retry makes startup order irrelevant.
+5. Each eligible quote becomes a minimal transient `QuoteMetricInput`, is calculated with exact
+   `Decimal` arithmetic, validated against the immutable registry, and published as `CustomData`
+   under `markeitech.metric.value`.
+6. The actor retains only current evidence, publication timestamps, and revision counters. It does
+   not retain raw quote history.
+
+Analyzer demand is operationally audited. Evidence snapshots are request/reply state transfer and
+are deliberately not persisted as semantic transitions. Raw quotes and numerical metric updates
+remain outside PostgreSQL and Discord.
+
+The evidence snapshot protocol prevents a late-starting consumer from waiting for a future health
+transition. Until evidence is available, quotes produce honest `WARMING` explained nulls rather
+than unqualified values. Demand and evidence retries use Nautilus clock timers, not sleeps or actor
+start sequencing.
 
 ### Current Non-Goals
 
-- no live actor or Nautilus adapter;
-- no direct IB or subscription ownership;
-- no bus publication;
-- no PostgreSQL rows;
+- no numerical metric-value PostgreSQL rows;
 - no logs or Discord output;
 - no spread-quality trading threshold; and
 - no option-specific interpretation.
 
-The next slice will adapt native quotes at the actor boundary, align them with current evidence
-health, activate the registry from typed configuration, and publish bounded typed metric values.
+## Live Acceptance
+
+The 2026-08-19 live run proved:
+
+- native IB quotes reached both Watchlist and quote-metric consumers through one provider stream
+  per instrument;
+- 2,111 received quotes minus 1,466 cadence suppressions produced 645 calculation cycles and
+  exactly 1,935 metric values across the three configured quote-quality metrics;
+- evidence qualification reconciled exactly to those values: 981 `HEALTHY`, 24 `DEGRADED`, 924
+  `DORMANT`, and 6 `STALE`, with no unqualified `NOT_EVALUATED` publication;
+- closed-session instruments remained honest explained-null observations rather than fabricated
+  healthy measurements;
+- the metric actor reported zero calculation or publication failures;
+- PostgreSQL stored 464 operational records plus 3 system-health records, exactly matching the
+  persistence runtime's 467 accepted and stored records; and
+- the node, acquisition, historical probes, Discord runtime, metric runtime, and persistence
+  runtime all stopped cleanly.
+
+Raw quotes and numerical metric values remain intentionally transient. PostgreSQL contains their
+operational lifecycle and system-health audit, not a duplicate market-data store.
+
+Stage 9C is closed. The next product slice is Stage 9D: reviewed session entities, bounded rolling
+state, and durable summaries.

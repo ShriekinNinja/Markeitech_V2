@@ -17,6 +17,8 @@ type MetricParameterValue = str | int | float | Decimal | bool
 type MetricScalarValue = str | int | float | Decimal | bool
 type MetricKey = tuple[str, int]
 
+METRIC_VALUE_TYPE_NAME = "markeitech.metric.value"
+
 
 class MetricValueKind(StrEnum):
     NUMBER = "number"
@@ -326,6 +328,16 @@ class MetricValue:
     @property
     def key(self) -> MetricKey:
         return (self.metric_id, self.metric_version)
+
+    @property
+    def ts_event(self) -> int:
+        """Nautilus event timestamp for typed CustomData publication."""
+        return self.effective_ts_ns
+
+    @property
+    def ts_init(self) -> int:
+        """Nautilus initialization timestamp for typed CustomData publication."""
+        return self.published_ts_ns
 
 
 class MetricRegistry:

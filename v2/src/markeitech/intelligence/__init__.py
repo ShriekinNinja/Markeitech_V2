@@ -1,6 +1,7 @@
 """Deterministic market-intelligence foundations."""
 
 from markeitech.intelligence.metrics import (
+    METRIC_VALUE_TYPE_NAME,
     MetricCadence,
     MetricDefinition,
     MetricDependency,
@@ -29,6 +30,7 @@ from markeitech.intelligence.quote_metrics import (
 )
 
 __all__ = [
+    "METRIC_VALUE_TYPE_NAME",
     "MetricCadence",
     "MetricDefinition",
     "MetricDependency",

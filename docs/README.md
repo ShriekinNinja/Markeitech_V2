@@ -81,6 +81,7 @@ for investigation and context, but it does not reopen old stage gates.
 - [Market-analysis specialist brief](research/market-analysis-specialist-brief.md)
 - [Trading frameworks study](research/trading-frameworks-study.md)
 - [Semantic events, AI observer, and options intelligence baseline](research/semantic-events-ai-options-baseline.md)
+- [Gamma exposure and 0DTE GEX maps](research/gamma-exposure-and-0dte-gex-maps.md)
 
 Research documents preserve sourced ideas, hypotheses, and unresolved questions.
 They are informative and do not define product behavior until an accepted

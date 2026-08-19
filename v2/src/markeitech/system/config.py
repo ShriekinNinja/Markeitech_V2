@@ -140,6 +140,23 @@ class EvidenceHealthConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class QuoteQualityMetricsConfig:
+    enabled: bool
+    required_watchlist_capability: str
+    parameter_version: int
+    minimum_update_interval_ms: int
+    maximum_output_age_ms: int
+    demand_retry_interval_ms: int
+    evidence_snapshot_retry_interval_ms: int
+    priority: int
+
+
+@dataclass(frozen=True, slots=True)
+class MetricsConfig:
+    quote_quality: QuoteQualityMetricsConfig
+
+
+@dataclass(frozen=True, slots=True)
 class LoggingConfig:
     directory: Path
     file_name: str
@@ -177,6 +194,7 @@ class SystemConfig:
     watchlist: WatchlistConfig
     sessions: SessionsConfig
     evidence_health: EvidenceHealthConfig
+    metrics: MetricsConfig
 
     @property
     def instrument_ids(self) -> tuple[str, ...]:
@@ -202,10 +220,11 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "watchlist",
             "sessions",
             "evidence_health",
+            "metrics",
         },
         "root",
     )
-    if raw["schema_version"] != 8:
+    if raw["schema_version"] != 9:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -218,6 +237,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
     historical = _load_historical(raw["historical"], watchlist)
     sessions = _load_sessions(raw["sessions"])
     evidence_health = _load_evidence_health(raw["evidence_health"])
+    metrics = _load_metrics(raw["metrics"])
     known_calendars = {calendar.calendar_id for calendar in sessions.calendars}
     unknown_calendars = sorted(
         {member.calendar_id for member in watchlist.members} - known_calendars,
@@ -239,6 +259,11 @@ def load_system_config(path: str | Path) -> SystemConfig:
     if missing_policies:
         formatted = ", ".join(f"{kind}/{selector}" for kind, selector in missing_policies)
         raise ValueError(f"watchlist feeds lack evidence-health policies: {formatted}")
+    if metrics.quote_quality.enabled and not any(
+        metrics.quote_quality.required_watchlist_capability in member.capabilities
+        for member in watchlist.members
+    ):
+        raise ValueError("enabled quote-quality metrics scope selects no watchlist instruments")
     feed_count = sum(len(member.capabilities) for member in watchlist.members)
     minimum_normal_capacity = feed_count * 4 + len(watchlist.members) * 2 + 16
     normal_capacity = persistence.queue_capacity - persistence.critical_queue_reserve
@@ -259,6 +284,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         watchlist=watchlist,
         sessions=sessions,
         evidence_health=evidence_health,
+        metrics=metrics,
     )
 
 
@@ -736,6 +762,59 @@ def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
             "evidence_health.profile_checkpoint_samples",
         ),
         policies=tuple(policies),
+    )
+
+
+def _load_metrics(raw: Any) -> MetricsConfig:
+    values = _mapping(raw, "metrics")
+    _require_keys(values, {"quote_quality"}, "metrics")
+    quote = _mapping(values["quote_quality"], "metrics.quote_quality")
+    _require_keys(
+        quote,
+        {
+            "enabled",
+            "required_watchlist_capability",
+            "parameter_version",
+            "minimum_update_interval_ms",
+            "maximum_output_age_ms",
+            "demand_retry_interval_ms",
+            "evidence_snapshot_retry_interval_ms",
+            "priority",
+        },
+        "metrics.quote_quality",
+    )
+    priority = _non_negative_int(quote["priority"], "metrics.quote_quality.priority")
+    if priority > 100:
+        raise ValueError("metrics.quote_quality.priority must not exceed 100")
+    return MetricsConfig(
+        quote_quality=QuoteQualityMetricsConfig(
+            enabled=_bool(quote["enabled"], "metrics.quote_quality.enabled"),
+            required_watchlist_capability=_non_empty_string(
+                quote["required_watchlist_capability"],
+                "metrics.quote_quality.required_watchlist_capability",
+            ),
+            parameter_version=_positive_int(
+                quote["parameter_version"],
+                "metrics.quote_quality.parameter_version",
+            ),
+            minimum_update_interval_ms=_non_negative_int(
+                quote["minimum_update_interval_ms"],
+                "metrics.quote_quality.minimum_update_interval_ms",
+            ),
+            maximum_output_age_ms=_positive_int(
+                quote["maximum_output_age_ms"],
+                "metrics.quote_quality.maximum_output_age_ms",
+            ),
+            demand_retry_interval_ms=_positive_int(
+                quote["demand_retry_interval_ms"],
+                "metrics.quote_quality.demand_retry_interval_ms",
+            ),
+            evidence_snapshot_retry_interval_ms=_positive_int(
+                quote["evidence_snapshot_retry_interval_ms"],
+                "metrics.quote_quality.evidence_snapshot_retry_interval_ms",
+            ),
+            priority=priority,
+        ),
     )
 
 

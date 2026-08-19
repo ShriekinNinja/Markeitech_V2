@@ -127,6 +127,37 @@ contracts are documented in
       volume, executable price, or market-wide sentiment from the current export.
 - [ ] Do not let options-flow work reorder or weaken the accepted Stage 9 product sequence.
 
+## Gamma-Exposure Evidence Track
+
+Gamma-exposure maps are optional modeled options context, not observed dealer inventory, order
+flow, directional probability, or a standalone signal. The interpretation boundary and proposed
+provider-neutral contract are documented in
+[`../research/gamma-exposure-and-0dte-gex-maps.md`](../research/gamma-exposure-and-0dte-gex-maps.md).
+
+- [ ] Confirm licensed access, internal-analysis rights, retention limits, and authoritative field
+      methodology for any GEX provider before runtime ingestion.
+- [ ] Define an immutable provider-reported snapshot contract carrying underlying/root/expiration,
+      reference instrument and basis, timestamps, session, units, formula/model version, sign
+      assumptions, coverage, input age, and evidence-health state.
+- [ ] Keep vendor-reported GEX and any future Markeitech chain-derived estimate as separately named
+      evidence sources. Never silently substitute one for the other.
+- [ ] Normalize SPX/SPY/ES and QQQ/NQ levels through explicit timestamped basis evidence; never
+      compare or project index, ETF, and futures levels as if their prices were interchangeable.
+- [ ] **Stage 9F:** prove bounded acquisition of the chain, quote, Greek, OI, and reference-price
+      inputs required to evaluate gamma claims honestly. Do not retain full raw chains by default.
+- [ ] **Stage 9H:** evaluate configurable wall, concentration, flip, balance, straddle, persistence,
+      and migration metrics only after their formulas and units are explicit. Join them with
+      acceptance/rejection, profile, delta/CVD, volatility, and cross-instrument evidence.
+- [ ] **Stage 9I:** expose GEX to the advisory agent only as cited, freshness-qualified evidence
+      with supporting, conflicting, and missing inputs visible. A wall, magnet, or flip cannot
+      independently create an opportunity or select an option contract.
+- [ ] **Stage 9K:** validate and optimize eligible definitions with leakage-safe temporal outcomes,
+      source/model version isolation, regime splits, abstention, and level-migration analysis.
+- [ ] Keep aggregate dollar GEX, call/put balance, walls, magnets, flips, and straddle fields out of
+      PostgreSQL until an approved semantic lifecycle or compact-summary contract exists.
+- [ ] Explicitly reject claims of certain dealer positioning, guaranteed pin/support/resistance,
+      deterministic hedging flow, or causal market impact from GEX alone.
+
 ## Product Sequence
 
 - [x] **Stage 9A:** session/calendar ownership and evidence-health truth.
@@ -134,7 +165,10 @@ contracts are documented in
 - [x] **Stage 9B:** historical dependency execution. Live-accepted 2026-08-17 with one shared
       provider request, two independent consumers/readiness results, continuing unrelated runtime
       activity, and lifecycle-only PostgreSQL persistence.
-- [ ] **Stage 9C:** baseline deterministic metric contracts.
+- [x] **Stage 9C:** baseline deterministic metric contracts. Live-accepted 2026-08-19 with shared
+      native quote acquisition, evidence-qualified bounded publication, honest closed-session
+      nulls, exact metric/evidence counter reconciliation, no calculation failures, and complete
+      operational/system-health persistence reconciliation.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.

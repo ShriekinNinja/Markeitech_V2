@@ -46,6 +46,7 @@ from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STATUS_SIGNAL,
     ACQUISITION_STREAM_SIGNAL,
+    ANALYTICAL_DEMAND_SIGNAL,
     COMPONENT_FAILURE_SIGNAL,
     INSTRUMENTS_READY,
     INSTRUMENTS_RESOLVING,
@@ -55,6 +56,7 @@ from markeitech.system.messages import (
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
+    AnalyticalDemandEvent,
     ComponentFailureEvent,
     PersistenceReadyEvent,
     PersistenceReadyRequest,
@@ -138,7 +140,7 @@ class DataAcquisitionActor(DataActor):
         super().__init__(config)
         self._tracker = InstrumentDefinitionTracker(config.instrument_ids)
         self._expected_instrument_ids = frozenset(config.instrument_ids)
-        self._pending_demands: dict[str, WatchlistDemandEvent] = {}
+        self._pending_demands: dict[str, ObservationDemand] = {}
         self._managed_stream_keys: set[tuple[str, str, str]] = set()
         self._coordinator = AcquisitionCoordinator(NautilusSubscriptionPort(self))
         historical = config.historical
@@ -184,6 +186,7 @@ class DataAcquisitionActor(DataActor):
         self.subscribe_signal(ACQUISITION_STATUS_REQUEST_SIGNAL)
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.subscribe_signal(WATCHLIST_DEMAND_SIGNAL)
+        self.subscribe_signal(ANALYTICAL_DEMAND_SIGNAL)
         self.subscribe_signal(HISTORICAL_DEPENDENCY_DEMAND_SIGNAL)
         self.publish_signal(
             PERSISTENCE_READY_REQUEST_SIGNAL,
@@ -225,6 +228,9 @@ class DataAcquisitionActor(DataActor):
             return
         if signal.name == WATCHLIST_DEMAND_SIGNAL:
             self._handle_watchlist_demand(signal.value)
+            return
+        if signal.name == ANALYTICAL_DEMAND_SIGNAL:
+            self._handle_analytical_demand(signal.value)
             return
         if signal.name == PERSISTENCE_READY_SIGNAL:
             try:
@@ -319,6 +325,7 @@ class DataAcquisitionActor(DataActor):
         self.unsubscribe_signal(ACQUISITION_STATUS_REQUEST_SIGNAL)
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.unsubscribe_signal(WATCHLIST_DEMAND_SIGNAL)
+        self.unsubscribe_signal(ANALYTICAL_DEMAND_SIGNAL)
         self.unsubscribe_signal(HISTORICAL_DEPENDENCY_DEMAND_SIGNAL)
         if _HISTORICAL_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_HISTORICAL_TIMER)
@@ -376,7 +383,7 @@ class DataAcquisitionActor(DataActor):
             event = WatchlistDemandEvent.from_signal_value(value)
             if event.instrument_id not in self._expected_instrument_ids:
                 raise ValueError("demand instrument is outside configured acquisition scope")
-            _observation_demand(event)
+            demand = _watchlist_observation_demand(event)
         except ValueError as exc:
             self.log.error(
                 f"WATCHLIST_DEMAND_REJECTED | reason=invalid_event | error={type(exc).__name__}",
@@ -388,15 +395,34 @@ class DataAcquisitionActor(DataActor):
                 self._coordinator.cancel(event.demand_id, now=self.clock.utc_now()),
             )
             return
-        self._pending_demands[event.demand_id] = event
+        self._pending_demands[event.demand_id] = demand
+        self._start_pending_demands_if_ready()
+
+    def _handle_analytical_demand(self, value: str) -> None:
+        try:
+            event = AnalyticalDemandEvent.from_signal_value(value)
+            if event.instrument_id not in self._expected_instrument_ids:
+                raise ValueError("demand instrument is outside configured acquisition scope")
+            demand = _analytical_observation_demand(event)
+        except ValueError as exc:
+            self.log.error(
+                f"ANALYTICAL_DEMAND_REJECTED | reason=invalid_event | error={type(exc).__name__}",
+            )
+            return
+        if event.action == "RELEASE":
+            self._pending_demands.pop(event.demand_id, None)
+            self._publish_lifecycle_events(
+                self._coordinator.cancel(event.demand_id, now=self.clock.utc_now()),
+            )
+            return
+        self._pending_demands[event.demand_id] = demand
         self._start_pending_demands_if_ready()
 
     def _start_pending_demands_if_ready(self) -> None:
         if not self._startup_released or self._tracker.missing:
             return
         for demand_id in sorted(tuple(self._pending_demands)):
-            event = self._pending_demands.pop(demand_id)
-            demand = _observation_demand(event)
+            demand = self._pending_demands.pop(demand_id)
             self._managed_stream_keys.add(demand.requirement.stream_key)
             self._publish_lifecycle_events(
                 self._coordinator.request(demand, now=self.clock.utc_now()),
@@ -547,10 +573,24 @@ class DataAcquisitionActor(DataActor):
             )
 
 
-def _observation_demand(event: WatchlistDemandEvent) -> ObservationDemand:
+def _watchlist_observation_demand(event: WatchlistDemandEvent) -> ObservationDemand:
     return ObservationDemand(
         demand_id=event.demand_id,
         owner=DemandOwner(DemandOwnerKind.WATCHLIST, event.owner_id),
+        requirement=FeedRequirement(
+            instrument_id=event.instrument_id,
+            kind=FeedKind(event.feed_kind),
+            selector=event.selector,
+        ),
+        priority=event.priority,
+        purpose=event.purpose,
+    )
+
+
+def _analytical_observation_demand(event: AnalyticalDemandEvent) -> ObservationDemand:
+    return ObservationDemand(
+        demand_id=event.demand_id,
+        owner=DemandOwner(DemandOwnerKind.ANALYZER, event.owner_id),
         requirement=FeedRequirement(
             instrument_id=event.instrument_id,
             kind=FeedKind(event.feed_kind),
