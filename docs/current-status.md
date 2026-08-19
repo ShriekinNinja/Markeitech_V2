@@ -226,8 +226,8 @@ is ready for live proof; automatic futures rolling is not implied.
 ## Next Accepted Sequence
 
 The static watchlist and live acquisition ownership foundation are complete. Dynamic watchlist
-membership remains intentionally deferred. Market intelligence design is now in review on branch
-`v2-stage-9-market-intelligence-design`.
+membership remains intentionally deferred. Stages 9A through 9C are live-accepted; Stage 9D is the
+next product slice.
 
 The authoritative proposed coding order is:
 
@@ -300,3 +300,29 @@ The same acceptance run proved profile learning for ES, NQ, YM, and CL. Brief ov
 freshness transitions showed that the configurable two-second hard fresh floor is still sensitive
 to natural delivery pauses. Transition hysteresis or persistence windows are tracked as Priority 1
 calibration; this does not block Stage 9B.
+
+## Stage 9B: Historical Dependency Execution
+
+Stage 9B is complete and live-accepted as of 2026-08-17. One shared provider request served two
+independent consumers and produced separate readiness results while unrelated runtime activity
+continued. Historical observations remained transient; PostgreSQL stored only request, execution,
+and readiness lifecycle records. The accepted timestamp boundary is UTC internally with
+instrument-timezone formatting confined to the Nautilus IB adapter request boundary.
+
+## Stage 9C: Baseline Metric Contracts
+
+Stage 9C is complete and live-accepted as of 2026-08-19. The first runtime metric family publishes
+three deterministic quote-quality values through native signals at a configured bounded cadence.
+Watchlist and metric consumers share one provider subscription per instrument, and the metric
+actor obtains evidence-health snapshots without startup sequencing.
+
+The acceptance run received 2,111 quotes, suppressed 1,466 by cadence, executed 645 calculation
+cycles, and published exactly 1,935 values. Evidence states reconciled exactly: 981 `HEALTHY`, 24
+`DEGRADED`, 924 `DORMANT`, and 6 `STALE`; there were no calculation or publication failures.
+PostgreSQL stored 464 operational records and 3 system-health records, matching the persistence
+runtime's 467 accepted/stored total with no failures or pending writes. Numerical metric values and
+raw quotes remain intentionally transient.
+
+The next accepted slice is Stage 9D: session entities, bounded rolling state, and durable compact
+summaries. Its entity definitions and persistence boundaries still require Markeitect review
+before implementation.

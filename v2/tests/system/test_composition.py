@@ -34,6 +34,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "system_control",
         "session_state",
         "evidence_health",
+        "quote_quality_metrics",
         "watchlist",
         "data_acquisition",
         "historical_dependency_probe:1",
@@ -57,9 +58,12 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "poll_interval_ms": 100,
     }
     assert acquisition.config.config["instrument_calendars"]["ESU6.CME"] == "cme_equity"
-    assert {
-        value["calendar_id"] for value in acquisition.config.config["calendars"]
-    } == {"cboe_spxw", "us_equities", "cme_equity", "cme_energy"}
+    assert {value["calendar_id"] for value in acquisition.config.config["calendars"]} == {
+        "cboe_spxw",
+        "us_equities",
+        "cme_equity",
+        "cme_energy",
+    }
     watchlist = next(item for item in plan if item.key == "watchlist")
     assert watchlist.config.config["consumer_retry_interval_ms"] == 1000
     assert watchlist.config.config["members"] == [
@@ -102,6 +106,14 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
     ]
     evidence = next(item for item in plan if item.key == "evidence_health")
     assert evidence.config.config["consumer_retry_interval_ms"] == 1000
+    quote_metrics = next(item for item in plan if item.key == "quote_quality_metrics")
+    assert quote_metrics.config.config["instrument_ids"] == [
+        instrument_id
+        for instrument_id in _config().instrument_ids
+        if instrument_id not in {"^SPX.CBOE", "^VIX.CBOE"}
+    ]
+    assert quote_metrics.config.config["minimum_update_interval_ms"] == 250
+    assert quote_metrics.config.config["parameter_version"] == 1
 
 
 def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
@@ -114,6 +126,7 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "system_control",
         "session_state",
         "evidence_health",
+        "quote_quality_metrics",
         "watchlist",
         "data_acquisition",
         "historical_dependency_probe:1",

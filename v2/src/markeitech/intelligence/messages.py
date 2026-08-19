@@ -7,6 +7,9 @@ SESSION_STATE_SIGNAL = "markeitech.session.state"
 SESSION_STATE_SCHEMA_VERSION = 1
 EVIDENCE_HEALTH_SIGNAL = "markeitech.evidence.health"
 EVIDENCE_HEALTH_SCHEMA_VERSION = 1
+EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL = "markeitech.evidence.health.snapshot.request"
+EVIDENCE_HEALTH_SNAPSHOT_SIGNAL = "markeitech.evidence.health.snapshot"
+EVIDENCE_HEALTH_SNAPSHOT_SCHEMA_VERSION = 1
 EVIDENCE_RECENCY_PROFILE_SIGNAL = "markeitech.evidence.recency_profile"
 EVIDENCE_RECENCY_PROFILE_SCHEMA_VERSION = 1
 
@@ -131,6 +134,83 @@ class EvidenceHealthEvent:
 
 
 @dataclass(frozen=True, slots=True)
+class EvidenceHealthSnapshotRequest:
+    requester: str
+    instrument_ids: tuple[str, ...]
+    feed_kind: str
+    selector: str
+    schema_version: int = EVIDENCE_HEALTH_SNAPSHOT_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _schema(
+            self.schema_version,
+            EVIDENCE_HEALTH_SNAPSHOT_SCHEMA_VERSION,
+            "evidence health snapshot request",
+        )
+        for field in ("requester", "feed_kind", "selector"):
+            _text(getattr(self, field), field)
+        if not isinstance(self.instrument_ids, (list, tuple)) or not self.instrument_ids:
+            raise ValueError("instrument_ids must contain at least one instrument")
+        normalized = tuple(
+            sorted({_normalized_text(value, "instrument_id") for value in self.instrument_ids})
+        )
+        if len(normalized) != len(self.instrument_ids):
+            raise ValueError("instrument_ids must not contain duplicates")
+        object.__setattr__(self, "instrument_ids", normalized)
+
+    def to_signal_value(self) -> str:
+        return json.dumps(asdict(self), separators=(",", ":"), sort_keys=True)
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> EvidenceHealthSnapshotRequest:
+        return cls(**_payload(value, set(cls.__dataclass_fields__)))
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceHealthSnapshot:
+    requester: str
+    source: str
+    events: tuple[EvidenceHealthEvent, ...]
+    snapshot_ts_ns: int
+    schema_version: int = EVIDENCE_HEALTH_SNAPSHOT_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _schema(
+            self.schema_version,
+            EVIDENCE_HEALTH_SNAPSHOT_SCHEMA_VERSION,
+            "evidence health snapshot",
+        )
+        _text(self.requester, "requester")
+        _text(self.source, "source")
+        _optional_ns(self.snapshot_ts_ns, "snapshot_ts_ns", optional=False)
+        if not isinstance(self.events, (list, tuple)):
+            raise ValueError("events must be a sequence")
+        events = tuple(
+            event if isinstance(event, EvidenceHealthEvent) else EvidenceHealthEvent(**event)
+            for event in self.events
+        )
+        keys = [(event.instrument_id, event.feed_kind, event.selector) for event in events]
+        if len(keys) != len(set(keys)):
+            raise ValueError("events must not contain duplicate streams")
+        object.__setattr__(
+            self,
+            "events",
+            tuple(
+                sorted(
+                    events, key=lambda event: (event.instrument_id, event.feed_kind, event.selector)
+                )
+            ),
+        )
+
+    def to_signal_value(self) -> str:
+        return json.dumps(asdict(self), separators=(",", ":"), sort_keys=True)
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> EvidenceHealthSnapshot:
+        return cls(**_payload(value, set(cls.__dataclass_fields__)))
+
+
+@dataclass(frozen=True, slots=True)
 class EvidenceRecencyProfileEvent:
     event_id: str
     instrument_id: str
@@ -194,6 +274,11 @@ def _payload(value: str, expected: set[str]) -> dict[str, object]:
 def _text(value: object, label: str) -> None:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{label} must be a non-empty string")
+
+
+def _normalized_text(value: object, label: str) -> str:
+    _text(value, label)
+    return str(value).strip()
 
 
 def _schema(actual: int, expected: int, label: str) -> None:

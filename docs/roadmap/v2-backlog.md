@@ -72,6 +72,92 @@ before an unattended advisory agent can be trusted.
       deployment.
 - [ ] Archive remaining V1-only operational documentation clearly without deleting preserved work.
 
+## Options-Flow Evidence Track
+
+The manually downloaded BlackBoxStocks feed is optional vendor-curated context, not a consolidated
+options tape, live execution source, or directional signal. Its measured limitations and proposed
+contracts are documented in
+[`../research/v2-options-flow-specialist-report.md`](../research/v2-options-flow-specialist-report.md).
+
+### Evidence And Provenance Gate
+
+- [ ] Confirm that the active subscription and market-data terms permit internal machine analysis,
+      source retention, normalized derivatives, model/agent use, and derived-event projection.
+- [ ] Approve whether original exports may be retained outside Git and PostgreSQL, with explicit
+      access controls and retention. Until then, `v2/data/OptionsFlow.csv` remains untracked.
+- [ ] Capture the export timezone, download timestamp, schema/version identity, and complete active
+      BlackBox filter profile with every future artifact.
+- [ ] Decide whether to pursue a supported licensed API or richer source containing stable trade/
+      correction identity, NBBO-at-print, venue, condition, strategy linkage, and precise time.
+
+### Isolated Source Contract
+
+- [ ] Define immutable source-artifact, source-row, and provider-neutral normalized-observation
+      contracts without presenting a manually imported file as live evidence.
+- [ ] Preserve decimal/raw source values, partial contract identity, unknown-timezone state,
+      sentinel/correction states, exact-date 0DTE derivation, and explicit fidelity.
+- [ ] Add deterministic artifact/row/equivalence identities, same-artifact idempotency, overlap
+      detection, and honest ambiguity where cross-file deduplication is impossible.
+- [ ] Implement a pure bounded BlackBox CSV adapter and quality summary with fixtures for schema
+      drift, duplicate-looking prints, orange/red rows, missing side, zero spot/IV, and the audited
+      20,271-row sample.
+- [ ] Keep raw rows out of PostgreSQL. Audit artifact lifecycle and quality summaries only after
+      the source contract is accepted.
+
+### Product Integration Gates
+
+- [ ] **Stage 9F:** join normalized flow only with canonical option identity, fresh NBBO/quotes,
+      chain/Greeks/OI, named underlying reference, session state, and quote-quality evidence before
+      making moneyness, affordability, liquidity, or expression-quality claims.
+- [ ] **Stage 9H:** add reviewed rolling concentration, repeated-contract activity, relative
+      premium/size, surface/time/session cohorts, and flow-versus-underlying-response analytics.
+      Keep calls/puts, ask/above-ask, sweep/block, late/cancel, 0DTE, contract, and underlying
+      dimensions separate; do not collapse them into a folklore bullish/bearish score.
+- [ ] **Stage 9I:** expose options-flow evidence to the advisory agent only after source freshness,
+      completeness, filter bias, missing fields, and conflicting evidence remain visible. The feed
+      stays optional and can never be a mandatory readiness dependency.
+- [ ] **Stage 9K:** evaluate and optimize eligible thresholds only with leakage-safe temporal data,
+      explicit outcomes, versioned parameters, and policy bounds. Two sessions are insufficient.
+
+### Explicit Non-Goals
+
+- [ ] Do not build a live actor, raw-row PostgreSQL table, full-chain subscription, Discord stream,
+      agent tool, or directional score in the first source-contract slice.
+- [ ] Do not infer opening/closing intent, customer/dealer identity, complete strategy, consolidated
+      volume, executable price, or market-wide sentiment from the current export.
+- [ ] Do not let options-flow work reorder or weaken the accepted Stage 9 product sequence.
+
+## Gamma-Exposure Evidence Track
+
+Gamma-exposure maps are optional modeled options context, not observed dealer inventory, order
+flow, directional probability, or a standalone signal. The interpretation boundary and proposed
+provider-neutral contract are documented in
+[`../research/gamma-exposure-and-0dte-gex-maps.md`](../research/gamma-exposure-and-0dte-gex-maps.md).
+
+- [ ] Confirm licensed access, internal-analysis rights, retention limits, and authoritative field
+      methodology for any GEX provider before runtime ingestion.
+- [ ] Define an immutable provider-reported snapshot contract carrying underlying/root/expiration,
+      reference instrument and basis, timestamps, session, units, formula/model version, sign
+      assumptions, coverage, input age, and evidence-health state.
+- [ ] Keep vendor-reported GEX and any future Markeitech chain-derived estimate as separately named
+      evidence sources. Never silently substitute one for the other.
+- [ ] Normalize SPX/SPY/ES and QQQ/NQ levels through explicit timestamped basis evidence; never
+      compare or project index, ETF, and futures levels as if their prices were interchangeable.
+- [ ] **Stage 9F:** prove bounded acquisition of the chain, quote, Greek, OI, and reference-price
+      inputs required to evaluate gamma claims honestly. Do not retain full raw chains by default.
+- [ ] **Stage 9H:** evaluate configurable wall, concentration, flip, balance, straddle, persistence,
+      and migration metrics only after their formulas and units are explicit. Join them with
+      acceptance/rejection, profile, delta/CVD, volatility, and cross-instrument evidence.
+- [ ] **Stage 9I:** expose GEX to the advisory agent only as cited, freshness-qualified evidence
+      with supporting, conflicting, and missing inputs visible. A wall, magnet, or flip cannot
+      independently create an opportunity or select an option contract.
+- [ ] **Stage 9K:** validate and optimize eligible definitions with leakage-safe temporal outcomes,
+      source/model version isolation, regime splits, abstention, and level-migration analysis.
+- [ ] Keep aggregate dollar GEX, call/put balance, walls, magnets, flips, and straddle fields out of
+      PostgreSQL until an approved semantic lifecycle or compact-summary contract exists.
+- [ ] Explicitly reject claims of certain dealer positioning, guaranteed pin/support/resistance,
+      deterministic hedging flow, or causal market impact from GEX alone.
+
 ## Product Sequence
 
 - [x] **Stage 9A:** session/calendar ownership and evidence-health truth.
@@ -79,7 +165,10 @@ before an unattended advisory agent can be trusted.
 - [x] **Stage 9B:** historical dependency execution. Live-accepted 2026-08-17 with one shared
       provider request, two independent consumers/readiness results, continuing unrelated runtime
       activity, and lifecycle-only PostgreSQL persistence.
-- [ ] **Stage 9C:** baseline deterministic metric contracts.
+- [x] **Stage 9C:** baseline deterministic metric contracts. Live-accepted 2026-08-19 with shared
+      native quote acquisition, evidence-qualified bounded publication, honest closed-session
+      nulls, exact metric/evidence counter reconciliation, no calculation failures, and complete
+      operational/system-health persistence reconciliation.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.

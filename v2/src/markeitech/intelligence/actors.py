@@ -9,9 +9,13 @@ from markeitech.acquisition import FeedKind, FeedRequirement, NautilusSubscripti
 from markeitech.intelligence.evidence import EvidencePolicy, RecencyProfile, assess_evidence
 from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
+    EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL,
+    EVIDENCE_HEALTH_SNAPSHOT_SIGNAL,
     EVIDENCE_RECENCY_PROFILE_SIGNAL,
     SESSION_STATE_SIGNAL,
     EvidenceHealthEvent,
+    EvidenceHealthSnapshot,
+    EvidenceHealthSnapshotRequest,
     EvidenceRecencyProfileEvent,
     SessionStateEvent,
 )
@@ -197,6 +201,7 @@ class EvidenceHealthActor(DataActor):
         }
         self._session_by_calendar: dict[str, SessionStateEvent] = {}
         self._states: dict[tuple[str, str, str], str] = {}
+        self._latest_events: dict[tuple[str, str, str], EvidenceHealthEvent] = {}
         self._profiles: dict[tuple[str, str, str, str, str, str], RecencyProfile] = {}
         self._dirty_profiles: set[tuple[str, str, str, str, str, str]] = set()
         for item in config.recency_profiles:
@@ -224,6 +229,7 @@ class EvidenceHealthActor(DataActor):
             PERSISTENCE_READY_SIGNAL,
             ACQUISITION_STREAM_SIGNAL,
             SESSION_STATE_SIGNAL,
+            EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL,
         ):
             self.subscribe_signal(signal_name)
         self._reconcile_consumer_attachments(None)
@@ -233,6 +239,9 @@ class EvidenceHealthActor(DataActor):
         )
 
     def on_signal(self, signal: Signal) -> None:
+        if signal.name == EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL:
+            self._publish_snapshot(signal.value)
+            return
         if signal.name == PERSISTENCE_READY_SIGNAL:
             try:
                 PersistenceReadyEvent.from_signal_value(signal.value)
@@ -285,6 +294,7 @@ class EvidenceHealthActor(DataActor):
             PERSISTENCE_READY_SIGNAL,
             ACQUISITION_STREAM_SIGNAL,
             SESSION_STATE_SIGNAL,
+            EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL,
         ):
             self.unsubscribe_signal(signal_name)
         if _EVIDENCE_TIMER in self.clock.timer_names():
@@ -402,6 +412,7 @@ class EvidenceHealthActor(DataActor):
             revision=revision,
         )
         self.publish_signal(EVIDENCE_HEALTH_SIGNAL, event.to_signal_value())
+        self._latest_events[key] = event
         self.log.info(
             f"EVIDENCE_HEALTH | instrument={instrument_id} | feed={feed_kind}/{selector}"
             f" | state={previous or 'UNINITIALIZED'}->{event.state}"
@@ -411,6 +422,26 @@ class EvidenceHealthActor(DataActor):
             f" | reason={event.reason}",
         )
         self._states[key] = assessment.state
+
+    def _publish_snapshot(self, value: str) -> None:
+        try:
+            request = EvidenceHealthSnapshotRequest.from_signal_value(value)
+        except ValueError as exc:
+            self.log.error(f"EVIDENCE_SNAPSHOT_REQUEST_REJECTED | error={type(exc).__name__}")
+            return
+        requested = set(request.instrument_ids)
+        events = tuple(
+            event
+            for key, event in self._latest_events.items()
+            if key[0] in requested and key[1] == request.feed_kind and key[2] == request.selector
+        )
+        snapshot = EvidenceHealthSnapshot(
+            requester=request.requester,
+            source=str(self.actor_id),
+            events=events,
+            snapshot_ts_ns=self.clock.timestamp_ns(),
+        )
+        self.publish_signal(EVIDENCE_HEALTH_SNAPSHOT_SIGNAL, snapshot.to_signal_value())
 
     def _learn_recency(
         self,

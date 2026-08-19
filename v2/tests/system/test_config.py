@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 8
+schema_version = 9
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -127,6 +127,16 @@ max_stale_ms = 20000
 min_unavailable_ms = 20000
 max_unavailable_ms = 60000
 
+[metrics.quote_quality]
+enabled = true
+required_watchlist_capability = "top_of_book"
+parameter_version = 1
+minimum_update_interval_ms = 250
+maximum_output_age_ms = 15000
+demand_retry_interval_ms = 1000
+evidence_snapshot_retry_interval_ms = 1000
+priority = 50
+
 [watchlist]
 consumer_retry_interval_ms = 1000
 
@@ -174,6 +184,9 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.sessions.calendars[0].calendar_id == "cme_equity"
     assert config.evidence_health.policies[0].fresh_for_ms == 2000
     assert config.evidence_health.consumer_retry_interval_ms == 1000
+    assert config.metrics.quote_quality.enabled is True
+    assert config.metrics.quote_quality.required_watchlist_capability == "top_of_book"
+    assert config.metrics.quote_quality.minimum_update_interval_ms == 250
     assert config.instrument_ids == ("ESU6.CME",)
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)

@@ -14,12 +14,14 @@ from markeitech.acquisition.historical_windows import HistoricalWindowResolver
 from markeitech.intelligence.session import SessionCalendar, definition_from_config
 from markeitech.system.acquisition import (
     InstrumentDefinitionTracker,
+    _analytical_observation_demand,
     _compile_historical_demand,
-    _observation_demand,
+    _watchlist_observation_demand,
 )
 from markeitech.system.messages import (
     INSTRUMENTS_READY,
     INSTRUMENTS_RESOLVING,
+    AnalyticalDemandEvent,
     WatchlistDemandEvent,
 )
 
@@ -62,7 +64,7 @@ def test_watchlist_contract_maps_to_acquisition_demand() -> None:
         purpose="static watchlist last",
     )
 
-    demand = _observation_demand(event)
+    demand = _watchlist_observation_demand(event)
 
     assert demand.demand_id == event.demand_id
     assert demand.owner.kind.value == "watchlist"
@@ -71,6 +73,26 @@ def test_watchlist_contract_maps_to_acquisition_demand() -> None:
         "bars",
         "5-SECOND-LAST-EXTERNAL",
     )
+
+
+def test_analytical_contract_maps_to_analyzer_owned_acquisition_demand() -> None:
+    event = AnalyticalDemandEvent(
+        demand_id="metric:quote-quality:ESU6.CME:quotes:default",
+        action="REQUEST",
+        instrument_id="ESU6.CME",
+        capability_id="metric:quote-quality",
+        capability_version=1,
+        feed_kind="quotes",
+        selector="default",
+        owner_id="QUOTE-QUALITY-METRICS",
+        purpose="calculate bounded quote-quality metrics",
+    )
+
+    demand = _analytical_observation_demand(event)
+
+    assert demand.owner.kind.value == "analyzer"
+    assert demand.owner.owner_id == "QUOTE-QUALITY-METRICS"
+    assert demand.requirement.stream_key == ("ESU6.CME", "quotes", "default")
 
 
 def test_recent_completed_historical_demand_excludes_forming_bar() -> None:
@@ -147,6 +169,10 @@ def test_session_owned_historical_demand_compiles_authoritative_bounds() -> None
     assert request.start_ns == int(
         datetime(2026, 8, 17, 13, 30, tzinfo=UTC).timestamp() * 1_000_000_000,
     )
-    assert request.end_ns == int(
-        datetime(2026, 8, 17, 14, 40, tzinfo=UTC).timestamp() * 1_000_000_000,
-    ) - 1
+    assert (
+        request.end_ns
+        == int(
+            datetime(2026, 8, 17, 14, 40, tzinfo=UTC).timestamp() * 1_000_000_000,
+        )
+        - 1
+    )

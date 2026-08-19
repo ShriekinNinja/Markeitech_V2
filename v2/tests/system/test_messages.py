@@ -17,6 +17,7 @@ from markeitech.system.messages import (
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
+    AnalyticalDemandEvent,
     ComponentFailureEvent,
     PersistenceReadyEvent,
     PersistenceReadyRequest,
@@ -47,6 +48,34 @@ def test_watchlist_demand_round_trip_and_validation() -> None:
             action="MAYBE",
             instrument_id=event.instrument_id,
             capability=event.capability,
+            feed_kind=event.feed_kind,
+            selector=event.selector,
+            owner_id=event.owner_id,
+            purpose=event.purpose,
+        )
+
+
+def test_analytical_demand_round_trip_and_validation() -> None:
+    event = AnalyticalDemandEvent(
+        demand_id="metric:quote-quality:ESU6.CME:quotes:default",
+        action="REQUEST",
+        instrument_id="ESU6.CME",
+        capability_id="metric:quote-quality",
+        capability_version=1,
+        feed_kind="quotes",
+        selector="default",
+        owner_id="QUOTE-QUALITY-METRICS",
+        purpose="calculate bounded quote-quality metrics",
+    )
+
+    assert AnalyticalDemandEvent.from_signal_value(event.to_signal_value()) == event
+    with pytest.raises(ValueError, match="capability_version"):
+        AnalyticalDemandEvent(
+            demand_id=event.demand_id,
+            action=event.action,
+            instrument_id=event.instrument_id,
+            capability_id=event.capability_id,
+            capability_version=0,
             feed_kind=event.feed_kind,
             selector=event.selector,
             owner_id=event.owner_id,
