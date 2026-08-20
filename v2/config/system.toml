@@ -1,4 +1,4 @@
-schema_version = 9
+schema_version = 10
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -216,6 +216,73 @@ maximum_output_age_ms = 15000
 demand_retry_interval_ms = 1000
 evidence_snapshot_retry_interval_ms = 1000
 priority = 50
+
+[metrics.session_measurements]
+enabled = false
+required_watchlist_capability = "watchlist_last"
+parameter_version = 1
+conflict_policy = "reject_conflict"
+maximum_active_sessions = 3
+demand_retry_interval_ms = 1000
+evidence_snapshot_retry_interval_ms = 1000
+priority = 40
+
+[metrics.session_measurements.completed_bars]
+live_selector = "5-SECOND-LAST-EXTERNAL"
+historical_selector = "1-MINUTE-LAST-EXTERNAL"
+historical_window = "recent_completed"
+minimum_historical_observations = 2
+maximum_historical_observations = 2000
+calculation_interval_seconds = 60
+minimum_interval_seconds = 5
+maximum_interval_seconds = 3600
+interval_step_seconds = 5
+interval_dynamic = true
+maximum_retained_observations = 5000
+maximum_output_age_ms = 120000
+
+[[metrics.session_measurements.profiles]]
+profile_id = "cme_equity_primary"
+version = 1
+calendar_id = "cme_equity"
+primary_phase = "OPEN"
+volume_supported = true
+
+[[metrics.session_measurements.profiles.windows]]
+window_id = "opening_range_fast"
+purpose = "opening_range"
+anchor_phase = "OPEN"
+anchor_boundary = "start"
+offset_seconds = 0
+duration_seconds = 300
+minimum_duration_seconds = 60
+maximum_duration_seconds = 1800
+duration_step_seconds = 60
+dynamic = true
+
+[[metrics.session_measurements.profiles.windows]]
+window_id = "opening_range_slow"
+purpose = "opening_range"
+anchor_phase = "OPEN"
+anchor_boundary = "start"
+offset_seconds = 0
+duration_seconds = 900
+minimum_duration_seconds = 300
+maximum_duration_seconds = 3600
+duration_step_seconds = 300
+dynamic = true
+
+[[metrics.session_measurements.profiles.windows]]
+window_id = "power_hour"
+purpose = "power_hour"
+anchor_phase = "OPEN"
+anchor_boundary = "end"
+offset_seconds = -3600
+duration_seconds = 3600
+minimum_duration_seconds = 1800
+maximum_duration_seconds = 7200
+duration_step_seconds = 300
+dynamic = true
 
 [watchlist]
 consumer_retry_interval_ms = 1000

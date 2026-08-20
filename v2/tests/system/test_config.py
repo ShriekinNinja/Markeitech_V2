@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 9
+schema_version = 10
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -137,6 +137,61 @@ demand_retry_interval_ms = 1000
 evidence_snapshot_retry_interval_ms = 1000
 priority = 50
 
+[metrics.session_measurements]
+enabled = true
+required_watchlist_capability = "watchlist_last"
+parameter_version = 1
+conflict_policy = "reject_conflict"
+maximum_active_sessions = 3
+demand_retry_interval_ms = 1000
+evidence_snapshot_retry_interval_ms = 1000
+priority = 40
+
+[metrics.session_measurements.completed_bars]
+live_selector = "5-SECOND-LAST-EXTERNAL"
+historical_selector = "1-MINUTE-LAST-EXTERNAL"
+historical_window = "recent_completed"
+minimum_historical_observations = 2
+maximum_historical_observations = 100
+calculation_interval_seconds = 60
+minimum_interval_seconds = 5
+maximum_interval_seconds = 3600
+interval_step_seconds = 5
+interval_dynamic = true
+maximum_retained_observations = 500
+maximum_output_age_ms = 120000
+
+[[metrics.session_measurements.profiles]]
+profile_id = "cme_equity_primary"
+version = 1
+calendar_id = "cme_equity"
+primary_phase = "OPEN"
+volume_supported = true
+
+[[metrics.session_measurements.profiles.windows]]
+window_id = "opening_range"
+purpose = "opening_range"
+anchor_phase = "OPEN"
+anchor_boundary = "start"
+offset_seconds = 0
+duration_seconds = 300
+minimum_duration_seconds = 60
+maximum_duration_seconds = 1800
+duration_step_seconds = 60
+dynamic = true
+
+[[metrics.session_measurements.profiles.windows]]
+window_id = "power_hour"
+purpose = "power_hour"
+anchor_phase = "OPEN"
+anchor_boundary = "end"
+offset_seconds = -3600
+duration_seconds = 3600
+minimum_duration_seconds = 1800
+maximum_duration_seconds = 7200
+duration_step_seconds = 300
+dynamic = true
+
 [watchlist]
 consumer_retry_interval_ms = 1000
 
@@ -187,6 +242,11 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.metrics.quote_quality.enabled is True
     assert config.metrics.quote_quality.required_watchlist_capability == "top_of_book"
     assert config.metrics.quote_quality.minimum_update_interval_ms == 250
+    assert config.metrics.session_measurements.enabled is True
+    assert config.metrics.session_measurements.completed_bars.calculation_interval_seconds == 60
+    assert config.metrics.session_measurements.completed_bars.interval_dynamic is True
+    assert config.metrics.session_measurements.profiles[0].profile_id == "cme_equity_primary"
+    assert config.metrics.session_measurements.profiles[0].windows[1].anchor_boundary == "end"
     assert config.instrument_ids == ("ESU6.CME",)
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
@@ -247,6 +307,9 @@ def test_accepts_feed_specific_watchlist_capabilities(tmp_path: Path) -> None:
         VALID_CONFIG.replace(
             'capabilities = ["top_of_book", "watchlist_last"]',
             'capabilities = ["top_of_book"]',
+        ).replace(
+            "[metrics.session_measurements]\nenabled = true",
+            "[metrics.session_measurements]\nenabled = false",
         ),
     )
 
@@ -318,4 +381,45 @@ start_day_offset = -1
     )
 
     with pytest.raises(ValueError, match="overrides reference undefined phases: GTH"):
+        load_system_config(path)
+
+
+def test_rejects_session_measurement_interval_outside_optimization_envelope(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            "calculation_interval_seconds = 60",
+            "calculation_interval_seconds = 2",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="outside its configured envelope"):
+        load_system_config(path)
+
+
+def test_rejects_unknown_session_measurement_profile_calendar(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'calendar_id = "cme_equity"\nprimary_phase = "OPEN"',
+            'calendar_id = "unknown"\nprimary_phase = "OPEN"',
+        ),
+    )
+
+    with pytest.raises(ValueError, match="profiles reference unknown calendars: unknown"):
+        load_system_config(path)
+
+
+def test_rejects_duplicate_analytical_window_ids(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'window_id = "power_hour"',
+            'window_id = "opening_range"',
+        ),
+    )
+
+    with pytest.raises(ValueError, match="window IDs must be unique"):
         load_system_config(path)
