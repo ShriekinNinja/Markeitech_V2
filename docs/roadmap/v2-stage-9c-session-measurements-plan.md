@@ -345,11 +345,118 @@ absorption, or trapped participants.
 | Realized log-return magnitude | Unannualized `sqrt(sum(log_return^2))` over a configured completed-bar window |
 | Average true range | Mean true range over a configured completed-bar window |
 | Directional efficiency | `abs(last_close-first_close) / sum(abs(close_change))`, null when denominator is zero |
-| Range expansion ratio | Current realized range divided by a configured trailing baseline |
-| Range percentile | Current realized range rank within a bounded trailing reference distribution |
+| Rolling price range | Highest high minus lowest low over one configured candidate window |
+| Range expansion ratio | Candidate rolling price range divided by a comparable configured trailing baseline |
+| Range percentile | Candidate rolling price range rank within a bounded trailing reference distribution |
 
 The stage publishes numerical inputs only. Labels such as `TRENDING`, `ROTATING`, `COMPRESSED`, or
 `EXPANDING` require separately reviewed state/entity/event policy.
+
+#### Reviewed Multi-Horizon Policy
+
+Context, expansion detection, state interpretation, and any later trade action answer different
+questions. They must not inherit one universal horizon merely because they consume the same bar
+stream. In particular, a consolidating market benefits from broader context that suppresses chop,
+while a shorter expansion detector may remain active to notice a genuine break. Once movement is
+established, a later directional selector may tighten around recent evidence so stale balance data
+does not dilute the move.
+
+Stage 9C therefore calculates a bounded, configuration-owned bank of candidate horizons. It does
+not choose one authoritative horizon, mutate subscriptions from an unreviewed heuristic, or publish
+an action. The initial reviewed candidate envelopes are:
+
+| Family | Context candidates | Expansion candidates |
+|---|---|---|
+| Fast, one-minute inputs | 20m, 30m, 45m, 60m | 10m, 15m, 23m, 30m |
+| Tactical, five-minute inputs | 2h, 3h, 4h, 6h | 1h, 90m, 2h, 3h |
+| Structural intraday, fifteen-minute inputs | 4h, 6h, 8h, 12h | 2h, 3h, 4h, 6h |
+
+The operator-selected defaults remain 45 minutes of one-minute inputs, four hours of five-minute
+inputs, and eight hours of fifteen-minute inputs. These defaults are not permanent preferences.
+Candidate activation, resolution, duration, bounds, step, historical selector, minimum evidence,
+and dynamic eligibility are versioned configuration. Historical dependencies remain
+purpose-specific; no universal base timeframe or automatic resolution pyramid is introduced.
+
+Every candidate publishes independently with exact window identity, session/phase composition,
+coverage, fidelity, and lineage. A current rolling price range and its baseline must use equal
+durations; a shorter expansion candidate may coexist with broader context, but it must not be
+divided by a longer-duration baseline. Baseline observations exclude the current window and any
+evidence prohibited by the eventual comparison policy.
+
+#### Later Adaptive Selection
+
+A separately reviewed bounded selector may later identify an effective context or detection
+horizon for a specific action. Its first candidate policy may combine:
+
+- normalized EMA slope, expressed relative to volatility and elapsed bars rather than raw price;
+- directional efficiency and volatility/range expansion;
+- agreement or instability between neighboring candidate horizons;
+- evidence coverage, health, and session composition; and
+- persistence, hysteresis, minimum dwell time, and hard horizon bounds.
+
+The intended behavior is action-dependent: broader context while consolidation would make a tight
+window easy to chop, and tighter recent evidence while an established move would make old balance
+data misleading. Expansion detection remains independently selectable and need not use the context
+horizon or a fixed fraction of it.
+
+EMA slope is evidence, not sole authority. Raw slope is not comparable across instruments or
+volatility regimes, and an EMA-only selector can lag transitions or chatter. A later competing
+policy may use bounded change-point detection: expand while the observed return/range distribution
+is stable, contract after a meaningful distribution change, and grow again as the new condition
+stabilizes. Both policies must be replayable from cited evidence, versioned, independently
+evaluated, and permitted to abstain.
+
+Adaptive selection belongs to a later reviewed state/policy stage. Stage 9C's responsibility ends
+at trustworthy candidate measurements and the evidence required to compare selection policies.
+
+#### Reviewed Range Baselines And Percentiles
+
+Range expansion has two distinct comparison questions. Recent-regime comparison asks whether price
+is expanding relative to its immediate behavior. Phase-matched comparison asks whether that range
+is unusual for the same authoritative session phase and offset. Neither reference can replace the
+other, and Stage 9C must not blend them into one score.
+
+For every active range candidate, publish the observed rolling price range plus independently
+healthy recent and phase-matched comparisons:
+
+- `rolling_price_range` is the highest high minus the lowest low over the candidate window;
+- `expansion_ratio_recent` divides that range by the median of eligible recent windows;
+- `expansion_ratio_phase` divides it by the median of eligible phase-matched windows;
+- `range_percentile_recent` ranks it inside the recent reference distribution; and
+- `range_percentile_phase` ranks it inside the phase-matched reference distribution.
+
+The recent baseline uses prior completed, non-overlapping windows with the same input resolution
+and duration. It adapts to the immediately preceding regime. The phase-matched baseline uses the
+equivalent duration anchored at the same offset inside the same authoritative session phase across
+prior valid sessions. It preserves time-of-day/session seasonality and never silently substitutes
+another phase. Early-close or interrupted-session windows that do not provide the required interval
+are excluded with an explained evidence reason.
+
+An eligible reference sample must:
+
+- use the same input resolution and exact duration as the current candidate;
+- exclude the current window and avoid overlap with another sample in that baseline;
+- satisfy the configured coverage, evidence-health, and fidelity requirements;
+- retain its calendar, trade date, phase, phase offset, and boundary-crossing lineage; and
+- remain independent of samples rejected for missing, conflicting, or prohibited evidence.
+
+The initial recent reference count is 20, configurable from 8 through 64. The initial phase-matched
+session count is 10, configurable from 5 through 30. Counts, bounds, steps, dynamic eligibility,
+minimum valid samples, and parameter version/effective UTC time are configuration. If one baseline
+lacks its minimum evidence, only that comparison remains `WARMING` or `UNAVAILABLE`; the rolling
+range and the other comparison continue independently. A zero median produces an explained null
+ratio, never infinity.
+
+Both percentiles use an empirical midrank definition:
+
+```text
+(count(reference < current) + 0.5 * count(reference == current)) / reference_count
+```
+
+Every percentile publishes its eligible reference count and baseline identity. Repeated equal
+ranges therefore receive a neutral tie treatment, while a small sample cannot masquerade as a
+well-supported distribution. Numerical ratios and percentiles remain evidence inputs; Stage 9C
+does not assign compressed, expanding, ordinary, exceptional, or trade-action labels.
 
 ## Health, Fidelity, And Null Behavior
 
