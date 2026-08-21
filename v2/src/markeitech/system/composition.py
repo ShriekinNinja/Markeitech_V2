@@ -214,9 +214,7 @@ def build_actor_plan(
                 key="session_metrics",
                 actor_id="SESSION-METRICS",
                 config=ImportableActorConfig(
-                    actor_path=(
-                        "markeitech.intelligence.session_metric_actor:SessionMetricsActor"
-                    ),
+                    actor_path=("markeitech.intelligence.session_metric_actor:SessionMetricsActor"),
                     config_path=(
                         "markeitech.intelligence.session_metric_actor:SessionMetricsActorConfig"
                     ),
@@ -262,6 +260,8 @@ def build_actor_plan(
                                 "version": profile.version,
                                 "calendar_id": profile.calendar_id,
                                 "primary_phase": profile.primary_phase,
+                                "overnight_enabled": profile.overnight_enabled,
+                                "overnight_phase": profile.overnight_phase,
                                 "volume_supported": profile.volume_supported,
                             }
                             for profile in session_metrics.profiles
@@ -298,15 +298,57 @@ def build_actor_plan(
                             "maximum_interval_seconds": completed.maximum_interval_seconds,
                             "interval_step_seconds": completed.interval_step_seconds,
                             "interval_dynamic": completed.interval_dynamic,
-                            "aggregation_boundary_policy": (
-                                completed.aggregation_boundary_policy
-                            ),
+                            "aggregation_boundary_policy": (completed.aggregation_boundary_policy),
                             "timestamp_policy": completed.timestamp_policy,
                             "revision_policy": completed.revision_policy,
                             "maximum_retained_observations": (
                                 completed.maximum_retained_observations
                             ),
                             "maximum_output_age_ms": completed.maximum_output_age_ms,
+                        },
+                        "session_references": {
+                            "enabled": session_metrics.session_references.enabled,
+                            "historical_selector": (
+                                session_metrics.session_references.historical_selector
+                            ),
+                            "active_window": session_metrics.session_references.active_window,
+                            "previous_window": session_metrics.session_references.previous_window,
+                            "overnight_window": (
+                                session_metrics.session_references.overnight_window
+                            ),
+                            "minimum_historical_observations": (
+                                session_metrics.session_references.minimum_historical_observations
+                            ),
+                            "maximum_historical_observations": (
+                                session_metrics.session_references.maximum_historical_observations
+                            ),
+                            "vwap_price_basis": (
+                                session_metrics.session_references.vwap_price_basis
+                            ),
+                            "vwap_price_basis_dynamic": (
+                                session_metrics.session_references.vwap_price_basis_dynamic
+                            ),
+                            "minimum_coverage_ratio": (
+                                session_metrics.session_references.minimum_coverage_ratio
+                            ),
+                            "minimum_coverage_ratio_floor": (
+                                session_metrics.session_references.minimum_coverage_ratio_floor
+                            ),
+                            "minimum_coverage_ratio_ceiling": (
+                                session_metrics.session_references.minimum_coverage_ratio_ceiling
+                            ),
+                            "minimum_coverage_ratio_step": (
+                                session_metrics.session_references.minimum_coverage_ratio_step
+                            ),
+                            "minimum_coverage_ratio_dynamic": (
+                                session_metrics.session_references.minimum_coverage_ratio_dynamic
+                            ),
+                            "maximum_retained_sessions": (
+                                session_metrics.session_references.maximum_retained_sessions
+                            ),
+                            "maximum_output_age_ms": (
+                                session_metrics.session_references.maximum_output_age_ms
+                            ),
                         },
                     },
                 ),

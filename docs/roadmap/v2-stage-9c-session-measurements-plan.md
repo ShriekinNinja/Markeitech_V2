@@ -444,9 +444,11 @@ identity, lifecycle, commit-before-publication, and restart contract is approved
 provider ownership leakage.
 
 **Implementation status:** the actor, demand wiring, timestamp policy, bounded aggregation,
-foundation metric publication, and live-first recalculation path are implemented behind
-`metrics.session_measurements.enabled = false`. Offline verification is complete; local review,
-connected acceptance, operational conflict persistence, and final counter reconciliation remain.
+foundation metric publication, and live-first recalculation path are enabled and live-accepted.
+The acceptance run covered all 18 configured instruments, converged history and live bars in the
+same actor, published 1,281 values from 183 accepted bars, and reported no calculation failure,
+duplicate, or conflict. Closed-session `recent_completed` dependencies degraded independently and
+did not block unrelated work.
 
 ### Slice 3: Session, Previous-Session, Overnight, And Gap Metrics
 
@@ -456,6 +458,31 @@ connected acceptance, operational conflict persistence, and final counter reconc
 - Prove unsupported-volume isolation.
 
 **Gate:** session references match an independent chart across restart and rollover.
+
+**Accepted implementation policy:**
+
+- Keep the completed-bar foundation intact and project session references through a separate,
+  bounded state component owned by the same actor.
+- Request each historical purpose through its exact calendar-aware window. Active-session warmup
+  uses session-to-date, previous-session evidence uses one completed configured primary phase,
+  and overnight evidence is requested only for profiles that explicitly enable an eligible phase.
+- Use a separately configured historical selector for these references; it need not match the
+  one-minute completed-bar foundation selector.
+- Merge live completed bars from the end of the last historical interval actually accepted, not
+  from the request's later as-of timestamp, so history-first and live-first arrival produce the
+  same state without either double-counting overlap or dropping a valid live tail.
+- Require direct boundary evidence for anchor semantics. A mid-session first observation is not a
+  session open, and an incomplete prior-session tail is not a prior close; dependent return and gap
+  values remain explicitly unavailable until those anchors are observed.
+- Calculate coverage from represented time, carry source health and fidelity per output, and let
+  active-session, previous-session, overnight, and gap families degrade independently.
+- Publish prior-session and opening-gap values as immutable once their complete inputs are
+  accepted. Indicative gap remains developing while its overnight reference changes.
+- Profiles without an approved overnight phase publish explained unavailable overnight and
+  indicative-gap values; they never reinterpret a primary session as overnight evidence.
+- Numerical values remain transient. PostgreSQL receives dependency demand, execution, readiness,
+  rejection, conflict, and resource lifecycle facts only; durable analytical summaries wait for
+  Stage 9D.
 
 ### Slice 4: Opening Range And Power Hour
 

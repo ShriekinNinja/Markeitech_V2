@@ -213,6 +213,7 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
     assert actor.config.config["instrument_ids"] == list(config.instrument_ids)
     assert actor.config.config["profile_bindings"]["ESU6.CME"] == "cme_equity_primary"
     assert actor.config.config["profile_bindings"]["^SPX.CBOE"] == "us_index_primary"
+    assert actor.config.config["profiles"][0]["overnight_enabled"] is False
     assert actor.config.config["completed_bars"] == {
         "live_selector": "5-SECOND-LAST-EXTERNAL",
         "historical_selector": "1-MINUTE-LAST-EXTERNAL",
@@ -228,6 +229,24 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
         "timestamp_policy": "interval_start",
         "revision_policy": "reject_revision",
         "maximum_retained_observations": 5000,
+        "maximum_output_age_ms": 120000,
+    }
+    assert actor.config.config["session_references"] == {
+        "enabled": True,
+        "historical_selector": "15-MINUTE-LAST-EXTERNAL",
+        "active_window": "session_to_date",
+        "previous_window": "previous_sessions",
+        "overnight_window": "current_overnight",
+        "minimum_historical_observations": 1,
+        "maximum_historical_observations": 100,
+        "vwap_price_basis": "typical",
+        "vwap_price_basis_dynamic": True,
+        "minimum_coverage_ratio": 0.8,
+        "minimum_coverage_ratio_floor": 0.5,
+        "minimum_coverage_ratio_ceiling": 1.0,
+        "minimum_coverage_ratio_step": 0.05,
+        "minimum_coverage_ratio_dynamic": True,
+        "maximum_retained_sessions": 4,
         "maximum_output_age_ms": 120000,
     }
 

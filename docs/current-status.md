@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-17
+Last reviewed: 2026-08-21
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -327,6 +327,16 @@ raw quotes remain intentionally transient.
 The active extension is the Stage 9C session-measurement work documented in
 [`roadmap/v2-stage-9c-session-measurements-plan.md`](roadmap/v2-stage-9c-session-measurements-plan.md).
 It closes the completed-bar, session/prior-session, opening-range, gap, power-hour, volatility,
-efficiency, and compression input gap before Stage 9D entity design. Slices 1-2 are implemented
-behind a disabled-by-default flag and await Markeitect's local review and connected acceptance;
-they are not yet live-accepted.
+efficiency, and compression input gap before Stage 9D entity design. Slices 1-2 are enabled and
+live-accepted. The acceptance run converged bounded historical and live bars for all 18 configured
+instruments, published 1,281 completed-bar values from 183 accepted bars, and reported no actor
+calculation failure, duplicate, or conflict. Closed-session recent-history requests degraded
+independently without stopping live processing; this confirmed the need for Slice 3's exact,
+purpose-specific session windows rather than a universal recent-history warmup.
+
+Slice 3 is now active on branch `v2-stage-9c-session-references`. It adds only deterministic
+active-session, previous-session, optional overnight, and gap measurements. It does not add
+entities, semantic events, signals, agent behavior, raw market-data persistence, or execution.
+Historical and live observations converge at the last interval actually received, and exact open,
+prior-close, return, and gap values remain unavailable when their session boundary was not directly
+observed rather than being inferred from partial coverage.

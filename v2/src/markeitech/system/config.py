@@ -171,6 +171,8 @@ class AnalyticalSessionProfileConfig:
     version: int
     calendar_id: str
     primary_phase: str
+    overnight_enabled: bool
+    overnight_phase: str
     volume_supported: bool
     windows: tuple[AnalyticalWindowConfig, ...]
 
@@ -201,6 +203,26 @@ class CompletedBarMetricsConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class SessionReferenceMetricsConfig:
+    enabled: bool
+    historical_selector: str
+    active_window: str
+    previous_window: str
+    overnight_window: str
+    minimum_historical_observations: int
+    maximum_historical_observations: int
+    vwap_price_basis: str
+    vwap_price_basis_dynamic: bool
+    minimum_coverage_ratio: float
+    minimum_coverage_ratio_floor: float
+    minimum_coverage_ratio_ceiling: float
+    minimum_coverage_ratio_step: float
+    minimum_coverage_ratio_dynamic: bool
+    maximum_retained_sessions: int
+    maximum_output_age_ms: int
+
+
+@dataclass(frozen=True, slots=True)
 class SessionMeasurementsConfig:
     enabled: bool
     required_watchlist_capability: str
@@ -213,6 +235,7 @@ class SessionMeasurementsConfig:
     evidence_snapshot_retry_interval_ms: int
     priority: int
     completed_bars: CompletedBarMetricsConfig
+    session_references: SessionReferenceMetricsConfig
     profiles: tuple[AnalyticalSessionProfileConfig, ...]
     profile_bindings: tuple[AnalyticalProfileBindingConfig, ...]
 
@@ -291,7 +314,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 11:
+    if raw["schema_version"] != 12:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -343,6 +366,20 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "session measurement profiles reference unknown calendars: "
             f"{', '.join(unknown_profile_calendars)}",
         )
+    calendars_by_id = {calendar.calendar_id: calendar for calendar in sessions.calendars}
+    for profile in metrics.session_measurements.profiles:
+        calendar = calendars_by_id[profile.calendar_id]
+        available_phases = {phase.name for phase in calendar.phases} or {"OPEN"}
+        if profile.primary_phase not in available_phases:
+            raise ValueError(
+                "session measurement profile primary phase is not defined by its calendar: "
+                f"profile={profile.profile_id}, phase={profile.primary_phase}",
+            )
+        if profile.overnight_enabled and profile.overnight_phase not in available_phases:
+            raise ValueError(
+                "session measurement profile overnight phase is not defined by its calendar: "
+                f"profile={profile.profile_id}, phase={profile.overnight_phase}",
+            )
     profile_by_id = {
         profile.profile_id: profile for profile in metrics.session_measurements.profiles
     }
@@ -383,8 +420,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
                 f"{', '.join(missing_bindings)}",
             )
         selected_calendars = {
-            watchlist_by_id[instrument_id].calendar_id
-            for instrument_id in selected_instruments
+            watchlist_by_id[instrument_id].calendar_id for instrument_id in selected_instruments
         }
         if len(selected_calendars) > metrics.session_measurements.maximum_active_sessions:
             raise ValueError(
@@ -970,6 +1006,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "evidence_snapshot_retry_interval_ms",
             "priority",
             "completed_bars",
+            "session_references",
             "profiles",
             "profile_bindings",
         },
@@ -1094,6 +1131,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "metrics.session_measurements.completed_bars.historical_window is unsupported: "
             f"{historical_window!r}",
         )
+    references = _load_session_reference_metrics(values["session_references"])
     profiles_raw = values["profiles"]
     if not isinstance(profiles_raw, list) or not profiles_raw:
         raise ValueError("metrics.session_measurements.profiles must be a non-empty array")
@@ -1185,6 +1223,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
                 "metrics.session_measurements.completed_bars.maximum_output_age_ms",
             ),
         ),
+        session_references=references,
         profiles=profiles,
         profile_bindings=bindings,
     )
@@ -1216,6 +1255,8 @@ def _load_analytical_profile(raw: Any, index: int) -> AnalyticalSessionProfileCo
             "version",
             "calendar_id",
             "primary_phase",
+            "overnight_enabled",
+            "overnight_phase",
             "volume_supported",
             "windows",
         },
@@ -1231,13 +1272,122 @@ def _load_analytical_profile(raw: Any, index: int) -> AnalyticalSessionProfileCo
     window_ids = [window.window_id for window in windows]
     if len(window_ids) != len(set(window_ids)):
         raise ValueError(f"{label} window IDs must be unique")
+    overnight_enabled = _bool(values["overnight_enabled"], f"{label}.overnight_enabled")
+    overnight_phase = _non_empty_string(values["overnight_phase"], f"{label}.overnight_phase")
     return AnalyticalSessionProfileConfig(
         profile_id=_non_empty_string(values["profile_id"], f"{label}.profile_id"),
         version=_positive_int(values["version"], f"{label}.version"),
         calendar_id=_non_empty_string(values["calendar_id"], f"{label}.calendar_id"),
         primary_phase=_non_empty_string(values["primary_phase"], f"{label}.primary_phase"),
+        overnight_enabled=overnight_enabled,
+        overnight_phase=overnight_phase,
         volume_supported=_bool(values["volume_supported"], f"{label}.volume_supported"),
         windows=windows,
+    )
+
+
+def _load_session_reference_metrics(raw: Any) -> SessionReferenceMetricsConfig:
+    label = "metrics.session_measurements.session_references"
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "historical_selector",
+            "active_window",
+            "previous_window",
+            "overnight_window",
+            "minimum_historical_observations",
+            "maximum_historical_observations",
+            "vwap_price_basis",
+            "vwap_price_basis_dynamic",
+            "minimum_coverage_ratio",
+            "minimum_coverage_ratio_floor",
+            "minimum_coverage_ratio_ceiling",
+            "minimum_coverage_ratio_step",
+            "minimum_coverage_ratio_dynamic",
+            "maximum_retained_sessions",
+            "maximum_output_age_ms",
+        },
+        label,
+    )
+    active_window = _non_empty_string(values["active_window"], f"{label}.active_window")
+    if active_window not in {"session_to_date", "current_rth", "current_gth"}:
+        raise ValueError(f"{label}.active_window is unsupported: {active_window!r}")
+    previous_window = _non_empty_string(
+        values["previous_window"],
+        f"{label}.previous_window",
+    )
+    if previous_window not in {"previous_sessions", "previous_rth"}:
+        raise ValueError(f"{label}.previous_window is unsupported: {previous_window!r}")
+    overnight_window = _non_empty_string(
+        values["overnight_window"],
+        f"{label}.overnight_window",
+    )
+    if overnight_window not in {"current_overnight", "current_gth", "premarket", "overnight"}:
+        raise ValueError(f"{label}.overnight_window is unsupported: {overnight_window!r}")
+    minimum = _positive_int(
+        values["minimum_historical_observations"],
+        f"{label}.minimum_historical_observations",
+    )
+    maximum = _positive_int(
+        values["maximum_historical_observations"],
+        f"{label}.maximum_historical_observations",
+    )
+    if maximum < minimum:
+        raise ValueError(f"{label} maximum historical observations cannot be below minimum")
+    basis = _non_empty_string(values["vwap_price_basis"], f"{label}.vwap_price_basis")
+    if basis not in {"typical", "close", "ohlc4"}:
+        raise ValueError(f"{label}.vwap_price_basis is unsupported: {basis!r}")
+    coverage = _coverage_ratio(values["minimum_coverage_ratio"], f"{label}.minimum_coverage_ratio")
+    floor = _coverage_ratio(
+        values["minimum_coverage_ratio_floor"],
+        f"{label}.minimum_coverage_ratio_floor",
+    )
+    ceiling = _coverage_ratio(
+        values["minimum_coverage_ratio_ceiling"],
+        f"{label}.minimum_coverage_ratio_ceiling",
+    )
+    step = _positive_float(
+        values["minimum_coverage_ratio_step"],
+        f"{label}.minimum_coverage_ratio_step",
+    )
+    if not floor <= coverage <= ceiling:
+        raise ValueError(f"{label}.minimum_coverage_ratio is outside its configured envelope")
+    if step > ceiling - floor:
+        raise ValueError(f"{label}.minimum_coverage_ratio_step exceeds its envelope")
+    return SessionReferenceMetricsConfig(
+        enabled=_bool(values["enabled"], f"{label}.enabled"),
+        historical_selector=_non_empty_string(
+            values["historical_selector"],
+            f"{label}.historical_selector",
+        ),
+        active_window=active_window,
+        previous_window=previous_window,
+        overnight_window=overnight_window,
+        minimum_historical_observations=minimum,
+        maximum_historical_observations=maximum,
+        vwap_price_basis=basis,
+        vwap_price_basis_dynamic=_bool(
+            values["vwap_price_basis_dynamic"],
+            f"{label}.vwap_price_basis_dynamic",
+        ),
+        minimum_coverage_ratio=coverage,
+        minimum_coverage_ratio_floor=floor,
+        minimum_coverage_ratio_ceiling=ceiling,
+        minimum_coverage_ratio_step=step,
+        minimum_coverage_ratio_dynamic=_bool(
+            values["minimum_coverage_ratio_dynamic"],
+            f"{label}.minimum_coverage_ratio_dynamic",
+        ),
+        maximum_retained_sessions=_positive_int(
+            values["maximum_retained_sessions"],
+            f"{label}.maximum_retained_sessions",
+        ),
+        maximum_output_age_ms=_positive_int(
+            values["maximum_output_age_ms"],
+            f"{label}.maximum_output_age_ms",
+        ),
     )
 
 
@@ -1484,6 +1634,15 @@ def _unit_float(value: Any, label: str) -> float:
     result = _positive_float(value, label)
     if result >= 1:
         raise ValueError(f"{label} must be less than 1")
+    return result
+
+
+def _coverage_ratio(value: Any, label: str) -> float:
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        raise ValueError(f"{label} must be a number")
+    result = float(value)
+    if not 0 <= result <= 1:
+        raise ValueError(f"{label} must be between 0 and 1")
     return result
 
 

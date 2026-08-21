@@ -49,6 +49,15 @@ from markeitech.intelligence.session_measurements import (
     calculate_completed_bar_metrics,
     completed_bar_metric_definitions,
 )
+from markeitech.intelligence.session_references import (
+    SessionReferenceBook,
+    SessionReferenceCatalogPolicy,
+    SessionReferenceRole,
+    SessionWindowSpec,
+    calculate_session_reference_metrics,
+    metric_value_signature,
+    session_reference_metric_definitions,
+)
 from markeitech.system.messages import (
     ACQUISITION_STREAM_SIGNAL,
     ANALYTICAL_DEMAND_SIGNAL,
@@ -78,6 +87,7 @@ class SessionMetricsActorConfig(DataActorConfig):
         evidence_snapshot_retry_interval_ms: int,
         priority: int,
         completed_bars: dict[str, object],
+        session_references: dict[str, object],
         actor_id: str | ActorId = "SESSION-METRICS",
     ) -> SessionMetricsActorConfig:
         resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
@@ -95,6 +105,7 @@ class SessionMetricsActorConfig(DataActorConfig):
         obj.evidence_snapshot_retry_interval_ms = evidence_snapshot_retry_interval_ms
         obj.priority = priority
         obj.completed_bars = dict(completed_bars)
+        obj.session_references = dict(session_references)
         return obj
 
 
@@ -152,14 +163,44 @@ class SessionMetricsActor(DataActor):
             maximum_retained_observations=self._maximum_retained,
             maximum_output_age_ms=int(completed["maximum_output_age_ms"]),
         )
-        self._registry = MetricRegistry(completed_bar_metric_definitions(policy))
+        references = config.session_references
+        self._references_enabled = bool(references["enabled"])
+        self._reference_historical_selector = str(references["historical_selector"])
+        self._reference_active_window = HistoricalWindow(str(references["active_window"]))
+        self._reference_previous_window = HistoricalWindow(str(references["previous_window"]))
+        self._reference_overnight_window = HistoricalWindow(str(references["overnight_window"]))
+        self._reference_minimum_history = int(references["minimum_historical_observations"])
+        self._reference_maximum_history = int(references["maximum_historical_observations"])
+        self._reference_price_basis = str(references["vwap_price_basis"])
+        reference_policy = SessionReferenceCatalogPolicy(
+            live_selector=self._live_selector,
+            historical_selector=self._reference_historical_selector,
+            active_window=self._reference_active_window,
+            previous_window=self._reference_previous_window,
+            overnight_window=self._reference_overnight_window,
+            minimum_historical_observations=self._reference_minimum_history,
+            maximum_historical_observations=self._reference_maximum_history,
+            vwap_price_basis=self._reference_price_basis,
+            vwap_price_basis_dynamic=bool(references["vwap_price_basis_dynamic"]),
+            minimum_coverage_ratio=float(references["minimum_coverage_ratio"]),
+            minimum_coverage_ratio_floor=float(references["minimum_coverage_ratio_floor"]),
+            minimum_coverage_ratio_ceiling=float(references["minimum_coverage_ratio_ceiling"]),
+            minimum_coverage_ratio_step=float(references["minimum_coverage_ratio_step"]),
+            minimum_coverage_ratio_dynamic=bool(references["minimum_coverage_ratio_dynamic"]),
+            parameter_source=self._parameter_source,
+            priority=self._priority,
+            maximum_retained_sessions=int(references["maximum_retained_sessions"]),
+            maximum_output_age_ms=int(references["maximum_output_age_ms"]),
+        )
+        definitions = completed_bar_metric_definitions(policy)
+        if self._references_enabled:
+            definitions += session_reference_metric_definitions(reference_policy)
+        self._registry = MetricRegistry(definitions)
         self._port = NautilusSubscriptionPort(self)
         self._metric_type = DataType(METRIC_VALUE_TYPE_NAME)
         self._batch_type = DataType(HISTORICAL_BATCH_TYPE_NAME)
         self._demand_retry_interval_ns = config.demand_retry_interval_ms * 1_000_000
-        self._evidence_retry_interval_ns = (
-            config.evidence_snapshot_retry_interval_ms * 1_000_000
-        )
+        self._evidence_retry_interval_ns = config.evidence_snapshot_retry_interval_ms * 1_000_000
         if config.conflict_policy != BarConflictPolicy.REJECT_CONFLICT.value:
             raise ValueError("session metrics support reject_conflict only")
         self._ledgers = {
@@ -177,6 +218,20 @@ class SessionMetricsActor(DataActor):
         self._historical_readiness: dict[str, str] = {}
         self._revisions: defaultdict[str, int] = defaultdict(int)
         self._counts: defaultdict[str, int] = defaultdict(int)
+        self._reference_books = {
+            instrument_id: SessionReferenceBook(
+                instrument_id=instrument_id,
+                price_basis=reference_policy.vwap_price_basis,
+                minimum_coverage_ratio=reference_policy.minimum_coverage_ratio,
+                maximum_retained_sessions=reference_policy.maximum_retained_sessions,
+                maximum_observations_per_session=max(
+                    self._maximum_retained,
+                    reference_policy.maximum_historical_observations,
+                ),
+            )
+            for instrument_id in self._instrument_ids
+        }
+        self._reference_signatures: dict[tuple[str, str], tuple[object, ...]] = {}
         self._live_demand_ids = {
             instrument_id: f"metric:session:{instrument_id}:bars:{self._live_selector}"
             for instrument_id in self._instrument_ids
@@ -186,6 +241,13 @@ class SessionMetricsActor(DataActor):
                 f"metric:session:{instrument_id}:historical:{self._historical_selector}"
             )
             for instrument_id in self._instrument_ids
+        }
+        self._reference_demand_ids = {
+            (instrument_id, role): f"metric:session:{instrument_id}:reference:{role.value}"
+            for instrument_id in self._instrument_ids
+            for role in SessionReferenceRole
+            if role is not SessionReferenceRole.OVERNIGHT
+            or bool(self._profiles[self._profile_bindings[instrument_id]]["overnight_enabled"])
         }
 
     def on_start(self) -> None:
@@ -233,26 +295,27 @@ class SessionMetricsActor(DataActor):
         payload = data.data if isinstance(data, CustomData) else data
         if not isinstance(payload, HistoricalBatch):
             return
-        dependencies = {
-            dependency.consumer_id for dependency in payload.request.dependencies
-        }
+        dependencies = {dependency.consumer_id for dependency in payload.request.dependencies}
         if str(self.actor_id) not in dependencies:
             return
         if payload.request.instrument_id not in self._instrument_set:
             return
-        if (
-            payload.request.kind is not FeedKind.BARS
-            or payload.request.selector != self._historical_selector
-        ):
+        if payload.request.kind is not FeedKind.BARS:
             return
-        self._counts["historical_batches"] += 1
-        for observation in payload.observations:
-            self._process_provider_bar(
-                observation,
-                source=CompletedBarSource.HISTORICAL_PROVIDER,
-                received_ns=payload.received_at_ns,
-                evidence_ref=f"historical:{payload.request.request_id}",
-            )
+        if payload.request.selector == self._historical_selector:
+            self._counts["historical_batches"] += 1
+            for observation in payload.observations:
+                self._process_provider_bar(
+                    observation,
+                    source=CompletedBarSource.HISTORICAL_PROVIDER,
+                    received_ns=payload.received_at_ns,
+                    evidence_ref=f"historical:{payload.request.request_id}",
+                )
+        if (
+            self._references_enabled
+            and payload.request.selector == self._reference_historical_selector
+        ):
+            self._process_reference_batch(payload)
 
     def on_bar(self, bar) -> None:  # noqa: ANN001
         instrument_id = str(bar.bar_type.instrument_id)
@@ -309,6 +372,8 @@ class SessionMetricsActor(DataActor):
             f" | conflicts={self._counts['conflicts']}"
             f" | expired_partial_buckets={self._counts['expired_partial_buckets']}"
             f" | values={self._counts['values']}"
+            f" | reference_batches={self._counts['reference_batches']}"
+            f" | reference_values={self._counts['reference_values']}"
             f" | failures={self._counts['failures']}",
         )
 
@@ -478,6 +543,11 @@ class SessionMetricsActor(DataActor):
             for value in values:
                 self.publish_data(self._metric_type, CustomData(self._metric_type, value))
             self._counts["values"] += len(values)
+        if self._references_enabled and bar.source in {
+            CompletedBarSource.LIVE_NATIVE,
+            CompletedBarSource.LIVE_AGGREGATE,
+        }:
+            self._ingest_live_reference(bar)
 
     def _attach_consumers(self) -> None:
         for instrument_id in self._instrument_ids:
@@ -539,6 +609,220 @@ class SessionMetricsActor(DataActor):
                 HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
                 demand.to_signal_value(),
             )
+            if self._references_enabled:
+                for role in SessionReferenceRole:
+                    if (instrument_id, role) not in self._reference_demand_ids:
+                        continue
+                    self.publish_signal(
+                        HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
+                        self._reference_demand(instrument_id, role, now_ns).to_signal_value(),
+                    )
+
+    def _process_reference_batch(self, batch: HistoricalBatch) -> None:
+        role = self._reference_role(batch)
+        if role is None or (batch.request.instrument_id, role) not in self._reference_demand_ids:
+            return
+        grouped: defaultdict[str, list[CompletedBarInput]] = defaultdict(list)
+        for observation in batch.observations:
+            try:
+                bar = self._normalize(
+                    observation,
+                    CompletedBarSource.HISTORICAL_PROVIDER,
+                    batch.received_at_ns,
+                    f"historical:{batch.request.request_id}",
+                )
+            except (ValueError, ArithmeticError, InvalidOperation) as exc:
+                self._counts["failures"] += 1
+                self.log.error(
+                    "SESSION_REFERENCE_BAR_REJECTED"
+                    f" | instrument_id={batch.request.instrument_id}"
+                    f" | role={role.value} | error={type(exc).__name__} | reason={exc}",
+                )
+                continue
+            grouped[bar.session_id].append(bar)
+        for session_id, bars in grouped.items():
+            try:
+                spec = SessionWindowSpec(
+                    role=role,
+                    session_id=session_id,
+                    start_ns=batch.request.start_ns,
+                    end_ns=batch.request.end_ns + 1,
+                    complete=role is SessionReferenceRole.PREVIOUS,
+                )
+                self._reference_books[batch.request.instrument_id].ingest_historical(
+                    spec,
+                    tuple(bars),
+                    cutoff_ns=max(bar.interval_end_ns for bar in bars),
+                )
+            except ValueError as exc:
+                self._counts["failures"] += 1
+                self.log.error(
+                    "SESSION_REFERENCE_BATCH_REJECTED"
+                    f" | instrument_id={batch.request.instrument_id}"
+                    f" | role={role.value} | reason={exc}",
+                )
+        self._counts["reference_batches"] += 1
+        self._publish_reference_metrics(batch.request.instrument_id)
+
+    def _ingest_live_reference(self, bar: CompletedBarInput) -> None:
+        profile = self._profiles[bar.analytical_profile_id]
+        phase = bar.session_id.rsplit(":", 1)[-1]
+        roles: list[SessionReferenceRole] = []
+        if phase == str(profile["primary_phase"]):
+            roles.append(SessionReferenceRole.ACTIVE)
+        if bool(profile["overnight_enabled"]) and phase == str(profile["overnight_phase"]):
+            roles.append(SessionReferenceRole.OVERNIGHT)
+        for role in roles:
+            spec = self._live_window_spec(bar, role, phase)
+            if spec is None:
+                continue
+            try:
+                self._reference_books[bar.instrument_id].ingest_live(spec, bar)
+            except ValueError as exc:
+                self._counts["failures"] += 1
+                self.log.error(
+                    "SESSION_REFERENCE_LIVE_REJECTED"
+                    f" | instrument_id={bar.instrument_id}"
+                    f" | role={role.value} | reason={exc}",
+                )
+        if roles:
+            self._publish_reference_metrics(bar.instrument_id)
+
+    def _live_window_spec(
+        self,
+        bar: CompletedBarInput,
+        role: SessionReferenceRole,
+        phase: str,
+    ) -> SessionWindowSpec | None:
+        windows = self._calendars[bar.calendar_id].windows(bar.trade_date, bar.trade_date)
+        window = next((item for item in windows if item.phase == phase), None)
+        if window is None:
+            self._counts["failures"] += 1
+            self.log.error(
+                "SESSION_REFERENCE_WINDOW_MISSING"
+                f" | instrument_id={bar.instrument_id}"
+                f" | trade_date={bar.trade_date.isoformat()} | phase={phase}",
+            )
+            return None
+        return SessionWindowSpec(
+            role=role,
+            session_id=bar.session_id,
+            start_ns=window.start_ns,
+            end_ns=window.end_ns,
+            complete=bar.interval_end_ns >= window.end_ns,
+        )
+
+    def _reference_demand(
+        self,
+        instrument_id: str,
+        role: SessionReferenceRole,
+        now_ns: int,
+    ) -> HistoricalDependencyDemandEvent:
+        profile = self._profiles[self._profile_bindings[instrument_id]]
+        if role is SessionReferenceRole.ACTIVE:
+            window = self._reference_active_window
+            phase = str(profile["primary_phase"])
+            window_parameters: dict[str, str | int] = {"phase": phase}
+        elif role is SessionReferenceRole.PREVIOUS:
+            window = self._reference_previous_window
+            phase = str(profile["primary_phase"])
+            window_parameters = {"phase": phase}
+            if window is HistoricalWindow.PREVIOUS_SESSIONS:
+                window_parameters["session_count"] = 1
+        else:
+            window = self._reference_overnight_window
+            phase = str(profile["overnight_phase"])
+            window_parameters = {"phase": phase}
+        return HistoricalDependencyDemandEvent(
+            demand_id=self._reference_demand_ids[(instrument_id, role)],
+            consumer_id=str(self.actor_id),
+            capability_id=f"metric:session-reference:{role.value}",
+            capability_version=1,
+            instrument_id=instrument_id,
+            selector=self._reference_historical_selector,
+            window=window.value,
+            minimum_observations=self._reference_minimum_history,
+            maximum_observations=self._reference_maximum_history,
+            priority=self._priority,
+            purpose=f"warm {role.value} session-reference measurements",
+            as_of_ns=now_ns,
+            window_parameters=window_parameters,
+            parameters={
+                "parameter_version": self._parameter_version,
+                "vwap_price_basis": self._reference_price_basis,
+            },
+        )
+
+    def _reference_role(self, batch: HistoricalBatch) -> SessionReferenceRole | None:
+        capabilities = {
+            dependency.capability_id
+            for dependency in batch.request.dependencies
+            if dependency.consumer_id == str(self.actor_id)
+        }
+        for role in SessionReferenceRole:
+            if f"metric:session-reference:{role.value}" in capabilities:
+                return role
+        return None
+
+    def _publish_reference_metrics(self, instrument_id: str) -> None:
+        if instrument_id not in self._reference_books:
+            return
+        profile = self._profiles[self._profile_bindings[instrument_id]]
+        book = self._reference_books[instrument_id]
+        snapshot = book.snapshot(
+            overnight_missing_reason=(
+                self._reference_missing_reason(instrument_id, SessionReferenceRole.OVERNIGHT)
+                if bool(profile["overnight_enabled"])
+                else "overnight_not_configured"
+            ),
+        )
+        snapshot = snapshot.__class__(
+            instrument_id=snapshot.instrument_id,
+            active=snapshot.active,
+            previous=snapshot.previous,
+            overnight=snapshot.overnight,
+            active_missing_reason=self._reference_missing_reason(
+                instrument_id,
+                SessionReferenceRole.ACTIVE,
+            ),
+            previous_missing_reason=self._reference_missing_reason(
+                instrument_id,
+                SessionReferenceRole.PREVIOUS,
+            ),
+            overnight_missing_reason=snapshot.overnight_missing_reason,
+        )
+        self._revisions[f"reference:{instrument_id}"] += 1
+        now_ns = self.clock.timestamp_ns()
+        values = calculate_session_reference_metrics(
+            snapshot,
+            registry=self._registry,
+            parameter_version=self._parameter_version,
+            calculated_ts_ns=now_ns,
+            published_ts_ns=now_ns,
+            source=str(self.actor_id),
+            revision=self._revisions[f"reference:{instrument_id}"],
+        )
+        for value in values:
+            key = (instrument_id, value.metric_id)
+            signature = metric_value_signature(value)
+            if self._reference_signatures.get(key) == signature:
+                continue
+            self.publish_data(self._metric_type, CustomData(self._metric_type, value))
+            self._reference_signatures[key] = signature
+            self._counts["reference_values"] += 1
+
+    def _reference_missing_reason(
+        self,
+        instrument_id: str,
+        role: SessionReferenceRole,
+    ) -> str:
+        capability_id = f"metric:session-reference:{role.value}"
+        state = self._historical_readiness.get(f"{instrument_id}:{capability_id}")
+        return (
+            f"{role.value}_session_history_{state.lower()}"
+            if state is not None
+            else f"{role.value}_session_history_pending"
+        )
 
     def _request_evidence_snapshot(self, _event) -> None:  # noqa: ANN001
         missing = tuple(
@@ -578,8 +862,11 @@ class SessionMetricsActor(DataActor):
             event = HistoricalReadinessEvent.from_signal_value(value)
         except ValueError:
             return
-        if event.consumer_id == str(self.actor_id):
-            self._historical_readiness[event.instrument_id] = event.state
+        if event.consumer_id != str(self.actor_id):
+            return
+        self._historical_readiness[f"{event.instrument_id}:{event.capability_id}"] = event.state
+        if self._references_enabled and event.capability_id.startswith("metric:session-reference:"):
+            self._publish_reference_metrics(event.instrument_id)
 
     def _observe_session_state(self, value: str) -> None:
         try:
@@ -666,10 +953,7 @@ def _recalculation_contexts(
     if index is None:
         raise ValueError("admitted completed bar is absent from ledger")
     targets = (index, index + 1) if index + 1 < len(bars) else (index,)
-    return tuple(
-        (bars[target], bars[target - 1] if target > 0 else None)
-        for target in targets
-    )
+    return tuple((bars[target], bars[target - 1] if target > 0 else None) for target in targets)
 
 
 class _EventSnapshot:
