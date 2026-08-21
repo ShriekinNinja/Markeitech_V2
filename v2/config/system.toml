@@ -1,4 +1,4 @@
-schema_version = 9
+schema_version = 11
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -54,7 +54,7 @@ retry_backoff_ms = 500
 poll_interval_ms = 100
 
 [historical.probe]
-enabled = true
+enabled = false
 actor_ids = ["HISTORICAL-PROBE-A", "HISTORICAL-PROBE-B"]
 instrument_id = "ESU6.CME"
 selector = "1-MINUTE-LAST-EXTERNAL"
@@ -216,6 +216,131 @@ maximum_output_age_ms = 15000
 demand_retry_interval_ms = 1000
 evidence_snapshot_retry_interval_ms = 1000
 priority = 50
+
+[metrics.session_measurements]
+enabled = true
+required_watchlist_capability = "watchlist_last"
+parameter_version = 1
+parameter_source = "operator-reviewed-config"
+parameter_effective_from = "2026-08-20T00:00:00Z"
+conflict_policy = "reject_conflict"
+maximum_active_sessions = 4
+demand_retry_interval_ms = 1000
+evidence_snapshot_retry_interval_ms = 1000
+priority = 40
+
+[metrics.session_measurements.completed_bars]
+live_selector = "5-SECOND-LAST-EXTERNAL"
+historical_selector = "1-MINUTE-LAST-EXTERNAL"
+historical_window = "recent_completed"
+minimum_historical_observations = 2
+maximum_historical_observations = 4
+calculation_interval_seconds = 60
+minimum_interval_seconds = 5
+maximum_interval_seconds = 3600
+interval_step_seconds = 5
+interval_dynamic = true
+aggregation_boundary_policy = "utc_fixed_intraday"
+timestamp_policy = "interval_start"
+revision_policy = "reject_revision"
+maximum_retained_observations = 5000
+maximum_output_age_ms = 120000
+
+[[metrics.session_measurements.profiles]]
+profile_id = "cme_equity_primary"
+version = 1
+calendar_id = "cme_equity"
+primary_phase = "OPEN"
+volume_supported = true
+
+[[metrics.session_measurements.profiles.windows]]
+window_id = "opening_range_fast"
+purpose = "opening_range"
+anchor_phase = "OPEN"
+anchor_boundary = "start"
+offset_seconds = 0
+duration_seconds = 300
+minimum_duration_seconds = 60
+maximum_duration_seconds = 1800
+duration_step_seconds = 60
+dynamic = true
+
+[[metrics.session_measurements.profiles.windows]]
+window_id = "opening_range_slow"
+purpose = "opening_range"
+anchor_phase = "OPEN"
+anchor_boundary = "start"
+offset_seconds = 0
+duration_seconds = 900
+minimum_duration_seconds = 300
+maximum_duration_seconds = 3600
+duration_step_seconds = 300
+dynamic = true
+
+[[metrics.session_measurements.profiles.windows]]
+window_id = "power_hour"
+purpose = "power_hour"
+anchor_phase = "OPEN"
+anchor_boundary = "end"
+offset_seconds = -3600
+duration_seconds = 3600
+minimum_duration_seconds = 1800
+maximum_duration_seconds = 7200
+duration_step_seconds = 300
+dynamic = true
+
+[[metrics.session_measurements.profiles]]
+profile_id = "cme_energy_primary"
+version = 1
+calendar_id = "cme_energy"
+primary_phase = "OPEN"
+volume_supported = true
+windows = []
+
+[[metrics.session_measurements.profiles]]
+profile_id = "us_equity_primary"
+version = 1
+calendar_id = "us_equities"
+primary_phase = "OPEN"
+volume_supported = true
+windows = []
+
+[[metrics.session_measurements.profiles]]
+profile_id = "us_index_primary"
+version = 1
+calendar_id = "us_equities"
+primary_phase = "OPEN"
+volume_supported = false
+windows = []
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "cme_equity_primary"
+instrument_ids = ["ESU6.CME", "NQU6.CME", "YMU6.CBOT"]
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "cme_energy_primary"
+instrument_ids = ["CLU6.NYMEX"]
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "us_equity_primary"
+instrument_ids = [
+  "SPY.ARCA",
+  "QQQ.NASDAQ",
+  "NVDA.NASDAQ",
+  "AAPL.NASDAQ",
+  "GOOGL.NASDAQ",
+  "MSFT.NASDAQ",
+  "AMZN.NASDAQ",
+  "TSM.NYSE",
+  "AVGO.NASDAQ",
+  "SPCX.NASDAQ",
+  "META.NASDAQ",
+  "TSLA.NASDAQ",
+]
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "us_index_primary"
+instrument_ids = ["^SPX.CBOE", "^VIX.CBOE"]
 
 [watchlist]
 consumer_retry_interval_ms = 1000

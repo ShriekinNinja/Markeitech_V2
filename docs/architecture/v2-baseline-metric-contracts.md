@@ -45,13 +45,17 @@ inputs, validation reference, and resource cost are reviewed with Markeitect.
 | `metric_id`, `version` | Stable identity and formula-contract revision |
 | `decision_question` | The bounded market question the value helps answer |
 | `implementation_id` | Stable implementation/formula reference |
+| `formula`, `normalization` | Deterministic calculation and any explicit scaling basis |
+| `applicability` | Valid instrument/data characteristics and interpretation boundary |
 | `value_kind`, `unit` | Output type and measurement unit |
 | `cadence` | Observation, completed bar, timer, session transition, or dependency readiness |
 | `horizon` | Human-readable analytical horizon; not an implicit lookback |
 | `nullable` | Whether honest missing output is representable |
 | `retained_state` | None, latest, rolling window, or current session |
-| `fidelity` | Maximum intended output fidelity |
+| `fidelity`, `allowed_fidelities` | Expected fidelity and every honest runtime fidelity the output may carry |
 | `failure_behavior` | Emit null, hold a stale prior value, or suppress output |
+| `failure_modes` | Known conditions which make the output missing, partial, stale, or invalid |
+| `priority` | Reviewed resource priority from 0 through 100 |
 | `warmup` | Minimum observations/time and dependency-readiness rule |
 | `resources` | State, cadence, and output-age bounds |
 | `live_inputs` | Existing acquisition feed requirements |
@@ -120,7 +124,7 @@ authorization, intents, audit, application boundaries, expiry, and rollback.
 
 A null value must explain why it is absent, and its definition must permit nulls. Unavailable,
 unsupported, and failed values cannot carry a misleading number. The registry validates output type,
-unit, nullability, and fidelity compatibility against the exact definition version.
+unit, nullability, and actual fidelity against the definition's explicit allowed-fidelity set.
 
 ### Registry
 

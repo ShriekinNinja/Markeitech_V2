@@ -58,6 +58,7 @@ Preserved V1 architecture remains available in
 - [First market-intelligence coding sequence](roadmap/v2-first-market-intelligence-coding-sequence.md)
 - [Active implementation roadmap](roadmap/implementation-roadmap.md)
 - [Runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
+- [V2 Stage 9C session measurements plan](roadmap/v2-stage-9c-session-measurements-plan.md)
 - [Trading quality evidence plan](roadmap/trading-quality-evidence-plan.md)
 - [Detailed implementation history](roadmap/implementation-history.md)
 

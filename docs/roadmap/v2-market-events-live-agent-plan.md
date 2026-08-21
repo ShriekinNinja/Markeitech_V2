@@ -213,6 +213,26 @@ Each approved capability declares:
 The registry expands an approved capability into dependencies. An agent cannot invent a formula or
 free-form warmup request.
 
+### Measurement Dependency And Resolution Policy
+
+There is no universal base timeframe, canonical historical substrate, or mandatory resolution
+pyramid. Every measurement declares its own provider/source, resolution, bounded lookback or time
+bounds, session scope, price basis, volume requirements, and minimum fidelity. The selected
+dependency must be the smallest and cheapest input that preserves the measurement's meaning.
+
+Direct provider bars are preferred when they satisfy the exact contract. Aggregation is used only
+when required by the measurement's semantics, provider availability, explicit session control, or
+validated resource sharing. A higher timeframe never automatically derives from the timeframe
+below it. Acquisition may deduplicate dependencies only when all material semantics are compatible;
+sharing is an execution optimization, not an analytical rule.
+
+Provider-native and locally aggregated representations require explicit equivalence validation
+before either may substitute for the other. Validation covers interval identity, calendar/session
+assignment, OHLCV, downstream output, and configured tolerances. Fidelity differences remain
+visible. For example, prior-day OHLC may use a direct daily bar, while an opening range requires
+intraday observations and weekly structure may use direct weekly bars or validated daily-to-weekly
+aggregation. Long one-minute downloads are never required merely to manufacture coarser history.
+
 ### Deterministic Capability Actors
 
 Own measurement calculation for separately approved families: quote/liquidity, session/range,
@@ -603,7 +623,7 @@ restart/DST/holiday/stale/degraded behavior.
 ### 9B: Historical Dependency Execution
 
 Capability-declared history, policy/resource validation, acquisition pacing/dedup/timeout/cancel,
-transient delivery, and explicit readiness.
+transient delivery, explicit readiness, and independent per-measurement resolution contracts.
 
 **Exit:** capabilities receive exact bounded warmup without provider ownership.
 

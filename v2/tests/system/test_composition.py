@@ -35,10 +35,9 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "session_state",
         "evidence_health",
         "quote_quality_metrics",
+        "session_metrics",
         "watchlist",
         "data_acquisition",
-        "historical_dependency_probe:1",
-        "historical_dependency_probe:2",
         "discord_health",
         "operational_persistence",
     ]
@@ -127,10 +126,9 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "session_state",
         "evidence_health",
         "quote_quality_metrics",
+        "session_metrics",
         "watchlist",
         "data_acquisition",
-        "historical_dependency_probe:1",
-        "historical_dependency_probe:2",
         "operational_persistence",
     ]
 
@@ -193,6 +191,45 @@ def test_actor_plan_adds_enabled_native_consumer_probe() -> None:
         "selector": "default",
     }
     assert probe.config.config["unsubscribe_after_seconds"] == 15
+
+
+def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> None:
+    config = _config()
+    config = replace(
+        config,
+        metrics=replace(
+            config.metrics,
+            session_measurements=replace(
+                config.metrics.session_measurements,
+                enabled=True,
+            ),
+        ),
+    )
+
+    plan = build_actor_plan(config, _prerequisites())
+
+    actor = next(item for item in plan if item.key == "session_metrics")
+    assert actor.actor_id == "SESSION-METRICS"
+    assert actor.config.config["instrument_ids"] == list(config.instrument_ids)
+    assert actor.config.config["profile_bindings"]["ESU6.CME"] == "cme_equity_primary"
+    assert actor.config.config["profile_bindings"]["^SPX.CBOE"] == "us_index_primary"
+    assert actor.config.config["completed_bars"] == {
+        "live_selector": "5-SECOND-LAST-EXTERNAL",
+        "historical_selector": "1-MINUTE-LAST-EXTERNAL",
+        "historical_window": "recent_completed",
+        "minimum_historical_observations": 2,
+        "maximum_historical_observations": 4,
+        "calculation_interval_seconds": 60,
+        "minimum_interval_seconds": 5,
+        "maximum_interval_seconds": 3600,
+        "interval_step_seconds": 5,
+        "interval_dynamic": True,
+        "aggregation_boundary_policy": "utc_fixed_intraday",
+        "timestamp_policy": "interval_start",
+        "revision_policy": "reject_revision",
+        "maximum_retained_observations": 5000,
+        "maximum_output_age_ms": 120000,
+    }
 
 
 def test_actor_plan_rejects_missing_required_preflight() -> None:

@@ -56,17 +56,24 @@ def _definition(
     *,
     metric_inputs: tuple[MetricDependency, ...] = (),
 ) -> MetricDefinition:
-    live_inputs = () if metric_inputs else (
-        CapabilityFeedRequirement(
-            kind=FeedKind.BARS,
-            selector="5-minute-last-external",
-        ),
+    live_inputs = (
+        ()
+        if metric_inputs
+        else (
+            CapabilityFeedRequirement(
+                kind=FeedKind.BARS,
+                selector="5-minute-last-external",
+            ),
+        )
     )
     return MetricDefinition(
         metric_id=metric_id,
         version=version,
         decision_question="How far did the completed bar move on a normalized basis?",
         implementation_id="markeitech.metrics.normalized_return",
+        formula="(close / prior_close) - 1",
+        normalization="dimensionless simple return",
+        applicability="instruments with validated completed bars",
         value_kind=MetricValueKind.NUMBER,
         unit="ratio",
         cadence=MetricCadence.COMPLETED_BAR,
@@ -74,7 +81,14 @@ def _definition(
         nullable=True,
         retained_state=MetricRetainedState.ROLLING_WINDOW,
         fidelity=MetricFidelity.DERIVED,
+        allowed_fidelities=(
+            MetricFidelity.DERIVED,
+            MetricFidelity.PARTIAL,
+            MetricFidelity.UNAVAILABLE,
+        ),
         failure_behavior=MetricFailureBehavior.EMIT_NULL,
+        failure_modes=("missing compatible prior close",),
+        priority=50,
         warmup=MetricWarmupPolicy(
             minimum_observations=5,
             minimum_elapsed_ns=0,
@@ -260,6 +274,40 @@ def test_metric_value_carries_temporal_health_and_lineage_truth() -> None:
 
     registry.validate_value(value)
     assert value.key == ("normalized_return", 1)
+
+
+def test_definition_exposes_specialist_contract_and_rejects_undeclared_fidelity() -> None:
+    definition = _definition()
+
+    assert definition.formula == "(close / prior_close) - 1"
+    assert definition.normalization == "dimensionless simple return"
+    assert definition.applicability == "instruments with validated completed bars"
+    assert definition.failure_modes == ("missing compatible prior close",)
+    assert definition.priority == 50
+
+    value = MetricValue(
+        metric_id="normalized_return",
+        metric_version=1,
+        parameter_version=1,
+        instrument_id="ESU6.CME",
+        session_id=None,
+        value=0.1,
+        unit="ratio",
+        effective_ts_ns=100,
+        observed_ts_ns=100,
+        received_ts_ns=100,
+        calculated_ts_ns=100,
+        published_ts_ns=100,
+        health=MetricHealth.READY,
+        fidelity=MetricFidelity.REPORTED,
+        source="TEST",
+        evidence_refs=("bar:1",),
+        missing_reasons=(),
+        revision=1,
+    )
+
+    with pytest.raises(ValueError, match="fidelity is incompatible"):
+        MetricRegistry((definition,)).validate_value(value)
 
 
 def test_null_value_requires_reason_and_definition_permission() -> None:

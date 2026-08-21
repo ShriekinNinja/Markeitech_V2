@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tomllib
 from dataclasses import dataclass
-from datetime import date, time
+from datetime import UTC, date, datetime, time
 from pathlib import Path
 from typing import Any
 
@@ -152,8 +152,75 @@ class QuoteQualityMetricsConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class AnalyticalWindowConfig:
+    window_id: str
+    purpose: str
+    anchor_phase: str
+    anchor_boundary: str
+    offset_seconds: int
+    duration_seconds: int
+    minimum_duration_seconds: int
+    maximum_duration_seconds: int
+    duration_step_seconds: int
+    dynamic: bool
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyticalSessionProfileConfig:
+    profile_id: str
+    version: int
+    calendar_id: str
+    primary_phase: str
+    volume_supported: bool
+    windows: tuple[AnalyticalWindowConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyticalProfileBindingConfig:
+    profile_id: str
+    instrument_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CompletedBarMetricsConfig:
+    live_selector: str
+    historical_selector: str
+    historical_window: str
+    minimum_historical_observations: int
+    maximum_historical_observations: int
+    calculation_interval_seconds: int
+    minimum_interval_seconds: int
+    maximum_interval_seconds: int
+    interval_step_seconds: int
+    interval_dynamic: bool
+    aggregation_boundary_policy: str
+    timestamp_policy: str
+    revision_policy: str
+    maximum_retained_observations: int
+    maximum_output_age_ms: int
+
+
+@dataclass(frozen=True, slots=True)
+class SessionMeasurementsConfig:
+    enabled: bool
+    required_watchlist_capability: str
+    parameter_version: int
+    parameter_source: str
+    parameter_effective_from_ns: int
+    conflict_policy: str
+    maximum_active_sessions: int
+    demand_retry_interval_ms: int
+    evidence_snapshot_retry_interval_ms: int
+    priority: int
+    completed_bars: CompletedBarMetricsConfig
+    profiles: tuple[AnalyticalSessionProfileConfig, ...]
+    profile_bindings: tuple[AnalyticalProfileBindingConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class MetricsConfig:
     quote_quality: QuoteQualityMetricsConfig
+    session_measurements: SessionMeasurementsConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -224,7 +291,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 9:
+    if raw["schema_version"] != 11:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -264,6 +331,72 @@ def load_system_config(path: str | Path) -> SystemConfig:
         for member in watchlist.members
     ):
         raise ValueError("enabled quote-quality metrics scope selects no watchlist instruments")
+    if metrics.session_measurements.enabled and not any(
+        metrics.session_measurements.required_watchlist_capability in member.capabilities
+        for member in watchlist.members
+    ):
+        raise ValueError("enabled session measurements scope selects no watchlist instruments")
+    profile_calendars = {profile.calendar_id for profile in metrics.session_measurements.profiles}
+    unknown_profile_calendars = sorted(profile_calendars - known_calendars)
+    if unknown_profile_calendars:
+        raise ValueError(
+            "session measurement profiles reference unknown calendars: "
+            f"{', '.join(unknown_profile_calendars)}",
+        )
+    profile_by_id = {
+        profile.profile_id: profile for profile in metrics.session_measurements.profiles
+    }
+    watchlist_by_id = {member.instrument_id: member for member in watchlist.members}
+    configured_binding_ids = {
+        instrument_id
+        for binding in metrics.session_measurements.profile_bindings
+        for instrument_id in binding.instrument_ids
+    }
+    unknown_binding_ids = sorted(configured_binding_ids - set(watchlist_by_id))
+    if unknown_binding_ids:
+        raise ValueError(
+            "session measurement bindings reference unknown watchlist instruments: "
+            f"{', '.join(unknown_binding_ids)}",
+        )
+    bound_instruments: dict[str, str] = {}
+    for binding in metrics.session_measurements.profile_bindings:
+        profile = profile_by_id[binding.profile_id]
+        for instrument_id in binding.instrument_ids:
+            member = watchlist_by_id[instrument_id]
+            if member.calendar_id != profile.calendar_id:
+                raise ValueError(
+                    "session measurement profile binding calendar mismatch: "
+                    f"{instrument_id} uses {member.calendar_id}, profile {profile.profile_id} "
+                    f"uses {profile.calendar_id}",
+                )
+            bound_instruments[instrument_id] = profile.profile_id
+    if metrics.session_measurements.enabled:
+        selected_instruments = {
+            member.instrument_id
+            for member in watchlist.members
+            if metrics.session_measurements.required_watchlist_capability in member.capabilities
+        }
+        missing_bindings = sorted(selected_instruments - set(bound_instruments))
+        if missing_bindings:
+            raise ValueError(
+                "enabled session measurements lack analytical profile bindings: "
+                f"{', '.join(missing_bindings)}",
+            )
+        selected_calendars = {
+            watchlist_by_id[instrument_id].calendar_id
+            for instrument_id in selected_instruments
+        }
+        if len(selected_calendars) > metrics.session_measurements.maximum_active_sessions:
+            raise ValueError(
+                "enabled session measurements exceed maximum_active_sessions: "
+                f"selected={len(selected_calendars)}, "
+                f"maximum={metrics.session_measurements.maximum_active_sessions}",
+            )
+        if ib.handle_revised_bars:
+            raise ValueError(
+                "enabled session measurements with reject_revision require "
+                "ib.handle_revised_bars = false",
+            )
     feed_count = sum(len(member.capabilities) for member in watchlist.members)
     minimum_normal_capacity = feed_count * 4 + len(watchlist.members) * 2 + 16
     normal_capacity = persistence.queue_capacity - persistence.critical_queue_reserve
@@ -767,7 +900,7 @@ def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
 
 def _load_metrics(raw: Any) -> MetricsConfig:
     values = _mapping(raw, "metrics")
-    _require_keys(values, {"quote_quality"}, "metrics")
+    _require_keys(values, {"quote_quality", "session_measurements"}, "metrics")
     quote = _mapping(values["quote_quality"], "metrics.quote_quality")
     _require_keys(
         quote,
@@ -786,35 +919,380 @@ def _load_metrics(raw: Any) -> MetricsConfig:
     priority = _non_negative_int(quote["priority"], "metrics.quote_quality.priority")
     if priority > 100:
         raise ValueError("metrics.quote_quality.priority must not exceed 100")
+    quote_config = QuoteQualityMetricsConfig(
+        enabled=_bool(quote["enabled"], "metrics.quote_quality.enabled"),
+        required_watchlist_capability=_non_empty_string(
+            quote["required_watchlist_capability"],
+            "metrics.quote_quality.required_watchlist_capability",
+        ),
+        parameter_version=_positive_int(
+            quote["parameter_version"],
+            "metrics.quote_quality.parameter_version",
+        ),
+        minimum_update_interval_ms=_non_negative_int(
+            quote["minimum_update_interval_ms"],
+            "metrics.quote_quality.minimum_update_interval_ms",
+        ),
+        maximum_output_age_ms=_positive_int(
+            quote["maximum_output_age_ms"],
+            "metrics.quote_quality.maximum_output_age_ms",
+        ),
+        demand_retry_interval_ms=_positive_int(
+            quote["demand_retry_interval_ms"],
+            "metrics.quote_quality.demand_retry_interval_ms",
+        ),
+        evidence_snapshot_retry_interval_ms=_positive_int(
+            quote["evidence_snapshot_retry_interval_ms"],
+            "metrics.quote_quality.evidence_snapshot_retry_interval_ms",
+        ),
+        priority=priority,
+    )
+    session = _load_session_measurements(values["session_measurements"])
     return MetricsConfig(
-        quote_quality=QuoteQualityMetricsConfig(
-            enabled=_bool(quote["enabled"], "metrics.quote_quality.enabled"),
-            required_watchlist_capability=_non_empty_string(
-                quote["required_watchlist_capability"],
-                "metrics.quote_quality.required_watchlist_capability",
+        quote_quality=quote_config,
+        session_measurements=session,
+    )
+
+
+def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
+    values = _mapping(raw, "metrics.session_measurements")
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "required_watchlist_capability",
+            "parameter_version",
+            "parameter_source",
+            "parameter_effective_from",
+            "conflict_policy",
+            "maximum_active_sessions",
+            "demand_retry_interval_ms",
+            "evidence_snapshot_retry_interval_ms",
+            "priority",
+            "completed_bars",
+            "profiles",
+            "profile_bindings",
+        },
+        "metrics.session_measurements",
+    )
+    conflict_policy = _non_empty_string(
+        values["conflict_policy"],
+        "metrics.session_measurements.conflict_policy",
+    )
+    if conflict_policy != "reject_conflict":
+        raise ValueError("metrics.session_measurements.conflict_policy must be reject_conflict")
+    priority = _non_negative_int(values["priority"], "metrics.session_measurements.priority")
+    if priority > 100:
+        raise ValueError("metrics.session_measurements.priority must not exceed 100")
+    completed = _mapping(
+        values["completed_bars"],
+        "metrics.session_measurements.completed_bars",
+    )
+    _require_keys(
+        completed,
+        {
+            "live_selector",
+            "historical_selector",
+            "historical_window",
+            "minimum_historical_observations",
+            "maximum_historical_observations",
+            "calculation_interval_seconds",
+            "minimum_interval_seconds",
+            "maximum_interval_seconds",
+            "interval_step_seconds",
+            "interval_dynamic",
+            "aggregation_boundary_policy",
+            "timestamp_policy",
+            "revision_policy",
+            "maximum_retained_observations",
+            "maximum_output_age_ms",
+        },
+        "metrics.session_measurements.completed_bars",
+    )
+    minimum_history = _positive_int(
+        completed["minimum_historical_observations"],
+        "metrics.session_measurements.completed_bars.minimum_historical_observations",
+    )
+    maximum_history = _positive_int(
+        completed["maximum_historical_observations"],
+        "metrics.session_measurements.completed_bars.maximum_historical_observations",
+    )
+    if maximum_history < minimum_history:
+        raise ValueError("completed-bar maximum historical observations cannot be below minimum")
+    minimum_interval = _positive_int(
+        completed["minimum_interval_seconds"],
+        "metrics.session_measurements.completed_bars.minimum_interval_seconds",
+    )
+    maximum_interval = _positive_int(
+        completed["maximum_interval_seconds"],
+        "metrics.session_measurements.completed_bars.maximum_interval_seconds",
+    )
+    interval = _positive_int(
+        completed["calculation_interval_seconds"],
+        "metrics.session_measurements.completed_bars.calculation_interval_seconds",
+    )
+    interval_step = _positive_int(
+        completed["interval_step_seconds"],
+        "metrics.session_measurements.completed_bars.interval_step_seconds",
+    )
+    if not minimum_interval <= interval <= maximum_interval:
+        raise ValueError("completed-bar calculation interval is outside its configured envelope")
+    if (interval - minimum_interval) % interval_step:
+        raise ValueError("completed-bar calculation interval does not align to its step")
+    aggregation_boundary_policy = _non_empty_string(
+        completed["aggregation_boundary_policy"],
+        "metrics.session_measurements.completed_bars.aggregation_boundary_policy",
+    )
+    if aggregation_boundary_policy != "utc_fixed_intraday":
+        raise ValueError(
+            "metrics.session_measurements.completed_bars.aggregation_boundary_policy "
+            "must be utc_fixed_intraday",
+        )
+    if 86_400 % interval:
+        raise ValueError("completed-bar UTC-fixed interval must divide one UTC day exactly")
+    timestamp_policy = _non_empty_string(
+        completed["timestamp_policy"],
+        "metrics.session_measurements.completed_bars.timestamp_policy",
+    )
+    if timestamp_policy not in {"interval_start", "interval_end"}:
+        raise ValueError(
+            "metrics.session_measurements.completed_bars.timestamp_policy must be "
+            "interval_start or interval_end",
+        )
+    revision_policy = _non_empty_string(
+        completed["revision_policy"],
+        "metrics.session_measurements.completed_bars.revision_policy",
+    )
+    if revision_policy != "reject_revision":
+        raise ValueError(
+            "metrics.session_measurements.completed_bars.revision_policy must be reject_revision",
+        )
+    historical_window = _non_empty_string(
+        completed["historical_window"],
+        "metrics.session_measurements.completed_bars.historical_window",
+    )
+    supported_historical_windows = {
+        "previous_rth",
+        "previous_gth_overnight",
+        "current_overnight",
+        "current_rth",
+        "current_gth",
+        "curb",
+        "premarket",
+        "power_hour",
+        "overnight",
+        "session_to_date",
+        "opening_range",
+        "named_phase_slice",
+        "previous_sessions",
+        "recent_completed",
+        "anchored_interval",
+        "synchronized_interval",
+    }
+    if historical_window not in supported_historical_windows:
+        raise ValueError(
+            "metrics.session_measurements.completed_bars.historical_window is unsupported: "
+            f"{historical_window!r}",
+        )
+    profiles_raw = values["profiles"]
+    if not isinstance(profiles_raw, list) or not profiles_raw:
+        raise ValueError("metrics.session_measurements.profiles must be a non-empty array")
+    profiles = tuple(
+        _load_analytical_profile(item, index) for index, item in enumerate(profiles_raw)
+    )
+    profile_ids = [profile.profile_id for profile in profiles]
+    if len(profile_ids) != len(set(profile_ids)):
+        raise ValueError("metrics.session_measurements profile IDs must be unique")
+    bindings_raw = values["profile_bindings"]
+    if not isinstance(bindings_raw, list) or not bindings_raw:
+        raise ValueError("metrics.session_measurements.profile_bindings must be a non-empty array")
+    bindings = tuple(
+        _load_analytical_profile_binding(item, index) for index, item in enumerate(bindings_raw)
+    )
+    known_profile_ids = set(profile_ids)
+    unknown_binding_profiles = sorted(
+        {binding.profile_id for binding in bindings} - known_profile_ids,
+    )
+    if unknown_binding_profiles:
+        raise ValueError(
+            "session measurement bindings reference unknown profiles: "
+            f"{', '.join(unknown_binding_profiles)}",
+        )
+    bound_ids = [instrument_id for binding in bindings for instrument_id in binding.instrument_ids]
+    if len(bound_ids) != len(set(bound_ids)):
+        raise ValueError("session measurement instruments must have exactly one profile binding")
+    return SessionMeasurementsConfig(
+        enabled=_bool(values["enabled"], "metrics.session_measurements.enabled"),
+        required_watchlist_capability=_non_empty_string(
+            values["required_watchlist_capability"],
+            "metrics.session_measurements.required_watchlist_capability",
+        ),
+        parameter_version=_positive_int(
+            values["parameter_version"],
+            "metrics.session_measurements.parameter_version",
+        ),
+        parameter_source=_non_empty_string(
+            values["parameter_source"],
+            "metrics.session_measurements.parameter_source",
+        ),
+        parameter_effective_from_ns=_utc_timestamp_ns(
+            values["parameter_effective_from"],
+            "metrics.session_measurements.parameter_effective_from",
+        ),
+        conflict_policy=conflict_policy,
+        maximum_active_sessions=_positive_int(
+            values["maximum_active_sessions"],
+            "metrics.session_measurements.maximum_active_sessions",
+        ),
+        demand_retry_interval_ms=_positive_int(
+            values["demand_retry_interval_ms"],
+            "metrics.session_measurements.demand_retry_interval_ms",
+        ),
+        evidence_snapshot_retry_interval_ms=_positive_int(
+            values["evidence_snapshot_retry_interval_ms"],
+            "metrics.session_measurements.evidence_snapshot_retry_interval_ms",
+        ),
+        priority=priority,
+        completed_bars=CompletedBarMetricsConfig(
+            live_selector=_non_empty_string(
+                completed["live_selector"],
+                "metrics.session_measurements.completed_bars.live_selector",
             ),
-            parameter_version=_positive_int(
-                quote["parameter_version"],
-                "metrics.quote_quality.parameter_version",
+            historical_selector=_non_empty_string(
+                completed["historical_selector"],
+                "metrics.session_measurements.completed_bars.historical_selector",
             ),
-            minimum_update_interval_ms=_non_negative_int(
-                quote["minimum_update_interval_ms"],
-                "metrics.quote_quality.minimum_update_interval_ms",
+            historical_window=historical_window,
+            minimum_historical_observations=minimum_history,
+            maximum_historical_observations=maximum_history,
+            calculation_interval_seconds=interval,
+            minimum_interval_seconds=minimum_interval,
+            maximum_interval_seconds=maximum_interval,
+            interval_step_seconds=interval_step,
+            interval_dynamic=_bool(
+                completed["interval_dynamic"],
+                "metrics.session_measurements.completed_bars.interval_dynamic",
+            ),
+            aggregation_boundary_policy=aggregation_boundary_policy,
+            timestamp_policy=timestamp_policy,
+            revision_policy=revision_policy,
+            maximum_retained_observations=_positive_int(
+                completed["maximum_retained_observations"],
+                "metrics.session_measurements.completed_bars.maximum_retained_observations",
             ),
             maximum_output_age_ms=_positive_int(
-                quote["maximum_output_age_ms"],
-                "metrics.quote_quality.maximum_output_age_ms",
+                completed["maximum_output_age_ms"],
+                "metrics.session_measurements.completed_bars.maximum_output_age_ms",
             ),
-            demand_retry_interval_ms=_positive_int(
-                quote["demand_retry_interval_ms"],
-                "metrics.quote_quality.demand_retry_interval_ms",
-            ),
-            evidence_snapshot_retry_interval_ms=_positive_int(
-                quote["evidence_snapshot_retry_interval_ms"],
-                "metrics.quote_quality.evidence_snapshot_retry_interval_ms",
-            ),
-            priority=priority,
         ),
+        profiles=profiles,
+        profile_bindings=bindings,
+    )
+
+
+def _load_analytical_profile_binding(
+    raw: Any,
+    index: int,
+) -> AnalyticalProfileBindingConfig:
+    label = f"metrics.session_measurements.profile_bindings[{index}]"
+    values = _mapping(raw, label)
+    _require_keys(values, {"profile_id", "instrument_ids"}, label)
+    return AnalyticalProfileBindingConfig(
+        profile_id=_non_empty_string(values["profile_id"], f"{label}.profile_id"),
+        instrument_ids=_unique_non_empty_strings(
+            values["instrument_ids"],
+            f"{label}.instrument_ids",
+        ),
+    )
+
+
+def _load_analytical_profile(raw: Any, index: int) -> AnalyticalSessionProfileConfig:
+    label = f"metrics.session_measurements.profiles[{index}]"
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "profile_id",
+            "version",
+            "calendar_id",
+            "primary_phase",
+            "volume_supported",
+            "windows",
+        },
+        label,
+    )
+    windows_raw = values["windows"]
+    if not isinstance(windows_raw, list):
+        raise ValueError(f"{label}.windows must be an array")
+    windows = tuple(
+        _load_analytical_window(item, f"{label}.windows[{window_index}]")
+        for window_index, item in enumerate(windows_raw)
+    )
+    window_ids = [window.window_id for window in windows]
+    if len(window_ids) != len(set(window_ids)):
+        raise ValueError(f"{label} window IDs must be unique")
+    return AnalyticalSessionProfileConfig(
+        profile_id=_non_empty_string(values["profile_id"], f"{label}.profile_id"),
+        version=_positive_int(values["version"], f"{label}.version"),
+        calendar_id=_non_empty_string(values["calendar_id"], f"{label}.calendar_id"),
+        primary_phase=_non_empty_string(values["primary_phase"], f"{label}.primary_phase"),
+        volume_supported=_bool(values["volume_supported"], f"{label}.volume_supported"),
+        windows=windows,
+    )
+
+
+def _load_analytical_window(raw: Any, label: str) -> AnalyticalWindowConfig:
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "window_id",
+            "purpose",
+            "anchor_phase",
+            "anchor_boundary",
+            "offset_seconds",
+            "duration_seconds",
+            "minimum_duration_seconds",
+            "maximum_duration_seconds",
+            "duration_step_seconds",
+            "dynamic",
+        },
+        label,
+    )
+    purpose = _non_empty_string(values["purpose"], f"{label}.purpose")
+    if purpose not in {"opening_range", "power_hour", "custom"}:
+        raise ValueError(f"{label}.purpose is unsupported: {purpose!r}")
+    boundary = _non_empty_string(values["anchor_boundary"], f"{label}.anchor_boundary")
+    if boundary not in {"start", "end"}:
+        raise ValueError(f"{label}.anchor_boundary must be start or end")
+    offset = values["offset_seconds"]
+    if not isinstance(offset, int) or isinstance(offset, bool) or not -604_800 <= offset <= 604_800:
+        raise ValueError(f"{label}.offset_seconds must be an integer within one week")
+    duration = _positive_int(values["duration_seconds"], f"{label}.duration_seconds")
+    minimum = _positive_int(
+        values["minimum_duration_seconds"],
+        f"{label}.minimum_duration_seconds",
+    )
+    maximum = _positive_int(
+        values["maximum_duration_seconds"],
+        f"{label}.maximum_duration_seconds",
+    )
+    step = _positive_int(values["duration_step_seconds"], f"{label}.duration_step_seconds")
+    if not minimum <= duration <= maximum:
+        raise ValueError(f"{label}.duration_seconds is outside its configured envelope")
+    if (duration - minimum) % step:
+        raise ValueError(f"{label}.duration_seconds does not align to its step")
+    return AnalyticalWindowConfig(
+        window_id=_non_empty_string(values["window_id"], f"{label}.window_id"),
+        purpose=purpose,
+        anchor_phase=_non_empty_string(values["anchor_phase"], f"{label}.anchor_phase"),
+        anchor_boundary=boundary,
+        offset_seconds=offset,
+        duration_seconds=duration,
+        minimum_duration_seconds=minimum,
+        maximum_duration_seconds=maximum,
+        duration_step_seconds=step,
+        dynamic=_bool(values["dynamic"], f"{label}.dynamic"),
     )
 
 
@@ -1047,6 +1525,20 @@ def _iso_date(value: Any, label: str) -> str:
         return date.fromisoformat(text).isoformat()
     except ValueError as exc:
         raise ValueError(f"{label} must be an ISO date") from exc
+
+
+def _utc_timestamp_ns(value: Any, label: str) -> int:
+    text = _non_empty_string(value, label)
+    if not text.endswith("Z"):
+        raise ValueError(f"{label} must be an ISO timestamp ending in Z")
+    try:
+        parsed = datetime.fromisoformat(text[:-1] + "+00:00")
+    except ValueError as exc:
+        raise ValueError(f"{label} must be an ISO UTC timestamp") from exc
+    if parsed.utcoffset() != UTC.utcoffset(parsed):
+        raise ValueError(f"{label} must use UTC")
+    delta = parsed - datetime(1970, 1, 1, tzinfo=UTC)
+    return (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000
 
 
 def _small_day_offset(value: Any, label: str) -> int:

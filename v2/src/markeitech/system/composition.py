@@ -197,6 +197,121 @@ def build_actor_plan(
                 ),
             ),
         )
+    if config.metrics.session_measurements.enabled:
+        session_metrics = config.metrics.session_measurements
+        selected_instruments = _watchlist_instruments_with_capability(
+            config,
+            session_metrics.required_watchlist_capability,
+        )
+        profile_by_instrument = {
+            instrument_id: binding.profile_id
+            for binding in session_metrics.profile_bindings
+            for instrument_id in binding.instrument_ids
+        }
+        completed = session_metrics.completed_bars
+        registrations.append(
+            ActorRegistration(
+                key="session_metrics",
+                actor_id="SESSION-METRICS",
+                config=ImportableActorConfig(
+                    actor_path=(
+                        "markeitech.intelligence.session_metric_actor:SessionMetricsActor"
+                    ),
+                    config_path=(
+                        "markeitech.intelligence.session_metric_actor:SessionMetricsActorConfig"
+                    ),
+                    config={
+                        "actor_id": "SESSION-METRICS",
+                        "instrument_ids": selected_instruments,
+                        "instrument_calendars": {
+                            member.instrument_id: member.calendar_id
+                            for member in config.watchlist.members
+                            if member.instrument_id in selected_instruments
+                        },
+                        "calendars": [
+                            {
+                                "calendar_id": calendar.calendar_id,
+                                "provider_calendar": calendar.provider_calendar,
+                                "timezone": calendar.timezone,
+                                "schedule_version": calendar.schedule_version,
+                                "phases": [
+                                    {
+                                        "name": phase.name,
+                                        "start": phase.start,
+                                        "end": phase.end,
+                                        "start_day_offset": phase.start_day_offset,
+                                    }
+                                    for phase in calendar.phases
+                                ],
+                                "overrides": [
+                                    {
+                                        "trade_date": override.trade_date,
+                                        "phase": override.phase,
+                                        "start": override.start,
+                                        "end": override.end,
+                                        "start_day_offset": override.start_day_offset,
+                                    }
+                                    for override in calendar.overrides
+                                ],
+                            }
+                            for calendar in config.sessions.calendars
+                        ],
+                        "profiles": [
+                            {
+                                "profile_id": profile.profile_id,
+                                "version": profile.version,
+                                "calendar_id": profile.calendar_id,
+                                "primary_phase": profile.primary_phase,
+                                "volume_supported": profile.volume_supported,
+                            }
+                            for profile in session_metrics.profiles
+                        ],
+                        "profile_bindings": {
+                            instrument_id: profile_by_instrument[instrument_id]
+                            for instrument_id in selected_instruments
+                        },
+                        "parameter_version": session_metrics.parameter_version,
+                        "parameter_source": session_metrics.parameter_source,
+                        "parameter_effective_from_ns": (
+                            session_metrics.parameter_effective_from_ns
+                        ),
+                        "conflict_policy": session_metrics.conflict_policy,
+                        "demand_retry_interval_ms": session_metrics.demand_retry_interval_ms,
+                        "evidence_snapshot_retry_interval_ms": (
+                            session_metrics.evidence_snapshot_retry_interval_ms
+                        ),
+                        "priority": session_metrics.priority,
+                        "completed_bars": {
+                            "live_selector": completed.live_selector,
+                            "historical_selector": completed.historical_selector,
+                            "historical_window": completed.historical_window,
+                            "minimum_historical_observations": (
+                                completed.minimum_historical_observations
+                            ),
+                            "maximum_historical_observations": (
+                                completed.maximum_historical_observations
+                            ),
+                            "calculation_interval_seconds": (
+                                completed.calculation_interval_seconds
+                            ),
+                            "minimum_interval_seconds": completed.minimum_interval_seconds,
+                            "maximum_interval_seconds": completed.maximum_interval_seconds,
+                            "interval_step_seconds": completed.interval_step_seconds,
+                            "interval_dynamic": completed.interval_dynamic,
+                            "aggregation_boundary_policy": (
+                                completed.aggregation_boundary_policy
+                            ),
+                            "timestamp_policy": completed.timestamp_policy,
+                            "revision_policy": completed.revision_policy,
+                            "maximum_retained_observations": (
+                                completed.maximum_retained_observations
+                            ),
+                            "maximum_output_age_ms": completed.maximum_output_age_ms,
+                        },
+                    },
+                ),
+            ),
+        )
     registrations.extend(
         [
             ActorRegistration(

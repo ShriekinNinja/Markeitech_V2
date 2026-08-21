@@ -1,5 +1,14 @@
 """Deterministic market-intelligence foundations."""
 
+from markeitech.intelligence.completed_bars import (
+    BarAdmission,
+    BarAdmissionStatus,
+    BarConflictPolicy,
+    CompletedBarInput,
+    CompletedBarLedger,
+    CompletedBarSource,
+    aggregate_completed_bars,
+)
 from markeitech.intelligence.metrics import (
     METRIC_VALUE_TYPE_NAME,
     MetricCadence,
@@ -28,8 +37,36 @@ from markeitech.intelligence.quote_metrics import (
     calculate_quote_metrics,
     quote_metric_definitions,
 )
+from markeitech.intelligence.session_measurements import (
+    COMPLETED_BAR_CLOSE_METRIC_ID,
+    COMPLETED_BAR_HIGH_METRIC_ID,
+    COMPLETED_BAR_LOW_METRIC_ID,
+    COMPLETED_BAR_METRIC_IDS,
+    COMPLETED_BAR_OPEN_METRIC_ID,
+    COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID,
+    COMPLETED_BAR_TRUE_RANGE_METRIC_ID,
+    COMPLETED_BAR_VOLUME_METRIC_ID,
+    CompletedBarCatalogPolicy,
+    calculate_completed_bar_metrics,
+    completed_bar_metric_definitions,
+)
 
 __all__ = [
+    "BarAdmission",
+    "BarAdmissionStatus",
+    "BarConflictPolicy",
+    "COMPLETED_BAR_CLOSE_METRIC_ID",
+    "COMPLETED_BAR_HIGH_METRIC_ID",
+    "COMPLETED_BAR_LOW_METRIC_ID",
+    "COMPLETED_BAR_METRIC_IDS",
+    "COMPLETED_BAR_OPEN_METRIC_ID",
+    "COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID",
+    "COMPLETED_BAR_TRUE_RANGE_METRIC_ID",
+    "COMPLETED_BAR_VOLUME_METRIC_ID",
+    "CompletedBarCatalogPolicy",
+    "CompletedBarInput",
+    "CompletedBarLedger",
+    "CompletedBarSource",
     "METRIC_VALUE_TYPE_NAME",
     "MetricCadence",
     "MetricDefinition",
@@ -52,6 +89,9 @@ __all__ = [
     "QUOTE_RELATIVE_SPREAD_METRIC_ID",
     "QuoteMetricCatalogPolicy",
     "QuoteMetricInput",
+    "aggregate_completed_bars",
+    "calculate_completed_bar_metrics",
     "calculate_quote_metrics",
+    "completed_bar_metric_definitions",
     "quote_metric_definitions",
 ]

@@ -72,6 +72,7 @@ class QuoteQualityMetricsActor(DataActor):
         policy = QuoteMetricCatalogPolicy(
             minimum_update_interval_ms=config.minimum_update_interval_ms,
             maximum_output_age_ms=config.maximum_output_age_ms,
+            priority=config.priority,
         )
         self._registry = MetricRegistry(quote_metric_definitions(policy))
         self._minimum_update_interval_ns = config.minimum_update_interval_ms * 1_000_000
