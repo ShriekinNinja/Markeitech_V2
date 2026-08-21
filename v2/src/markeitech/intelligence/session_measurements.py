@@ -8,14 +8,18 @@ from markeitech.acquisition import (
     FeedKind,
     HistoricalWindow,
 )
+from markeitech.intelligence.completed_bars import CompletedBarInput
 from markeitech.intelligence.metrics import (
     MetricCadence,
     MetricDefinition,
     MetricFailureBehavior,
     MetricFidelity,
+    MetricHealth,
     MetricParameterDefinition,
+    MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
+    MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
     ParameterMutability,
@@ -241,6 +245,158 @@ def completed_bar_metric_definitions(
             two_bar_warmup,
             common,
         ),
+    )
+
+
+def calculate_completed_bar_metrics(
+    bar: CompletedBarInput,
+    *,
+    prior_bar: CompletedBarInput | None,
+    registry: MetricRegistry,
+    parameter_version: int,
+    calculated_ts_ns: int,
+    published_ts_ns: int,
+    source: str,
+    revision: int,
+) -> tuple[MetricValue, ...]:
+    """Calculate the Stage 9C-S1 metric family from one admitted completed bar."""
+    if not isinstance(bar, CompletedBarInput):
+        raise ValueError("bar must be a CompletedBarInput")
+    if prior_bar is not None and not isinstance(prior_bar, CompletedBarInput):
+        raise ValueError("prior_bar must be a CompletedBarInput or None")
+    if not isinstance(registry, MetricRegistry):
+        raise ValueError("registry must be a MetricRegistry")
+    if prior_bar is not None and (
+        prior_bar.instrument_id != bar.instrument_id
+        or prior_bar.bar_specification != bar.bar_specification
+        or prior_bar.calendar_id != bar.calendar_id
+        or prior_bar.analytical_profile_id != bar.analytical_profile_id
+        or prior_bar.analytical_profile_version != bar.analytical_profile_version
+        or prior_bar.interval_end_ns >= bar.interval_end_ns
+    ):
+        raise ValueError("prior_bar is not compatible with bar")
+
+    prior_close = prior_bar.close if prior_bar is not None else None
+    calculated: dict[str, tuple[object | None, MetricHealth, MetricFidelity, tuple[str, ...]]] = {
+        COMPLETED_BAR_OPEN_METRIC_ID: (bar.open, bar.health, bar.fidelity, ()),
+        COMPLETED_BAR_HIGH_METRIC_ID: (bar.high, bar.health, bar.fidelity, ()),
+        COMPLETED_BAR_LOW_METRIC_ID: (bar.low, bar.health, bar.fidelity, ()),
+        COMPLETED_BAR_CLOSE_METRIC_ID: (bar.close, bar.health, bar.fidelity, ()),
+    }
+    if bar.volume is None:
+        volume_reason = next(
+            (
+                reason
+                for reason in bar.missing_reasons
+                if reason in {"volume_missing", "volume_unsupported", "volume_partial"}
+            ),
+            "volume_missing",
+        )
+        volume_health = (
+            MetricHealth.UNSUPPORTED
+            if volume_reason == "volume_unsupported"
+            else MetricHealth.UNAVAILABLE
+        )
+        calculated[COMPLETED_BAR_VOLUME_METRIC_ID] = (
+            None,
+            volume_health,
+            MetricFidelity.UNAVAILABLE,
+            (volume_reason,),
+        )
+    else:
+        calculated[COMPLETED_BAR_VOLUME_METRIC_ID] = (
+            bar.volume,
+            bar.health,
+            bar.fidelity,
+            (),
+        )
+    if prior_close is None:
+        missing = ("prior_compatible_close_missing",)
+        calculated[COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID] = (
+            None,
+            MetricHealth.WARMING,
+            MetricFidelity.UNAVAILABLE,
+            missing,
+        )
+        calculated[COMPLETED_BAR_TRUE_RANGE_METRIC_ID] = (
+            None,
+            MetricHealth.WARMING,
+            MetricFidelity.UNAVAILABLE,
+            missing,
+        )
+    else:
+        derived_fidelity = (
+            MetricFidelity.DERIVED
+            if bar.health is MetricHealth.READY
+            else MetricFidelity.PARTIAL
+        )
+        calculated[COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID] = (
+            bar.close / prior_close - 1,
+            bar.health,
+            derived_fidelity,
+            (),
+        )
+        calculated[COMPLETED_BAR_TRUE_RANGE_METRIC_ID] = (
+            max(bar.high - bar.low, abs(bar.high - prior_close), abs(bar.low - prior_close)),
+            bar.health,
+            derived_fidelity,
+            (),
+        )
+
+    values = tuple(
+        _completed_bar_metric_value(
+            registry.get(metric_id, 1),
+            bar,
+            value=calculated[metric_id][0],
+            health=calculated[metric_id][1],
+            fidelity=calculated[metric_id][2],
+            missing_reasons=calculated[metric_id][3],
+            parameter_version=parameter_version,
+            calculated_ts_ns=calculated_ts_ns,
+            published_ts_ns=published_ts_ns,
+            source=source,
+            revision=revision,
+        )
+        for metric_id in COMPLETED_BAR_METRIC_IDS
+    )
+    for value in values:
+        registry.validate_value(value)
+    return values
+
+
+def _completed_bar_metric_value(
+    definition: MetricDefinition,
+    bar: CompletedBarInput,
+    *,
+    value: object | None,
+    health: MetricHealth,
+    fidelity: MetricFidelity,
+    missing_reasons: tuple[str, ...],
+    parameter_version: int,
+    calculated_ts_ns: int,
+    published_ts_ns: int,
+    source: str,
+    revision: int,
+) -> MetricValue:
+    return MetricValue(
+        metric_id=definition.metric_id,
+        metric_version=definition.version,
+        parameter_version=parameter_version,
+        instrument_id=bar.instrument_id,
+        session_id=bar.session_id,
+        value=value,  # type: ignore[arg-type]
+        unit=definition.unit,
+        effective_ts_ns=bar.interval_end_ns,
+        observed_ts_ns=bar.observed_ts_ns,
+        received_ts_ns=bar.received_ts_ns,
+        calculated_ts_ns=calculated_ts_ns,
+        published_ts_ns=published_ts_ns,
+        health=health,
+        fidelity=fidelity,
+        source=source,
+        evidence_refs=bar.evidence_refs,
+        missing_reasons=missing_reasons,
+        revision=revision,
     )
 
 

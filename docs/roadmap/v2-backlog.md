@@ -175,6 +175,7 @@ provider-neutral contract are documented in
       directional-efficiency, and compression inputs before entity design. No universal base
       timeframe or automatic resolution pyramid is permitted. Follow the reviewed plan in
       [`v2-stage-9c-session-measurements-plan.md`](v2-stage-9c-session-measurements-plan.md).
+      Slices 1-2 are implemented disabled-by-default and await local/live acceptance.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.

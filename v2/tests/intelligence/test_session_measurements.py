@@ -1,16 +1,31 @@
 from __future__ import annotations
 
+from dataclasses import replace
+from datetime import date
+from decimal import Decimal
+
 import pytest
 
 from markeitech.acquisition import HistoricalWindow
-from markeitech.intelligence import MetricRegistry, ParameterMutability
+from markeitech.intelligence import (
+    CompletedBarInput,
+    CompletedBarSource,
+    MetricFidelity,
+    MetricHealth,
+    MetricRegistry,
+    ParameterMutability,
+)
 from markeitech.intelligence.session_measurements import (
+    COMPLETED_BAR_CLOSE_METRIC_ID,
     COMPLETED_BAR_METRIC_IDS,
     COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID,
+    COMPLETED_BAR_TRUE_RANGE_METRIC_ID,
     COMPLETED_BAR_VOLUME_METRIC_ID,
     CompletedBarCatalogPolicy,
+    calculate_completed_bar_metrics,
     completed_bar_metric_definitions,
 )
+from markeitech.intelligence.session_metric_actor import _recalculation_contexts
 
 
 def _policy(**changes: object) -> CompletedBarCatalogPolicy:
@@ -95,3 +110,111 @@ def test_completed_bar_catalog_rejects_invalid_resolution_envelopes() -> None:
         )
     with pytest.raises(ValueError, match="reject_revision"):
         _policy(revision_policy="replace")
+
+
+def test_calculates_foundation_values_with_explicit_warmup() -> None:
+    registry = MetricRegistry(completed_bar_metric_definitions(_policy()))
+    first = _bar(0, close="100")
+
+    warming = calculate_completed_bar_metrics(
+        first,
+        prior_bar=None,
+        registry=registry,
+        parameter_version=3,
+        calculated_ts_ns=61_000_000_001,
+        published_ts_ns=61_000_000_001,
+        source="SESSION-METRICS",
+        revision=1,
+    )
+    by_id = {value.metric_id: value for value in warming}
+
+    assert by_id[COMPLETED_BAR_CLOSE_METRIC_ID].value == Decimal("100")
+    assert by_id[COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID].value is None
+    assert by_id[COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID].health is MetricHealth.WARMING
+    assert by_id[COMPLETED_BAR_TRUE_RANGE_METRIC_ID].missing_reasons == (
+        "prior_compatible_close_missing",
+    )
+
+    second = _bar(1, close="105", high="107", low="99")
+    values = calculate_completed_bar_metrics(
+        second,
+        prior_bar=first,
+        registry=registry,
+        parameter_version=3,
+        calculated_ts_ns=121_000_000_001,
+        published_ts_ns=121_000_000_001,
+        source="SESSION-METRICS",
+        revision=2,
+    )
+    by_id = {value.metric_id: value for value in values}
+
+    assert by_id[COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID].value == Decimal("0.05")
+    assert by_id[COMPLETED_BAR_TRUE_RANGE_METRIC_ID].value == Decimal("8")
+    assert by_id[COMPLETED_BAR_TRUE_RANGE_METRIC_ID].fidelity is MetricFidelity.DERIVED
+
+
+def test_unsupported_volume_isolated_from_price_metrics() -> None:
+    registry = MetricRegistry(completed_bar_metric_definitions(_policy()))
+    bar = replace(_bar(0), volume=None, missing_reasons=("volume_unsupported",))
+
+    values = calculate_completed_bar_metrics(
+        bar,
+        prior_bar=None,
+        registry=registry,
+        parameter_version=1,
+        calculated_ts_ns=61_000_000_001,
+        published_ts_ns=61_000_000_001,
+        source="SESSION-METRICS",
+        revision=1,
+    )
+    by_id = {value.metric_id: value for value in values}
+
+    assert by_id[COMPLETED_BAR_VOLUME_METRIC_ID].health is MetricHealth.UNSUPPORTED
+    assert by_id[COMPLETED_BAR_VOLUME_METRIC_ID].value is None
+    assert by_id[COMPLETED_BAR_CLOSE_METRIC_ID].health is MetricHealth.READY
+
+
+def test_late_predecessor_recalculates_successor_without_sequencing() -> None:
+    first = _bar(0, close="100")
+    second = _bar(1, close="105", high="106")
+
+    live_first = _recalculation_contexts((second,), second.key)
+    after_warmup = _recalculation_contexts((first, second), first.key)
+
+    assert live_first == ((second, None),)
+    assert after_warmup == ((first, None), (second, first))
+
+
+def _bar(
+    index: int,
+    *,
+    close: str = "100",
+    high: str = "101",
+    low: str = "99",
+) -> CompletedBarInput:
+    start_ns = index * 60_000_000_000
+    return CompletedBarInput(
+        instrument_id="ESU6.CME",
+        bar_specification="1-MINUTE-LAST-EXTERNAL",
+        calendar_id="cme_equity",
+        analytical_profile_id="cme_equity_primary",
+        analytical_profile_version=1,
+        trade_date=date(2026, 8, 21),
+        session_id="cme_equity:2026-08-21:OPEN",
+        window_id="primary",
+        interval_start_ns=start_ns,
+        interval_end_ns=start_ns + 60_000_000_000,
+        open=Decimal("100"),
+        high=Decimal(high),
+        low=Decimal(low),
+        close=Decimal(close),
+        volume=Decimal("10"),
+        source=CompletedBarSource.HISTORICAL_PROVIDER,
+        observed_ts_ns=start_ns + 60_000_000_000,
+        received_ts_ns=start_ns + 60_000_000_001,
+        normalized_ts_ns=start_ns + 60_000_000_001,
+        health=MetricHealth.READY,
+        fidelity=MetricFidelity.REPORTED,
+        evidence_refs=(f"bar:{index}",),
+        complete=True,
+    )

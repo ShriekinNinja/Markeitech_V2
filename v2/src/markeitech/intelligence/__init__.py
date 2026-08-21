@@ -47,6 +47,7 @@ from markeitech.intelligence.session_measurements import (
     COMPLETED_BAR_TRUE_RANGE_METRIC_ID,
     COMPLETED_BAR_VOLUME_METRIC_ID,
     CompletedBarCatalogPolicy,
+    calculate_completed_bar_metrics,
     completed_bar_metric_definitions,
 )
 
@@ -89,6 +90,7 @@ __all__ = [
     "QuoteMetricCatalogPolicy",
     "QuoteMetricInput",
     "aggregate_completed_bars",
+    "calculate_completed_bar_metrics",
     "calculate_quote_metrics",
     "completed_bar_metric_definitions",
     "quote_metric_definitions",

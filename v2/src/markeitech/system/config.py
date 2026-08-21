@@ -194,6 +194,7 @@ class CompletedBarMetricsConfig:
     interval_step_seconds: int
     interval_dynamic: bool
     aggregation_boundary_policy: str
+    timestamp_policy: str
     revision_policy: str
     maximum_retained_observations: int
     maximum_output_age_ms: int
@@ -380,6 +381,16 @@ def load_system_config(path: str | Path) -> SystemConfig:
             raise ValueError(
                 "enabled session measurements lack analytical profile bindings: "
                 f"{', '.join(missing_bindings)}",
+            )
+        selected_calendars = {
+            watchlist_by_id[instrument_id].calendar_id
+            for instrument_id in selected_instruments
+        }
+        if len(selected_calendars) > metrics.session_measurements.maximum_active_sessions:
+            raise ValueError(
+                "enabled session measurements exceed maximum_active_sessions: "
+                f"selected={len(selected_calendars)}, "
+                f"maximum={metrics.session_measurements.maximum_active_sessions}",
             )
         if ib.handle_revised_bars:
             raise ValueError(
@@ -991,6 +1002,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "interval_step_seconds",
             "interval_dynamic",
             "aggregation_boundary_policy",
+            "timestamp_policy",
             "revision_policy",
             "maximum_retained_observations",
             "maximum_output_age_ms",
@@ -1038,6 +1050,15 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
         )
     if 86_400 % interval:
         raise ValueError("completed-bar UTC-fixed interval must divide one UTC day exactly")
+    timestamp_policy = _non_empty_string(
+        completed["timestamp_policy"],
+        "metrics.session_measurements.completed_bars.timestamp_policy",
+    )
+    if timestamp_policy not in {"interval_start", "interval_end"}:
+        raise ValueError(
+            "metrics.session_measurements.completed_bars.timestamp_policy must be "
+            "interval_start or interval_end",
+        )
     revision_policy = _non_empty_string(
         completed["revision_policy"],
         "metrics.session_measurements.completed_bars.revision_policy",
@@ -1153,6 +1174,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
                 "metrics.session_measurements.completed_bars.interval_dynamic",
             ),
             aggregation_boundary_policy=aggregation_boundary_policy,
+            timestamp_policy=timestamp_policy,
             revision_policy=revision_policy,
             maximum_retained_observations=_positive_int(
                 completed["maximum_retained_observations"],

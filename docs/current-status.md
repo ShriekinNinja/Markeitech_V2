@@ -324,8 +324,9 @@ PostgreSQL stored 464 operational records and 3 system-health records, matching 
 runtime's 467 accepted/stored total with no failures or pending writes. Numerical metric values and
 raw quotes remain intentionally transient.
 
-The next proposed slice is the Stage 9C session-measurement extension documented in
+The active extension is the Stage 9C session-measurement work documented in
 [`roadmap/v2-stage-9c-session-measurements-plan.md`](roadmap/v2-stage-9c-session-measurements-plan.md).
 It closes the completed-bar, session/prior-session, opening-range, gap, power-hour, volatility,
-efficiency, and compression input gap before Stage 9D entity design. No runtime code begins until
-Markeitect reviews that plan.
+efficiency, and compression input gap before Stage 9D entity design. Slices 1-2 are implemented
+behind a disabled-by-default flag and await Markeitect's local review and connected acceptance;
+they are not yet live-accepted.

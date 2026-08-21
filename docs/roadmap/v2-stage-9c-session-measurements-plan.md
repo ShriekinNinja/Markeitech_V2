@@ -1,6 +1,6 @@
 # V2 Stage 9C Session Measurements Plan
 
-**Status:** Proposed for Markeitect review before runtime code
+**Status:** Slices 1-2 implemented for local review; runtime remains disabled pending acceptance
 
 **Branch:** `v2-stage-9c-session-measurements`
 
@@ -407,6 +407,9 @@ identity, lifecycle, commit-before-publication, and restart contract is approved
   copied into future `MetricParameterSet` and `MetricValue` publication.
 - Native provider bars may honestly produce `REPORTED` values; validated local aggregation produces
   `DERIVED`; incomplete/degraded paths may produce only declared `PARTIAL` or `UNAVAILABLE` values.
+- Provider timestamps are interpreted only through the configured `timestamp_policy`; the initial
+  IB external-bar profile declares `interval_start`, and changing that boundary is a reviewed
+  configuration decision rather than an adapter assumption.
 
 ## Failure Isolation And Recovery
 
@@ -428,7 +431,7 @@ identity, lifecycle, commit-before-publication, and restart contract is approved
 - Implement pure validation, configured aggregation, deduplication, and conflict detection.
 - Test UTC/session alignment, duplicates, conflicts, late data, and resource bounds.
 
-**Gate:** deterministic inputs and identities are approved; no runtime actor yet.
+**Gate:** deterministic inputs and identities are approved and implemented.
 
 ### Slice 2: Historical/Live Runtime Convergence
 
@@ -439,6 +442,11 @@ identity, lifecycle, commit-before-publication, and restart contract is approved
 
 **Gate:** history and live bars converge in either arrival order without duplicate intervals or
 provider ownership leakage.
+
+**Implementation status:** the actor, demand wiring, timestamp policy, bounded aggregation,
+foundation metric publication, and live-first recalculation path are implemented behind
+`metrics.session_measurements.enabled = false`. Offline verification is complete; local review,
+connected acceptance, operational conflict persistence, and final counter reconciliation remain.
 
 ### Slice 3: Session, Previous-Session, Overnight, And Gap Metrics
 

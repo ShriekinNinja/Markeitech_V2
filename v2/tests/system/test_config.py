@@ -161,6 +161,7 @@ maximum_interval_seconds = 3600
 interval_step_seconds = 5
 interval_dynamic = true
 aggregation_boundary_policy = "utc_fixed_intraday"
+timestamp_policy = "interval_start"
 revision_policy = "reject_revision"
 maximum_retained_observations = 500
 maximum_output_age_ms = 120000
@@ -257,6 +258,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         config.metrics.session_measurements.completed_bars.aggregation_boundary_policy
         == "utc_fixed_intraday"
     )
+    assert config.metrics.session_measurements.completed_bars.timestamp_policy == "interval_start"
     assert config.metrics.session_measurements.parameter_source == "operator-reviewed-config"
     assert config.metrics.session_measurements.parameter_effective_from_ns > 0
     assert config.metrics.session_measurements.profiles[0].profile_id == "cme_equity_primary"
@@ -344,6 +346,44 @@ def test_rejects_enabled_session_measurements_without_profile_binding(tmp_path: 
     )
 
     with pytest.raises(ValueError, match="lack analytical profile bindings"):
+        load_system_config(path)
+
+
+def test_rejects_session_measurements_above_active_calendar_bound(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace("maximum_active_sessions = 3", "maximum_active_sessions = 1")
+        + """
+
+[[sessions.calendars]]
+calendar_id = "second_calendar"
+provider_calendar = "NYSE"
+timezone = "America/New_York"
+schedule_version = "test-1"
+phases = []
+overrides = []
+
+[[metrics.session_measurements.profiles]]
+profile_id = "second_profile"
+version = 1
+calendar_id = "second_calendar"
+primary_phase = "OPEN"
+volume_supported = true
+windows = []
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "second_profile"
+instrument_ids = ["SPY.ARCA"]
+
+[[watchlist.members]]
+instrument_id = "SPY.ARCA"
+calendar_id = "second_calendar"
+owner_ids = ["config:system"]
+capabilities = ["watchlist_last"]
+""",
+    )
+
+    with pytest.raises(ValueError, match="exceed maximum_active_sessions"):
         load_system_config(path)
 
 

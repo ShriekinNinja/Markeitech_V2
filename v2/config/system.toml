@@ -241,6 +241,7 @@ maximum_interval_seconds = 3600
 interval_step_seconds = 5
 interval_dynamic = true
 aggregation_boundary_policy = "utc_fixed_intraday"
+timestamp_policy = "interval_start"
 revision_policy = "reject_revision"
 maximum_retained_observations = 5000
 maximum_output_age_ms = 120000

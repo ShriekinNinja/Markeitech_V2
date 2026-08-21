@@ -28,7 +28,7 @@ claim behind it yet.
 | Specialist family | First implementation location | Required evidence | Current status |
 |---|---|---|---|
 | Quote quality and liquidity | Stage 9A quote metrics | Native bid/ask plus evidence health | Implemented |
-| Completed OHLCV, return, true range | Stage 9C Slices 1-2 | Native/aggregated completed bars and bounded history | Contracts implemented; runtime planned |
+| Completed OHLCV, return, true range | Stage 9C Slices 1-2 | Native/aggregated completed bars and bounded history | Runtime implemented disabled-by-default; local review pending |
 | Session range and location | Stage 9C Slice 3 | Session state plus completed bars | Planned |
 | Prior-session references and overnight gap | Stage 9C Slice 3, durable summary in Stage 9D | Purpose-specific daily/session dependencies | Planned |
 | Opening range and extensions | Stage 9C Slice 4 | Calendar-relative intraday dependency | Planned |
