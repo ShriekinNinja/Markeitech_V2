@@ -334,9 +334,16 @@ calculation failure, duplicate, or conflict. Closed-session recent-history reque
 independently without stopping live processing; this confirmed the need for Slice 3's exact,
 purpose-specific session windows rather than a universal recent-history warmup.
 
-Slice 3 is now active on branch `v2-stage-9c-session-references`. It adds only deterministic
-active-session, previous-session, optional overnight, and gap measurements. It does not add
-entities, semantic events, signals, agent behavior, raw market-data persistence, or execution.
-Historical and live observations converge at the last interval actually received, and exact open,
-prior-close, return, and gap values remain unavailable when their session boundary was not directly
-observed rather than being inferred from partial coverage.
+Slice 3 is accepted at commit `8696acf`. It adds only deterministic active-session,
+previous-session, optional overnight, and gap measurements. Historical and live observations
+converge at the last interval actually received, and exact open, prior-close, return, and gap
+values remain unavailable when their session boundary was not directly observed rather than being
+inferred from partial coverage.
+
+Slice 4 is implemented for local review on branch `v2-stage-9c-session-windows`. It adds
+configuration-owned calendar-relative opening-range families and close-relative power-hour
+measurements, including developing/completed truth, coverage, supported-volume isolation, and
+early-close handling. The initial acceptance scope configures two opening ranges and one power-hour
+window for the CME-equity profile only; expanding profiles requires an explicit session-semantics
+review. It does not add entities, semantic events, signals, agent behavior, raw market-data
+persistence, or execution.

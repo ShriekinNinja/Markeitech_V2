@@ -1,4 +1,4 @@
-schema_version = 12
+schema_version = 13
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -264,6 +264,18 @@ minimum_coverage_ratio_dynamic = true
 maximum_retained_sessions = 4
 maximum_output_age_ms = 120000
 
+[metrics.session_measurements.session_windows]
+enabled = true
+price_basis = "typical"
+price_basis_dynamic = true
+minimum_coverage_ratio = 0.8
+minimum_coverage_ratio_floor = 0.5
+minimum_coverage_ratio_ceiling = 1.0
+minimum_coverage_ratio_step = 0.05
+minimum_coverage_ratio_dynamic = true
+maximum_retained_sessions = 4
+maximum_output_age_ms = 120000
+
 [[metrics.session_measurements.profiles]]
 profile_id = "cme_equity_primary"
 version = 1
@@ -284,6 +296,9 @@ minimum_duration_seconds = 60
 maximum_duration_seconds = 1800
 duration_step_seconds = 60
 dynamic = true
+historical_selector = "1-MINUTE-LAST-EXTERNAL"
+minimum_historical_observations = 1
+maximum_historical_observations = 5
 
 [[metrics.session_measurements.profiles.windows]]
 window_id = "opening_range_slow"
@@ -296,6 +311,9 @@ minimum_duration_seconds = 300
 maximum_duration_seconds = 3600
 duration_step_seconds = 300
 dynamic = true
+historical_selector = "1-MINUTE-LAST-EXTERNAL"
+minimum_historical_observations = 1
+maximum_historical_observations = 15
 
 [[metrics.session_measurements.profiles.windows]]
 window_id = "power_hour"
@@ -308,6 +326,9 @@ minimum_duration_seconds = 1800
 maximum_duration_seconds = 7200
 duration_step_seconds = 300
 dynamic = true
+historical_selector = "15-MINUTE-LAST-EXTERNAL"
+minimum_historical_observations = 1
+maximum_historical_observations = 4
 
 [[metrics.session_measurements.profiles]]
 profile_id = "cme_energy_primary"
@@ -345,7 +366,7 @@ instrument_ids = ["ESU6.CME", "NQU6.CME", "YMU6.CBOT"]
 
 [[metrics.session_measurements.profile_bindings]]
 profile_id = "cme_energy_primary"
-instrument_ids = ["CLU6.NYMEX"]
+instrument_ids = ["CLV6.NYMEX"]
 
 [[metrics.session_measurements.profile_bindings]]
 profile_id = "us_equity_primary"
@@ -390,7 +411,7 @@ owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
-instrument_id = "CLU6.NYMEX"
+instrument_id = "CLV6.NYMEX"
 calendar_id = "cme_energy"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]

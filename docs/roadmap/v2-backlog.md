@@ -175,7 +175,9 @@ provider-neutral contract are documented in
       directional-efficiency, and compression inputs before entity design. No universal base
       timeframe or automatic resolution pyramid is permitted. Follow the reviewed plan in
       [`v2-stage-9c-session-measurements-plan.md`](v2-stage-9c-session-measurements-plan.md).
-      Slices 1-2 are enabled and live-accepted. Slice 3 session references are in progress.
+      Slices 1-2 are enabled and live-accepted. Slice 3 session references are locally accepted at
+      `8696acf`. Slice 4 opening-range and power-hour measurements are implemented for local
+      review; later slices and connected acceptance remain open.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.

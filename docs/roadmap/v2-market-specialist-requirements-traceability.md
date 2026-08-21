@@ -29,10 +29,10 @@ claim behind it yet.
 |---|---|---|---|
 | Quote quality and liquidity | Stage 9A quote metrics | Native bid/ask plus evidence health | Implemented |
 | Completed OHLCV, return, true range | Stage 9C Slices 1-2 | Native/aggregated completed bars and bounded history | Enabled and live-accepted |
-| Session range and location | Stage 9C Slice 3 | Session state plus completed bars | In progress |
-| Prior-session references and overnight gap | Stage 9C Slice 3, durable summary in Stage 9D | Purpose-specific calendar-window dependencies | In progress |
-| Opening range and extensions | Stage 9C Slice 4 | Calendar-relative intraday dependency | Planned |
-| Power-hour evidence | Stage 9C Slice 4, durable summary in Stage 9D | Authoritative close-relative window | Planned |
+| Session range and location | Stage 9C Slice 3 | Session state plus completed bars | Implemented and locally accepted |
+| Prior-session references and overnight gap | Stage 9C Slice 3, durable summary in Stage 9D | Purpose-specific calendar-window dependencies | Implemented and locally accepted |
+| Opening range and extensions | Stage 9C Slice 4 | Calendar-relative intraday dependency | Implemented for local review |
+| Power-hour evidence | Stage 9C Slice 4, durable summary in Stage 9D | Authoritative close-relative window | Implemented for local review |
 | VWAP where volume is meaningful | Stage 9C later slice | Intraday price/volume with supported-volume profile | Planned |
 | Realized volatility/range | Stage 9C Slice 5 | Purpose-specific completed bars | Planned |
 | Directional efficiency and compression | Stage 9C Slice 5 | Bounded returns/ranges | Planned |

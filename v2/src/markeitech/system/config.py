@@ -163,6 +163,9 @@ class AnalyticalWindowConfig:
     maximum_duration_seconds: int
     duration_step_seconds: int
     dynamic: bool
+    historical_selector: str
+    minimum_historical_observations: int
+    maximum_historical_observations: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,6 +226,20 @@ class SessionReferenceMetricsConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class SessionWindowMetricsConfig:
+    enabled: bool
+    price_basis: str
+    price_basis_dynamic: bool
+    minimum_coverage_ratio: float
+    minimum_coverage_ratio_floor: float
+    minimum_coverage_ratio_ceiling: float
+    minimum_coverage_ratio_step: float
+    minimum_coverage_ratio_dynamic: bool
+    maximum_retained_sessions: int
+    maximum_output_age_ms: int
+
+
+@dataclass(frozen=True, slots=True)
 class SessionMeasurementsConfig:
     enabled: bool
     required_watchlist_capability: str
@@ -236,6 +253,7 @@ class SessionMeasurementsConfig:
     priority: int
     completed_bars: CompletedBarMetricsConfig
     session_references: SessionReferenceMetricsConfig
+    session_windows: SessionWindowMetricsConfig
     profiles: tuple[AnalyticalSessionProfileConfig, ...]
     profile_bindings: tuple[AnalyticalProfileBindingConfig, ...]
 
@@ -314,7 +332,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 12:
+    if raw["schema_version"] != 13:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -380,6 +398,13 @@ def load_system_config(path: str | Path) -> SystemConfig:
                 "session measurement profile overnight phase is not defined by its calendar: "
                 f"profile={profile.profile_id}, phase={profile.overnight_phase}",
             )
+        for window in profile.windows:
+            if window.anchor_phase not in available_phases:
+                raise ValueError(
+                    "session measurement window phase is not defined by its calendar: "
+                    f"profile={profile.profile_id}, window={window.window_id}, "
+                    f"phase={window.anchor_phase}",
+                )
     profile_by_id = {
         profile.profile_id: profile for profile in metrics.session_measurements.profiles
     }
@@ -1007,6 +1032,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "priority",
             "completed_bars",
             "session_references",
+            "session_windows",
             "profiles",
             "profile_bindings",
         },
@@ -1132,6 +1158,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             f"{historical_window!r}",
         )
     references = _load_session_reference_metrics(values["session_references"])
+    session_windows = _load_session_window_metrics(values["session_windows"])
     profiles_raw = values["profiles"]
     if not isinstance(profiles_raw, list) or not profiles_raw:
         raise ValueError("metrics.session_measurements.profiles must be a non-empty array")
@@ -1224,6 +1251,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             ),
         ),
         session_references=references,
+        session_windows=session_windows,
         profiles=profiles,
         profile_bindings=bindings,
     )
@@ -1406,6 +1434,9 @@ def _load_analytical_window(raw: Any, label: str) -> AnalyticalWindowConfig:
             "maximum_duration_seconds",
             "duration_step_seconds",
             "dynamic",
+            "historical_selector",
+            "minimum_historical_observations",
+            "maximum_historical_observations",
         },
         label,
     )
@@ -1432,6 +1463,16 @@ def _load_analytical_window(raw: Any, label: str) -> AnalyticalWindowConfig:
         raise ValueError(f"{label}.duration_seconds is outside its configured envelope")
     if (duration - minimum) % step:
         raise ValueError(f"{label}.duration_seconds does not align to its step")
+    minimum_observations = _positive_int(
+        values["minimum_historical_observations"],
+        f"{label}.minimum_historical_observations",
+    )
+    maximum_observations = _positive_int(
+        values["maximum_historical_observations"],
+        f"{label}.maximum_historical_observations",
+    )
+    if maximum_observations < minimum_observations:
+        raise ValueError(f"{label} maximum historical observations cannot be below minimum")
     return AnalyticalWindowConfig(
         window_id=_non_empty_string(values["window_id"], f"{label}.window_id"),
         purpose=purpose,
@@ -1443,6 +1484,77 @@ def _load_analytical_window(raw: Any, label: str) -> AnalyticalWindowConfig:
         maximum_duration_seconds=maximum,
         duration_step_seconds=step,
         dynamic=_bool(values["dynamic"], f"{label}.dynamic"),
+        historical_selector=_non_empty_string(
+            values["historical_selector"],
+            f"{label}.historical_selector",
+        ),
+        minimum_historical_observations=minimum_observations,
+        maximum_historical_observations=maximum_observations,
+    )
+
+
+def _load_session_window_metrics(raw: Any) -> SessionWindowMetricsConfig:
+    label = "metrics.session_measurements.session_windows"
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "price_basis",
+            "price_basis_dynamic",
+            "minimum_coverage_ratio",
+            "minimum_coverage_ratio_floor",
+            "minimum_coverage_ratio_ceiling",
+            "minimum_coverage_ratio_step",
+            "minimum_coverage_ratio_dynamic",
+            "maximum_retained_sessions",
+            "maximum_output_age_ms",
+        },
+        label,
+    )
+    basis = _non_empty_string(values["price_basis"], f"{label}.price_basis")
+    if basis not in {"typical", "close", "ohlc4"}:
+        raise ValueError(f"{label}.price_basis is unsupported: {basis!r}")
+    coverage = _coverage_ratio(values["minimum_coverage_ratio"], f"{label}.minimum_coverage_ratio")
+    floor = _coverage_ratio(
+        values["minimum_coverage_ratio_floor"],
+        f"{label}.minimum_coverage_ratio_floor",
+    )
+    ceiling = _coverage_ratio(
+        values["minimum_coverage_ratio_ceiling"],
+        f"{label}.minimum_coverage_ratio_ceiling",
+    )
+    step = _positive_float(
+        values["minimum_coverage_ratio_step"],
+        f"{label}.minimum_coverage_ratio_step",
+    )
+    if not floor <= coverage <= ceiling:
+        raise ValueError(f"{label}.minimum_coverage_ratio is outside its configured envelope")
+    if step > ceiling - floor:
+        raise ValueError(f"{label}.minimum_coverage_ratio_step exceeds its envelope")
+    return SessionWindowMetricsConfig(
+        enabled=_bool(values["enabled"], f"{label}.enabled"),
+        price_basis=basis,
+        price_basis_dynamic=_bool(
+            values["price_basis_dynamic"],
+            f"{label}.price_basis_dynamic",
+        ),
+        minimum_coverage_ratio=coverage,
+        minimum_coverage_ratio_floor=floor,
+        minimum_coverage_ratio_ceiling=ceiling,
+        minimum_coverage_ratio_step=step,
+        minimum_coverage_ratio_dynamic=_bool(
+            values["minimum_coverage_ratio_dynamic"],
+            f"{label}.minimum_coverage_ratio_dynamic",
+        ),
+        maximum_retained_sessions=_positive_int(
+            values["maximum_retained_sessions"],
+            f"{label}.maximum_retained_sessions",
+        ),
+        maximum_output_age_ms=_positive_int(
+            values["maximum_output_age_ms"],
+            f"{label}.maximum_output_age_ms",
+        ),
     )
 
 

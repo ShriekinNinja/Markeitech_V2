@@ -1,8 +1,8 @@
 # V2 Stage 9C Session Measurements Plan
 
-**Status:** Slices 1-2 implemented for local review; runtime remains disabled pending acceptance
+**Status:** Slices 1-3 accepted; Slice 4 implemented for local review
 
-**Branch:** `v2-stage-9c-session-measurements`
+**Branch:** `v2-stage-9c-session-windows`
 
 ## Purpose
 
@@ -491,6 +491,26 @@ did not block unrelated work.
 - Preserve developing versus complete measurement truth.
 
 **Gate:** windows match authoritative calendar boundaries, including early closes.
+
+**Implementation status:** implemented for local review. Each analytical profile may declare zero
+or more independently named calendar-relative windows with its own purpose, anchor phase/boundary,
+offset, duration envelope, dynamic eligibility, historical selector, and bounded observation
+envelope. The family policy separately owns price basis, coverage envelope, retention, and output
+age. Metric identity includes profile and window IDs, so multiple concurrent opening ranges do not
+collide.
+
+The initial runtime configuration deliberately enables two opening ranges and one close-relative
+power-hour window only for the CME-equity analytical profile. This is an acceptance scope, not a
+hard-coded instrument rule; other profiles remain explicit empty sets until their desired session
+semantics are reviewed. Opening-range bounds freeze after completion while distance measurements
+continue from the latest accepted close. Power-hour history falls back to the latest started
+close-relative window, allowing prior-session evidence before the current window begins. Early
+closes are inherited from the authoritative calendar rather than fixed clock times.
+
+Opening-range outputs do not depend on volume or directional efficiency. Power-hour volume and
+bar-VWAP remain independently unsupported where the profile lacks volume while its OHLC, return,
+range, coverage, and efficiency outputs remain available. All numerical state stays bounded and
+transient; PostgreSQL continues to receive only dependency and runtime lifecycle facts.
 
 ### Slice 5: Volatility, Efficiency, And Compression Inputs
 

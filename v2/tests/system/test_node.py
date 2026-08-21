@@ -31,7 +31,7 @@ def test_maps_provider_boundary_to_installed_ib_config() -> None:
         "ESU6.CME",
         "NQU6.CME",
         "YMU6.CBOT",
-        "CLU6.NYMEX",
+        "CLV6.NYMEX",
         "SPY.ARCA",
         "QQQ.NASDAQ",
         "^SPX.CBOE",

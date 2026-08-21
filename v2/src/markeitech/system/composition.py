@@ -263,6 +263,32 @@ def build_actor_plan(
                                 "overnight_enabled": profile.overnight_enabled,
                                 "overnight_phase": profile.overnight_phase,
                                 "volume_supported": profile.volume_supported,
+                                "windows": [
+                                    {
+                                        "window_id": window.window_id,
+                                        "purpose": window.purpose,
+                                        "anchor_phase": window.anchor_phase,
+                                        "anchor_boundary": window.anchor_boundary,
+                                        "offset_seconds": window.offset_seconds,
+                                        "duration_seconds": window.duration_seconds,
+                                        "minimum_duration_seconds": (
+                                            window.minimum_duration_seconds
+                                        ),
+                                        "maximum_duration_seconds": (
+                                            window.maximum_duration_seconds
+                                        ),
+                                        "duration_step_seconds": window.duration_step_seconds,
+                                        "dynamic": window.dynamic,
+                                        "historical_selector": window.historical_selector,
+                                        "minimum_historical_observations": (
+                                            window.minimum_historical_observations
+                                        ),
+                                        "maximum_historical_observations": (
+                                            window.maximum_historical_observations
+                                        ),
+                                    }
+                                    for window in profile.windows
+                                ],
                             }
                             for profile in session_metrics.profiles
                         ],
@@ -348,6 +374,34 @@ def build_actor_plan(
                             ),
                             "maximum_output_age_ms": (
                                 session_metrics.session_references.maximum_output_age_ms
+                            ),
+                        },
+                        "session_windows": {
+                            "enabled": session_metrics.session_windows.enabled,
+                            "price_basis": session_metrics.session_windows.price_basis,
+                            "price_basis_dynamic": (
+                                session_metrics.session_windows.price_basis_dynamic
+                            ),
+                            "minimum_coverage_ratio": (
+                                session_metrics.session_windows.minimum_coverage_ratio
+                            ),
+                            "minimum_coverage_ratio_floor": (
+                                session_metrics.session_windows.minimum_coverage_ratio_floor
+                            ),
+                            "minimum_coverage_ratio_ceiling": (
+                                session_metrics.session_windows.minimum_coverage_ratio_ceiling
+                            ),
+                            "minimum_coverage_ratio_step": (
+                                session_metrics.session_windows.minimum_coverage_ratio_step
+                            ),
+                            "minimum_coverage_ratio_dynamic": (
+                                session_metrics.session_windows.minimum_coverage_ratio_dynamic
+                            ),
+                            "maximum_retained_sessions": (
+                                session_metrics.session_windows.maximum_retained_sessions
+                            ),
+                            "maximum_output_age_ms": (
+                                session_metrics.session_windows.maximum_output_age_ms
                             ),
                         },
                     },

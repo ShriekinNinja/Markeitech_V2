@@ -170,6 +170,24 @@ def test_power_hour_fails_until_configured_window_starts() -> None:
     assert bounds.end_ns == _ns("2026-08-17T15:20:00-04:00") - 1
 
 
+def test_power_hour_can_fall_back_to_latest_started_close_relative_window() -> None:
+    bounds = _resolve(
+        HistoricalWindow.POWER_HOUR,
+        "2026-08-18T10:00:00-04:00",
+        HistoricalWindowParameters(
+            phase="RTH",
+            anchor_boundary="end",
+            offset_seconds=-3_600,
+            duration_seconds=3_600,
+            fallback_to_previous=True,
+        ),
+        interval_minutes=15,
+    )
+
+    assert bounds.start_ns == _ns("2026-08-17T15:15:00-04:00")
+    assert bounds.end_ns == _ns("2026-08-17T16:15:00-04:00") - 1
+
+
 def test_named_phase_slice_uses_only_supplied_offsets() -> None:
     bounds = _resolve(
         HistoricalWindow.NAMED_PHASE_SLICE,

@@ -21,6 +21,10 @@ class HistoricalWindowParameters:
     start_ns: int | None = None
     end_ns: int | None = None
     observation_count: int | None = None
+    anchor_boundary: str | None = None
+    offset_seconds: int | None = None
+    duration_seconds: int | None = None
+    fallback_to_previous: bool | None = None
 
     def __post_init__(self) -> None:
         if self.phase is not None and not self.phase.strip():
@@ -51,6 +55,16 @@ class HistoricalWindowParameters:
             type(self.observation_count) is not int or self.observation_count <= 0
         ):
             raise ValueError("observation_count must be positive when supplied")
+        if self.anchor_boundary is not None and self.anchor_boundary not in {"start", "end"}:
+            raise ValueError("anchor_boundary must be start or end when supplied")
+        if self.offset_seconds is not None and type(self.offset_seconds) is not int:
+            raise ValueError("offset_seconds must be an integer when supplied")
+        if self.duration_seconds is not None and (
+            type(self.duration_seconds) is not int or self.duration_seconds <= 0
+        ):
+            raise ValueError("duration_seconds must be positive when supplied")
+        if self.fallback_to_previous is not None and type(self.fallback_to_previous) is not bool:
+            raise ValueError("fallback_to_previous must be a boolean when supplied")
 
 
 class HistoricalWindowResolutionError(ValueError):
@@ -140,6 +154,14 @@ class HistoricalWindowResolver:
                 )
             selected = sorted(completed, key=lambda item: item.end_ns)[-policy.session_count :]
             start_ns, end_exclusive_ns = selected[0].start_ns, selected[-1].end_ns
+        elif window is HistoricalWindow.POWER_HOUR and policy.fallback_to_previous:
+            selected = _latest_started_relative_window(
+                phase_windows,
+                completed_boundary_ns,
+                window,
+                policy,
+            )
+            start_ns, end_exclusive_ns = _window_shape(window, selected, policy)
         else:
             selected = _current_for_trade_date(
                 calendar,
@@ -207,6 +229,11 @@ def _window_shape(
     session: SessionWindow,
     policy: HistoricalWindowParameters,
 ) -> tuple[int, int]:
+    if policy.duration_seconds is not None:
+        anchor = session.start_ns if policy.anchor_boundary == "start" else session.end_ns
+        start_ns = anchor + (policy.offset_seconds or 0) * 1_000_000_000
+        end_ns = start_ns + policy.duration_seconds * 1_000_000_000
+        return max(session.start_ns, start_ns), min(session.end_ns, end_ns)
     if window in {
         HistoricalWindow.CURRENT_OVERNIGHT,
         HistoricalWindow.CURRENT_RTH,
@@ -233,6 +260,24 @@ def _window_shape(
             session.start_ns + policy.end_offset_minutes * _MINUTE_NS,
         )
     raise HistoricalWindowResolutionError(f"unsupported window={window.value}")
+
+
+def _latest_started_relative_window(
+    windows: tuple[SessionWindow, ...],
+    completed_boundary_ns: int,
+    window: HistoricalWindow,
+    policy: HistoricalWindowParameters,
+) -> SessionWindow:
+    eligible = tuple(
+        item
+        for item in windows
+        if _window_shape(window, item, policy)[0] < completed_boundary_ns
+    )
+    if not eligible:
+        raise HistoricalWindowResolutionError(
+            f"no started phase-relative window is available for window={window.value}",
+        )
+    return max(eligible, key=lambda item: _window_shape(window, item, policy)[0])
 
 
 def _required_phase(
@@ -270,6 +315,10 @@ def _validate_policy(
             "start_ns",
             "end_ns",
             "observation_count",
+            "anchor_boundary",
+            "offset_seconds",
+            "duration_seconds",
+            "fallback_to_previous",
         )
         if getattr(policy, name) is not None
     }
@@ -288,8 +337,24 @@ def _validate_policy(
         HistoricalWindow.PREMARKET: {"phase"},
         HistoricalWindow.OVERNIGHT: {"phase"},
         HistoricalWindow.SESSION_TO_DATE: {"phase"},
-        HistoricalWindow.OPENING_RANGE: {"phase", "duration_minutes"},
-        HistoricalWindow.POWER_HOUR: {"phase", "duration_minutes"},
+        HistoricalWindow.OPENING_RANGE: (
+            {"phase", "anchor_boundary", "offset_seconds", "duration_seconds"}
+            if policy.duration_seconds is not None
+            else {"phase", "duration_minutes"}
+        ),
+        HistoricalWindow.POWER_HOUR: (
+            {
+                "phase",
+                "anchor_boundary",
+                "offset_seconds",
+                "duration_seconds",
+                "fallback_to_previous",
+            }
+            if policy.duration_seconds is not None and policy.fallback_to_previous is not None
+            else {"phase", "anchor_boundary", "offset_seconds", "duration_seconds"}
+            if policy.duration_seconds is not None
+            else {"phase", "duration_minutes"}
+        ),
         HistoricalWindow.NAMED_PHASE_SLICE: {
             "phase",
             "start_offset_minutes",

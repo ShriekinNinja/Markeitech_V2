@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 12
+schema_version = 13
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -184,6 +184,18 @@ minimum_coverage_ratio_dynamic = true
 maximum_retained_sessions = 4
 maximum_output_age_ms = 120000
 
+[metrics.session_measurements.session_windows]
+enabled = true
+price_basis = "typical"
+price_basis_dynamic = true
+minimum_coverage_ratio = 0.8
+minimum_coverage_ratio_floor = 0.5
+minimum_coverage_ratio_ceiling = 1.0
+minimum_coverage_ratio_step = 0.05
+minimum_coverage_ratio_dynamic = true
+maximum_retained_sessions = 4
+maximum_output_age_ms = 120000
+
 [[metrics.session_measurements.profiles]]
 profile_id = "cme_equity_primary"
 version = 1
@@ -204,6 +216,9 @@ minimum_duration_seconds = 60
 maximum_duration_seconds = 1800
 duration_step_seconds = 60
 dynamic = true
+historical_selector = "1-MINUTE-LAST-EXTERNAL"
+minimum_historical_observations = 1
+maximum_historical_observations = 5
 
 [[metrics.session_measurements.profiles.windows]]
 window_id = "power_hour"
@@ -216,6 +231,9 @@ minimum_duration_seconds = 1800
 maximum_duration_seconds = 7200
 duration_step_seconds = 300
 dynamic = true
+historical_selector = "15-MINUTE-LAST-EXTERNAL"
+minimum_historical_observations = 1
+maximum_historical_observations = 4
 
 [[metrics.session_measurements.profile_bindings]]
 profile_id = "cme_equity_primary"
@@ -286,12 +304,23 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         "previous_sessions"
     )
     assert config.metrics.session_measurements.session_references.minimum_coverage_ratio == 0.8
+    assert config.metrics.session_measurements.session_windows.minimum_coverage_ratio == 0.8
     assert config.metrics.session_measurements.parameter_source == "operator-reviewed-config"
     assert config.metrics.session_measurements.parameter_effective_from_ns > 0
     assert config.metrics.session_measurements.profiles[0].profile_id == "cme_equity_primary"
     assert config.metrics.session_measurements.profiles[0].overnight_enabled is False
     assert config.metrics.session_measurements.profile_bindings[0].instrument_ids == ("ESU6.CME",)
     assert config.metrics.session_measurements.profiles[0].windows[1].anchor_boundary == "end"
+    assert (
+        config.metrics.session_measurements.profiles[0].windows[0].historical_selector
+        == "1-MINUTE-LAST-EXTERNAL"
+    )
+    assert (
+        config.metrics.session_measurements.profiles[0]
+        .windows[1]
+        .maximum_historical_observations
+        == 4
+    )
     assert config.instrument_ids == ("ESU6.CME",)
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)

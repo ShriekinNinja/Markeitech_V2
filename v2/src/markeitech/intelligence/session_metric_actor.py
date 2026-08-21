@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
@@ -58,6 +59,15 @@ from markeitech.intelligence.session_references import (
     metric_value_signature,
     session_reference_metric_definitions,
 )
+from markeitech.intelligence.session_windows import (
+    AnalyticalWindowBook,
+    AnalyticalWindowPolicy,
+    analytical_window_metric_definitions,
+    analytical_window_value_signature,
+    calculate_analytical_window_metrics,
+    resolve_analytical_window,
+    resolve_historical_analytical_window,
+)
 from markeitech.system.messages import (
     ACQUISITION_STREAM_SIGNAL,
     ANALYTICAL_DEMAND_SIGNAL,
@@ -88,6 +98,7 @@ class SessionMetricsActorConfig(DataActorConfig):
         priority: int,
         completed_bars: dict[str, object],
         session_references: dict[str, object],
+        session_windows: dict[str, object],
         actor_id: str | ActorId = "SESSION-METRICS",
     ) -> SessionMetricsActorConfig:
         resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
@@ -106,6 +117,7 @@ class SessionMetricsActorConfig(DataActorConfig):
         obj.priority = priority
         obj.completed_bars = dict(completed_bars)
         obj.session_references = dict(session_references)
+        obj.session_windows = dict(session_windows)
         return obj
 
 
@@ -192,9 +204,66 @@ class SessionMetricsActor(DataActor):
             maximum_retained_sessions=int(references["maximum_retained_sessions"]),
             maximum_output_age_ms=int(references["maximum_output_age_ms"]),
         )
+        session_windows = config.session_windows
+        self._windows_enabled = bool(session_windows["enabled"])
+        self._window_policies: dict[tuple[str, str], AnalyticalWindowPolicy] = {}
+        if self._windows_enabled:
+            for profile_id, profile in self._profiles.items():
+                for raw_window in profile.get("windows", []):
+                    window = dict(raw_window)
+                    policy_key = (profile_id, str(window["window_id"]))
+                    self._window_policies[policy_key] = AnalyticalWindowPolicy(
+                        profile_id=profile_id,
+                        profile_version=int(profile["version"]),
+                        window_id=str(window["window_id"]),
+                        purpose=str(window["purpose"]),
+                        anchor_phase=str(window["anchor_phase"]),
+                        anchor_boundary=str(window["anchor_boundary"]),
+                        offset_seconds=int(window["offset_seconds"]),
+                        duration_seconds=int(window["duration_seconds"]),
+                        minimum_duration_seconds=int(window["minimum_duration_seconds"]),
+                        maximum_duration_seconds=int(window["maximum_duration_seconds"]),
+                        duration_step_seconds=int(window["duration_step_seconds"]),
+                        duration_dynamic=bool(window["dynamic"]),
+                        live_selector=self._live_selector,
+                        historical_selector=str(window["historical_selector"]),
+                        minimum_historical_observations=int(
+                            window["minimum_historical_observations"],
+                        ),
+                        maximum_historical_observations=int(
+                            window["maximum_historical_observations"],
+                        ),
+                        price_basis=str(session_windows["price_basis"]),
+                        price_basis_dynamic=bool(session_windows["price_basis_dynamic"]),
+                        minimum_coverage_ratio=float(
+                            session_windows["minimum_coverage_ratio"],
+                        ),
+                        minimum_coverage_ratio_floor=float(
+                            session_windows["minimum_coverage_ratio_floor"],
+                        ),
+                        minimum_coverage_ratio_ceiling=float(
+                            session_windows["minimum_coverage_ratio_ceiling"],
+                        ),
+                        minimum_coverage_ratio_step=float(
+                            session_windows["minimum_coverage_ratio_step"],
+                        ),
+                        minimum_coverage_ratio_dynamic=bool(
+                            session_windows["minimum_coverage_ratio_dynamic"],
+                        ),
+                        parameter_source=self._parameter_source,
+                        priority=self._priority,
+                        maximum_retained_sessions=int(
+                            session_windows["maximum_retained_sessions"],
+                        ),
+                        maximum_output_age_ms=int(session_windows["maximum_output_age_ms"]),
+                    )
         definitions = completed_bar_metric_definitions(policy)
         if self._references_enabled:
             definitions += session_reference_metric_definitions(reference_policy)
+        if self._windows_enabled:
+            definitions += analytical_window_metric_definitions(
+                tuple(self._window_policies.values()),
+            )
         self._registry = MetricRegistry(definitions)
         self._port = NautilusSubscriptionPort(self)
         self._metric_type = DataType(METRIC_VALUE_TYPE_NAME)
@@ -232,6 +301,23 @@ class SessionMetricsActor(DataActor):
             for instrument_id in self._instrument_ids
         }
         self._reference_signatures: dict[tuple[str, str], tuple[object, ...]] = {}
+        self._window_books = {
+            (instrument_id, window_id): AnalyticalWindowBook(
+                instrument_id=instrument_id,
+                policy=self._window_policies[(profile_id, window_id)],
+                maximum_observations_per_session=max(
+                    self._maximum_retained,
+                    self._window_policies[
+                        (profile_id, window_id)
+                    ].maximum_historical_observations,
+                ),
+            )
+            for instrument_id in self._instrument_ids
+            for profile_id in (self._profile_bindings[instrument_id],)
+            for candidate_profile_id, window_id in self._window_policies
+            if candidate_profile_id == profile_id
+        }
+        self._window_signatures: dict[tuple[str, str], tuple[object, ...]] = {}
         self._live_demand_ids = {
             instrument_id: f"metric:session:{instrument_id}:bars:{self._live_selector}"
             for instrument_id in self._instrument_ids
@@ -248,6 +334,10 @@ class SessionMetricsActor(DataActor):
             for role in SessionReferenceRole
             if role is not SessionReferenceRole.OVERNIGHT
             or bool(self._profiles[self._profile_bindings[instrument_id]]["overnight_enabled"])
+        }
+        self._window_demand_ids = {
+            (instrument_id, window_id): f"metric:session:{instrument_id}:window:{window_id}"
+            for instrument_id, window_id in self._window_books
         }
 
     def on_start(self) -> None:
@@ -295,14 +385,21 @@ class SessionMetricsActor(DataActor):
         payload = data.data if isinstance(data, CustomData) else data
         if not isinstance(payload, HistoricalBatch):
             return
-        dependencies = {dependency.consumer_id for dependency in payload.request.dependencies}
+        dependencies = {
+            dependency.consumer_id for dependency in payload.request.dependencies
+        }
         if str(self.actor_id) not in dependencies:
             return
         if payload.request.instrument_id not in self._instrument_set:
             return
         if payload.request.kind is not FeedKind.BARS:
             return
-        if payload.request.selector == self._historical_selector:
+        capabilities = {
+            dependency.capability_id
+            for dependency in payload.request.dependencies
+            if dependency.consumer_id == str(self.actor_id)
+        }
+        if "metric:completed-bar-foundation" in capabilities:
             self._counts["historical_batches"] += 1
             for observation in payload.observations:
                 self._process_provider_bar(
@@ -316,6 +413,8 @@ class SessionMetricsActor(DataActor):
             and payload.request.selector == self._reference_historical_selector
         ):
             self._process_reference_batch(payload)
+        if self._windows_enabled:
+            self._process_window_batch(payload)
 
     def on_bar(self, bar) -> None:  # noqa: ANN001
         instrument_id = str(bar.bar_type.instrument_id)
@@ -374,6 +473,8 @@ class SessionMetricsActor(DataActor):
             f" | values={self._counts['values']}"
             f" | reference_batches={self._counts['reference_batches']}"
             f" | reference_values={self._counts['reference_values']}"
+            f" | window_batches={self._counts['window_batches']}"
+            f" | window_values={self._counts['window_values']}"
             f" | failures={self._counts['failures']}",
         )
 
@@ -548,6 +649,11 @@ class SessionMetricsActor(DataActor):
             CompletedBarSource.LIVE_AGGREGATE,
         }:
             self._ingest_live_reference(bar)
+        if self._windows_enabled and bar.source in {
+            CompletedBarSource.LIVE_NATIVE,
+            CompletedBarSource.LIVE_AGGREGATE,
+        }:
+            self._ingest_live_windows(bar)
 
     def _attach_consumers(self) -> None:
         for instrument_id in self._instrument_ids:
@@ -613,9 +719,22 @@ class SessionMetricsActor(DataActor):
                 for role in SessionReferenceRole:
                     if (instrument_id, role) not in self._reference_demand_ids:
                         continue
+                    if role is SessionReferenceRole.ACTIVE and not self._primary_phase_is_open(
+                        instrument_id,
+                        now_ns,
+                    ):
+                        continue
                     self.publish_signal(
                         HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
                         self._reference_demand(instrument_id, role, now_ns).to_signal_value(),
+                    )
+            if self._windows_enabled:
+                for candidate_instrument, window_id in self._window_demand_ids:
+                    if candidate_instrument != instrument_id:
+                        continue
+                    self.publish_signal(
+                        HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
+                        self._window_demand(instrument_id, window_id, now_ns).to_signal_value(),
                     )
 
     def _process_reference_batch(self, batch: HistoricalBatch) -> None:
@@ -824,6 +943,203 @@ class SessionMetricsActor(DataActor):
             else f"{role.value}_session_history_pending"
         )
 
+    def _process_window_batch(self, batch: HistoricalBatch) -> None:
+        policies = self._window_policies_for_batch(batch)
+        if not policies:
+            return
+        for policy in policies:
+            bars: list[CompletedBarInput] = []
+            for observation in batch.observations:
+                try:
+                    bar = self._normalize(
+                        observation,
+                        CompletedBarSource.HISTORICAL_PROVIDER,
+                        batch.received_at_ns,
+                        f"historical:{batch.request.request_id}",
+                    )
+                except (ValueError, ArithmeticError, InvalidOperation) as exc:
+                    self._counts["failures"] += 1
+                    self.log.error(
+                        "SESSION_WINDOW_BAR_REJECTED"
+                        f" | instrument_id={batch.request.instrument_id}"
+                        f" | window_id={policy.window_id}"
+                        f" | error={type(exc).__name__} | reason={exc}",
+                    )
+                    continue
+                bars.append(bar)
+            if bars:
+                try:
+                    trade_date, spec = resolve_historical_analytical_window(
+                        policy,
+                        self._calendars[self._instrument_calendars[batch.request.instrument_id]],
+                        calendar_id=self._instrument_calendars[batch.request.instrument_id],
+                        request_start_ns=batch.request.start_ns,
+                    )
+                    aligned = tuple(
+                        replace(
+                            bar,
+                            trade_date=trade_date,
+                            session_id=spec.session_id,
+                        )
+                        for bar in bars
+                        if bar.interval_end_ns > spec.start_ns
+                        and bar.interval_start_ns < spec.end_ns
+                    )
+                    if not aligned:
+                        raise ValueError("historical batch does not overlap analytical window")
+                    self._window_books[
+                        (batch.request.instrument_id, policy.window_id)
+                    ].ingest_historical(
+                        spec,
+                        aligned,
+                        cutoff_ns=max(bar.interval_end_ns for bar in aligned),
+                    )
+                except ValueError as exc:
+                    self._counts["failures"] += 1
+                    self.log.error(
+                        "SESSION_WINDOW_BATCH_REJECTED"
+                        f" | instrument_id={batch.request.instrument_id}"
+                        f" | window_id={policy.window_id} | reason={exc}",
+                    )
+            self._counts["window_batches"] += 1
+            self._publish_window_metrics(batch.request.instrument_id, policy)
+
+    def _ingest_live_windows(self, bar: CompletedBarInput) -> None:
+        for (profile_id, _), policy in self._window_policies.items():
+            if profile_id != bar.analytical_profile_id:
+                continue
+            if bar.session_id.rsplit(":", 1)[-1] != policy.anchor_phase:
+                continue
+            try:
+                spec = self._window_spec(policy, bar)
+                self._window_books[(bar.instrument_id, policy.window_id)].ingest_live(spec, bar)
+            except ValueError as exc:
+                self._counts["failures"] += 1
+                self.log.error(
+                    "SESSION_WINDOW_LIVE_REJECTED"
+                    f" | instrument_id={bar.instrument_id}"
+                    f" | window_id={policy.window_id} | reason={exc}",
+                )
+                continue
+            self._publish_window_metrics(bar.instrument_id, policy)
+
+    def _window_spec(
+        self,
+        policy: AnalyticalWindowPolicy,
+        bar: CompletedBarInput,
+    ):  # noqa: ANN202
+        windows = self._calendars[bar.calendar_id].windows(bar.trade_date, bar.trade_date)
+        session = next((item for item in windows if item.phase == policy.anchor_phase), None)
+        if session is None:
+            raise ValueError("calendar did not provide the configured anchor phase")
+        return resolve_analytical_window(policy, session, session_id=bar.session_id)
+
+    def _window_demand(
+        self,
+        instrument_id: str,
+        window_id: str,
+        now_ns: int,
+    ) -> HistoricalDependencyDemandEvent:
+        profile_id = self._profile_bindings[instrument_id]
+        policy = self._window_policies[(profile_id, window_id)]
+        window_parameters: dict[str, str | int | bool] = {
+            "phase": policy.anchor_phase,
+            "anchor_boundary": policy.anchor_boundary,
+            "offset_seconds": policy.offset_seconds,
+            "duration_seconds": policy.duration_seconds,
+        }
+        if policy.purpose == "power_hour":
+            window_parameters["fallback_to_previous"] = True
+        return HistoricalDependencyDemandEvent(
+            demand_id=self._window_demand_ids[(instrument_id, window_id)],
+            consumer_id=str(self.actor_id),
+            capability_id=self._window_capability_id(policy),
+            capability_version=1,
+            instrument_id=instrument_id,
+            selector=policy.historical_selector,
+            window=policy.historical_window.value,
+            minimum_observations=policy.minimum_historical_observations,
+            maximum_observations=policy.maximum_historical_observations,
+            priority=self._priority,
+            purpose=f"warm {policy.purpose} window {policy.window_id}",
+            as_of_ns=now_ns,
+            window_parameters=window_parameters,
+            parameters={
+                "parameter_version": self._parameter_version,
+                "window_id": policy.window_id,
+                "price_basis": policy.price_basis,
+            },
+        )
+
+    def _window_policies_for_batch(
+        self,
+        batch: HistoricalBatch,
+    ) -> tuple[AnalyticalWindowPolicy, ...]:
+        capabilities = {
+            dependency.capability_id
+            for dependency in batch.request.dependencies
+            if dependency.consumer_id == str(self.actor_id)
+        }
+        instrument_id = batch.request.instrument_id
+        profile_id = self._profile_bindings[instrument_id]
+        return tuple(
+            policy
+            for (candidate_profile, window_id), policy in self._window_policies.items()
+            if candidate_profile == profile_id
+            and (instrument_id, window_id) in self._window_books
+            and self._window_capability_id(policy) in capabilities
+        )
+
+    def _publish_window_metrics(
+        self,
+        instrument_id: str,
+        policy: AnalyticalWindowPolicy,
+    ) -> None:
+        book = self._window_books.get((instrument_id, policy.window_id))
+        if book is None:
+            return
+        now_ns = self.clock.timestamp_ns()
+        summary = book.summary(as_of_ns=now_ns)
+        revision_key = f"window:{instrument_id}:{policy.window_id}"
+        self._revisions[revision_key] += 1
+        values = calculate_analytical_window_metrics(
+            instrument_id,
+            policy,
+            summary,
+            registry=self._registry,
+            parameter_version=self._parameter_version,
+            calculated_ts_ns=now_ns,
+            published_ts_ns=now_ns,
+            source=str(self.actor_id),
+            revision=self._revisions[revision_key],
+            missing_reason=self._window_missing_reason(instrument_id, policy),
+        )
+        for value in values:
+            key = (instrument_id, value.metric_id)
+            signature = analytical_window_value_signature(value)
+            if self._window_signatures.get(key) == signature:
+                continue
+            self.publish_data(self._metric_type, CustomData(self._metric_type, value))
+            self._window_signatures[key] = signature
+            self._counts["window_values"] += 1
+
+    def _window_missing_reason(
+        self,
+        instrument_id: str,
+        policy: AnalyticalWindowPolicy,
+    ) -> str:
+        capability_id = self._window_capability_id(policy)
+        state = self._historical_readiness.get(f"{instrument_id}:{capability_id}")
+        return (
+            f"{policy.window_id}_history_{state.lower()}"
+            if state is not None
+            else f"{policy.window_id}_not_started_or_history_pending"
+        )
+
+    @staticmethod
+    def _window_capability_id(policy: AnalyticalWindowPolicy) -> str:
+        return f"metric:session-window:{policy.profile_id}:{policy.window_id}"
+
     def _request_evidence_snapshot(self, _event) -> None:  # noqa: ANN001
         missing = tuple(
             instrument_id
@@ -867,6 +1183,16 @@ class SessionMetricsActor(DataActor):
         self._historical_readiness[f"{event.instrument_id}:{event.capability_id}"] = event.state
         if self._references_enabled and event.capability_id.startswith("metric:session-reference:"):
             self._publish_reference_metrics(event.instrument_id)
+        if self._windows_enabled and event.capability_id.startswith("metric:session-window:"):
+            profile_id = self._profile_bindings.get(event.instrument_id)
+            if profile_id is None:
+                return
+            for (candidate_profile, _), policy in self._window_policies.items():
+                if (
+                    candidate_profile == profile_id
+                    and self._window_capability_id(policy) == event.capability_id
+                ):
+                    self._publish_window_metrics(event.instrument_id, policy)
 
     def _observe_session_state(self, value: str) -> None:
         try:
@@ -874,7 +1200,45 @@ class SessionMetricsActor(DataActor):
         except ValueError:
             return
         if event.calendar_id in self._calendars:
+            previous = self._session_states.get(event.calendar_id)
             self._session_states[event.calendar_id] = event
+            if previous is None or previous.phase == event.phase:
+                return
+            self._request_open_session_references(event)
+
+    def _primary_phase_is_open(self, instrument_id: str, timestamp_ns: int) -> bool:
+        profile = self._profiles[self._profile_bindings[instrument_id]]
+        calendar_id = str(profile["calendar_id"])
+        current = self._session_states.get(calendar_id)
+        phase = (
+            current.phase
+            if current is not None
+            else self._calendars[calendar_id].evaluate(timestamp_ns).phase
+        )
+        return phase == str(profile["primary_phase"])
+
+    def _request_open_session_references(self, event: SessionStateEvent) -> None:
+        if not self._references_enabled or event.phase == "CLOSED":
+            return
+        now_ns = self.clock.timestamp_ns()
+        for instrument_id in self._instrument_ids:
+            profile = self._profiles[self._profile_bindings[instrument_id]]
+            if (
+                str(profile["calendar_id"]) != event.calendar_id
+                or str(profile["primary_phase"]) != event.phase
+            ):
+                continue
+            capability_id = f"metric:session-reference:{SessionReferenceRole.ACTIVE.value}"
+            if self._historical_readiness.get(f"{instrument_id}:{capability_id}") == "READY":
+                continue
+            self.publish_signal(
+                HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
+                self._reference_demand(
+                    instrument_id,
+                    SessionReferenceRole.ACTIVE,
+                    now_ns,
+                ).to_signal_value(),
+            )
 
     def _observe_evidence(self, value: str) -> None:
         try:
