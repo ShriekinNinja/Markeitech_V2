@@ -219,7 +219,7 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
         "historical_selector": "1-MINUTE-LAST-EXTERNAL",
         "historical_window": "recent_completed",
         "minimum_historical_observations": 2,
-        "maximum_historical_observations": 4,
+        "maximum_historical_observations": 720,
         "calculation_interval_seconds": 60,
         "minimum_interval_seconds": 5,
         "maximum_interval_seconds": 3600,
@@ -228,7 +228,7 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
         "aggregation_boundary_policy": "utc_fixed_intraday",
         "timestamp_policy": "interval_start",
         "revision_policy": "reject_revision",
-        "maximum_retained_observations": 5000,
+        "maximum_retained_observations": 8000,
         "maximum_output_age_ms": 120000,
     }
     assert actor.config.config["session_references"] == {
@@ -261,6 +261,15 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
         "maximum_retained_sessions": 4,
         "maximum_output_age_ms": 120000,
     }
+    rolling = actor.config.config["rolling_measurements"]
+    assert rolling["baseline"]["recent_reference_count"] == 20
+    assert rolling["baseline"]["eligible_reference_health"] == ["READY"]
+    assert [family["family_id"] for family in rolling["families"]] == [
+        "fast",
+        "tactical",
+        "structural_intraday",
+    ]
+    assert rolling["families"][0]["selected_context_candidate_id"] == "context_45m"
     assert actor.config.config["profiles"][0]["windows"] == [
         {
             "window_id": "opening_range_fast",

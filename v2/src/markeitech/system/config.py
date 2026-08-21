@@ -240,6 +240,61 @@ class SessionWindowMetricsConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class RollingCandidateConfig:
+    candidate_id: str
+    purpose: str
+    duration_seconds: int
+    minimum_duration_seconds: int
+    maximum_duration_seconds: int
+    duration_step_seconds: int
+    dynamic: bool
+    active: bool
+
+
+@dataclass(frozen=True, slots=True)
+class RollingFamilyConfig:
+    family_id: str
+    source_selector: str
+    input_selector: str
+    input_interval_seconds: int
+    aggregation_policy: str
+    selected_context_candidate_id: str
+    candidates: tuple[RollingCandidateConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class RollingBaselineConfig:
+    eligible_reference_health: tuple[str, ...]
+    eligible_reference_fidelities: tuple[str, ...]
+    recent_reference_count: int
+    recent_reference_count_minimum: int
+    recent_reference_count_maximum: int
+    recent_reference_count_step: int
+    recent_reference_count_dynamic: bool
+    minimum_recent_references: int
+    phase_reference_count: int
+    phase_reference_count_minimum: int
+    phase_reference_count_maximum: int
+    phase_reference_count_step: int
+    phase_reference_count_dynamic: bool
+    minimum_phase_references: int
+
+
+@dataclass(frozen=True, slots=True)
+class RollingMeasurementsConfig:
+    enabled: bool
+    minimum_coverage_ratio: float
+    minimum_coverage_ratio_floor: float
+    minimum_coverage_ratio_ceiling: float
+    minimum_coverage_ratio_step: float
+    minimum_coverage_ratio_dynamic: bool
+    maximum_retained_observations: int
+    maximum_output_age_ms: int
+    baseline: RollingBaselineConfig
+    families: tuple[RollingFamilyConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class SessionMeasurementsConfig:
     enabled: bool
     required_watchlist_capability: str
@@ -254,6 +309,7 @@ class SessionMeasurementsConfig:
     completed_bars: CompletedBarMetricsConfig
     session_references: SessionReferenceMetricsConfig
     session_windows: SessionWindowMetricsConfig
+    rolling_measurements: RollingMeasurementsConfig
     profiles: tuple[AnalyticalSessionProfileConfig, ...]
     profile_bindings: tuple[AnalyticalProfileBindingConfig, ...]
 
@@ -1033,6 +1089,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "completed_bars",
             "session_references",
             "session_windows",
+            "rolling_measurements",
             "profiles",
             "profile_bindings",
         },
@@ -1159,6 +1216,43 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
         )
     references = _load_session_reference_metrics(values["session_references"])
     session_windows = _load_session_window_metrics(values["session_windows"])
+    rolling_measurements = _load_rolling_measurements(values["rolling_measurements"])
+    if (
+        rolling_measurements.maximum_retained_observations
+        > completed["maximum_retained_observations"]
+    ):
+        raise ValueError(
+            "rolling measurements cannot retain more observations than the completed-bar ledger",
+        )
+    for family in rolling_measurements.families:
+        if family.source_selector != completed["historical_selector"]:
+            raise ValueError(
+                "rolling family source_selector must match the completed-bar historical selector",
+            )
+        if family.input_interval_seconds < interval or family.input_interval_seconds % interval:
+            raise ValueError(
+                "rolling family input interval must be an integer multiple of the completed-bar "
+                "calculation interval",
+            )
+        expected_policy = (
+            "identity" if family.input_interval_seconds == interval else "utc_fixed_intraday"
+        )
+        if family.aggregation_policy != expected_policy:
+            raise ValueError(
+                "rolling family aggregation policy does not match its configured input interval",
+            )
+    minimum_recent_retention = max(
+        (candidate.duration_seconds // interval)
+        * (rolling_measurements.baseline.minimum_recent_references + 1)
+        for family in rolling_measurements.families
+        for candidate in family.candidates
+        if candidate.active
+    )
+    if rolling_measurements.maximum_retained_observations < minimum_recent_retention:
+        raise ValueError(
+            "rolling measurement retention cannot satisfy its configured minimum recent "
+            "reference count",
+        )
     profiles_raw = values["profiles"]
     if not isinstance(profiles_raw, list) or not profiles_raw:
         raise ValueError("metrics.session_measurements.profiles must be a non-empty array")
@@ -1252,6 +1346,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
         ),
         session_references=references,
         session_windows=session_windows,
+        rolling_measurements=rolling_measurements,
         profiles=profiles,
         profile_bindings=bindings,
     )
@@ -1556,6 +1651,279 @@ def _load_session_window_metrics(raw: Any) -> SessionWindowMetricsConfig:
             f"{label}.maximum_output_age_ms",
         ),
     )
+
+
+def _load_rolling_measurements(raw: Any) -> RollingMeasurementsConfig:
+    label = "metrics.session_measurements.rolling_measurements"
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "minimum_coverage_ratio",
+            "minimum_coverage_ratio_floor",
+            "minimum_coverage_ratio_ceiling",
+            "minimum_coverage_ratio_step",
+            "minimum_coverage_ratio_dynamic",
+            "maximum_retained_observations",
+            "maximum_output_age_ms",
+            "baseline",
+            "families",
+        },
+        label,
+    )
+    coverage = _coverage_ratio(values["minimum_coverage_ratio"], f"{label}.minimum_coverage_ratio")
+    floor = _coverage_ratio(
+        values["minimum_coverage_ratio_floor"],
+        f"{label}.minimum_coverage_ratio_floor",
+    )
+    ceiling = _coverage_ratio(
+        values["minimum_coverage_ratio_ceiling"],
+        f"{label}.minimum_coverage_ratio_ceiling",
+    )
+    step = _positive_float(
+        values["minimum_coverage_ratio_step"],
+        f"{label}.minimum_coverage_ratio_step",
+    )
+    if not floor <= coverage <= ceiling:
+        raise ValueError(f"{label}.minimum_coverage_ratio is outside its configured envelope")
+    if step > ceiling - floor:
+        raise ValueError(f"{label}.minimum_coverage_ratio_step exceeds its envelope")
+    baseline = _load_rolling_baseline(values["baseline"], f"{label}.baseline")
+    families_raw = values["families"]
+    if not isinstance(families_raw, list) or not families_raw:
+        raise ValueError(f"{label}.families must be a non-empty array")
+    families = tuple(
+        _load_rolling_family(item, f"{label}.families[{index}]")
+        for index, item in enumerate(families_raw)
+    )
+    family_ids = tuple(item.family_id for item in families)
+    if len(family_ids) != len(set(family_ids)):
+        raise ValueError(f"{label} family IDs must be unique")
+    return RollingMeasurementsConfig(
+        enabled=_bool(values["enabled"], f"{label}.enabled"),
+        minimum_coverage_ratio=coverage,
+        minimum_coverage_ratio_floor=floor,
+        minimum_coverage_ratio_ceiling=ceiling,
+        minimum_coverage_ratio_step=step,
+        minimum_coverage_ratio_dynamic=_bool(
+            values["minimum_coverage_ratio_dynamic"],
+            f"{label}.minimum_coverage_ratio_dynamic",
+        ),
+        maximum_retained_observations=_positive_int(
+            values["maximum_retained_observations"],
+            f"{label}.maximum_retained_observations",
+        ),
+        maximum_output_age_ms=_positive_int(
+            values["maximum_output_age_ms"],
+            f"{label}.maximum_output_age_ms",
+        ),
+        baseline=baseline,
+        families=families,
+    )
+
+
+def _load_rolling_baseline(raw: Any, label: str) -> RollingBaselineConfig:
+    values = _mapping(raw, label)
+    keys = {
+        "eligible_reference_health",
+        "eligible_reference_fidelities",
+        "recent_reference_count",
+        "recent_reference_count_minimum",
+        "recent_reference_count_maximum",
+        "recent_reference_count_step",
+        "recent_reference_count_dynamic",
+        "minimum_recent_references",
+        "phase_reference_count",
+        "phase_reference_count_minimum",
+        "phase_reference_count_maximum",
+        "phase_reference_count_step",
+        "phase_reference_count_dynamic",
+        "minimum_phase_references",
+    }
+    _require_keys(values, keys, label)
+    integer_keys = keys - {"eligible_reference_health", "eligible_reference_fidelities"}
+    integers = {
+        key: _positive_int(values[key], f"{label}.{key}")
+        for key in integer_keys
+        if not key.endswith("_dynamic")
+    }
+    eligible_health = _unique_non_empty_strings(
+        values["eligible_reference_health"],
+        f"{label}.eligible_reference_health",
+    )
+    unsupported_health = set(eligible_health) - {
+        "READY",
+        "WARMING",
+        "DEGRADED",
+        "STALE",
+        "UNAVAILABLE",
+        "UNSUPPORTED",
+        "FAILED",
+    }
+    if unsupported_health:
+        raise ValueError(f"{label}.eligible_reference_health contains unsupported values")
+    eligible_fidelities = _unique_non_empty_strings(
+        values["eligible_reference_fidelities"],
+        f"{label}.eligible_reference_fidelities",
+    )
+    unsupported_fidelities = set(eligible_fidelities) - {
+        "REPORTED",
+        "DERIVED",
+        "INFERRED",
+        "PARTIAL",
+        "UNAVAILABLE",
+    }
+    if unsupported_fidelities:
+        raise ValueError(f"{label}.eligible_reference_fidelities contains unsupported values")
+    _validate_integer_envelope(
+        integers["recent_reference_count"],
+        integers["recent_reference_count_minimum"],
+        integers["recent_reference_count_maximum"],
+        integers["recent_reference_count_step"],
+        f"{label}.recent_reference_count",
+    )
+    _validate_integer_envelope(
+        integers["phase_reference_count"],
+        integers["phase_reference_count_minimum"],
+        integers["phase_reference_count_maximum"],
+        integers["phase_reference_count_step"],
+        f"{label}.phase_reference_count",
+    )
+    if integers["minimum_recent_references"] > integers["recent_reference_count"]:
+        raise ValueError(f"{label}.minimum_recent_references exceeds requested count")
+    if integers["minimum_phase_references"] > integers["phase_reference_count"]:
+        raise ValueError(f"{label}.minimum_phase_references exceeds requested count")
+    return RollingBaselineConfig(
+        **integers,
+        eligible_reference_health=eligible_health,
+        eligible_reference_fidelities=eligible_fidelities,
+        recent_reference_count_dynamic=_bool(
+            values["recent_reference_count_dynamic"],
+            f"{label}.recent_reference_count_dynamic",
+        ),
+        phase_reference_count_dynamic=_bool(
+            values["phase_reference_count_dynamic"],
+            f"{label}.phase_reference_count_dynamic",
+        ),
+    )
+
+
+def _load_rolling_family(raw: Any, label: str) -> RollingFamilyConfig:
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "family_id",
+            "source_selector",
+            "input_selector",
+            "input_interval_seconds",
+            "aggregation_policy",
+            "selected_context_candidate_id",
+            "candidates",
+        },
+        label,
+    )
+    input_interval = _positive_int(
+        values["input_interval_seconds"],
+        f"{label}.input_interval_seconds",
+    )
+    aggregation_policy = _non_empty_string(
+        values["aggregation_policy"],
+        f"{label}.aggregation_policy",
+    )
+    if aggregation_policy not in {"identity", "utc_fixed_intraday"}:
+        raise ValueError(f"{label}.aggregation_policy is unsupported")
+    candidates_raw = values["candidates"]
+    if not isinstance(candidates_raw, list) or not candidates_raw:
+        raise ValueError(f"{label}.candidates must be a non-empty array")
+    candidates = tuple(
+        _load_rolling_candidate(item, f"{label}.candidates[{index}]", input_interval)
+        for index, item in enumerate(candidates_raw)
+    )
+    candidate_ids = tuple(item.candidate_id for item in candidates)
+    if len(candidate_ids) != len(set(candidate_ids)):
+        raise ValueError(f"{label} candidate IDs must be unique")
+    selected_id = _non_empty_string(
+        values["selected_context_candidate_id"],
+        f"{label}.selected_context_candidate_id",
+    )
+    selected = next((item for item in candidates if item.candidate_id == selected_id), None)
+    if selected is None or selected.purpose != "context" or not selected.active:
+        raise ValueError(f"{label}.selected_context_candidate_id must select an active context")
+    return RollingFamilyConfig(
+        family_id=_non_empty_string(values["family_id"], f"{label}.family_id"),
+        source_selector=_non_empty_string(
+            values["source_selector"],
+            f"{label}.source_selector",
+        ),
+        input_selector=_non_empty_string(values["input_selector"], f"{label}.input_selector"),
+        input_interval_seconds=input_interval,
+        aggregation_policy=aggregation_policy,
+        selected_context_candidate_id=selected_id,
+        candidates=candidates,
+    )
+
+
+def _load_rolling_candidate(
+    raw: Any,
+    label: str,
+    input_interval_seconds: int,
+) -> RollingCandidateConfig:
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "candidate_id",
+            "purpose",
+            "duration_seconds",
+            "minimum_duration_seconds",
+            "maximum_duration_seconds",
+            "duration_step_seconds",
+            "dynamic",
+            "active",
+        },
+        label,
+    )
+    purpose = _non_empty_string(values["purpose"], f"{label}.purpose")
+    if purpose not in {"context", "expansion"}:
+        raise ValueError(f"{label}.purpose must be context or expansion")
+    duration = _positive_int(values["duration_seconds"], f"{label}.duration_seconds")
+    minimum = _positive_int(
+        values["minimum_duration_seconds"],
+        f"{label}.minimum_duration_seconds",
+    )
+    maximum = _positive_int(
+        values["maximum_duration_seconds"],
+        f"{label}.maximum_duration_seconds",
+    )
+    step = _positive_int(values["duration_step_seconds"], f"{label}.duration_step_seconds")
+    _validate_integer_envelope(duration, minimum, maximum, step, f"{label}.duration_seconds")
+    if duration % input_interval_seconds:
+        raise ValueError(f"{label}.duration_seconds must contain whole input intervals")
+    return RollingCandidateConfig(
+        candidate_id=_non_empty_string(values["candidate_id"], f"{label}.candidate_id"),
+        purpose=purpose,
+        duration_seconds=duration,
+        minimum_duration_seconds=minimum,
+        maximum_duration_seconds=maximum,
+        duration_step_seconds=step,
+        dynamic=_bool(values["dynamic"], f"{label}.dynamic"),
+        active=_bool(values["active"], f"{label}.active"),
+    )
+
+
+def _validate_integer_envelope(
+    value: int,
+    minimum: int,
+    maximum: int,
+    step: int,
+    label: str,
+) -> None:
+    if not minimum <= value <= maximum:
+        raise ValueError(f"{label} is outside its configured envelope")
+    if (value - minimum) % step:
+        raise ValueError(f"{label} does not align to its step")
 
 
 def _load_acquisition(

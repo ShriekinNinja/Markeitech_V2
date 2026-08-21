@@ -404,6 +404,106 @@ def build_actor_plan(
                                 session_metrics.session_windows.maximum_output_age_ms
                             ),
                         },
+                        "rolling_measurements": {
+                            "enabled": session_metrics.rolling_measurements.enabled,
+                            "minimum_coverage_ratio": (
+                                session_metrics.rolling_measurements.minimum_coverage_ratio
+                            ),
+                            "minimum_coverage_ratio_floor": (
+                                session_metrics.rolling_measurements.minimum_coverage_ratio_floor
+                            ),
+                            "minimum_coverage_ratio_ceiling": (
+                                session_metrics.rolling_measurements.minimum_coverage_ratio_ceiling
+                            ),
+                            "minimum_coverage_ratio_step": (
+                                session_metrics.rolling_measurements.minimum_coverage_ratio_step
+                            ),
+                            "minimum_coverage_ratio_dynamic": (
+                                session_metrics.rolling_measurements.minimum_coverage_ratio_dynamic
+                            ),
+                            "maximum_retained_observations": (
+                                session_metrics.rolling_measurements.maximum_retained_observations
+                            ),
+                            "maximum_output_age_ms": (
+                                session_metrics.rolling_measurements.maximum_output_age_ms
+                            ),
+                            "baseline": {
+                                "eligible_reference_health": list(
+                                    session_metrics.rolling_measurements.baseline.eligible_reference_health
+                                ),
+                                "eligible_reference_fidelities": list(
+                                    session_metrics.rolling_measurements.baseline.eligible_reference_fidelities
+                                ),
+                                "recent_reference_count": (
+                                    session_metrics.rolling_measurements.baseline.recent_reference_count
+                                ),
+                                "recent_reference_count_minimum": (
+                                    session_metrics.rolling_measurements.baseline.recent_reference_count_minimum
+                                ),
+                                "recent_reference_count_maximum": (
+                                    session_metrics.rolling_measurements.baseline.recent_reference_count_maximum
+                                ),
+                                "recent_reference_count_step": (
+                                    session_metrics.rolling_measurements.baseline.recent_reference_count_step
+                                ),
+                                "recent_reference_count_dynamic": (
+                                    session_metrics.rolling_measurements.baseline.recent_reference_count_dynamic
+                                ),
+                                "minimum_recent_references": (
+                                    session_metrics.rolling_measurements.baseline.minimum_recent_references
+                                ),
+                                "phase_reference_count": (
+                                    session_metrics.rolling_measurements.baseline.phase_reference_count
+                                ),
+                                "phase_reference_count_minimum": (
+                                    session_metrics.rolling_measurements.baseline.phase_reference_count_minimum
+                                ),
+                                "phase_reference_count_maximum": (
+                                    session_metrics.rolling_measurements.baseline.phase_reference_count_maximum
+                                ),
+                                "phase_reference_count_step": (
+                                    session_metrics.rolling_measurements.baseline.phase_reference_count_step
+                                ),
+                                "phase_reference_count_dynamic": (
+                                    session_metrics.rolling_measurements.baseline.phase_reference_count_dynamic
+                                ),
+                                "minimum_phase_references": (
+                                    session_metrics.rolling_measurements.baseline.minimum_phase_references
+                                ),
+                            },
+                            "families": [
+                                {
+                                    "family_id": family.family_id,
+                                    "source_selector": family.source_selector,
+                                    "input_selector": family.input_selector,
+                                    "input_interval_seconds": family.input_interval_seconds,
+                                    "aggregation_policy": family.aggregation_policy,
+                                    "selected_context_candidate_id": (
+                                        family.selected_context_candidate_id
+                                    ),
+                                    "candidates": [
+                                        {
+                                            "candidate_id": candidate.candidate_id,
+                                            "purpose": candidate.purpose,
+                                            "duration_seconds": candidate.duration_seconds,
+                                            "minimum_duration_seconds": (
+                                                candidate.minimum_duration_seconds
+                                            ),
+                                            "maximum_duration_seconds": (
+                                                candidate.maximum_duration_seconds
+                                            ),
+                                            "duration_step_seconds": (
+                                                candidate.duration_step_seconds
+                                            ),
+                                            "dynamic": candidate.dynamic,
+                                            "active": candidate.active,
+                                        }
+                                        for candidate in family.candidates
+                                    ],
+                                }
+                                for family in session_metrics.rolling_measurements.families
+                            ],
+                        },
                     },
                 ),
             ),

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 import pytest
@@ -15,6 +15,7 @@ from markeitech.intelligence import (
     MetricRegistry,
     ParameterMutability,
 )
+from markeitech.intelligence.session import SessionCalendar, definition_from_config
 from markeitech.intelligence.session_measurements import (
     COMPLETED_BAR_CLOSE_METRIC_ID,
     COMPLETED_BAR_METRIC_IDS,
@@ -25,7 +26,73 @@ from markeitech.intelligence.session_measurements import (
     calculate_completed_bar_metrics,
     completed_bar_metric_definitions,
 )
-from markeitech.intelligence.session_metric_actor import _recalculation_contexts
+from markeitech.intelligence.session_metric_actor import (
+    _active_reference_attempt_ns,
+    _recalculation_contexts,
+)
+
+
+def _us_equities_calendar() -> SessionCalendar:
+    return SessionCalendar(
+        definition_from_config(
+            {
+                "calendar_id": "us_equities",
+                "provider_calendar": "NYSE",
+                "timezone": "America/New_York",
+                "schedule_version": "test-1",
+                "phases": [
+                    {
+                        "name": "OPEN",
+                        "start": "09:30",
+                        "end": "16:00",
+                        "start_day_offset": 0,
+                    },
+                ],
+                "overrides": [],
+            },
+        ),
+    )
+
+
+def _timestamp_ns(value: str) -> int:
+    return int(datetime.fromisoformat(value).astimezone(UTC).timestamp() * 1_000_000_000)
+
+
+def test_active_reference_waits_for_first_completed_selector_interval() -> None:
+    attempt_ns = _active_reference_attempt_ns(
+        _us_equities_calendar(),
+        "OPEN",
+        _timestamp_ns("2026-08-21T09:31:34-04:00"),
+        15 * 60 * 1_000_000_000,
+    )
+
+    assert attempt_ns == _timestamp_ns("2026-08-21T09:45:00-04:00") + 1_000_000
+
+
+def test_active_reference_is_immediately_eligible_after_completed_interval() -> None:
+    now_ns = _timestamp_ns("2026-08-21T09:46:00-04:00")
+
+    assert (
+        _active_reference_attempt_ns(
+            _us_equities_calendar(),
+            "OPEN",
+            now_ns,
+            15 * 60 * 1_000_000_000,
+        )
+        == now_ns
+    )
+
+
+def test_active_reference_is_not_scheduled_outside_primary_phase() -> None:
+    assert (
+        _active_reference_attempt_ns(
+            _us_equities_calendar(),
+            "OPEN",
+            _timestamp_ns("2026-08-21T08:00:00-04:00"),
+            15 * 60 * 1_000_000_000,
+        )
+        is None
+    )
 
 
 def _policy(**changes: object) -> CompletedBarCatalogPolicy:

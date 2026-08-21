@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import replace
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
-from nautilus_trader.model import ActorId, CustomData, DataType
+from nautilus_trader.model import ActorId, BarType, CustomData, DataType
 
 from markeitech.acquisition import (
     HISTORICAL_BATCH_TYPE_NAME,
@@ -44,6 +44,16 @@ from markeitech.intelligence.metrics import (
     MetricHealth,
     MetricRegistry,
 )
+from markeitech.intelligence.rolling_measurements import (
+    RollingBaselinePolicy,
+    RollingCandidatePolicy,
+    RollingCandidateResult,
+    RollingFamilyPolicy,
+    RollingMeasurementPolicy,
+    calculate_rolling_candidates,
+    rolling_metric_definitions,
+    rolling_metric_values,
+)
 from markeitech.intelligence.session import SessionCalendar, definition_from_config
 from markeitech.intelligence.session_measurements import (
     CompletedBarCatalogPolicy,
@@ -79,6 +89,25 @@ _DEMAND_RETRY_TIMER = "session-metrics-demand-retry"
 _EVIDENCE_RETRY_TIMER = "session-metrics-evidence-retry"
 _HISTORICAL_DEMAND_DELAY_NS = 1_000_000
 _HISTORICAL_DEMAND_ALERT = "session-metrics-historical-demand"
+_ACTIVE_REFERENCE_RETRY_ALERT = "session-metrics-active-reference-retry"
+_ACTIVE_REFERENCE_RETRY_DELAY_NS = 1_000_000
+
+
+def _active_reference_attempt_ns(
+    calendar: SessionCalendar,
+    phase: str,
+    timestamp_ns: int,
+    selector_interval_ns: int,
+) -> int | None:
+    if selector_interval_ns <= 0:
+        raise ValueError("selector interval must be positive")
+    snapshot = calendar.evaluate(timestamp_ns)
+    if snapshot.phase != phase or snapshot.phase_open_ns is None:
+        return None
+    completed_boundary_ns = timestamp_ns - (timestamp_ns % selector_interval_ns)
+    if snapshot.phase_open_ns < completed_boundary_ns:
+        return timestamp_ns
+    return completed_boundary_ns + selector_interval_ns + _ACTIVE_REFERENCE_RETRY_DELAY_NS
 
 
 class SessionMetricsActorConfig(DataActorConfig):
@@ -99,6 +128,7 @@ class SessionMetricsActorConfig(DataActorConfig):
         completed_bars: dict[str, object],
         session_references: dict[str, object],
         session_windows: dict[str, object],
+        rolling_measurements: dict[str, object],
         actor_id: str | ActorId = "SESSION-METRICS",
     ) -> SessionMetricsActorConfig:
         resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
@@ -118,6 +148,7 @@ class SessionMetricsActorConfig(DataActorConfig):
         obj.completed_bars = dict(completed_bars)
         obj.session_references = dict(session_references)
         obj.session_windows = dict(session_windows)
+        obj.rolling_measurements = dict(rolling_measurements)
         return obj
 
 
@@ -178,12 +209,16 @@ class SessionMetricsActor(DataActor):
         references = config.session_references
         self._references_enabled = bool(references["enabled"])
         self._reference_historical_selector = str(references["historical_selector"])
+        self._reference_interval_ns = BarType.from_str(
+            f"{self._instrument_ids[0]}-{self._reference_historical_selector}",
+        ).spec.get_interval_ns()
         self._reference_active_window = HistoricalWindow(str(references["active_window"]))
         self._reference_previous_window = HistoricalWindow(str(references["previous_window"]))
         self._reference_overnight_window = HistoricalWindow(str(references["overnight_window"]))
         self._reference_minimum_history = int(references["minimum_historical_observations"])
         self._reference_maximum_history = int(references["maximum_historical_observations"])
         self._reference_price_basis = str(references["vwap_price_basis"])
+        self._deferred_active_references: set[str] = set()
         reference_policy = SessionReferenceCatalogPolicy(
             live_selector=self._live_selector,
             historical_selector=self._reference_historical_selector,
@@ -257,6 +292,13 @@ class SessionMetricsActor(DataActor):
                         ),
                         maximum_output_age_ms=int(session_windows["maximum_output_age_ms"]),
                     )
+        rolling = config.rolling_measurements
+        self._rolling_policy = _rolling_policy(
+            rolling,
+            parameter_source=self._parameter_source,
+            priority=self._priority,
+        )
+        self._rolling_enabled = self._rolling_policy.enabled
         definitions = completed_bar_metric_definitions(policy)
         if self._references_enabled:
             definitions += session_reference_metric_definitions(reference_policy)
@@ -264,6 +306,8 @@ class SessionMetricsActor(DataActor):
             definitions += analytical_window_metric_definitions(
                 tuple(self._window_policies.values()),
             )
+        if self._rolling_enabled:
+            definitions += rolling_metric_definitions(self._rolling_policy)
         self._registry = MetricRegistry(definitions)
         self._port = NautilusSubscriptionPort(self)
         self._metric_type = DataType(METRIC_VALUE_TYPE_NAME)
@@ -307,9 +351,7 @@ class SessionMetricsActor(DataActor):
                 policy=self._window_policies[(profile_id, window_id)],
                 maximum_observations_per_session=max(
                     self._maximum_retained,
-                    self._window_policies[
-                        (profile_id, window_id)
-                    ].maximum_historical_observations,
+                    self._window_policies[(profile_id, window_id)].maximum_historical_observations,
                 ),
             )
             for instrument_id in self._instrument_ids
@@ -318,6 +360,7 @@ class SessionMetricsActor(DataActor):
             if candidate_profile_id == profile_id
         }
         self._window_signatures: dict[tuple[str, str], tuple[object, ...]] = {}
+        self._rolling_signatures: dict[tuple[str, str], tuple[object, ...]] = {}
         self._live_demand_ids = {
             instrument_id: f"metric:session:{instrument_id}:bars:{self._live_selector}"
             for instrument_id in self._instrument_ids
@@ -385,9 +428,7 @@ class SessionMetricsActor(DataActor):
         payload = data.data if isinstance(data, CustomData) else data
         if not isinstance(payload, HistoricalBatch):
             return
-        dependencies = {
-            dependency.consumer_id for dependency in payload.request.dependencies
-        }
+        dependencies = {dependency.consumer_id for dependency in payload.request.dependencies}
         if str(self.actor_id) not in dependencies:
             return
         if payload.request.instrument_id not in self._instrument_set:
@@ -408,6 +449,8 @@ class SessionMetricsActor(DataActor):
                     received_ns=payload.received_at_ns,
                     evidence_ref=f"historical:{payload.request.request_id}",
                 )
+            if self._rolling_enabled:
+                self._publish_rolling_metrics(payload.request.instrument_id)
         if (
             self._references_enabled
             and payload.request.selector == self._reference_historical_selector
@@ -440,6 +483,7 @@ class SessionMetricsActor(DataActor):
             _DEMAND_RETRY_TIMER,
             _EVIDENCE_RETRY_TIMER,
             _HISTORICAL_DEMAND_ALERT,
+            _ACTIVE_REFERENCE_RETRY_ALERT,
         ):
             if timer_name in self.clock.timer_names():
                 self.clock.cancel_timer(timer_name)
@@ -475,6 +519,8 @@ class SessionMetricsActor(DataActor):
             f" | reference_values={self._counts['reference_values']}"
             f" | window_batches={self._counts['window_batches']}"
             f" | window_values={self._counts['window_values']}"
+            f" | rolling_batches={self._counts['rolling_batches']}"
+            f" | rolling_values={self._counts['rolling_values']}"
             f" | failures={self._counts['failures']}",
         )
 
@@ -654,6 +700,60 @@ class SessionMetricsActor(DataActor):
             CompletedBarSource.LIVE_AGGREGATE,
         }:
             self._ingest_live_windows(bar)
+        if self._rolling_enabled and bar.source in {
+            CompletedBarSource.LIVE_NATIVE,
+            CompletedBarSource.LIVE_AGGREGATE,
+        }:
+            self._publish_rolling_metrics(bar.instrument_id)
+
+    def _publish_rolling_metrics(self, instrument_id: str) -> None:
+        bars = self._ledgers[instrument_id].bars
+        if not bars:
+            return
+        try:
+            calendar = self._calendars[self._instrument_calendars[instrument_id]]
+            latest_date = bars[-1].trade_date
+            phase_windows = calendar.windows(latest_date - timedelta(days=45), latest_date)
+            results = calculate_rolling_candidates(
+                bars,
+                phase_windows=phase_windows,
+                policy=self._rolling_policy,
+            )
+            pending: list[tuple[RollingCandidateResult, tuple[object, ...]]] = []
+            for result in results:
+                signature = _rolling_result_signature(result)
+                key = (instrument_id, f"{result.family_id}:{result.candidate_id}")
+                if self._rolling_signatures.get(key) == signature:
+                    continue
+                pending.append((result, signature))
+            if not pending:
+                return
+            self._revisions[instrument_id] += 1
+            now_ns = max(self.clock.timestamp_ns(), bars[-1].normalized_ts_ns)
+            for result, signature in pending:
+                values = rolling_metric_values(
+                    result,
+                    registry=self._registry,
+                    parameter_version=self._parameter_version,
+                    calculated_ts_ns=now_ns,
+                    published_ts_ns=now_ns,
+                    source=str(self.actor_id),
+                    revision=self._revisions[instrument_id],
+                )
+                for value in values:
+                    self.publish_data(self._metric_type, CustomData(self._metric_type, value))
+                self._rolling_signatures[
+                    (instrument_id, f"{result.family_id}:{result.candidate_id}")
+                ] = signature
+                self._counts["rolling_values"] += len(values)
+            self._counts["rolling_batches"] += 1
+        except (ValueError, ArithmeticError, InvalidOperation) as exc:
+            self._counts["failures"] += 1
+            self.log.error(
+                "ROLLING_MEASUREMENT_REJECTED"
+                f" | instrument_id={instrument_id}"
+                f" | error={type(exc).__name__} | reason={exc}",
+            )
 
     def _attach_consumers(self) -> None:
         for instrument_id in self._instrument_ids:
@@ -692,6 +792,7 @@ class SessionMetricsActor(DataActor):
 
     def _publish_historical_demands(self, _event) -> None:  # noqa: ANN001
         now_ns = self.clock.timestamp_ns()
+        active_retry_ns: int | None = None
         for instrument_id in self._instrument_ids:
             demand = HistoricalDependencyDemandEvent(
                 demand_id=self._historical_demand_ids[instrument_id],
@@ -719,10 +820,14 @@ class SessionMetricsActor(DataActor):
                 for role in SessionReferenceRole:
                     if (instrument_id, role) not in self._reference_demand_ids:
                         continue
-                    if role is SessionReferenceRole.ACTIVE and not self._primary_phase_is_open(
-                        instrument_id,
-                        now_ns,
-                    ):
+                    if role is SessionReferenceRole.ACTIVE:
+                        retry_ns = self._request_active_reference(instrument_id, now_ns)
+                        if retry_ns is not None:
+                            active_retry_ns = (
+                                retry_ns
+                                if active_retry_ns is None
+                                else min(active_retry_ns, retry_ns)
+                            )
                         continue
                     self.publish_signal(
                         HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
@@ -736,6 +841,66 @@ class SessionMetricsActor(DataActor):
                         HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
                         self._window_demand(instrument_id, window_id, now_ns).to_signal_value(),
                     )
+        if active_retry_ns is not None:
+            self._schedule_active_reference_retry(active_retry_ns)
+
+    def _request_active_reference(self, instrument_id: str, now_ns: int) -> int | None:
+        capability_id = f"metric:session-reference:{SessionReferenceRole.ACTIVE.value}"
+        if self._historical_readiness.get(f"{instrument_id}:{capability_id}") == "READY":
+            self._deferred_active_references.discard(instrument_id)
+            return None
+        profile = self._profiles[self._profile_bindings[instrument_id]]
+        calendar = self._calendars[str(profile["calendar_id"])]
+        attempt_ns = _active_reference_attempt_ns(
+            calendar,
+            str(profile["primary_phase"]),
+            now_ns,
+            self._reference_interval_ns,
+        )
+        if attempt_ns is None:
+            self._deferred_active_references.discard(instrument_id)
+            return None
+        if attempt_ns > now_ns:
+            self._deferred_active_references.add(instrument_id)
+            return attempt_ns
+        self._deferred_active_references.discard(instrument_id)
+        self.publish_signal(
+            HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
+            self._reference_demand(
+                instrument_id,
+                SessionReferenceRole.ACTIVE,
+                now_ns,
+            ).to_signal_value(),
+        )
+        return None
+
+    def _schedule_active_reference_retry(self, retry_at_ns: int) -> None:
+        if _ACTIVE_REFERENCE_RETRY_ALERT in self.clock.timer_names():
+            self.clock.cancel_timer(_ACTIVE_REFERENCE_RETRY_ALERT)
+        self.clock.set_time_alert_ns(
+            _ACTIVE_REFERENCE_RETRY_ALERT,
+            retry_at_ns,
+            callback=self._retry_active_references,
+        )
+        self.log.info(
+            "SESSION_REFERENCE_RETRY_SCHEDULED"
+            f" | pending={len(self._deferred_active_references)}"
+            f" | retry_at_ns={retry_at_ns}",
+        )
+
+    def _retry_active_references(self, _event) -> None:  # noqa: ANN001
+        now_ns = self.clock.timestamp_ns()
+        pending = tuple(sorted(self._deferred_active_references))
+        self._deferred_active_references.clear()
+        next_retry_ns: int | None = None
+        for instrument_id in pending:
+            retry_ns = self._request_active_reference(instrument_id, now_ns)
+            if retry_ns is not None:
+                next_retry_ns = (
+                    retry_ns if next_retry_ns is None else min(next_retry_ns, retry_ns)
+                )
+        if next_retry_ns is not None:
+            self._schedule_active_reference_retry(next_retry_ns)
 
     def _process_reference_batch(self, batch: HistoricalBatch) -> None:
         role = self._reference_role(batch)
@@ -1221,6 +1386,7 @@ class SessionMetricsActor(DataActor):
         if not self._references_enabled or event.phase == "CLOSED":
             return
         now_ns = self.clock.timestamp_ns()
+        active_retry_ns: int | None = None
         for instrument_id in self._instrument_ids:
             profile = self._profiles[self._profile_bindings[instrument_id]]
             if (
@@ -1228,17 +1394,13 @@ class SessionMetricsActor(DataActor):
                 or str(profile["primary_phase"]) != event.phase
             ):
                 continue
-            capability_id = f"metric:session-reference:{SessionReferenceRole.ACTIVE.value}"
-            if self._historical_readiness.get(f"{instrument_id}:{capability_id}") == "READY":
-                continue
-            self.publish_signal(
-                HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
-                self._reference_demand(
-                    instrument_id,
-                    SessionReferenceRole.ACTIVE,
-                    now_ns,
-                ).to_signal_value(),
-            )
+            retry_ns = self._request_active_reference(instrument_id, now_ns)
+            if retry_ns is not None:
+                active_retry_ns = (
+                    retry_ns if active_retry_ns is None else min(active_retry_ns, retry_ns)
+                )
+        if active_retry_ns is not None:
+            self._schedule_active_reference_retry(active_retry_ns)
 
     def _observe_evidence(self, value: str) -> None:
         try:
@@ -1278,6 +1440,97 @@ class SessionMetricsActor(DataActor):
             purpose="calculate completed-bar foundation metrics",
             priority=self._priority,
         )
+
+
+def _rolling_policy(
+    raw: dict[str, object],
+    *,
+    parameter_source: str,
+    priority: int,
+) -> RollingMeasurementPolicy:
+    baseline = dict(raw["baseline"])  # type: ignore[arg-type]
+    families = tuple(
+        RollingFamilyPolicy(
+            family_id=str(family["family_id"]),
+            source_selector=str(family["source_selector"]),
+            input_selector=str(family["input_selector"]),
+            input_interval_seconds=int(family["input_interval_seconds"]),
+            aggregation_policy=str(family["aggregation_policy"]),
+            selected_context_candidate_id=str(family["selected_context_candidate_id"]),
+            candidates=tuple(
+                RollingCandidatePolicy(
+                    candidate_id=str(candidate["candidate_id"]),
+                    purpose=str(candidate["purpose"]),
+                    duration_seconds=int(candidate["duration_seconds"]),
+                    minimum_duration_seconds=int(candidate["minimum_duration_seconds"]),
+                    maximum_duration_seconds=int(candidate["maximum_duration_seconds"]),
+                    duration_step_seconds=int(candidate["duration_step_seconds"]),
+                    dynamic=bool(candidate["dynamic"]),
+                    active=bool(candidate["active"]),
+                )
+                for candidate in family["candidates"]  # type: ignore[union-attr]
+            ),
+        )
+        for family in raw["families"]  # type: ignore[union-attr]
+    )
+    return RollingMeasurementPolicy(
+        enabled=bool(raw["enabled"]),
+        minimum_coverage_ratio=float(raw["minimum_coverage_ratio"]),
+        minimum_coverage_ratio_floor=float(raw["minimum_coverage_ratio_floor"]),
+        minimum_coverage_ratio_ceiling=float(raw["minimum_coverage_ratio_ceiling"]),
+        minimum_coverage_ratio_step=float(raw["minimum_coverage_ratio_step"]),
+        minimum_coverage_ratio_dynamic=bool(raw["minimum_coverage_ratio_dynamic"]),
+        maximum_retained_observations=int(raw["maximum_retained_observations"]),
+        maximum_output_age_ms=int(raw["maximum_output_age_ms"]),
+        baseline=RollingBaselinePolicy(
+            eligible_reference_health=tuple(
+                MetricHealth(str(value)) for value in baseline["eligible_reference_health"]
+            ),
+            eligible_reference_fidelities=tuple(
+                MetricFidelity(str(value))
+                for value in baseline["eligible_reference_fidelities"]
+            ),
+            recent_reference_count=int(baseline["recent_reference_count"]),
+            recent_reference_count_minimum=int(baseline["recent_reference_count_minimum"]),
+            recent_reference_count_maximum=int(baseline["recent_reference_count_maximum"]),
+            recent_reference_count_step=int(baseline["recent_reference_count_step"]),
+            recent_reference_count_dynamic=bool(baseline["recent_reference_count_dynamic"]),
+            minimum_recent_references=int(baseline["minimum_recent_references"]),
+            phase_reference_count=int(baseline["phase_reference_count"]),
+            phase_reference_count_minimum=int(baseline["phase_reference_count_minimum"]),
+            phase_reference_count_maximum=int(baseline["phase_reference_count_maximum"]),
+            phase_reference_count_step=int(baseline["phase_reference_count_step"]),
+            phase_reference_count_dynamic=bool(baseline["phase_reference_count_dynamic"]),
+            minimum_phase_references=int(baseline["minimum_phase_references"]),
+        ),
+        families=families,
+        parameter_source=parameter_source,
+        priority=priority,
+    )
+
+
+def _rolling_result_signature(result: RollingCandidateResult) -> tuple[object, ...]:
+    return (
+        result.effective_ts_ns,
+        result.price_range,
+        result.realized_log_return_magnitude,
+        result.average_true_range,
+        result.directional_efficiency,
+        result.coverage_ratio,
+        result.expansion_ratio_recent,
+        result.range_percentile_recent,
+        result.recent_reference_count,
+        result.expansion_ratio_phase,
+        result.range_percentile_phase,
+        result.phase_reference_count,
+        result.current_health,
+        result.recent_health,
+        result.phase_health,
+        result.fidelity,
+        result.current_missing_reasons,
+        result.recent_missing_reasons,
+        result.phase_missing_reasons,
+    )
 
 
 def _decimal(value: object) -> Decimal:

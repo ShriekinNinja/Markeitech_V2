@@ -1,8 +1,8 @@
 # V2 Stage 9C Session Measurements Plan
 
-**Status:** Slices 1-3 accepted; Slice 4 implemented for local review
+**Status:** Slices 1-4 accepted; Slice 5 implemented for local review
 
-**Branch:** `v2-stage-9c-session-windows`
+**Branch:** `v2-stage-9c-rolling-measurements`
 
 ## Purpose
 
@@ -501,8 +501,10 @@ identity, lifecycle, commit-before-publication, and restart contract is approved
 
 ### Accepted Slice 2 Preflight Policies
 
-- Completed-bar foundation warmup requests two observations and may request at most four. This is
-  the real request envelope, not a placeholder budget.
+- Completed-bar foundation warmup originally requested two observations and at most four for Slice
+  2 acceptance. Slice 5 expands the same bounded request to at most 720 one-minute observations so
+  the longest current candidate can warm; baselines remain independently `WARMING` until their
+  configured eligible reference count exists.
 - Historical and live observations share one semantic interval identity.
 - The first accepted completed interval is preserved. An unequal later copy is rejected as a
   conflict, degrades affected evidence, and produces an operational audit event.
@@ -599,7 +601,7 @@ did not block unrelated work.
 
 **Gate:** windows match authoritative calendar boundaries, including early closes.
 
-**Implementation status:** implemented for local review. Each analytical profile may declare zero
+**Implementation status:** locally accepted. Each analytical profile may declare zero
 or more independently named calendar-relative windows with its own purpose, anchor phase/boundary,
 offset, duration envelope, dynamic eligibility, historical selector, and bounded observation
 envelope. The family policy separately owns price basis, coverage envelope, retention, and output
@@ -626,6 +628,32 @@ transient; PostgreSQL continues to receive only dependency and runtime lifecycle
 - Keep semantic classifications out.
 
 **Gate:** outputs match independent fixtures and remain stable under missing/late data.
+
+**Implementation status:** implemented for local review. The runtime defines three independently
+configured families: fast one-minute inputs, tactical five-minute inputs, and structural-intraday
+fifteen-minute inputs. The latter two are derived only from complete UTC-fixed one-minute buckets;
+their lineage distinguishes historical-only aggregation from any aggregation containing live bars.
+The current configuration keeps four context and four expansion candidates active per family, for
+24 candidates and 264 versioned metric definitions. Selected context candidates are metadata only;
+all active candidates are calculated concurrently and no winner is promoted into a semantic state.
+
+Each candidate publishes price range, realized log-return magnitude, average true range,
+directional efficiency, and time coverage. Expansion is compared independently with recent
+non-overlapping equal-duration windows and authoritative phase-matched windows at the same elapsed
+phase offset. Both baseline families publish their eligible reference count, median-relative ratio,
+midrank percentile, health, and explicit missing reasons. A zero median yields an unavailable ratio
+rather than division or an invented value. Missing phase history cannot degrade an otherwise valid
+current or recent measurement.
+
+Candidate durations, duration bounds and steps, dynamic eligibility, recent and phase reference
+counts, minimum eligible counts, coverage threshold, retention, output age, selectors, and
+aggregation policy are configuration-owned and strictly validated. The completed-bar warmup is
+bounded at 720 one-minute observations so the current 12-hour intraday candidate can warm without a
+new provider request family. This is a purpose-specific initial envelope, not a rule that all future
+measurements must derive from one-minute history. The transient completed-bar ledger is bounded at
+8,000 observations, which startup validation proves can satisfy the minimum recent-reference count
+for the longest active candidate if enough evidence arrives. Reference eligibility is explicitly
+configured by coverage, health, and fidelity. Raw bars and numerical values remain transient.
 
 ### Slice 6: Live Acceptance And Stage Closure
 

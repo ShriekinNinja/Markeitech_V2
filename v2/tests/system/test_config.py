@@ -196,6 +196,50 @@ minimum_coverage_ratio_dynamic = true
 maximum_retained_sessions = 4
 maximum_output_age_ms = 120000
 
+[metrics.session_measurements.rolling_measurements]
+enabled = true
+minimum_coverage_ratio = 0.9
+minimum_coverage_ratio_floor = 0.7
+minimum_coverage_ratio_ceiling = 1.0
+minimum_coverage_ratio_step = 0.05
+minimum_coverage_ratio_dynamic = true
+maximum_retained_observations = 500
+maximum_output_age_ms = 120000
+
+[metrics.session_measurements.rolling_measurements.baseline]
+eligible_reference_health = ["READY"]
+eligible_reference_fidelities = ["REPORTED", "DERIVED"]
+recent_reference_count = 8
+recent_reference_count_minimum = 8
+recent_reference_count_maximum = 64
+recent_reference_count_step = 1
+recent_reference_count_dynamic = true
+minimum_recent_references = 8
+phase_reference_count = 5
+phase_reference_count_minimum = 5
+phase_reference_count_maximum = 30
+phase_reference_count_step = 1
+phase_reference_count_dynamic = true
+minimum_phase_references = 5
+
+[[metrics.session_measurements.rolling_measurements.families]]
+family_id = "fast"
+source_selector = "1-MINUTE-LAST-EXTERNAL"
+input_selector = "1-MINUTE-LAST-EXTERNAL"
+input_interval_seconds = 60
+aggregation_policy = "identity"
+selected_context_candidate_id = "context_1m"
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_1m"
+purpose = "context"
+duration_seconds = 60
+minimum_duration_seconds = 60
+maximum_duration_seconds = 600
+duration_step_seconds = 60
+dynamic = true
+active = true
+
 [[metrics.session_measurements.profiles]]
 profile_id = "cme_equity_primary"
 version = 1
@@ -305,6 +349,21 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     )
     assert config.metrics.session_measurements.session_references.minimum_coverage_ratio == 0.8
     assert config.metrics.session_measurements.session_windows.minimum_coverage_ratio == 0.8
+    assert config.metrics.session_measurements.rolling_measurements.enabled is True
+    assert (
+        config.metrics.session_measurements.rolling_measurements.baseline.recent_reference_count
+        == 8
+    )
+    assert (
+        config.metrics.session_measurements.rolling_measurements.baseline.eligible_reference_health
+        == ("READY",)
+    )
+    assert (
+        config.metrics.session_measurements.rolling_measurements.families[
+            0
+        ].selected_context_candidate_id
+        == "context_1m"
+    )
     assert config.metrics.session_measurements.parameter_source == "operator-reviewed-config"
     assert config.metrics.session_measurements.parameter_effective_from_ns > 0
     assert config.metrics.session_measurements.profiles[0].profile_id == "cme_equity_primary"
@@ -316,9 +375,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         == "1-MINUTE-LAST-EXTERNAL"
     )
     assert (
-        config.metrics.session_measurements.profiles[0]
-        .windows[1]
-        .maximum_historical_observations
+        config.metrics.session_measurements.profiles[0].windows[1].maximum_historical_observations
         == 4
     )
     assert config.instrument_ids == ("ESU6.CME",)
@@ -567,6 +624,35 @@ def test_rejects_session_measurement_interval_outside_optimization_envelope(
     )
 
     with pytest.raises(ValueError, match="outside its configured envelope"):
+        load_system_config(path)
+
+
+def test_rejects_rolling_retention_that_cannot_satisfy_recent_baseline(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            "[metrics.session_measurements.rolling_measurements]\n"
+            "enabled = true\n"
+            "minimum_coverage_ratio = 0.9\n"
+            "minimum_coverage_ratio_floor = 0.7\n"
+            "minimum_coverage_ratio_ceiling = 1.0\n"
+            "minimum_coverage_ratio_step = 0.05\n"
+            "minimum_coverage_ratio_dynamic = true\n"
+            "maximum_retained_observations = 500",
+            "[metrics.session_measurements.rolling_measurements]\n"
+            "enabled = true\n"
+            "minimum_coverage_ratio = 0.9\n"
+            "minimum_coverage_ratio_floor = 0.7\n"
+            "minimum_coverage_ratio_ceiling = 1.0\n"
+            "minimum_coverage_ratio_step = 0.05\n"
+            "minimum_coverage_ratio_dynamic = true\n"
+            "maximum_retained_observations = 8",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="cannot satisfy.*minimum recent"):
         load_system_config(path)
 
 

@@ -176,8 +176,10 @@ provider-neutral contract are documented in
       timeframe or automatic resolution pyramid is permitted. Follow the reviewed plan in
       [`v2-stage-9c-session-measurements-plan.md`](v2-stage-9c-session-measurements-plan.md).
       Slices 1-2 are enabled and live-accepted. Slice 3 session references are locally accepted at
-      `8696acf`. Slice 4 opening-range and power-hour measurements are implemented for local
-      review; later slices and connected acceptance remain open.
+      `8696acf`, and Slice 4 opening-range and power-hour measurements are locally accepted. Slice 5
+      rolling numerical measurements are implemented for local review with configuration-owned
+      one-, five-, and fifteen-minute families, bounded recent and phase-matched baselines, and no
+      semantic classifications. Connected acceptance and stage closure remain open.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.
