@@ -152,7 +152,9 @@ Build only the foundation metrics needed by several later decisions:
 - compression/expansion state.
 
 Each metric contract must state inputs, cadence, warmup, units, nullability, retained state,
-fidelity, and failure behavior.
+formula, normalization, applicability, expected and allowed fidelity, failure modes, priority,
+parameter provenance, and failure behavior. Requirement-to-stage coverage is tracked in
+[V2 Market-Specialist Requirements Traceability](v2-market-specialist-requirements-traceability.md).
 
 **Exit:** live values match an independent operator reference and remain bounded in memory.
 

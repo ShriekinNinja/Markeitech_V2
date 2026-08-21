@@ -125,6 +125,25 @@ concepts without symbol-specific code.
 - valid instrument classes or explicit capability scope; and
 - exceptional-session behavior.
 
+### Profile binding
+
+Every instrument selected by an enabled measurement family must resolve to exactly one configured
+analytical profile. Stage 9C uses explicit instrument bindings; it does not infer analytical meaning
+from an exchange name or silently fall back to a calendar-day boundary.
+
+Validation precedence and future extension are:
+
+1. exact instrument binding;
+2. a later explicitly configured group binding;
+3. a later explicitly configured instrument-class binding; and
+4. no match is a rejected capability, never a guessed profile.
+
+The current startup configuration uses the first form. A future dynamic Watchlist-add intent must
+include or policy-resolve an approved profile before session measurements may admit that instrument.
+The instrument calendar and profile calendar must match. Separate profiles may share one calendar
+when their analytical semantics differ; the initial configuration uses this to keep US equity/ETF
+volume support separate from SPX/VIX index volume non-support.
+
 ### Parameter metadata
 
 Every variable parameter must declare:
@@ -174,6 +193,12 @@ precision. Existing live five-second IB bars may be aggregated to that interval,
 historical one-minute bars may satisfy the same declared dependency. Both paths produce the same
 internal `CompletedBarInput` contract. This choice does not require prior-day, daily, weekly, or
 other measurements to use one-minute history.
+
+The first aggregation boundary policy is explicitly `utc_fixed_intraday`. It permits only fixed
+intraday intervals which divide a UTC day exactly and is intended for paths such as five-second to
+one-minute aggregation. It is not valid for daily, weekly, RTH, Globex, exchange-local, or
+session-anchored aggregation. Those measurements must declare a provider-native dependency or a
+separate reviewed boundary policy.
 
 Whenever direct provider bars and locally aggregated bars can represent the same requested
 measurement, acceptance requires an equivalence fixture comparing interval identity, session
@@ -366,6 +391,22 @@ overlap conflicts, rejected corrections, resource failures, and configuration/al
 PostgreSQL does not yet record raw bars, every completed-bar metric, every running session update,
 or the prior-session/power-hour durable summary. The compact summary belongs to Stage 9D after its
 identity, lifecycle, commit-before-publication, and restart contract is approved.
+
+### Accepted Slice 2 Preflight Policies
+
+- Completed-bar foundation warmup requests two observations and may request at most four. This is
+  the real request envelope, not a placeholder budget.
+- Historical and live observations share one semantic interval identity.
+- The first accepted completed interval is preserved. An unequal later copy is rejected as a
+  conflict, degrades affected evidence, and produces an operational audit event.
+- Provider bar revisions are unsupported in this stage and are rejected; the IB adapter remains
+  configured with revised-bar handling disabled.
+- Metric definitions carry formula, normalization, applicability, known failure modes, priority,
+  expected fidelity, and allowed runtime fidelities.
+- Parameter source, version, and explicit UTC effective time are configuration-owned and must be
+  copied into future `MetricParameterSet` and `MetricValue` publication.
+- Native provider bars may honestly produce `REPORTED` values; validated local aggregation produces
+  `DERIVED`; incomplete/degraded paths may produce only declared `PARTIAL` or `UNAVAILABLE` values.
 
 ## Failure Isolation And Recovery
 

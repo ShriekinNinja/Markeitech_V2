@@ -184,6 +184,9 @@ class MetricDefinition:
     version: int
     decision_question: str
     implementation_id: str
+    formula: str
+    normalization: str
+    applicability: str
     value_kind: MetricValueKind
     unit: str
     cadence: MetricCadence
@@ -191,7 +194,10 @@ class MetricDefinition:
     nullable: bool
     retained_state: MetricRetainedState
     fidelity: MetricFidelity
+    allowed_fidelities: tuple[MetricFidelity, ...]
     failure_behavior: MetricFailureBehavior
+    failure_modes: tuple[str, ...]
+    priority: int
     warmup: MetricWarmupPolicy
     resources: MetricResourcePolicy
     live_inputs: tuple[CapabilityFeedRequirement, ...] = ()
@@ -201,7 +207,16 @@ class MetricDefinition:
     event_uses: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        for field in ("metric_id", "decision_question", "implementation_id", "unit", "horizon"):
+        for field in (
+            "metric_id",
+            "decision_question",
+            "implementation_id",
+            "formula",
+            "normalization",
+            "applicability",
+            "unit",
+            "horizon",
+        ):
             object.__setattr__(self, field, _required_text(getattr(self, field), field))
         _positive_int(self.version, "version")
         if not isinstance(self.value_kind, MetricValueKind):
@@ -212,8 +227,24 @@ class MetricDefinition:
             raise ValueError("retained_state must be a MetricRetainedState")
         if not isinstance(self.fidelity, MetricFidelity):
             raise ValueError("fidelity must be a MetricFidelity")
+        _typed_tuple(self.allowed_fidelities, MetricFidelity, "allowed_fidelities")
+        if not self.allowed_fidelities:
+            raise ValueError("allowed_fidelities must not be empty")
+        if self.fidelity not in self.allowed_fidelities:
+            raise ValueError("expected fidelity must be included in allowed_fidelities")
+        _unique(self.allowed_fidelities, "allowed fidelity")
         if not isinstance(self.failure_behavior, MetricFailureBehavior):
             raise ValueError("failure_behavior must be a MetricFailureBehavior")
+        object.__setattr__(
+            self,
+            "failure_modes",
+            _text_tuple(self.failure_modes, "failure mode"),
+        )
+        if not self.failure_modes:
+            raise ValueError("failure_modes must not be empty")
+        _non_negative_int(self.priority, "priority")
+        if self.priority > 100:
+            raise ValueError("priority must not exceed 100")
         if not isinstance(self.nullable, bool):
             raise ValueError("nullable must be a boolean")
         if self.failure_behavior is MetricFailureBehavior.EMIT_NULL and not self.nullable:
@@ -389,10 +420,7 @@ class MetricRegistry:
         definition = self.get(value.metric_id, value.metric_version)
         if value.unit != definition.unit:
             raise ValueError("metric value unit does not match its definition")
-        if value.fidelity is not definition.fidelity and value.fidelity not in {
-            MetricFidelity.PARTIAL,
-            MetricFidelity.UNAVAILABLE,
-        }:
+        if value.fidelity not in definition.allowed_fidelities:
             raise ValueError("metric value fidelity is incompatible with its definition")
         if value.value is None:
             if not definition.nullable:

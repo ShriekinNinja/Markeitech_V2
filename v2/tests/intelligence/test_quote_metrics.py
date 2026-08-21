@@ -26,6 +26,7 @@ def _registry() -> MetricRegistry:
             QuoteMetricCatalogPolicy(
                 minimum_update_interval_ms=100,
                 maximum_output_age_ms=5_000,
+                priority=50,
             ),
         ),
     )
@@ -67,6 +68,7 @@ def test_catalog_requires_explicit_resource_policy() -> None:
         QuoteMetricCatalogPolicy(
             minimum_update_interval_ms=250,
             maximum_output_age_ms=10_000,
+            priority=40,
         ),
     )
 
@@ -78,6 +80,7 @@ def test_catalog_requires_explicit_resource_policy() -> None:
     assert all(item.parameters == () for item in definitions)
     assert all(item.resources.minimum_update_interval_ms == 250 for item in definitions)
     assert all(item.resources.maximum_output_age_ms == 10_000 for item in definitions)
+    assert all(item.priority == 40 for item in definitions)
     assert all(item.acquisition_capability() is not None for item in definitions)
 
 
@@ -94,7 +97,7 @@ def test_catalog_policy_rejects_invalid_bounds(
     message: str,
 ) -> None:
     with pytest.raises(ValueError, match=message):
-        QuoteMetricCatalogPolicy(minimum_update_interval_ms, maximum_output_age_ms)
+        QuoteMetricCatalogPolicy(minimum_update_interval_ms, maximum_output_age_ms, 50)
 
 
 def test_healthy_two_sided_quote_produces_exact_decimal_metrics() -> None:
@@ -161,8 +164,7 @@ def test_unusable_evidence_preserves_quote_completeness_reasons() -> None:
     values = _calculate(_quote(bid=None, evidence_state="STALE"))
 
     assert all(
-        value.missing_reasons == ("evidence_stale", "bid_missing")
-        for value in values.values()
+        value.missing_reasons == ("evidence_stale", "bid_missing") for value in values.values()
     )
 
 

@@ -41,6 +41,7 @@ _NULL_HEALTH_BY_EVIDENCE_STATE = {
 class QuoteMetricCatalogPolicy:
     minimum_update_interval_ms: int
     maximum_output_age_ms: int
+    priority: int
 
     def __post_init__(self) -> None:
         if (
@@ -55,6 +56,10 @@ class QuoteMetricCatalogPolicy:
             or self.maximum_output_age_ms <= 0
         ):
             raise ValueError("maximum_output_age_ms must be a positive integer")
+        if not isinstance(self.priority, int) or isinstance(self.priority, bool):
+            raise ValueError("priority must be an integer")
+        if not 0 <= self.priority <= 100:
+            raise ValueError("priority must be between 0 and 100")
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,12 +100,25 @@ def quote_metric_definitions(policy: QuoteMetricCatalogPolicy) -> tuple[MetricDe
     input_requirement = CapabilityFeedRequirement(kind=FeedKind.QUOTES)
     common = {
         "version": 1,
+        "normalization": "none",
+        "applicability": "instruments with a valid two-sided top-of-book quote",
         "cadence": MetricCadence.OBSERVATION,
         "horizon": "current top-of-book observation",
         "nullable": True,
         "retained_state": MetricRetainedState.LATEST,
         "fidelity": MetricFidelity.DERIVED,
+        "allowed_fidelities": (
+            MetricFidelity.DERIVED,
+            MetricFidelity.PARTIAL,
+            MetricFidelity.UNAVAILABLE,
+        ),
         "failure_behavior": MetricFailureBehavior.EMIT_NULL,
+        "failure_modes": (
+            "missing bid or ask",
+            "crossed or non-positive quote",
+            "stale or unavailable quote evidence",
+        ),
+        "priority": policy.priority,
         "warmup": MetricWarmupPolicy(
             minimum_observations=1,
             minimum_elapsed_ns=0,
@@ -118,6 +136,7 @@ def quote_metric_definitions(policy: QuoteMetricCatalogPolicy) -> tuple[MetricDe
             metric_id=QUOTE_MIDPOINT_METRIC_ID,
             decision_question="What is the center of the current valid two-sided quote?",
             implementation_id="markeitech.quote.midpoint.v1",
+            formula="(bid + ask) / 2",
             value_kind=MetricValueKind.NUMBER,
             unit="price",
             **common,
@@ -126,6 +145,7 @@ def quote_metric_definitions(policy: QuoteMetricCatalogPolicy) -> tuple[MetricDe
             metric_id=QUOTE_ABSOLUTE_SPREAD_METRIC_ID,
             decision_question="How wide is the current valid quote in price units?",
             implementation_id="markeitech.quote.absolute_spread.v1",
+            formula="ask - bid",
             value_kind=MetricValueKind.NUMBER,
             unit="price",
             **common,
@@ -134,6 +154,7 @@ def quote_metric_definitions(policy: QuoteMetricCatalogPolicy) -> tuple[MetricDe
             metric_id=QUOTE_RELATIVE_SPREAD_METRIC_ID,
             decision_question="How wide is the current valid quote relative to its midpoint?",
             implementation_id="markeitech.quote.relative_spread.v1",
+            formula="(ask - bid) / midpoint",
             value_kind=MetricValueKind.NUMBER,
             unit="ratio",
             **common,
@@ -180,13 +201,9 @@ def calculate_quote_metrics(
         assert quote.ask is not None
         midpoint = (quote.bid + quote.ask) / Decimal(2)
         spread = quote.ask - quote.bid
-        health = (
-            MetricHealth.READY if quote.evidence_state == "HEALTHY" else MetricHealth.DEGRADED
-        )
+        health = MetricHealth.READY if quote.evidence_state == "HEALTHY" else MetricHealth.DEGRADED
         fidelity = (
-            MetricFidelity.DERIVED
-            if quote.evidence_state == "HEALTHY"
-            else MetricFidelity.PARTIAL
+            MetricFidelity.DERIVED if quote.evidence_state == "HEALTHY" else MetricFidelity.PARTIAL
         )
         calculated = (midpoint, spread, spread / midpoint)
         results = tuple(

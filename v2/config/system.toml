@@ -1,4 +1,4 @@
-schema_version = 10
+schema_version = 11
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -221,8 +221,10 @@ priority = 50
 enabled = false
 required_watchlist_capability = "watchlist_last"
 parameter_version = 1
+parameter_source = "operator-reviewed-config"
+parameter_effective_from = "2026-08-20T00:00:00Z"
 conflict_policy = "reject_conflict"
-maximum_active_sessions = 3
+maximum_active_sessions = 4
 demand_retry_interval_ms = 1000
 evidence_snapshot_retry_interval_ms = 1000
 priority = 40
@@ -232,12 +234,14 @@ live_selector = "5-SECOND-LAST-EXTERNAL"
 historical_selector = "1-MINUTE-LAST-EXTERNAL"
 historical_window = "recent_completed"
 minimum_historical_observations = 2
-maximum_historical_observations = 2000
+maximum_historical_observations = 4
 calculation_interval_seconds = 60
 minimum_interval_seconds = 5
 maximum_interval_seconds = 3600
 interval_step_seconds = 5
 interval_dynamic = true
+aggregation_boundary_policy = "utc_fixed_intraday"
+revision_policy = "reject_revision"
 maximum_retained_observations = 5000
 maximum_output_age_ms = 120000
 
@@ -283,6 +287,59 @@ minimum_duration_seconds = 1800
 maximum_duration_seconds = 7200
 duration_step_seconds = 300
 dynamic = true
+
+[[metrics.session_measurements.profiles]]
+profile_id = "cme_energy_primary"
+version = 1
+calendar_id = "cme_energy"
+primary_phase = "OPEN"
+volume_supported = true
+windows = []
+
+[[metrics.session_measurements.profiles]]
+profile_id = "us_equity_primary"
+version = 1
+calendar_id = "us_equities"
+primary_phase = "OPEN"
+volume_supported = true
+windows = []
+
+[[metrics.session_measurements.profiles]]
+profile_id = "us_index_primary"
+version = 1
+calendar_id = "us_equities"
+primary_phase = "OPEN"
+volume_supported = false
+windows = []
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "cme_equity_primary"
+instrument_ids = ["ESU6.CME", "NQU6.CME", "YMU6.CBOT"]
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "cme_energy_primary"
+instrument_ids = ["CLU6.NYMEX"]
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "us_equity_primary"
+instrument_ids = [
+  "SPY.ARCA",
+  "QQQ.NASDAQ",
+  "NVDA.NASDAQ",
+  "AAPL.NASDAQ",
+  "GOOGL.NASDAQ",
+  "MSFT.NASDAQ",
+  "AMZN.NASDAQ",
+  "TSM.NYSE",
+  "AVGO.NASDAQ",
+  "SPCX.NASDAQ",
+  "META.NASDAQ",
+  "TSLA.NASDAQ",
+]
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "us_index_primary"
+instrument_ids = ["^SPX.CBOE", "^VIX.CBOE"]
 
 [watchlist]
 consumer_retry_interval_ms = 1000

@@ -52,11 +52,21 @@ class CompletedBarCatalogPolicy:
     maximum_interval_seconds: int
     interval_step_seconds: int
     interval_dynamic: bool
+    aggregation_boundary_policy: str
+    revision_policy: str
+    parameter_source: str
+    priority: int
     maximum_retained_observations: int
     maximum_output_age_ms: int
 
     def __post_init__(self) -> None:
-        for field in ("live_selector", "historical_selector"):
+        for field in (
+            "live_selector",
+            "historical_selector",
+            "aggregation_boundary_policy",
+            "revision_policy",
+            "parameter_source",
+        ):
             value = getattr(self, field)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"{field} must be a non-empty string")
@@ -87,6 +97,16 @@ class CompletedBarCatalogPolicy:
             raise ValueError("calculation interval must align to interval_step_seconds")
         if not isinstance(self.interval_dynamic, bool):
             raise ValueError("interval_dynamic must be a boolean")
+        if self.aggregation_boundary_policy != "utc_fixed_intraday":
+            raise ValueError("aggregation_boundary_policy must be utc_fixed_intraday")
+        if 86_400 % self.calculation_interval_seconds:
+            raise ValueError("UTC-fixed interval must divide one UTC day exactly")
+        if self.revision_policy != "reject_revision":
+            raise ValueError("revision_policy must be reject_revision")
+        if not isinstance(self.priority, int) or isinstance(self.priority, bool):
+            raise ValueError("priority must be an integer")
+        if not 0 <= self.priority <= 100:
+            raise ValueError("priority must be between 0 and 100")
 
 
 def completed_bar_metric_definitions(
@@ -105,8 +125,10 @@ def completed_bar_metric_definitions(
         minimum_observations=policy.minimum_historical_observations,
         maximum_observations=policy.maximum_historical_observations,
         parameters={
+            "aggregation_boundary_policy": policy.aggregation_boundary_policy,
             "calculation_interval_seconds": policy.calculation_interval_seconds,
             "purpose": "completed_bar_foundation",
+            "revision_policy": policy.revision_policy,
         },
     )
     interval = MetricParameterDefinition(
@@ -122,7 +144,7 @@ def completed_bar_metric_definitions(
             if policy.interval_dynamic
             else ParameterMutability.STARTUP_ONLY
         ),
-        source="operator-reviewed-config",
+        source=policy.parameter_source,
         minimum=policy.minimum_interval_seconds,
         maximum=policy.maximum_interval_seconds,
         step=policy.interval_step_seconds,
@@ -135,6 +157,7 @@ def completed_bar_metric_definitions(
         "retained_state": MetricRetainedState.ROLLING_WINDOW,
         "fidelity": MetricFidelity.DERIVED,
         "failure_behavior": MetricFailureBehavior.EMIT_NULL,
+        "priority": policy.priority,
         "resources": MetricResourcePolicy(
             maximum_retained_observations=policy.maximum_retained_observations,
             minimum_update_interval_ms=0,
@@ -158,6 +181,8 @@ def completed_bar_metric_definitions(
         _definition(
             COMPLETED_BAR_OPEN_METRIC_ID,
             "What open did the completed calculation interval report?",
+            "completed_bar.open",
+            "none",
             "price",
             one_bar_warmup,
             common,
@@ -165,6 +190,8 @@ def completed_bar_metric_definitions(
         _definition(
             COMPLETED_BAR_HIGH_METRIC_ID,
             "What high did the completed calculation interval report?",
+            "completed_bar.high",
+            "none",
             "price",
             one_bar_warmup,
             common,
@@ -172,6 +199,8 @@ def completed_bar_metric_definitions(
         _definition(
             COMPLETED_BAR_LOW_METRIC_ID,
             "What low did the completed calculation interval report?",
+            "completed_bar.low",
+            "none",
             "price",
             one_bar_warmup,
             common,
@@ -179,6 +208,8 @@ def completed_bar_metric_definitions(
         _definition(
             COMPLETED_BAR_CLOSE_METRIC_ID,
             "What close did the completed calculation interval report?",
+            "completed_bar.close",
+            "none",
             "price",
             one_bar_warmup,
             common,
@@ -186,6 +217,8 @@ def completed_bar_metric_definitions(
         _definition(
             COMPLETED_BAR_VOLUME_METRIC_ID,
             "What supported volume did the completed calculation interval report?",
+            "completed_bar.volume",
+            "none",
             "volume",
             one_bar_warmup,
             common,
@@ -193,6 +226,8 @@ def completed_bar_metric_definitions(
         _definition(
             COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID,
             "How far did close move from the preceding compatible close?",
+            "(completed_bar.close / prior_compatible_close) - 1",
+            "dimensionless simple return",
             "ratio",
             two_bar_warmup,
             common,
@@ -200,6 +235,8 @@ def completed_bar_metric_definitions(
         _definition(
             COMPLETED_BAR_TRUE_RANGE_METRIC_ID,
             "What range did the interval realize including a compatible prior-close gap?",
+            "max(high - low, abs(high - prior_close), abs(low - prior_close))",
+            "none",
             "price",
             two_bar_warmup,
             common,
@@ -210,17 +247,52 @@ def completed_bar_metric_definitions(
 def _definition(
     metric_id: str,
     decision_question: str,
+    formula: str,
+    normalization: str,
     unit: str,
     warmup: MetricWarmupPolicy,
     common: dict[str, object],
 ) -> MetricDefinition:
+    direct_metrics = {
+        COMPLETED_BAR_OPEN_METRIC_ID,
+        COMPLETED_BAR_HIGH_METRIC_ID,
+        COMPLETED_BAR_LOW_METRIC_ID,
+        COMPLETED_BAR_CLOSE_METRIC_ID,
+        COMPLETED_BAR_VOLUME_METRIC_ID,
+    }
+    failure_modes = [
+        "incomplete or non-contiguous interval",
+        "missing or unhealthy evidence",
+        "historical/live observation conflict",
+    ]
+    if metric_id == COMPLETED_BAR_VOLUME_METRIC_ID:
+        failure_modes.append("unsupported or missing volume")
+    if metric_id in {
+        COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID,
+        COMPLETED_BAR_TRUE_RANGE_METRIC_ID,
+    }:
+        failure_modes.append("missing compatible prior close")
     return MetricDefinition(
         metric_id=metric_id,
         decision_question=decision_question,
         implementation_id=f"markeitech.{metric_id}.v1",
+        formula=formula,
+        normalization=normalization,
+        applicability=(
+            "instruments with validated completed OHLCV bars and a volume-supporting profile"
+            if metric_id == COMPLETED_BAR_VOLUME_METRIC_ID
+            else "instruments with validated completed OHLC bars"
+        ),
         value_kind=MetricValueKind.NUMBER,
         unit=unit,
         warmup=warmup,
+        allowed_fidelities=(
+            *((MetricFidelity.REPORTED,) if metric_id in direct_metrics else ()),
+            MetricFidelity.DERIVED,
+            MetricFidelity.PARTIAL,
+            MetricFidelity.UNAVAILABLE,
+        ),
+        failure_modes=tuple(failure_modes),
         **common,  # type: ignore[arg-type]
     )
 

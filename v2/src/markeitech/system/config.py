@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tomllib
 from dataclasses import dataclass
-from datetime import date, time
+from datetime import UTC, date, datetime, time
 from pathlib import Path
 from typing import Any
 
@@ -176,6 +176,12 @@ class AnalyticalSessionProfileConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class AnalyticalProfileBindingConfig:
+    profile_id: str
+    instrument_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class CompletedBarMetricsConfig:
     live_selector: str
     historical_selector: str
@@ -187,6 +193,8 @@ class CompletedBarMetricsConfig:
     maximum_interval_seconds: int
     interval_step_seconds: int
     interval_dynamic: bool
+    aggregation_boundary_policy: str
+    revision_policy: str
     maximum_retained_observations: int
     maximum_output_age_ms: int
 
@@ -196,6 +204,8 @@ class SessionMeasurementsConfig:
     enabled: bool
     required_watchlist_capability: str
     parameter_version: int
+    parameter_source: str
+    parameter_effective_from_ns: int
     conflict_policy: str
     maximum_active_sessions: int
     demand_retry_interval_ms: int
@@ -203,6 +213,7 @@ class SessionMeasurementsConfig:
     priority: int
     completed_bars: CompletedBarMetricsConfig
     profiles: tuple[AnalyticalSessionProfileConfig, ...]
+    profile_bindings: tuple[AnalyticalProfileBindingConfig, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -279,7 +290,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 10:
+    if raw["schema_version"] != 11:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -331,6 +342,50 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "session measurement profiles reference unknown calendars: "
             f"{', '.join(unknown_profile_calendars)}",
         )
+    profile_by_id = {
+        profile.profile_id: profile for profile in metrics.session_measurements.profiles
+    }
+    watchlist_by_id = {member.instrument_id: member for member in watchlist.members}
+    configured_binding_ids = {
+        instrument_id
+        for binding in metrics.session_measurements.profile_bindings
+        for instrument_id in binding.instrument_ids
+    }
+    unknown_binding_ids = sorted(configured_binding_ids - set(watchlist_by_id))
+    if unknown_binding_ids:
+        raise ValueError(
+            "session measurement bindings reference unknown watchlist instruments: "
+            f"{', '.join(unknown_binding_ids)}",
+        )
+    bound_instruments: dict[str, str] = {}
+    for binding in metrics.session_measurements.profile_bindings:
+        profile = profile_by_id[binding.profile_id]
+        for instrument_id in binding.instrument_ids:
+            member = watchlist_by_id[instrument_id]
+            if member.calendar_id != profile.calendar_id:
+                raise ValueError(
+                    "session measurement profile binding calendar mismatch: "
+                    f"{instrument_id} uses {member.calendar_id}, profile {profile.profile_id} "
+                    f"uses {profile.calendar_id}",
+                )
+            bound_instruments[instrument_id] = profile.profile_id
+    if metrics.session_measurements.enabled:
+        selected_instruments = {
+            member.instrument_id
+            for member in watchlist.members
+            if metrics.session_measurements.required_watchlist_capability in member.capabilities
+        }
+        missing_bindings = sorted(selected_instruments - set(bound_instruments))
+        if missing_bindings:
+            raise ValueError(
+                "enabled session measurements lack analytical profile bindings: "
+                f"{', '.join(missing_bindings)}",
+            )
+        if ib.handle_revised_bars:
+            raise ValueError(
+                "enabled session measurements with reject_revision require "
+                "ib.handle_revised_bars = false",
+            )
     feed_count = sum(len(member.capabilities) for member in watchlist.members)
     minimum_normal_capacity = feed_count * 4 + len(watchlist.members) * 2 + 16
     normal_capacity = persistence.queue_capacity - persistence.critical_queue_reserve
@@ -896,6 +951,8 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "enabled",
             "required_watchlist_capability",
             "parameter_version",
+            "parameter_source",
+            "parameter_effective_from",
             "conflict_policy",
             "maximum_active_sessions",
             "demand_retry_interval_ms",
@@ -903,6 +960,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "priority",
             "completed_bars",
             "profiles",
+            "profile_bindings",
         },
         "metrics.session_measurements",
     )
@@ -932,6 +990,8 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "maximum_interval_seconds",
             "interval_step_seconds",
             "interval_dynamic",
+            "aggregation_boundary_policy",
+            "revision_policy",
             "maximum_retained_observations",
             "maximum_output_age_ms",
         },
@@ -967,6 +1027,25 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
         raise ValueError("completed-bar calculation interval is outside its configured envelope")
     if (interval - minimum_interval) % interval_step:
         raise ValueError("completed-bar calculation interval does not align to its step")
+    aggregation_boundary_policy = _non_empty_string(
+        completed["aggregation_boundary_policy"],
+        "metrics.session_measurements.completed_bars.aggregation_boundary_policy",
+    )
+    if aggregation_boundary_policy != "utc_fixed_intraday":
+        raise ValueError(
+            "metrics.session_measurements.completed_bars.aggregation_boundary_policy "
+            "must be utc_fixed_intraday",
+        )
+    if 86_400 % interval:
+        raise ValueError("completed-bar UTC-fixed interval must divide one UTC day exactly")
+    revision_policy = _non_empty_string(
+        completed["revision_policy"],
+        "metrics.session_measurements.completed_bars.revision_policy",
+    )
+    if revision_policy != "reject_revision":
+        raise ValueError(
+            "metrics.session_measurements.completed_bars.revision_policy must be reject_revision",
+        )
     historical_window = _non_empty_string(
         completed["historical_window"],
         "metrics.session_measurements.completed_bars.historical_window",
@@ -1003,6 +1082,24 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
     profile_ids = [profile.profile_id for profile in profiles]
     if len(profile_ids) != len(set(profile_ids)):
         raise ValueError("metrics.session_measurements profile IDs must be unique")
+    bindings_raw = values["profile_bindings"]
+    if not isinstance(bindings_raw, list) or not bindings_raw:
+        raise ValueError("metrics.session_measurements.profile_bindings must be a non-empty array")
+    bindings = tuple(
+        _load_analytical_profile_binding(item, index) for index, item in enumerate(bindings_raw)
+    )
+    known_profile_ids = set(profile_ids)
+    unknown_binding_profiles = sorted(
+        {binding.profile_id for binding in bindings} - known_profile_ids,
+    )
+    if unknown_binding_profiles:
+        raise ValueError(
+            "session measurement bindings reference unknown profiles: "
+            f"{', '.join(unknown_binding_profiles)}",
+        )
+    bound_ids = [instrument_id for binding in bindings for instrument_id in binding.instrument_ids]
+    if len(bound_ids) != len(set(bound_ids)):
+        raise ValueError("session measurement instruments must have exactly one profile binding")
     return SessionMeasurementsConfig(
         enabled=_bool(values["enabled"], "metrics.session_measurements.enabled"),
         required_watchlist_capability=_non_empty_string(
@@ -1012,6 +1109,14 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
         parameter_version=_positive_int(
             values["parameter_version"],
             "metrics.session_measurements.parameter_version",
+        ),
+        parameter_source=_non_empty_string(
+            values["parameter_source"],
+            "metrics.session_measurements.parameter_source",
+        ),
+        parameter_effective_from_ns=_utc_timestamp_ns(
+            values["parameter_effective_from"],
+            "metrics.session_measurements.parameter_effective_from",
         ),
         conflict_policy=conflict_policy,
         maximum_active_sessions=_positive_int(
@@ -1047,6 +1152,8 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
                 completed["interval_dynamic"],
                 "metrics.session_measurements.completed_bars.interval_dynamic",
             ),
+            aggregation_boundary_policy=aggregation_boundary_policy,
+            revision_policy=revision_policy,
             maximum_retained_observations=_positive_int(
                 completed["maximum_retained_observations"],
                 "metrics.session_measurements.completed_bars.maximum_retained_observations",
@@ -1057,6 +1164,23 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             ),
         ),
         profiles=profiles,
+        profile_bindings=bindings,
+    )
+
+
+def _load_analytical_profile_binding(
+    raw: Any,
+    index: int,
+) -> AnalyticalProfileBindingConfig:
+    label = f"metrics.session_measurements.profile_bindings[{index}]"
+    values = _mapping(raw, label)
+    _require_keys(values, {"profile_id", "instrument_ids"}, label)
+    return AnalyticalProfileBindingConfig(
+        profile_id=_non_empty_string(values["profile_id"], f"{label}.profile_id"),
+        instrument_ids=_unique_non_empty_strings(
+            values["instrument_ids"],
+            f"{label}.instrument_ids",
+        ),
     )
 
 
@@ -1379,6 +1503,20 @@ def _iso_date(value: Any, label: str) -> str:
         return date.fromisoformat(text).isoformat()
     except ValueError as exc:
         raise ValueError(f"{label} must be an ISO date") from exc
+
+
+def _utc_timestamp_ns(value: Any, label: str) -> int:
+    text = _non_empty_string(value, label)
+    if not text.endswith("Z"):
+        raise ValueError(f"{label} must be an ISO timestamp ending in Z")
+    try:
+        parsed = datetime.fromisoformat(text[:-1] + "+00:00")
+    except ValueError as exc:
+        raise ValueError(f"{label} must be an ISO UTC timestamp") from exc
+    if parsed.utcoffset() != UTC.utcoffset(parsed):
+        raise ValueError(f"{label} must use UTC")
+    delta = parsed - datetime(1970, 1, 1, tzinfo=UTC)
+    return (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000
 
 
 def _small_day_offset(value: Any, label: str) -> int:
