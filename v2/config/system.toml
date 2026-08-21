@@ -54,7 +54,7 @@ retry_backoff_ms = 500
 poll_interval_ms = 100
 
 [historical.probe]
-enabled = true
+enabled = false
 actor_ids = ["HISTORICAL-PROBE-A", "HISTORICAL-PROBE-B"]
 instrument_id = "ESU6.CME"
 selector = "1-MINUTE-LAST-EXTERNAL"
@@ -218,7 +218,7 @@ evidence_snapshot_retry_interval_ms = 1000
 priority = 50
 
 [metrics.session_measurements]
-enabled = false
+enabled = true
 required_watchlist_capability = "watchlist_last"
 parameter_version = 1
 parameter_source = "operator-reviewed-config"

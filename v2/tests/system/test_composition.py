@@ -35,10 +35,9 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "session_state",
         "evidence_health",
         "quote_quality_metrics",
+        "session_metrics",
         "watchlist",
         "data_acquisition",
-        "historical_dependency_probe:1",
-        "historical_dependency_probe:2",
         "discord_health",
         "operational_persistence",
     ]
@@ -127,10 +126,9 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "session_state",
         "evidence_health",
         "quote_quality_metrics",
+        "session_metrics",
         "watchlist",
         "data_acquisition",
-        "historical_dependency_probe:1",
-        "historical_dependency_probe:2",
         "operational_persistence",
     ]
 
