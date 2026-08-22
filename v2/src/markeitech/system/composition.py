@@ -214,9 +214,7 @@ def build_actor_plan(
                 key="session_metrics",
                 actor_id="SESSION-METRICS",
                 config=ImportableActorConfig(
-                    actor_path=(
-                        "markeitech.intelligence.session_metric_actor:SessionMetricsActor"
-                    ),
+                    actor_path=("markeitech.intelligence.session_metric_actor:SessionMetricsActor"),
                     config_path=(
                         "markeitech.intelligence.session_metric_actor:SessionMetricsActorConfig"
                     ),
@@ -262,7 +260,35 @@ def build_actor_plan(
                                 "version": profile.version,
                                 "calendar_id": profile.calendar_id,
                                 "primary_phase": profile.primary_phase,
+                                "overnight_enabled": profile.overnight_enabled,
+                                "overnight_phase": profile.overnight_phase,
                                 "volume_supported": profile.volume_supported,
+                                "windows": [
+                                    {
+                                        "window_id": window.window_id,
+                                        "purpose": window.purpose,
+                                        "anchor_phase": window.anchor_phase,
+                                        "anchor_boundary": window.anchor_boundary,
+                                        "offset_seconds": window.offset_seconds,
+                                        "duration_seconds": window.duration_seconds,
+                                        "minimum_duration_seconds": (
+                                            window.minimum_duration_seconds
+                                        ),
+                                        "maximum_duration_seconds": (
+                                            window.maximum_duration_seconds
+                                        ),
+                                        "duration_step_seconds": window.duration_step_seconds,
+                                        "dynamic": window.dynamic,
+                                        "historical_selector": window.historical_selector,
+                                        "minimum_historical_observations": (
+                                            window.minimum_historical_observations
+                                        ),
+                                        "maximum_historical_observations": (
+                                            window.maximum_historical_observations
+                                        ),
+                                    }
+                                    for window in profile.windows
+                                ],
                             }
                             for profile in session_metrics.profiles
                         ],
@@ -298,15 +324,185 @@ def build_actor_plan(
                             "maximum_interval_seconds": completed.maximum_interval_seconds,
                             "interval_step_seconds": completed.interval_step_seconds,
                             "interval_dynamic": completed.interval_dynamic,
-                            "aggregation_boundary_policy": (
-                                completed.aggregation_boundary_policy
-                            ),
+                            "aggregation_boundary_policy": (completed.aggregation_boundary_policy),
                             "timestamp_policy": completed.timestamp_policy,
                             "revision_policy": completed.revision_policy,
                             "maximum_retained_observations": (
                                 completed.maximum_retained_observations
                             ),
                             "maximum_output_age_ms": completed.maximum_output_age_ms,
+                        },
+                        "session_references": {
+                            "enabled": session_metrics.session_references.enabled,
+                            "historical_selector": (
+                                session_metrics.session_references.historical_selector
+                            ),
+                            "active_window": session_metrics.session_references.active_window,
+                            "previous_window": session_metrics.session_references.previous_window,
+                            "overnight_window": (
+                                session_metrics.session_references.overnight_window
+                            ),
+                            "minimum_historical_observations": (
+                                session_metrics.session_references.minimum_historical_observations
+                            ),
+                            "maximum_historical_observations": (
+                                session_metrics.session_references.maximum_historical_observations
+                            ),
+                            "vwap_price_basis": (
+                                session_metrics.session_references.vwap_price_basis
+                            ),
+                            "vwap_price_basis_dynamic": (
+                                session_metrics.session_references.vwap_price_basis_dynamic
+                            ),
+                            "minimum_coverage_ratio": (
+                                session_metrics.session_references.minimum_coverage_ratio
+                            ),
+                            "minimum_coverage_ratio_floor": (
+                                session_metrics.session_references.minimum_coverage_ratio_floor
+                            ),
+                            "minimum_coverage_ratio_ceiling": (
+                                session_metrics.session_references.minimum_coverage_ratio_ceiling
+                            ),
+                            "minimum_coverage_ratio_step": (
+                                session_metrics.session_references.minimum_coverage_ratio_step
+                            ),
+                            "minimum_coverage_ratio_dynamic": (
+                                session_metrics.session_references.minimum_coverage_ratio_dynamic
+                            ),
+                            "maximum_retained_sessions": (
+                                session_metrics.session_references.maximum_retained_sessions
+                            ),
+                            "maximum_output_age_ms": (
+                                session_metrics.session_references.maximum_output_age_ms
+                            ),
+                        },
+                        "session_windows": {
+                            "enabled": session_metrics.session_windows.enabled,
+                            "price_basis": session_metrics.session_windows.price_basis,
+                            "price_basis_dynamic": (
+                                session_metrics.session_windows.price_basis_dynamic
+                            ),
+                            "minimum_coverage_ratio": (
+                                session_metrics.session_windows.minimum_coverage_ratio
+                            ),
+                            "minimum_coverage_ratio_floor": (
+                                session_metrics.session_windows.minimum_coverage_ratio_floor
+                            ),
+                            "minimum_coverage_ratio_ceiling": (
+                                session_metrics.session_windows.minimum_coverage_ratio_ceiling
+                            ),
+                            "minimum_coverage_ratio_step": (
+                                session_metrics.session_windows.minimum_coverage_ratio_step
+                            ),
+                            "minimum_coverage_ratio_dynamic": (
+                                session_metrics.session_windows.minimum_coverage_ratio_dynamic
+                            ),
+                            "maximum_retained_sessions": (
+                                session_metrics.session_windows.maximum_retained_sessions
+                            ),
+                            "maximum_output_age_ms": (
+                                session_metrics.session_windows.maximum_output_age_ms
+                            ),
+                        },
+                        "rolling_measurements": {
+                            "enabled": session_metrics.rolling_measurements.enabled,
+                            "minimum_coverage_ratio": (
+                                session_metrics.rolling_measurements.minimum_coverage_ratio
+                            ),
+                            "minimum_coverage_ratio_floor": (
+                                session_metrics.rolling_measurements.minimum_coverage_ratio_floor
+                            ),
+                            "minimum_coverage_ratio_ceiling": (
+                                session_metrics.rolling_measurements.minimum_coverage_ratio_ceiling
+                            ),
+                            "minimum_coverage_ratio_step": (
+                                session_metrics.rolling_measurements.minimum_coverage_ratio_step
+                            ),
+                            "minimum_coverage_ratio_dynamic": (
+                                session_metrics.rolling_measurements.minimum_coverage_ratio_dynamic
+                            ),
+                            "maximum_retained_observations": (
+                                session_metrics.rolling_measurements.maximum_retained_observations
+                            ),
+                            "maximum_output_age_ms": (
+                                session_metrics.rolling_measurements.maximum_output_age_ms
+                            ),
+                            "baseline": {
+                                "eligible_reference_health": list(
+                                    session_metrics.rolling_measurements.baseline.eligible_reference_health
+                                ),
+                                "eligible_reference_fidelities": list(
+                                    session_metrics.rolling_measurements.baseline.eligible_reference_fidelities
+                                ),
+                                "recent_reference_count": (
+                                    session_metrics.rolling_measurements.baseline.recent_reference_count
+                                ),
+                                "recent_reference_count_minimum": (
+                                    session_metrics.rolling_measurements.baseline.recent_reference_count_minimum
+                                ),
+                                "recent_reference_count_maximum": (
+                                    session_metrics.rolling_measurements.baseline.recent_reference_count_maximum
+                                ),
+                                "recent_reference_count_step": (
+                                    session_metrics.rolling_measurements.baseline.recent_reference_count_step
+                                ),
+                                "recent_reference_count_dynamic": (
+                                    session_metrics.rolling_measurements.baseline.recent_reference_count_dynamic
+                                ),
+                                "minimum_recent_references": (
+                                    session_metrics.rolling_measurements.baseline.minimum_recent_references
+                                ),
+                                "phase_reference_count": (
+                                    session_metrics.rolling_measurements.baseline.phase_reference_count
+                                ),
+                                "phase_reference_count_minimum": (
+                                    session_metrics.rolling_measurements.baseline.phase_reference_count_minimum
+                                ),
+                                "phase_reference_count_maximum": (
+                                    session_metrics.rolling_measurements.baseline.phase_reference_count_maximum
+                                ),
+                                "phase_reference_count_step": (
+                                    session_metrics.rolling_measurements.baseline.phase_reference_count_step
+                                ),
+                                "phase_reference_count_dynamic": (
+                                    session_metrics.rolling_measurements.baseline.phase_reference_count_dynamic
+                                ),
+                                "minimum_phase_references": (
+                                    session_metrics.rolling_measurements.baseline.minimum_phase_references
+                                ),
+                            },
+                            "families": [
+                                {
+                                    "family_id": family.family_id,
+                                    "source_selector": family.source_selector,
+                                    "input_selector": family.input_selector,
+                                    "input_interval_seconds": family.input_interval_seconds,
+                                    "aggregation_policy": family.aggregation_policy,
+                                    "selected_context_candidate_id": (
+                                        family.selected_context_candidate_id
+                                    ),
+                                    "candidates": [
+                                        {
+                                            "candidate_id": candidate.candidate_id,
+                                            "purpose": candidate.purpose,
+                                            "duration_seconds": candidate.duration_seconds,
+                                            "minimum_duration_seconds": (
+                                                candidate.minimum_duration_seconds
+                                            ),
+                                            "maximum_duration_seconds": (
+                                                candidate.maximum_duration_seconds
+                                            ),
+                                            "duration_step_seconds": (
+                                                candidate.duration_step_seconds
+                                            ),
+                                            "dynamic": candidate.dynamic,
+                                            "active": candidate.active,
+                                        }
+                                        for candidate in family.candidates
+                                    ],
+                                }
+                                for family in session_metrics.rolling_measurements.families
+                            ],
                         },
                     },
                 ),

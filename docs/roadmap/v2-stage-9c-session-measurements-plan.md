@@ -1,8 +1,8 @@
 # V2 Stage 9C Session Measurements Plan
 
-**Status:** Slices 1-2 implemented for local review; runtime remains disabled pending acceptance
+**Status:** Slices 1-4 accepted; Slice 5 implemented for local review
 
-**Branch:** `v2-stage-9c-session-measurements`
+**Branch:** `v2-stage-9c-rolling-measurements`
 
 ## Purpose
 
@@ -345,11 +345,118 @@ absorption, or trapped participants.
 | Realized log-return magnitude | Unannualized `sqrt(sum(log_return^2))` over a configured completed-bar window |
 | Average true range | Mean true range over a configured completed-bar window |
 | Directional efficiency | `abs(last_close-first_close) / sum(abs(close_change))`, null when denominator is zero |
-| Range expansion ratio | Current realized range divided by a configured trailing baseline |
-| Range percentile | Current realized range rank within a bounded trailing reference distribution |
+| Rolling price range | Highest high minus lowest low over one configured candidate window |
+| Range expansion ratio | Candidate rolling price range divided by a comparable configured trailing baseline |
+| Range percentile | Candidate rolling price range rank within a bounded trailing reference distribution |
 
 The stage publishes numerical inputs only. Labels such as `TRENDING`, `ROTATING`, `COMPRESSED`, or
 `EXPANDING` require separately reviewed state/entity/event policy.
+
+#### Reviewed Multi-Horizon Policy
+
+Context, expansion detection, state interpretation, and any later trade action answer different
+questions. They must not inherit one universal horizon merely because they consume the same bar
+stream. In particular, a consolidating market benefits from broader context that suppresses chop,
+while a shorter expansion detector may remain active to notice a genuine break. Once movement is
+established, a later directional selector may tighten around recent evidence so stale balance data
+does not dilute the move.
+
+Stage 9C therefore calculates a bounded, configuration-owned bank of candidate horizons. It does
+not choose one authoritative horizon, mutate subscriptions from an unreviewed heuristic, or publish
+an action. The initial reviewed candidate envelopes are:
+
+| Family | Context candidates | Expansion candidates |
+|---|---|---|
+| Fast, one-minute inputs | 20m, 30m, 45m, 60m | 10m, 15m, 23m, 30m |
+| Tactical, five-minute inputs | 2h, 3h, 4h, 6h | 1h, 90m, 2h, 3h |
+| Structural intraday, fifteen-minute inputs | 4h, 6h, 8h, 12h | 2h, 3h, 4h, 6h |
+
+The operator-selected defaults remain 45 minutes of one-minute inputs, four hours of five-minute
+inputs, and eight hours of fifteen-minute inputs. These defaults are not permanent preferences.
+Candidate activation, resolution, duration, bounds, step, historical selector, minimum evidence,
+and dynamic eligibility are versioned configuration. Historical dependencies remain
+purpose-specific; no universal base timeframe or automatic resolution pyramid is introduced.
+
+Every candidate publishes independently with exact window identity, session/phase composition,
+coverage, fidelity, and lineage. A current rolling price range and its baseline must use equal
+durations; a shorter expansion candidate may coexist with broader context, but it must not be
+divided by a longer-duration baseline. Baseline observations exclude the current window and any
+evidence prohibited by the eventual comparison policy.
+
+#### Later Adaptive Selection
+
+A separately reviewed bounded selector may later identify an effective context or detection
+horizon for a specific action. Its first candidate policy may combine:
+
+- normalized EMA slope, expressed relative to volatility and elapsed bars rather than raw price;
+- directional efficiency and volatility/range expansion;
+- agreement or instability between neighboring candidate horizons;
+- evidence coverage, health, and session composition; and
+- persistence, hysteresis, minimum dwell time, and hard horizon bounds.
+
+The intended behavior is action-dependent: broader context while consolidation would make a tight
+window easy to chop, and tighter recent evidence while an established move would make old balance
+data misleading. Expansion detection remains independently selectable and need not use the context
+horizon or a fixed fraction of it.
+
+EMA slope is evidence, not sole authority. Raw slope is not comparable across instruments or
+volatility regimes, and an EMA-only selector can lag transitions or chatter. A later competing
+policy may use bounded change-point detection: expand while the observed return/range distribution
+is stable, contract after a meaningful distribution change, and grow again as the new condition
+stabilizes. Both policies must be replayable from cited evidence, versioned, independently
+evaluated, and permitted to abstain.
+
+Adaptive selection belongs to a later reviewed state/policy stage. Stage 9C's responsibility ends
+at trustworthy candidate measurements and the evidence required to compare selection policies.
+
+#### Reviewed Range Baselines And Percentiles
+
+Range expansion has two distinct comparison questions. Recent-regime comparison asks whether price
+is expanding relative to its immediate behavior. Phase-matched comparison asks whether that range
+is unusual for the same authoritative session phase and offset. Neither reference can replace the
+other, and Stage 9C must not blend them into one score.
+
+For every active range candidate, publish the observed rolling price range plus independently
+healthy recent and phase-matched comparisons:
+
+- `rolling_price_range` is the highest high minus the lowest low over the candidate window;
+- `expansion_ratio_recent` divides that range by the median of eligible recent windows;
+- `expansion_ratio_phase` divides it by the median of eligible phase-matched windows;
+- `range_percentile_recent` ranks it inside the recent reference distribution; and
+- `range_percentile_phase` ranks it inside the phase-matched reference distribution.
+
+The recent baseline uses prior completed, non-overlapping windows with the same input resolution
+and duration. It adapts to the immediately preceding regime. The phase-matched baseline uses the
+equivalent duration anchored at the same offset inside the same authoritative session phase across
+prior valid sessions. It preserves time-of-day/session seasonality and never silently substitutes
+another phase. Early-close or interrupted-session windows that do not provide the required interval
+are excluded with an explained evidence reason.
+
+An eligible reference sample must:
+
+- use the same input resolution and exact duration as the current candidate;
+- exclude the current window and avoid overlap with another sample in that baseline;
+- satisfy the configured coverage, evidence-health, and fidelity requirements;
+- retain its calendar, trade date, phase, phase offset, and boundary-crossing lineage; and
+- remain independent of samples rejected for missing, conflicting, or prohibited evidence.
+
+The initial recent reference count is 20, configurable from 8 through 64. The initial phase-matched
+session count is 10, configurable from 5 through 30. Counts, bounds, steps, dynamic eligibility,
+minimum valid samples, and parameter version/effective UTC time are configuration. If one baseline
+lacks its minimum evidence, only that comparison remains `WARMING` or `UNAVAILABLE`; the rolling
+range and the other comparison continue independently. A zero median produces an explained null
+ratio, never infinity.
+
+Both percentiles use an empirical midrank definition:
+
+```text
+(count(reference < current) + 0.5 * count(reference == current)) / reference_count
+```
+
+Every percentile publishes its eligible reference count and baseline identity. Repeated equal
+ranges therefore receive a neutral tie treatment, while a small sample cannot masquerade as a
+well-supported distribution. Numerical ratios and percentiles remain evidence inputs; Stage 9C
+does not assign compressed, expanding, ordinary, exceptional, or trade-action labels.
 
 ## Health, Fidelity, And Null Behavior
 
@@ -394,8 +501,10 @@ identity, lifecycle, commit-before-publication, and restart contract is approved
 
 ### Accepted Slice 2 Preflight Policies
 
-- Completed-bar foundation warmup requests two observations and may request at most four. This is
-  the real request envelope, not a placeholder budget.
+- Completed-bar foundation warmup originally requested two observations and at most four for Slice
+  2 acceptance. Slice 5 expands the same bounded request to at most 720 one-minute observations so
+  the longest current candidate can warm; baselines remain independently `WARMING` until their
+  configured eligible reference count exists.
 - Historical and live observations share one semantic interval identity.
 - The first accepted completed interval is preserved. An unequal later copy is rejected as a
   conflict, degrades affected evidence, and produces an operational audit event.
@@ -444,9 +553,11 @@ identity, lifecycle, commit-before-publication, and restart contract is approved
 provider ownership leakage.
 
 **Implementation status:** the actor, demand wiring, timestamp policy, bounded aggregation,
-foundation metric publication, and live-first recalculation path are implemented behind
-`metrics.session_measurements.enabled = false`. Offline verification is complete; local review,
-connected acceptance, operational conflict persistence, and final counter reconciliation remain.
+foundation metric publication, and live-first recalculation path are enabled and live-accepted.
+The acceptance run covered all 18 configured instruments, converged history and live bars in the
+same actor, published 1,281 values from 183 accepted bars, and reported no calculation failure,
+duplicate, or conflict. Closed-session `recent_completed` dependencies degraded independently and
+did not block unrelated work.
 
 ### Slice 3: Session, Previous-Session, Overnight, And Gap Metrics
 
@@ -457,6 +568,31 @@ connected acceptance, operational conflict persistence, and final counter reconc
 
 **Gate:** session references match an independent chart across restart and rollover.
 
+**Accepted implementation policy:**
+
+- Keep the completed-bar foundation intact and project session references through a separate,
+  bounded state component owned by the same actor.
+- Request each historical purpose through its exact calendar-aware window. Active-session warmup
+  uses session-to-date, previous-session evidence uses one completed configured primary phase,
+  and overnight evidence is requested only for profiles that explicitly enable an eligible phase.
+- Use a separately configured historical selector for these references; it need not match the
+  one-minute completed-bar foundation selector.
+- Merge live completed bars from the end of the last historical interval actually accepted, not
+  from the request's later as-of timestamp, so history-first and live-first arrival produce the
+  same state without either double-counting overlap or dropping a valid live tail.
+- Require direct boundary evidence for anchor semantics. A mid-session first observation is not a
+  session open, and an incomplete prior-session tail is not a prior close; dependent return and gap
+  values remain explicitly unavailable until those anchors are observed.
+- Calculate coverage from represented time, carry source health and fidelity per output, and let
+  active-session, previous-session, overnight, and gap families degrade independently.
+- Publish prior-session and opening-gap values as immutable once their complete inputs are
+  accepted. Indicative gap remains developing while its overnight reference changes.
+- Profiles without an approved overnight phase publish explained unavailable overnight and
+  indicative-gap values; they never reinterpret a primary session as overnight evidence.
+- Numerical values remain transient. PostgreSQL receives dependency demand, execution, readiness,
+  rejection, conflict, and resource lifecycle facts only; durable analytical summaries wait for
+  Stage 9D.
+
 ### Slice 4: Opening Range And Power Hour
 
 - Implement configurable opening-range families.
@@ -465,6 +601,26 @@ connected acceptance, operational conflict persistence, and final counter reconc
 
 **Gate:** windows match authoritative calendar boundaries, including early closes.
 
+**Implementation status:** locally accepted. Each analytical profile may declare zero
+or more independently named calendar-relative windows with its own purpose, anchor phase/boundary,
+offset, duration envelope, dynamic eligibility, historical selector, and bounded observation
+envelope. The family policy separately owns price basis, coverage envelope, retention, and output
+age. Metric identity includes profile and window IDs, so multiple concurrent opening ranges do not
+collide.
+
+The initial runtime configuration deliberately enables two opening ranges and one close-relative
+power-hour window only for the CME-equity analytical profile. This is an acceptance scope, not a
+hard-coded instrument rule; other profiles remain explicit empty sets until their desired session
+semantics are reviewed. Opening-range bounds freeze after completion while distance measurements
+continue from the latest accepted close. Power-hour history falls back to the latest started
+close-relative window, allowing prior-session evidence before the current window begins. Early
+closes are inherited from the authoritative calendar rather than fixed clock times.
+
+Opening-range outputs do not depend on volume or directional efficiency. Power-hour volume and
+bar-VWAP remain independently unsupported where the profile lacks volume while its OHLC, return,
+range, coverage, and efficiency outputs remain available. All numerical state stays bounded and
+transient; PostgreSQL continues to receive only dependency and runtime lifecycle facts.
+
 ### Slice 5: Volatility, Efficiency, And Compression Inputs
 
 - Implement approved rolling numerical formulas.
@@ -472,6 +628,32 @@ connected acceptance, operational conflict persistence, and final counter reconc
 - Keep semantic classifications out.
 
 **Gate:** outputs match independent fixtures and remain stable under missing/late data.
+
+**Implementation status:** live-accepted at `116657b`. The runtime defines three independently
+configured families: fast one-minute inputs, tactical five-minute inputs, and structural-intraday
+fifteen-minute inputs. The latter two are derived only from complete UTC-fixed one-minute buckets;
+their lineage distinguishes historical-only aggregation from any aggregation containing live bars.
+The current configuration keeps four context and four expansion candidates active per family, for
+24 candidates and 264 versioned metric definitions. Selected context candidates are metadata only;
+all active candidates are calculated concurrently and no winner is promoted into a semantic state.
+
+Each candidate publishes price range, realized log-return magnitude, average true range,
+directional efficiency, and time coverage. Expansion is compared independently with recent
+non-overlapping equal-duration windows and authoritative phase-matched windows at the same elapsed
+phase offset. Both baseline families publish their eligible reference count, median-relative ratio,
+midrank percentile, health, and explicit missing reasons. A zero median yields an unavailable ratio
+rather than division or an invented value. Missing phase history cannot degrade an otherwise valid
+current or recent measurement.
+
+Candidate durations, duration bounds and steps, dynamic eligibility, recent and phase reference
+counts, minimum eligible counts, coverage threshold, retention, output age, selectors, and
+aggregation policy are configuration-owned and strictly validated. The completed-bar warmup is
+bounded at 720 one-minute observations so the current 12-hour intraday candidate can warm without a
+new provider request family. This is a purpose-specific initial envelope, not a rule that all future
+measurements must derive from one-minute history. The transient completed-bar ledger is bounded at
+8,000 observations, which startup validation proves can satisfy the minimum recent-reference count
+for the longest active candidate if enough evidence arrives. Reference eligibility is explicitly
+configured by coverage, health, and fidelity. Raw bars and numerical values remain transient.
 
 ### Slice 6: Live Acceptance And Stage Closure
 
@@ -526,3 +708,25 @@ The recommended first implementation assumes:
    implementation begins.
 
 No runtime code begins until these decisions and the metric scope are reviewed.
+
+## Closure Evidence
+
+The extended 2026-08-21 RTH acceptance closed Slice 6 and the Stage 9C session-measurement
+extension:
+
+- all 34 live acquisition streams remained active;
+- all 63 historical dependencies completed ready with zero degradation or late callbacks;
+- 32,659 live bars and 18 historical batches produced 10,632 accepted completed bars;
+- overlap handling found 13 exact duplicates and zero conflicts;
+- the actor published 103,236 completed-bar values, 44,718 session-reference values, 1,779
+  calendar-window values, and 307,296 rolling values across 2,736 rolling batches;
+- the measurement actor reported zero calculation failures;
+- PostgreSQL stored all 32,389 accepted operational events without retry, failure, rejection, or
+  pending work;
+- Discord delivered all three system-health messages; and
+- the runtime completed a controlled SIGINT shutdown.
+
+The acceptance also identified evidence-health transition noise and late callback ordering during
+shutdown as separate runtime-hardening work. Neither altered accepted measurement values or caused
+a Stage 9C calculation failure. The optional Observatory was active during this run and is retained
+on its own experimental branch for an isolated resource comparison.

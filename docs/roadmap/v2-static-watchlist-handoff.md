@@ -31,7 +31,7 @@ The intended configuration-owned baseline contains 18 logical instruments:
 `SPCX` and the choice of `GOOGL` as the sole Google share class are confirmed. The runtime now uses
 Nautilus IB simplified `load_ids` for the complete baseline:
 
-- futures: `ESU6.CME`, `NQU6.CME`, `YMU6.CBOT`, `CLU6.NYMEX`;
+- futures: `ESU6.CME`, `NQU6.CME`, `YMU6.CBOT`, `CLV6.NYMEX`;
 - trade expression and indices: `SPY.ARCA`, `QQQ.NASDAQ`, `^SPX.CBOE`, `^VIX.CBOE`; and
 - equities: `NVDA.NASDAQ`, `AAPL.NASDAQ`, `GOOGL.NASDAQ`, `MSFT.NASDAQ`, `AMZN.NASDAQ`,
   `TSM.NYSE`, `AVGO.NASDAQ`, `SPCX.NASDAQ`, `META.NASDAQ`, `TSLA.NASDAQ`.

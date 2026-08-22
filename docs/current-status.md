@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-17
+Last reviewed: 2026-08-21
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -327,6 +327,53 @@ raw quotes remain intentionally transient.
 The active extension is the Stage 9C session-measurement work documented in
 [`roadmap/v2-stage-9c-session-measurements-plan.md`](roadmap/v2-stage-9c-session-measurements-plan.md).
 It closes the completed-bar, session/prior-session, opening-range, gap, power-hour, volatility,
-efficiency, and compression input gap before Stage 9D entity design. Slices 1-2 are implemented
-behind a disabled-by-default flag and await Markeitect's local review and connected acceptance;
-they are not yet live-accepted.
+efficiency, and expansion input gap before Stage 9D entity design. Slices 1-2 are enabled and
+live-accepted. The acceptance run converged bounded historical and live bars for all 18 configured
+instruments, published 1,281 completed-bar values from 183 accepted bars, and reported no actor
+calculation failure, duplicate, or conflict. Closed-session recent-history requests degraded
+independently without stopping live processing; this confirmed the need for Slice 3's exact,
+purpose-specific session windows rather than a universal recent-history warmup.
+
+Slice 3 is accepted at commit `8696acf`. It adds only deterministic active-session,
+previous-session, optional overnight, and gap measurements. Historical and live observations
+converge at the last interval actually received, and exact open, prior-close, return, and gap
+values remain unavailable when their session boundary was not directly observed rather than being
+inferred from partial coverage.
+
+Slice 4 is locally accepted. It adds
+configuration-owned calendar-relative opening-range families and close-relative power-hour
+measurements, including developing/completed truth, coverage, supported-volume isolation, and
+early-close handling. The initial acceptance scope configures two opening ranges and one power-hour
+window for the CME-equity profile only; expanding profiles requires an explicit session-semantics
+review. It does not add entities, semantic events, signals, agent behavior, raw market-data
+persistence, or execution.
+
+Slice 5 is live-accepted and committed at `116657b`. It adds three
+configuration-owned rolling families over one-, five-, and fifteen-minute completed bars, with 24
+active duration candidates and 264 versioned numerical metric definitions. Every candidate reports
+range, realized log-return magnitude, average true range, directional efficiency, coverage, and
+independently qualified recent and phase-matched expansion baselines. Candidate durations,
+reference counts, coverage requirements, selection metadata, and dynamic eligibility all have
+explicit configuration envelopes. A bounded 720-observation one-minute warmup can support each
+current candidate window, while the 8,000-observation transient ledger can eventually satisfy the
+minimum recent baseline for the longest candidate; neither is a universal historical pyramid.
+Numerical values and raw bars remain transient, and no semantic regime, compression, trend, signal,
+entity, or agent decision is created in this slice.
+
+The extended 2026-08-21 RTH acceptance completed all 63 historical dependencies with zero
+degradation and kept all 34 acquisition streams active. Across 32,659 live bars and 18 historical
+batches, the measurement actor accepted 10,632 completed bars, identified 13 exact duplicates and
+zero conflicts, and published 103,236 completed-bar values, 44,718 session-reference values, 1,779
+calendar-window values, and 307,296 rolling values across 2,736 rolling batches. It reported zero
+calculation failures. PostgreSQL stored all 32,389 accepted operational events with zero retries,
+failures, rejections, or pending writes; Discord delivered all three health messages; shutdown
+completed cleanly.
+
+The run also exposed two separate hardening concerns which do not invalidate the deterministic
+measurement results: evidence-health transitions remain too noisy for some thin instruments, and
+late evidence callbacks can appear after their actor has entered shutdown. Those remain explicit
+follow-up work. The optional Observatory ran concurrently during this acceptance, so its suspected
+host resource cost is isolated on `v2-stage-observatory` rather than attributed to Stage 9C.
+
+Stage 9C session measurements are closed. They provide numerical evidence for future entities and
+semantic events; they do not themselves classify market state or create opportunities.

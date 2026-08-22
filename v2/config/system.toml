@@ -1,4 +1,4 @@
-schema_version = 11
+schema_version = 13
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -234,7 +234,7 @@ live_selector = "5-SECOND-LAST-EXTERNAL"
 historical_selector = "1-MINUTE-LAST-EXTERNAL"
 historical_window = "recent_completed"
 minimum_historical_observations = 2
-maximum_historical_observations = 4
+maximum_historical_observations = 720
 calculation_interval_seconds = 60
 minimum_interval_seconds = 5
 maximum_interval_seconds = 3600
@@ -243,7 +243,327 @@ interval_dynamic = true
 aggregation_boundary_policy = "utc_fixed_intraday"
 timestamp_policy = "interval_start"
 revision_policy = "reject_revision"
-maximum_retained_observations = 5000
+maximum_retained_observations = 8000
+maximum_output_age_ms = 120000
+
+[metrics.session_measurements.rolling_measurements]
+enabled = true
+minimum_coverage_ratio = 0.9
+minimum_coverage_ratio_floor = 0.7
+minimum_coverage_ratio_ceiling = 1.0
+minimum_coverage_ratio_step = 0.05
+minimum_coverage_ratio_dynamic = true
+maximum_retained_observations = 8000
+maximum_output_age_ms = 120000
+
+[metrics.session_measurements.rolling_measurements.baseline]
+eligible_reference_health = ["READY"]
+eligible_reference_fidelities = ["REPORTED", "DERIVED"]
+recent_reference_count = 20
+recent_reference_count_minimum = 8
+recent_reference_count_maximum = 64
+recent_reference_count_step = 1
+recent_reference_count_dynamic = true
+minimum_recent_references = 8
+phase_reference_count = 10
+phase_reference_count_minimum = 5
+phase_reference_count_maximum = 30
+phase_reference_count_step = 1
+phase_reference_count_dynamic = true
+minimum_phase_references = 5
+
+[[metrics.session_measurements.rolling_measurements.families]]
+family_id = "fast"
+source_selector = "1-MINUTE-LAST-EXTERNAL"
+input_selector = "1-MINUTE-LAST-EXTERNAL"
+input_interval_seconds = 60
+aggregation_policy = "identity"
+selected_context_candidate_id = "context_45m"
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_20m"
+purpose = "context"
+duration_seconds = 1200
+minimum_duration_seconds = 600
+maximum_duration_seconds = 3600
+duration_step_seconds = 60
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_30m"
+purpose = "context"
+duration_seconds = 1800
+minimum_duration_seconds = 600
+maximum_duration_seconds = 3600
+duration_step_seconds = 60
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_45m"
+purpose = "context"
+duration_seconds = 2700
+minimum_duration_seconds = 600
+maximum_duration_seconds = 3600
+duration_step_seconds = 60
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_60m"
+purpose = "context"
+duration_seconds = 3600
+minimum_duration_seconds = 600
+maximum_duration_seconds = 3600
+duration_step_seconds = 60
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_10m"
+purpose = "expansion"
+duration_seconds = 600
+minimum_duration_seconds = 300
+maximum_duration_seconds = 3600
+duration_step_seconds = 60
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_15m"
+purpose = "expansion"
+duration_seconds = 900
+minimum_duration_seconds = 300
+maximum_duration_seconds = 3600
+duration_step_seconds = 60
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_23m"
+purpose = "expansion"
+duration_seconds = 1380
+minimum_duration_seconds = 300
+maximum_duration_seconds = 3600
+duration_step_seconds = 60
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_30m"
+purpose = "expansion"
+duration_seconds = 1800
+minimum_duration_seconds = 300
+maximum_duration_seconds = 3600
+duration_step_seconds = 60
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families]]
+family_id = "tactical"
+source_selector = "1-MINUTE-LAST-EXTERNAL"
+input_selector = "5-MINUTE-LAST-EXTERNAL"
+input_interval_seconds = 300
+aggregation_policy = "utc_fixed_intraday"
+selected_context_candidate_id = "context_4h"
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_2h"
+purpose = "context"
+duration_seconds = 7200
+minimum_duration_seconds = 3600
+maximum_duration_seconds = 21600
+duration_step_seconds = 300
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_3h"
+purpose = "context"
+duration_seconds = 10800
+minimum_duration_seconds = 3600
+maximum_duration_seconds = 21600
+duration_step_seconds = 300
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_4h"
+purpose = "context"
+duration_seconds = 14400
+minimum_duration_seconds = 3600
+maximum_duration_seconds = 21600
+duration_step_seconds = 300
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_6h"
+purpose = "context"
+duration_seconds = 21600
+minimum_duration_seconds = 3600
+maximum_duration_seconds = 21600
+duration_step_seconds = 300
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_1h"
+purpose = "expansion"
+duration_seconds = 3600
+minimum_duration_seconds = 1800
+maximum_duration_seconds = 10800
+duration_step_seconds = 300
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_90m"
+purpose = "expansion"
+duration_seconds = 5400
+minimum_duration_seconds = 1800
+maximum_duration_seconds = 10800
+duration_step_seconds = 300
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_2h"
+purpose = "expansion"
+duration_seconds = 7200
+minimum_duration_seconds = 1800
+maximum_duration_seconds = 10800
+duration_step_seconds = 300
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_3h"
+purpose = "expansion"
+duration_seconds = 10800
+minimum_duration_seconds = 1800
+maximum_duration_seconds = 10800
+duration_step_seconds = 300
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families]]
+family_id = "structural_intraday"
+source_selector = "1-MINUTE-LAST-EXTERNAL"
+input_selector = "15-MINUTE-LAST-EXTERNAL"
+input_interval_seconds = 900
+aggregation_policy = "utc_fixed_intraday"
+selected_context_candidate_id = "context_8h"
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_4h"
+purpose = "context"
+duration_seconds = 14400
+minimum_duration_seconds = 7200
+maximum_duration_seconds = 43200
+duration_step_seconds = 900
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_6h"
+purpose = "context"
+duration_seconds = 21600
+minimum_duration_seconds = 7200
+maximum_duration_seconds = 43200
+duration_step_seconds = 900
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_8h"
+purpose = "context"
+duration_seconds = 28800
+minimum_duration_seconds = 7200
+maximum_duration_seconds = 43200
+duration_step_seconds = 900
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_12h"
+purpose = "context"
+duration_seconds = 43200
+minimum_duration_seconds = 7200
+maximum_duration_seconds = 43200
+duration_step_seconds = 900
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_2h"
+purpose = "expansion"
+duration_seconds = 7200
+minimum_duration_seconds = 3600
+maximum_duration_seconds = 21600
+duration_step_seconds = 900
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_3h"
+purpose = "expansion"
+duration_seconds = 10800
+minimum_duration_seconds = 3600
+maximum_duration_seconds = 21600
+duration_step_seconds = 900
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_4h"
+purpose = "expansion"
+duration_seconds = 14400
+minimum_duration_seconds = 3600
+maximum_duration_seconds = 21600
+duration_step_seconds = 900
+dynamic = true
+active = true
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "expansion_6h"
+purpose = "expansion"
+duration_seconds = 21600
+minimum_duration_seconds = 3600
+maximum_duration_seconds = 21600
+duration_step_seconds = 900
+dynamic = true
+active = true
+
+[metrics.session_measurements.session_references]
+enabled = true
+historical_selector = "15-MINUTE-LAST-EXTERNAL"
+active_window = "session_to_date"
+previous_window = "previous_sessions"
+overnight_window = "current_overnight"
+minimum_historical_observations = 1
+maximum_historical_observations = 100
+vwap_price_basis = "typical"
+vwap_price_basis_dynamic = true
+minimum_coverage_ratio = 0.8
+minimum_coverage_ratio_floor = 0.5
+minimum_coverage_ratio_ceiling = 1.0
+minimum_coverage_ratio_step = 0.05
+minimum_coverage_ratio_dynamic = true
+maximum_retained_sessions = 4
+maximum_output_age_ms = 120000
+
+[metrics.session_measurements.session_windows]
+enabled = true
+price_basis = "typical"
+price_basis_dynamic = true
+minimum_coverage_ratio = 0.8
+minimum_coverage_ratio_floor = 0.5
+minimum_coverage_ratio_ceiling = 1.0
+minimum_coverage_ratio_step = 0.05
+minimum_coverage_ratio_dynamic = true
+maximum_retained_sessions = 4
 maximum_output_age_ms = 120000
 
 [[metrics.session_measurements.profiles]]
@@ -251,6 +571,8 @@ profile_id = "cme_equity_primary"
 version = 1
 calendar_id = "cme_equity"
 primary_phase = "OPEN"
+overnight_enabled = false
+overnight_phase = "OPEN"
 volume_supported = true
 
 [[metrics.session_measurements.profiles.windows]]
@@ -264,6 +586,9 @@ minimum_duration_seconds = 60
 maximum_duration_seconds = 1800
 duration_step_seconds = 60
 dynamic = true
+historical_selector = "1-MINUTE-LAST-EXTERNAL"
+minimum_historical_observations = 1
+maximum_historical_observations = 5
 
 [[metrics.session_measurements.profiles.windows]]
 window_id = "opening_range_slow"
@@ -276,6 +601,9 @@ minimum_duration_seconds = 300
 maximum_duration_seconds = 3600
 duration_step_seconds = 300
 dynamic = true
+historical_selector = "1-MINUTE-LAST-EXTERNAL"
+minimum_historical_observations = 1
+maximum_historical_observations = 15
 
 [[metrics.session_measurements.profiles.windows]]
 window_id = "power_hour"
@@ -288,12 +616,17 @@ minimum_duration_seconds = 1800
 maximum_duration_seconds = 7200
 duration_step_seconds = 300
 dynamic = true
+historical_selector = "15-MINUTE-LAST-EXTERNAL"
+minimum_historical_observations = 1
+maximum_historical_observations = 4
 
 [[metrics.session_measurements.profiles]]
 profile_id = "cme_energy_primary"
 version = 1
 calendar_id = "cme_energy"
 primary_phase = "OPEN"
+overnight_enabled = false
+overnight_phase = "OPEN"
 volume_supported = true
 windows = []
 
@@ -302,6 +635,8 @@ profile_id = "us_equity_primary"
 version = 1
 calendar_id = "us_equities"
 primary_phase = "OPEN"
+overnight_enabled = false
+overnight_phase = "OPEN"
 volume_supported = true
 windows = []
 
@@ -310,6 +645,8 @@ profile_id = "us_index_primary"
 version = 1
 calendar_id = "us_equities"
 primary_phase = "OPEN"
+overnight_enabled = false
+overnight_phase = "OPEN"
 volume_supported = false
 windows = []
 
@@ -319,7 +656,7 @@ instrument_ids = ["ESU6.CME", "NQU6.CME", "YMU6.CBOT"]
 
 [[metrics.session_measurements.profile_bindings]]
 profile_id = "cme_energy_primary"
-instrument_ids = ["CLU6.NYMEX"]
+instrument_ids = ["CLV6.NYMEX"]
 
 [[metrics.session_measurements.profile_bindings]]
 profile_id = "us_equity_primary"
@@ -364,7 +701,7 @@ owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
-instrument_id = "CLU6.NYMEX"
+instrument_id = "CLV6.NYMEX"
 calendar_id = "cme_energy"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]

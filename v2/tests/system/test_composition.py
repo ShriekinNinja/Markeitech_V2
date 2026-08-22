@@ -72,7 +72,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
                 "cme_equity"
                 if instrument_id in {"ESU6.CME", "NQU6.CME", "YMU6.CBOT"}
                 else "cme_energy"
-                if instrument_id == "CLU6.NYMEX"
+                if instrument_id == "CLV6.NYMEX"
                 else "us_equities"
             ),
             "owner_ids": ["config:system"],
@@ -86,7 +86,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
             "ESU6.CME",
             "NQU6.CME",
             "YMU6.CBOT",
-            "CLU6.NYMEX",
+            "CLV6.NYMEX",
             "SPY.ARCA",
             "QQQ.NASDAQ",
             "^SPX.CBOE",
@@ -213,12 +213,13 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
     assert actor.config.config["instrument_ids"] == list(config.instrument_ids)
     assert actor.config.config["profile_bindings"]["ESU6.CME"] == "cme_equity_primary"
     assert actor.config.config["profile_bindings"]["^SPX.CBOE"] == "us_index_primary"
+    assert actor.config.config["profiles"][0]["overnight_enabled"] is False
     assert actor.config.config["completed_bars"] == {
         "live_selector": "5-SECOND-LAST-EXTERNAL",
         "historical_selector": "1-MINUTE-LAST-EXTERNAL",
         "historical_window": "recent_completed",
         "minimum_historical_observations": 2,
-        "maximum_historical_observations": 4,
+        "maximum_historical_observations": 720,
         "calculation_interval_seconds": 60,
         "minimum_interval_seconds": 5,
         "maximum_interval_seconds": 3600,
@@ -227,9 +228,95 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
         "aggregation_boundary_policy": "utc_fixed_intraday",
         "timestamp_policy": "interval_start",
         "revision_policy": "reject_revision",
-        "maximum_retained_observations": 5000,
+        "maximum_retained_observations": 8000,
         "maximum_output_age_ms": 120000,
     }
+    assert actor.config.config["session_references"] == {
+        "enabled": True,
+        "historical_selector": "15-MINUTE-LAST-EXTERNAL",
+        "active_window": "session_to_date",
+        "previous_window": "previous_sessions",
+        "overnight_window": "current_overnight",
+        "minimum_historical_observations": 1,
+        "maximum_historical_observations": 100,
+        "vwap_price_basis": "typical",
+        "vwap_price_basis_dynamic": True,
+        "minimum_coverage_ratio": 0.8,
+        "minimum_coverage_ratio_floor": 0.5,
+        "minimum_coverage_ratio_ceiling": 1.0,
+        "minimum_coverage_ratio_step": 0.05,
+        "minimum_coverage_ratio_dynamic": True,
+        "maximum_retained_sessions": 4,
+        "maximum_output_age_ms": 120000,
+    }
+    assert actor.config.config["session_windows"] == {
+        "enabled": True,
+        "price_basis": "typical",
+        "price_basis_dynamic": True,
+        "minimum_coverage_ratio": 0.8,
+        "minimum_coverage_ratio_floor": 0.5,
+        "minimum_coverage_ratio_ceiling": 1.0,
+        "minimum_coverage_ratio_step": 0.05,
+        "minimum_coverage_ratio_dynamic": True,
+        "maximum_retained_sessions": 4,
+        "maximum_output_age_ms": 120000,
+    }
+    rolling = actor.config.config["rolling_measurements"]
+    assert rolling["baseline"]["recent_reference_count"] == 20
+    assert rolling["baseline"]["eligible_reference_health"] == ["READY"]
+    assert [family["family_id"] for family in rolling["families"]] == [
+        "fast",
+        "tactical",
+        "structural_intraday",
+    ]
+    assert rolling["families"][0]["selected_context_candidate_id"] == "context_45m"
+    assert actor.config.config["profiles"][0]["windows"] == [
+        {
+            "window_id": "opening_range_fast",
+            "purpose": "opening_range",
+            "anchor_phase": "OPEN",
+            "anchor_boundary": "start",
+            "offset_seconds": 0,
+            "duration_seconds": 300,
+            "minimum_duration_seconds": 60,
+            "maximum_duration_seconds": 1800,
+            "duration_step_seconds": 60,
+            "dynamic": True,
+            "historical_selector": "1-MINUTE-LAST-EXTERNAL",
+            "minimum_historical_observations": 1,
+            "maximum_historical_observations": 5,
+        },
+        {
+            "window_id": "opening_range_slow",
+            "purpose": "opening_range",
+            "anchor_phase": "OPEN",
+            "anchor_boundary": "start",
+            "offset_seconds": 0,
+            "duration_seconds": 900,
+            "minimum_duration_seconds": 300,
+            "maximum_duration_seconds": 3600,
+            "duration_step_seconds": 300,
+            "dynamic": True,
+            "historical_selector": "1-MINUTE-LAST-EXTERNAL",
+            "minimum_historical_observations": 1,
+            "maximum_historical_observations": 15,
+        },
+        {
+            "window_id": "power_hour",
+            "purpose": "power_hour",
+            "anchor_phase": "OPEN",
+            "anchor_boundary": "end",
+            "offset_seconds": -3600,
+            "duration_seconds": 3600,
+            "minimum_duration_seconds": 1800,
+            "maximum_duration_seconds": 7200,
+            "duration_step_seconds": 300,
+            "dynamic": True,
+            "historical_selector": "15-MINUTE-LAST-EXTERNAL",
+            "minimum_historical_observations": 1,
+            "maximum_historical_observations": 4,
+        },
+    ]
 
 
 def test_actor_plan_rejects_missing_required_preflight() -> None:

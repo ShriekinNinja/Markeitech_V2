@@ -163,6 +163,9 @@ class AnalyticalWindowConfig:
     maximum_duration_seconds: int
     duration_step_seconds: int
     dynamic: bool
+    historical_selector: str
+    minimum_historical_observations: int
+    maximum_historical_observations: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,6 +174,8 @@ class AnalyticalSessionProfileConfig:
     version: int
     calendar_id: str
     primary_phase: str
+    overnight_enabled: bool
+    overnight_phase: str
     volume_supported: bool
     windows: tuple[AnalyticalWindowConfig, ...]
 
@@ -201,6 +206,95 @@ class CompletedBarMetricsConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class SessionReferenceMetricsConfig:
+    enabled: bool
+    historical_selector: str
+    active_window: str
+    previous_window: str
+    overnight_window: str
+    minimum_historical_observations: int
+    maximum_historical_observations: int
+    vwap_price_basis: str
+    vwap_price_basis_dynamic: bool
+    minimum_coverage_ratio: float
+    minimum_coverage_ratio_floor: float
+    minimum_coverage_ratio_ceiling: float
+    minimum_coverage_ratio_step: float
+    minimum_coverage_ratio_dynamic: bool
+    maximum_retained_sessions: int
+    maximum_output_age_ms: int
+
+
+@dataclass(frozen=True, slots=True)
+class SessionWindowMetricsConfig:
+    enabled: bool
+    price_basis: str
+    price_basis_dynamic: bool
+    minimum_coverage_ratio: float
+    minimum_coverage_ratio_floor: float
+    minimum_coverage_ratio_ceiling: float
+    minimum_coverage_ratio_step: float
+    minimum_coverage_ratio_dynamic: bool
+    maximum_retained_sessions: int
+    maximum_output_age_ms: int
+
+
+@dataclass(frozen=True, slots=True)
+class RollingCandidateConfig:
+    candidate_id: str
+    purpose: str
+    duration_seconds: int
+    minimum_duration_seconds: int
+    maximum_duration_seconds: int
+    duration_step_seconds: int
+    dynamic: bool
+    active: bool
+
+
+@dataclass(frozen=True, slots=True)
+class RollingFamilyConfig:
+    family_id: str
+    source_selector: str
+    input_selector: str
+    input_interval_seconds: int
+    aggregation_policy: str
+    selected_context_candidate_id: str
+    candidates: tuple[RollingCandidateConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class RollingBaselineConfig:
+    eligible_reference_health: tuple[str, ...]
+    eligible_reference_fidelities: tuple[str, ...]
+    recent_reference_count: int
+    recent_reference_count_minimum: int
+    recent_reference_count_maximum: int
+    recent_reference_count_step: int
+    recent_reference_count_dynamic: bool
+    minimum_recent_references: int
+    phase_reference_count: int
+    phase_reference_count_minimum: int
+    phase_reference_count_maximum: int
+    phase_reference_count_step: int
+    phase_reference_count_dynamic: bool
+    minimum_phase_references: int
+
+
+@dataclass(frozen=True, slots=True)
+class RollingMeasurementsConfig:
+    enabled: bool
+    minimum_coverage_ratio: float
+    minimum_coverage_ratio_floor: float
+    minimum_coverage_ratio_ceiling: float
+    minimum_coverage_ratio_step: float
+    minimum_coverage_ratio_dynamic: bool
+    maximum_retained_observations: int
+    maximum_output_age_ms: int
+    baseline: RollingBaselineConfig
+    families: tuple[RollingFamilyConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class SessionMeasurementsConfig:
     enabled: bool
     required_watchlist_capability: str
@@ -213,6 +307,9 @@ class SessionMeasurementsConfig:
     evidence_snapshot_retry_interval_ms: int
     priority: int
     completed_bars: CompletedBarMetricsConfig
+    session_references: SessionReferenceMetricsConfig
+    session_windows: SessionWindowMetricsConfig
+    rolling_measurements: RollingMeasurementsConfig
     profiles: tuple[AnalyticalSessionProfileConfig, ...]
     profile_bindings: tuple[AnalyticalProfileBindingConfig, ...]
 
@@ -291,7 +388,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 11:
+    if raw["schema_version"] != 13:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -343,6 +440,27 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "session measurement profiles reference unknown calendars: "
             f"{', '.join(unknown_profile_calendars)}",
         )
+    calendars_by_id = {calendar.calendar_id: calendar for calendar in sessions.calendars}
+    for profile in metrics.session_measurements.profiles:
+        calendar = calendars_by_id[profile.calendar_id]
+        available_phases = {phase.name for phase in calendar.phases} or {"OPEN"}
+        if profile.primary_phase not in available_phases:
+            raise ValueError(
+                "session measurement profile primary phase is not defined by its calendar: "
+                f"profile={profile.profile_id}, phase={profile.primary_phase}",
+            )
+        if profile.overnight_enabled and profile.overnight_phase not in available_phases:
+            raise ValueError(
+                "session measurement profile overnight phase is not defined by its calendar: "
+                f"profile={profile.profile_id}, phase={profile.overnight_phase}",
+            )
+        for window in profile.windows:
+            if window.anchor_phase not in available_phases:
+                raise ValueError(
+                    "session measurement window phase is not defined by its calendar: "
+                    f"profile={profile.profile_id}, window={window.window_id}, "
+                    f"phase={window.anchor_phase}",
+                )
     profile_by_id = {
         profile.profile_id: profile for profile in metrics.session_measurements.profiles
     }
@@ -383,8 +501,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
                 f"{', '.join(missing_bindings)}",
             )
         selected_calendars = {
-            watchlist_by_id[instrument_id].calendar_id
-            for instrument_id in selected_instruments
+            watchlist_by_id[instrument_id].calendar_id for instrument_id in selected_instruments
         }
         if len(selected_calendars) > metrics.session_measurements.maximum_active_sessions:
             raise ValueError(
@@ -970,6 +1087,9 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "evidence_snapshot_retry_interval_ms",
             "priority",
             "completed_bars",
+            "session_references",
+            "session_windows",
+            "rolling_measurements",
             "profiles",
             "profile_bindings",
         },
@@ -1094,6 +1214,45 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "metrics.session_measurements.completed_bars.historical_window is unsupported: "
             f"{historical_window!r}",
         )
+    references = _load_session_reference_metrics(values["session_references"])
+    session_windows = _load_session_window_metrics(values["session_windows"])
+    rolling_measurements = _load_rolling_measurements(values["rolling_measurements"])
+    if (
+        rolling_measurements.maximum_retained_observations
+        > completed["maximum_retained_observations"]
+    ):
+        raise ValueError(
+            "rolling measurements cannot retain more observations than the completed-bar ledger",
+        )
+    for family in rolling_measurements.families:
+        if family.source_selector != completed["historical_selector"]:
+            raise ValueError(
+                "rolling family source_selector must match the completed-bar historical selector",
+            )
+        if family.input_interval_seconds < interval or family.input_interval_seconds % interval:
+            raise ValueError(
+                "rolling family input interval must be an integer multiple of the completed-bar "
+                "calculation interval",
+            )
+        expected_policy = (
+            "identity" if family.input_interval_seconds == interval else "utc_fixed_intraday"
+        )
+        if family.aggregation_policy != expected_policy:
+            raise ValueError(
+                "rolling family aggregation policy does not match its configured input interval",
+            )
+    minimum_recent_retention = max(
+        (candidate.duration_seconds // interval)
+        * (rolling_measurements.baseline.minimum_recent_references + 1)
+        for family in rolling_measurements.families
+        for candidate in family.candidates
+        if candidate.active
+    )
+    if rolling_measurements.maximum_retained_observations < minimum_recent_retention:
+        raise ValueError(
+            "rolling measurement retention cannot satisfy its configured minimum recent "
+            "reference count",
+        )
     profiles_raw = values["profiles"]
     if not isinstance(profiles_raw, list) or not profiles_raw:
         raise ValueError("metrics.session_measurements.profiles must be a non-empty array")
@@ -1185,6 +1344,9 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
                 "metrics.session_measurements.completed_bars.maximum_output_age_ms",
             ),
         ),
+        session_references=references,
+        session_windows=session_windows,
+        rolling_measurements=rolling_measurements,
         profiles=profiles,
         profile_bindings=bindings,
     )
@@ -1216,6 +1378,8 @@ def _load_analytical_profile(raw: Any, index: int) -> AnalyticalSessionProfileCo
             "version",
             "calendar_id",
             "primary_phase",
+            "overnight_enabled",
+            "overnight_phase",
             "volume_supported",
             "windows",
         },
@@ -1231,13 +1395,122 @@ def _load_analytical_profile(raw: Any, index: int) -> AnalyticalSessionProfileCo
     window_ids = [window.window_id for window in windows]
     if len(window_ids) != len(set(window_ids)):
         raise ValueError(f"{label} window IDs must be unique")
+    overnight_enabled = _bool(values["overnight_enabled"], f"{label}.overnight_enabled")
+    overnight_phase = _non_empty_string(values["overnight_phase"], f"{label}.overnight_phase")
     return AnalyticalSessionProfileConfig(
         profile_id=_non_empty_string(values["profile_id"], f"{label}.profile_id"),
         version=_positive_int(values["version"], f"{label}.version"),
         calendar_id=_non_empty_string(values["calendar_id"], f"{label}.calendar_id"),
         primary_phase=_non_empty_string(values["primary_phase"], f"{label}.primary_phase"),
+        overnight_enabled=overnight_enabled,
+        overnight_phase=overnight_phase,
         volume_supported=_bool(values["volume_supported"], f"{label}.volume_supported"),
         windows=windows,
+    )
+
+
+def _load_session_reference_metrics(raw: Any) -> SessionReferenceMetricsConfig:
+    label = "metrics.session_measurements.session_references"
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "historical_selector",
+            "active_window",
+            "previous_window",
+            "overnight_window",
+            "minimum_historical_observations",
+            "maximum_historical_observations",
+            "vwap_price_basis",
+            "vwap_price_basis_dynamic",
+            "minimum_coverage_ratio",
+            "minimum_coverage_ratio_floor",
+            "minimum_coverage_ratio_ceiling",
+            "minimum_coverage_ratio_step",
+            "minimum_coverage_ratio_dynamic",
+            "maximum_retained_sessions",
+            "maximum_output_age_ms",
+        },
+        label,
+    )
+    active_window = _non_empty_string(values["active_window"], f"{label}.active_window")
+    if active_window not in {"session_to_date", "current_rth", "current_gth"}:
+        raise ValueError(f"{label}.active_window is unsupported: {active_window!r}")
+    previous_window = _non_empty_string(
+        values["previous_window"],
+        f"{label}.previous_window",
+    )
+    if previous_window not in {"previous_sessions", "previous_rth"}:
+        raise ValueError(f"{label}.previous_window is unsupported: {previous_window!r}")
+    overnight_window = _non_empty_string(
+        values["overnight_window"],
+        f"{label}.overnight_window",
+    )
+    if overnight_window not in {"current_overnight", "current_gth", "premarket", "overnight"}:
+        raise ValueError(f"{label}.overnight_window is unsupported: {overnight_window!r}")
+    minimum = _positive_int(
+        values["minimum_historical_observations"],
+        f"{label}.minimum_historical_observations",
+    )
+    maximum = _positive_int(
+        values["maximum_historical_observations"],
+        f"{label}.maximum_historical_observations",
+    )
+    if maximum < minimum:
+        raise ValueError(f"{label} maximum historical observations cannot be below minimum")
+    basis = _non_empty_string(values["vwap_price_basis"], f"{label}.vwap_price_basis")
+    if basis not in {"typical", "close", "ohlc4"}:
+        raise ValueError(f"{label}.vwap_price_basis is unsupported: {basis!r}")
+    coverage = _coverage_ratio(values["minimum_coverage_ratio"], f"{label}.minimum_coverage_ratio")
+    floor = _coverage_ratio(
+        values["minimum_coverage_ratio_floor"],
+        f"{label}.minimum_coverage_ratio_floor",
+    )
+    ceiling = _coverage_ratio(
+        values["minimum_coverage_ratio_ceiling"],
+        f"{label}.minimum_coverage_ratio_ceiling",
+    )
+    step = _positive_float(
+        values["minimum_coverage_ratio_step"],
+        f"{label}.minimum_coverage_ratio_step",
+    )
+    if not floor <= coverage <= ceiling:
+        raise ValueError(f"{label}.minimum_coverage_ratio is outside its configured envelope")
+    if step > ceiling - floor:
+        raise ValueError(f"{label}.minimum_coverage_ratio_step exceeds its envelope")
+    return SessionReferenceMetricsConfig(
+        enabled=_bool(values["enabled"], f"{label}.enabled"),
+        historical_selector=_non_empty_string(
+            values["historical_selector"],
+            f"{label}.historical_selector",
+        ),
+        active_window=active_window,
+        previous_window=previous_window,
+        overnight_window=overnight_window,
+        minimum_historical_observations=minimum,
+        maximum_historical_observations=maximum,
+        vwap_price_basis=basis,
+        vwap_price_basis_dynamic=_bool(
+            values["vwap_price_basis_dynamic"],
+            f"{label}.vwap_price_basis_dynamic",
+        ),
+        minimum_coverage_ratio=coverage,
+        minimum_coverage_ratio_floor=floor,
+        minimum_coverage_ratio_ceiling=ceiling,
+        minimum_coverage_ratio_step=step,
+        minimum_coverage_ratio_dynamic=_bool(
+            values["minimum_coverage_ratio_dynamic"],
+            f"{label}.minimum_coverage_ratio_dynamic",
+        ),
+        maximum_retained_sessions=_positive_int(
+            values["maximum_retained_sessions"],
+            f"{label}.maximum_retained_sessions",
+        ),
+        maximum_output_age_ms=_positive_int(
+            values["maximum_output_age_ms"],
+            f"{label}.maximum_output_age_ms",
+        ),
     )
 
 
@@ -1256,6 +1529,9 @@ def _load_analytical_window(raw: Any, label: str) -> AnalyticalWindowConfig:
             "maximum_duration_seconds",
             "duration_step_seconds",
             "dynamic",
+            "historical_selector",
+            "minimum_historical_observations",
+            "maximum_historical_observations",
         },
         label,
     )
@@ -1282,6 +1558,16 @@ def _load_analytical_window(raw: Any, label: str) -> AnalyticalWindowConfig:
         raise ValueError(f"{label}.duration_seconds is outside its configured envelope")
     if (duration - minimum) % step:
         raise ValueError(f"{label}.duration_seconds does not align to its step")
+    minimum_observations = _positive_int(
+        values["minimum_historical_observations"],
+        f"{label}.minimum_historical_observations",
+    )
+    maximum_observations = _positive_int(
+        values["maximum_historical_observations"],
+        f"{label}.maximum_historical_observations",
+    )
+    if maximum_observations < minimum_observations:
+        raise ValueError(f"{label} maximum historical observations cannot be below minimum")
     return AnalyticalWindowConfig(
         window_id=_non_empty_string(values["window_id"], f"{label}.window_id"),
         purpose=purpose,
@@ -1293,7 +1579,351 @@ def _load_analytical_window(raw: Any, label: str) -> AnalyticalWindowConfig:
         maximum_duration_seconds=maximum,
         duration_step_seconds=step,
         dynamic=_bool(values["dynamic"], f"{label}.dynamic"),
+        historical_selector=_non_empty_string(
+            values["historical_selector"],
+            f"{label}.historical_selector",
+        ),
+        minimum_historical_observations=minimum_observations,
+        maximum_historical_observations=maximum_observations,
     )
+
+
+def _load_session_window_metrics(raw: Any) -> SessionWindowMetricsConfig:
+    label = "metrics.session_measurements.session_windows"
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "price_basis",
+            "price_basis_dynamic",
+            "minimum_coverage_ratio",
+            "minimum_coverage_ratio_floor",
+            "minimum_coverage_ratio_ceiling",
+            "minimum_coverage_ratio_step",
+            "minimum_coverage_ratio_dynamic",
+            "maximum_retained_sessions",
+            "maximum_output_age_ms",
+        },
+        label,
+    )
+    basis = _non_empty_string(values["price_basis"], f"{label}.price_basis")
+    if basis not in {"typical", "close", "ohlc4"}:
+        raise ValueError(f"{label}.price_basis is unsupported: {basis!r}")
+    coverage = _coverage_ratio(values["minimum_coverage_ratio"], f"{label}.minimum_coverage_ratio")
+    floor = _coverage_ratio(
+        values["minimum_coverage_ratio_floor"],
+        f"{label}.minimum_coverage_ratio_floor",
+    )
+    ceiling = _coverage_ratio(
+        values["minimum_coverage_ratio_ceiling"],
+        f"{label}.minimum_coverage_ratio_ceiling",
+    )
+    step = _positive_float(
+        values["minimum_coverage_ratio_step"],
+        f"{label}.minimum_coverage_ratio_step",
+    )
+    if not floor <= coverage <= ceiling:
+        raise ValueError(f"{label}.minimum_coverage_ratio is outside its configured envelope")
+    if step > ceiling - floor:
+        raise ValueError(f"{label}.minimum_coverage_ratio_step exceeds its envelope")
+    return SessionWindowMetricsConfig(
+        enabled=_bool(values["enabled"], f"{label}.enabled"),
+        price_basis=basis,
+        price_basis_dynamic=_bool(
+            values["price_basis_dynamic"],
+            f"{label}.price_basis_dynamic",
+        ),
+        minimum_coverage_ratio=coverage,
+        minimum_coverage_ratio_floor=floor,
+        minimum_coverage_ratio_ceiling=ceiling,
+        minimum_coverage_ratio_step=step,
+        minimum_coverage_ratio_dynamic=_bool(
+            values["minimum_coverage_ratio_dynamic"],
+            f"{label}.minimum_coverage_ratio_dynamic",
+        ),
+        maximum_retained_sessions=_positive_int(
+            values["maximum_retained_sessions"],
+            f"{label}.maximum_retained_sessions",
+        ),
+        maximum_output_age_ms=_positive_int(
+            values["maximum_output_age_ms"],
+            f"{label}.maximum_output_age_ms",
+        ),
+    )
+
+
+def _load_rolling_measurements(raw: Any) -> RollingMeasurementsConfig:
+    label = "metrics.session_measurements.rolling_measurements"
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "minimum_coverage_ratio",
+            "minimum_coverage_ratio_floor",
+            "minimum_coverage_ratio_ceiling",
+            "minimum_coverage_ratio_step",
+            "minimum_coverage_ratio_dynamic",
+            "maximum_retained_observations",
+            "maximum_output_age_ms",
+            "baseline",
+            "families",
+        },
+        label,
+    )
+    coverage = _coverage_ratio(values["minimum_coverage_ratio"], f"{label}.minimum_coverage_ratio")
+    floor = _coverage_ratio(
+        values["minimum_coverage_ratio_floor"],
+        f"{label}.minimum_coverage_ratio_floor",
+    )
+    ceiling = _coverage_ratio(
+        values["minimum_coverage_ratio_ceiling"],
+        f"{label}.minimum_coverage_ratio_ceiling",
+    )
+    step = _positive_float(
+        values["minimum_coverage_ratio_step"],
+        f"{label}.minimum_coverage_ratio_step",
+    )
+    if not floor <= coverage <= ceiling:
+        raise ValueError(f"{label}.minimum_coverage_ratio is outside its configured envelope")
+    if step > ceiling - floor:
+        raise ValueError(f"{label}.minimum_coverage_ratio_step exceeds its envelope")
+    baseline = _load_rolling_baseline(values["baseline"], f"{label}.baseline")
+    families_raw = values["families"]
+    if not isinstance(families_raw, list) or not families_raw:
+        raise ValueError(f"{label}.families must be a non-empty array")
+    families = tuple(
+        _load_rolling_family(item, f"{label}.families[{index}]")
+        for index, item in enumerate(families_raw)
+    )
+    family_ids = tuple(item.family_id for item in families)
+    if len(family_ids) != len(set(family_ids)):
+        raise ValueError(f"{label} family IDs must be unique")
+    return RollingMeasurementsConfig(
+        enabled=_bool(values["enabled"], f"{label}.enabled"),
+        minimum_coverage_ratio=coverage,
+        minimum_coverage_ratio_floor=floor,
+        minimum_coverage_ratio_ceiling=ceiling,
+        minimum_coverage_ratio_step=step,
+        minimum_coverage_ratio_dynamic=_bool(
+            values["minimum_coverage_ratio_dynamic"],
+            f"{label}.minimum_coverage_ratio_dynamic",
+        ),
+        maximum_retained_observations=_positive_int(
+            values["maximum_retained_observations"],
+            f"{label}.maximum_retained_observations",
+        ),
+        maximum_output_age_ms=_positive_int(
+            values["maximum_output_age_ms"],
+            f"{label}.maximum_output_age_ms",
+        ),
+        baseline=baseline,
+        families=families,
+    )
+
+
+def _load_rolling_baseline(raw: Any, label: str) -> RollingBaselineConfig:
+    values = _mapping(raw, label)
+    keys = {
+        "eligible_reference_health",
+        "eligible_reference_fidelities",
+        "recent_reference_count",
+        "recent_reference_count_minimum",
+        "recent_reference_count_maximum",
+        "recent_reference_count_step",
+        "recent_reference_count_dynamic",
+        "minimum_recent_references",
+        "phase_reference_count",
+        "phase_reference_count_minimum",
+        "phase_reference_count_maximum",
+        "phase_reference_count_step",
+        "phase_reference_count_dynamic",
+        "minimum_phase_references",
+    }
+    _require_keys(values, keys, label)
+    integer_keys = keys - {"eligible_reference_health", "eligible_reference_fidelities"}
+    integers = {
+        key: _positive_int(values[key], f"{label}.{key}")
+        for key in integer_keys
+        if not key.endswith("_dynamic")
+    }
+    eligible_health = _unique_non_empty_strings(
+        values["eligible_reference_health"],
+        f"{label}.eligible_reference_health",
+    )
+    unsupported_health = set(eligible_health) - {
+        "READY",
+        "WARMING",
+        "DEGRADED",
+        "STALE",
+        "UNAVAILABLE",
+        "UNSUPPORTED",
+        "FAILED",
+    }
+    if unsupported_health:
+        raise ValueError(f"{label}.eligible_reference_health contains unsupported values")
+    eligible_fidelities = _unique_non_empty_strings(
+        values["eligible_reference_fidelities"],
+        f"{label}.eligible_reference_fidelities",
+    )
+    unsupported_fidelities = set(eligible_fidelities) - {
+        "REPORTED",
+        "DERIVED",
+        "INFERRED",
+        "PARTIAL",
+        "UNAVAILABLE",
+    }
+    if unsupported_fidelities:
+        raise ValueError(f"{label}.eligible_reference_fidelities contains unsupported values")
+    _validate_integer_envelope(
+        integers["recent_reference_count"],
+        integers["recent_reference_count_minimum"],
+        integers["recent_reference_count_maximum"],
+        integers["recent_reference_count_step"],
+        f"{label}.recent_reference_count",
+    )
+    _validate_integer_envelope(
+        integers["phase_reference_count"],
+        integers["phase_reference_count_minimum"],
+        integers["phase_reference_count_maximum"],
+        integers["phase_reference_count_step"],
+        f"{label}.phase_reference_count",
+    )
+    if integers["minimum_recent_references"] > integers["recent_reference_count"]:
+        raise ValueError(f"{label}.minimum_recent_references exceeds requested count")
+    if integers["minimum_phase_references"] > integers["phase_reference_count"]:
+        raise ValueError(f"{label}.minimum_phase_references exceeds requested count")
+    return RollingBaselineConfig(
+        **integers,
+        eligible_reference_health=eligible_health,
+        eligible_reference_fidelities=eligible_fidelities,
+        recent_reference_count_dynamic=_bool(
+            values["recent_reference_count_dynamic"],
+            f"{label}.recent_reference_count_dynamic",
+        ),
+        phase_reference_count_dynamic=_bool(
+            values["phase_reference_count_dynamic"],
+            f"{label}.phase_reference_count_dynamic",
+        ),
+    )
+
+
+def _load_rolling_family(raw: Any, label: str) -> RollingFamilyConfig:
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "family_id",
+            "source_selector",
+            "input_selector",
+            "input_interval_seconds",
+            "aggregation_policy",
+            "selected_context_candidate_id",
+            "candidates",
+        },
+        label,
+    )
+    input_interval = _positive_int(
+        values["input_interval_seconds"],
+        f"{label}.input_interval_seconds",
+    )
+    aggregation_policy = _non_empty_string(
+        values["aggregation_policy"],
+        f"{label}.aggregation_policy",
+    )
+    if aggregation_policy not in {"identity", "utc_fixed_intraday"}:
+        raise ValueError(f"{label}.aggregation_policy is unsupported")
+    candidates_raw = values["candidates"]
+    if not isinstance(candidates_raw, list) or not candidates_raw:
+        raise ValueError(f"{label}.candidates must be a non-empty array")
+    candidates = tuple(
+        _load_rolling_candidate(item, f"{label}.candidates[{index}]", input_interval)
+        for index, item in enumerate(candidates_raw)
+    )
+    candidate_ids = tuple(item.candidate_id for item in candidates)
+    if len(candidate_ids) != len(set(candidate_ids)):
+        raise ValueError(f"{label} candidate IDs must be unique")
+    selected_id = _non_empty_string(
+        values["selected_context_candidate_id"],
+        f"{label}.selected_context_candidate_id",
+    )
+    selected = next((item for item in candidates if item.candidate_id == selected_id), None)
+    if selected is None or selected.purpose != "context" or not selected.active:
+        raise ValueError(f"{label}.selected_context_candidate_id must select an active context")
+    return RollingFamilyConfig(
+        family_id=_non_empty_string(values["family_id"], f"{label}.family_id"),
+        source_selector=_non_empty_string(
+            values["source_selector"],
+            f"{label}.source_selector",
+        ),
+        input_selector=_non_empty_string(values["input_selector"], f"{label}.input_selector"),
+        input_interval_seconds=input_interval,
+        aggregation_policy=aggregation_policy,
+        selected_context_candidate_id=selected_id,
+        candidates=candidates,
+    )
+
+
+def _load_rolling_candidate(
+    raw: Any,
+    label: str,
+    input_interval_seconds: int,
+) -> RollingCandidateConfig:
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "candidate_id",
+            "purpose",
+            "duration_seconds",
+            "minimum_duration_seconds",
+            "maximum_duration_seconds",
+            "duration_step_seconds",
+            "dynamic",
+            "active",
+        },
+        label,
+    )
+    purpose = _non_empty_string(values["purpose"], f"{label}.purpose")
+    if purpose not in {"context", "expansion"}:
+        raise ValueError(f"{label}.purpose must be context or expansion")
+    duration = _positive_int(values["duration_seconds"], f"{label}.duration_seconds")
+    minimum = _positive_int(
+        values["minimum_duration_seconds"],
+        f"{label}.minimum_duration_seconds",
+    )
+    maximum = _positive_int(
+        values["maximum_duration_seconds"],
+        f"{label}.maximum_duration_seconds",
+    )
+    step = _positive_int(values["duration_step_seconds"], f"{label}.duration_step_seconds")
+    _validate_integer_envelope(duration, minimum, maximum, step, f"{label}.duration_seconds")
+    if duration % input_interval_seconds:
+        raise ValueError(f"{label}.duration_seconds must contain whole input intervals")
+    return RollingCandidateConfig(
+        candidate_id=_non_empty_string(values["candidate_id"], f"{label}.candidate_id"),
+        purpose=purpose,
+        duration_seconds=duration,
+        minimum_duration_seconds=minimum,
+        maximum_duration_seconds=maximum,
+        duration_step_seconds=step,
+        dynamic=_bool(values["dynamic"], f"{label}.dynamic"),
+        active=_bool(values["active"], f"{label}.active"),
+    )
+
+
+def _validate_integer_envelope(
+    value: int,
+    minimum: int,
+    maximum: int,
+    step: int,
+    label: str,
+) -> None:
+    if not minimum <= value <= maximum:
+        raise ValueError(f"{label} is outside its configured envelope")
+    if (value - minimum) % step:
+        raise ValueError(f"{label} does not align to its step")
 
 
 def _load_acquisition(
@@ -1484,6 +2114,15 @@ def _unit_float(value: Any, label: str) -> float:
     result = _positive_float(value, label)
     if result >= 1:
         raise ValueError(f"{label} must be less than 1")
+    return result
+
+
+def _coverage_ratio(value: Any, label: str) -> float:
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        raise ValueError(f"{label} must be a number")
+    result = float(value)
+    if not 0 <= result <= 1:
+        raise ValueError(f"{label} must be between 0 and 1")
     return result
 
 
