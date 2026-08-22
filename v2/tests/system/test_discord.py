@@ -7,9 +7,11 @@ from nautilus_trader.network import HttpResponse
 from markeitech.system.discord import (
     DiscordDelivery,
     DiscordDeliveryWorker,
+    render_runtime_resource_health_message,
     render_system_health_message,
 )
 from markeitech.system.messages import SystemHealthEvent
+from markeitech.system.resource_contracts import RuntimeResourceHealthEvent
 
 
 def test_renders_readable_health_embed_without_mentions() -> None:
@@ -39,6 +41,48 @@ def test_renders_readable_health_embed_without_mentions() -> None:
         "Configured instruments": "ESU6.CME,SPY.ARCA",
         "Previous state": "STARTING",
     }
+
+
+def test_renders_critical_resource_transition_with_explicit_here_ping() -> None:
+    event = RuntimeResourceHealthEvent(
+        event_id="runtime-resource-health:RESOURCE-HEALTH:1:CRITICAL",
+        source="RESOURCE-HEALTH",
+        observed_ts_ns=1,
+        state="CRITICAL",
+        previous_state="WARNING",
+        reason_codes=("disk_free_percent",),
+        observations={"disk_free_percent": 4.5},
+        thresholds={"disk_free_percent": 5.0},
+        notification_eligible=True,
+        threshold_version="test-v1",
+    )
+
+    payload = json.loads(render_runtime_resource_health_message(event, 1, ping_critical=True))
+
+    assert payload["content"] == "@here"
+    assert payload["allowed_mentions"] == {"parse": ["everyone"]}
+    assert payload["embeds"][0]["title"] == "Markeitech V2 | Host Resources Critical"
+    assert "Disk Free Percent" in payload["embeds"][0]["description"]
+
+
+def test_renders_resource_recovery_without_mentions() -> None:
+    event = RuntimeResourceHealthEvent(
+        event_id="runtime-resource-health:RESOURCE-HEALTH:2:NORMAL",
+        source="RESOURCE-HEALTH",
+        observed_ts_ns=2,
+        state="NORMAL",
+        previous_state="WARNING",
+        reason_codes=("resources_recovered",),
+        observations={"host_memory_available_percent": 40.0},
+        thresholds={"host_memory_available_percent": 15.0},
+        notification_eligible=True,
+        threshold_version="test-v1",
+    )
+
+    payload = json.loads(render_runtime_resource_health_message(event, 2, ping_critical=False))
+
+    assert "content" not in payload
+    assert payload["allowed_mentions"] == {"parse": []}
 
 
 def test_worker_preserves_order_and_reports_confirmed_delivery() -> None:

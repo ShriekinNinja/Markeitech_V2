@@ -51,6 +51,15 @@ before an unattended advisory agent can be trusted.
 
 ## Priority 2: Runtime Hardening
 
+- [x] Preserve temporarily unavailable historical session-window demands with typed, deduplicated,
+      timer/session-driven retry instead of rejecting closed-session and pre-open work. Connected
+      acceptance on 2026-08-22 deferred all six future opening-range demands without rejection while
+      unrelated historical acquisition completed.
+- [x] Add passive host/process/cache resource measurements plus configurable sustained
+      warning/critical/recovery transitions, durable operational audit, and critical-only Discord
+      ping policy. Connected warning acceptance on 2026-08-22 reconciled 15 raw samples, one warning
+      transition, four Discord deliveries, and all 726 PostgreSQL writes; controlled critical and
+      recovery projection remain follow-up cases.
 - [ ] Make native-probe composition request only feed kinds the selected probe supports.
 - [ ] Cache or precompute session schedules so steady-state evaluation does not rebuild exchange
       calendars every second.
@@ -181,6 +190,15 @@ provider-neutral contract are documented in
       bounded recent and phase-matched baselines, and no semantic classifications. Extended RTH
       acceptance on 2026-08-21 produced 307,296 rolling values with zero calculation failures and
       reconciled all 32,389 operational persistence writes.
+- [x] **Runtime resource evidence gate:** live-accept process, host, disk, and public Nautilus cache
+      telemetry plus warning/critical/recovery transitions with the Observatory off and cache
+      defaults unchanged. Reconcile PostgreSQL samples/transitions, Discord critical-only ping
+      behavior, and shutdown summaries before changing retention, cache backing, or selecting Redis.
+      Accepted at `248a999` after an Observatory-off connected run persisted all 15 resource
+      samples and one sustained warning transition, delivered all four eligible Discord messages,
+      kept system health `READY` until controlled shutdown, and reconciled all 726 PostgreSQL
+      records without retry, rejection, failure, or pending work. Cache counts and process RSS
+      remained bounded; no cache-policy or Redis change was justified.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.

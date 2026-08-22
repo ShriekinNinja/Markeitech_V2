@@ -330,6 +330,61 @@ class LoggingConfig:
 class DiscordConfig:
     enabled: bool
     request_timeout_seconds: int
+    queue_capacity: int
+    ping_critical_resource_alerts: bool
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeResourceThresholdConfig:
+    host_memory_available_percent: float
+    host_cpu_percent: float
+    host_swap_percent: float
+    disk_free_bytes: int
+    disk_free_percent: float
+    process_rss_bytes: int
+    process_rss_growth_bytes: int
+    process_cpu_percent: float
+    thread_count: int
+    open_fd_ratio: float
+
+    def to_dict(self) -> dict[str, int | float]:
+        return {
+            "host_memory_available_percent": self.host_memory_available_percent,
+            "host_cpu_percent": self.host_cpu_percent,
+            "host_swap_percent": self.host_swap_percent,
+            "disk_free_bytes": self.disk_free_bytes,
+            "disk_free_percent": self.disk_free_percent,
+            "rss_bytes": self.process_rss_bytes,
+            "rss_growth_bytes": self.process_rss_growth_bytes,
+            "cpu_percent": self.process_cpu_percent,
+            "thread_count": self.thread_count,
+            "open_fd_ratio": self.open_fd_ratio,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeResourceHealthConfig:
+    enabled: bool
+    threshold_version: str
+    warning_consecutive_samples: int
+    critical_consecutive_samples: int
+    recovery_consecutive_samples: int
+    notification_cooldown_ms: int
+    rss_growth_window_samples: int
+    stale_warning_ms: int
+    stale_critical_ms: int
+    warning: RuntimeResourceThresholdConfig
+    critical: RuntimeResourceThresholdConfig
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeResourcesConfig:
+    enabled: bool
+    sample_interval_ms: int
+    log_every_samples: int
+    include_cache_counts: bool
+    disk_path: str
+    health: RuntimeResourceHealthConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -352,6 +407,7 @@ class SystemConfig:
     ib: InteractiveBrokersConfig
     logging: LoggingConfig
     discord: DiscordConfig
+    runtime_resources: RuntimeResourcesConfig
     persistence: PersistenceConfig
     acquisition: AcquisitionConfig
     historical: HistoricalConfig
@@ -378,6 +434,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "ib",
             "logging",
             "discord",
+            "runtime_resources",
             "persistence",
             "acquisition",
             "historical",
@@ -388,13 +445,14 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 13:
+    if raw["schema_version"] != 15:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
     ib = _load_ib(raw["ib"])
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
+    runtime_resources = _load_runtime_resources(raw["runtime_resources"])
     persistence = _load_persistence(raw["persistence"])
     watchlist = _load_watchlist(raw["watchlist"])
     acquisition = _load_acquisition(raw["acquisition"], watchlist)
@@ -528,6 +586,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         ib=ib,
         logging=logging,
         discord=discord,
+        runtime_resources=runtime_resources,
         persistence=persistence,
         acquisition=acquisition,
         historical=historical,
@@ -628,14 +687,209 @@ def _load_logging(raw: Any, config_directory: Path) -> LoggingConfig:
 
 def _load_discord(raw: Any) -> DiscordConfig:
     values = _mapping(raw, "discord")
-    _require_keys(values, {"enabled", "request_timeout_seconds"}, "discord")
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "request_timeout_seconds",
+            "queue_capacity",
+            "ping_critical_resource_alerts",
+        },
+        "discord",
+    )
     return DiscordConfig(
         enabled=_bool(values["enabled"], "discord.enabled"),
         request_timeout_seconds=_positive_int(
             values["request_timeout_seconds"],
             "discord.request_timeout_seconds",
         ),
+        queue_capacity=_positive_int(values["queue_capacity"], "discord.queue_capacity"),
+        ping_critical_resource_alerts=_bool(
+            values["ping_critical_resource_alerts"],
+            "discord.ping_critical_resource_alerts",
+        ),
     )
+
+
+def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
+    values = _mapping(raw, "runtime_resources")
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "sample_interval_ms",
+            "log_every_samples",
+            "include_cache_counts",
+            "disk_path",
+            "health",
+        },
+        "runtime_resources",
+    )
+    health_values = _mapping(values["health"], "runtime_resources.health")
+    _require_keys(
+        health_values,
+        {
+            "enabled",
+            "threshold_version",
+            "warning_consecutive_samples",
+            "critical_consecutive_samples",
+            "recovery_consecutive_samples",
+            "notification_cooldown_ms",
+            "rss_growth_window_samples",
+            "stale_warning_ms",
+            "stale_critical_ms",
+            "warning",
+            "critical",
+        },
+        "runtime_resources.health",
+    )
+    warning = _load_runtime_resource_thresholds(
+        health_values["warning"],
+        "runtime_resources.health.warning",
+    )
+    critical = _load_runtime_resource_thresholds(
+        health_values["critical"],
+        "runtime_resources.health.critical",
+    )
+    _validate_runtime_resource_threshold_order(warning, critical)
+    stale_warning_ms = _positive_int(
+        health_values["stale_warning_ms"],
+        "runtime_resources.health.stale_warning_ms",
+    )
+    stale_critical_ms = _positive_int(
+        health_values["stale_critical_ms"],
+        "runtime_resources.health.stale_critical_ms",
+    )
+    if stale_critical_ms <= stale_warning_ms:
+        raise ValueError(
+            "runtime_resources.health.stale_critical_ms must exceed stale_warning_ms",
+        )
+    return RuntimeResourcesConfig(
+        enabled=_bool(values["enabled"], "runtime_resources.enabled"),
+        sample_interval_ms=_positive_int(
+            values["sample_interval_ms"],
+            "runtime_resources.sample_interval_ms",
+        ),
+        log_every_samples=_positive_int(
+            values["log_every_samples"],
+            "runtime_resources.log_every_samples",
+        ),
+        include_cache_counts=_bool(
+            values["include_cache_counts"],
+            "runtime_resources.include_cache_counts",
+        ),
+        disk_path=_non_empty_string(values["disk_path"], "runtime_resources.disk_path"),
+        health=RuntimeResourceHealthConfig(
+            enabled=_bool(health_values["enabled"], "runtime_resources.health.enabled"),
+            threshold_version=_non_empty_string(
+                health_values["threshold_version"],
+                "runtime_resources.health.threshold_version",
+            ),
+            warning_consecutive_samples=_positive_int(
+                health_values["warning_consecutive_samples"],
+                "runtime_resources.health.warning_consecutive_samples",
+            ),
+            critical_consecutive_samples=_positive_int(
+                health_values["critical_consecutive_samples"],
+                "runtime_resources.health.critical_consecutive_samples",
+            ),
+            recovery_consecutive_samples=_positive_int(
+                health_values["recovery_consecutive_samples"],
+                "runtime_resources.health.recovery_consecutive_samples",
+            ),
+            notification_cooldown_ms=_positive_int(
+                health_values["notification_cooldown_ms"],
+                "runtime_resources.health.notification_cooldown_ms",
+            ),
+            rss_growth_window_samples=_positive_int(
+                health_values["rss_growth_window_samples"],
+                "runtime_resources.health.rss_growth_window_samples",
+            ),
+            stale_warning_ms=stale_warning_ms,
+            stale_critical_ms=stale_critical_ms,
+            warning=warning,
+            critical=critical,
+        ),
+    )
+
+
+def _load_runtime_resource_thresholds(
+    raw: Any,
+    label: str,
+) -> RuntimeResourceThresholdConfig:
+    values = _mapping(raw, label)
+    keys = {
+        "host_memory_available_percent",
+        "host_cpu_percent",
+        "host_swap_percent",
+        "disk_free_bytes",
+        "disk_free_percent",
+        "process_rss_bytes",
+        "process_rss_growth_bytes",
+        "process_cpu_percent",
+        "thread_count",
+        "open_fd_ratio",
+    }
+    _require_keys(values, keys, label)
+    return RuntimeResourceThresholdConfig(
+        host_memory_available_percent=_percentage(
+            values["host_memory_available_percent"],
+            f"{label}.host_memory_available_percent",
+        ),
+        host_cpu_percent=_percentage(
+            values["host_cpu_percent"],
+            f"{label}.host_cpu_percent",
+        ),
+        host_swap_percent=_percentage(
+            values["host_swap_percent"],
+            f"{label}.host_swap_percent",
+        ),
+        disk_free_bytes=_positive_int(values["disk_free_bytes"], f"{label}.disk_free_bytes"),
+        disk_free_percent=_percentage(
+            values["disk_free_percent"],
+            f"{label}.disk_free_percent",
+        ),
+        process_rss_bytes=_positive_int(
+            values["process_rss_bytes"],
+            f"{label}.process_rss_bytes",
+        ),
+        process_rss_growth_bytes=_positive_int(
+            values["process_rss_growth_bytes"],
+            f"{label}.process_rss_growth_bytes",
+        ),
+        process_cpu_percent=_positive_float(
+            values["process_cpu_percent"],
+            f"{label}.process_cpu_percent",
+        ),
+        thread_count=_positive_int(values["thread_count"], f"{label}.thread_count"),
+        open_fd_ratio=_unit_float(values["open_fd_ratio"], f"{label}.open_fd_ratio"),
+    )
+
+
+def _validate_runtime_resource_threshold_order(
+    warning: RuntimeResourceThresholdConfig,
+    critical: RuntimeResourceThresholdConfig,
+) -> None:
+    lower_is_worse = (
+        "host_memory_available_percent",
+        "disk_free_bytes",
+        "disk_free_percent",
+    )
+    upper_is_worse = (
+        "host_cpu_percent",
+        "host_swap_percent",
+        "process_rss_bytes",
+        "process_rss_growth_bytes",
+        "process_cpu_percent",
+        "thread_count",
+        "open_fd_ratio",
+    )
+    for field_name in lower_is_worse:
+        if getattr(critical, field_name) >= getattr(warning, field_name):
+            raise ValueError(f"critical {field_name} must be below warning")
+    for field_name in upper_is_worse:
+        if getattr(critical, field_name) <= getattr(warning, field_name):
+            raise ValueError(f"critical {field_name} must exceed warning")
 
 
 def _load_persistence(raw: Any) -> PersistenceConfig:
@@ -2108,6 +2362,13 @@ def _positive_float(value: Any, label: str) -> float:
     if not isinstance(value, int | float) or isinstance(value, bool) or value <= 0:
         raise ValueError(f"{label} must be a positive number")
     return float(value)
+
+
+def _percentage(value: Any, label: str) -> float:
+    result = _positive_float(value, label)
+    if result > 100:
+        raise ValueError(f"{label} must not exceed 100")
+    return result
 
 
 def _unit_float(value: Any, label: str) -> float:

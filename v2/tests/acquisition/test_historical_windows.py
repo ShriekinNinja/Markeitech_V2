@@ -9,6 +9,7 @@ from markeitech.acquisition.historical_windows import (
     HistoricalWindowParameters,
     HistoricalWindowResolutionError,
     HistoricalWindowResolver,
+    HistoricalWindowUnavailable,
 )
 from markeitech.intelligence.session import SessionCalendar, definition_from_config
 
@@ -152,13 +153,14 @@ def test_opening_range_uses_configured_duration_and_clips_while_forming() -> Non
 
 
 def test_power_hour_fails_until_configured_window_starts() -> None:
-    with pytest.raises(HistoricalWindowResolutionError, match="not yet started"):
+    with pytest.raises(HistoricalWindowUnavailable, match="not yet available") as error:
         _resolve(
             HistoricalWindow.POWER_HOUR,
             "2026-08-17T14:59:59-04:00",
             HistoricalWindowParameters(phase="RTH", duration_minutes=60),
             interval_minutes=5,
         )
+    assert error.value.retry_at_ns == _ns("2026-08-17T15:20:00-04:00")
 
     bounds = _resolve(
         HistoricalWindow.POWER_HOUR,
@@ -317,10 +319,57 @@ def test_named_slice_with_invalid_bounds_fails_closed() -> None:
         )
 
 
-def test_window_fails_before_phase_has_started() -> None:
-    with pytest.raises(HistoricalWindowResolutionError, match="has not started"):
+def test_pre_open_window_defers_until_first_completed_interval() -> None:
+    with pytest.raises(HistoricalWindowUnavailable, match="not yet available") as error:
         _resolve(
             HistoricalWindow.CURRENT_RTH,
             "2026-08-17T09:20:00-04:00",
             HistoricalWindowParameters(phase="RTH"),
         )
+
+    assert error.value.retry_at_ns == _ns("2026-08-17T09:31:00-04:00")
+
+
+def test_closed_market_window_defers_to_next_session_first_completed_interval() -> None:
+    with pytest.raises(HistoricalWindowUnavailable) as error:
+        _resolve(
+            HistoricalWindow.OPENING_RANGE,
+            "2026-08-22T09:00:00-04:00",
+            HistoricalWindowParameters(phase="RTH", duration_minutes=30),
+            interval_minutes=5,
+        )
+
+    assert error.value.retry_at_ns == _ns("2026-08-24T09:35:00-04:00")
+
+
+def test_phase_open_waits_for_first_completed_selector_interval() -> None:
+    with pytest.raises(HistoricalWindowUnavailable) as error:
+        _resolve(
+            HistoricalWindow.OPENING_RANGE,
+            "2026-08-17T09:30:30-04:00",
+            HistoricalWindowParameters(phase="RTH", duration_minutes=30),
+            interval_minutes=5,
+        )
+
+    assert error.value.retry_at_ns == _ns("2026-08-17T09:35:00-04:00")
+
+    bounds = _resolve(
+        HistoricalWindow.OPENING_RANGE,
+        "2026-08-17T09:35:00-04:00",
+        HistoricalWindowParameters(phase="RTH", duration_minutes=30),
+        interval_minutes=5,
+    )
+    assert bounds.start_ns == _ns("2026-08-17T09:30:00-04:00")
+    assert bounds.end_ns == _ns("2026-08-17T09:35:00-04:00") - 1
+
+
+def test_invalid_pre_open_window_policy_is_rejected_not_deferred() -> None:
+    with pytest.raises(HistoricalWindowResolutionError, match="duration_minutes") as error:
+        _resolve(
+            HistoricalWindow.OPENING_RANGE,
+            "2026-08-17T09:20:00-04:00",
+            HistoricalWindowParameters(phase="RTH"),
+            interval_minutes=5,
+        )
+
+    assert not isinstance(error.value, HistoricalWindowUnavailable)

@@ -57,6 +57,12 @@ from markeitech.system.messages import (
     WatchlistMembershipEvent,
 )
 from markeitech.system.persistence_migrations import MIGRATIONS, REQUIRED_SCHEMA_COLUMNS
+from markeitech.system.resource_contracts import (
+    RUNTIME_RESOURCE_HEALTH_SIGNAL,
+    RUNTIME_RESOURCE_SIGNAL,
+    RuntimeResourceEvent,
+    RuntimeResourceHealthEvent,
+)
 
 PERSISTENCE_SCHEMA_VERSION = 1
 _MIGRATION_LOCK_ID = 4_873_274_823
@@ -794,6 +800,8 @@ class OperationalPersistenceActor(DataActor):
             HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
             HISTORICAL_EXECUTION_SIGNAL,
             HISTORICAL_READINESS_SIGNAL,
+            RUNTIME_RESOURCE_SIGNAL,
+            RUNTIME_RESOURCE_HEALTH_SIGNAL,
         ):
             self.subscribe_signal(signal_name)
             self._subscribed_signals.add(signal_name)
@@ -942,8 +950,12 @@ def _write_record(store: OperationalStore, record: PersistedRecord) -> None:
 
 
 def _is_critical_record(record: PersistedRecord) -> bool:
-    return isinstance(record, HealthEventRecord) or (
-        isinstance(record, OperationalEventRecord) and record.event_type == "component.failure"
+    if isinstance(record, HealthEventRecord):
+        return True
+    if not isinstance(record, OperationalEventRecord):
+        return False
+    return record.event_type == "component.failure" or (
+        record.event_type == "runtime.resource_health" and record.payload.get("state") == "CRITICAL"
     )
 
 
@@ -955,6 +967,38 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             event=SystemHealthEvent.from_signal_value(signal.value),
             ts_event_ns=signal.ts_event,
             ts_init_ns=signal.ts_init,
+        )
+    if signal.name == RUNTIME_RESOURCE_SIGNAL:
+        event = RuntimeResourceEvent.from_signal_value(signal.value)
+        return OperationalEventRecord(
+            event_id=event.event_id,
+            run_id=run_id,
+            sequence=sequence,
+            signal_name=signal.name,
+            event_type="runtime.resource",
+            source=event.source,
+            correlation_id=f"runtime-resource:{event.source}",
+            causation_id=None,
+            payload=json.loads(signal.value),
+            ts_event_ns=signal.ts_event,
+            ts_init_ns=signal.ts_init,
+            schema_version=event.schema_version,
+        )
+    if signal.name == RUNTIME_RESOURCE_HEALTH_SIGNAL:
+        event = RuntimeResourceHealthEvent.from_signal_value(signal.value)
+        return OperationalEventRecord(
+            event_id=event.event_id,
+            run_id=run_id,
+            sequence=sequence,
+            signal_name=signal.name,
+            event_type="runtime.resource_health",
+            source=event.source,
+            correlation_id=f"runtime-resource-health:{event.source}",
+            causation_id=None,
+            payload=json.loads(signal.value),
+            ts_event_ns=signal.ts_event,
+            ts_init_ns=signal.ts_init,
+            schema_version=event.schema_version,
         )
     if signal.name == WATCHLIST_MEMBERSHIP_SIGNAL:
         event = WatchlistMembershipEvent.from_signal_value(signal.value)

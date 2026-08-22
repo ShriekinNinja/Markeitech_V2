@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 13
+schema_version = 15
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -35,6 +35,50 @@ file_name = "markeitech-v2.log"
 [discord]
 enabled = true
 request_timeout_seconds = 5
+queue_capacity = 32
+ping_critical_resource_alerts = true
+
+[runtime_resources]
+enabled = true
+sample_interval_ms = 10000
+log_every_samples = 1
+include_cache_counts = true
+disk_path = "/"
+
+[runtime_resources.health]
+enabled = true
+threshold_version = "test-v1"
+warning_consecutive_samples = 3
+critical_consecutive_samples = 2
+recovery_consecutive_samples = 3
+notification_cooldown_ms = 60000
+rss_growth_window_samples = 6
+stale_warning_ms = 30000
+stale_critical_ms = 120000
+
+[runtime_resources.health.warning]
+host_memory_available_percent = 15.0
+host_cpu_percent = 90.0
+host_swap_percent = 50.0
+disk_free_bytes = 16106127360
+disk_free_percent = 10.0
+process_rss_bytes = 4294967296
+process_rss_growth_bytes = 536870912
+process_cpu_percent = 400.0
+thread_count = 100
+open_fd_ratio = 0.70
+
+[runtime_resources.health.critical]
+host_memory_available_percent = 8.0
+host_cpu_percent = 98.0
+host_swap_percent = 80.0
+disk_free_bytes = 5368709120
+disk_free_percent = 5.0
+process_rss_bytes = 8589934592
+process_rss_growth_bytes = 1073741824
+process_cpu_percent = 800.0
+thread_count = 250
+open_fd_ratio = 0.90
 
 [persistence]
 dsn_env = "MARKEITECH_POSTGRES_DSN"
@@ -311,6 +355,17 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.logging.file_name == "markeitech-v2.log"
     assert config.discord.request_timeout_seconds == 5
     assert config.discord.enabled is True
+    assert config.discord.queue_capacity == 32
+    assert config.discord.ping_critical_resource_alerts is True
+    assert config.runtime_resources.enabled is True
+    assert config.runtime_resources.sample_interval_ms == 10000
+    assert config.runtime_resources.log_every_samples == 1
+    assert config.runtime_resources.include_cache_counts is True
+    assert config.runtime_resources.disk_path == "/"
+    assert config.runtime_resources.health.enabled is True
+    assert config.runtime_resources.health.threshold_version == "test-v1"
+    assert config.runtime_resources.health.warning.host_memory_available_percent == 15.0
+    assert config.runtime_resources.health.critical.process_rss_bytes == 8_589_934_592
     assert config.persistence.dsn_env == "MARKEITECH_POSTGRES_DSN"
     assert config.persistence.queue_capacity == 64
     assert config.persistence.critical_queue_reserve == 8

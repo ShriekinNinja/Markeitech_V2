@@ -68,6 +68,7 @@ for investigation and context, but it does not reopen old stage gates.
 ## Operations
 
 - [GitHub workflow](operations/github-workflow.md)
+- [V2 runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
 - [V2 operational PostgreSQL](operations/v2-postgresql.md)
 - [V2 static watchlist handoff](roadmap/v2-static-watchlist-handoff.md)
 - [Interactive Brokers setup](operations/ib-setup.md)

@@ -1,4 +1,4 @@
-schema_version = 13
+schema_version = 15
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -26,6 +26,50 @@ file_name = "markeitech-v2.log"
 [discord]
 enabled = true
 request_timeout_seconds = 5
+queue_capacity = 32
+ping_critical_resource_alerts = true
+
+[runtime_resources]
+enabled = true
+sample_interval_ms = 10000
+log_every_samples = 1
+include_cache_counts = true
+disk_path = "/"
+
+[runtime_resources.health]
+enabled = true
+threshold_version = "2026-08-22-v2"
+warning_consecutive_samples = 6
+critical_consecutive_samples = 3
+recovery_consecutive_samples = 6
+notification_cooldown_ms = 900000
+rss_growth_window_samples = 90
+stale_warning_ms = 30000
+stale_critical_ms = 120000
+
+[runtime_resources.health.warning]
+host_memory_available_percent = 15.0
+host_cpu_percent = 90.0
+host_swap_percent = 50.0
+disk_free_bytes = 16106127360
+disk_free_percent = 10.0
+process_rss_bytes = 4294967296
+process_rss_growth_bytes = 536870912
+process_cpu_percent = 400.0
+thread_count = 100
+open_fd_ratio = 0.70
+
+[runtime_resources.health.critical]
+host_memory_available_percent = 8.0
+host_cpu_percent = 98.0
+host_swap_percent = 80.0
+disk_free_bytes = 5368709120
+disk_free_percent = 2.0
+process_rss_bytes = 8589934592
+process_rss_growth_bytes = 1073741824
+process_cpu_percent = 800.0
+thread_count = 250
+open_fd_ratio = 0.90
 
 [persistence]
 dsn_env = "MARKEITECH_POSTGRES_DSN"
