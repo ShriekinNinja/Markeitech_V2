@@ -391,7 +391,7 @@ memory/CPU/swap, disk headroom, and public Nautilus cache-count evidence through
 `markeitech.runtime.resource` contract. The existing operational persistence actor records samples
 as `runtime.resource`; no raw market data or new database table is introduced.
 
-The current hardening branch adds a separate `RuntimeResourceHealthActor`. It evaluates only
+Commit `248a999` adds a separate `RuntimeResourceHealthActor`. It evaluates only
 configuration-owned, versioned thresholds with sustained warning/critical/recovery windows and
 publishes durable semantic transitions on the non-overlapping `markeitech.runtime.health` signal as
 `runtime.resource_health` operational events. Discord remains a read-only
@@ -413,4 +413,5 @@ system health remained `READY` until controlled shutdown; and PostgreSQL reconci
 records with zero retries, failures, rejections, or pending writes. Process RSS grew only 3.3 MiB,
 cache counts remained bounded, and Nautilus returned cleanly. The resource warning path and signal
 routing correction are connected-accepted; critical and recovery projection remain controlled
-follow-up cases rather than blockers for this hardening batch.
+follow-up cases rather than blockers for this hardening batch. The runtime-resource evidence gate
+is closed; Stage 9D remains the next accepted intelligence stage.
