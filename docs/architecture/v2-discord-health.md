@@ -20,7 +20,8 @@ or general notification router in this stage.
 
 ## Configuration And Secrets
 
-The request timeout is explicit in `v2/config/system.toml`:
+The request timeout is explicit in local `v2/config/system.local.toml`, initially copied from
+tracked `v2/config/system.example.toml`:
 
 ```toml
 [discord]

@@ -1,3 +1,6 @@
+# PRESERVED V1 PACKAGE. The active project is v2/pyproject.toml; do not install this root package
+# for V2 development. See LEGACY.md.
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

@@ -1,24 +1,160 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-python3 --version
-uv --version
-node --version
-npm --version
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="$ROOT_DIR/v2/.env"
+CONFIG_FILE="$ROOT_DIR/v2/config/system.local.toml"
+COMPOSE_FILE="$ROOT_DIR/v2/compose.yaml"
+WITH_IB=false
 
-python3 - <<'PY'
+usage() {
+  cat <<'EOF'
+Usage: ./scripts/check-env [--with-ib]
+
+Checks the supported Markeitech V2 development environment without starting services or the
+runtime. --with-ib additionally verifies that the configured TWS/Gateway TCP endpoint is listening.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --with-ib)
+      WITH_IB=true
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'ERROR: unknown argument: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+pass() {
+  printf 'PASS: %s\n' "$1"
+}
+
+warn() {
+  printf 'WARN: %s\n' "$1"
+}
+
+fail() {
+  printf 'FAIL: %s\n' "$1" >&2
+  exit 1
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || fail "$1 is not installed or not on PATH"
+  pass "$1 is available"
+}
+
+cd "$ROOT_DIR"
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  pass "macOS is the supported local platform"
+else
+  warn "this host is not macOS; CI may pass but the local runtime path is unsupported"
+fi
+
+require_command uv
+require_command docker
+require_command git
+docker compose version >/dev/null 2>&1 || fail "Docker Compose is unavailable"
+pass "Docker Compose is available"
+
+[[ -f "$ENV_FILE" ]] || fail "missing v2/.env; copy v2/.env.example without overwriting existing files"
+[[ -f "$CONFIG_FILE" ]] || fail "missing v2/config/system.local.toml; copy the tracked example"
+pass "local environment and system configuration exist"
+
+git check-ignore -q "$ENV_FILE" || fail "v2/.env is not ignored by Git"
+git check-ignore -q "$CONFIG_FILE" || fail "system.local.toml is not ignored by Git"
+git check-ignore -q "$ROOT_DIR/v2/data/OptionsFlow.csv" \
+  || fail "v2/data vendor/runtime files are not protected by Git ignore rules"
+pass "local secrets, machine configuration, and v2/data are protected from Git"
+
+[[ -x "$ROOT_DIR/v2/.venv/bin/python" ]] \
+  || fail "locked V2 environment is missing; run uv sync --project v2 --locked --dev"
+
+python_version="$("$ROOT_DIR/v2/.venv/bin/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+[[ "$python_version" == "3.13" ]] || fail "V2 interpreter must be Python 3.13, found $python_version"
+pass "V2 Python $python_version environment exists"
+
+"$ROOT_DIR/v2/.venv/bin/python" - "$ENV_FILE" "$CONFIG_FILE" <<'PY'
+from __future__ import annotations
+
+import os
 import sys
+from pathlib import Path
+from urllib.parse import unquote, urlparse
 
-if sys.version_info[:2] != (3, 13):
-    raise SystemExit("Python 3.13 is required for this Stage 0 bootstrap.")
+from dotenv import dotenv_values
+
+from markeitech.system.composition import validate_runtime_environment
+from markeitech.system.config import load_system_config
+
+env_path = Path(sys.argv[1])
+config_path = Path(sys.argv[2])
+file_values = {key: value or "" for key, value in dotenv_values(env_path).items()}
+environment = dict(file_values)
+environment.update(os.environ)
+
+password = file_values.get("MARKEITECH_POSTGRES_PASSWORD", "")
+dsn = file_values.get("MARKEITECH_POSTGRES_DSN", "")
+webhook = file_values.get("MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK", "")
+
+if not password or password == "change-me":
+    raise SystemExit("FAIL: set a non-placeholder MARKEITECH_POSTGRES_PASSWORD in v2/.env")
+if not dsn:
+    raise SystemExit("FAIL: MARKEITECH_POSTGRES_DSN is missing from v2/.env")
+parsed = urlparse(dsn)
+if parsed.scheme not in {"postgresql", "postgres"}:
+    raise SystemExit("FAIL: MARKEITECH_POSTGRES_DSN must be a PostgreSQL URL")
+if unquote(parsed.password or "") != password:
+    raise SystemExit("FAIL: PostgreSQL password and DSN password do not match")
+if not webhook:
+    raise SystemExit("FAIL: MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK is missing")
+if not webhook.startswith("https://"):
+    raise SystemExit("FAIL: Discord webhook must use HTTPS")
+
+config = load_system_config(config_path)
+validate_runtime_environment(config, environment)
+print(f"PASS: V2 configuration parsed for {len(config.instrument_ids)} instruments")
+print("PASS: required environment values are present and mutually consistent")
 PY
 
-node - <<'JS'
-const version = process.versions.node.split(".").map(Number);
-const supported = version[0] > 22 || (version[0] === 22 && version[1] >= 12) || (version[0] === 20 && version[1] >= 19);
-if (!supported) {
-  throw new Error("Node.js 20.19+ or 22.12+ is required by current Vite.");
-}
-JS
+docker info >/dev/null 2>&1 || fail "Docker Desktop is not running"
+pass "Docker Desktop daemon is reachable"
 
-echo "Stage 0 environment checks passed."
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config --quiet \
+  || fail "Docker Compose model is invalid"
+pass "PostgreSQL Compose model is valid"
+
+if [[ "$WITH_IB" == true ]]; then
+  "$ROOT_DIR/v2/.venv/bin/python" - "$CONFIG_FILE" <<'PY'
+from __future__ import annotations
+
+import socket
+import sys
+from pathlib import Path
+
+from markeitech.system.config import load_system_config
+
+config = load_system_config(Path(sys.argv[1]))
+try:
+    with socket.create_connection((config.ib.host, config.ib.port), timeout=2):
+        pass
+except OSError as exc:
+    raise SystemExit(
+        f"FAIL: IB endpoint {config.ib.host}:{config.ib.port} is not reachable: {exc}",
+    ) from exc
+print(f"PASS: IB endpoint {config.ib.host}:{config.ib.port} is listening")
+PY
+else
+  warn "IB socket was not checked; rerun with --with-ib when TWS/Gateway should be listening"
+fi
+
+printf '\nMarkeitech V2 setup checks passed. No service or live runtime was started.\n'

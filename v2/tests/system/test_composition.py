@@ -17,7 +17,7 @@ from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
 
 def _config():  # noqa: ANN202
     root = Path(__file__).parents[2]
-    return load_system_config(root / "config/system.toml")
+    return load_system_config(root / "config/system.example.toml")
 
 
 def _prerequisites(ready: bool = True) -> StartupPrerequisites:

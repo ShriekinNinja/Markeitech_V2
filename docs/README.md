@@ -67,6 +67,7 @@ for investigation and context, but it does not reopen old stage gates.
 
 ## Operations
 
+- [V2 developer setup and machine handoff](operations/developer-setup.md)
 - [GitHub workflow](operations/github-workflow.md)
 - [V2 runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
 - [V2 operational PostgreSQL](operations/v2-postgresql.md)
@@ -91,6 +92,7 @@ decision or roadmap item promotes a tested result.
 
 ## Notes And Archive
 
+- [Preserved V1 project boundary](../LEGACY.md)
 - [Markeitect notes](notes/markeitect-notes.md)
 - [Original greenfield brief](archive/initial-greenfield-brief.md)
 - [Stage 0 project context](archive/stage-0-project-context.md)

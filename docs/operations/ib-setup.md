@@ -1,149 +1,171 @@
-# Interactive Brokers Setup
+# V2 Interactive Brokers Setup
+
+This guide applies only to the active Markeitech V2 runtime. The archived V1 commands and
+active/background instrument model are not part of this workflow.
 
 ## Authoritative References
 
-Consult the [NautilusTrader V2 nightly Interactive Brokers Python API reference](https://nautechsystems.github.io/nautilus_docs/python-api-nightly/adapters/interactive_brokers.html)
-before changing IB configuration, instrument discovery, market-data subscriptions, historical
-requests, execution, factories, or gateway behavior. It documents the Rust-backed V2 adapter and
-is the primary IB API reference for Markeitech V2.
+Use the [NautilusTrader V2 nightly Interactive Brokers API reference](https://nautechsystems.github.io/nautilus_docs/python-api-nightly/adapters/interactive_brokers.html)
+before changing adapter configuration, instrument discovery, market-data subscriptions, historical
+requests, factories, or gateway behavior.
 
-The [latest stable Python API reference](https://nautechsystems.github.io/nautilus_docs/python-api-latest/adapters/interactive_brokers.html#module-nautilus_trader.adapters.interactive_brokers)
-currently documents the v1 Python/`ibapi` adapter and is secondary historical context only. Always
-cross-check the V2 reference against Markeitech's pinned Nautilus release, installed public
-signatures, and live behavior. Do not assume a parameter or method from one adapter generation is
-accepted or interpreted identically by another.
+Cross-check documentation against Markeitech's pinned Nautilus release, installed public
+signatures, and connected acceptance. The V1 Python/`ibapi` adapter documentation is historical
+context and must not be treated as the V2 contract.
 
-## Current Posture
+## Safety Boundary
 
-Interactive Brokers connectivity is implemented behind a manual-only smoke command. No live connection is made by automated tests or the default configuration.
+Markeitech currently uses Interactive Brokers for market data only:
 
-Market-data startup requires explicit active-instrument configuration, guarded runtime flags, and operator confirmation.
+- paper account;
+- read-only socket API;
+- no execution client configuration;
+- no order-routing actor;
+- explicit connection confirmation token; and
+- no automated test or setup command that connects to IB.
 
-The runtime is centered on a Nautilus `TradingNodeConfig` and a Markeitech market-data actor. Automated tests build configuration, action plans, coordinators, and fake nodes, but they must not start a real node or connect to IB.
+Execution requires a separately reviewed architecture and risk stage.
 
-## Supported Connection Paths
+## User-Owned Requirements
 
-Preferred:
+Every machine/user supplies:
 
-- NautilusTrader Interactive Brokers data client inside a LiveNode.
+- its own IB paper account;
+- TWS or IB Gateway;
+- market-data subscriptions and permissions;
+- local API port and client ID; and
+- current explicit contract configuration.
 
-Allowed only when needed:
+The repository does not include account credentials or entitlements.
 
-- Narrow native IB API adapter for capabilities NautilusTrader does not expose.
+## TWS Or Gateway Checklist
 
-Both paths must use the same contract identity, timestamp, session, health, reconnection, persistence, and deduplication rules.
+1. Log into paper trading.
+2. Enable ActiveX and socket clients.
+3. Enable read-only API mode.
+4. Allow localhost connections.
+5. Note the configured socket port.
+6. Ensure the selected client ID is not already in use.
+7. Keep the accepted API timestamp/timezone behavior compatible with the pinned Nautilus V2
+   adapter. Markeitech normalizes internal event timestamps to UTC; do not infer API behavior from
+   the TWS chart display timezone.
 
-## Local TWS / IB Gateway Defaults
+Common IB defaults:
 
-`.env.example` uses paper TWS defaults:
+| Application | Paper | Live |
+| --- | ---: | ---: |
+| TWS | `7497` | `7496` |
+| IB Gateway | `4002` | `4001` |
 
-- host: `127.0.0.1`
-- paper TWS port: `7497`
-- paper IB Gateway port: `4002`
-- live TWS port: `7496`
-- live IB Gateway port: `4001`
+A custom port is valid when TWS/Gateway and `v2/config/system.local.toml` agree.
 
-Use read-only API mode during data stages.
+## Local Configuration
 
-## Required TWS / Gateway Setting
-
-Configure TWS or IB Gateway to return market-data timestamps in UTC before connecting NautilusTrader.
-
-## Contract Configuration
-
-Initial runtime requires an explicit active futures contract. NQ is the first active target. Do not configure continuous futures for canonical data capture.
-
-Initial active NQ values:
-
-- `NQ_SYMBOL=NQ`
-- `NQ_EXCHANGE=CME`
-- `NQ_CONTRACT_EXPIRY=YYYYMMDD`
-- `NQ_INSTRUMENT_ID=<explicit NautilusTrader instrument id>`
-
-The runtime must fail clearly if active instrument values are missing when market-data startup is implemented.
-
-Background instruments may be configured for historical warmup followed by live 1-minute bar tracking. Examples include ES, SPX, VIX, QQQ, SPY, MAG7 symbols, and later additional operator-selected instruments. Background instruments are not tick-by-tick streams unless promoted to active.
-
-## Dry-Run Validation
-
-Before connecting to IB, validate the local runtime plan:
+Create the ignored local file once:
 
 ```bash
-uv run markeitech-market-data-plan config/market-data.example.toml
+test -e v2/config/system.local.toml || \
+  cp v2/config/system.example.toml v2/config/system.local.toml
 ```
 
-The command builds the Nautilus `TradingNodeConfig`, validates the market-data registry, and prints planned warmups and subscriptions. It does not start `TradingNode.run()` and does not connect to IB.
-
-The dry-run output includes Nautilus-oriented request intents. These are validation artifacts only; they are not live subscriptions until a later guarded bootstrap translates them into Nautilus calls.
-
-## Guarded LiveNode Bootstrap
-
-Markeitech prepares a Nautilus `TradingNode` from validated config by registering the IB data-client factory, attaching the market-data actor, and building the node clients. Starting it remains manual-only.
-
-LiveNode start requires all of:
-
-- `run_live_node=true`
-- `manual_live_node_start=true`
-- explicit confirmation token: `I_UNDERSTAND_THIS_CONNECTS_TO_IB`
-
-The checked-in example config keeps both start flags disabled.
-
-## Manual Smoke Command
-
-After the dry-run command succeeds, copy or edit a local config for smoke testing:
+Review the `[ib]` section:
 
 ```toml
-[runtime]
-manual_live_node_start = true
-run_live_node = true
+[ib]
+host = "127.0.0.1"
+port = 4002
+client_id = 20
+symbology_method = "simplified"
+convert_exchange_to_mic_venue = false
+market_data_type = "realtime"
+use_regular_trading_hours = false
 ```
 
-Then run:
+These are example values, not universal machine settings. Keep the local file outside Git.
+
+## Instruments And Entitlements
+
+The tracked template is a reviewed project starting point. Before a connected run:
+
+- roll expired futures everywhere they appear;
+- verify venue and simplified Nautilus instrument identity;
+- remove or disable instruments the user cannot lawfully receive;
+- confirm real-time versus delayed data behavior;
+- verify each instrument's calendar/profile assignment; and
+- keep explicit-expiry futures for canonical observation unless a separate decision changes that
+  boundary.
+
+Definitions may load successfully while live data remains unavailable because of entitlement,
+session, venue, or contract errors. Markeitech reports those failures honestly rather than
+fabricating readiness.
+
+## Preflight
+
+With Docker Desktop running and local files configured:
 
 ```bash
-uv run markeitech-market-data-smoke config/market-data.example.toml --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
+./scripts/check-env --with-ib
 ```
 
-The command prints the same plan summary as the dry run and refuses to start unless both config flags and the confirmation token are present. After startup, the actor requests every configured historical warmup, waits for all asynchronous completions, validates historical coverage, and only then submits active and background live subscriptions. Automated tests use fake actors and nodes; they do not connect to IB.
+The doctor checks that the configured TCP endpoint is listening. It does not authenticate, request
+market data, validate entitlements, or start Nautilus.
 
-The PyCharm `Market Data - Continuous Live Context` run configuration invokes this guarded command with `config/market-data.local.toml`. Unlike the acceptance command, it has no duration limit and runs until stopped. The console emits bounded `OPERATOR_CONTEXT`, `OPERATOR_LEVELS`, and `OPERATOR_AUCTION` reports while detailed `MARKET_CONTEXT_EVENT` records remain available in file logs. See the [operator context log guide](operator-context-logs.md).
-
-The local runtime enables Nautilus JSONL file logging at `data/logs/markeitech-live.jsonl`. It captures IB, LiveNode, persistence, readiness, context, and structure messages from the same kernel logger while the console remains human-readable. Files rotate at 25 MiB with ten backups and are ignored by Git. Share or inspect this file when diagnosing a live run; do not commit it because broker/runtime metadata may be present.
-
-The runtime monitors required-stream freshness and external 1-minute bar continuity. Every instrument contract must declare `calendar_id` and `session_profile`; recovery uses the pinned product-calendar adapter to exclude holidays, early closes, breaks, and other expected closures. Use `full` when IB bars are expected across published extended hours, `regular` for market-open through market-close expectations, and `continuous` only with the native `24/7` calendar. These package-shipped rules are not a live exchange-hours feed, so representative schedules must be reconciled with observed IB bars before production use. NautilusTrader remains responsible for physical IB reconnect and transport retry behavior.
-
-With persistence enabled, the initial warmup bars are flushed before exact one-minute repair requests begin. Repairs are issued sequentially and fairly across configured product instruments. The acceptance report records each instrument's recovery request count, missing intervals before and after repair, confirmed provider-empty intervals, and remaining reason codes. A degraded recovery is observable but does not by itself invalidate otherwise sufficient warmup analysis; storage failure or an unbounded recovery plan does fail startup.
-
-Dry-run output also includes ordered LiveNode actions. The manual smoke path maps those actions to real Nautilus actor calls after the startup guards pass.
-
-## Duration-Limited Paper Acceptance
-
-Create `config/market-data.local.toml` from the checked-in example and keep it local. Set the actual paper socket port plus both manual startup flags. The repository ignores this filename.
-
-Run the offline plan first:
+Run offline checks before a connected acceptance:
 
 ```bash
-uv run markeitech-market-data-plan config/market-data.local.toml
+uv run --project v2 ruff check v2/src v2/tests
+uv run --project v2 pytest -q v2/tests -m "not postgres"
 ```
 
-Then run the bounded acceptance command:
+## Connected Run
+
+Run the guarded command directly or place it in a local, untracked PyCharm Shell configuration:
 
 ```bash
-uv run markeitech-market-data-acceptance config/market-data.local.toml \
-  --duration 90 \
-  --confirm I_UNDERSTAND_THIS_CONNECTS_TO_IB
+docker compose --env-file v2/.env -f v2/compose.yaml up -d --wait postgres
+uv run --project v2 markeitech-system v2/config/system.local.toml \
+  --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
 ```
 
-The command starts the real prepared LiveNode, observes it for the requested duration, stops it gracefully, and prints a JSON report. It passes only when warmup completes, the active instrument receives trade and quote ticks, every enabled instrument receives completed external 1-minute bars, source health is healthy, IB is read-only, and execution remains disabled.
+Startup performs PostgreSQL schema preflight before opening the operational run. Actors then start
+independently through the Nautilus runtime. System `READY` requires mandatory persistence and
+instrument readiness; unrelated data paths continue attempting recovery when one request degrades.
 
-For the first paper run, prefer NQ active plus ES background. Add SPX and other independently entitled feeds after the CME path passes so entitlement failures remain easy to isolate.
+## Expected Evidence
 
-## Execution Safety
+Inspect:
 
-Execution is disabled by default:
+- console system/actor lifecycle output;
+- `v2/data/logs/markeitech-v2.log`;
+- Discord system-health transitions;
+- PostgreSQL runtime and operational-event records; and
+- actor shutdown summaries after controlled `SIGINT`.
 
-- `MARKEITECH_MODE=data_only`
-- `MARKEITECH_ENABLE_EXECUTION=false`
-- `IB_READ_ONLY_API=true`
+Provider observations remain transient. PostgreSQL stores operational intent, status, health,
+request, retry, transition, and outcome evidence rather than raw quotes, trades, or bars.
 
-Do not add account or order-routing requirements during data-only/read-only operation. Execution requires a separately reviewed risk and execution stage.
+## Common Failures
+
+### Connection refused
+
+TWS/Gateway is not listening at the configured host/port, the API is disabled, or localhost is not
+allowed.
+
+### Client ID conflict
+
+Another process is using the configured ID. Select a free value in `system.local.toml`.
+
+### Instrument definition failure
+
+Review expiry, symbol, exchange, symbology mode, and whether the contract is available from IB.
+
+### Definition succeeds but observations do not arrive
+
+Review market session, exchange entitlement, real-time/delayed permissions, and requested feed
+kind. Do not treat retries as an entitlement fix.
+
+### Historical request parsing or timezone failure
+
+Preserve UTC internally, inspect the exact request/adapter boundary, and verify behavior against the
+pinned Nautilus V2 API and connected logs before changing timestamp ownership. Do not reintroduce
+provider-format conversions into unrelated analytical actors.
