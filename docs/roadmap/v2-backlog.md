@@ -169,17 +169,18 @@ provider-neutral contract are documented in
       native quote acquisition, evidence-qualified bounded publication, honest closed-session
       nulls, exact metric/evidence counter reconciliation, no calculation failures, and complete
       operational/system-health persistence reconciliation.
-- [ ] **Stage 9C session-measurement extension:** complete the accepted baseline with
+- [x] **Stage 9C session-measurement extension:** complete the accepted baseline with
       per-measurement resolution dependencies and normalized completed-bar inputs;
       session/prior-session, overnight/gap, opening-range, power-hour, volatility,
       directional-efficiency, and compression inputs before entity design. No universal base
       timeframe or automatic resolution pyramid is permitted. Follow the reviewed plan in
       [`v2-stage-9c-session-measurements-plan.md`](v2-stage-9c-session-measurements-plan.md).
-      Slices 1-2 are enabled and live-accepted. Slice 3 session references are locally accepted at
-      `8696acf`, and Slice 4 opening-range and power-hour measurements are locally accepted. Slice 5
-      rolling numerical measurements are implemented for local review with configuration-owned
-      one-, five-, and fifteen-minute families, bounded recent and phase-matched baselines, and no
-      semantic classifications. Connected acceptance and stage closure remain open.
+      Slices 1-2 are enabled and live-accepted. Slice 3 session references are accepted at
+      `8696acf`, Slice 4 adds opening-range and power-hour measurements, and Slice 5 closes the stage
+      at `116657b` with configuration-owned one-, five-, and fifteen-minute rolling families,
+      bounded recent and phase-matched baselines, and no semantic classifications. Extended RTH
+      acceptance on 2026-08-21 produced 307,296 rolling values with zero calculation failures and
+      reconciled all 32,389 operational persistence writes.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.

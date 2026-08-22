@@ -629,7 +629,7 @@ transient; PostgreSQL continues to receive only dependency and runtime lifecycle
 
 **Gate:** outputs match independent fixtures and remain stable under missing/late data.
 
-**Implementation status:** implemented for local review. The runtime defines three independently
+**Implementation status:** live-accepted at `116657b`. The runtime defines three independently
 configured families: fast one-minute inputs, tactical five-minute inputs, and structural-intraday
 fifteen-minute inputs. The latter two are derived only from complete UTC-fixed one-minute buckets;
 their lineage distinguishes historical-only aggregation from any aggregation containing live bars.
@@ -708,3 +708,25 @@ The recommended first implementation assumes:
    implementation begins.
 
 No runtime code begins until these decisions and the metric scope are reviewed.
+
+## Closure Evidence
+
+The extended 2026-08-21 RTH acceptance closed Slice 6 and the Stage 9C session-measurement
+extension:
+
+- all 34 live acquisition streams remained active;
+- all 63 historical dependencies completed ready with zero degradation or late callbacks;
+- 32,659 live bars and 18 historical batches produced 10,632 accepted completed bars;
+- overlap handling found 13 exact duplicates and zero conflicts;
+- the actor published 103,236 completed-bar values, 44,718 session-reference values, 1,779
+  calendar-window values, and 307,296 rolling values across 2,736 rolling batches;
+- the measurement actor reported zero calculation failures;
+- PostgreSQL stored all 32,389 accepted operational events without retry, failure, rejection, or
+  pending work;
+- Discord delivered all three system-health messages; and
+- the runtime completed a controlled SIGINT shutdown.
+
+The acceptance also identified evidence-health transition noise and late callback ordering during
+shutdown as separate runtime-hardening work. Neither altered accepted measurement values or caused
+a Stage 9C calculation failure. The optional Observatory was active during this run and is retained
+on its own experimental branch for an isolated resource comparison.

@@ -348,7 +348,7 @@ window for the CME-equity profile only; expanding profiles requires an explicit 
 review. It does not add entities, semantic events, signals, agent behavior, raw market-data
 persistence, or execution.
 
-Slice 5 is implemented for local review on branch `v2-stage-9c-rolling-measurements`. It adds three
+Slice 5 is live-accepted and committed at `116657b`. It adds three
 configuration-owned rolling families over one-, five-, and fifteen-minute completed bars, with 24
 active duration candidates and 264 versioned numerical metric definitions. Every candidate reports
 range, realized log-return magnitude, average true range, directional efficiency, coverage, and
@@ -359,3 +359,21 @@ current candidate window, while the 8,000-observation transient ledger can event
 minimum recent baseline for the longest candidate; neither is a universal historical pyramid.
 Numerical values and raw bars remain transient, and no semantic regime, compression, trend, signal,
 entity, or agent decision is created in this slice.
+
+The extended 2026-08-21 RTH acceptance completed all 63 historical dependencies with zero
+degradation and kept all 34 acquisition streams active. Across 32,659 live bars and 18 historical
+batches, the measurement actor accepted 10,632 completed bars, identified 13 exact duplicates and
+zero conflicts, and published 103,236 completed-bar values, 44,718 session-reference values, 1,779
+calendar-window values, and 307,296 rolling values across 2,736 rolling batches. It reported zero
+calculation failures. PostgreSQL stored all 32,389 accepted operational events with zero retries,
+failures, rejections, or pending writes; Discord delivered all three health messages; shutdown
+completed cleanly.
+
+The run also exposed two separate hardening concerns which do not invalidate the deterministic
+measurement results: evidence-health transitions remain too noisy for some thin instruments, and
+late evidence callbacks can appear after their actor has entered shutdown. Those remain explicit
+follow-up work. The optional Observatory ran concurrently during this acceptance, so its suspected
+host resource cost is isolated on `v2-stage-observatory` rather than attributed to Stage 9C.
+
+Stage 9C session measurements are closed. They provide numerical evidence for future entities and
+semantic events; they do not themselves classify market state or create opportunities.
