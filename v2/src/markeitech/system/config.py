@@ -333,6 +333,14 @@ class DiscordConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class RuntimeResourcesConfig:
+    enabled: bool
+    sample_interval_ms: int
+    log_every_samples: int
+    include_cache_counts: bool
+
+
+@dataclass(frozen=True, slots=True)
 class PersistenceConfig:
     dsn_env: str
     connect_timeout_seconds: int
@@ -352,6 +360,7 @@ class SystemConfig:
     ib: InteractiveBrokersConfig
     logging: LoggingConfig
     discord: DiscordConfig
+    runtime_resources: RuntimeResourcesConfig
     persistence: PersistenceConfig
     acquisition: AcquisitionConfig
     historical: HistoricalConfig
@@ -378,6 +387,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "ib",
             "logging",
             "discord",
+            "runtime_resources",
             "persistence",
             "acquisition",
             "historical",
@@ -388,13 +398,14 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 13:
+    if raw["schema_version"] != 14:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
     ib = _load_ib(raw["ib"])
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
+    runtime_resources = _load_runtime_resources(raw["runtime_resources"])
     persistence = _load_persistence(raw["persistence"])
     watchlist = _load_watchlist(raw["watchlist"])
     acquisition = _load_acquisition(raw["acquisition"], watchlist)
@@ -528,6 +539,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         ib=ib,
         logging=logging,
         discord=discord,
+        runtime_resources=runtime_resources,
         persistence=persistence,
         acquisition=acquisition,
         historical=historical,
@@ -634,6 +646,30 @@ def _load_discord(raw: Any) -> DiscordConfig:
         request_timeout_seconds=_positive_int(
             values["request_timeout_seconds"],
             "discord.request_timeout_seconds",
+        ),
+    )
+
+
+def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
+    values = _mapping(raw, "runtime_resources")
+    _require_keys(
+        values,
+        {"enabled", "sample_interval_ms", "log_every_samples", "include_cache_counts"},
+        "runtime_resources",
+    )
+    return RuntimeResourcesConfig(
+        enabled=_bool(values["enabled"], "runtime_resources.enabled"),
+        sample_interval_ms=_positive_int(
+            values["sample_interval_ms"],
+            "runtime_resources.sample_interval_ms",
+        ),
+        log_every_samples=_positive_int(
+            values["log_every_samples"],
+            "runtime_resources.log_every_samples",
+        ),
+        include_cache_counts=_bool(
+            values["include_cache_counts"],
+            "runtime_resources.include_cache_counts",
         ),
     )
 

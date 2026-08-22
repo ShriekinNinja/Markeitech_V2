@@ -1,4 +1,4 @@
-schema_version = 13
+schema_version = 14
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -26,6 +26,12 @@ file_name = "markeitech-v2.log"
 [discord]
 enabled = true
 request_timeout_seconds = 5
+
+[runtime_resources]
+enabled = true
+sample_interval_ms = 10000
+log_every_samples = 1
+include_cache_counts = true
 
 [persistence]
 dsn_env = "MARKEITECH_POSTGRES_DSN"

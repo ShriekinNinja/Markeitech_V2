@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 13
+schema_version = 14
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -35,6 +35,12 @@ file_name = "markeitech-v2.log"
 [discord]
 enabled = true
 request_timeout_seconds = 5
+
+[runtime_resources]
+enabled = true
+sample_interval_ms = 10000
+log_every_samples = 1
+include_cache_counts = true
 
 [persistence]
 dsn_env = "MARKEITECH_POSTGRES_DSN"
@@ -311,6 +317,10 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.logging.file_name == "markeitech-v2.log"
     assert config.discord.request_timeout_seconds == 5
     assert config.discord.enabled is True
+    assert config.runtime_resources.enabled is True
+    assert config.runtime_resources.sample_interval_ms == 10000
+    assert config.runtime_resources.log_every_samples == 1
+    assert config.runtime_resources.include_cache_counts is True
     assert config.persistence.dsn_env == "MARKEITECH_POSTGRES_DSN"
     assert config.persistence.queue_capacity == 64
     assert config.persistence.critical_queue_reserve == 8

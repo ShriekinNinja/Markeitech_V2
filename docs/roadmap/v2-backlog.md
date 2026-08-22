@@ -181,6 +181,9 @@ provider-neutral contract are documented in
       bounded recent and phase-matched baselines, and no semantic classifications. Extended RTH
       acceptance on 2026-08-21 produced 307,296 rolling values with zero calculation failures and
       reconciled all 32,389 operational persistence writes.
+- [ ] **Runtime resource evidence gate:** live-accept passive process and public Nautilus cache
+      telemetry with the Observatory off and cache defaults unchanged. Reconcile PostgreSQL samples
+      and shutdown summary before changing retention, cache backing, or selecting Redis.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.

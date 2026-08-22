@@ -658,6 +658,23 @@ def build_actor_plan(
                 ),
             ),
         )
+    if config.runtime_resources.enabled:
+        registrations.append(
+            ActorRegistration(
+                key="runtime_resources",
+                actor_id="RUNTIME-RESOURCES",
+                config=ImportableActorConfig(
+                    actor_path="markeitech.system.resource_actor:RuntimeResourceActor",
+                    config_path=("markeitech.system.resource_actor:RuntimeResourceActorConfig"),
+                    config={
+                        "actor_id": "RUNTIME-RESOURCES",
+                        "sample_interval_ms": config.runtime_resources.sample_interval_ms,
+                        "log_every_samples": config.runtime_resources.log_every_samples,
+                        "include_cache_counts": (config.runtime_resources.include_cache_counts),
+                    },
+                ),
+            ),
+        )
     registrations.append(
         ActorRegistration(
             key="operational_persistence",

@@ -377,3 +377,15 @@ host resource cost is isolated on `v2-stage-observatory` rather than attributed 
 
 Stage 9C session measurements are closed. They provide numerical evidence for future entities and
 semantic events; they do not themselves classify market state or create opportunities.
+
+## Runtime Resource Baseline
+
+The `v2-stage-runtime-resource-telemetry` branch adds a passive `RuntimeResourceActor` for local
+review before the next connected acceptance run. At a configuration-owned cadence it publishes
+process memory, CPU, thread, file-descriptor, and public Nautilus cache-count evidence through the
+typed `markeitech.runtime.resource` contract. The existing operational persistence actor records the
+samples as `runtime.resource`; no raw market data or new database table is introduced.
+
+This diagnostic slice does not mutate Nautilus cache policy, assign thresholds, alter system health,
+send alerts, or select Redis. The next controlled run keeps the Observatory off and all current cache
+defaults unchanged so resource growth can be attributed with fewer moving parts.

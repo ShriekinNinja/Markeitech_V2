@@ -40,6 +40,10 @@ from markeitech.system.persistence import (
     PersistenceWorker,
     _record_from_signal,
 )
+from markeitech.system.resource_contracts import (
+    RUNTIME_RESOURCE_SIGNAL,
+    RuntimeResourceEvent,
+)
 
 
 def test_operational_event_record_validates_durable_identity_and_timestamps() -> None:
@@ -77,6 +81,50 @@ def test_operational_event_record_validates_durable_identity_and_timestamps() ->
             ts_init_ns=11,
             schema_version=1,
         )
+
+
+def test_runtime_resource_signal_converts_to_operational_audit_record() -> None:
+    run_id = uuid4()
+    event = RuntimeResourceEvent(
+        event_id="runtime-resource:RUNTIME-RESOURCES:100",
+        source="RUNTIME-RESOURCES",
+        observed_ts_ns=100,
+        sample_sequence=1,
+        sample_interval_ms=10000,
+        rss_bytes=500,
+        peak_rss_bytes=500,
+        vms_bytes=1000,
+        cpu_user_seconds=1.0,
+        cpu_system_seconds=0.5,
+        cpu_percent=15.0,
+        thread_count=8,
+        open_fd_count=12,
+        cache_observed=True,
+        cache_error=None,
+        cache_instrument_count=2,
+        cache_quote_tick_count=20,
+        cache_trade_tick_count=10,
+        cache_bar_type_count=3,
+        cache_bar_count=30,
+    )
+
+    record = _record_from_signal(
+        run_id,
+        1,
+        Signal(
+            name=RUNTIME_RESOURCE_SIGNAL,
+            value=event.to_signal_value(),
+            ts_event=100,
+            ts_init=101,
+        ),
+    )
+
+    assert isinstance(record, OperationalEventRecord)
+    assert record.event_id == event.event_id
+    assert record.event_type == "runtime.resource"
+    assert record.source == "RUNTIME-RESOURCES"
+    assert record.correlation_id == "runtime-resource:RUNTIME-RESOURCES"
+    assert record.payload["rss_bytes"] == 500
 
 
 def test_worker_preserves_order_across_health_and_generic_operational_records() -> None:

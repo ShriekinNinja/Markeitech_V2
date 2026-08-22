@@ -39,6 +39,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "watchlist",
         "data_acquisition",
         "discord_health",
+        "runtime_resources",
         "operational_persistence",
     ]
     assert len({registration.actor_id for registration in plan}) == len(plan)
@@ -113,6 +114,13 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
     ]
     assert quote_metrics.config.config["minimum_update_interval_ms"] == 250
     assert quote_metrics.config.config["parameter_version"] == 1
+    resources = next(item for item in plan if item.key == "runtime_resources")
+    assert resources.config.config == {
+        "actor_id": "RUNTIME-RESOURCES",
+        "sample_interval_ms": 10000,
+        "log_every_samples": 1,
+        "include_cache_counts": True,
+    }
 
 
 def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
@@ -129,8 +137,21 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "session_metrics",
         "watchlist",
         "data_acquisition",
+        "runtime_resources",
         "operational_persistence",
     ]
+
+
+def test_actor_plan_omits_disabled_runtime_resource_telemetry() -> None:
+    config = _config()
+    config = replace(
+        config,
+        runtime_resources=replace(config.runtime_resources, enabled=False),
+    )
+
+    plan = build_actor_plan(config, _prerequisites())
+
+    assert "runtime_resources" not in {registration.key for registration in plan}
 
 
 def test_actor_plan_omits_disabled_native_consumer_probe() -> None:
