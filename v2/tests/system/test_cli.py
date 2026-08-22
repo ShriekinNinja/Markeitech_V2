@@ -4,7 +4,13 @@ import os
 from pathlib import Path
 from unittest.mock import Mock
 
-from markeitech.system.cli import V2_ROOT, _start_caffeinate, main
+from markeitech.system.cli import (
+    DEFAULT_CONFIG_FILE,
+    DEFAULT_ENV_FILE,
+    V2_ROOT,
+    _start_caffeinate,
+    main,
+)
 from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
 
 POSTGRES_DSN_ENV = "MARKEITECH_POSTGRES_DSN"
@@ -12,14 +18,20 @@ POSTGRES_DSN_ENV = "MARKEITECH_POSTGRES_DSN"
 
 def test_default_env_file_is_owned_by_v2() -> None:
     assert V2_ROOT.name == "v2"
-    assert V2_ROOT / ".env" != V2_ROOT.parent / ".env"
+    assert DEFAULT_ENV_FILE == V2_ROOT / ".env"
+    assert DEFAULT_ENV_FILE != V2_ROOT.parent / ".env"
+
+
+def test_default_config_file_is_local_and_owned_by_v2() -> None:
+    assert DEFAULT_CONFIG_FILE == V2_ROOT / "config/system.local.toml"
+    assert DEFAULT_CONFIG_FILE != V2_ROOT / "config/system.example.toml"
 
 
 def test_loads_explicit_env_file_without_overriding_process_environment(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    config_path = V2_ROOT / "config/system.toml"
+    config_path = V2_ROOT / "config/system.example.toml"
     env_path = tmp_path / ".env"
     env_path.write_text("MARKEITECH_TEST_FILE_VALUE=loaded\nMARKEITECH_TEST_PRIORITY=file\n")
     monkeypatch.setenv("MARKEITECH_TEST_PRIORITY", "process")
@@ -62,7 +74,7 @@ def test_clean_connected_run_is_closed_only_after_node_returns(
 
     result = main(
         [
-            str(V2_ROOT / "config/system.toml"),
+            str(V2_ROOT / "config/system.example.toml"),
             "--env-file",
             str(tmp_path / "missing.env"),
             "--connect",
@@ -94,7 +106,7 @@ def test_unclean_connected_run_remains_open(tmp_path: Path, monkeypatch) -> None
     try:
         main(
             [
-                str(V2_ROOT / "config/system.toml"),
+                str(V2_ROOT / "config/system.example.toml"),
                 "--env-file",
                 str(tmp_path / "missing.env"),
                 "--connect",

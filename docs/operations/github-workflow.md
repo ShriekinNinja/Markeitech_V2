@@ -3,6 +3,10 @@
 Markeitech uses GitHub for reviewable integration of the V2 runtime. This is a source-control
 and continuous-integration workflow; it is not a deployment system.
 
+Fresh-machine preparation is documented in
+[`developer-setup.md`](developer-setup.md). The conventional repository contribution summary is
+available at the root in [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+
 ## Stage Branches
 
 Keep one approved stage branch active at a time. Before beginning a new stage, the previously

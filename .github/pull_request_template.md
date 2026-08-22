@@ -25,6 +25,6 @@ Live acceptance status: `not run` / `run and passed` / `run with findings` / `no
 
 ## Integrity checklist
 
-- [ ] No secrets, webhook URLs, passwords, tokens, or local `.env` files were committed.
-- [ ] No raw market data was committed.
+- [ ] No secrets, webhook URLs, passwords, tokens, local `.env`, or `system.local.toml` were committed.
+- [ ] No raw market data, vendor exports, runtime logs, or database dumps were committed.
 - [ ] No live IB/TWS, Discord, or execution path was invoked by CI.
