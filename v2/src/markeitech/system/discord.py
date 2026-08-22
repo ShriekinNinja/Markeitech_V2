@@ -17,12 +17,15 @@ from nautilus_trader.network import HttpResponse, http_post
 
 from markeitech.system.control import SystemHealthState
 from markeitech.system.messages import SYSTEM_HEALTH_SIGNAL, SystemHealthEvent
+from markeitech.system.resource_contracts import (
+    RUNTIME_RESOURCE_HEALTH_SIGNAL,
+    RuntimeResourceHealthEvent,
+)
 
 SYSTEM_HEALTH_WEBHOOK_ENV = "MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK"
 
 _RESULT_TIMER = "discord-health-delivery-results"
 _RESULT_POLL_INTERVAL_NS = 1_000_000_000
-_QUEUE_CAPACITY = len(SystemHealthState)
 _STOP = object()
 
 _STATE_COLORS = {
@@ -31,6 +34,11 @@ _STATE_COLORS = {
     SystemHealthState.DEGRADED.value: 0xE67E22,
     SystemHealthState.FAILED.value: 0xE74C3C,
     SystemHealthState.STOPPING.value: 0x95A5A6,
+}
+_RESOURCE_STATE_COLORS = {
+    "NORMAL": 0x2ECC71,
+    "WARNING": 0xE67E22,
+    "CRITICAL": 0xE74C3C,
 }
 
 PostCallable = Callable[..., HttpResponse]
@@ -67,13 +75,14 @@ class DiscordDeliveryWorker:
         self,
         webhook_url: str,
         timeout_seconds: int,
+        queue_capacity: int = 32,
         *,
         post: PostCallable = http_post,
     ) -> None:
         self._webhook_url = _with_wait_confirmation(webhook_url)
         self._timeout_seconds = timeout_seconds
         self._post = post
-        self._pending: Queue[DiscordDelivery | object] = Queue(maxsize=_QUEUE_CAPACITY)
+        self._pending: Queue[DiscordDelivery | object] = Queue(maxsize=queue_capacity)
         self.results: Queue[DiscordDeliveryResult] = Queue()
         self._closed = False
         self._stop_enqueued = False
@@ -167,6 +176,8 @@ class DiscordHealthActorConfig(DataActorConfig):
     def __new__(
         cls,
         request_timeout_seconds: int,
+        queue_capacity: int,
+        ping_critical_resource_alerts: bool,
         actor_id: str | ActorId = "DISCORD-HEALTH",
         webhook_env: str = SYSTEM_HEALTH_WEBHOOK_ENV,
     ) -> DiscordHealthActorConfig:
@@ -175,6 +186,8 @@ class DiscordHealthActorConfig(DataActorConfig):
         )
         obj = super().__new__(cls, actor_id=resolved_actor_id)
         obj.request_timeout_seconds = request_timeout_seconds
+        obj.queue_capacity = queue_capacity
+        obj.ping_critical_resource_alerts = ping_critical_resource_alerts
         obj.webhook_env = webhook_env
         return obj
 
@@ -183,6 +196,8 @@ class DiscordHealthActor(DataActor):
     def __init__(self, config: DiscordHealthActorConfig) -> None:
         super().__init__(config)
         self._timeout_seconds = config.request_timeout_seconds
+        self._queue_capacity = config.queue_capacity
+        self._ping_critical_resource_alerts = config.ping_critical_resource_alerts
         self._webhook_env = config.webhook_env
         self._worker: DiscordDeliveryWorker | None = None
         self._subscribed = False
@@ -197,9 +212,14 @@ class DiscordHealthActor(DataActor):
             )
             return
 
-        self._worker = DiscordDeliveryWorker(webhook_url, self._timeout_seconds)
+        self._worker = DiscordDeliveryWorker(
+            webhook_url,
+            self._timeout_seconds,
+            self._queue_capacity,
+        )
         self._worker.start()
         self.subscribe_signal(SYSTEM_HEALTH_SIGNAL)
+        self.subscribe_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL)
         self._subscribed = True
         self.clock.set_timer_ns(
             _RESULT_TIMER,
@@ -211,12 +231,14 @@ class DiscordHealthActor(DataActor):
     def on_signal(self, signal: Signal) -> None:
         if self._worker is None:
             return
+        if signal.name == RUNTIME_RESOURCE_HEALTH_SIGNAL:
+            self._handle_resource_health(signal)
+            return
         try:
             event = SystemHealthEvent.from_signal_value(signal.value)
         except ValueError as exc:
             self.log.error(
-                f"DISCORD_HEALTH_REJECTED | reason=invalid_event"
-                f" | error={type(exc).__name__}",
+                f"DISCORD_HEALTH_REJECTED | reason=invalid_event | error={type(exc).__name__}",
             )
             return
         if event.state not in _STATE_COLORS:
@@ -233,6 +255,7 @@ class DiscordHealthActor(DataActor):
     def on_stop(self) -> None:
         if self._subscribed:
             self.unsubscribe_signal(SYSTEM_HEALTH_SIGNAL)
+            self.unsubscribe_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL)
             self._subscribed = False
         if _RESULT_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_RESULT_TIMER)
@@ -285,6 +308,34 @@ class DiscordHealthActor(DataActor):
             f" | pending={stats.pending}",
         )
 
+    def _handle_resource_health(self, signal: Signal) -> None:
+        assert self._worker is not None
+        try:
+            event = RuntimeResourceHealthEvent.from_signal_value(signal.value)
+        except ValueError as exc:
+            self.log.error(
+                "DISCORD_RESOURCE_HEALTH_REJECTED"
+                f" | reason=invalid_event | error={type(exc).__name__}",
+            )
+            return
+        if not event.notification_eligible:
+            self.log.info(
+                f"DISCORD_RESOURCE_HEALTH_SUPPRESSED | state={event.state} | reason=cooldown",
+            )
+            return
+        delivery = DiscordDelivery(
+            state=f"RESOURCE_{event.state}",
+            body=render_runtime_resource_health_message(
+                event,
+                signal.ts_event,
+                ping_critical=(self._ping_critical_resource_alerts and event.state == "CRITICAL"),
+            ),
+        )
+        if not self._worker.submit(delivery):
+            self.log.error(
+                f"DISCORD_RESOURCE_HEALTH_DROPPED | state={event.state} | reason=queue_full",
+            )
+
 
 def render_system_health_message(event: SystemHealthEvent, ts_event: int) -> bytes:
     available = event.evidence.get("available_instrument_count", "unknown")
@@ -317,6 +368,51 @@ def render_system_health_message(event: SystemHealthEvent, ts_event: int) -> byt
         },
         separators=(",", ":"),
     ).encode()
+
+
+def render_runtime_resource_health_message(
+    event: RuntimeResourceHealthEvent,
+    ts_event: int,
+    *,
+    ping_critical: bool,
+) -> bytes:
+    state_label = "Recovered" if event.state == "NORMAL" else event.state.title()
+    observations = []
+    for reason in event.reason_codes:
+        if reason == "resources_recovered":
+            continue
+        observed = event.observations.get(reason)
+        threshold = event.thresholds.get(reason)
+        observations.append(f"**{_display_name(reason)}:** {observed} (limit {threshold})")
+    if not observations:
+        observations.append("All monitored resources are within configured limits.")
+    embed: dict[str, Any] = {
+        "title": f"Markeitech V2 | Host Resources {state_label}",
+        "description": "\n".join(observations),
+        "color": _RESOURCE_STATE_COLORS[event.state],
+        "fields": [
+            {"name": "State", "value": event.state, "inline": True},
+            {"name": "Previous", "value": event.previous_state, "inline": True},
+            {"name": "Policy", "value": event.threshold_version, "inline": True},
+        ],
+        "footer": {"text": "Runtime resource health"},
+    }
+    if ts_event > 0:
+        embed["timestamp"] = datetime.fromtimestamp(
+            ts_event / 1_000_000_000,
+            UTC,
+        ).isoformat()
+    payload: dict[str, Any] = {
+        "allowed_mentions": {"parse": ["everyone"] if ping_critical else []},
+        "embeds": [embed],
+    }
+    if ping_critical:
+        payload["content"] = "@here"
+    return json.dumps(payload, separators=(",", ":")).encode()
+
+
+def _display_name(value: str) -> str:
+    return value.replace("_", " ").title()
 
 
 def _with_wait_confirmation(webhook_url: str) -> str:

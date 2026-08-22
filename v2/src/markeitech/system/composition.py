@@ -653,6 +653,10 @@ def build_actor_plan(
                     config={
                         "actor_id": "DISCORD-HEALTH",
                         "request_timeout_seconds": config.discord.request_timeout_seconds,
+                        "queue_capacity": config.discord.queue_capacity,
+                        "ping_critical_resource_alerts": (
+                            config.discord.ping_critical_resource_alerts
+                        ),
                         "webhook_env": SYSTEM_HEALTH_WEBHOOK_ENV,
                     },
                 ),
@@ -671,10 +675,42 @@ def build_actor_plan(
                         "sample_interval_ms": config.runtime_resources.sample_interval_ms,
                         "log_every_samples": config.runtime_resources.log_every_samples,
                         "include_cache_counts": (config.runtime_resources.include_cache_counts),
+                        "disk_path": config.runtime_resources.disk_path,
                     },
                 ),
             ),
         )
+        if config.runtime_resources.health.enabled:
+            health = config.runtime_resources.health
+            registrations.append(
+                ActorRegistration(
+                    key="runtime_resource_health",
+                    actor_id="RUNTIME-RESOURCE-HEALTH",
+                    config=ImportableActorConfig(
+                        actor_path=(
+                            "markeitech.system.resource_health_actor:RuntimeResourceHealthActor"
+                        ),
+                        config_path=(
+                            "markeitech.system.resource_health_actor:"
+                            "RuntimeResourceHealthActorConfig"
+                        ),
+                        config={
+                            "actor_id": "RUNTIME-RESOURCE-HEALTH",
+                            "sample_interval_ms": config.runtime_resources.sample_interval_ms,
+                            "threshold_version": health.threshold_version,
+                            "warning_consecutive_samples": health.warning_consecutive_samples,
+                            "critical_consecutive_samples": health.critical_consecutive_samples,
+                            "recovery_consecutive_samples": health.recovery_consecutive_samples,
+                            "notification_cooldown_ms": health.notification_cooldown_ms,
+                            "rss_growth_window_samples": health.rss_growth_window_samples,
+                            "stale_warning_ms": health.stale_warning_ms,
+                            "stale_critical_ms": health.stale_critical_ms,
+                            "warning": health.warning.to_dict(),
+                            "critical": health.critical.to_dict(),
+                        },
+                    ),
+                ),
+            )
     registrations.append(
         ActorRegistration(
             key="operational_persistence",

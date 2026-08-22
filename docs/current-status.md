@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-21
+Last reviewed: 2026-08-22
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -369,23 +369,48 @@ calculation failures. PostgreSQL stored all 32,389 accepted operational events w
 failures, rejections, or pending writes; Discord delivered all three health messages; shutdown
 completed cleanly.
 
-The run also exposed two separate hardening concerns which do not invalidate the deterministic
-measurement results: evidence-health transitions remain too noisy for some thin instruments, and
-late evidence callbacks can appear after their actor has entered shutdown. Those remain explicit
-follow-up work. The optional Observatory ran concurrently during this acceptance, so its suspected
-host resource cost is isolated on `v2-stage-observatory` rather than attributed to Stage 9C.
+The run also exposed separate hardening concerns which do not invalidate the deterministic
+measurement results: evidence-health transitions remain too noisy for some thin instruments, late
+evidence callbacks can appear after their actor has entered shutdown, and closed-session calendar
+windows were rejected before their future phase began. The first two remain follow-up work. The
+closed-session path is now implemented for review as typed, deduplicated deferral with exact
+first-completed-boundary retries and session-transition wakeups. Invalid policies still fail hard,
+and unrelated acquisition remains active. The optional Observatory ran concurrently during this
+acceptance, so its suspected host resource cost is isolated on `v2-stage-observatory` rather than
+attributed to Stage 9C.
 
 Stage 9C session measurements are closed. They provide numerical evidence for future entities and
 semantic events; they do not themselves classify market state or create opportunities.
 
-## Runtime Resource Baseline
+## Runtime Resource Hardening
 
-The `v2-stage-runtime-resource-telemetry` branch adds a passive `RuntimeResourceActor` for local
-review before the next connected acceptance run. At a configuration-owned cadence it publishes
-process memory, CPU, thread, file-descriptor, and public Nautilus cache-count evidence through the
-typed `markeitech.runtime.resource` contract. The existing operational persistence actor records the
-samples as `runtime.resource`; no raw market data or new database table is introduced.
+Commit `ba442c4` adds the reviewed passive `RuntimeResourceActor`. The first short connected run
+persisted all seven raw samples and showed bounded RSS/cache growth with no sampling failure. At a
+configuration-owned cadence the actor publishes process memory, CPU, thread, file-descriptor, host
+memory/CPU/swap, disk headroom, and public Nautilus cache-count evidence through the typed
+`markeitech.runtime.resource` contract. The existing operational persistence actor records samples
+as `runtime.resource`; no raw market data or new database table is introduced.
 
-This diagnostic slice does not mutate Nautilus cache policy, assign thresholds, alter system health,
-send alerts, or select Redis. The next controlled run keeps the Observatory off and all current cache
-defaults unchanged so resource growth can be attributed with fewer moving parts.
+The current hardening branch adds a separate `RuntimeResourceHealthActor`. It evaluates only
+configuration-owned, versioned thresholds with sustained warning/critical/recovery windows and
+publishes durable semantic transitions on the non-overlapping `markeitech.runtime.health` signal as
+`runtime.resource_health` operational events. Discord remains a read-only
+projection: critical transitions may ping; warnings and recoveries do not; raw samples are never
+sent. The actor does not mutate Nautilus cache policy, alter global system health, or select Redis.
+
+The 2026-08-22 Observatory-off run collected 20 bounded samples with flat cache counts and no
+sampling failures. It also exposed Nautilus prefix-routing overlap between the original raw and
+health signal names: one transition re-entered the health actor and reached persistence twice,
+rolling back a three-record batch. The health signal now uses a non-overlapping namespace, consumers
+guard exact signal names, and the disk critical-percentage threshold is versioned at 2% so the
+observed 17.5 GiB / 3.8% state remains warning-level while the 5 GiB absolute critical guard stays
+active. Offline verification passes 302 tests with two PostgreSQL-marked tests deselected.
+
+The corrected connected rerun collected 15/15 durable raw samples and one sustained
+`NORMAL -> WARNING` disk-headroom transition under policy `2026-08-22-v2`. The health actor reported
+zero rejected samples; Discord delivered all four eligible lifecycle/resource messages; global
+system health remained `READY` until controlled shutdown; and PostgreSQL reconciled all 726 accepted
+records with zero retries, failures, rejections, or pending writes. Process RSS grew only 3.3 MiB,
+cache counts remained bounded, and Nautilus returned cleanly. The resource warning path and signal
+routing correction are connected-accepted; critical and recovery projection remain controlled
+follow-up cases rather than blockers for this hardening batch.

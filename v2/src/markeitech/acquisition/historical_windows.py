@@ -71,6 +71,14 @@ class HistoricalWindowResolutionError(ValueError):
     pass
 
 
+class HistoricalWindowUnavailable(HistoricalWindowResolutionError):
+    def __init__(self, message: str, *, retry_at_ns: int) -> None:
+        super().__init__(message)
+        if retry_at_ns <= 0:
+            raise ValueError("retry_at_ns must be positive")
+        self.retry_at_ns = retry_at_ns
+
+
 class HistoricalWindowResolver:
     """Resolve configured historical windows against authoritative session calendars."""
 
@@ -163,14 +171,23 @@ class HistoricalWindowResolver:
             )
             start_ns, end_exclusive_ns = _window_shape(window, selected, policy)
         else:
-            selected = _current_for_trade_date(
+            selected = _phase_for_trade_date(
                 calendar,
                 phase_windows,
                 as_of_ns,
-                completed_boundary_ns,
                 window,
             )
             start_ns, end_exclusive_ns = _window_shape(window, selected, policy)
+
+        if end_exclusive_ns <= start_ns:
+            raise HistoricalWindowResolutionError(
+                f"window has invalid bounds: window={window.value}",
+            )
+        if start_ns >= completed_boundary_ns:
+            raise HistoricalWindowUnavailable(
+                f"window is not yet available: window={window.value}",
+                retry_at_ns=_first_completed_boundary(start_ns, selector_interval_ns),
+            )
 
         return _bounds(
             window,
@@ -204,24 +221,23 @@ def _latest_completed(
     return max(eligible, key=lambda item: (item.end_ns, item.start_ns))
 
 
-def _current_for_trade_date(
+def _phase_for_trade_date(
     calendar: SessionCalendar,
     windows: tuple[SessionWindow, ...],
     as_of_ns: int,
-    completed_boundary_ns: int,
     window: HistoricalWindow,
 ) -> SessionWindow:
     trade_date = calendar.evaluate(as_of_ns).trade_date
-    eligible = tuple(
-        item
-        for item in windows
-        if item.trade_date == trade_date and item.start_ns < completed_boundary_ns
-    )
+    eligible = tuple(item for item in windows if item.trade_date == trade_date)
     if not eligible:
         raise HistoricalWindowResolutionError(
-            f"configured phase has not started for window={window.value}",
+            f"calendar has no configured phase for window={window.value}",
         )
     return max(eligible, key=lambda item: (item.start_ns, item.end_ns))
+
+
+def _first_completed_boundary(start_ns: int, selector_interval_ns: int) -> int:
+    return ((start_ns // selector_interval_ns) + 1) * selector_interval_ns
 
 
 def _window_shape(
@@ -269,9 +285,7 @@ def _latest_started_relative_window(
     policy: HistoricalWindowParameters,
 ) -> SessionWindow:
     eligible = tuple(
-        item
-        for item in windows
-        if _window_shape(window, item, policy)[0] < completed_boundary_ns
+        item for item in windows if _window_shape(window, item, policy)[0] < completed_boundary_ns
     )
     if not eligible:
         raise HistoricalWindowResolutionError(
@@ -324,9 +338,7 @@ def _validate_policy(
     }
     expected = {
         HistoricalWindow.RECENT_COMPLETED: (
-            {"observation_count"}
-            if policy.observation_count is not None
-            else {"duration_minutes"}
+            {"observation_count"} if policy.observation_count is not None else {"duration_minutes"}
         ),
         HistoricalWindow.PREVIOUS_RTH: {"phase"},
         HistoricalWindow.PREVIOUS_GTH_OVERNIGHT: {"phase"},

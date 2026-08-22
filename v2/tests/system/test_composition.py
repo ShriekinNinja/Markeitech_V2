@@ -40,6 +40,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "data_acquisition",
         "discord_health",
         "runtime_resources",
+        "runtime_resource_health",
         "operational_persistence",
     ]
     assert len({registration.actor_id for registration in plan}) == len(plan)
@@ -120,7 +121,12 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "sample_interval_ms": 10000,
         "log_every_samples": 1,
         "include_cache_counts": True,
+        "disk_path": "/",
     }
+    health = next(item for item in plan if item.key == "runtime_resource_health")
+    assert health.config.config["threshold_version"] == "2026-08-22-v2"
+    assert health.config.config["warning"]["host_memory_available_percent"] == 15.0
+    assert health.config.config["critical"]["disk_free_percent"] == 2.0
 
 
 def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
@@ -138,6 +144,7 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "watchlist",
         "data_acquisition",
         "runtime_resources",
+        "runtime_resource_health",
         "operational_persistence",
     ]
 
@@ -152,6 +159,7 @@ def test_actor_plan_omits_disabled_runtime_resource_telemetry() -> None:
     plan = build_actor_plan(config, _prerequisites())
 
     assert "runtime_resources" not in {registration.key for registration in plan}
+    assert "runtime_resource_health" not in {registration.key for registration in plan}
 
 
 def test_actor_plan_omits_disabled_native_consumer_probe() -> None:

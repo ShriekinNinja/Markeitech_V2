@@ -13,10 +13,12 @@ from markeitech.acquisition import (
 from markeitech.acquisition.historical_windows import HistoricalWindowResolver
 from markeitech.intelligence.session import SessionCalendar, definition_from_config
 from markeitech.system.acquisition import (
+    HistoricalDemandRetryBook,
     InstrumentDefinitionTracker,
     _analytical_observation_demand,
     _compile_historical_demand,
     _watchlist_observation_demand,
+    synchronize_historical_demand_retry_timer,
 )
 from markeitech.system.messages import (
     INSTRUMENTS_READY,
@@ -176,3 +178,123 @@ def test_session_owned_historical_demand_compiles_authoritative_bounds() -> None
         )
         - 1
     )
+
+
+def test_deferred_historical_demands_dedupe_by_demand_id() -> None:
+    book = HistoricalDemandRetryBook()
+    original = _historical_event("window:ES", as_of_ns=100)
+    replacement = _historical_event("window:ES", as_of_ns=200)
+
+    book.retain(original, calendar_id="cme_equity", retry_at_ns=500)
+    book.retain(replacement, calendar_id="cme_equity", retry_at_ns=600)
+
+    assert book.demand_ids == ("window:ES",)
+    assert book.next_retry_ns == 600
+    assert book.release_due(599) == ()
+    assert book.release_due(600) == (replacement,)
+
+
+def test_session_transition_releases_only_matching_calendar_demands() -> None:
+    book = HistoricalDemandRetryBook()
+    cme = _historical_event("window:ES", as_of_ns=100)
+    equities = _historical_event("window:SPY", as_of_ns=100, instrument_id="SPY.ARCA")
+    book.retain(cme, calendar_id="cme_equity", retry_at_ns=500)
+    book.retain(equities, calendar_id="us_equities", retry_at_ns=500)
+
+    assert book.release_calendar("cme_equity") == (cme,)
+    assert book.demand_ids == ("window:SPY",)
+
+
+def test_clearing_deferred_demands_removes_shutdown_work() -> None:
+    book = HistoricalDemandRetryBook()
+    book.retain(
+        _historical_event("window:ES", as_of_ns=100),
+        calendar_id="cme_equity",
+        retry_at_ns=500,
+    )
+
+    book.clear()
+
+    assert book.demand_ids == ()
+    assert book.next_retry_ns is None
+
+
+def test_historical_retry_timer_is_precise_deduplicated_and_canceled() -> None:
+    clock = _RetryClock()
+
+    def callback(_event) -> None:  # noqa: ANN001
+        return None
+
+    scheduled = synchronize_historical_demand_retry_timer(
+        clock,
+        current_retry_at_ns=None,
+        next_retry_at_ns=500,
+        callback=callback,
+    )
+    unchanged = synchronize_historical_demand_retry_timer(
+        clock,
+        current_retry_at_ns=scheduled,
+        next_retry_at_ns=500,
+        callback=callback,
+    )
+    replaced = synchronize_historical_demand_retry_timer(
+        clock,
+        current_retry_at_ns=unchanged,
+        next_retry_at_ns=600,
+        callback=callback,
+    )
+    canceled = synchronize_historical_demand_retry_timer(
+        clock,
+        current_retry_at_ns=replaced,
+        next_retry_at_ns=None,
+        callback=callback,
+    )
+
+    assert clock.scheduled == [500, 600]
+    assert clock.cancel_count == 2
+    assert canceled is None
+    assert clock.timer_names() == []
+
+
+def _historical_event(
+    demand_id: str,
+    *,
+    as_of_ns: int,
+    instrument_id: str = "ESU6.CME",
+) -> HistoricalDependencyDemandEvent:
+    return HistoricalDependencyDemandEvent(
+        demand_id=demand_id,
+        consumer_id="SESSION-METRICS",
+        capability_id="metric:session-window:opening_range_5m",
+        capability_version=1,
+        instrument_id=instrument_id,
+        selector="5-MINUTE-LAST-EXTERNAL",
+        window="opening_range",
+        minimum_observations=1,
+        maximum_observations=6,
+        priority=50,
+        purpose="test deferred session window",
+        as_of_ns=as_of_ns,
+        window_parameters={"phase": "RTH", "duration_minutes": 30},
+    )
+
+
+class _RetryClock:
+    def __init__(self) -> None:
+        self.scheduled: list[int] = []
+        self.cancel_count = 0
+        self._active = False
+
+    def timer_names(self) -> list[str]:
+        return ["historical-window-demand-retry"] if self._active else []
+
+    def cancel_timer(self, name: str) -> None:
+        assert name == "historical-window-demand-retry"
+        self.cancel_count += 1
+        self._active = False
+
+    def set_time_alert_ns(self, name: str, alert_time_ns: int, callback) -> None:  # noqa: ANN001
+        assert name == "historical-window-demand-retry"
+        assert callable(callback)
+        self.scheduled.append(alert_time_ns)
+        self._active = True

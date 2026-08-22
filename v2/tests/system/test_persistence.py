@@ -38,11 +38,14 @@ from markeitech.system.persistence import (
     HealthEventRecord,
     OperationalEventRecord,
     PersistenceWorker,
+    _is_critical_record,
     _record_from_signal,
 )
 from markeitech.system.resource_contracts import (
+    RUNTIME_RESOURCE_HEALTH_SIGNAL,
     RUNTIME_RESOURCE_SIGNAL,
     RuntimeResourceEvent,
+    RuntimeResourceHealthEvent,
 )
 
 
@@ -99,6 +102,17 @@ def test_runtime_resource_signal_converts_to_operational_audit_record() -> None:
         cpu_percent=15.0,
         thread_count=8,
         open_fd_count=12,
+        open_fd_soft_limit=1024,
+        host_cpu_percent=30.0,
+        host_memory_total_bytes=32_000,
+        host_memory_available_bytes=16_000,
+        host_memory_available_percent=50.0,
+        host_swap_used_bytes=100,
+        host_swap_percent=1.0,
+        disk_path="/",
+        disk_total_bytes=100_000,
+        disk_free_bytes=50_000,
+        disk_free_percent=50.0,
         cache_observed=True,
         cache_error=None,
         cache_instrument_count=2,
@@ -125,6 +139,38 @@ def test_runtime_resource_signal_converts_to_operational_audit_record() -> None:
     assert record.source == "RUNTIME-RESOURCES"
     assert record.correlation_id == "runtime-resource:RUNTIME-RESOURCES"
     assert record.payload["rss_bytes"] == 500
+
+
+def test_runtime_resource_health_signal_is_durable_and_critical_when_required() -> None:
+    run_id = uuid4()
+    event = RuntimeResourceHealthEvent(
+        event_id="runtime-resource-health:RESOURCE-HEALTH:100:CRITICAL",
+        source="RESOURCE-HEALTH",
+        observed_ts_ns=100,
+        state="CRITICAL",
+        previous_state="WARNING",
+        reason_codes=("host_memory_available_percent",),
+        observations={"host_memory_available_percent": 7.0},
+        thresholds={"host_memory_available_percent": 8.0},
+        notification_eligible=True,
+        threshold_version="test-v1",
+    )
+
+    record = _record_from_signal(
+        run_id,
+        1,
+        Signal(
+            name=RUNTIME_RESOURCE_HEALTH_SIGNAL,
+            value=event.to_signal_value(),
+            ts_event=100,
+            ts_init=101,
+        ),
+    )
+
+    assert isinstance(record, OperationalEventRecord)
+    assert record.event_type == "runtime.resource_health"
+    assert record.payload["state"] == "CRITICAL"
+    assert _is_critical_record(record) is True
 
 
 def test_worker_preserves_order_across_health_and_generic_operational_records() -> None:

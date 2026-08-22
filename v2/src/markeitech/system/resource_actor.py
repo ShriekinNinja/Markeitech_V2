@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from resource import RLIMIT_NOFILE, getrlimit
 from time import monotonic
 
 import psutil
@@ -23,6 +24,16 @@ class ProcessResourceSample:
     cpu_system_seconds: float
     thread_count: int
     open_fd_count: int | None
+    open_fd_soft_limit: int | None
+    host_cpu_percent: float
+    host_memory_total_bytes: int
+    host_memory_available_bytes: int
+    host_memory_available_percent: float
+    host_swap_used_bytes: int
+    host_swap_percent: float
+    disk_total_bytes: int
+    disk_free_bytes: int
+    disk_free_percent: float
     monotonic_seconds: float
 
 
@@ -38,12 +49,16 @@ class CacheResourceSample:
 
 
 class ProcessResourceSampler:
-    def __init__(self) -> None:
+    def __init__(self, disk_path: str) -> None:
         self._process = psutil.Process()
+        self._disk_path = disk_path
 
     def sample(self) -> ProcessResourceSample:
         memory = self._process.memory_info()
         cpu = self._process.cpu_times()
+        host_memory = psutil.virtual_memory()
+        host_swap = psutil.swap_memory()
+        disk = psutil.disk_usage(self._disk_path)
         open_fd_count = None
         num_fds = getattr(self._process, "num_fds", None)
         if num_fds is not None:
@@ -51,6 +66,11 @@ class ProcessResourceSampler:
                 open_fd_count = num_fds()
             except (OSError, psutil.Error):
                 open_fd_count = None
+        try:
+            soft_limit, _ = getrlimit(RLIMIT_NOFILE)
+            open_fd_soft_limit = soft_limit if soft_limit > 0 else None
+        except (OSError, ValueError):
+            open_fd_soft_limit = None
         return ProcessResourceSample(
             rss_bytes=memory.rss,
             vms_bytes=memory.vms,
@@ -58,6 +78,16 @@ class ProcessResourceSampler:
             cpu_system_seconds=cpu.system,
             thread_count=self._process.num_threads(),
             open_fd_count=open_fd_count,
+            open_fd_soft_limit=open_fd_soft_limit,
+            host_cpu_percent=psutil.cpu_percent(interval=None),
+            host_memory_total_bytes=host_memory.total,
+            host_memory_available_bytes=host_memory.available,
+            host_memory_available_percent=100.0 - host_memory.percent,
+            host_swap_used_bytes=host_swap.used,
+            host_swap_percent=host_swap.percent,
+            disk_total_bytes=disk.total,
+            disk_free_bytes=disk.free,
+            disk_free_percent=(disk.free / disk.total * 100.0 if disk.total else 0.0),
             monotonic_seconds=monotonic(),
         )
 
@@ -68,6 +98,7 @@ class RuntimeResourceActorConfig(DataActorConfig):
         sample_interval_ms: int,
         log_every_samples: int,
         include_cache_counts: bool,
+        disk_path: str,
         actor_id: str | ActorId = "RUNTIME-RESOURCES",
     ) -> RuntimeResourceActorConfig:
         resolved_actor_id = (
@@ -77,6 +108,7 @@ class RuntimeResourceActorConfig(DataActorConfig):
         obj.sample_interval_ms = sample_interval_ms
         obj.log_every_samples = log_every_samples
         obj.include_cache_counts = include_cache_counts
+        obj.disk_path = disk_path
         return obj
 
 
@@ -87,7 +119,8 @@ class RuntimeResourceActor(DataActor):
         self._sample_interval_ns = config.sample_interval_ms * 1_000_000
         self._log_every_samples = config.log_every_samples
         self._include_cache_counts = config.include_cache_counts
-        self._sampler = ProcessResourceSampler()
+        self._disk_path = config.disk_path
+        self._sampler = ProcessResourceSampler(config.disk_path)
         self._sequence = 0
         self._failures = 0
         self._previous: ProcessResourceSample | None = None
@@ -113,7 +146,8 @@ class RuntimeResourceActor(DataActor):
         self.log.info(
             "RUNTIME_RESOURCE_STARTED"
             f" | sample_interval_ms={self._sample_interval_ms}"
-            f" | include_cache_counts={self._include_cache_counts}",
+            f" | include_cache_counts={self._include_cache_counts}"
+            f" | disk_path={self._disk_path}",
         )
 
     def on_stop(self) -> None:
@@ -200,6 +234,17 @@ class RuntimeResourceActor(DataActor):
                 cpu_percent=cpu_percent,
                 thread_count=process.thread_count,
                 open_fd_count=process.open_fd_count,
+                open_fd_soft_limit=process.open_fd_soft_limit,
+                host_cpu_percent=process.host_cpu_percent,
+                host_memory_total_bytes=process.host_memory_total_bytes,
+                host_memory_available_bytes=process.host_memory_available_bytes,
+                host_memory_available_percent=process.host_memory_available_percent,
+                host_swap_used_bytes=process.host_swap_used_bytes,
+                host_swap_percent=process.host_swap_percent,
+                disk_path=self._disk_path,
+                disk_total_bytes=process.disk_total_bytes,
+                disk_free_bytes=process.disk_free_bytes,
+                disk_free_percent=process.disk_free_percent,
                 cache_observed=cache.observed,
                 cache_error=cache.error,
                 cache_instrument_count=cache.instrument_count,
@@ -262,6 +307,12 @@ class RuntimeResourceActor(DataActor):
             f" | cpu_pct={resource.cpu_percent:.2f}"
             f" | threads={resource.thread_count}"
             f" | open_fds={resource.open_fd_count}"
+            f" | open_fd_soft_limit={resource.open_fd_soft_limit}"
+            f" | host_cpu_pct={resource.host_cpu_percent:.2f}"
+            f" | host_memory_available_pct={resource.host_memory_available_percent:.2f}"
+            f" | swap_pct={resource.host_swap_percent:.2f}"
+            f" | disk_free_gb={resource.disk_free_bytes / 1_073_741_824:.1f}"
+            f" | disk_free_pct={resource.disk_free_percent:.2f}"
             f" | cache_instruments={resource.cache_instrument_count}"
             f" | cache_quotes={resource.cache_quote_tick_count}"
             f" | cache_trades={resource.cache_trade_tick_count}"
