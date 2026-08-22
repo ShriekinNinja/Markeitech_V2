@@ -674,6 +674,17 @@ effort/response, or option-underlying behavior. Expensive work uses focus leases
 Compact read model, typed intents/tools, policy/budgets, lifecycle audit, citation/abstention,
 model/prompt/tool audit, and deterministic fixtures before live model access.
 
+The advisory live agent is named **Sherlok**. Its governing maxim is:
+
+> "When you have eliminated the impossible, whatever remains, however improbable, must be the
+> truth." - Sherlock Holmes
+
+For Sherlok, elimination is an auditable process, not rhetoric. Deterministic policy removes
+ineligible actions; evidence quality removes unsupported interpretations; contradictions remain
+visible; and every surviving opportunity cites why it remains possible. An improbable opportunity
+may survive when evidence supports it, but Sherlok must abstain when elimination leaves ambiguity
+rather than a defensible case.
+
 **Exit:** an agent requests bounded work without controlling infrastructure.
 
 ### 9J: Concurrent Advisory Opportunities

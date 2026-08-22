@@ -7,6 +7,10 @@ state, semantic market events, options intelligence, and an advisory AI agent.
 
 The runtime does not place orders. Automated execution is intentionally absent.
 
+> ### "When you have eliminated the impossible, whatever remains, however improbable, must be the truth."
+>
+> **Sherlock Holmes - Sherlok's governing maxim**
+
 > "No Obstacles; Only Challenges; This is Just a Ride." - Markeitect
 
 > "Build only what the evidence can defend; leave the rest configurable." - Kite
