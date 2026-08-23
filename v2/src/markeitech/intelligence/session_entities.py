@@ -345,10 +345,11 @@ class SessionEntityProjectionOwner:
             observed_ns,
             *(item.calculated_ts_ns for item in usable.values()),
         )
-        published_ns = max(
-            calculated_ns,
-            *(item.published_ts_ns for item in usable.values()),
+        latest_input_publication_ns = max(
+            (item.published_ts_ns for item in usable.values()),
+            default=calculated_ns,
         )
+        published_ns = max(calculated_ns, latest_input_publication_ns)
         effective_ns = max(
             (item.effective_ts_ns for item in usable.values()),
             default=trigger.effective_ts_ns,

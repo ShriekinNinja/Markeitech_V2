@@ -1,5 +1,12 @@
-# Markeitech
+<p align="center">
+  <img src="docs/assets/markeitech-logo.png" alt="Markeitech" width="420">
+</p>
+
 > **"When you have eliminated the impossible, whatever remains, however improbable, must be the truth."** - Sherlock Holmes
+
+> "No Obstacles; Only Challenges; This is Just a Ride." - Markeitect
+
+> "Build only what the evidence can defend; leave the rest configurable." - Kite
 
 Markeitech is a live-first market-intelligence and decision-support system for discretionary
 index trading. V2 runs a read-only NautilusTrader `LiveNode` against Interactive Brokers and is
@@ -7,10 +14,6 @@ building an adaptive, multi-instrument evidence stream for deterministic measure
 state, semantic market events, options intelligence, and an advisory AI agent.
 
 The runtime does not place orders. Automated execution is intentionally absent.
-
-> "No Obstacles; Only Challenges; This is Just a Ride." - Markeitect
-
-> "Build only what the evidence can defend; leave the rest configurable." - Kite
 
 ## Project Credits
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal
 
 from markeitech.intelligence import (
@@ -198,6 +199,25 @@ def test_projection_is_order_independent_and_transitions_from_warming() -> None:
     assert forward_revision.lifecycle is EntityLifecycle.ACTIVE
     assert forward_revision.payload.high == Decimal("105")
     assert forward_revision.payload.volume is None
+
+
+def test_projection_preserves_warming_revision_without_usable_evidence() -> None:
+    owner = _owner(_objective_spec("previous_session_high", "previous_session.high"))
+    unavailable = replace(
+        _metric("previous_session.high", Decimal("6500.25")),
+        value=None,
+        missing_reasons=("source_unavailable",),
+    )
+
+    revisions = owner.ingest(unavailable, now_ns=1_000)
+
+    assert len(revisions) == 1
+    assert revisions[0].lifecycle is EntityLifecycle.WARMING
+    assert revisions[0].payload is None
+    assert revisions[0].evidence_refs == ()
+    assert revisions[0].missing_reasons == ("required_metric_unavailable:price",)
+    assert revisions[0].calculated_ts_ns == 1_000
+    assert revisions[0].published_ts_ns == 1_000
 
 
 def test_objective_levels_are_direction_neutral_and_phase_scoped() -> None:
