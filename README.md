@@ -1,9 +1,7 @@
 <p align="center" style="background: black">
-  <img src="docs/assets/markeitech-logo.png" alt="Markeitech" width="420>
+  <img src="docs/assets/markeitech-logo.png" alt="Markeitech" width="100%">
 </p>
-<br />
-<br />
-<br />
+
 >### **"When you have eliminated the impossible, whatever remains, however improbable, must be the truth."** - Sherlock Holmes
 
 > "No Obstacles; Only Challenges; This is Just a Ride." - Markeitect
