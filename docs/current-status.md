@@ -436,5 +436,18 @@ with optimization metadata. Initial parameter values are not presented as tradin
 
 The detailed plan is available in
 [`roadmap/v2-stage-9d-entities-rolling-state-plan.md`](roadmap/v2-stage-9d-entities-rolling-state-plan.md).
-No Stage 9D runtime behavior or PostgreSQL analytical-state schema has been implemented. The
-persistence writer and schema remain explicit review gates before the durable-summary slice.
+The initial Stage 9D capability bindings, bounded actor split, EMA/reference baseline, first
+swing/FVG/zone/bar-volume definitions, three-class durability policy, dedicated analytical
+persistence ownership, and restoration/retention policy are approved.
+
+Slice 9D.1 is implemented for Markeitect review. It introduces framework-independent, immutable
+entity definition, identity, parameter, evidence, revision, lifecycle, durability, snapshot, and
+admission contracts plus a pure bounded state book. Entity IDs are deterministic; registry
+dependencies and payload/evidence compatibility are validated; revision gaps, stale writes,
+conflicts, and meaningless updates are rejected; only terminal state may be evicted or pruned; and
+cross-session restoration is forced to remain stale/degraded until later catch-up evidence. The
+state book supports bounded snapshots by instrument, entity type, analytical profile, identity
+dimensions, and lifecycle. Nine focused entity tests and the 312-test non-PostgreSQL suite pass.
+
+No Stage 9D actor, configuration loader, PostgreSQL analytical-state schema, Discord projection,
+or connected runtime behavior has been introduced. Those remain later review gates.

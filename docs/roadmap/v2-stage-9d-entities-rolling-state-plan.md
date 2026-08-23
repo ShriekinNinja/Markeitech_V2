@@ -1,6 +1,6 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Scope approved; detailed design revised for Markeitect review
+**Status:** Slice 9D.1 implemented; pending Markeitect review
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
@@ -562,6 +562,13 @@ No actor, configuration, database, migration, Discord, or connected run is intro
 
 **Exit:** entity identity and rolling-state behavior are reviewable without framework side effects.
 
+**Implementation evidence:** immutable typed contracts, deterministic identity, dependency and
+evidence validation, revision ordering, meaningful-change suppression, bounded admission,
+terminal-only eviction/pruning, restoration fidelity guards, and filtered immutable snapshots are
+implemented. Nine focused tests pass, the complete intelligence suite passes 97 tests, and the
+full non-PostgreSQL suite passes 312 tests with two PostgreSQL-marked tests deselected. No actor,
+configuration loader, persistence schema, Discord projection, or connected run was added.
+
 ### 9D.2: Configuration And Numerical Prerequisites
 
 - define and validate the complete configuration envelope for Groups 1-5;
@@ -695,14 +702,40 @@ Stage 9D closes only when:
 - offline verification passes and connected acceptance debt is stated precisely; and
 - current status, roadmap, implementation, and tests agree.
 
-## Decisions Required Before Coding Beyond 9D.1
+## Approved Decisions
 
-Markeitect must approve:
+Markeitect approved the following decisions before implementation began:
 
-1. the first concrete configuration values and applicability bindings for each approved group;
-2. the proposed bounded actor ownership split;
-3. the exact moving/anchored reference formulae included in the first trend-state baseline;
-4. the first swing, FVG, zone, and bar-volume-allocation definitions;
-5. the compact summary field set;
-6. a dedicated analytical-summary persistence actor versus extending operational persistence; and
-7. the first retention and restoration policy after reviewing actual configuration values.
+1. Capability applicability is bound through configuration by analytical profile, instrument or
+   instrument class, session, and horizon. The initial baseline uses one-minute evidence for
+   session/opening-range/proximity and fast state; five- and fifteen-minute evidence for intraday
+   state and structure; direct one-hour and one-day evidence for higher-timeframe state and
+   structure; and direct weekly evidence only for configured structural references. No universal
+   resolution pyramid, preferred instrument, or all-capabilities-on-all-instruments rule exists.
+2. Runtime ownership is split among bounded session/reference, market-state, market-structure, and
+   bar-volume-distribution actors sharing common entity contracts and pure state-book primitives.
+3. The first moving/anchored reference baseline contains the existing session bar-VWAP estimate,
+   configured EMA 20/50/200 references, and one dynamic-eligible EMA initially set to 10 with a
+   bounded 5-34 integer envelope. EMA is a registry formula, not privileged code; additional
+   reference families require an explicit decision question.
+4. The first structure baseline uses a configurable confirmed-pivot swing detector; configurable
+   three-bar wick-gap FVG geometry; deterministic constituent-preserving derived zones; and a
+   deterministic uniform candle-volume allocation across intersected price bins. Order blocks and
+   supply/demand semantics remain deferred until precisely defined.
+5. Durability has three explicit classes. Finalized session facts are persisted. The latest
+   revision of explicitly configured cross-session entities may be checkpointed, including
+   confirmed higher-timeframe swings, still-relevant FVGs/zones/levels, and compact finalized
+   inferred profile references. Rolling state, developing candidates, volume bins, per-update
+   revisions, and raw market observations remain transient. Restored cross-session checkpoints
+   remain stale/degraded until catch-up evidence covers the offline interval.
+6. A dedicated analytical-summary persistence actor and table own approved analytical durability;
+   operational audit remains separate. Analytical recovery failure degrades that capability and
+   does not stop unrelated runtime actors.
+7. Initial completed-summary retention is two sessions per instrument/profile with a fourteen-day
+   maximum age. Every entity family retains independent typed/versioned bounds. Restoration
+   requires exact schema, entity, metric, formula, and parameter compatibility; incompatible state
+   is audited, ignored, and re-warmed.
+
+All numerical defaults above remain configuration values with identity, type, bounds, source,
+version, UTC effective time, mutability, and optimization metadata. Approval establishes the
+first baseline, not permanent trading calibration.
