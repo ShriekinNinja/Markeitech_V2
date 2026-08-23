@@ -506,3 +506,19 @@ normal, and shutdown was clean.
 RTH live-bar updates, developing-to-complete session transitions, and rolling-input behavior remain
 explicit connected-acceptance debt. No Stage 9D analytical-state schema, Discord market projection,
 or semantic interaction event has been introduced.
+
+Slice 9D.4A is implemented locally and awaits Markeitect's review. It adds immutable typed payload
+contracts for volatility, compression/expansion, horizon-specific direction, trend/rotation, and
+configured reference state plus one pure scalar state-classification primitive. Category labels and
+contiguous bands, definition and parameter identity, evidence measure, health/fidelity envelope,
+minimum coverage, hysteresis, consecutive confirmation, and maximum evidence age are supplied by
+validated versioned policy rather than hidden constants. The classifier handles exact boundaries,
+candidate interruption, stale or late evidence, and unavailable state deterministically.
+
+The family projectors retain their exact numerical inputs, horizon, evidence references, candidate
+and confirmed state, reference axes, and explicit cross-horizon conflicts. They do not create a
+universal direction or trend score and do not infer transitions or trading meaning. Seven focused
+market-state tests, the 144-test intelligence/configuration scope, and the complete 344-test
+non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected. Stage 9D.4A adds no actor,
+provider request, runtime configuration binding, entity revision publication, PostgreSQL schema,
+Discord output, semantic event, opportunity selection, option selection, or Sir Loke behavior.

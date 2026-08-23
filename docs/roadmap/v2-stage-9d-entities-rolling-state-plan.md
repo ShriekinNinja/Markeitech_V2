@@ -1,6 +1,6 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slice 9D.3 approved and closed-market connected-accepted; RTH acceptance debt recorded
+**Status:** Slice 9D.4A implemented and awaiting local review; 9D.3 RTH acceptance debt recorded
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
@@ -669,6 +669,37 @@ market projection, semantic interaction event, opportunity, option selection, or
 
 **Exit:** consumers can query current numerical market state by exact horizon and definition
 without deriving it independently or receiving semantic transition noise.
+
+#### 9D.4A: Pure State Policy And Payload Contracts
+
+This first 9D.4 batch implements the actor-independent contract and classification layer only. It
+adds typed immutable payloads for volatility, compression/expansion, directional,
+trend/rotation, and moving/anchored-reference state. A common pure classifier accepts one exact
+named numerical measure and a versioned policy containing configuration-owned category labels and
+contiguous bands, hysteresis, consecutive-confirmation count, minimum coverage, maximum evidence
+age, and permitted health/fidelity. The policy also carries definition, parameter, source, and UTC
+effective-time identity so later runtime composition does not manufacture hidden defaults.
+
+The classifier uses lower-inclusive and upper-exclusive category boundaries, preserves a current
+confirmed category while a new candidate accumulates, resets interrupted candidates, requires a
+configured hysteresis crossing before a transition candidate begins, ignores non-monotonic input
+without mutating accepted memory, and returns `UNAVAILABLE` under stale or insufficient evidence.
+The exact unavailable label is policy owned. Family projectors retain their complete numerical
+inputs, horizon identity, evidence lineage, candidate/confirmation state, independent reference
+slope and separation axes, and explicit cross-horizon conflicts. No horizon is collapsed into a
+universal direction or trend score.
+
+Seven focused tests prove policy-envelope rejection, exact category boundaries, initial and
+transition confirmation, hysteresis, interrupted candidates, stale and late evidence, coverage
+and fidelity requirements, policy-version re-warm, independent reference axes, numerical payload
+retention, and explicit cross-horizon conflicts. The 144-test intelligence/configuration scope and
+complete 344-test
+non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected.
+
+9D.4A deliberately adds no Nautilus actor or request, runtime configuration binding, entity
+revision publication, state-book ownership, PostgreSQL schema, Discord projection, semantic
+transition event, opportunity selection, option selection, or Sir Loke behavior. Those runtime
+concerns require the next separately reviewed 9D.4 batch.
 
 ### 9D.5: Swing, FVG, And Zone Projection
 
