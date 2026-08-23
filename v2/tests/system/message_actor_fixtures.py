@@ -9,6 +9,7 @@ from nautilus_trader.model import ActorId, CustomData, DataType
 from markeitech.intelligence import (
     ENTITY_REVISION_TYPE_NAME,
     METRIC_VALUE_TYPE_NAME,
+    EntityLifecycle,
     EntityRevision,
     MetricFidelity,
     MetricHealth,
@@ -32,6 +33,7 @@ received = Event()
 ready_received = Event()
 received_events: list[SystemHealthEvent] = []
 entity_received = Event()
+market_state_received = Event()
 received_entity_revisions: list[EntityRevision] = []
 
 
@@ -167,6 +169,46 @@ class EntityMetricPublisher(DataActor):
         self.publish_data(data_type, CustomData(data_type, value))
 
 
+class MarketStateMetricPublisherConfig(DataActorConfig):
+    def __new__(
+        cls,
+        actor_id: str | ActorId = "MARKET-STATE-METRIC-PUBLISHER",
+    ) -> MarketStateMetricPublisherConfig:
+        resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
+        return super().__new__(cls, actor_id=resolved)
+
+
+class MarketStateMetricPublisher(DataActor):
+    def on_start(self) -> None:
+        data_type = DataType(METRIC_VALUE_TYPE_NAME)
+        timestamp = self.clock.timestamp_ns()
+        for metric_id, value in (
+            ("rolling.fast.context_45m.coverage_ratio", Decimal("1")),
+            ("rolling.fast.context_45m.range_percentile_recent", Decimal("0.8")),
+        ):
+            metric = MetricValue(
+                metric_id=metric_id,
+                metric_version=1,
+                parameter_version=1,
+                instrument_id="ESU6.CME",
+                session_id="cme_equity:2026-08-23:OPEN",
+                value=value,
+                unit="ratio",
+                effective_ts_ns=timestamp,
+                observed_ts_ns=timestamp,
+                received_ts_ns=timestamp,
+                calculated_ts_ns=timestamp,
+                published_ts_ns=timestamp,
+                health=MetricHealth.READY,
+                fidelity=MetricFidelity.DERIVED,
+                source=str(self.actor_id),
+                evidence_refs=(f"metric:{metric_id}:fixture",),
+                missing_reasons=(),
+                revision=1,
+            )
+            self.publish_data(data_type, CustomData(data_type, metric))
+
+
 class EntityRevisionSubscriberConfig(DataActorConfig):
     def __new__(
         cls,
@@ -189,3 +231,8 @@ class EntityRevisionSubscriber(DataActor):
         if isinstance(payload, EntityRevision):
             received_entity_revisions.append(payload)
             entity_received.set()
+            if (
+                payload.identity.entity_type == "volatility_state"
+                and payload.lifecycle is EntityLifecycle.ACTIVE
+            ):
+                market_state_received.set()

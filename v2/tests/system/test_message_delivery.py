@@ -4,8 +4,10 @@ from nautilus_trader.common import Environment, ImportableActorConfig
 from nautilus_trader.live import LiveNode
 from nautilus_trader.model import TraderId
 
+from markeitech.intelligence import EntityLifecycle, VolatilityStatePayload
 from tests.system.message_actor_fixtures import (
     entity_received,
+    market_state_received,
     ready_received,
     received,
     received_entity_revisions,
@@ -168,6 +170,80 @@ def test_metric_custom_data_projects_to_typed_entity_revision() -> None:
     assert revision.payload.price == revision.payload.lower == revision.payload.upper
 
 
+def test_rolling_metrics_project_to_typed_volatility_state_revision() -> None:
+    market_state_received.clear()
+    received_entity_revisions.clear()
+    node = LiveNode.builder(
+        "MARKEITECH-V2-MARKET-STATE-MESSAGE-TEST",
+        TraderId.from_str("MARKEITECH-TEST-001"),
+        Environment.SANDBOX,
+    ).build()
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:EntityRevisionSubscriber",
+            config_path="tests.system.message_actor_fixtures:EntityRevisionSubscriberConfig",
+            config={"actor_id": "ENTITY-REVISION-SUBSCRIBER"},
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="markeitech.intelligence.market_state_actor:MarketStateEntityActor",
+            config_path=(
+                "markeitech.intelligence.market_state_actor:MarketStateEntityActorConfig"
+            ),
+            config={
+                "actor_id": "MARKET-STATE-ENTITIES",
+                "instrument_profiles": {
+                    "ESU6.CME": {
+                        "profile_id": "cme_equity_primary",
+                        "profile_version": 1,
+                    },
+                },
+                "definitions": [_volatility_state_definition()],
+                "maximum_entities_global": 10,
+                "maximum_entities_per_instrument": 10,
+                "maximum_entities_per_type": 10,
+                "maximum_metric_values": 10,
+                "reconciliation_interval_ms": 1000,
+                "minimum_snapshot_interval_ms": 0,
+                "maximum_publications_per_cycle": 10,
+                "schema_version": 2,
+            },
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:PersistenceReadyFixture",
+            config_path="tests.system.message_actor_fixtures:PersistenceReadyFixtureConfig",
+            config={"actor_id": "PERSISTENCE-READY-FIXTURE"},
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:MarketStateMetricPublisher",
+            config_path="tests.system.message_actor_fixtures:MarketStateMetricPublisherConfig",
+            config={"actor_id": "MARKET-STATE-METRIC-PUBLISHER"},
+        ),
+    )
+
+    try:
+        node.start()
+        assert market_state_received.wait(timeout=2)
+    finally:
+        node.stop()
+
+    revision = next(
+        item
+        for item in received_entity_revisions
+        if item.identity.entity_type == "volatility_state"
+        and item.lifecycle is EntityLifecycle.ACTIVE
+    )
+    assert isinstance(revision.payload, VolatilityStatePayload)
+    assert revision.payload.normalized_value == revision.payload.classification.measure_value
+    assert revision.payload.classification.category == "HIGH"
+    assert revision.payload.classification.confirmed is True
+
+
 def _objective_level_definition() -> dict[str, object]:
     return {
         "definition_id": "previous-session-high-v1",
@@ -210,4 +286,97 @@ def _objective_level_definition() -> dict[str, object]:
             },
         ],
         "entity_inputs": [],
+    }
+
+
+def _volatility_state_definition() -> dict[str, object]:
+    return {
+        "definition_id": "volatility-state-v1",
+        "group": "volatility_compression_expansion",
+        "entity_type": "volatility_state",
+        "entity_version": 1,
+        "decision_question": "What is the current numerical volatility state?",
+        "implementation_id": "markeitech.entity.volatility_state.v1",
+        "identity_dimensions": ["horizon", "definition_id"],
+        "durability": "TRANSIENT",
+        "completion_rule": "never completes while active",
+        "invalidation_rule": "dependency identity conflict",
+        "expiry_rule": "configured maximum input age",
+        "permitted_health": ["READY", "DEGRADED", "WARMING", "STALE", "UNAVAILABLE"],
+        "permitted_fidelities": ["DERIVED", "PARTIAL"],
+        "applications": [
+            {
+                "application_id": "cme-fast",
+                "analytical_profile_ids": ["cme_equity_primary"],
+                "instrument_ids": [],
+                "session_phases": ["OPEN"],
+                "horizon": "fast",
+            },
+        ],
+        "metric_inputs": [
+            {
+                "role": "normalized_volatility",
+                "metric_id": "rolling.fast.context_45m.range_percentile_recent",
+                "metric_version": 1,
+                "parameter_version": 1,
+                "required": True,
+                "permitted_health": ["READY", "DEGRADED"],
+                "permitted_fidelities": ["DERIVED", "PARTIAL"],
+            },
+            {
+                "role": "coverage_ratio",
+                "metric_id": "rolling.fast.context_45m.coverage_ratio",
+                "metric_version": 1,
+                "parameter_version": 1,
+                "required": True,
+                "permitted_health": ["READY", "DEGRADED"],
+                "permitted_fidelities": ["DERIVED", "PARTIAL"],
+            },
+        ],
+        "entity_inputs": [],
+        "parameter_sets": [
+            {
+                "parameter_set_id": "volatility-test",
+                "parameter_version": 1,
+                "effective_from_ns": 1,
+                "source": "TEST-CONFIG",
+                "values": {
+                    "low_upper": 0.25,
+                    "typical_upper": 0.75,
+                    "hysteresis": 0.05,
+                    "confirmation": 1,
+                    "minimum_coverage": 0.8,
+                    "maximum_age_ms": 120000,
+                },
+            },
+        ],
+        "market_state": {
+            "parameter_set_id": "volatility-test",
+            "normalization": "recent_range_percentile",
+            "policies": [
+                {
+                    "axis": "primary",
+                    "policy_id": "volatility-primary",
+                    "policy_version": 1,
+                    "measure_role": "normalized_volatility",
+                    "coverage_role": "coverage_ratio",
+                    "unavailable_category": "UNAVAILABLE",
+                    "bands": [
+                        {"category": "LOW", "upper_bound_parameter_id": "low_upper"},
+                        {
+                            "category": "TYPICAL",
+                            "lower_bound_parameter_id": "low_upper",
+                            "upper_bound_parameter_id": "typical_upper",
+                        },
+                        {"category": "HIGH", "lower_bound_parameter_id": "typical_upper"},
+                    ],
+                    "hysteresis_parameter_id": "hysteresis",
+                    "confirmation_observations_parameter_id": "confirmation",
+                    "minimum_coverage_ratio_parameter_id": "minimum_coverage",
+                    "maximum_evidence_age_ms_parameter_id": "maximum_age_ms",
+                    "permitted_health": ["READY", "DEGRADED"],
+                    "permitted_fidelities": ["DERIVED", "PARTIAL"],
+                },
+            ],
+        },
     }

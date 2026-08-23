@@ -381,6 +381,58 @@ def test_actor_plan_adds_enabled_session_reference_entity_owner(tmp_path: Path) 
     assert actor.config.config["maximum_publications_per_cycle"] == 500
 
 
+def test_actor_plan_adds_only_runtime_bound_market_state_definitions(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    source = (root / "config/system.example.toml").read_text()
+    definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
+    path = tmp_path / "system.toml"
+    path.write_text(
+        source.replace(
+            "[metrics.entity_analysis]\nenabled = false",
+            "[metrics.entity_analysis]\nenabled = true",
+        ).replace("definitions = []", definitions),
+    )
+    config = load_system_config(path)
+
+    plan = build_actor_plan(config, _prerequisites())
+
+    actor = next(item for item in plan if item.key == "market_state_entities")
+    assert actor.actor_id == "MARKET-STATE-ENTITIES"
+    assert actor.config.config["maximum_metric_values"] == 20000
+    assert actor.config.config["reconciliation_interval_ms"] == 1000
+    assert [item["definition_id"] for item in actor.config.config["definitions"]] == [
+        "volatility-state-v1",
+    ]
+    definition = actor.config.config["definitions"][0]
+    assert definition["market_state"]["parameter_set_id"] == (
+        "volatility-percentile-fixture"
+    )
+    assert definition["market_state"]["policies"][0]["measure_role"] == (
+        "normalized_volatility"
+    )
+
+
+def test_actor_plan_rejects_market_state_metric_without_runtime_producer(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    source = (root / "config/system.example.toml").read_text()
+    definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
+    definitions = definitions.replace(
+        "rolling.fast.context_45m.range_percentile_recent",
+        "rolling.fast.missing_candidate.range_percentile_recent",
+    )
+    path = tmp_path / "system.toml"
+    path.write_text(
+        source.replace(
+            "[metrics.entity_analysis]\nenabled = false",
+            "[metrics.entity_analysis]\nenabled = true",
+        ).replace("definitions = []", definitions),
+    )
+    config = load_system_config(path)
+
+    with pytest.raises(ValueError, match="require unavailable runtime metrics"):
+        build_actor_plan(config, _prerequisites())
+
+
 def test_actor_plan_rejects_entity_metric_without_configured_producer(tmp_path: Path) -> None:
     root = Path(__file__).parents[2]
     source = (root / "config/system.example.toml").read_text()

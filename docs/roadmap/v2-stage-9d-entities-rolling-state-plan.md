@@ -1,6 +1,6 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slice 9D.4B implemented and awaiting local review; 9D.3 RTH acceptance debt recorded
+**Status:** Slice 9D.4C implemented and awaiting local review; 9D.3 RTH acceptance debt recorded
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
@@ -746,6 +746,58 @@ strings would violate the evidence and structured-data rules. Cross-entity recon
 runtime configuration translation, the Nautilus actor, and live publication therefore remain the
 next separately reviewed 9D.4 work. PostgreSQL, Discord, semantic events, opportunities, options,
 and Sir Loke remain unchanged.
+
+#### 9D.4C: Configured Runtime Projection
+
+This third 9D.4 batch translates approved metric-driven state definitions into validated runtime
+configuration and a dedicated Nautilus actor. Entity-analysis catalog version 2 may attach an
+optional `market_state` block to a Group 2 or Group 3 definition. The binding selects one exact
+effective parameter set and declares one or more independently named policy axes. Every axis names
+its required measure and coverage roles, category bands, unavailable category, and the parameter
+IDs supplying boundaries, hysteresis, confirmation count, minimum coverage, and maximum evidence
+age. The parser rejects missing or mismatched parameter sets, parameter-version disagreement,
+unknown or incorrectly typed parameter references, optional policy evidence, duplicate axes or
+policy identities, non-contiguous bands, and legacy catalog versions.
+
+The actor receives only typed `MetricValue` custom data. It does not subscribe to bars, calculate
+source measurements, request provider data, or embed classification logic. It delegates ingestion,
+deduplication, conflict handling, bounded metric retention, classification memory, entity admission,
+publication deferral, snapshots, and staleness revision generation to the 9D.4B pure owner. The
+actor owns the Nautilus subscriptions, typed `EntityRevision` publication, configured reconciliation
+timer, persistence-ready handshake, snapshot throttling, failure isolation, and bounded lifetime
+counters.
+
+Composition activates only enabled Group 2 or Group 3 definitions which carry an explicit runtime
+binding. It derives the available rolling metric/version identities from enabled configured
+families and candidates, then refuses startup if any bound dependency lacks a producer. Definitions
+without a runtime binding remain catalog-only and are not silently interpreted. This lets the
+entity catalog describe the accepted future capability set without pretending every family already
+has runtime evidence.
+
+The first producer-backed binding is deliberately narrow: `volatility_state` for the configured
+fast horizon uses `rolling.fast.context_45m.range_percentile_recent` as its normalized measure and
+the matching coverage ratio, with optional ATR, realized range, and realized return magnitude as
+numerical context. Initial values in the test catalog are offline fixture parameters, not trading
+calibration. The tracked runtime example remains disabled with no definitions.
+
+The following families remain deferred honestly:
+
+- compression/expansion requires the approved phase-duration observation metric in addition to
+  existing expansion and baseline evidence;
+- direction requires signed displacement, signed return, and signed path-efficiency producers;
+- moving/anchored reference state requires reference value, slope, separation, and coverage
+  producers; and
+- trend/rotation requires typed cross-entity inputs and explicit conflicting-horizon evidence.
+
+Focused tests cover catalog-version and parameter-reference rejection, explicit runtime resource
+limits, producer availability, selective composition, sandboxed native bus delivery, and projection
+of rolling metric evidence into a typed confirmed volatility-state revision. The combined
+intelligence/configuration/composition/message scope passes 173 tests, and the complete
+non-PostgreSQL V2 suite passes 358 tests with two PostgreSQL-marked tests deselected. The batch adds
+no provider request, analytical PostgreSQL persistence, Discord output, semantic transition,
+ranking, opportunity, option selection, or Sir Loke behavior. Connected acceptance is separate and
+must prove actual rolling evidence, revisions, staleness, resource behavior, and clean shutdown
+without assuming market-session coverage.
 
 ### 9D.5: Swing, FVG, And Zone Projection
 

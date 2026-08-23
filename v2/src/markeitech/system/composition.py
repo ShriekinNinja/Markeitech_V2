@@ -6,6 +6,10 @@ from uuid import UUID
 
 from nautilus_trader.common import ImportableActorConfig
 
+from markeitech.intelligence.rolling_measurements import (
+    ROLLING_METRIC_SUFFIXES,
+    rolling_metric_id,
+)
 from markeitech.intelligence.session_references import SESSION_REFERENCE_METRIC_IDS
 from markeitech.intelligence.session_windows import OPENING_RANGE_FIELDS
 from markeitech.system.config import SystemConfig
@@ -56,6 +60,7 @@ def _entity_definition_payload(definition) -> dict[str, object]:  # noqa: ANN001
         "entity_version": definition.entity_version,
         "decision_question": definition.decision_question,
         "implementation_id": definition.implementation_id,
+        "formula_version": definition.formula_version,
         "identity_dimensions": list(definition.identity_dimensions),
         "durability": definition.durability,
         "completion_rule": definition.completion_rule,
@@ -96,6 +101,102 @@ def _entity_definition_payload(definition) -> dict[str, object]:  # noqa: ANN001
             }
             for dependency in definition.entity_inputs
         ],
+        "parameters": [
+            {
+                "parameter_id": parameter.parameter_id,
+                "meaning": parameter.meaning,
+                "value_kind": parameter.value_kind,
+                "unit": parameter.unit,
+                "default": parameter.default,
+                "dynamic": parameter.dynamic,
+                "mutability": parameter.mutability,
+                "source": parameter.source,
+                "minimum": parameter.minimum,
+                "maximum": parameter.maximum,
+                "step": parameter.step,
+                "allowed_values": list(parameter.allowed_values),
+            }
+            for parameter in definition.parameters
+        ],
+        "parameter_sets": [
+            {
+                "parameter_set_id": parameter_set.parameter_set_id,
+                "parameter_version": parameter_set.parameter_version,
+                "effective_from_ns": parameter_set.effective_from_ns,
+                "source": parameter_set.source,
+                "values": dict(parameter_set.values),
+            }
+            for parameter_set in definition.parameter_sets
+        ],
+        "market_state": (
+            None
+            if definition.market_state is None
+            else {
+                "parameter_set_id": definition.market_state.parameter_set_id,
+                **(
+                    {}
+                    if definition.market_state.normalization is None
+                    else {"normalization": definition.market_state.normalization}
+                ),
+                **(
+                    {}
+                    if definition.market_state.reference_id is None
+                    else {"reference_id": definition.market_state.reference_id}
+                ),
+                **(
+                    {}
+                    if definition.market_state.reference_kind is None
+                    else {"reference_kind": definition.market_state.reference_kind}
+                ),
+                "policies": [
+                    {
+                        "axis": policy.axis,
+                        "policy_id": policy.policy_id,
+                        "policy_version": policy.policy_version,
+                        "measure_role": policy.measure_role,
+                        "coverage_role": policy.coverage_role,
+                        "unavailable_category": policy.unavailable_category,
+                        "bands": [
+                            {
+                                "category": band.category,
+                                **(
+                                    {}
+                                    if band.lower_bound_parameter_id is None
+                                    else {
+                                        "lower_bound_parameter_id": (
+                                            band.lower_bound_parameter_id
+                                        ),
+                                    }
+                                ),
+                                **(
+                                    {}
+                                    if band.upper_bound_parameter_id is None
+                                    else {
+                                        "upper_bound_parameter_id": (
+                                            band.upper_bound_parameter_id
+                                        ),
+                                    }
+                                ),
+                            }
+                            for band in policy.bands
+                        ],
+                        "hysteresis_parameter_id": policy.hysteresis_parameter_id,
+                        "confirmation_observations_parameter_id": (
+                            policy.confirmation_observations_parameter_id
+                        ),
+                        "minimum_coverage_ratio_parameter_id": (
+                            policy.minimum_coverage_ratio_parameter_id
+                        ),
+                        "maximum_evidence_age_ms_parameter_id": (
+                            policy.maximum_evidence_age_ms_parameter_id
+                        ),
+                        "permitted_health": list(policy.permitted_health),
+                        "permitted_fidelities": list(policy.permitted_fidelities),
+                    }
+                    for policy in definition.market_state.policies
+                ],
+            }
+        ),
     }
 
 
@@ -114,6 +215,19 @@ def _available_session_entity_metric_keys(config: SystemConfig) -> set[tuple[str
                 prefix = f"opening_range.{profile.profile_id}.{window.window_id}"
                 keys.update((f"{prefix}.{field}", 1) for field in OPENING_RANGE_FIELDS)
     return keys
+
+
+def _available_market_state_metric_keys(config: SystemConfig) -> set[tuple[str, int]]:
+    rolling = config.metrics.session_measurements.rolling_measurements
+    if not rolling.enabled:
+        return set()
+    return {
+        (rolling_metric_id(family.family_id, candidate.candidate_id, suffix), 1)
+        for family in rolling.families
+        for candidate in family.candidates
+        if candidate.active
+        for suffix in ROLLING_METRIC_SUFFIXES
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -646,7 +760,10 @@ def build_actor_plan(
                         "maximum_entities_per_type": (
                             entity_analysis.maximum_entities_per_instrument_type
                         ),
-                        "maximum_metric_values": entity_analysis.maximum_entities_global,
+                        "maximum_metric_values": (
+                            entity_analysis.maximum_metric_values
+                            or entity_analysis.maximum_entities_global
+                        ),
                         "minimum_snapshot_interval_ms": (
                             entity_analysis.minimum_snapshot_interval_ms
                         ),
@@ -658,6 +775,102 @@ def build_actor_plan(
                 ),
             ),
         )
+        market_state_definitions = [
+            definition
+            for definition in entity_analysis.definitions
+            if definition.enabled
+            and definition.market_state is not None
+            and definition.group
+            in {
+                "volatility_compression_expansion",
+                "direction_trend_rotation_reference",
+            }
+        ]
+        unsupported_state_types = sorted(
+            definition.entity_type
+            for definition in market_state_definitions
+            if definition.entity_type
+            not in {
+                "volatility_state",
+                "compression_expansion_state",
+                "directional_state",
+            }
+            and not definition.entity_type.startswith("reference_state.")
+        )
+        if unsupported_state_types:
+            raise ValueError(
+                "metric-driven market-state definitions use unsupported entity types: "
+                f"{unsupported_state_types!r}",
+            )
+        available_state_metric_keys = _available_market_state_metric_keys(config)
+        missing_state_metric_keys = sorted(
+            {
+                (dependency.metric_id, dependency.metric_version)
+                for definition in market_state_definitions
+                for dependency in definition.metric_inputs
+            }
+            - available_state_metric_keys,
+        )
+        if missing_state_metric_keys:
+            raise ValueError(
+                "market-state entity definitions require unavailable runtime metrics: "
+                f"{missing_state_metric_keys!r}",
+            )
+        if market_state_definitions:
+            assert entity_analysis.maximum_metric_values is not None
+            assert entity_analysis.market_state_reconciliation_interval_ms is not None
+            registrations.append(
+                ActorRegistration(
+                    key="market_state_entities",
+                    actor_id="MARKET-STATE-ENTITIES",
+                    config=ImportableActorConfig(
+                        actor_path=(
+                            "markeitech.intelligence.market_state_actor:"
+                            "MarketStateEntityActor"
+                        ),
+                        config_path=(
+                            "markeitech.intelligence.market_state_actor:"
+                            "MarketStateEntityActorConfig"
+                        ),
+                        config={
+                            "actor_id": "MARKET-STATE-ENTITIES",
+                            "instrument_profiles": {
+                                instrument_id: {
+                                    "profile_id": profile_by_instrument[instrument_id],
+                                    "profile_version": profile_by_id[
+                                        profile_by_instrument[instrument_id]
+                                    ].version,
+                                }
+                                for instrument_id in selected_instruments
+                            },
+                            "definitions": [
+                                _entity_definition_payload(definition)
+                                for definition in market_state_definitions
+                            ],
+                            "maximum_entities_global": (
+                                entity_analysis.maximum_entities_global
+                            ),
+                            "maximum_entities_per_instrument": (
+                                entity_analysis.maximum_entities_per_instrument
+                            ),
+                            "maximum_entities_per_type": (
+                                entity_analysis.maximum_entities_per_instrument_type
+                            ),
+                            "maximum_metric_values": entity_analysis.maximum_metric_values,
+                            "reconciliation_interval_ms": (
+                                entity_analysis.market_state_reconciliation_interval_ms
+                            ),
+                            "minimum_snapshot_interval_ms": (
+                                entity_analysis.minimum_snapshot_interval_ms
+                            ),
+                            "maximum_publications_per_cycle": (
+                                entity_analysis.maximum_publications_per_cycle
+                            ),
+                            "schema_version": entity_analysis.catalog_version,
+                        },
+                    ),
+                ),
+            )
     registrations.extend(
         [
             ActorRegistration(

@@ -523,7 +523,7 @@ non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected. Stage 9D.
 provider request, runtime configuration binding, entity revision publication, PostgreSQL schema,
 Discord output, semantic event, opportunity selection, option selection, or Sir Loke behavior.
 
-Slice 9D.4B is implemented locally and awaits Markeitect's review. It adds typed market-state
+Slice 9D.4B is approved and committed at `3b815eb`. It adds typed market-state
 definition, application, and policy-axis bindings plus one bounded pure projection owner for
 metric-driven volatility, compression/expansion, exact-horizon direction, and independent
 reference slope/separation state. The owner contains stale, duplicate, conflicting, mismatched,
@@ -539,3 +539,29 @@ scope pass in the locked V2 environment. The complete non-PostgreSQL V2 suite pa
 two PostgreSQL-marked tests deselected. The batch adds no Nautilus actor, provider request, runtime
 TOML translation, PostgreSQL schema, Discord output, semantic event, opportunity, option selection,
 or Sir Loke behavior.
+
+Slice 9D.4C is implemented locally and awaits Markeitect's review. It adds strict optional
+market-state policy bindings to entity-analysis catalog version 2 and a bounded
+`MarketStateEntityActor` which consumes typed `MetricValue`, delegates all classification and
+revision ownership to the 9D.4B pure owner, publishes typed `EntityRevision`, serves the existing
+snapshot contract, and performs configured periodic staleness reconciliation. Category bands,
+boundary values, hysteresis, confirmation, minimum coverage, maximum evidence age, parameter-set
+identity, resource limits, and reconciliation cadence remain explicit validated configuration.
+
+Runtime composition admits only enabled Group 2 or Group 3 definitions with an explicit
+`market_state` binding and fails closed if any declared metric/version lacks an active configured
+producer. The current offline test catalog therefore activates only `volatility_state`, bound to
+the configured fast `context_45m` recent-range percentile and coverage metrics. The catalog-only
+dynamic EMA definition remains inactive. Compression/expansion still lacks its required phase
+duration metric; direction and reference state still lack their signed-direction and EMA-reference
+producers; trend/rotation still requires typed cross-entity reconciliation. None is manufactured
+from substitute evidence.
+
+Focused configuration, composition, and native in-process bus tests prove strict policy validation,
+producer-contract rejection, selective actor registration, and rolling metrics projecting into a
+typed active volatility-state revision. The combined intelligence/configuration/composition/message
+scope passes 173 tests. The complete non-PostgreSQL V2 suite passes 358 tests with two
+PostgreSQL-marked tests deselected. The tracked runtime example remains disabled and empty, so this
+batch does not activate new market semantics in a normal run. It adds no provider request,
+PostgreSQL schema, Discord projection, semantic event, opportunity, option selection, or Sir Loke
+behavior. Connected RTH acceptance remains pending.

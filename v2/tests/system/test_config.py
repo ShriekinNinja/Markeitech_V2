@@ -330,7 +330,7 @@ instrument_ids = ["ESU6.CME"]
 [metrics.entity_analysis]
 enabled = false
 required_watchlist_capability = "watchlist_last"
-catalog_version = 1
+catalog_version = 2
 parameter_source = "operator-reviewed-config"
 parameter_effective_from = "2026-08-23T00:00:00Z"
 maximum_entities_global = 20000
@@ -339,6 +339,8 @@ maximum_entities_per_instrument_type = 250
 completed_session_retention = 2
 completed_session_maximum_age_days = 14
 maximum_input_age_ms = 120000
+maximum_metric_values = 20000
+market_state_reconciliation_interval_ms = 1000
 minimum_snapshot_interval_ms = 1000
 maximum_publications_per_cycle = 500
 definitions = []
@@ -460,9 +462,11 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     )
     assert config.schema_version == 16
     assert config.metrics.entity_analysis.enabled is False
-    assert config.metrics.entity_analysis.catalog_version == 1
+    assert config.metrics.entity_analysis.catalog_version == 2
     assert config.metrics.entity_analysis.completed_session_retention == 2
     assert config.metrics.entity_analysis.completed_session_maximum_age_days == 14
+    assert config.metrics.entity_analysis.maximum_metric_values == 20000
+    assert config.metrics.entity_analysis.market_state_reconciliation_interval_ms == 1000
     assert config.metrics.entity_analysis.definitions == ()
     assert config.instrument_ids == ("ESU6.CME",)
     assert config.watchlist.consumer_retry_interval_ms == 1000
@@ -493,6 +497,48 @@ def test_loads_complete_entity_analysis_configuration_envelope(tmp_path: Path) -
     assert ema.parameters[0].minimum == 5
     assert ema.parameters[0].maximum == 34
     assert ema.parameter_sets[0].values == (("period", 10),)
+    volatility = next(
+        item for item in config.definitions if item.definition_id == "volatility-state-v1"
+    )
+    assert volatility.market_state is not None
+    assert volatility.market_state.parameter_set_id == "volatility-percentile-fixture"
+    assert volatility.market_state.normalization == "recent_range_percentile"
+    assert volatility.market_state.policies[0].measure_role == "normalized_volatility"
+    assert [band.category for band in volatility.market_state.policies[0].bands] == [
+        "LOW",
+        "TYPICAL",
+        "HIGH",
+    ]
+
+
+def test_rejects_market_state_binding_in_legacy_entity_catalog(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(_entity_enabled_config().replace("catalog_version = 2", "catalog_version = 1"))
+
+    with pytest.raises(ValueError, match="market-state bindings require.*version 2"):
+        load_system_config(path)
+
+
+def test_rejects_market_state_binding_without_explicit_runtime_limits(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(_entity_enabled_config().replace("maximum_metric_values = 20000\n", ""))
+
+    with pytest.raises(ValueError, match="require explicit runtime limits.*maximum_metric_values"):
+        load_system_config(path)
+
+
+def test_rejects_market_state_policy_with_unknown_boundary_parameter(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        _entity_enabled_config().replace(
+            'upper_bound_parameter_id = "volatility_low_upper"',
+            'upper_bound_parameter_id = "missing_boundary"',
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="unknown configured parameter: missing_boundary"):
+        load_system_config(path)
 
 
 def test_entity_application_accepts_direct_high_timeframe_selector(tmp_path: Path) -> None:

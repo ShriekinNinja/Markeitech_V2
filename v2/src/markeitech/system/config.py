@@ -408,6 +408,39 @@ class EntityParameterSetConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class EntityStateBandConfig:
+    category: str
+    lower_bound_parameter_id: str | None
+    upper_bound_parameter_id: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class EntityStatePolicyConfig:
+    axis: str
+    policy_id: str
+    policy_version: int
+    measure_role: str
+    coverage_role: str
+    unavailable_category: str
+    bands: tuple[EntityStateBandConfig, ...]
+    hysteresis_parameter_id: str
+    confirmation_observations_parameter_id: str
+    minimum_coverage_ratio_parameter_id: str
+    maximum_evidence_age_ms_parameter_id: str
+    permitted_health: tuple[str, ...]
+    permitted_fidelities: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EntityMarketStateConfig:
+    parameter_set_id: str
+    normalization: str | None
+    reference_id: str | None
+    reference_kind: str | None
+    policies: tuple[EntityStatePolicyConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class EntityDefinitionConfig:
     definition_id: str
     group: str
@@ -429,6 +462,7 @@ class EntityDefinitionConfig:
     entity_inputs: tuple[EntityInputConfig, ...]
     parameters: tuple[EntityParameterConfig, ...]
     parameter_sets: tuple[EntityParameterSetConfig, ...]
+    market_state: EntityMarketStateConfig | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -444,6 +478,8 @@ class EntityAnalysisConfig:
     completed_session_retention: int
     completed_session_maximum_age_days: int
     maximum_input_age_ms: int
+    maximum_metric_values: int | None
+    market_state_reconciliation_interval_ms: int | None
     minimum_snapshot_interval_ms: int
     maximum_publications_per_cycle: int
     definitions: tuple[EntityDefinitionConfig, ...]
@@ -1484,7 +1520,7 @@ def _load_metrics(raw: Any) -> MetricsConfig:
 
 def _load_entity_analysis(raw: Any) -> EntityAnalysisConfig:
     values = _mapping(raw, "metrics.entity_analysis")
-    _require_keys(
+    _require_keys_allowing(
         values,
         {
             "enabled",
@@ -1502,6 +1538,7 @@ def _load_entity_analysis(raw: Any) -> EntityAnalysisConfig:
             "maximum_publications_per_cycle",
             "definitions",
         },
+        {"maximum_metric_values", "market_state_reconciliation_interval_ms"},
         "metrics.entity_analysis",
     )
     enabled = _bool(values["enabled"], "metrics.entity_analysis.enabled")
@@ -1513,6 +1550,23 @@ def _load_entity_analysis(raw: Any) -> EntityAnalysisConfig:
     )
     if enabled and not definitions:
         raise ValueError("metrics.entity_analysis.definitions must not be empty")
+    catalog_version = _positive_int(
+        values["catalog_version"],
+        "metrics.entity_analysis.catalog_version",
+    )
+    if any(item.market_state is not None for item in definitions) and catalog_version < 2:
+        raise ValueError("market-state bindings require entity-analysis catalog version 2")
+    if any(item.market_state is not None for item in definitions):
+        missing_runtime_limits = {
+            key
+            for key in ("maximum_metric_values", "market_state_reconciliation_interval_ms")
+            if key not in values
+        }
+        if missing_runtime_limits:
+            raise ValueError(
+                "market-state bindings require explicit runtime limits: "
+                f"{', '.join(sorted(missing_runtime_limits))}",
+            )
     definition_ids = tuple(item.definition_id for item in definitions)
     if len(definition_ids) != len(set(definition_ids)):
         raise ValueError("entity definition IDs must be unique")
@@ -1556,10 +1610,7 @@ def _load_entity_analysis(raw: Any) -> EntityAnalysisConfig:
             values["required_watchlist_capability"],
             "metrics.entity_analysis.required_watchlist_capability",
         ),
-        catalog_version=_positive_int(
-            values["catalog_version"],
-            "metrics.entity_analysis.catalog_version",
-        ),
+        catalog_version=catalog_version,
         parameter_source=_non_empty_string(
             values["parameter_source"],
             "metrics.entity_analysis.parameter_source",
@@ -1577,6 +1628,22 @@ def _load_entity_analysis(raw: Any) -> EntityAnalysisConfig:
             values["maximum_input_age_ms"],
             "metrics.entity_analysis.maximum_input_age_ms",
         ),
+        maximum_metric_values=(
+            None
+            if "maximum_metric_values" not in values
+            else _positive_int(
+                values["maximum_metric_values"],
+                "metrics.entity_analysis.maximum_metric_values",
+            )
+        ),
+        market_state_reconciliation_interval_ms=(
+            None
+            if "market_state_reconciliation_interval_ms" not in values
+            else _positive_int(
+                values["market_state_reconciliation_interval_ms"],
+                "metrics.entity_analysis.market_state_reconciliation_interval_ms",
+            )
+        ),
         minimum_snapshot_interval_ms=_non_negative_int(
             values["minimum_snapshot_interval_ms"],
             "metrics.entity_analysis.minimum_snapshot_interval_ms",
@@ -1592,7 +1659,7 @@ def _load_entity_analysis(raw: Any) -> EntityAnalysisConfig:
 def _load_entity_definition(raw: Any, *, index: int) -> EntityDefinitionConfig:
     label = f"metrics.entity_analysis.definitions[{index}]"
     values = _mapping(raw, label)
-    _require_keys(
+    _require_keys_allowing(
         values,
         {
             "definition_id",
@@ -1616,6 +1683,7 @@ def _load_entity_definition(raw: Any, *, index: int) -> EntityDefinitionConfig:
             "parameters",
             "parameter_sets",
         },
+        {"market_state"},
         label,
     )
     group = _non_empty_string(values["group"], f"{label}.group")
@@ -1684,6 +1752,22 @@ def _load_entity_definition(raw: Any, *, index: int) -> EntityDefinitionConfig:
     parameter_set_ids = tuple(item.parameter_set_id for item in parameter_sets)
     if len(parameter_set_ids) != len(set(parameter_set_ids)):
         raise ValueError(f"{label} parameter-set IDs must be unique")
+    market_state = (
+        None
+        if "market_state" not in values
+        else _load_entity_market_state(
+            values["market_state"],
+            label=f"{label}.market_state",
+            parameters=parameters,
+            parameter_sets=parameter_sets,
+            metric_inputs=metric_inputs,
+        )
+    )
+    if market_state is not None and group not in {
+        "volatility_compression_expansion",
+        "direction_trend_rotation_reference",
+    }:
+        raise ValueError(f"{label}.market_state is unsupported for group: {group}")
     return EntityDefinitionConfig(
         definition_id=_non_empty_string(values["definition_id"], f"{label}.definition_id"),
         group=group,
@@ -1720,6 +1804,7 @@ def _load_entity_definition(raw: Any, *, index: int) -> EntityDefinitionConfig:
         entity_inputs=entity_inputs,
         parameters=parameters,
         parameter_sets=parameter_sets,
+        market_state=market_state,
     )
 
 
@@ -1940,6 +2025,248 @@ def _load_entity_parameter_set(
         source=_non_empty_string(values["source"], f"{label}.source"),
         values=tuple(normalized),
     )
+
+
+def _load_entity_market_state(
+    raw: Any,
+    *,
+    label: str,
+    parameters: tuple[EntityParameterConfig, ...],
+    parameter_sets: tuple[EntityParameterSetConfig, ...],
+    metric_inputs: tuple[EntityMetricInputConfig, ...],
+) -> EntityMarketStateConfig:
+    values = _mapping(raw, label)
+    _require_keys_allowing(
+        values,
+        {"parameter_set_id", "policies"},
+        {"normalization", "reference_id", "reference_kind"},
+        label,
+    )
+    parameter_set_id = _non_empty_string(
+        values["parameter_set_id"],
+        f"{label}.parameter_set_id",
+    )
+    parameter_set = next(
+        (item for item in parameter_sets if item.parameter_set_id == parameter_set_id),
+        None,
+    )
+    if parameter_set is None:
+        raise ValueError(f"{label} references an unknown parameter set: {parameter_set_id}")
+    dependency_parameter_versions = {item.parameter_version for item in metric_inputs}
+    if dependency_parameter_versions != {parameter_set.parameter_version}:
+        raise ValueError(
+            f"{label} metric dependencies must match the selected parameter-set version",
+        )
+    policies = tuple(
+        _load_entity_state_policy(
+            item,
+            label=f"{label}.policies[{position}]",
+            parameters=parameters,
+            parameter_set=parameter_set,
+            metric_inputs=metric_inputs,
+        )
+        for position, item in enumerate(_table_array(values["policies"], f"{label}.policies"))
+    )
+    if not policies:
+        raise ValueError(f"{label}.policies must not be empty")
+    axes = tuple(item.axis for item in policies)
+    if len(axes) != len(set(axes)):
+        raise ValueError(f"{label} policy axes must be unique")
+    identities = tuple((item.policy_id, item.policy_version) for item in policies)
+    if len(identities) != len(set(identities)):
+        raise ValueError(f"{label} policy identities must be unique")
+    return EntityMarketStateConfig(
+        parameter_set_id=parameter_set_id,
+        normalization=_optional_config_text(values, "normalization", label),
+        reference_id=_optional_config_text(values, "reference_id", label),
+        reference_kind=_optional_config_text(values, "reference_kind", label),
+        policies=policies,
+    )
+
+
+def _load_entity_state_policy(
+    raw: Any,
+    *,
+    label: str,
+    parameters: tuple[EntityParameterConfig, ...],
+    parameter_set: EntityParameterSetConfig,
+    metric_inputs: tuple[EntityMetricInputConfig, ...],
+) -> EntityStatePolicyConfig:
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "axis",
+            "policy_id",
+            "policy_version",
+            "measure_role",
+            "coverage_role",
+            "unavailable_category",
+            "bands",
+            "hysteresis_parameter_id",
+            "confirmation_observations_parameter_id",
+            "minimum_coverage_ratio_parameter_id",
+            "maximum_evidence_age_ms_parameter_id",
+            "permitted_health",
+            "permitted_fidelities",
+        },
+        label,
+    )
+    input_by_role = {item.role: item for item in metric_inputs}
+    measure_role = _non_empty_string(values["measure_role"], f"{label}.measure_role")
+    coverage_role = _non_empty_string(values["coverage_role"], f"{label}.coverage_role")
+    for role, role_label in ((measure_role, "measure"), (coverage_role, "coverage")):
+        dependency = input_by_role.get(role)
+        if dependency is None:
+            raise ValueError(f"{label} references an unknown {role_label} role: {role}")
+        if not dependency.required:
+            raise ValueError(f"{label} {role_label} role must be required: {role}")
+    parameter_by_id = {item.parameter_id: item for item in parameters}
+    configured_values = dict(parameter_set.values)
+    parameter_refs = {
+        "hysteresis_parameter_id": _non_empty_string(
+            values["hysteresis_parameter_id"],
+            f"{label}.hysteresis_parameter_id",
+        ),
+        "confirmation_observations_parameter_id": _non_empty_string(
+            values["confirmation_observations_parameter_id"],
+            f"{label}.confirmation_observations_parameter_id",
+        ),
+        "minimum_coverage_ratio_parameter_id": _non_empty_string(
+            values["minimum_coverage_ratio_parameter_id"],
+            f"{label}.minimum_coverage_ratio_parameter_id",
+        ),
+        "maximum_evidence_age_ms_parameter_id": _non_empty_string(
+            values["maximum_evidence_age_ms_parameter_id"],
+            f"{label}.maximum_evidence_age_ms_parameter_id",
+        ),
+    }
+    expected_kinds = {
+        "hysteresis_parameter_id": "number",
+        "confirmation_observations_parameter_id": "integer",
+        "minimum_coverage_ratio_parameter_id": "number",
+        "maximum_evidence_age_ms_parameter_id": "integer",
+    }
+    for field, parameter_id in parameter_refs.items():
+        _require_state_parameter(
+            parameter_id,
+            expected_kind=expected_kinds[field],
+            parameter_by_id=parameter_by_id,
+            configured_values=configured_values,
+            label=f"{label}.{field}",
+        )
+    bands = tuple(
+        _load_entity_state_band(
+            item,
+            label=f"{label}.bands[{position}]",
+            parameter_by_id=parameter_by_id,
+            configured_values=configured_values,
+        )
+        for position, item in enumerate(_table_array(values["bands"], f"{label}.bands"))
+    )
+    if len(bands) < 2:
+        raise ValueError(f"{label}.bands must contain at least two categories")
+    categories = tuple(item.category for item in bands)
+    if len(categories) != len(set(categories)):
+        raise ValueError(f"{label}.bands categories must be unique")
+    unavailable_category = _non_empty_string(
+        values["unavailable_category"],
+        f"{label}.unavailable_category",
+    )
+    if unavailable_category in categories:
+        raise ValueError(f"{label}.unavailable_category must not be a classified category")
+    if bands[0].lower_bound_parameter_id is not None:
+        raise ValueError(f"{label} first band must be unbounded below")
+    if bands[-1].upper_bound_parameter_id is not None:
+        raise ValueError(f"{label} last band must be unbounded above")
+    for previous, current in zip(bands, bands[1:], strict=False):
+        if previous.upper_bound_parameter_id != current.lower_bound_parameter_id:
+            raise ValueError(f"{label}.bands must share contiguous boundary parameters")
+    return EntityStatePolicyConfig(
+        axis=_non_empty_string(values["axis"], f"{label}.axis"),
+        policy_id=_non_empty_string(values["policy_id"], f"{label}.policy_id"),
+        policy_version=_positive_int(values["policy_version"], f"{label}.policy_version"),
+        measure_role=measure_role,
+        coverage_role=coverage_role,
+        unavailable_category=unavailable_category,
+        bands=bands,
+        hysteresis_parameter_id=parameter_refs["hysteresis_parameter_id"],
+        confirmation_observations_parameter_id=parameter_refs[
+            "confirmation_observations_parameter_id"
+        ],
+        minimum_coverage_ratio_parameter_id=parameter_refs[
+            "minimum_coverage_ratio_parameter_id"
+        ],
+        maximum_evidence_age_ms_parameter_id=parameter_refs[
+            "maximum_evidence_age_ms_parameter_id"
+        ],
+        permitted_health=_enum_strings(
+            values["permitted_health"],
+            f"{label}.permitted_health",
+            _ENTITY_HEALTH_VALUES,
+        ),
+        permitted_fidelities=_enum_strings(
+            values["permitted_fidelities"],
+            f"{label}.permitted_fidelities",
+            _ENTITY_FIDELITY_VALUES,
+        ),
+    )
+
+
+def _load_entity_state_band(
+    raw: Any,
+    *,
+    label: str,
+    parameter_by_id: dict[str, EntityParameterConfig],
+    configured_values: dict[str, EntityConfigScalar],
+) -> EntityStateBandConfig:
+    values = _mapping(raw, label)
+    _require_keys_allowing(
+        values,
+        {"category"},
+        {"lower_bound_parameter_id", "upper_bound_parameter_id"},
+        label,
+    )
+    lower = _optional_config_text(values, "lower_bound_parameter_id", label)
+    upper = _optional_config_text(values, "upper_bound_parameter_id", label)
+    for field, parameter_id in (
+        ("lower_bound_parameter_id", lower),
+        ("upper_bound_parameter_id", upper),
+    ):
+        if parameter_id is not None:
+            _require_state_parameter(
+                parameter_id,
+                expected_kind="number",
+                parameter_by_id=parameter_by_id,
+                configured_values=configured_values,
+                label=f"{label}.{field}",
+            )
+    return EntityStateBandConfig(
+        category=_non_empty_string(values["category"], f"{label}.category"),
+        lower_bound_parameter_id=lower,
+        upper_bound_parameter_id=upper,
+    )
+
+
+def _require_state_parameter(
+    parameter_id: str,
+    *,
+    expected_kind: str,
+    parameter_by_id: dict[str, EntityParameterConfig],
+    configured_values: dict[str, EntityConfigScalar],
+    label: str,
+) -> None:
+    parameter = parameter_by_id.get(parameter_id)
+    if parameter is None or parameter_id not in configured_values:
+        raise ValueError(f"{label} references an unknown configured parameter: {parameter_id}")
+    if parameter.value_kind != expected_kind:
+        raise ValueError(f"{label} requires a {expected_kind} parameter: {parameter_id}")
+
+
+def _optional_config_text(values: dict[str, Any], key: str, label: str) -> str | None:
+    if key not in values:
+        return None
+    return _non_empty_string(values[key], f"{label}.{key}")
 
 
 def _validate_entity_analysis_scope(
@@ -3083,6 +3410,21 @@ def _require_keys(values: dict[str, Any], expected: set[str], label: str) -> Non
     actual = set(values)
     missing = expected - actual
     unknown = actual - expected
+    if missing:
+        raise ValueError(f"{label} missing keys: {', '.join(sorted(missing))}")
+    if unknown:
+        raise ValueError(f"{label} has unknown keys: {', '.join(sorted(unknown))}")
+
+
+def _require_keys_allowing(
+    values: dict[str, Any],
+    required: set[str],
+    optional: set[str],
+    label: str,
+) -> None:
+    actual = set(values)
+    missing = required - actual
+    unknown = actual - required - optional
     if missing:
         raise ValueError(f"{label} missing keys: {', '.join(sorted(missing))}")
     if unknown:
