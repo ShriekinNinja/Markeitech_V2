@@ -418,7 +418,7 @@ is closed; Stage 9D remains the next accepted intelligence stage.
 
 ## Stage 9D: Entities And Rolling State
 
-Stage 9D design is active on branch `v2-stage-9d-entities-rolling-state`. The proposed stage gives
+Stage 9D is active. Slices 9D.1 through 9D.4C are approved and committed; the stage gives
 accepted Stage 9C measurements stable entity identity, bounded current-state projection, explicit
 revision/expiry/invalidation semantics, and an approved compact completed-session recovery
 boundary. Its approved scope now includes complete first deterministic implementations for
@@ -540,7 +540,7 @@ two PostgreSQL-marked tests deselected. The batch adds no Nautilus actor, provid
 TOML translation, PostgreSQL schema, Discord output, semantic event, opportunity, option selection,
 or Sir Loke behavior.
 
-Slice 9D.4C is implemented locally and awaits Markeitect's review. It adds strict optional
+Slice 9D.4C is approved and committed at `662fa0f`. It adds strict optional
 market-state policy bindings to entity-analysis catalog version 2 and a bounded
 `MarketStateEntityActor` which consumes typed `MetricValue`, delegates all classification and
 revision ownership to the 9D.4B pure owner, publishes typed `EntityRevision`, serves the existing

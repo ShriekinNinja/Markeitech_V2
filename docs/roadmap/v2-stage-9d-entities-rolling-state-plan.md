@@ -1,6 +1,6 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slice 9D.4C implemented and awaiting local review; 9D.3 RTH acceptance debt recorded
+**Status:** Slices 9D.1 through 9D.4C approved and committed; 9D.3 RTH acceptance debt recorded
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
