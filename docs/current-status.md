@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-22
+Last reviewed: 2026-08-23
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -449,7 +449,7 @@ cross-session restoration is forced to remain stale/degraded until later catch-u
 state book supports bounded snapshots by instrument, entity type, analytical profile, identity
 dimensions, and lifecycle. Nine focused entity tests and the 312-test non-PostgreSQL suite pass.
 
-Slice 9D.2 is implemented for Markeitect review. Tracked configuration schema 16 adds a disabled,
+Slice 9D.2 is approved and committed. Tracked configuration schema 16 adds a disabled,
 bounded entity-analysis catalog capable of representing all five approved groups with exact
 profile/instrument/session/horizon applicability; metric and entity dependency versions; permitted
 health/fidelity; lifecycle rules; durability; complete parameter schemas and effective parameter
@@ -468,10 +468,12 @@ Bar-volume output is always `INFERRED`; unsupported or partial volume remains ho
 prerequisite tests, 25 configuration tests, the 105-test intelligence suite, and the 327-test
 non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected.
 
-The ignored local runtime configuration remains schema 15 and is intentionally not overwritten by
-this batch. It must be reviewed and migrated to schema 16 before a later connected run.
+The ignored local runtime configuration was operator-reviewed and migrated to schema 16 for the
+connected Group 1 acceptance run. It remains local and untracked; the tracked example remains
+disabled and empty.
 
-Slice 9D.3 is implemented for Markeitect review. `SessionReferenceEntityActor` consumes only typed
+Slice 9D.3 is approved, committed, and closed-market connected-accepted.
+`SessionReferenceEntityActor` consumes only typed
 `MetricValue` custom data and projects analytical-session, previous-session-reference,
 opening-range, opening-gap, and direction-neutral objective-level revisions through native
 Nautilus custom data. The actor does not consume bars, request provider data, calculate semantic
@@ -487,6 +489,20 @@ instead of discarding them, scopes per-type limits by instrument, and serves imm
 snapshot requests/responses. Enabled Group 1 composition also fails closed when a definition names
 a metric/version that the configured session-reference or opening-range producers cannot emit. The
 enabled test catalog contains the complete Group 1 definitions; the tracked runtime example remains
-disabled and empty, so no connected runtime behavior is activated. The complete offline V2 suite
-passes 336 tests with two PostgreSQL-marked tests deselected. No Stage 9D analytical-state schema,
-Discord projection, or connected acceptance has been introduced; those remain later review gates.
+disabled and empty.
+
+The accepted 2026-08-23 closed-market run reached `READY` with all 18 configured instrument
+definitions. Acquisition completed 39 historical dependencies: 21 were ready and 18 degraded
+honestly after IB returned no one-minute observations for the closed-market interval. Session
+measurement produced 18 reference batches with 900 values and three window batches with 39 values,
+with zero failures. Group 1 accepted 42 metric values and published 45 entity revisions, with nine
+duplicate revisions, zero rejected revisions, and no pending publications. A missing-evidence
+timestamp defect found during the first connected run was corrected so the same path now emits a
+payload-free `WARMING` revision instead of escaping the actor callback. The complete offline V2
+suite passes 337 tests with two PostgreSQL-marked tests deselected. PostgreSQL stored all 682
+accepted operational events, Discord delivered all three health messages, resource health remained
+normal, and shutdown was clean.
+
+RTH live-bar updates, developing-to-complete session transitions, and rolling-input behavior remain
+explicit connected-acceptance debt. No Stage 9D analytical-state schema, Discord market projection,
+or semantic interaction event has been introduced.

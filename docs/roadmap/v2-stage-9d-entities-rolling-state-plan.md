@@ -1,6 +1,6 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slice 9D.3 implemented; pending Markeitect review
+**Status:** Slice 9D.3 approved and closed-market connected-accepted; RTH acceptance debt recorded
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
@@ -639,10 +639,23 @@ current state to later actors.
 Offline evidence covers order-independent convergence, warming-to-active lifecycle, optional
 volume, direction-neutral objective levels, phase filtering, bounded retention, overflow recovery,
 duplicate/conflict behavior, per-instrument/type limits, actor composition, and a native Nautilus
-typed-CustomData delivery proof. The complete offline V2 suite passes 336 tests with two
-PostgreSQL-marked tests deselected. This slice adds no provider request, raw-data persistence,
-analytical PostgreSQL table, Discord market projection, semantic interaction event, opportunity,
-option selection, Sir Loke behavior, or connected run.
+typed-CustomData delivery proof. A connected missing-evidence case exposed a timestamp fallback
+defect; the corrected path now publishes a payload-free `WARMING` revision and is protected by a
+focused regression test. The complete offline V2 suite passes 337 tests with two PostgreSQL-marked
+tests deselected.
+
+The accepted 2026-08-23 closed-market run reached system `READY` with 18/18 configured instrument
+definitions. IB completed 39 historical dependencies; 21 were ready and 18 degraded honestly when
+the closed-market one-minute interval returned no observations. Session measurement emitted 18
+reference batches with 900 values and three window batches with 39 values, with zero failures. The
+Group 1 actor accepted 42 metrics, published 45 revisions, suppressed nine duplicate revisions,
+rejected none, and stopped with no pending publication. PostgreSQL stored 682/682 accepted
+operational events, Discord delivered 3/3 health messages, runtime resource health remained normal,
+and shutdown completed cleanly. RTH live bars and developing-to-complete lifecycle transitions
+remain connected-acceptance debt.
+
+This slice adds no provider request, raw-data persistence, analytical PostgreSQL table, Discord
+market projection, semantic interaction event, opportunity, option selection, or Sir Loke behavior.
 
 ### 9D.4: Rolling Market-State Projection
 
