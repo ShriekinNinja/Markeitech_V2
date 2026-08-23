@@ -20,9 +20,9 @@ work.
   instrument is globally preferred. The long-term product goal is a deterministic semantic-event
   stream, multidimensional rolling market state, options context, and an advisory AI observer that
   maintains, ranks, and explains multiple concurrent 0DTE opportunities.
-- The future advisory AI observer is named **Sherlok**. Its governing maxim is Sherlock Holmes's
+- The future advisory AI observer is named **Sir Loke**. Its governing maxim is Sherlock Holmes's
   principle: "When you have eliminated the impossible, whatever remains, however improbable, must
-  be the truth." Sherlok must eliminate through cited evidence and deterministic policy, preserve
+  be the truth." Sir Loke must eliminate through cited evidence and deterministic policy, preserve
   unresolved uncertainty, and abstain when the remaining case is not sufficiently supported.
 - Native provider observations, deterministic facts, semantic events, persistent
   entities, rolling state, model outputs, AI interpretations, and execution

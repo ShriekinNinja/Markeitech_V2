@@ -33,10 +33,14 @@ claim behind it yet.
 | Prior-session references and overnight gap | Stage 9C Slice 3, durable summary in Stage 9D | Purpose-specific calendar-window dependencies | Implemented and locally accepted |
 | Opening range and extensions | Stage 9C Slice 4 | Calendar-relative intraday dependency | Implemented and locally accepted |
 | Power-hour evidence | Stage 9C Slice 4, durable summary in Stage 9D | Authoritative close-relative window | Implemented and locally accepted |
-| VWAP where volume is meaningful | Stage 9C later slice | Intraday price/volume with supported-volume profile | Planned |
+| VWAP where volume is meaningful | Stage 9D Group 1 prerequisite/reference state | Intraday price/volume with supported-volume profile | Planned in approved Stage 9D scope |
 | Realized volatility/range | Stage 9C Slice 5 | Purpose-specific completed bars | Numerical inputs implemented for local review |
-| Directional efficiency and compression | Stage 9C Slice 5 | Bounded returns/ranges | Numerical efficiency and expansion inputs implemented for local review; semantics deferred |
-| Levels, zones, gaps, profile nodes | Entity stages after trusted measurements | Purpose-specific higher-timeframe/session evidence | Planned |
+| Directional efficiency and compression | Stage 9C Slice 5 inputs; Stage 9D Groups 2-3 state | Bounded returns/ranges plus signed directional prerequisites | Numerical inputs implemented; complete baseline state approved for Stage 9D |
+| Objective session/reference levels and gaps | Stage 9D Group 1 | Purpose-specific session/window evidence | Approved Stage 9D scope |
+| Direction, trend, rotation, volatility, compression, expansion | Stage 9D Groups 2-3 | Versioned multi-horizon numerical evidence | Approved Stage 9D scope |
+| Swings, FVGs, and derived zones | Stage 9D Group 4 | Purpose-specific completed-bar geometry | Approved Stage 9D scope |
+| Inferred bar-volume distribution, POC/value area, HVN/LVN | Stage 9D Group 5 | Completed OHLCV where volume is supported | Approved with explicit `INFERRED_FROM_BARS` fidelity |
+| Observed trade-at-price profile nodes | Richer analytics after an approved trade-at-price source | Observed trades at price | Deferred; must remain separate from bar inference |
 | Effort versus price response | Richer analytics | Trades/order flow where available; explicitly named proxies otherwise | Planned |
 | Cross-instrument leadership, lag, divergence | Cross-instrument state stage | Time-aligned healthy measurements | Planned |
 | Options affordability, liquidity, Greeks, expected move | Bounded options-data proof and later options intelligence | Fresh executable option quotes and chain evidence | Planned |

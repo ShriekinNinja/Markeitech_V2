@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored v2/.env.
 
-schema_version = 15
+schema_version = 16
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -726,6 +726,24 @@ instrument_ids = [
 [[metrics.session_measurements.profile_bindings]]
 profile_id = "us_index_primary"
 instrument_ids = ["^SPX.CBOE", "^VIX.CBOE"]
+
+[metrics.entity_analysis]
+enabled = false
+required_watchlist_capability = "watchlist_last"
+catalog_version = 2
+parameter_source = "operator-reviewed-config"
+parameter_effective_from = "2026-08-23T00:00:00Z"
+maximum_entities_global = 20000
+maximum_entities_per_instrument = 1000
+maximum_entities_per_instrument_type = 250
+completed_session_retention = 2
+completed_session_maximum_age_days = 14
+maximum_input_age_ms = 120000
+maximum_metric_values = 20000
+market_state_reconciliation_interval_ms = 1000
+minimum_snapshot_interval_ms = 1000
+maximum_publications_per_cycle = 500
+definitions = []
 
 [watchlist]
 consumer_retry_interval_ms = 1000

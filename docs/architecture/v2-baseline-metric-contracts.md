@@ -272,3 +272,28 @@ operational lifecycle and system-health audit, not a duplicate market-data store
 
 Stage 9C is closed. The next product slice is Stage 9D: reviewed session entities, bounded rolling
 state, and durable summaries.
+
+## Stage 9D Numerical Prerequisite Extension
+
+Stage 9D.2 extends the same registry rather than creating a private entity-calculation path. The
+first versioned prerequisite family contains:
+
+| Family | Metric outputs | Evidence boundary |
+|---|---|---|
+| Direction | signed displacement, signed simple return, signed path efficiency | Completed close geometry; minimum two bars |
+| EMA reference | value, slope per completed bar, price separation | Configured close-price EMA with explicit period and slope warmup |
+| Confirmed swing | pivot price, strict neighboring-wick prominence | Published only after the configured right span; ties rejected |
+| FVG geometry | lower bound, upper bound, width, later wick-fill ratio | Three completed wick bars; geometry only, no interaction claim |
+| Bar-volume allocation | estimated volume per configured price bin | Uniform candle-volume intersection; always `INFERRED` or `PARTIAL` |
+
+Every definition declares formula version one, exact completed-bar dependencies, units,
+applicability, actual minimum observations, nullable failure behavior, health/fidelity set, bounded
+retention, and complete parameter metadata. EMA periods and slope lookbacks, swing spans and
+prominence, FVG width, and bar-volume bin/coverage settings are bounded configuration with explicit
+dynamic eligibility. Dynamic means eligible for a future policy-controlled revision; no optimizer
+or agent is authorized by this slice.
+
+These functions produce deterministic numerical prerequisites only. They do not create entities,
+semantic interactions, alerts, PostgreSQL market rows, opportunities, scores, advice, or orders.
+Equivalent normalized historical and live completed bars must yield the same numerical result;
+transport lineage may differ without changing analytical geometry.

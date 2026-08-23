@@ -168,11 +168,14 @@ def test_opening_range_freezes_bounds_and_tracks_post_range_distance() -> None:
         revision=1,
     )
     by_id = {value.metric_id: value for value in values}
+    assert by_id[f"{policy.metric_prefix}.open"].value == Decimal("100")
+    assert by_id[f"{policy.metric_prefix}.close"].value == Decimal("104.5")
+    assert by_id[f"{policy.metric_prefix}.volume"].value == Decimal("50")
     assert by_id[f"{policy.metric_prefix}.distance_above_high_points"].value == Decimal("5")
     assert by_id[f"{policy.metric_prefix}.distance_below_low_points"].value == Decimal("0")
 
 
-def test_opening_range_does_not_depend_on_volume_or_efficiency() -> None:
+def test_opening_range_price_evidence_does_not_depend_on_volume() -> None:
     policy = _policy(purpose="opening_range", window_id="or_fast", duration_minutes=5)
     spec = resolve_analytical_window(
         policy,
@@ -203,6 +206,28 @@ def test_opening_range_does_not_depend_on_volume_or_efficiency() -> None:
     assert summary.health is MetricHealth.READY
     assert summary.fidelity is MetricFidelity.DERIVED
     assert summary.missing_reasons == ()
+    assert summary.volume is None
+    assert summary.volume_missing_reasons == ("volume_unsupported",)
+
+    registry = MetricRegistry(analytical_window_metric_definitions((policy,)))
+    values = calculate_analytical_window_metrics(
+        "ESU6.CME",
+        policy,
+        summary,
+        registry=registry,
+        parameter_version=1,
+        calculated_ts_ns=7 * MINUTE_NS,
+        published_ts_ns=7 * MINUTE_NS,
+        source="SESSION-METRICS",
+        revision=1,
+    )
+    by_id = {value.metric_id: value for value in values}
+    assert by_id[f"{policy.metric_prefix}.high"].health is MetricHealth.READY
+    assert by_id[f"{policy.metric_prefix}.volume"].value is None
+    assert by_id[f"{policy.metric_prefix}.volume"].health is MetricHealth.UNSUPPORTED
+    assert by_id[f"{policy.metric_prefix}.volume"].missing_reasons == (
+        "volume_unsupported",
+    )
 
 
 def test_power_hour_reports_only_ohlcv_derived_evidence() -> None:

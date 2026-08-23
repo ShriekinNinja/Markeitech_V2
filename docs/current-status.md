@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-22
+Last reviewed: 2026-08-23
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -415,3 +415,153 @@ cache counts remained bounded, and Nautilus returned cleanly. The resource warni
 routing correction are connected-accepted; critical and recovery projection remain controlled
 follow-up cases rather than blockers for this hardening batch. The runtime-resource evidence gate
 is closed; Stage 9D remains the next accepted intelligence stage.
+
+## Stage 9D: Entities And Rolling State
+
+Stage 9D is active. Slices 9D.1 through 9D.4C are approved and committed; the stage gives
+accepted Stage 9C measurements stable entity identity, bounded current-state projection, explicit
+revision/expiry/invalidation semantics, and an approved compact completed-session recovery
+boundary. Its approved scope now includes complete first deterministic implementations for
+objective session/reference/level entities; volatility and compression/expansion state;
+horizon-specific direction, trend, rotation, and range state; moving/anchored references; and
+swings, FVGs, and derived zones. It also includes a separately named bar-volume-distribution
+baseline with explicit `INFERRED_FROM_BARS` fidelity; observed trade-at-price profiles remain
+deferred.
+
+Stage 9D does not introduce semantic interaction events such as approach, acceptance, rejection,
+breakout, or failure; options intelligence; Discord market alerts; ML; Sir Loke; raw market-data
+persistence; replay; or execution. All variable formulae, thresholds, horizons, detectors,
+windows, lifecycle policies, and resource bounds must be typed, bounded, versioned configuration
+with optimization metadata. Initial parameter values are not presented as trading calibration.
+
+The detailed plan is available in
+[`roadmap/v2-stage-9d-entities-rolling-state-plan.md`](roadmap/v2-stage-9d-entities-rolling-state-plan.md).
+The initial Stage 9D capability bindings, bounded actor split, EMA/reference baseline, first
+swing/FVG/zone/bar-volume definitions, three-class durability policy, dedicated analytical
+persistence ownership, and restoration/retention policy are approved.
+
+Slice 9D.1 is implemented. It introduces framework-independent, immutable
+entity definition, identity, parameter, evidence, revision, lifecycle, durability, snapshot, and
+admission contracts plus a pure bounded state book. Entity IDs are deterministic; registry
+dependencies and payload/evidence compatibility are validated; revision gaps, stale writes,
+conflicts, and meaningless updates are rejected; only terminal state may be evicted or pruned; and
+cross-session restoration is forced to remain stale/degraded until later catch-up evidence. The
+state book supports bounded snapshots by instrument, entity type, analytical profile, identity
+dimensions, and lifecycle. Nine focused entity tests and the 312-test non-PostgreSQL suite pass.
+
+Slice 9D.2 is approved and committed. Tracked configuration schema 16 adds a disabled,
+bounded entity-analysis catalog capable of representing all five approved groups with exact
+profile/instrument/session/horizon applicability; metric and entity dependency versions; permitted
+health/fidelity; lifecycle rules; durability; complete parameter schemas and effective parameter
+sets; optimization eligibility; and global/per-instrument resource limits. Enabled catalogs must
+represent all five groups and reject unknown applicability, unsupported volume use, duplicate
+identity/version, missing parameter values, invalid mutability, and values outside or off their
+declared optimization envelope. The tracked example remains disabled with no definitions so this
+schema change does not activate unreviewed market semantics.
+
+Stage 9D.2 also adds version-one metric-registry definitions and pure deterministic calculations
+for signed displacement, signed simple return, signed path efficiency, configurable EMA value,
+slope and price separation, confirmed strict-pivot swing geometry, three-bar wick FVG geometry and
+fill, and uniform-intersection candle-volume price-bin estimates. Their real warmup, units,
+formulae, dependencies, health, fidelity, failure modes, bounds, and mutability are explicit.
+Bar-volume output is always `INFERRED`; unsupported or partial volume remains honest. Eight focused
+prerequisite tests, 25 configuration tests, the 105-test intelligence suite, and the 327-test
+non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected.
+
+The ignored local runtime configuration was operator-reviewed and migrated to schema 16 for the
+connected Group 1 acceptance run. It remains local and untracked; the tracked example remains
+disabled and empty.
+
+Slice 9D.3 is approved, committed, and closed-market connected-accepted.
+`SessionReferenceEntityActor` consumes only typed
+`MetricValue` custom data and projects analytical-session, previous-session-reference,
+opening-range, opening-gap, and direction-neutral objective-level revisions through native
+Nautilus custom data. The actor does not consume bars, request provider data, calculate semantic
+interactions, choose direction, notify Discord, or write analytical state to PostgreSQL. Exact
+application profile, instrument, session-phase, metric/version, parameter-version, health, and
+fidelity contracts remain configuration owned.
+
+The upstream metric contracts now expose exact active/previous-session bounds and completion plus
+opening-range open, close, and supported volume. Unsupported volume remains optional field-level
+evidence and does not degrade otherwise valid price geometry. The bounded owner converges under
+out-of-order metric arrival, suppresses duplicates and conflicts, retains overflow publications
+instead of discarding them, scopes per-type limits by instrument, and serves immutable typed
+snapshot requests/responses. Enabled Group 1 composition also fails closed when a definition names
+a metric/version that the configured session-reference or opening-range producers cannot emit. The
+enabled test catalog contains the complete Group 1 definitions; the tracked runtime example remains
+disabled and empty.
+
+The accepted 2026-08-23 closed-market run reached `READY` with all 18 configured instrument
+definitions. Acquisition completed 39 historical dependencies: 21 were ready and 18 degraded
+honestly after IB returned no one-minute observations for the closed-market interval. Session
+measurement produced 18 reference batches with 900 values and three window batches with 39 values,
+with zero failures. Group 1 accepted 42 metric values and published 45 entity revisions, with nine
+duplicate revisions, zero rejected revisions, and no pending publications. A missing-evidence
+timestamp defect found during the first connected run was corrected so the same path now emits a
+payload-free `WARMING` revision instead of escaping the actor callback. The complete offline V2
+suite passes 337 tests with two PostgreSQL-marked tests deselected. PostgreSQL stored all 682
+accepted operational events, Discord delivered all three health messages, resource health remained
+normal, and shutdown was clean.
+
+RTH live-bar updates, developing-to-complete session transitions, and rolling-input behavior remain
+explicit connected-acceptance debt. No Stage 9D analytical-state schema, Discord market projection,
+or semantic interaction event has been introduced.
+
+Slice 9D.4A is approved and committed. It adds immutable typed payload
+contracts for volatility, compression/expansion, horizon-specific direction, trend/rotation, and
+configured reference state plus one pure scalar state-classification primitive. Category labels and
+contiguous bands, definition and parameter identity, evidence measure, health/fidelity envelope,
+minimum coverage, hysteresis, consecutive confirmation, and maximum evidence age are supplied by
+validated versioned policy rather than hidden constants. The classifier handles exact boundaries,
+candidate interruption, stale or late evidence, and unavailable state deterministically.
+
+The family projectors retain their exact numerical inputs, horizon, evidence references, candidate
+and confirmed state, reference axes, and explicit cross-horizon conflicts. They do not create a
+universal direction or trend score and do not infer transitions or trading meaning. Seven focused
+market-state tests, the 144-test intelligence/configuration scope, and the complete 344-test
+non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected. Stage 9D.4A adds no actor,
+provider request, runtime configuration binding, entity revision publication, PostgreSQL schema,
+Discord output, semantic event, opportunity selection, option selection, or Sir Loke behavior.
+
+Slice 9D.4B is approved and committed at `3b815eb`. It adds typed market-state
+definition, application, and policy-axis bindings plus one bounded pure projection owner for
+metric-driven volatility, compression/expansion, exact-horizon direction, and independent
+reference slope/separation state. The owner contains stale, duplicate, conflicting, mismatched,
+out-of-scope, and out-of-order input; retains metrics under a configured limit; uses the shared
+entity registry/state book; defers publication overflow; serves filtered snapshots; and can publish
+staleness revisions from explicit reconciliation without new market input. Per-entity classifier
+memory is removed if the state book rejects or evicts that identity.
+
+Trend/rotation runtime ownership is deliberately deferred because it requires typed cross-entity
+inputs and explicit conflicting-horizon evidence. Stage 9D.4B does not counterfeit that evidence
+as scalar text. Eight focused owner tests and the combined 152-test intelligence/configuration
+scope pass in the locked V2 environment. The complete non-PostgreSQL V2 suite passes 352 tests with
+two PostgreSQL-marked tests deselected. The batch adds no Nautilus actor, provider request, runtime
+TOML translation, PostgreSQL schema, Discord output, semantic event, opportunity, option selection,
+or Sir Loke behavior.
+
+Slice 9D.4C is approved and committed at `662fa0f`. It adds strict optional
+market-state policy bindings to entity-analysis catalog version 2 and a bounded
+`MarketStateEntityActor` which consumes typed `MetricValue`, delegates all classification and
+revision ownership to the 9D.4B pure owner, publishes typed `EntityRevision`, serves the existing
+snapshot contract, and performs configured periodic staleness reconciliation. Category bands,
+boundary values, hysteresis, confirmation, minimum coverage, maximum evidence age, parameter-set
+identity, resource limits, and reconciliation cadence remain explicit validated configuration.
+
+Runtime composition admits only enabled Group 2 or Group 3 definitions with an explicit
+`market_state` binding and fails closed if any declared metric/version lacks an active configured
+producer. The current offline test catalog therefore activates only `volatility_state`, bound to
+the configured fast `context_45m` recent-range percentile and coverage metrics. The catalog-only
+dynamic EMA definition remains inactive. Compression/expansion still lacks its required phase
+duration metric; direction and reference state still lack their signed-direction and EMA-reference
+producers; trend/rotation still requires typed cross-entity reconciliation. None is manufactured
+from substitute evidence.
+
+Focused configuration, composition, and native in-process bus tests prove strict policy validation,
+producer-contract rejection, selective actor registration, and rolling metrics projecting into a
+typed active volatility-state revision. The combined intelligence/configuration/composition/message
+scope passes 173 tests. The complete non-PostgreSQL V2 suite passes 358 tests with two
+PostgreSQL-marked tests deselected. The tracked runtime example remains disabled and empty, so this
+batch does not activate new market semantics in a normal run. It adds no provider request,
+PostgreSQL schema, Discord projection, semantic event, opportunity, option selection, or Sir Loke
+behavior. Connected RTH acceptance remains pending.

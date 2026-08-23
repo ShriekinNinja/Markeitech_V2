@@ -158,21 +158,31 @@ parameter provenance, and failure behavior. Requirement-to-stage coverage is tra
 
 **Exit:** live values match an independent operator reference and remain bounded in memory.
 
-### 5. Session Entities And Durable Summaries
+### 5. Baseline Entities, Rolling State, And Durable Summaries
 
-Create stable identities only for subjects required by the baseline:
+Create stable identities and bounded current state for the approved deterministic baseline:
 
-- trading session;
-- previous-session reference set;
-- opening range;
-- gap; and
-- compact derived session summary.
+- trading sessions, previous-session references, opening ranges, gaps, and objective levels;
+- volatility and compression/expansion state;
+- horizon-specific direction, trend, rotation, and range state;
+- configured moving or anchored reference state;
+- confirmed swings, FVGs, and derived zones;
+- explicitly inferred bar-volume distributions, POC/value-area, and HVN/LVN candidates where
+  volume is supported; and
+- compact derived session summaries.
+
+Groups other than bar-volume distribution receive complete first deterministic implementations.
+The bar-volume capability is complete only under an explicit `INFERRED_FROM_BARS` contract; an
+observed trade-at-price profile remains a separate later capability. Every formula, threshold,
+horizon, detector, window, lifecycle policy, and resource bound is typed, versioned,
+configuration-owned, and optimization-ready within declared safety bounds.
 
 Persist meaningful derived summaries, not raw market data. The first durable summary should retain
 approved prior-session and power-hour measurements needed by the next premarket run. It must carry
 metric versions and fidelity so changed formulas cannot rewrite history invisibly.
 
-**Exit:** a restart before the open does not erase yesterday's decision evidence.
+**Exit:** stable analytical subjects are shared without duplicated meaning, and a restart before
+the open does not erase approved prior-session decision evidence.
 
 ### 6. Quiet Semantic Market Events
 

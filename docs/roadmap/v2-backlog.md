@@ -205,7 +205,7 @@ provider-neutral contract are documented in
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.
 - [ ] **Stage 9G:** cross-instrument relationship state.
 - [ ] **Stage 9H:** richer approved analytics.
-- [ ] **Stage 9I:** Sherlok live advisory agent and plural opportunity set.
+- [ ] **Stage 9I:** Sir Loke live advisory agent and plural opportunity set.
 
 The detailed product design remains in
 [`v2-first-market-intelligence-coding-sequence.md`](v2-first-market-intelligence-coding-sequence.md)

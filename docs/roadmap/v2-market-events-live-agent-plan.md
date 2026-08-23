@@ -636,8 +636,12 @@ health, native updates, and independent validation.
 
 ### 9D: Entities And Rolling State
 
-Approved identity/revision contracts, bounded projection, expiry/invalidation/roll, compact prior
-summaries, and restart semantics.
+Approved identity/revision contracts and bounded projection for objective sessions/references/
+levels; volatility and compression/expansion; horizon-specific direction/trend/rotation;
+moving/anchored references; swings/FVGs/derived zones; and explicitly inferred bar-volume
+distribution/profile nodes. Include expiry/invalidation/roll, compact prior summaries, restart
+semantics, and typed/versioned configuration plus optimization metadata for every variable policy.
+Observed trade-at-price profiles remain separate later evidence.
 
 **Exit:** stable analytical subjects are shared without duplicated meaning.
 
@@ -664,8 +668,9 @@ decay, and target-exposure linkage.
 
 ### 9H: Richer Analytics
 
-Add one approved decision capability at a time: structure, locations/profiles, participation,
-effort/response, or option-underlying behavior. Expensive work uses focus leases.
+Add one approved decision capability at a time beyond the Stage 9D deterministic baseline:
+observed trade-at-price profiles, participation, effort/response, advanced structure/location
+interactions, or option-underlying behavior. Expensive work uses focus leases.
 
 **Exit:** evidence is rich enough for useful theses while truthful and bounded.
 
@@ -674,15 +679,15 @@ effort/response, or option-underlying behavior. Expensive work uses focus leases
 Compact read model, typed intents/tools, policy/budgets, lifecycle audit, citation/abstention,
 model/prompt/tool audit, and deterministic fixtures before live model access.
 
-The advisory live agent is named **Sherlok**. Its governing maxim is:
+The advisory live agent is named **Sir Loke**. Its governing maxim is:
 
 > "When you have eliminated the impossible, whatever remains, however improbable, must be the
 > truth." - Sherlock Holmes
 
-For Sherlok, elimination is an auditable process, not rhetoric. Deterministic policy removes
+For Sir Loke, elimination is an auditable process, not rhetoric. Deterministic policy removes
 ineligible actions; evidence quality removes unsupported interpretations; contradictions remain
 visible; and every surviving opportunity cites why it remains possible. An improbable opportunity
-may survive when evidence supports it, but Sherlok must abstain when elimination leaves ambiguity
+may survive when evidence supports it, but Sir Loke must abstain when elimination leaves ambiguity
 rather than a defensible case.
 
 **Exit:** an agent requests bounded work without controlling infrastructure.

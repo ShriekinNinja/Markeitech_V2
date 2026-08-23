@@ -68,6 +68,8 @@ def test_catalog_declares_purpose_specific_reference_dependencies() -> None:
         "active_session.open",
         "previous_session.close",
     )
+    assert registry.get("active_session.start_ns", 1).unit == "unix_ns"
+    assert registry.get("active_session.complete", 1).unit == "boolean"
 
 
 def test_history_live_overlap_is_arrival_order_independent() -> None:
@@ -232,7 +234,13 @@ def test_price_and_opening_gap_survive_unsupported_volume() -> None:
     by_id = {value.metric_id: value for value in values}
 
     assert by_id["active_session.open"].value == Decimal("105")
+    assert by_id["active_session.start_ns"].value == active.start_ns
+    assert by_id["active_session.end_ns"].value == active.end_ns
+    assert by_id["active_session.complete"].value is False
     assert by_id["previous_session.close"].value == Decimal("103")
+    assert by_id["previous_session.start_ns"].value == previous.start_ns
+    assert by_id["previous_session.end_ns"].value == previous.end_ns
+    assert by_id["previous_session.complete"].value is True
     assert by_id["gap.opening.points"].value == Decimal("2")
     assert by_id["active_session.volume"].value is None
     assert by_id["active_session.volume"].health is MetricHealth.UNSUPPORTED

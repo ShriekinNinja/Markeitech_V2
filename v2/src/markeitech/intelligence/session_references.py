@@ -29,6 +29,9 @@ from markeitech.intelligence.metrics import (
 )
 
 ACTIVE_SESSION_METRIC_IDS = (
+    "active_session.start_ns",
+    "active_session.end_ns",
+    "active_session.complete",
     "active_session.open",
     "active_session.high",
     "active_session.low",
@@ -40,6 +43,9 @@ ACTIVE_SESSION_METRIC_IDS = (
     "active_session.coverage_ratio",
 )
 PREVIOUS_SESSION_METRIC_IDS = (
+    "previous_session.start_ns",
+    "previous_session.end_ns",
+    "previous_session.complete",
     "previous_session.open",
     "previous_session.high",
     "previous_session.low",
@@ -594,6 +600,9 @@ def _summary_values(
             )
         return
     values: dict[str, object | None] = {
+        f"{prefix}.start_ns": summary.start_ns,
+        f"{prefix}.end_ns": summary.end_ns,
+        f"{prefix}.complete": summary.complete,
         f"{prefix}.open": summary.open if summary.opening_observed else None,
         f"{prefix}.high": summary.high,
         f"{prefix}.low": summary.low,
@@ -748,12 +757,21 @@ def _definition(
     metric_inputs: tuple[MetricDependency, ...] = (),
     parameters: tuple[MetricParameterDefinition, ...] = (),
 ) -> MetricDefinition:
-    if metric_id.endswith((".ratio", ".location", ".simple_return", ".coverage_ratio")):
+    if metric_id.endswith((".start_ns", ".end_ns")):
+        unit = "unix_ns"
+        value_kind = MetricValueKind.INTEGER
+    elif metric_id.endswith(".complete"):
+        unit = "boolean"
+        value_kind = MetricValueKind.BOOLEAN
+    elif metric_id.endswith((".ratio", ".location", ".simple_return", ".coverage_ratio")):
         unit = "ratio"
+        value_kind = MetricValueKind.NUMBER
     elif metric_id.endswith(".volume"):
         unit = "volume"
+        value_kind = MetricValueKind.NUMBER
     else:
         unit = "price"
+        value_kind = MetricValueKind.NUMBER
     return MetricDefinition(
         metric_id=metric_id,
         version=1,
@@ -762,7 +780,7 @@ def _definition(
         formula=metric_id,
         normalization="none" if unit != "ratio" else "dimensionless ratio",
         applicability="instruments bound to an explicit analytical session profile",
-        value_kind=MetricValueKind.NUMBER,
+        value_kind=value_kind,
         unit=unit,
         cadence=cadence,
         horizon="configured analytical session reference",

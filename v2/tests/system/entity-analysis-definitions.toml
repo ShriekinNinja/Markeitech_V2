@@ -1,0 +1,317 @@
+[[metrics.entity_analysis.definitions]]
+definition_id = "analytical-session-v1"
+group = "objective_session_reference_level"
+entity_type = "analytical_session"
+entity_version = 1
+enabled = true
+decision_question = "What objective session geometry is currently available?"
+implementation_id = "markeitech.entity.analytical_session.v1"
+formula_version = 1
+identity_dimensions = ["definition_id", "session_id", "trade_date"]
+durability = "FINALIZED_SESSION"
+completion_rule = "configured analytical session completes"
+invalidation_rule = "session identity or metric evidence conflict"
+expiry_rule = "configured completed-session retention"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [
+  { role = "start_ns", metric_id = "active_session.start_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "end_ns", metric_id = "active_session.end_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "complete", metric_id = "active_session.complete", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "open", metric_id = "active_session.open", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "high", metric_id = "active_session.high", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "low", metric_id = "active_session.low", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "latest_close", metric_id = "active_session.latest_close", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "range", metric_id = "active_session.range", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "location", metric_id = "active_session.location", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "volume", metric_id = "active_session.volume", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "bar_vwap_estimate", metric_id = "active_session.bar_vwap_estimate", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "coverage_ratio", metric_id = "active_session.coverage_ratio", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "previous-session-reference-v1"
+group = "objective_session_reference_level"
+entity_type = "previous_session_reference"
+entity_version = 1
+enabled = true
+decision_question = "What finalized prior-session reference is available?"
+implementation_id = "markeitech.entity.previous_session_reference.v1"
+formula_version = 1
+identity_dimensions = ["definition_id", "session_id", "trade_date"]
+durability = "FINALIZED_SESSION"
+completion_rule = "source session completes"
+invalidation_rule = "source session identity or metric evidence conflict"
+expiry_rule = "configured completed-session retention"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "previous_session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [
+  { role = "start_ns", metric_id = "previous_session.start_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "end_ns", metric_id = "previous_session.end_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "complete", metric_id = "previous_session.complete", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "open", metric_id = "previous_session.open", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "high", metric_id = "previous_session.high", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "low", metric_id = "previous_session.low", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "close", metric_id = "previous_session.close", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "range", metric_id = "previous_session.range", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "simple_return", metric_id = "previous_session.simple_return", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "volume", metric_id = "previous_session.volume", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "bar_vwap_estimate", metric_id = "previous_session.bar_vwap_estimate", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "coverage_ratio", metric_id = "previous_session.coverage_ratio", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "opening-range-v1"
+group = "objective_session_reference_level"
+entity_type = "opening_range"
+entity_version = 1
+enabled = true
+decision_question = "What objective opening-range geometry is available?"
+implementation_id = "markeitech.entity.opening_range.v1"
+formula_version = 1
+identity_dimensions = ["definition_id", "session_id", "trade_date", "window_id"]
+durability = "FINALIZED_SESSION"
+completion_rule = "configured opening-range window completes"
+invalidation_rule = "window identity or metric evidence conflict"
+expiry_rule = "configured completed-session retention"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-opening-range", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "opening_range", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [
+  { role = "start_ns", metric_id = "opening_range.cme_equity_primary.opening_range_fast.start_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "end_ns", metric_id = "opening_range.cme_equity_primary.opening_range_fast.end_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "complete", metric_id = "opening_range.cme_equity_primary.opening_range_fast.complete", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "open", metric_id = "opening_range.cme_equity_primary.opening_range_fast.open", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "high", metric_id = "opening_range.cme_equity_primary.opening_range_fast.high", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "low", metric_id = "opening_range.cme_equity_primary.opening_range_fast.low", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "close", metric_id = "opening_range.cme_equity_primary.opening_range_fast.close", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "range", metric_id = "opening_range.cme_equity_primary.opening_range_fast.range", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "volume", metric_id = "opening_range.cme_equity_primary.opening_range_fast.volume", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "coverage_ratio", metric_id = "opening_range.cme_equity_primary.opening_range_fast.coverage_ratio", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "opening-gap-v1"
+group = "objective_session_reference_level"
+entity_type = "gap"
+entity_version = 1
+enabled = true
+decision_question = "What objective opening gap is present relative to the prior close?"
+implementation_id = "markeitech.entity.gap.opening.v1"
+formula_version = 1
+identity_dimensions = ["definition_id", "session_id", "trade_date", "gap_kind"]
+durability = "FINALIZED_SESSION"
+completion_rule = "active session open and prior session close are available"
+invalidation_rule = "session identity or metric evidence conflict"
+expiry_rule = "configured completed-session retention"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session_open", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [
+  { role = "points", metric_id = "gap.opening.points", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "ratio", metric_id = "gap.opening.ratio", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "previous-session-high-v1"
+group = "objective_session_reference_level"
+entity_type = "objective_level.previous_session_high"
+entity_version = 1
+enabled = true
+decision_question = "Where is the prior-session high objective reference?"
+implementation_id = "markeitech.entity.objective_level.previous_session_high.v1"
+formula_version = 1
+identity_dimensions = ["definition_id", "horizon", "session_id", "source_metric", "trade_date"]
+durability = "FINALIZED_SESSION"
+completion_rule = "source prior session completes"
+invalidation_rule = "source metric identity conflict"
+expiry_rule = "configured completed-session retention"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "previous_session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "price", metric_id = "previous_session.high", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }, { role = "source_complete", metric_id = "previous_session.complete", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "previous-session-low-v1"
+group = "objective_session_reference_level"
+entity_type = "objective_level.previous_session_low"
+entity_version = 1
+enabled = true
+decision_question = "Where is the prior-session low objective reference?"
+implementation_id = "markeitech.entity.objective_level.previous_session_low.v1"
+formula_version = 1
+identity_dimensions = ["definition_id", "horizon", "session_id", "source_metric", "trade_date"]
+durability = "FINALIZED_SESSION"
+completion_rule = "source prior session completes"
+invalidation_rule = "source metric identity conflict"
+expiry_rule = "configured completed-session retention"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "previous_session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "price", metric_id = "previous_session.low", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }, { role = "source_complete", metric_id = "previous_session.complete", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "opening-range-high-v1"
+group = "objective_session_reference_level"
+entity_type = "objective_level.opening_range_high"
+entity_version = 1
+enabled = true
+decision_question = "Where is the configured opening-range high objective reference?"
+implementation_id = "markeitech.entity.objective_level.opening_range_high.v1"
+formula_version = 1
+identity_dimensions = ["definition_id", "horizon", "session_id", "source_metric", "trade_date"]
+durability = "FINALIZED_SESSION"
+completion_rule = "source opening range completes"
+invalidation_rule = "source metric identity conflict"
+expiry_rule = "configured completed-session retention"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-opening-range", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "opening_range", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "price", metric_id = "opening_range.cme_equity_primary.opening_range_fast.high", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }, { role = "source_complete", metric_id = "opening_range.cme_equity_primary.opening_range_fast.complete", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "opening-range-low-v1"
+group = "objective_session_reference_level"
+entity_type = "objective_level.opening_range_low"
+entity_version = 1
+enabled = true
+decision_question = "Where is the configured opening-range low objective reference?"
+implementation_id = "markeitech.entity.objective_level.opening_range_low.v1"
+formula_version = 1
+identity_dimensions = ["definition_id", "horizon", "session_id", "source_metric", "trade_date"]
+durability = "FINALIZED_SESSION"
+completion_rule = "source opening range completes"
+invalidation_rule = "source metric identity conflict"
+expiry_rule = "configured completed-session retention"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-opening-range", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "opening_range", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "price", metric_id = "opening_range.cme_equity_primary.opening_range_fast.low", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }, { role = "source_complete", metric_id = "opening_range.cme_equity_primary.opening_range_fast.complete", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "volatility-state-v1"
+group = "volatility_compression_expansion"
+entity_type = "volatility_state"
+entity_version = 1
+enabled = true
+decision_question = "What is the current numerical volatility state for this horizon?"
+implementation_id = "markeitech.entity.volatility_state.v1"
+formula_version = 1
+identity_dimensions = ["horizon", "definition_id"]
+durability = "TRANSIENT"
+completion_rule = "never completes while the horizon is active"
+invalidation_rule = "dependency identity conflict"
+expiry_rule = "configured maximum input age"
+permitted_health = ["READY", "DEGRADED", "WARMING", "STALE", "UNAVAILABLE"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-fast", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "fast", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [
+  { role = "normalized_volatility", metric_id = "rolling.fast.context_45m.range_percentile_recent", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "coverage_ratio", metric_id = "rolling.fast.context_45m.coverage_ratio", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "average_true_range", metric_id = "rolling.fast.context_45m.average_true_range", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "realized_range", metric_id = "rolling.fast.context_45m.price_range", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+  { role = "realized_return_magnitude", metric_id = "rolling.fast.context_45m.realized_log_return_magnitude", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
+]
+entity_inputs = []
+parameters = [
+  { parameter_id = "volatility_low_upper", meaning = "Upper recent-range percentile boundary for low volatility", value_kind = "number", unit = "ratio", default = 0.25, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.05, maximum = 0.45, step = 0.05 },
+  { parameter_id = "volatility_typical_upper", meaning = "Upper recent-range percentile boundary for typical volatility", value_kind = "number", unit = "ratio", default = 0.75, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.55, maximum = 0.95, step = 0.05 },
+  { parameter_id = "volatility_hysteresis", meaning = "Additional percentile movement required before category transition", value_kind = "number", unit = "ratio", default = 0.05, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.0, maximum = 0.20, step = 0.01 },
+  { parameter_id = "volatility_confirmation_observations", meaning = "Consecutive accepted observations required to confirm a category", value_kind = "integer", unit = "observations", default = 2, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 1, maximum = 10, step = 1 },
+  { parameter_id = "volatility_minimum_coverage_ratio", meaning = "Minimum rolling-window coverage eligible for classification", value_kind = "number", unit = "ratio", default = 0.8, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.5, maximum = 1.0, step = 0.05 },
+  { parameter_id = "volatility_maximum_evidence_age_ms", meaning = "Maximum accepted age for volatility evidence", value_kind = "integer", unit = "milliseconds", default = 120000, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 5000, maximum = 600000, step = 5000 },
+]
+parameter_sets = [{ parameter_set_id = "volatility-percentile-fixture", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "offline-test-fixture", values = { volatility_low_upper = 0.25, volatility_typical_upper = 0.75, volatility_hysteresis = 0.05, volatility_confirmation_observations = 2, volatility_minimum_coverage_ratio = 0.8, volatility_maximum_evidence_age_ms = 120000 } }]
+market_state = { parameter_set_id = "volatility-percentile-fixture", normalization = "recent_range_percentile", policies = [{ axis = "primary", policy_id = "volatility-percentile-primary", policy_version = 1, measure_role = "normalized_volatility", coverage_role = "coverage_ratio", unavailable_category = "UNAVAILABLE", bands = [{ category = "LOW", upper_bound_parameter_id = "volatility_low_upper" }, { category = "TYPICAL", lower_bound_parameter_id = "volatility_low_upper", upper_bound_parameter_id = "volatility_typical_upper" }, { category = "HIGH", lower_bound_parameter_id = "volatility_typical_upper" }], hysteresis_parameter_id = "volatility_hysteresis", confirmation_observations_parameter_id = "volatility_confirmation_observations", minimum_coverage_ratio_parameter_id = "volatility_minimum_coverage_ratio", maximum_evidence_age_ms_parameter_id = "volatility_maximum_evidence_age_ms", permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }] }
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "dynamic-ema-reference-v1"
+group = "direction_trend_rotation_reference"
+entity_type = "reference_state.dynamic_ema"
+entity_version = 1
+enabled = true
+decision_question = "Where is the configured dynamic EMA and how is price behaving relative to it?"
+implementation_id = "markeitech.entity.reference_state.dynamic_ema.v1"
+formula_version = 1
+identity_dimensions = ["horizon", "parameter_set_id"]
+durability = "TRANSIENT"
+completion_rule = "never completes while the horizon is active"
+invalidation_rule = "parameter or dependency identity conflict"
+expiry_rule = "configured maximum input age"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-fast", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "fast", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "reference_value", metric_id = "entity_input.reference.ema.value", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+entity_inputs = []
+parameters = [{ parameter_id = "period", meaning = "EMA lookback in completed bars", value_kind = "integer", unit = "bars", default = 10, dynamic = true, mutability = "policy_controlled_runtime", source = "operator-reviewed-config", minimum = 5, maximum = 34, step = 1 }]
+parameter_sets = [{ parameter_set_id = "ema-dynamic-10", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "operator-reviewed-config", values = { period = 10 } }]
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "confirmed-swing-v1"
+group = "swing_fvg_zone"
+entity_type = "confirmed_swing"
+entity_version = 1
+enabled = true
+decision_question = "Which pivot geometry is confirmed without look-ahead publication?"
+implementation_id = "markeitech.entity.confirmed_swing.v1"
+formula_version = 1
+identity_dimensions = ["horizon", "pivot_timestamp", "swing_kind"]
+durability = "CROSS_SESSION_CHECKPOINT"
+completion_rule = "configured right-span evidence is complete"
+invalidation_rule = "source observation conflict"
+expiry_rule = "configured age or retention bound"
+permitted_health = ["READY", "DEGRADED"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-tactical", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "tactical", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "pivot_price", metric_id = "entity_input.swing.pivot_price", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "inferred-bar-volume-v1"
+group = "inferred_bar_volume_distribution"
+entity_type = "bar_volume_distribution.inferred_from_bars"
+entity_version = 1
+enabled = true
+decision_question = "Where does a deterministic candle-derived volume estimate concentrate?"
+implementation_id = "markeitech.entity.bar_volume_distribution.inferred_from_bars.v1"
+formula_version = 1
+identity_dimensions = ["horizon", "window_id", "binning_definition"]
+durability = "CROSS_SESSION_CHECKPOINT"
+completion_rule = "configured session or window is finalized"
+invalidation_rule = "volume support or source observation conflict"
+expiry_rule = "configured session and maximum-age retention"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["INFERRED", "PARTIAL"]
+applications = [{ application_id = "cme-session", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = true }]
+metric_inputs = [{ role = "allocated_bin_volume", metric_id = "entity_input.bar_volume.allocated_volume", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["INFERRED", "PARTIAL"] }]
+entity_inputs = []
+parameters = []
+parameter_sets = []
