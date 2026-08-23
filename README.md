@@ -1,4 +1,5 @@
 # Markeitech
+> **"When you have eliminated the impossible, whatever remains, however improbable, must be the truth."** - Sherlock Holmes
 
 Markeitech is a live-first market-intelligence and decision-support system for discretionary
 index trading. V2 runs a read-only NautilusTrader `LiveNode` against Interactive Brokers and is
@@ -6,10 +7,6 @@ building an adaptive, multi-instrument evidence stream for deterministic measure
 state, semantic market events, options intelligence, and an advisory AI agent.
 
 The runtime does not place orders. Automated execution is intentionally absent.
-
-> ### "When you have eliminated the impossible, whatever remains, however improbable, must be the truth."
->
-> **Sherlock Holmes - Sherlok's governing maxim**
 
 > "No Obstacles; Only Challenges; This is Just a Ride." - Markeitect
 
