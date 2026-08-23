@@ -507,7 +507,7 @@ RTH live-bar updates, developing-to-complete session transitions, and rolling-in
 explicit connected-acceptance debt. No Stage 9D analytical-state schema, Discord market projection,
 or semantic interaction event has been introduced.
 
-Slice 9D.4A is implemented locally and awaits Markeitect's review. It adds immutable typed payload
+Slice 9D.4A is approved and committed. It adds immutable typed payload
 contracts for volatility, compression/expansion, horizon-specific direction, trend/rotation, and
 configured reference state plus one pure scalar state-classification primitive. Category labels and
 contiguous bands, definition and parameter identity, evidence measure, health/fidelity envelope,
@@ -522,3 +522,20 @@ market-state tests, the 144-test intelligence/configuration scope, and the compl
 non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected. Stage 9D.4A adds no actor,
 provider request, runtime configuration binding, entity revision publication, PostgreSQL schema,
 Discord output, semantic event, opportunity selection, option selection, or Sir Loke behavior.
+
+Slice 9D.4B is implemented locally and awaits Markeitect's review. It adds typed market-state
+definition, application, and policy-axis bindings plus one bounded pure projection owner for
+metric-driven volatility, compression/expansion, exact-horizon direction, and independent
+reference slope/separation state. The owner contains stale, duplicate, conflicting, mismatched,
+out-of-scope, and out-of-order input; retains metrics under a configured limit; uses the shared
+entity registry/state book; defers publication overflow; serves filtered snapshots; and can publish
+staleness revisions from explicit reconciliation without new market input. Per-entity classifier
+memory is removed if the state book rejects or evicts that identity.
+
+Trend/rotation runtime ownership is deliberately deferred because it requires typed cross-entity
+inputs and explicit conflicting-horizon evidence. Stage 9D.4B does not counterfeit that evidence
+as scalar text. Eight focused owner tests and the combined 152-test intelligence/configuration
+scope pass in the locked V2 environment. The complete non-PostgreSQL V2 suite passes 352 tests with
+two PostgreSQL-marked tests deselected. The batch adds no Nautilus actor, provider request, runtime
+TOML translation, PostgreSQL schema, Discord output, semantic event, opportunity, option selection,
+or Sir Loke behavior.

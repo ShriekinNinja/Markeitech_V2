@@ -1,6 +1,6 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slice 9D.4A implemented and awaiting local review; 9D.3 RTH acceptance debt recorded
+**Status:** Slice 9D.4B implemented and awaiting local review; 9D.3 RTH acceptance debt recorded
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
@@ -700,6 +700,52 @@ non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected.
 revision publication, state-book ownership, PostgreSQL schema, Discord projection, semantic
 transition event, opportunity selection, option selection, or Sir Loke behavior. Those runtime
 concerns require the next separately reviewed 9D.4 batch.
+
+#### 9D.4B: Bounded Metric-Driven State Ownership
+
+This second 9D.4 batch binds the 9D.4A policies to typed entity definitions, exact metric roles,
+parameter-set identity, analytical-profile applications, session phases, and horizons. A new pure
+`MarketStateProjectionOwner` accepts `MetricValue` revisions, retains only a configured maximum,
+projects through the shared `EntityRegistry` and `EntityStateBook`, queues only admitted revisions
+under a configured per-cycle publication limit, and serves immutable filtered snapshots. It adds
+no Nautilus actor or runtime subscription.
+
+The owner currently covers the metric-driven families that can be represented honestly from
+scalar evidence:
+
+- volatility state with explicit normalization and complete optional numerical context;
+- compression/expansion state with explicit recent/phase baseline counts and duration;
+- signed directional state for one exact horizon; and
+- configured moving/anchored reference state with independent slope and separation policies.
+
+Each classification axis binds one required measure role and one required coverage role. The
+binding validates that the policy measure, entity parameter version, metric dependency, payload
+type, policy axes, and family-specific roles agree before any input is accepted. Classification
+memory is isolated by deterministic entity identity and policy axis. A metric correction at the
+same effective timestamp re-evaluates from a clean policy memory rather than masquerading as a new
+chronological observation.
+
+Metric duplicates, same-revision conflicts, stale revisions, parameter-version mismatches,
+unsupported instruments, session-phase mismatches, and unrelated metrics are contained without
+mutating accepted state. `reconcile(now_ns)` can publish a `STALE` revision without waiting for a
+new metric. Publication overflow is deferred rather than discarded. Per-entity projection and
+classification caches are removed when the shared state book rejects or evicts their identity, so
+the pure owner remains bounded with the entity and metric limits it advertises.
+
+Eight focused tests prove role-order convergence, confirmation, duplicate/conflict/stale input
+containment, parameter isolation, timer-driven staleness, exact-horizon snapshot queries,
+independent reference axes, compression baseline retention, deferred publication, and bounded
+metric retention. The combined intelligence/configuration scope passes 152 tests in the locked V2
+environment, and the complete non-PostgreSQL V2 suite passes 352 tests with two PostgreSQL-marked
+tests deselected.
+
+`TrendRotationStatePayload` remains available from 9D.4A, but 9D.4B intentionally refuses to bind
+`trend_rotation_state`. That family needs typed directional, compression/expansion, and reference
+entity inputs plus explicit conflicting-horizon evidence. Encoding those facts as ad hoc scalar
+strings would violate the evidence and structured-data rules. Cross-entity reconciliation, raw
+runtime configuration translation, the Nautilus actor, and live publication therefore remain the
+next separately reviewed 9D.4 work. PostgreSQL, Discord, semantic events, opportunities, options,
+and Sir Loke remain unchanged.
 
 ### 9D.5: Swing, FVG, And Zone Projection
 
