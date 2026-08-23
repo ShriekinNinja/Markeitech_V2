@@ -415,3 +415,26 @@ cache counts remained bounded, and Nautilus returned cleanly. The resource warni
 routing correction are connected-accepted; critical and recovery projection remain controlled
 follow-up cases rather than blockers for this hardening batch. The runtime-resource evidence gate
 is closed; Stage 9D remains the next accepted intelligence stage.
+
+## Stage 9D: Entities And Rolling State
+
+Stage 9D design is active on branch `v2-stage-9d-entities-rolling-state`. The proposed stage gives
+accepted Stage 9C measurements stable entity identity, bounded current-state projection, explicit
+revision/expiry/invalidation semantics, and an approved compact completed-session recovery
+boundary. Its approved scope now includes complete first deterministic implementations for
+objective session/reference/level entities; volatility and compression/expansion state;
+horizon-specific direction, trend, rotation, and range state; moving/anchored references; and
+swings, FVGs, and derived zones. It also includes a separately named bar-volume-distribution
+baseline with explicit `INFERRED_FROM_BARS` fidelity; observed trade-at-price profiles remain
+deferred.
+
+Stage 9D does not introduce semantic interaction events such as approach, acceptance, rejection,
+breakout, or failure; options intelligence; Discord market alerts; ML; Sir Loke; raw market-data
+persistence; replay; or execution. All variable formulae, thresholds, horizons, detectors,
+windows, lifecycle policies, and resource bounds must be typed, bounded, versioned configuration
+with optimization metadata. Initial parameter values are not presented as trading calibration.
+
+The detailed plan is available in
+[`roadmap/v2-stage-9d-entities-rolling-state-plan.md`](roadmap/v2-stage-9d-entities-rolling-state-plan.md).
+No Stage 9D runtime behavior or PostgreSQL analytical-state schema has been implemented. The
+persistence writer and schema remain explicit review gates before the durable-summary slice.
