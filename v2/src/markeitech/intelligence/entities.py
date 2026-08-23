@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import StrEnum
@@ -17,6 +17,8 @@ from markeitech.intelligence.metrics import (
 )
 
 ENTITY_REVISION_TYPE_NAME = "markeitech.entity.revision"
+ENTITY_SNAPSHOT_REQUEST_TYPE_NAME = "markeitech.entity.snapshot.request"
+ENTITY_SNAPSHOT_TYPE_NAME = "markeitech.entity.snapshot"
 
 type EntityKey = tuple[str, int]
 type EntityParameterValue = str | int | float | Decimal | bool
@@ -393,6 +395,7 @@ class EntityRegistry:
         definitions: tuple[EntityDefinition, ...],
         *,
         metric_registry: MetricRegistry | None = None,
+        metric_keys: Collection[tuple[str, int]] | None = None,
     ) -> None:
         _typed_tuple(definitions, EntityDefinition, "definitions")
         by_key: dict[EntityKey, EntityDefinition] = {}
@@ -409,15 +412,23 @@ class EntityRegistry:
                     f"entity dependencies are not registered: {missing_entities!r}",
                 )
             if definition.metric_inputs:
-                if metric_registry is None:
-                    raise ValueError("metric_registry is required for metric dependencies")
+                if metric_registry is None and metric_keys is None:
+                    raise ValueError(
+                        "metric_registry or metric_keys is required for metric dependencies",
+                    )
+                known_metric_keys = frozenset(metric_keys or ())
                 for dependency in definition.metric_inputs:
-                    try:
-                        metric_registry.get(*dependency.key)
-                    except KeyError as exc:
+                    if metric_registry is not None:
+                        try:
+                            metric_registry.get(*dependency.key)
+                        except KeyError as exc:
+                            raise ValueError(
+                                f"metric dependency is not registered: {dependency.key!r}",
+                            ) from exc
+                    elif dependency.key not in known_metric_keys:
                         raise ValueError(
                             f"metric dependency is not registered: {dependency.key!r}",
-                        ) from exc
+                        )
         _reject_entity_cycles(by_key)
         self._definitions = MappingProxyType(dict(sorted(by_key.items())))
 
@@ -480,11 +491,13 @@ class EntityRegistry:
             EntityEvidenceKind.METRIC,
             definition.metric_inputs,
             revision.evidence_refs,
+            require_all=revision.payload is not None,
         )
         _validate_dependency_evidence(
             EntityEvidenceKind.ENTITY,
             definition.entity_inputs,
             revision.evidence_refs,
+            require_all=revision.payload is not None,
         )
 
 
@@ -533,6 +546,83 @@ class EntitySnapshot:
     def __post_init__(self) -> None:
         _timestamp(self.generated_ts_ns, "generated_ts_ns")
         _typed_tuple(self.revisions, EntityRevision, "revisions")
+
+    @property
+    def ts_event(self) -> int:
+        return self.generated_ts_ns
+
+    @property
+    def ts_init(self) -> int:
+        return self.generated_ts_ns
+
+
+@dataclass(frozen=True, slots=True)
+class EntitySnapshotRequest:
+    request_id: str
+    requester: str
+    requested_ts_ns: int
+    instrument_id: str | None = None
+    entity_type: str | None = None
+    analytical_profile_id: str | None = None
+    analytical_profile_version: int | None = None
+    lifecycles: tuple[EntityLifecycle, ...] | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "request_id", _required_text(self.request_id, "request_id"))
+        object.__setattr__(self, "requester", _required_text(self.requester, "requester"))
+        _timestamp(self.requested_ts_ns, "requested_ts_ns")
+        if self.instrument_id is not None:
+            object.__setattr__(
+                self,
+                "instrument_id",
+                _required_text(self.instrument_id, "instrument_id"),
+            )
+        if self.entity_type is not None:
+            object.__setattr__(
+                self,
+                "entity_type",
+                _required_text(self.entity_type, "entity_type"),
+            )
+        if self.analytical_profile_id is not None:
+            object.__setattr__(
+                self,
+                "analytical_profile_id",
+                _required_text(self.analytical_profile_id, "analytical_profile_id"),
+            )
+        if self.analytical_profile_version is not None:
+            _positive_int(self.analytical_profile_version, "analytical_profile_version")
+        if self.lifecycles is not None:
+            _typed_tuple(self.lifecycles, EntityLifecycle, "lifecycles")
+            _unique(self.lifecycles, "lifecycle")
+
+    @property
+    def ts_event(self) -> int:
+        return self.requested_ts_ns
+
+    @property
+    def ts_init(self) -> int:
+        return self.requested_ts_ns
+
+
+@dataclass(frozen=True, slots=True)
+class EntitySnapshotResponse:
+    request_id: str
+    requester: str
+    snapshot: EntitySnapshot
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "request_id", _required_text(self.request_id, "request_id"))
+        object.__setattr__(self, "requester", _required_text(self.requester, "requester"))
+        if not isinstance(self.snapshot, EntitySnapshot):
+            raise ValueError("snapshot must be EntitySnapshot")
+
+    @property
+    def ts_event(self) -> int:
+        return self.snapshot.ts_event
+
+    @property
+    def ts_init(self) -> int:
+        return self.snapshot.ts_init
 
 
 _TERMINAL_LIFECYCLES = {
@@ -744,10 +834,15 @@ def _violating_scope(
     if instrument_count > limits.maximum_entities_per_instrument:
         return lambda item: item.identity.instrument_id == protected.identity.instrument_id
     type_count = sum(
-        item.identity.entity_type == protected.identity.entity_type for item in proposed.values()
+        item.identity.instrument_id == protected.identity.instrument_id
+        and item.identity.entity_type == protected.identity.entity_type
+        for item in proposed.values()
     )
     if type_count > limits.maximum_entities_per_type:
-        return lambda item: item.identity.entity_type == protected.identity.entity_type
+        return lambda item: (
+            item.identity.instrument_id == protected.identity.instrument_id
+            and item.identity.entity_type == protected.identity.entity_type
+        )
     if len(proposed) > limits.maximum_entities:
         return lambda _item: True
     return None
@@ -824,6 +919,8 @@ def _validate_dependency_evidence(
     kind: EntityEvidenceKind,
     dependencies: tuple[EntityMetricDependency, ...] | tuple[EntityDependency, ...],
     evidence_refs: tuple[EntityEvidenceReference, ...],
+    *,
+    require_all: bool,
 ) -> None:
     label = "metric" if kind is EntityEvidenceKind.METRIC else "entity"
     for dependency in dependencies:
@@ -832,7 +929,7 @@ def _validate_dependency_evidence(
             for item in evidence_refs
             if item.kind is kind and (item.definition_id, item.version) == dependency.key
         )
-        if dependency.required and not matches:
+        if require_all and dependency.required and not matches:
             raise ValueError(f"required {label} evidence is missing: {dependency.key!r}")
         if matches and not any(
             item.health in dependency.permitted_health

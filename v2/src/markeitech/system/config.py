@@ -632,6 +632,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
         for member in watchlist.members
     ):
         raise ValueError("enabled entity analysis scope selects no watchlist instruments")
+    if metrics.entity_analysis.enabled and not metrics.session_measurements.enabled:
+        raise ValueError("enabled entity analysis requires enabled session measurements")
     profile_calendars = {profile.calendar_id for profile in metrics.session_measurements.profiles}
     unknown_profile_calendars = sorted(profile_calendars - known_calendars)
     if unknown_profile_calendars:
@@ -1951,6 +1953,8 @@ def _validate_entity_analysis_scope(
 ) -> None:
     if not config.enabled:
         return
+    if not bound_instruments:
+        raise ValueError("enabled entity analysis requires session measurement profile bindings")
     available_selectors = {
         completed_bars.live_selector,
         completed_bars.historical_selector,
@@ -2013,6 +2017,16 @@ def _validate_entity_analysis_scope(
                 raise ValueError(
                     "entity application source selector is unsupported: "
                     f"{application.source_selector}",
+                )
+            selected_instruments = set(application.instrument_ids) or {
+                instrument_id
+                for instrument_id, profile_id in bound_instruments.items()
+                if profile_id in application.analytical_profile_ids
+            }
+            if not selected_instruments:
+                raise ValueError(
+                    "entity application selects no profile-bound instruments: "
+                    f"{definition.definition_id}/{application.application_id}",
                 )
 
 

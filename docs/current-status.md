@@ -469,6 +469,24 @@ prerequisite tests, 25 configuration tests, the 105-test intelligence suite, and
 non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected.
 
 The ignored local runtime configuration remains schema 15 and is intentionally not overwritten by
-this batch. It must be reviewed and migrated to schema 16 before a later connected run. No Stage 9D
-actor, PostgreSQL analytical-state schema, Discord projection, or connected runtime behavior has
-been introduced. Those remain later review gates.
+this batch. It must be reviewed and migrated to schema 16 before a later connected run.
+
+Slice 9D.3 is implemented for Markeitect review. `SessionReferenceEntityActor` consumes only typed
+`MetricValue` custom data and projects analytical-session, previous-session-reference,
+opening-range, opening-gap, and direction-neutral objective-level revisions through native
+Nautilus custom data. The actor does not consume bars, request provider data, calculate semantic
+interactions, choose direction, notify Discord, or write analytical state to PostgreSQL. Exact
+application profile, instrument, session-phase, metric/version, parameter-version, health, and
+fidelity contracts remain configuration owned.
+
+The upstream metric contracts now expose exact active/previous-session bounds and completion plus
+opening-range open, close, and supported volume. Unsupported volume remains optional field-level
+evidence and does not degrade otherwise valid price geometry. The bounded owner converges under
+out-of-order metric arrival, suppresses duplicates and conflicts, retains overflow publications
+instead of discarding them, scopes per-type limits by instrument, and serves immutable typed
+snapshot requests/responses. Enabled Group 1 composition also fails closed when a definition names
+a metric/version that the configured session-reference or opening-range producers cannot emit. The
+enabled test catalog contains the complete Group 1 definitions; the tracked runtime example remains
+disabled and empty, so no connected runtime behavior is activated. The complete offline V2 suite
+passes 336 tests with two PostgreSQL-marked tests deselected. No Stage 9D analytical-state schema,
+Discord projection, or connected acceptance has been introduced; those remain later review gates.

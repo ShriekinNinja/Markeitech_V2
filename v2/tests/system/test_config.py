@@ -294,7 +294,7 @@ overnight_phase = "OPEN"
 volume_supported = true
 
 [[metrics.session_measurements.profiles.windows]]
-window_id = "opening_range"
+window_id = "opening_range_fast"
 purpose = "opening_range"
 anchor_phase = "OPEN"
 anchor_boundary = "start"
@@ -874,7 +874,7 @@ def test_rejects_duplicate_analytical_window_ids(tmp_path: Path) -> None:
     path.write_text(
         VALID_CONFIG.replace(
             'window_id = "power_hour"',
-            'window_id = "opening_range"',
+            'window_id = "opening_range_fast"',
         ),
     )
 

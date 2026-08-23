@@ -6,6 +6,8 @@ from uuid import UUID
 
 from nautilus_trader.common import ImportableActorConfig
 
+from markeitech.intelligence.session_references import SESSION_REFERENCE_METRIC_IDS
+from markeitech.intelligence.session_windows import OPENING_RANGE_FIELDS
 from markeitech.system.config import SystemConfig
 from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
 
@@ -44,6 +46,74 @@ def _watchlist_instruments_with_capability(
         for member in config.watchlist.members
         if capability in member.capabilities
     ]
+
+
+def _entity_definition_payload(definition) -> dict[str, object]:  # noqa: ANN001
+    return {
+        "definition_id": definition.definition_id,
+        "group": definition.group,
+        "entity_type": definition.entity_type,
+        "entity_version": definition.entity_version,
+        "decision_question": definition.decision_question,
+        "implementation_id": definition.implementation_id,
+        "identity_dimensions": list(definition.identity_dimensions),
+        "durability": definition.durability,
+        "completion_rule": definition.completion_rule,
+        "invalidation_rule": definition.invalidation_rule,
+        "expiry_rule": definition.expiry_rule,
+        "permitted_health": list(definition.permitted_health),
+        "permitted_fidelities": list(definition.permitted_fidelities),
+        "applications": [
+            {
+                "application_id": application.application_id,
+                "analytical_profile_ids": list(application.analytical_profile_ids),
+                "instrument_ids": list(application.instrument_ids),
+                "session_phases": list(application.session_phases),
+                "horizon": application.horizon,
+            }
+            for application in definition.applications
+        ],
+        "metric_inputs": [
+            {
+                "role": dependency.role,
+                "metric_id": dependency.metric_id,
+                "metric_version": dependency.metric_version,
+                "parameter_version": dependency.parameter_version,
+                "required": dependency.required,
+                "permitted_health": list(dependency.permitted_health),
+                "permitted_fidelities": list(dependency.permitted_fidelities),
+            }
+            for dependency in definition.metric_inputs
+        ],
+        "entity_inputs": [
+            {
+                "role": dependency.role,
+                "entity_type": dependency.entity_type,
+                "entity_version": dependency.entity_version,
+                "required": dependency.required,
+                "permitted_health": list(dependency.permitted_health),
+                "permitted_fidelities": list(dependency.permitted_fidelities),
+            }
+            for dependency in definition.entity_inputs
+        ],
+    }
+
+
+def _available_session_entity_metric_keys(config: SystemConfig) -> set[tuple[str, int]]:
+    session_metrics = config.metrics.session_measurements
+    keys = (
+        {(metric_id, 1) for metric_id in SESSION_REFERENCE_METRIC_IDS}
+        if session_metrics.session_references.enabled
+        else set()
+    )
+    if session_metrics.session_windows.enabled:
+        for profile in session_metrics.profiles:
+            for window in profile.windows:
+                if window.purpose != "opening_range":
+                    continue
+                prefix = f"opening_range.{profile.profile_id}.{window.window_id}"
+                keys.update((f"{prefix}.{field}", 1) for field in OPENING_RANGE_FIELDS)
+    return keys
 
 
 @dataclass(frozen=True, slots=True)
@@ -504,6 +574,86 @@ def build_actor_plan(
                                 for family in session_metrics.rolling_measurements.families
                             ],
                         },
+                    },
+                ),
+            ),
+        )
+    if config.metrics.entity_analysis.enabled:
+        entity_analysis = config.metrics.entity_analysis
+        session_metrics = config.metrics.session_measurements
+        profile_by_id = {profile.profile_id: profile for profile in session_metrics.profiles}
+        profile_by_instrument = {
+            instrument_id: binding.profile_id
+            for binding in session_metrics.profile_bindings
+            for instrument_id in binding.instrument_ids
+        }
+        selected_instruments = _watchlist_instruments_with_capability(
+            config,
+            entity_analysis.required_watchlist_capability,
+        )
+        group_one = [
+            definition
+            for definition in entity_analysis.definitions
+            if definition.enabled and definition.group == "objective_session_reference_level"
+        ]
+        available_metric_keys = _available_session_entity_metric_keys(config)
+        missing_metric_keys = sorted(
+            {
+                (dependency.metric_id, dependency.metric_version)
+                for definition in group_one
+                for dependency in definition.metric_inputs
+            }
+            - available_metric_keys,
+        )
+        if missing_metric_keys:
+            raise ValueError(
+                "session-reference entity definitions require unavailable metrics: "
+                f"{missing_metric_keys!r}",
+            )
+        registrations.append(
+            ActorRegistration(
+                key="session_reference_entities",
+                actor_id="SESSION-REFERENCE-ENTITIES",
+                config=ImportableActorConfig(
+                    actor_path=(
+                        "markeitech.intelligence.session_entity_actor:"
+                        "SessionReferenceEntityActor"
+                    ),
+                    config_path=(
+                        "markeitech.intelligence.session_entity_actor:"
+                        "SessionReferenceEntityActorConfig"
+                    ),
+                    config={
+                        "actor_id": "SESSION-REFERENCE-ENTITIES",
+                        "instrument_profiles": {
+                            instrument_id: {
+                                "profile_id": profile_by_instrument[instrument_id],
+                                "profile_version": profile_by_id[
+                                    profile_by_instrument[instrument_id]
+                                ].version,
+                            }
+                            for instrument_id in selected_instruments
+                        },
+                        "definitions": [
+                            _entity_definition_payload(definition) for definition in group_one
+                        ],
+                        "maximum_entities_global": (
+                            entity_analysis.maximum_entities_global
+                        ),
+                        "maximum_entities_per_instrument": (
+                            entity_analysis.maximum_entities_per_instrument
+                        ),
+                        "maximum_entities_per_type": (
+                            entity_analysis.maximum_entities_per_instrument_type
+                        ),
+                        "maximum_metric_values": entity_analysis.maximum_entities_global,
+                        "minimum_snapshot_interval_ms": (
+                            entity_analysis.minimum_snapshot_interval_ms
+                        ),
+                        "maximum_publications_per_cycle": (
+                            entity_analysis.maximum_publications_per_cycle
+                        ),
+                        "schema_version": entity_analysis.catalog_version,
                     },
                 ),
             ),

@@ -443,6 +443,19 @@ def test_capacity_evicts_oldest_terminal_entity_but_never_active_state() -> None
     assert len(protected_book) == 2
 
 
+def test_per_type_limit_is_scoped_per_instrument() -> None:
+    book = _book(maximum=4, per_instrument=2, per_type=1)
+    es = _revision(lifecycle=EntityLifecycle.COMPLETE)
+    spy = _revision(
+        identity=_identity(instrument_id="SPY.ARCA"),
+        lifecycle=EntityLifecycle.COMPLETE,
+    )
+
+    assert book.admit(es).status is EntityAdmissionStatus.ADDED
+    assert book.admit(spy).status is EntityAdmissionStatus.ADDED
+    assert len(book) == 2
+
+
 def test_snapshot_filters_are_immutable_and_terminal_pruning_is_bounded() -> None:
     book = _book()
     active = _revision()

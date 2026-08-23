@@ -1,6 +1,6 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slice 9D.1 implemented; pending Markeitect review
+**Status:** Slice 9D.3 implemented; pending Markeitect review
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
@@ -616,6 +616,33 @@ projection, or connected run is introduced by 9D.2.
 
 **Exit:** stable objective market subjects are shared through Nautilus without interaction or
 trading semantics.
+
+**Implementation evidence:** the upstream session-reference metric catalog now publishes exact
+active/previous-session `start_ns`, `end_ns`, and `complete` values. Opening-range metrics now
+publish open, close, and optional supported volume in addition to existing geometry; unsupported
+volume stays explicit and field-local instead of degrading price evidence. The reviewed enabled
+test catalog defines analytical session, previous-session reference, configured opening range,
+opening gap, previous-session high/low, and opening-range high/low entities with exact dependency,
+application, identity, health, fidelity, and parameter versions. The tracked runtime example stays
+disabled and empty.
+
+`SessionReferenceEntityActor` consumes typed `MetricValue` custom data only. Its pure bounded owner
+indexes exact subject evidence, converges under arrival-order changes, emits `WARMING` identities
+until required evidence exists, advances monotonic meaningful revisions, enforces profile and
+session-phase applicability, rejects parameter-version mismatches, suppresses exact
+duplicates/stale/conflicting inputs, bounds retained metric values and entity state, and queues
+publication overflow rather than silently dropping an admitted revision. Per-type bounds are
+correctly scoped by instrument. Composition fails closed when a Group 1 dependency has no
+configured metric producer. Immutable typed snapshot request/response contracts expose filtered
+current state to later actors.
+
+Offline evidence covers order-independent convergence, warming-to-active lifecycle, optional
+volume, direction-neutral objective levels, phase filtering, bounded retention, overflow recovery,
+duplicate/conflict behavior, per-instrument/type limits, actor composition, and a native Nautilus
+typed-CustomData delivery proof. The complete offline V2 suite passes 336 tests with two
+PostgreSQL-marked tests deselected. This slice adds no provider request, raw-data persistence,
+analytical PostgreSQL table, Discord market projection, semantic interaction event, opportunity,
+option selection, Sir Loke behavior, or connected run.
 
 ### 9D.4: Rolling Market-State Projection
 

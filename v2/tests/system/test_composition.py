@@ -348,6 +348,60 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
     ]
 
 
+def test_actor_plan_adds_enabled_session_reference_entity_owner(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    source = (root / "config/system.example.toml").read_text()
+    definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
+    path = tmp_path / "system.toml"
+    path.write_text(
+        source.replace(
+            "[metrics.entity_analysis]\nenabled = false",
+            "[metrics.entity_analysis]\nenabled = true",
+        ).replace("definitions = []", definitions),
+    )
+    config = load_system_config(path)
+
+    plan = build_actor_plan(config, _prerequisites())
+
+    actor = next(item for item in plan if item.key == "session_reference_entities")
+    assert actor.actor_id == "SESSION-REFERENCE-ENTITIES"
+    assert len(actor.config.config["instrument_profiles"]) == len(config.instrument_ids)
+    assert {
+        definition["entity_type"] for definition in actor.config.config["definitions"]
+    } == {
+        "analytical_session",
+        "previous_session_reference",
+        "opening_range",
+        "gap",
+        "objective_level.previous_session_high",
+        "objective_level.previous_session_low",
+        "objective_level.opening_range_high",
+        "objective_level.opening_range_low",
+    }
+    assert actor.config.config["maximum_publications_per_cycle"] == 500
+
+
+def test_actor_plan_rejects_entity_metric_without_configured_producer(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    source = (root / "config/system.example.toml").read_text()
+    definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
+    definitions = definitions.replace(
+        "opening_range.cme_equity_primary.opening_range_fast.high",
+        "opening_range.cme_equity_primary.missing_window.high",
+    )
+    path = tmp_path / "system.toml"
+    path.write_text(
+        source.replace(
+            "[metrics.entity_analysis]\nenabled = false",
+            "[metrics.entity_analysis]\nenabled = true",
+        ).replace("definitions = []", definitions),
+    )
+    config = load_system_config(path)
+
+    with pytest.raises(ValueError, match="require unavailable metrics"):
+        build_actor_plan(config, _prerequisites())
+
+
 def test_actor_plan_rejects_missing_required_preflight() -> None:
     with pytest.raises(ValueError, match="persistence must pass preflight"):
         build_actor_plan(_config(), _prerequisites(ready=False))

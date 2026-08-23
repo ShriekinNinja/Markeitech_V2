@@ -34,9 +34,12 @@ OPENING_RANGE_FIELDS = (
     "start_ns",
     "end_ns",
     "complete",
+    "open",
     "high",
     "low",
+    "close",
     "range",
+    "volume",
     "distance_above_high_points",
     "distance_above_high_ratio",
     "distance_below_low_points",
@@ -205,6 +208,7 @@ class AnalyticalWindowSummary:
     received_ts_ns: int
     evidence_refs: tuple[str, ...]
     missing_reasons: tuple[str, ...]
+    volume_missing_reasons: tuple[str, ...]
 
     @property
     def range(self) -> Decimal:
@@ -303,11 +307,15 @@ class AnalyticalWindowBook:
         volume: Decimal | None = None
         vwap: Decimal | None = None
         efficiency: Decimal | None = None
+        volume_missing: list[str] = []
         if self._policy.purpose == "power_hour":
-            volume, vwap = _volume_values(bars, self._policy.price_basis, missing)
+            volume, vwap = _volume_values(bars, self._policy.price_basis, volume_missing)
+            missing.extend(volume_missing)
             efficiency = _directional_efficiency(bars)
             if efficiency is None:
                 missing.append("zero_close_path")
+        else:
+            volume, _ = _volume_values(bars, self._policy.price_basis, volume_missing)
         latest = bucket.latest or bars[-1]
         contexts = (*bars, latest)
         fidelity = (
@@ -339,6 +347,7 @@ class AnalyticalWindowBook:
                 dict.fromkeys(ref for bar in contexts for ref in bar.evidence_refs),
             ),
             missing_reasons=tuple(dict.fromkeys(missing)),
+            volume_missing_reasons=tuple(dict.fromkeys(volume_missing)),
         )
 
     def _bucket(self, spec: AnalyticalWindowSpec) -> _WindowBucket:
@@ -650,6 +659,9 @@ def _values(
         below = max(summary.low - summary.latest_close, Decimal(0))
         values.update(
             {
+                f"{prefix}.open": summary.open,
+                f"{prefix}.close": summary.close,
+                f"{prefix}.volume": summary.volume,
                 f"{prefix}.distance_above_high_points": above,
                 f"{prefix}.distance_above_high_ratio": (
                     above / summary.high if summary.high != 0 else None
@@ -660,6 +672,10 @@ def _values(
                 ),
             },
         )
+        if summary.volume is None:
+            reasons[f"{prefix}.volume"] = summary.volume_missing_reasons or (
+                "volume_unavailable",
+            )
     else:
         values.update(
             {
