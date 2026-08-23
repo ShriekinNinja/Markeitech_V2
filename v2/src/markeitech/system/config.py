@@ -1,10 +1,45 @@
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
+
+type EntityConfigScalar = str | int | float | bool
+
+_ENTITY_GROUPS = {
+    "objective_session_reference_level",
+    "volatility_compression_expansion",
+    "direction_trend_rotation_reference",
+    "swing_fvg_zone",
+    "inferred_bar_volume_distribution",
+}
+_ENTITY_HEALTH_VALUES = {
+    "READY",
+    "WARMING",
+    "DEGRADED",
+    "STALE",
+    "UNAVAILABLE",
+    "UNSUPPORTED",
+    "FAILED",
+}
+_ENTITY_FIDELITY_VALUES = {
+    "REPORTED",
+    "DERIVED",
+    "INFERRED",
+    "PARTIAL",
+    "UNAVAILABLE",
+}
+_ENTITY_DURABILITY_VALUES = {
+    "TRANSIENT",
+    "FINALIZED_SESSION",
+    "CROSS_SESSION_CHECKPOINT",
+}
+_PARAMETER_VALUE_KINDS = {"number", "integer", "boolean", "text"}
+_PARAMETER_MUTABILITY_VALUES = {"startup_only", "policy_controlled_runtime"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -315,9 +350,110 @@ class SessionMeasurementsConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class EntityApplicationConfig:
+    application_id: str
+    analytical_profile_ids: tuple[str, ...]
+    instrument_ids: tuple[str, ...]
+    instrument_classes: tuple[str, ...]
+    session_phases: tuple[str, ...]
+    horizon: str
+    source_selector: str
+    requires_volume: bool
+
+
+@dataclass(frozen=True, slots=True)
+class EntityMetricInputConfig:
+    role: str
+    metric_id: str
+    metric_version: int
+    parameter_version: int
+    required: bool
+    permitted_health: tuple[str, ...]
+    permitted_fidelities: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EntityInputConfig:
+    role: str
+    entity_type: str
+    entity_version: int
+    required: bool
+    permitted_health: tuple[str, ...]
+    permitted_fidelities: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EntityParameterConfig:
+    parameter_id: str
+    meaning: str
+    value_kind: str
+    unit: str
+    default: EntityConfigScalar
+    dynamic: bool
+    mutability: str
+    source: str
+    minimum: int | float | None
+    maximum: int | float | None
+    step: int | float | None
+    allowed_values: tuple[EntityConfigScalar, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EntityParameterSetConfig:
+    parameter_set_id: str
+    parameter_version: int
+    effective_from_ns: int
+    source: str
+    values: tuple[tuple[str, EntityConfigScalar], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EntityDefinitionConfig:
+    definition_id: str
+    group: str
+    entity_type: str
+    entity_version: int
+    enabled: bool
+    decision_question: str
+    implementation_id: str
+    formula_version: int
+    identity_dimensions: tuple[str, ...]
+    durability: str
+    completion_rule: str
+    invalidation_rule: str
+    expiry_rule: str
+    permitted_health: tuple[str, ...]
+    permitted_fidelities: tuple[str, ...]
+    applications: tuple[EntityApplicationConfig, ...]
+    metric_inputs: tuple[EntityMetricInputConfig, ...]
+    entity_inputs: tuple[EntityInputConfig, ...]
+    parameters: tuple[EntityParameterConfig, ...]
+    parameter_sets: tuple[EntityParameterSetConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EntityAnalysisConfig:
+    enabled: bool
+    required_watchlist_capability: str
+    catalog_version: int
+    parameter_source: str
+    parameter_effective_from_ns: int
+    maximum_entities_global: int
+    maximum_entities_per_instrument: int
+    maximum_entities_per_instrument_type: int
+    completed_session_retention: int
+    completed_session_maximum_age_days: int
+    maximum_input_age_ms: int
+    minimum_snapshot_interval_ms: int
+    maximum_publications_per_cycle: int
+    definitions: tuple[EntityDefinitionConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class MetricsConfig:
     quote_quality: QuoteQualityMetricsConfig
     session_measurements: SessionMeasurementsConfig
+    entity_analysis: EntityAnalysisConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -445,7 +581,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 15:
+    if raw["schema_version"] != 16:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -491,6 +627,11 @@ def load_system_config(path: str | Path) -> SystemConfig:
         for member in watchlist.members
     ):
         raise ValueError("enabled session measurements scope selects no watchlist instruments")
+    if metrics.entity_analysis.enabled and not any(
+        metrics.entity_analysis.required_watchlist_capability in member.capabilities
+        for member in watchlist.members
+    ):
+        raise ValueError("enabled entity analysis scope selects no watchlist instruments")
     profile_calendars = {profile.calendar_id for profile in metrics.session_measurements.profiles}
     unknown_profile_calendars = sorted(profile_calendars - known_calendars)
     if unknown_profile_calendars:
@@ -546,6 +687,14 @@ def load_system_config(path: str | Path) -> SystemConfig:
                     f"uses {profile.calendar_id}",
                 )
             bound_instruments[instrument_id] = profile.profile_id
+    _validate_entity_analysis_scope(
+        metrics.entity_analysis,
+        profiles=profile_by_id,
+        bound_instruments=bound_instruments,
+        watchlist=watchlist_by_id,
+        rolling_families=metrics.session_measurements.rolling_measurements.families,
+        completed_bars=metrics.session_measurements.completed_bars,
+    )
     if metrics.session_measurements.enabled:
         selected_instruments = {
             member.instrument_id
@@ -1271,7 +1420,11 @@ def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
 
 def _load_metrics(raw: Any) -> MetricsConfig:
     values = _mapping(raw, "metrics")
-    _require_keys(values, {"quote_quality", "session_measurements"}, "metrics")
+    _require_keys(
+        values,
+        {"quote_quality", "session_measurements", "entity_analysis"},
+        "metrics",
+    )
     quote = _mapping(values["quote_quality"], "metrics.quote_quality")
     _require_keys(
         quote,
@@ -1319,9 +1472,585 @@ def _load_metrics(raw: Any) -> MetricsConfig:
         priority=priority,
     )
     session = _load_session_measurements(values["session_measurements"])
+    entity_analysis = _load_entity_analysis(values["entity_analysis"])
     return MetricsConfig(
         quote_quality=quote_config,
         session_measurements=session,
+        entity_analysis=entity_analysis,
+    )
+
+
+def _load_entity_analysis(raw: Any) -> EntityAnalysisConfig:
+    values = _mapping(raw, "metrics.entity_analysis")
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "required_watchlist_capability",
+            "catalog_version",
+            "parameter_source",
+            "parameter_effective_from",
+            "maximum_entities_global",
+            "maximum_entities_per_instrument",
+            "maximum_entities_per_instrument_type",
+            "completed_session_retention",
+            "completed_session_maximum_age_days",
+            "maximum_input_age_ms",
+            "minimum_snapshot_interval_ms",
+            "maximum_publications_per_cycle",
+            "definitions",
+        },
+        "metrics.entity_analysis",
+    )
+    enabled = _bool(values["enabled"], "metrics.entity_analysis.enabled")
+    definitions = tuple(
+        _load_entity_definition(item, index=index)
+        for index, item in enumerate(
+            _table_array(values["definitions"], "metrics.entity_analysis.definitions"),
+        )
+    )
+    if enabled and not definitions:
+        raise ValueError("metrics.entity_analysis.definitions must not be empty")
+    definition_ids = tuple(item.definition_id for item in definitions)
+    if len(definition_ids) != len(set(definition_ids)):
+        raise ValueError("entity definition IDs must be unique")
+    definition_keys = tuple((item.entity_type, item.entity_version) for item in definitions)
+    if len(definition_keys) != len(set(definition_keys)):
+        raise ValueError("entity type/version definitions must be unique")
+    if enabled:
+        represented_groups = {item.group for item in definitions if item.enabled}
+        missing_groups = sorted(_ENTITY_GROUPS - represented_groups)
+        if missing_groups:
+            raise ValueError(
+                f"enabled entity analysis lacks definition groups: {', '.join(missing_groups)}",
+            )
+    maximum_entities_global = _positive_int(
+        values["maximum_entities_global"],
+        "metrics.entity_analysis.maximum_entities_global",
+    )
+    maximum_entities_per_instrument = _positive_int(
+        values["maximum_entities_per_instrument"],
+        "metrics.entity_analysis.maximum_entities_per_instrument",
+    )
+    maximum_entities_per_instrument_type = _positive_int(
+        values["maximum_entities_per_instrument_type"],
+        "metrics.entity_analysis.maximum_entities_per_instrument_type",
+    )
+    if maximum_entities_per_instrument > maximum_entities_global:
+        raise ValueError("entity per-instrument bound cannot exceed the global bound")
+    if maximum_entities_per_instrument_type > maximum_entities_per_instrument:
+        raise ValueError("entity per-instrument/type bound cannot exceed per-instrument bound")
+    completed_session_retention = _positive_int(
+        values["completed_session_retention"],
+        "metrics.entity_analysis.completed_session_retention",
+    )
+    completed_session_maximum_age_days = _positive_int(
+        values["completed_session_maximum_age_days"],
+        "metrics.entity_analysis.completed_session_maximum_age_days",
+    )
+    return EntityAnalysisConfig(
+        enabled=enabled,
+        required_watchlist_capability=_non_empty_string(
+            values["required_watchlist_capability"],
+            "metrics.entity_analysis.required_watchlist_capability",
+        ),
+        catalog_version=_positive_int(
+            values["catalog_version"],
+            "metrics.entity_analysis.catalog_version",
+        ),
+        parameter_source=_non_empty_string(
+            values["parameter_source"],
+            "metrics.entity_analysis.parameter_source",
+        ),
+        parameter_effective_from_ns=_utc_timestamp_ns(
+            values["parameter_effective_from"],
+            "metrics.entity_analysis.parameter_effective_from",
+        ),
+        maximum_entities_global=maximum_entities_global,
+        maximum_entities_per_instrument=maximum_entities_per_instrument,
+        maximum_entities_per_instrument_type=maximum_entities_per_instrument_type,
+        completed_session_retention=completed_session_retention,
+        completed_session_maximum_age_days=completed_session_maximum_age_days,
+        maximum_input_age_ms=_positive_int(
+            values["maximum_input_age_ms"],
+            "metrics.entity_analysis.maximum_input_age_ms",
+        ),
+        minimum_snapshot_interval_ms=_non_negative_int(
+            values["minimum_snapshot_interval_ms"],
+            "metrics.entity_analysis.minimum_snapshot_interval_ms",
+        ),
+        maximum_publications_per_cycle=_positive_int(
+            values["maximum_publications_per_cycle"],
+            "metrics.entity_analysis.maximum_publications_per_cycle",
+        ),
+        definitions=definitions,
+    )
+
+
+def _load_entity_definition(raw: Any, *, index: int) -> EntityDefinitionConfig:
+    label = f"metrics.entity_analysis.definitions[{index}]"
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "definition_id",
+            "group",
+            "entity_type",
+            "entity_version",
+            "enabled",
+            "decision_question",
+            "implementation_id",
+            "formula_version",
+            "identity_dimensions",
+            "durability",
+            "completion_rule",
+            "invalidation_rule",
+            "expiry_rule",
+            "permitted_health",
+            "permitted_fidelities",
+            "applications",
+            "metric_inputs",
+            "entity_inputs",
+            "parameters",
+            "parameter_sets",
+        },
+        label,
+    )
+    group = _non_empty_string(values["group"], f"{label}.group")
+    if group not in _ENTITY_GROUPS:
+        raise ValueError(f"{label}.group is unsupported: {group}")
+    durability = _non_empty_string(values["durability"], f"{label}.durability")
+    if durability not in _ENTITY_DURABILITY_VALUES:
+        raise ValueError(f"{label}.durability is unsupported: {durability}")
+    permitted_health = _enum_strings(
+        values["permitted_health"],
+        f"{label}.permitted_health",
+        _ENTITY_HEALTH_VALUES,
+    )
+    permitted_fidelities = _enum_strings(
+        values["permitted_fidelities"],
+        f"{label}.permitted_fidelities",
+        _ENTITY_FIDELITY_VALUES,
+    )
+    applications = tuple(
+        _load_entity_application(item, label=f"{label}.applications[{position}]")
+        for position, item in enumerate(
+            _table_array(values["applications"], f"{label}.applications")
+        )
+    )
+    if not applications:
+        raise ValueError(f"{label}.applications must not be empty")
+    application_ids = tuple(item.application_id for item in applications)
+    if len(application_ids) != len(set(application_ids)):
+        raise ValueError(f"{label} application IDs must be unique")
+    metric_inputs = tuple(
+        _load_entity_metric_input(item, label=f"{label}.metric_inputs[{position}]")
+        for position, item in enumerate(
+            _table_array(values["metric_inputs"], f"{label}.metric_inputs")
+        )
+    )
+    entity_inputs = tuple(
+        _load_entity_input(item, label=f"{label}.entity_inputs[{position}]")
+        for position, item in enumerate(
+            _table_array(values["entity_inputs"], f"{label}.entity_inputs")
+        )
+    )
+    if not metric_inputs and not entity_inputs:
+        raise ValueError(f"{label} must declare at least one metric or entity input")
+    input_roles = tuple(item.role for item in (*metric_inputs, *entity_inputs))
+    if len(input_roles) != len(set(input_roles)):
+        raise ValueError(f"{label} dependency roles must be unique")
+    parameters = tuple(
+        _load_entity_parameter(item, label=f"{label}.parameters[{position}]")
+        for position, item in enumerate(_table_array(values["parameters"], f"{label}.parameters"))
+    )
+    parameter_ids = tuple(item.parameter_id for item in parameters)
+    if len(parameter_ids) != len(set(parameter_ids)):
+        raise ValueError(f"{label} parameter IDs must be unique")
+    parameter_sets = tuple(
+        _load_entity_parameter_set(
+            item,
+            label=f"{label}.parameter_sets[{position}]",
+            parameters=parameters,
+        )
+        for position, item in enumerate(
+            _table_array(values["parameter_sets"], f"{label}.parameter_sets"),
+        )
+    )
+    if parameters and not parameter_sets:
+        raise ValueError(f"{label} parameters require at least one parameter set")
+    parameter_set_ids = tuple(item.parameter_set_id for item in parameter_sets)
+    if len(parameter_set_ids) != len(set(parameter_set_ids)):
+        raise ValueError(f"{label} parameter-set IDs must be unique")
+    return EntityDefinitionConfig(
+        definition_id=_non_empty_string(values["definition_id"], f"{label}.definition_id"),
+        group=group,
+        entity_type=_non_empty_string(values["entity_type"], f"{label}.entity_type"),
+        entity_version=_positive_int(values["entity_version"], f"{label}.entity_version"),
+        enabled=_bool(values["enabled"], f"{label}.enabled"),
+        decision_question=_non_empty_string(
+            values["decision_question"],
+            f"{label}.decision_question",
+        ),
+        implementation_id=_non_empty_string(
+            values["implementation_id"],
+            f"{label}.implementation_id",
+        ),
+        formula_version=_positive_int(values["formula_version"], f"{label}.formula_version"),
+        identity_dimensions=_unique_non_empty_strings(
+            values["identity_dimensions"],
+            f"{label}.identity_dimensions",
+        ),
+        durability=durability,
+        completion_rule=_non_empty_string(
+            values["completion_rule"],
+            f"{label}.completion_rule",
+        ),
+        invalidation_rule=_non_empty_string(
+            values["invalidation_rule"],
+            f"{label}.invalidation_rule",
+        ),
+        expiry_rule=_non_empty_string(values["expiry_rule"], f"{label}.expiry_rule"),
+        permitted_health=permitted_health,
+        permitted_fidelities=permitted_fidelities,
+        applications=applications,
+        metric_inputs=metric_inputs,
+        entity_inputs=entity_inputs,
+        parameters=parameters,
+        parameter_sets=parameter_sets,
+    )
+
+
+def _load_entity_application(raw: Any, *, label: str) -> EntityApplicationConfig:
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "application_id",
+            "analytical_profile_ids",
+            "instrument_ids",
+            "instrument_classes",
+            "session_phases",
+            "horizon",
+            "source_selector",
+            "requires_volume",
+        },
+        label,
+    )
+    instrument_ids = _unique_strings(values["instrument_ids"], f"{label}.instrument_ids")
+    instrument_classes = _unique_strings(
+        values["instrument_classes"],
+        f"{label}.instrument_classes",
+    )
+    if not instrument_ids and not instrument_classes:
+        raise ValueError(f"{label} must select instrument IDs or instrument classes")
+    return EntityApplicationConfig(
+        application_id=_non_empty_string(values["application_id"], f"{label}.application_id"),
+        analytical_profile_ids=_unique_non_empty_strings(
+            values["analytical_profile_ids"],
+            f"{label}.analytical_profile_ids",
+        ),
+        instrument_ids=instrument_ids,
+        instrument_classes=instrument_classes,
+        session_phases=_unique_non_empty_strings(
+            values["session_phases"],
+            f"{label}.session_phases",
+        ),
+        horizon=_non_empty_string(values["horizon"], f"{label}.horizon"),
+        source_selector=_non_empty_string(
+            values["source_selector"],
+            f"{label}.source_selector",
+        ),
+        requires_volume=_bool(values["requires_volume"], f"{label}.requires_volume"),
+    )
+
+
+def _load_entity_metric_input(raw: Any, *, label: str) -> EntityMetricInputConfig:
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "role",
+            "metric_id",
+            "metric_version",
+            "parameter_version",
+            "required",
+            "permitted_health",
+            "permitted_fidelities",
+        },
+        label,
+    )
+    return EntityMetricInputConfig(
+        role=_non_empty_string(values["role"], f"{label}.role"),
+        metric_id=_non_empty_string(values["metric_id"], f"{label}.metric_id"),
+        metric_version=_positive_int(values["metric_version"], f"{label}.metric_version"),
+        parameter_version=_positive_int(
+            values["parameter_version"],
+            f"{label}.parameter_version",
+        ),
+        required=_bool(values["required"], f"{label}.required"),
+        permitted_health=_enum_strings(
+            values["permitted_health"],
+            f"{label}.permitted_health",
+            _ENTITY_HEALTH_VALUES,
+        ),
+        permitted_fidelities=_enum_strings(
+            values["permitted_fidelities"],
+            f"{label}.permitted_fidelities",
+            _ENTITY_FIDELITY_VALUES,
+        ),
+    )
+
+
+def _load_entity_input(raw: Any, *, label: str) -> EntityInputConfig:
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {
+            "role",
+            "entity_type",
+            "entity_version",
+            "required",
+            "permitted_health",
+            "permitted_fidelities",
+        },
+        label,
+    )
+    return EntityInputConfig(
+        role=_non_empty_string(values["role"], f"{label}.role"),
+        entity_type=_non_empty_string(values["entity_type"], f"{label}.entity_type"),
+        entity_version=_positive_int(values["entity_version"], f"{label}.entity_version"),
+        required=_bool(values["required"], f"{label}.required"),
+        permitted_health=_enum_strings(
+            values["permitted_health"],
+            f"{label}.permitted_health",
+            _ENTITY_HEALTH_VALUES,
+        ),
+        permitted_fidelities=_enum_strings(
+            values["permitted_fidelities"],
+            f"{label}.permitted_fidelities",
+            _ENTITY_FIDELITY_VALUES,
+        ),
+    )
+
+
+def _load_entity_parameter(raw: Any, *, label: str) -> EntityParameterConfig:
+    values = _mapping(raw, label)
+    base_keys = {
+        "parameter_id",
+        "meaning",
+        "value_kind",
+        "unit",
+        "default",
+        "dynamic",
+        "mutability",
+        "source",
+    }
+    value_kind = _non_empty_string(values.get("value_kind"), f"{label}.value_kind")
+    if value_kind not in _PARAMETER_VALUE_KINDS:
+        raise ValueError(f"{label}.value_kind is unsupported: {value_kind}")
+    numeric = value_kind in {"number", "integer"}
+    expected = base_keys | ({"minimum", "maximum", "step"} if numeric else {"allowed_values"})
+    _require_keys(values, expected, label)
+    default = _entity_scalar(values["default"], f"{label}.default")
+    dynamic = _bool(values["dynamic"], f"{label}.dynamic")
+    mutability = _non_empty_string(values["mutability"], f"{label}.mutability")
+    if mutability not in _PARAMETER_MUTABILITY_VALUES:
+        raise ValueError(f"{label}.mutability is unsupported: {mutability}")
+    expected_mutability = "policy_controlled_runtime" if dynamic else "startup_only"
+    if mutability != expected_mutability:
+        raise ValueError(f"{label} dynamic eligibility conflicts with mutability")
+    minimum: int | float | None = None
+    maximum: int | float | None = None
+    step: int | float | None = None
+    allowed_values: tuple[EntityConfigScalar, ...] = ()
+    if numeric:
+        minimum = _finite_number(values["minimum"], f"{label}.minimum")
+        maximum = _finite_number(values["maximum"], f"{label}.maximum")
+        step = _finite_number(values["step"], f"{label}.step")
+        if minimum > maximum:
+            raise ValueError(f"{label}.minimum cannot exceed maximum")
+        if step <= 0:
+            raise ValueError(f"{label}.step must be positive")
+    else:
+        allowed_values = tuple(
+            _entity_scalar(item, f"{label}.allowed_values[]")
+            for item in _array(values["allowed_values"], f"{label}.allowed_values")
+        )
+        if not allowed_values or len(allowed_values) != len(set(allowed_values)):
+            raise ValueError(f"{label}.allowed_values must be non-empty and unique")
+    parameter = EntityParameterConfig(
+        parameter_id=_non_empty_string(values["parameter_id"], f"{label}.parameter_id"),
+        meaning=_non_empty_string(values["meaning"], f"{label}.meaning"),
+        value_kind=value_kind,
+        unit=_non_empty_string(values["unit"], f"{label}.unit"),
+        default=default,
+        dynamic=dynamic,
+        mutability=mutability,
+        source=_non_empty_string(values["source"], f"{label}.source"),
+        minimum=minimum,
+        maximum=maximum,
+        step=step,
+        allowed_values=allowed_values,
+    )
+    _validate_entity_parameter_value(parameter, default, label=f"{label}.default")
+    return parameter
+
+
+def _load_entity_parameter_set(
+    raw: Any,
+    *,
+    label: str,
+    parameters: tuple[EntityParameterConfig, ...],
+) -> EntityParameterSetConfig:
+    values = _mapping(raw, label)
+    _require_keys(
+        values,
+        {"parameter_set_id", "parameter_version", "effective_from", "source", "values"},
+        label,
+    )
+    configured = _mapping(values["values"], f"{label}.values")
+    by_id = {item.parameter_id: item for item in parameters}
+    if set(configured) != set(by_id):
+        raise ValueError(f"{label}.values must provide every declared parameter exactly once")
+    normalized: list[tuple[str, EntityConfigScalar]] = []
+    for parameter_id, raw_value in sorted(configured.items()):
+        value = _entity_scalar(raw_value, f"{label}.values.{parameter_id}")
+        _validate_entity_parameter_value(
+            by_id[parameter_id],
+            value,
+            label=f"{label}.values.{parameter_id}",
+        )
+        normalized.append((parameter_id, value))
+    return EntityParameterSetConfig(
+        parameter_set_id=_non_empty_string(
+            values["parameter_set_id"],
+            f"{label}.parameter_set_id",
+        ),
+        parameter_version=_positive_int(
+            values["parameter_version"],
+            f"{label}.parameter_version",
+        ),
+        effective_from_ns=_utc_timestamp_ns(
+            values["effective_from"],
+            f"{label}.effective_from",
+        ),
+        source=_non_empty_string(values["source"], f"{label}.source"),
+        values=tuple(normalized),
+    )
+
+
+def _validate_entity_analysis_scope(
+    config: EntityAnalysisConfig,
+    *,
+    profiles: dict[str, AnalyticalSessionProfileConfig],
+    bound_instruments: dict[str, str],
+    watchlist: dict[str, WatchlistMemberConfig],
+    rolling_families: tuple[RollingFamilyConfig, ...],
+    completed_bars: CompletedBarMetricsConfig,
+) -> None:
+    if not config.enabled:
+        return
+    available_selectors = {
+        completed_bars.live_selector,
+        completed_bars.historical_selector,
+        *(item.source_selector for item in rolling_families),
+        *(item.input_selector for item in rolling_families),
+    }
+    definition_keys = {(item.entity_type, item.entity_version) for item in config.definitions}
+    for definition in config.definitions:
+        for dependency in definition.entity_inputs:
+            if (dependency.entity_type, dependency.entity_version) not in definition_keys:
+                raise ValueError(
+                    "entity analysis references an unknown entity dependency: "
+                    f"{definition.definition_id}/{dependency.role}",
+                )
+            if (dependency.entity_type, dependency.entity_version) == (
+                definition.entity_type,
+                definition.entity_version,
+            ):
+                raise ValueError("an entity analysis definition cannot depend on itself")
+        versions = tuple(item.parameter_version for item in definition.parameter_sets)
+        if len(versions) != len(set(versions)):
+            raise ValueError(
+                f"entity parameter versions must be unique: {definition.definition_id}",
+            )
+        for application in definition.applications:
+            unknown_profiles = sorted(set(application.analytical_profile_ids) - set(profiles))
+            if unknown_profiles:
+                raise ValueError(
+                    "entity application references unknown analytical profiles: "
+                    f"{', '.join(unknown_profiles)}",
+                )
+            unknown_instruments = sorted(set(application.instrument_ids) - set(watchlist))
+            if unknown_instruments:
+                raise ValueError(
+                    "entity application references unknown watchlist instruments: "
+                    f"{', '.join(unknown_instruments)}",
+                )
+            for instrument_id in application.instrument_ids:
+                if bound_instruments.get(instrument_id) not in application.analytical_profile_ids:
+                    raise ValueError(
+                        "entity application instrument/profile mismatch: "
+                        f"{definition.definition_id}/{application.application_id}/"
+                        f"{instrument_id}",
+                    )
+            if application.requires_volume:
+                unsupported = sorted(
+                    profile_id
+                    for profile_id in application.analytical_profile_ids
+                    if not profiles[profile_id].volume_supported
+                )
+                if unsupported:
+                    raise ValueError(
+                        "volume-dependent entity application selects unsupported profiles: "
+                        f"{', '.join(unsupported)}",
+                    )
+            if (
+                application.source_selector not in available_selectors
+                and not _is_supported_bar_selector(application.source_selector)
+            ):
+                raise ValueError(
+                    "entity application source selector is unsupported: "
+                    f"{application.source_selector}",
+                )
+
+
+def _validate_entity_parameter_value(
+    parameter: EntityParameterConfig,
+    value: EntityConfigScalar,
+    *,
+    label: str,
+) -> None:
+    valid_kind = {
+        "number": isinstance(value, int | float) and not isinstance(value, bool),
+        "integer": isinstance(value, int) and not isinstance(value, bool),
+        "boolean": isinstance(value, bool),
+        "text": isinstance(value, str) and bool(value.strip()),
+    }[parameter.value_kind]
+    if not valid_kind:
+        raise ValueError(f"{label} does not match {parameter.value_kind}")
+    if parameter.value_kind in {"number", "integer"}:
+        assert parameter.minimum is not None
+        assert parameter.maximum is not None
+        assert parameter.step is not None
+        if value < parameter.minimum or value > parameter.maximum:
+            raise ValueError(f"{label} is outside its configured envelope")
+        offset = Decimal(str(value)) - Decimal(str(parameter.minimum))
+        if offset % Decimal(str(parameter.step)) != 0:
+            raise ValueError(f"{label} does not align with its configured step")
+        return
+    if value not in parameter.allowed_values:
+        raise ValueError(f"{label} is outside its allowed values")
+
+
+def _is_supported_bar_selector(value: str) -> bool:
+    return (
+        re.fullmatch(
+            r"[1-9][0-9]*-(SECOND|MINUTE|HOUR|DAY|WEEK)-[A-Z_]+-(EXTERNAL|INTERNAL)",
+            value,
+        )
+        is not None
     )
 
 
@@ -2352,6 +3081,19 @@ def _mapping(value: Any, label: str) -> dict[str, Any]:
     return value
 
 
+def _array(value: Any, label: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise ValueError(f"{label} must be an array")
+    return value
+
+
+def _table_array(value: Any, label: str) -> list[dict[str, Any]]:
+    items = _array(value, label)
+    if any(not isinstance(item, dict) for item in items):
+        raise ValueError(f"{label} must contain tables")
+    return items
+
+
 def _non_empty_string(value: Any, label: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{label} must be a non-empty string")
@@ -2394,6 +3136,38 @@ def _unique_non_empty_strings(value: Any, label: str) -> tuple[str, ...]:
     if len(set(items)) != len(items):
         raise ValueError(f"{label} must contain unique values")
     return items
+
+
+def _unique_strings(value: Any, label: str) -> tuple[str, ...]:
+    items = tuple(_non_empty_string(item, f"{label}[]") for item in _array(value, label))
+    if len(set(items)) != len(items):
+        raise ValueError(f"{label} must contain unique values")
+    return items
+
+
+def _enum_strings(value: Any, label: str, allowed: set[str]) -> tuple[str, ...]:
+    items = _unique_non_empty_strings(value, label)
+    unsupported = sorted(set(items) - allowed)
+    if unsupported:
+        raise ValueError(f"{label} contains unsupported values: {', '.join(unsupported)}")
+    return items
+
+
+def _entity_scalar(value: Any, label: str) -> EntityConfigScalar:
+    if not isinstance(value, str | int | float | bool):
+        raise ValueError(f"{label} must be a string, number, or boolean")
+    if isinstance(value, float) and (value != value or value in {float("inf"), float("-inf")}):
+        raise ValueError(f"{label} must be finite")
+    if isinstance(value, str) and not value.strip():
+        raise ValueError(f"{label} must not be empty")
+    return value
+
+
+def _finite_number(value: Any, label: str) -> int | float:
+    normalized = _entity_scalar(value, label)
+    if not isinstance(normalized, int | float) or isinstance(normalized, bool):
+        raise ValueError(f"{label} must be a finite number")
+    return normalized
 
 
 def _positive_int(value: Any, label: str) -> int:

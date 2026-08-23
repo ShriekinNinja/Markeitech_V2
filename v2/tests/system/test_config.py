@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 15
+schema_version = 16
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -327,6 +327,22 @@ maximum_historical_observations = 4
 profile_id = "cme_equity_primary"
 instrument_ids = ["ESU6.CME"]
 
+[metrics.entity_analysis]
+enabled = false
+required_watchlist_capability = "watchlist_last"
+catalog_version = 1
+parameter_source = "operator-reviewed-config"
+parameter_effective_from = "2026-08-23T00:00:00Z"
+maximum_entities_global = 20000
+maximum_entities_per_instrument = 1000
+maximum_entities_per_instrument_type = 250
+completed_session_retention = 2
+completed_session_maximum_age_days = 14
+maximum_input_age_ms = 120000
+minimum_snapshot_interval_ms = 1000
+maximum_publications_per_cycle = 500
+definitions = []
+
 [watchlist]
 consumer_retry_interval_ms = 1000
 
@@ -336,6 +352,15 @@ calendar_id = "cme_equity"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 """
+
+ENTITY_DEFINITIONS = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
+
+
+def _entity_enabled_config() -> str:
+    return VALID_CONFIG.replace(
+        "[metrics.entity_analysis]\nenabled = false",
+        "[metrics.entity_analysis]\nenabled = true",
+    ).replace("definitions = []", ENTITY_DEFINITIONS)
 
 
 def test_loads_standalone_system_config(tmp_path: Path) -> None:
@@ -433,10 +458,130 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         config.metrics.session_measurements.profiles[0].windows[1].maximum_historical_observations
         == 4
     )
+    assert config.schema_version == 16
+    assert config.metrics.entity_analysis.enabled is False
+    assert config.metrics.entity_analysis.catalog_version == 1
+    assert config.metrics.entity_analysis.completed_session_retention == 2
+    assert config.metrics.entity_analysis.completed_session_maximum_age_days == 14
+    assert config.metrics.entity_analysis.definitions == ()
     assert config.instrument_ids == ("ESU6.CME",)
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
     assert config.watchlist.members[0].capabilities == ("top_of_book", "watchlist_last")
+
+
+def test_loads_complete_entity_analysis_configuration_envelope(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(_entity_enabled_config())
+
+    config = load_system_config(path).metrics.entity_analysis
+
+    assert config.enabled is True
+    assert {item.group for item in config.definitions} == {
+        "objective_session_reference_level",
+        "volatility_compression_expansion",
+        "direction_trend_rotation_reference",
+        "swing_fvg_zone",
+        "inferred_bar_volume_distribution",
+    }
+    ema = next(
+        item for item in config.definitions if item.definition_id == "dynamic-ema-reference-v1"
+    )
+    assert ema.applications[0].horizon == "fast"
+    assert ema.metric_inputs[0].parameter_version == 1
+    assert ema.parameters[0].dynamic is True
+    assert ema.parameters[0].minimum == 5
+    assert ema.parameters[0].maximum == 34
+    assert ema.parameter_sets[0].values == (("period", 10),)
+
+
+def test_entity_application_accepts_direct_high_timeframe_selector(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        _entity_enabled_config().replace(
+            'source_selector = "5-MINUTE-LAST-EXTERNAL"',
+            'source_selector = "1-DAY-LAST-EXTERNAL"',
+        ),
+    )
+
+    config = load_system_config(path)
+
+    selectors = {
+        application.source_selector
+        for definition in config.metrics.entity_analysis.definitions
+        for application in definition.applications
+    }
+    assert "1-DAY-LAST-EXTERNAL" in selectors
+
+
+def test_rejects_entity_catalog_missing_an_enabled_group(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        _entity_enabled_config().replace(
+            'group = "inferred_bar_volume_distribution"',
+            'group = "swing_fvg_zone"',
+        ),
+    )
+
+    with pytest.raises(ValueError, match="lacks definition groups.*inferred_bar_volume"):
+        load_system_config(path)
+
+
+def test_rejects_entity_parameter_set_outside_optimization_envelope(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        _entity_enabled_config().replace(
+            "values = { period = 10 }",
+            "values = { period = 35 }",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="period.*outside its configured envelope"):
+        load_system_config(path)
+
+
+def test_rejects_entity_parameter_value_off_optimization_step(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        _entity_enabled_config().replace(
+            "minimum = 5, maximum = 34, step = 1",
+            "minimum = 5, maximum = 34, step = 2",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="does not align with its configured step"):
+        load_system_config(path)
+
+
+def test_rejects_duplicate_entity_parameter_versions(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        _entity_enabled_config()
+        .replace(
+            'parameter_sets = [{ parameter_set_id = "ema-dynamic-10", parameter_version = 1,',
+            'parameter_sets = [{ parameter_set_id = "ema-dynamic-10", parameter_version = 1,',
+        )
+        .replace(
+            "values = { period = 10 } }]",
+            'values = { period = 10 } }, { parameter_set_id = "ema-dynamic-11", '
+            'parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", '
+            'source = "operator-reviewed-config", values = { period = 11 } }]',
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="parameter versions must be unique"):
+        load_system_config(path)
+
+
+def test_rejects_volume_entity_for_profile_without_volume_support(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        _entity_enabled_config().replace("volume_supported = true", "volume_supported = false"),
+    )
+
+    with pytest.raises(ValueError, match="volume-dependent.*unsupported profiles"):
+        load_system_config(path)
 
 
 def test_rejects_unknown_configuration(tmp_path: Path) -> None:

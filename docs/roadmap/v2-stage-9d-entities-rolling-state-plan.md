@@ -583,6 +583,27 @@ configuration loader, persistence schema, Discord projection, or connected run w
 **Exit:** every entity input is available as explicit versioned evidence; no entity projector
 hides an unreviewed calculation or constant.
 
+**Implementation evidence:** tracked configuration schema 16 now owns a disabled, bounded catalog
+envelope for all five groups. Definitions carry exact analytical applicability, dependency and
+parameter versions, lifecycle rules, durability, health/fidelity permissions, complete typed
+parameter envelopes and effective sets, optimization eligibility, and resource limits. Enabled
+catalogs must cover all groups and fail closed on identity/version conflicts, unknown profile or
+instrument bindings, unsupported volume applicability, missing parameter values, invalid
+mutability, and out-of-range or off-step values. `system.example.toml` remains disabled and empty;
+the ignored schema-15 local configuration is deliberately untouched pending operator-reviewed
+migration before any connected run.
+
+Thirteen version-one prerequisite metrics are registered over exact completed-bar dependencies:
+signed displacement, simple return, signed path efficiency, EMA value/slope/separation, swing pivot
+price/prominence, FVG lower/upper/width/fill, and inferred allocated bar volume. Pure calculations
+use explicit configurable policies and real warmup contracts; reject mixed, overlapping, or
+incomplete bar identity; preserve missing/partial/unsupported evidence; confirm swings only after
+the right span; conserve allocated candle volume exactly; and converge numerically for equivalent
+historical and live completed bars. Bar allocation is explicitly inferred geometry, never observed
+trade-at-price evidence. Eight prerequisite tests, 25 configuration tests, the 105-test
+intelligence suite, and the 327-test non-PostgreSQL suite pass. No actor, database schema, Discord
+projection, or connected run is introduced by 9D.2.
+
 ### 9D.3: Session, Reference, And Objective-Level Projection
 
 - add reviewed configuration and composition;

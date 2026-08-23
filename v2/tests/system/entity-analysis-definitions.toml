@@ -1,0 +1,109 @@
+[[metrics.entity_analysis.definitions]]
+definition_id = "objective-session-v1"
+group = "objective_session_reference_level"
+entity_type = "analytical_session"
+entity_version = 1
+enabled = true
+decision_question = "What is the current objective analytical session state?"
+implementation_id = "markeitech.entity.analytical_session.v1"
+formula_version = 1
+identity_dimensions = ["session_id", "trade_date"]
+durability = "FINALIZED_SESSION"
+completion_rule = "authoritative session close"
+invalidation_rule = "calendar identity conflict"
+expiry_rule = "configured completed-session retention"
+permitted_health = ["READY", "DEGRADED"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "session_high", metric_id = "active_session.high", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "volatility-state-v1"
+group = "volatility_compression_expansion"
+entity_type = "volatility_state"
+entity_version = 1
+enabled = true
+decision_question = "What is the current numerical volatility state for this horizon?"
+implementation_id = "markeitech.entity.volatility_state.v1"
+formula_version = 1
+identity_dimensions = ["horizon", "definition_id"]
+durability = "TRANSIENT"
+completion_rule = "never completes while the horizon is active"
+invalidation_rule = "dependency identity conflict"
+expiry_rule = "configured maximum input age"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-fast", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "fast", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "average_true_range", metric_id = "rolling.fast.context_1m.average_true_range", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "dynamic-ema-reference-v1"
+group = "direction_trend_rotation_reference"
+entity_type = "reference_state.dynamic_ema"
+entity_version = 1
+enabled = true
+decision_question = "Where is the configured dynamic EMA and how is price behaving relative to it?"
+implementation_id = "markeitech.entity.reference_state.dynamic_ema.v1"
+formula_version = 1
+identity_dimensions = ["horizon", "parameter_set_id"]
+durability = "TRANSIENT"
+completion_rule = "never completes while the horizon is active"
+invalidation_rule = "parameter or dependency identity conflict"
+expiry_rule = "configured maximum input age"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-fast", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "fast", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "reference_value", metric_id = "entity_input.reference.ema.value", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+entity_inputs = []
+parameters = [{ parameter_id = "period", meaning = "EMA lookback in completed bars", value_kind = "integer", unit = "bars", default = 10, dynamic = true, mutability = "policy_controlled_runtime", source = "operator-reviewed-config", minimum = 5, maximum = 34, step = 1 }]
+parameter_sets = [{ parameter_set_id = "ema-dynamic-10", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "operator-reviewed-config", values = { period = 10 } }]
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "confirmed-swing-v1"
+group = "swing_fvg_zone"
+entity_type = "confirmed_swing"
+entity_version = 1
+enabled = true
+decision_question = "Which pivot geometry is confirmed without look-ahead publication?"
+implementation_id = "markeitech.entity.confirmed_swing.v1"
+formula_version = 1
+identity_dimensions = ["horizon", "pivot_timestamp", "swing_kind"]
+durability = "CROSS_SESSION_CHECKPOINT"
+completion_rule = "configured right-span evidence is complete"
+invalidation_rule = "source observation conflict"
+expiry_rule = "configured age or retention bound"
+permitted_health = ["READY", "DEGRADED"]
+permitted_fidelities = ["DERIVED", "PARTIAL"]
+applications = [{ application_id = "cme-tactical", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "tactical", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "pivot_price", metric_id = "entity_input.swing.pivot_price", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+entity_inputs = []
+parameters = []
+parameter_sets = []
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "inferred-bar-volume-v1"
+group = "inferred_bar_volume_distribution"
+entity_type = "bar_volume_distribution.inferred_from_bars"
+entity_version = 1
+enabled = true
+decision_question = "Where does a deterministic candle-derived volume estimate concentrate?"
+implementation_id = "markeitech.entity.bar_volume_distribution.inferred_from_bars.v1"
+formula_version = 1
+identity_dimensions = ["horizon", "window_id", "binning_definition"]
+durability = "CROSS_SESSION_CHECKPOINT"
+completion_rule = "configured session or window is finalized"
+invalidation_rule = "volume support or source observation conflict"
+expiry_rule = "configured session and maximum-age retention"
+permitted_health = ["READY", "DEGRADED", "WARMING"]
+permitted_fidelities = ["INFERRED", "PARTIAL"]
+applications = [{ application_id = "cme-session", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = true }]
+metric_inputs = [{ role = "allocated_bin_volume", metric_id = "entity_input.bar_volume.allocated_volume", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["INFERRED", "PARTIAL"] }]
+entity_inputs = []
+parameters = []
+parameter_sets = []

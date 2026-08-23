@@ -440,7 +440,7 @@ The initial Stage 9D capability bindings, bounded actor split, EMA/reference bas
 swing/FVG/zone/bar-volume definitions, three-class durability policy, dedicated analytical
 persistence ownership, and restoration/retention policy are approved.
 
-Slice 9D.1 is implemented for Markeitect review. It introduces framework-independent, immutable
+Slice 9D.1 is implemented. It introduces framework-independent, immutable
 entity definition, identity, parameter, evidence, revision, lifecycle, durability, snapshot, and
 admission contracts plus a pure bounded state book. Entity IDs are deterministic; registry
 dependencies and payload/evidence compatibility are validated; revision gaps, stale writes,
@@ -449,5 +449,26 @@ cross-session restoration is forced to remain stale/degraded until later catch-u
 state book supports bounded snapshots by instrument, entity type, analytical profile, identity
 dimensions, and lifecycle. Nine focused entity tests and the 312-test non-PostgreSQL suite pass.
 
-No Stage 9D actor, configuration loader, PostgreSQL analytical-state schema, Discord projection,
-or connected runtime behavior has been introduced. Those remain later review gates.
+Slice 9D.2 is implemented for Markeitect review. Tracked configuration schema 16 adds a disabled,
+bounded entity-analysis catalog capable of representing all five approved groups with exact
+profile/instrument/session/horizon applicability; metric and entity dependency versions; permitted
+health/fidelity; lifecycle rules; durability; complete parameter schemas and effective parameter
+sets; optimization eligibility; and global/per-instrument resource limits. Enabled catalogs must
+represent all five groups and reject unknown applicability, unsupported volume use, duplicate
+identity/version, missing parameter values, invalid mutability, and values outside or off their
+declared optimization envelope. The tracked example remains disabled with no definitions so this
+schema change does not activate unreviewed market semantics.
+
+Stage 9D.2 also adds version-one metric-registry definitions and pure deterministic calculations
+for signed displacement, signed simple return, signed path efficiency, configurable EMA value,
+slope and price separation, confirmed strict-pivot swing geometry, three-bar wick FVG geometry and
+fill, and uniform-intersection candle-volume price-bin estimates. Their real warmup, units,
+formulae, dependencies, health, fidelity, failure modes, bounds, and mutability are explicit.
+Bar-volume output is always `INFERRED`; unsupported or partial volume remains honest. Eight focused
+prerequisite tests, 25 configuration tests, the 105-test intelligence suite, and the 327-test
+non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected.
+
+The ignored local runtime configuration remains schema 15 and is intentionally not overwritten by
+this batch. It must be reviewed and migrated to schema 16 before a later connected run. No Stage 9D
+actor, PostgreSQL analytical-state schema, Discord projection, or connected runtime behavior has
+been introduced. Those remain later review gates.
