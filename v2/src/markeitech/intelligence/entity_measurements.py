@@ -268,6 +268,9 @@ class ConfirmedSwingGeometry:
     kind: SwingKind
     pivot_price: Decimal
     prominence: Decimal
+    confirmation_close: Decimal
+    confirmation_displacement: Decimal
+    pivot_bar_volume: Decimal | None
     pivot_ts_ns: int
     confirmation_ts_ns: int
     left_span_bars: int
@@ -1043,6 +1046,11 @@ def _swing_result(
         kind=kind,
         pivot_price=pivot.high if kind is SwingKind.HIGH else pivot.low,
         prominence=prominence,
+        confirmation_close=confirmation.close,
+        confirmation_displacement=(
+            confirmation.close - (pivot.high if kind is SwingKind.HIGH else pivot.low)
+        ),
+        pivot_bar_volume=pivot.volume,
         pivot_ts_ns=pivot.interval_end_ns,
         confirmation_ts_ns=confirmation.interval_end_ns,
         left_span_bars=policy.left_span_bars,

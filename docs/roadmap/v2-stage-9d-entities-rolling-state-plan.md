@@ -1,7 +1,7 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slices 9D.1 through 9D.4C approved, committed, and connected-accepted; narrow 9D.3
-window-boundary acceptance deferred
+**Status:** Slices 9D.1 through 9D.4C approved, committed, and connected-accepted; 9D.5A implemented
+locally for review; narrow 9D.3 window-boundary acceptance deferred
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
@@ -9,7 +9,7 @@ window-boundary acceptance deferred
 
 **9D.5 branch:** `v2-stage-9d5-market-structure`
 
-**Next gate:** Review and begin 9D.5 confirmed-swing, pivot-structure, FVG, and zone projection. The
+**Next gate:** Review 9D.5A, then implement 9D.5B swing legs and per-horizon pivot structure. The
 unobserved 9D.3 opening-range developing-to-complete transition is explicitly deferred until a run
 crosses that configured boundary and does not block 9D.5.
 
@@ -341,6 +341,9 @@ A swing entity represents confirmed market geometry under one configured detecto
 includes detector/version, horizon, instrument/profile, pivot timestamp, and swing kind. Payload
 includes pivot price, confirmation time, left/right evidence span, prominence/displacement
 evidence, age, health, fidelity, and invalidation/expiry status.
+
+Age is query-relative evidence derived from the immutable confirmation timestamp and the query's
+UTC timestamp. It is not stored as a changing payload field and cannot create time-only revisions.
 
 The detector's left/right span, minimum prominence, normalization, confirmation delay, source
 resolution, horizon, tie handling, and retention are configuration. Developing candidates may be
@@ -875,6 +878,32 @@ actually crosses their configured boundaries.
 
 **Exit:** independently queryable tactical and structural pivots are truthful, horizon-specific
 entities rather than inferred chart labels.
+
+**Implementation evidence:** a framework-independent confirmed-swing payload, detector application
+contract, and bounded projection owner consume only `CompletedBarInput` evidence. The owner keeps a
+bounded first-accepted ledger per exact detector/application/instrument/bar-specification subject,
+splits evidence at every non-contiguous interval, and invokes the reviewed strict-pivot geometry
+only within contiguous runs. It publishes immutable `COMPLETE` revisions only after the configured
+right span exists. A late bar may complete a previously gapped window, while exact historical/live
+duplicates and conflicting observations cannot republish or rewrite accepted truth.
+
+Entity identity preserves definition, detector and version, source bar specification, horizon,
+pivot timestamp, swing kind, instrument, and analytical profile. Payload preserves pivot price,
+strict prominence, confirmation close and displacement from the pivot, optional pivot-bar volume,
+configured left/right spans, and exact source-bar references. Health and fidelity are inherited
+from the complete evidence window. The shared registry validates the required pivot-price and
+prominence metric contracts, and the shared state book provides deterministic admission, snapshot,
+terminal eviction, and global/per-instrument/per-type bounds. Multiple tactical and structural
+detector applications remain independently identifiable; no relationship label or directional
+meaning is introduced.
+
+Seven focused tests prove no-look-ahead confirmation, tied-pivot rejection, transport-independent
+deduplication, late contiguous evidence, detector/horizon identity isolation, degraded/partial and
+missing-volume honesty, and bounded candidate/confirmed retention. Together with prerequisite
+coverage, 15 focused tests pass, the complete intelligence suite passes 134 tests, and the full
+non-PostgreSQL suite passes 365 tests with two PostgreSQL-marked tests deselected. This slice adds
+no Nautilus actor, runtime configuration binding, PostgreSQL table, Discord output, semantic event,
+chart renderer, connected run, swing leg, pivot relationship, FVG, or zone.
 
 #### 9D.5B: Swing Legs And Per-Horizon Pivot Structure
 

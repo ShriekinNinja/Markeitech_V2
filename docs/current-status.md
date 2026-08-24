@@ -21,10 +21,11 @@ system. The preserved V1 status is available in
 
 - Stages 1 through 9C and the runtime-resource hardening gate are implemented and connected-
   accepted within the evidence recorded below.
-- Stage 9D is active. Slices 9D.1 through 9D.4C are approved and committed. They provide typed
+- Stage 9D is active. Slices 9D.1 through 9D.4C are approved and committed. Slice 9D.5A is
+  implemented locally for review. Together they provide typed
   analytical entity contracts, a bounded state book, a configuration-owned entity catalog,
-  deterministic numerical prerequisites, pure rolling market-state projection, and an optional
-  `MarketStateEntityActor` runtime boundary.
+  deterministic numerical prerequisites, pure rolling market-state projection, an optional
+  `MarketStateEntityActor` runtime boundary, and pure confirmed-swing entity projection.
 - Stage 9D.3 still carries narrow opening-range developing-to-complete acceptance debt. Markeitect
   explicitly deferred that window-boundary proof until a run crosses the configured boundary; it
   does not block 9D.5. Stage 9D.4C connected acceptance closed on 2026-08-24 against liquid
@@ -36,8 +37,10 @@ system. The preserved V1 status is available in
   bounded; PostgreSQL stored all 2,261 accepted operational events; Discord delivered 4/4 health
   messages; and shutdown was clean. The acceptance configuration declares `STALE` and
   `UNAVAILABLE` as valid volatility-entity health outcomes, correcting the earlier actor-
-  construction rejection without changing classification policy. Stage 9D.5 confirmed-swing,
-  per-horizon pivot-structure, FVG, and zone projection is the next implementation slice.
+  construction rejection without changing classification policy. Stage 9D.5A now projects only
+  fully confirmed strict pivots with detector/horizon identity, contiguous completed-bar lineage,
+  bounded evidence and entity retention, and no market interpretation. Swing legs and per-horizon
+  pivot structure remain the next implementation slice; FVG and zone projection follow them.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -511,6 +514,26 @@ formulae, dependencies, health, fidelity, failure modes, bounds, and mutability 
 Bar-volume output is always `INFERRED`; unsupported or partial volume remains honest. Eight focused
 prerequisite tests, 25 configuration tests, the 105-test intelligence suite, and the 327-test
 non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected.
+
+Slice 9D.5A is implemented locally for review. It adds a framework-independent confirmed-swing
+payload, detector application contract, and bounded projection owner over completed bars. A swing
+is published as an immutable `COMPLETE` entity only after its configured right span exists in one
+contiguous evidence run. Identity preserves definition, detector/version, source bar specification,
+horizon, pivot timestamp, swing kind, instrument, and analytical profile. Payload preserves exact
+pivot and confirmation geometry, strict prominence, confirmation displacement, optional pivot-bar
+volume, configured spans, and source-bar references. Health and fidelity remain inherited from the
+full evidence window. Age stays query-relative from the confirmation timestamp instead of creating
+time-only entity revisions.
+
+The owner uses the shared entity registry/state book, rejects conflicting bar observations,
+suppresses historical/live duplicates, permits late bars to complete a previously gapped evidence
+window, requires contiguous bars, bounds retained candidate evidence and confirmed entities, and
+supports independent tactical and structural detector identities without interpreting either as
+trend, support, resistance, reversal, or direction. Seven focused tests plus the prerequisite tests
+pass 15/15; the complete intelligence suite passes 134 tests, and the full non-PostgreSQL suite
+passes 365 tests with two PostgreSQL-marked tests deselected. No actor, runtime composition,
+configuration migration, PostgreSQL schema, Discord projection, semantic event, connected run,
+or visual annotation is included.
 
 The ignored local runtime configuration was operator-reviewed and migrated to schema 16 for the
 connected Group 1 acceptance run. It remains local and untracked; the tracked example remains

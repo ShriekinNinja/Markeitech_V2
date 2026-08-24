@@ -98,6 +98,15 @@ from markeitech.intelligence.market_states import (
     project_trend_rotation_state,
     project_volatility_state,
 )
+from markeitech.intelligence.market_structure_entities import (
+    CONFIRMED_SWING_ENTITY_TYPE,
+    MARKET_STRUCTURE_ENTITY_GROUP,
+    ConfirmedSwingApplication,
+    ConfirmedSwingDefinition,
+    ConfirmedSwingOwnerCounts,
+    ConfirmedSwingPayload,
+    ConfirmedSwingProjectionOwner,
+)
 from markeitech.intelligence.metrics import (
     METRIC_VALUE_TYPE_NAME,
     MetricCadence,
@@ -208,6 +217,12 @@ __all__ = [
     "CompletedBarSource",
     "CompressionExpansionStatePayload",
     "ConfirmedSwingGeometry",
+    "ConfirmedSwingApplication",
+    "ConfirmedSwingDefinition",
+    "ConfirmedSwingOwnerCounts",
+    "ConfirmedSwingPayload",
+    "ConfirmedSwingProjectionOwner",
+    "CONFIRMED_SWING_ENTITY_TYPE",
     "DIRECTION_STATE_GROUP",
     "DirectionalStatePayload",
     "DirectionalPrerequisiteResult",
@@ -250,6 +265,7 @@ __all__ = [
     "GAP_METRIC_IDS",
     "METRIC_VALUE_TYPE_NAME",
     "MARKET_STATE_GROUPS",
+    "MARKET_STRUCTURE_ENTITY_GROUP",
     "MarketStateApplication",
     "MarketStateDefinition",
     "MarketStateOwnerCounts",
