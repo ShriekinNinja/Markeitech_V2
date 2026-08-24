@@ -1,8 +1,8 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slices 9D.1 through 9D.4C approved, committed, and connected-accepted; 9D.5A approved
-and committed; 9D.5B implemented locally for review; narrow 9D.3 window-boundary acceptance
-deferred
+**Status:** Slices 9D.1 through 9D.4C approved, committed, and connected-accepted; 9D.5A and 9D.5B
+approved and committed; 9D.5C implemented locally for review; narrow 9D.3 window-boundary
+acceptance deferred
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
@@ -10,9 +10,9 @@ deferred
 
 **9D.5 branch:** `v2-stage-9d5-market-structure`
 
-**Next gate:** Review 9D.5B, then implement 9D.5C FVG and constituent-preserving zone projection.
-The unobserved 9D.3 opening-range developing-to-complete transition is explicitly deferred until a
-run crosses that configured boundary and does not block 9D.5.
+**Next gate:** Review 9D.5C, then implement 9D.5D runtime, snapshot, visual, and connected
+acceptance. The unobserved 9D.3 opening-range developing-to-complete transition is explicitly
+deferred until a run crosses that configured boundary and does not block 9D.5.
 
 ## Purpose
 
@@ -976,6 +976,51 @@ PostgreSQL-marked tests deselected.
 
 **Exit:** FVG and zone geometry remains useful and inspectable without turning every pattern into a
 market claim or repeating V1's noisy annotation behavior.
+
+**Implementation evidence:** a pure bounded FVG owner consumes only complete
+`CompletedBarInput` evidence. The first baseline applies the reviewed configurable three-bar wick
+geometry to exact contiguous windows and publishes stable formation identities with exact bounds,
+direction, source resolution and horizon, source-bar lineage, width, optional explicit
+normalization, fill ratio, remaining interval, lifecycle-bar lineage, health, fidelity, and missing
+context. Full fill has a configured `COMPLETE` or `INVALIDATED` outcome; unfilled geometry expires
+at an exact configured completed-bar age. Minimum width, age, terminal outcome, normalization
+identity and recency, retained bars and normalizations, entity limits, and publication limits are
+explicit versioned policy. Late bars and normalization evidence reproject from bounded ordered
+state; duplicates and conflicting bars cannot rewrite accepted observations.
+
+FVG entities retain independent identity throughout their lifecycle. The first baseline does not
+merge or reinterpret them. Compatible FVGs may become exact constituents of a separately owned
+derived zone, alongside approved objective levels and confirmed swings.
+
+The pure derived-zone owner consumes only typed entity revisions. Its application and versioned
+policy own exact source types/versions/horizons, permitted source lifecycles, developing-level
+eligibility, same-horizon or mixed-horizon compatibility, merge distance, padding, maximum width,
+minimum constituents, maximum constituent age, ordered-connected partition method, equal
+weighting, withdrawal outcome, source retention, entity limits, and publication limits. Every
+numerical market threshold declares current, floor, ceiling, step, and dynamic eligibility.
+Constituents are deterministically ordered by interval and identity; adjacency is accepted only
+when distance, horizon, and padded maximum-width policy all permit it. Failed adjacency starts a
+new component. This makes overlap, merge, and width-driven split behavior inspectable rather than
+hidden.
+
+Zone identity is based on the exact constituent entity set plus definition, application, and policy
+identity. Payload preserves every constituent entity/version/revision, lifecycle, horizon, bounds,
+effective time, health, and fidelity, together with zone bounds, width, equal-weighted center,
+horizon mix, and lifecycle timestamps. Composition change invalidates or expires the old zone under
+configured policy and publishes the new composition without deleting source truth. A previously
+withdrawn constituent set may become active again through a monotonic revision whose transition
+time comes from the newest causal source revision; original constituent timestamps remain
+unchanged.
+
+Sixteen focused tests prove no-look-ahead FVG formation, partial and full fill, configurable
+completion/invalidation, expiry, normalization, late arrival, bounded bar and normalization state,
+source/developing/horizon eligibility, swing/FVG/level extraction, exact lineage, maximum-width
+splitting, merge/split terminal history, constituent-set reactivation, source aging, bounded source
+retention, and arrival-order convergence. The complete intelligence suite passes 161 tests. The
+full non-PostgreSQL V2 suite passes 392 tests with two PostgreSQL-marked tests deselected. This
+slice adds no actor, provider request, runtime configuration binding, PostgreSQL schema, Discord
+output, semantic event, chart renderer, connected run, cross-horizon score, support/resistance
+meaning, opportunity, option selection, or Sir Loke behavior.
 
 #### 9D.5D: Runtime, Snapshot, Visual, And Connected Acceptance
 

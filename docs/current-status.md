@@ -21,7 +21,7 @@ system. The preserved V1 status is available in
 
 - Stages 1 through 9C and the runtime-resource hardening gate are implemented and connected-
   accepted within the evidence recorded below.
-- Stage 9D is active. Slices 9D.1 through 9D.5A are approved and committed. Slice 9D.5B is
+- Stage 9D is active. Slices 9D.1 through 9D.5B are approved and committed. Slice 9D.5C is
   implemented locally for review. Together they provide typed
   analytical entity contracts, a bounded state book, a configuration-owned entity catalog,
   deterministic numerical prerequisites, pure rolling market-state projection, an optional
@@ -46,8 +46,13 @@ system. The preserved V1 status is available in
   evidence. Its revisable per-horizon structure preserves same-kind comparisons, bounds,
   leg-scale relationships, superseded/unresolved pivots, and conflicts without rewriting confirmed
   swings or producing a trend score. The three numerical relationship thresholds carry explicit
-  versioned floors, ceilings, steps, and dynamic eligibility. FVG and constituent-preserving zone
-  projection remain next.
+  versioned floors, ceilings, steps, and dynamic eligibility. Stage 9D.5C now adds pure bounded
+  FVG lifecycle and constituent-preserving zone projection. FVGs retain independent formation
+  identity, exact completed-bar lineage, fill state, remaining interval, optional normalization,
+  and configurable complete/invalidate/expire outcomes. Zones preserve exact source revisions and
+  deterministic horizon, distance, padding, width, constituent-count, age, partition, weighting,
+  and retention policy without support/resistance or trading meaning. Runtime composition and
+  visual/connected acceptance remain next in 9D.5D.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -522,7 +527,7 @@ Bar-volume output is always `INFERRED`; unsupported or partial volume remains ho
 prerequisite tests, 25 configuration tests, the 105-test intelligence suite, and the 327-test
 non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected.
 
-Slice 9D.5A is implemented locally for review. It adds a framework-independent confirmed-swing
+Slice 9D.5A is approved and committed at `666b972`. It adds a framework-independent confirmed-swing
 payload, detector application contract, and bounded projection owner over completed bars. A swing
 is published as an immutable `COMPLETE` entity only after its configured right span exists in one
 contiguous evidence run. Identity preserves definition, detector/version, source bar specification,
@@ -541,6 +546,43 @@ pass 15/15; the complete intelligence suite passes 134 tests, and the full non-P
 passes 365 tests with two PostgreSQL-marked tests deselected. No actor, runtime composition,
 configuration migration, PostgreSQL schema, Discord projection, semantic event, connected run,
 or visual annotation is included.
+
+Slice 9D.5B is approved and committed at `4d2cee9`. A separate pure relationship owner consumes
+immutable complete confirmed-swing revisions and projects deterministic alternating swing legs and
+one revisable pivot-structure state per exact instrument/profile/detector/horizon/chain-policy
+subject. Legs preserve endpoint revisions, price and percentage displacement, bar and UTC duration,
+raw slope, optional normalized slope, path efficiency, excursion, volume context, completed-bar
+lineage, health, fidelity, and missing context. The structure payload preserves selected pivots,
+same-kind predecessor comparisons, structural bounds, leg-scale comparisons, superseded and
+unresolved pivots, and conflicts without changing confirmed swing truth or creating a universal
+direction score. Eighteen focused market-structure tests, 145 intelligence tests, and 376
+non-PostgreSQL tests passed for that reviewed batch.
+
+Slice 9D.5C is implemented locally for review. A pure bounded FVG owner applies the reviewed
+three-completed-bar wick-gap detector to contiguous evidence only. It projects stable formation
+identity, exact bounds and source bars, optional explicit width normalization, fill ratio,
+remaining interval, lifecycle bars, and configurable full-fill and completed-bar-age terminal
+outcomes. Exact duplicates and conflicts cannot rewrite accepted bar truth; late bars and
+normalization evidence reproject deterministically; retained bars, normalizations, entities, and
+publication work are bounded. FVG entities remain independent. The first baseline does not merge
+or reinterpret their identities.
+
+A separate pure derived-zone owner consumes approved objective-level, confirmed-swing, and active
+FVG revisions. Its versioned policy explicitly owns source types and horizons, lifecycle and
+developing eligibility, same-horizon or mixed-horizon compatibility, merge distance, padding,
+maximum width, minimum constituents, constituent age, deterministic ordered partitioning, equal
+weighting, withdrawal outcome, and source retention. Merge and split create inspectable zone
+lifecycle revisions while every zone payload and evidence reference preserves the exact source
+entity IDs and revisions. Zones carry geometry only: no support/resistance label, revisit claim,
+confidence, opportunity score, direction, alert, or execution meaning is introduced.
+
+Sixteen focused 9D.5C tests prove no-look-ahead formation, partial/full fill, configured
+completion/invalidation, expiry, late evidence, normalization, bounded retention, source and
+horizon eligibility, exact lineage, maximum-width splitting, merge/split history, reactivation,
+and arrival-order convergence. The complete intelligence suite passes 161 tests and the full
+non-PostgreSQL V2 suite passes 392 tests with two PostgreSQL-marked tests deselected. The slice adds
+no actor, runtime/configuration migration, PostgreSQL schema, Discord output, semantic event,
+renderer, connected run, or trading interpretation.
 
 The ignored local runtime configuration was operator-reviewed and migrated to schema 16 for the
 connected Group 1 acceptance run. It remains local and untracked; the tracked example remains
