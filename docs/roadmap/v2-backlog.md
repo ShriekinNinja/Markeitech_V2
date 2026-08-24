@@ -204,8 +204,8 @@ provider-neutral contract are documented in
       9D.4C are approved, committed, and connected-accepted. The 2026-08-24 London/ETH run
       projected 645 metrics into 645 valid revisions, completed 2,560 reconciliation cycles, kept
       resources bounded, reconciled 2,261 PostgreSQL writes, and shut down cleanly. The narrow 9D.3
-      opening-range boundary transition is explicitly deferred and does not block the 9D.5 review
-      gate.
+      opening-range boundary transition is explicitly deferred and does not block the 9D.5
+      confirmed-swing, per-horizon pivot-structure, FVG, and zone review gate.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.
 - [ ] **Stage 9G:** cross-instrument relationship state.

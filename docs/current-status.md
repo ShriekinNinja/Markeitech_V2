@@ -36,8 +36,8 @@ system. The preserved V1 status is available in
   bounded; PostgreSQL stored all 2,261 accepted operational events; Discord delivered 4/4 health
   messages; and shutdown was clean. The acceptance configuration declares `STALE` and
   `UNAVAILABLE` as valid volatility-entity health outcomes, correcting the earlier actor-
-  construction rejection without changing classification policy. Stage 9D.5 swing/FVG/zone
-  projection is the next implementation slice.
+  construction rejection without changing classification policy. Stage 9D.5 confirmed-swing,
+  per-horizon pivot-structure, FVG, and zone projection is the next implementation slice.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -468,9 +468,9 @@ revision/expiry/invalidation semantics, and an approved compact completed-sessio
 boundary. Its approved scope now includes complete first deterministic implementations for
 objective session/reference/level entities; volatility and compression/expansion state;
 horizon-specific direction, trend, rotation, and range state; moving/anchored references; and
-swings, FVGs, and derived zones. It also includes a separately named bar-volume-distribution
-baseline with explicit `INFERRED_FROM_BARS` fidelity; observed trade-at-price profiles remain
-deferred.
+confirmed swings, deterministic swing legs, per-horizon pivot structure, FVGs, and derived zones.
+It also includes a separately named bar-volume-distribution baseline with explicit
+`INFERRED_FROM_BARS` fidelity; observed trade-at-price profiles remain deferred.
 
 Stage 9D does not introduce semantic interaction events such as approach, acceptance, rejection,
 breakout, or failure; options intelligence; Discord market alerts; ML; Sir Loke; raw market-data
