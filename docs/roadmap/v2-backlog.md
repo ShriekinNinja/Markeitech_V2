@@ -201,8 +201,11 @@ provider-neutral contract are documented in
       records without retry, rejection, failure, or pending work. Cache counts and process RSS
       remained bounded; no cache-policy or Redis change was justified.
 - [ ] **Stage 9D:** session entities, rolling state, and durable summaries. Slices 9D.1 through
-      9D.4C are approved and committed; 9D.3 RTH and 9D.4C connected acceptance remain explicit
-      debt before the 9D.5 review gate.
+      9D.4C are approved, committed, and connected-accepted. The 2026-08-24 London/ETH run
+      projected 645 metrics into 645 valid revisions, completed 2,560 reconciliation cycles, kept
+      resources bounded, reconciled 2,261 PostgreSQL writes, and shut down cleanly. The narrow 9D.3
+      opening-range boundary transition is explicitly deferred and does not block the 9D.5 review
+      gate.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.
 - [ ] **Stage 9G:** cross-instrument relationship state.

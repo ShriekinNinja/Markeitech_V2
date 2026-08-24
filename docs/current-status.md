@@ -25,12 +25,19 @@ system. The preserved V1 status is available in
   analytical entity contracts, a bounded state book, a configuration-owned entity catalog,
   deterministic numerical prerequisites, pure rolling market-state projection, and an optional
   `MarketStateEntityActor` runtime boundary.
-- Stage 9D.3 still carries RTH/developing-to-complete acceptance debt. Stage 9D.4C is offline-
-  accepted, but connected acceptance remains pending; the latest reviewed ETH run did not exercise
-  that optional runtime projection and therefore does not close the gate.
-- The next proposed implementation slice is 9D.5, swing/FVG/zone projection. Before that slice
-  begins, Markeitect must explicitly close or defer the recorded 9D.3 and 9D.4C connected-
-  acceptance debt.
+- Stage 9D.3 still carries narrow opening-range developing-to-complete acceptance debt. Markeitect
+  explicitly deferred that window-boundary proof until a run crosses the configured boundary; it
+  does not block 9D.5. Stage 9D.4C connected acceptance closed on 2026-08-24 against liquid
+  London/ETH futures data with its optional runtime projection enabled.
+- The accepted run projected 645 rolling metrics into 645 valid market-state revisions with zero
+  conflicts, rejections, deferrals, or projection failures. Its staleness timer completed 2,560
+  reconciliation cycles without observing evidence old enough to require a stale revision.
+  Session metrics produced 64,064 rolling values with zero calculation failures; resources stayed
+  bounded; PostgreSQL stored all 2,261 accepted operational events; Discord delivered 4/4 health
+  messages; and shutdown was clean. The acceptance configuration declares `STALE` and
+  `UNAVAILABLE` as valid volatility-entity health outcomes, correcting the earlier actor-
+  construction rejection without changing classification policy. Stage 9D.5 swing/FVG/zone
+  projection is the next implementation slice.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -261,8 +268,8 @@ manual procedure is documented in
 
 The static watchlist and live acquisition ownership foundation are complete. Dynamic watchlist
 membership remains intentionally deferred. Stages 9A through 9C are live-accepted. Stage 9D is
-active through approved and committed Slice 9D.4C, with the connected-acceptance debt stated in the
-current snapshot.
+active through connected-accepted Slice 9D.4C. The narrow deferred 9D.3 opening-range boundary
+proof remains stated in the current snapshot and does not block 9D.5.
 
 The canonical Stage 9 coding order is:
 
@@ -601,4 +608,14 @@ scope passes 173 tests. The complete non-PostgreSQL V2 suite passes 358 tests wi
 PostgreSQL-marked tests deselected. The tracked runtime example remains disabled and empty, so this
 batch does not activate new market semantics in a normal run. It adds no provider request,
 PostgreSQL schema, Discord projection, semantic event, opportunity, option selection, or Sir Loke
-behavior. Connected RTH acceptance remains pending.
+behavior.
+
+Connected acceptance closed on 2026-08-24 using the ignored local acceptance configuration and
+liquid London/ETH futures data. The actor consumed 645 metrics, published 645 valid revisions,
+completed 2,560 staleness-reconciliation cycles, retained 15 current metrics, and stopped with zero
+conflicts, rejected revisions, deferred or pending publications, projection failures, or snapshot
+failures. No evidence crossed its staleness boundary during the run, so no stale revision was
+observed. The surrounding runtime produced 64,064 rolling values without calculation failure,
+stored 2,261/2,261 operational events without retry or rejection, delivered 4/4 Discord health
+messages, remained resource-bounded, and disconnected cleanly. This closes 9D.4C without claiming
+the separately deferred 9D.3 opening-range boundary transition.

@@ -1,13 +1,15 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slices 9D.1 through 9D.4C approved and committed; 9D.3 RTH and 9D.4C connected
-acceptance debt recorded
+**Status:** Slices 9D.1 through 9D.4C approved, committed, and connected-accepted; narrow 9D.3
+window-boundary acceptance deferred
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
-**Next gate:** Markeitect must explicitly close or defer the recorded connected-acceptance debt
-before 9D.5 implementation begins. The latest reviewed ETH run did not exercise the optional
-`MarketStateEntityActor` and is not 9D.4C acceptance evidence.
+**Acceptance branch:** `v2-stage-9d-connected-acceptance`
+
+**Next gate:** Review and begin 9D.5 swing/FVG/zone projection. The unobserved 9D.3 opening-range
+developing-to-complete transition is explicitly deferred until a run crosses that configured
+boundary and does not block 9D.5.
 
 ## Purpose
 
@@ -656,8 +658,10 @@ reference batches with 900 values and three window batches with 39 values, with 
 Group 1 actor accepted 42 metrics, published 45 revisions, suppressed nine duplicate revisions,
 rejected none, and stopped with no pending publication. PostgreSQL stored 682/682 accepted
 operational events, Discord delivered 3/3 health messages, runtime resource health remained normal,
-and shutdown completed cleanly. RTH live bars and developing-to-complete lifecycle transitions
-remain connected-acceptance debt.
+and shutdown completed cleanly. Live-bar updates were later exercised, but an opening-range
+developing-to-complete transition still requires a run which crosses the configured window
+boundary. Markeitect explicitly deferred that narrow proof; it remains recorded acceptance debt
+without blocking 9D.5.
 
 This slice adds no provider request, raw-data persistence, analytical PostgreSQL table, Discord
 market projection, semantic interaction event, opportunity, option selection, or Sir Loke behavior.
@@ -801,8 +805,10 @@ intelligence/configuration/composition/message scope passes 173 tests, and the c
 non-PostgreSQL V2 suite passes 358 tests with two PostgreSQL-marked tests deselected. The batch adds
 no provider request, analytical PostgreSQL persistence, Discord output, semantic transition,
 ranking, opportunity, option selection, or Sir Loke behavior. Connected acceptance is separate and
-must prove actual rolling evidence, revisions, staleness, resource behavior, and clean shutdown
-without assuming market-session coverage.
+must prove actual rolling evidence, revisions, staleness, resource behavior, and clean shutdown.
+Any liquid session which supplies the configured rolling inputs is valid evidence; US RTH is not a
+9D.4C requirement. Session- or window-specific transitions remain accepted only when the run
+actually crosses their configured boundaries.
 
 ### 9D.5: Swing, FVG, And Zone Projection
 
@@ -877,7 +883,31 @@ Offline verification must cover:
 
 Connected acceptance must prove only what the live run observes. It should reconcile publication
 and persistence counters, inspect memory/resource behavior with the Observatory off, verify clean
-shutdown, and record any market-session coverage which could not be exercised.
+shutdown, and record any market-session coverage which could not be exercised. London/ETH futures
+data may close 9D.4C when the configured rolling inputs flow and the optional actor is active; it
+cannot by itself close an opening-range lifecycle transition whose boundary occurred before the
+run.
+
+The connected-acceptance configuration initially declared only `READY`, `DEGRADED`, and `WARMING`
+for the volatility entity while its classifier can also truthfully emit `STALE` and `UNAVAILABLE`.
+The runtime correctly rejected that incomplete health envelope during actor construction. The local
+acceptance definition now includes all five outcomes, and offline construction of the complete
+`MarketStateEntityActor` succeeds. This was a configuration correction only: thresholds, bands,
+confirmation, staleness policy, actor ownership, and publication behavior were unchanged.
+
+Connected acceptance closed on 2026-08-24 using liquid London/ETH futures data. The optional actor
+consumed 645 rolling metrics and published 645 valid revisions with zero metric conflicts, stale
+inputs, rejected revisions, deferred or pending publications, projection failures, or snapshot
+failures. Its configured timer completed 2,560 reconciliation cycles; no evidence crossed the
+staleness boundary during the run, so `staleness_revisions=0` is the observed result rather than a
+claim that the transition was exercised. The surrounding session runtime produced 64,064 rolling
+values with zero calculation failures. Process and cache resources remained bounded, PostgreSQL
+stored all 2,261 accepted operational events without retry or rejection, Discord delivered all four
+health messages, and controlled shutdown disconnected IB cleanly. One resource warning correctly
+reported host disk headroom below its configured threshold. `^SPX.CBOE` was unobserved in this
+session, accounting for 17/18 watchlist instruments and 33/34 active streams; that unrelated
+session-specific absence does not weaken the futures-backed rolling-state evidence. This closes
+9D.4C without closing the separately deferred 9D.3 opening-range boundary transition.
 
 ## Stage Exit Criteria
 

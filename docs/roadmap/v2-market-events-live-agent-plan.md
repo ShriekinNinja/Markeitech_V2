@@ -766,7 +766,10 @@ These are not blanks for code defaults. They require stage review with Markeitec
 
 ## Immediate Next Batch
 
-Stage 9D is active through approved and committed Slice 9D.4C. The next review gate is to close or
-explicitly defer the recorded 9D.3 RTH and 9D.4C connected-acceptance debt before beginning 9D.5
-swing/FVG/zone projection. The exact implementation boundary remains in
+Stage 9D is active through connected-accepted Slice 9D.4C. The 2026-08-24 London/ETH run exercised
+the optional runtime projection with actual rolling inputs, valid revisions, periodic staleness
+reconciliation, bounded resources, reconciled operational persistence, and clean shutdown.
+Markeitect explicitly deferred the narrow 9D.3 opening-range developing-to-complete proof until a
+run crosses that configured boundary; it does not block 9D.5 swing/FVG/zone projection. The exact
+implementation boundary remains in
 [`v2-stage-9d-entities-rolling-state-plan.md`](v2-stage-9d-entities-rolling-state-plan.md).
