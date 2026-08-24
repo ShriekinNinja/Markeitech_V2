@@ -11,17 +11,19 @@ When documents disagree, use this order:
    invariants.
 2. [`current-status.md`](current-status.md) records implemented, current, and
    next work plus validation debt.
-3. Accepted V2 architecture documents and the
-   [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md) govern the active runtime.
-4. Accepted V2 architecture documents describe implemented V2 design.
-5. The legacy [runtime architecture](architecture/runtime-architecture.md),
+3. Accepted V2 architecture documents govern their implemented subject boundaries.
+4. The canonical [Stage 9A-9K blueprint](roadmap/v2-market-events-live-agent-plan.md) and accepted
+   stage plans govern future sequence within their approved scope.
+5. The [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md) preserves the completed
+   foundation gates; it is not the current progress ledger.
+6. The legacy [runtime architecture](architecture/runtime-architecture.md),
    [data contracts](architecture/data-contracts.md),
    [implementation roadmap](roadmap/implementation-roadmap.md), and
    [decisions register](architecture/decisions-register.md) preserve V1 intent and history; they do
    not override accepted V2 decisions.
-6. Future roadmaps express future intent and may change through review.
-7. Operations documents describe how to run and inspect the system.
-8. Notes and archive documents are informative, not normative.
+7. Future roadmaps express future intent and may change through review.
+8. Operations documents describe how to run and inspect the system.
+9. Notes and archive documents are informative, not normative.
 
 Implementation and tests remain the final evidence when a descriptive document
 has not yet been updated. Correct the document rather than preserving an
@@ -37,12 +39,12 @@ accidental disagreement.
 ## Architecture
 
 - [Decisions register](architecture/decisions-register.md)
-- [V2 runtime messaging discovery](architecture/v2-runtime-messaging-discovery.md)
-- [V2 runtime control plane](architecture/v2-runtime-control-plane.md)
+- [V2 runtime messaging discovery (historical discovery record)](architecture/v2-runtime-messaging-discovery.md)
+- [V2 runtime control plane (initial Stage 2 decision record)](architecture/v2-runtime-control-plane.md)
 - [V2 Discord system health](architecture/v2-discord-health.md)
 - [V2 persistence boundary discovery](architecture/v2-persistence-boundary-discovery.md)
-- [V2 actor composition discovery](architecture/v2-actor-composition-discovery.md)
-- [V2 provider and canonical data boundary](architecture/v2-provider-data-boundary-discovery.md)
+- [V2 actor composition discovery (historical composition decision)](architecture/v2-actor-composition-discovery.md)
+- [V2 provider and canonical data boundary (historical discovery record)](architecture/v2-provider-data-boundary-discovery.md)
 - [V2 adaptive market-data plane](architecture/v2-adaptive-market-data-plane.md)
 - [V2 historical dependency execution](architecture/v2-historical-dependency-execution.md)
 
@@ -56,11 +58,11 @@ Preserved V1 architecture remains available in
 - [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md)
 - [V2 market events and live-agent requirements](roadmap/v2-market-events-live-agent-plan.md)
 - [First market-intelligence coding sequence](roadmap/v2-first-market-intelligence-coding-sequence.md)
-- [Active implementation roadmap](roadmap/implementation-roadmap.md)
-- [Runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
+- [Legacy V1 implementation roadmap](roadmap/implementation-roadmap.md)
+- [Legacy V1 runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
 - [V2 Stage 9C session measurements plan](roadmap/v2-stage-9c-session-measurements-plan.md)
 - [V2 Stage 9D entities and rolling state plan](roadmap/v2-stage-9d-entities-rolling-state-plan.md)
-- [Trading quality evidence plan](roadmap/trading-quality-evidence-plan.md)
+- [Legacy V1 trading quality evidence plan](roadmap/trading-quality-evidence-plan.md)
 - [Detailed implementation history](roadmap/implementation-history.md)
 
 The roadmap is intentionally concise. The history retains completed slice detail
@@ -72,6 +74,7 @@ for investigation and context, but it does not reopen old stage gates.
 - [GitHub workflow](operations/github-workflow.md)
 - [V2 runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
 - [V2 operational PostgreSQL](operations/v2-postgresql.md)
+- [V2 futures rollover](operations/v2-futures-rollover.md)
 - [V2 static watchlist handoff](roadmap/v2-static-watchlist-handoff.md)
 - [Interactive Brokers setup](operations/ib-setup.md)
 - [Operator context log guide](operations/operator-context-logs.md)

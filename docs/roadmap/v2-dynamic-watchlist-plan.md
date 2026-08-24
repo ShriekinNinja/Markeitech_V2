@@ -244,7 +244,8 @@ Initial limits must be based on measured IB/runtime behavior, not invented const
 
 - [x] Add a dedicated baseline watchlist configuration section.
 - [x] Map every screenshot instrument to a Nautilus IB simplified provider identity.
-- [x] Configure explicit September 2026 futures contracts; automatic rolling remains deferred.
+- [x] Configure explicit dated contracts: September 2026 ES/NQ/YM and October 2026 CL; automatic
+      rolling remains deferred.
 - [x] Remove duplicated bootstrap subscription declarations from system configuration.
 - [x] Have Watchlist create logical baseline demand through acquisition.
 

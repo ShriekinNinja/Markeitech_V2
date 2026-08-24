@@ -8,6 +8,9 @@ opportunities
 **Near-term sequence:**
 [`v2-first-market-intelligence-coding-sequence.md`](v2-first-market-intelligence-coding-sequence.md)
 
+This document is the canonical Stage 9A-9K product sequence. Focused stage plans may refine
+implementation details, but they must not silently renumber, omit, or reorder the canonical stages.
+
 ## Purpose
 
 This is the master blueprint for Markeitech's market-intelligence system. It describes the target
@@ -78,8 +81,10 @@ The accepted foundation currently provides:
 - native multi-actor delivery without a Markeitech raw-data fan-out wrapper; and
 - bounded demand lifecycle facts: requested, subscribed, active, failed, canceled, and stopped.
 
-V2 has no approved trading analytics, semantic market-event engine, options intelligence, ML
-model, advisory agent, or execution. V1 analytical/signal models are reference material only.
+V2 now has approved deterministic measurements and the Stage 9D typed entity/rolling-state
+foundation through Slice 9D.4C. It does not yet have approved semantic interaction events, options
+intelligence, an ML model, an advisory agent, an opportunity lifecycle, or execution. V1
+analytical/signal models are reference material only.
 
 ## Target Topology
 
@@ -610,7 +615,9 @@ Session/calendar ownership
     -> bounded options-data proof
     -> cross-instrument state
     -> richer analytics
-    -> live advisory agent
+    -> agent read model, policy, and tools
+    -> concurrent advisory opportunities
+    -> evaluation and ML readiness
 ```
 
 ### 9A: Session And Evidence Truth
@@ -674,6 +681,21 @@ interactions, or option-underlying behavior. Expensive work uses focus leases.
 
 **Exit:** evidence is rich enough for useful theses while truthful and bounded.
 
+### Mandatory Reliability Gate Before 9I
+
+No live model access or agent-directed runtime intent begins until the current provider and
+runtime recovery debt is closed or explicitly accepted by Markeitect. The gate must prove:
+
+- provider subscription failure is retried or rejected through a bounded, observable lifecycle;
+- connection loss and recovery can move affected evidence through degraded/unavailable and back to
+  ready without restarting unrelated capabilities;
+- queue and publication overflow remain bounded, audited, and recoverable where policy permits;
+- retry, lifecycle, recency-decay, and hysteresis behavior has deterministic offline coverage; and
+- one connected acceptance run reconciles recovery, resource, persistence, and shutdown evidence.
+
+This gate hardens the evidence path. It does not authorize semantic thresholds, options selection,
+agent behavior, or execution.
+
 ### 9I: Agent Read Model, Policy, And Tools
 
 Compact read model, typed intents/tools, policy/budgets, lifecycle audit, citation/abstention,
@@ -703,6 +725,13 @@ ranking without forced winner, Discord, operator disposition, and no-execution e
 
 Outcome/feedback contracts, leakage-safe datasets, baselines, temporal/regime evaluation, shadow
 models, monitoring, and bounded optimization interfaces.
+
+Before any model-training implementation, Markeitect must approve a data strategy defining the
+historical acquisition source, reproducible feature construction, labels and outcome windows,
+as-of cutoffs and revision handling, licensing and retention, dataset identity/versioning, and
+leakage-safe temporal evaluation. The current no-raw-retention and no-replay decisions remain in
+force until that explicit gate changes them; Stage 9K must not quietly turn PostgreSQL into a raw
+market-data warehouse.
 
 **Exit:** models improve named decisions without replacing truth or policy.
 
@@ -737,7 +766,7 @@ These are not blanks for code defaults. They require stage review with Markeitec
 
 ## Immediate Next Batch
 
-Implement **Session And Calendar Ownership plus Evidence Health Contracts** as specified in
-[`v2-first-market-intelligence-coding-sequence.md`](v2-first-market-intelligence-coding-sequence.md#first-coding-batch-recommendation).
-It adds no trading analytics; it establishes temporal and evidence truth required by every later
-metric, event, option candidate, model, and agent conclusion.
+Stage 9D is active through approved and committed Slice 9D.4C. The next review gate is to close or
+explicitly defer the recorded 9D.3 RTH and 9D.4C connected-acceptance debt before beginning 9D.5
+swing/FVG/zone projection. The exact implementation boundary remains in
+[`v2-stage-9d-entities-rolling-state-plan.md`](v2-stage-9d-entities-rolling-state-plan.md).

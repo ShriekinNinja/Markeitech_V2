@@ -98,10 +98,11 @@ honesty, source identity, authorization boundaries, audit requirements, and the 
 unauthorized execution remain code-enforced invariants. Tunable limits belong in configuration;
 the enforcement of those limits belongs in deterministic code.
 
-PostgreSQL currently owns only operational run and system-health records. Redis,
-SQLite, Parquet, and raw market-data retention are not selected V2 infrastructure.
-Market data that IB can fetch again should not be stored without an approved live
-consumer and retention requirement.
+PostgreSQL currently owns runtime runs, system-health events, generic operational events, and
+compact evidence-recency profiles. Additional analytical or agent state requires an explicit
+schema, lifecycle, retention, and recovery decision. Redis, SQLite, Parquet, and raw market-data
+retention are not selected V2 infrastructure. Market data that IB can fetch again should not be
+stored without an approved live consumer and retention requirement.
 
 ## Evidence And Interpretation
 

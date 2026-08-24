@@ -1,7 +1,12 @@
 # V2 Actor Composition And Ownership Discovery
 
-**Status:** Decision Gate 5 accepted and implemented; Stage 8A acquisition ownership added on
-2026-08-09 and ready for review.
+**Status:** Historical Decision Gate 5 record; initial composition implemented and later expanded
+through accepted V2 stages.
+
+> **Historical composition decision:** The four-actor inventory below records the initial bounded
+> composition choice. Current V2 contains additional accepted actors. The ownership principles and
+> code-owned composition rule remain valid, but `docs/current-status.md` and runtime composition
+> are the authority for the present actor inventory.
 
 **Scope:** Current V2 actors and the actor-registration facilities exposed by NautilusTrader
 `2.0.0rc1`. This document proposes composition rules; it does not change runtime behavior.

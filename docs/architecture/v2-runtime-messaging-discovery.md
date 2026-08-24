@@ -2,6 +2,11 @@
 
 **Status:** Discovery complete; Decision Gate 1 accepted on 2026-08-05.
 
+> **Historical discovery record:** This file describes the Nautilus RC and runtime inventory at
+> Decision Gate 1. Later accepted contracts and actor composition supersede its present-tense
+> inventory. Use `docs/current-status.md` for current behavior; retain this document for the
+> evidence behind the native-bus decision.
+
 **Scope:** NautilusTrader `2.0.0rc1` as installed in `v2/.venv`. This document records
 available runtime communication facilities and their constraints. It does not approve a
 Markeitech message contract or change runtime behavior.
