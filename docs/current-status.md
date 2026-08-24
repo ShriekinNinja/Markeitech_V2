@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-23
+Last reviewed: 2026-08-24
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -17,7 +17,36 @@ system. The preserved V1 status is available in
   V2 requirements.
 - Markeitect approves architecture decisions before implementation proceeds.
 
-## Live-Accepted Foundation
+## Current Snapshot
+
+- Stages 1 through 9C and the runtime-resource hardening gate are implemented and connected-
+  accepted within the evidence recorded below.
+- Stage 9D is active. Slices 9D.1 through 9D.4C are approved and committed. They provide typed
+  analytical entity contracts, a bounded state book, a configuration-owned entity catalog,
+  deterministic numerical prerequisites, pure rolling market-state projection, and an optional
+  `MarketStateEntityActor` runtime boundary.
+- Stage 9D.3 still carries RTH/developing-to-complete acceptance debt. Stage 9D.4C is offline-
+  accepted, but connected acceptance remains pending; the latest reviewed ETH run did not exercise
+  that optional runtime projection and therefore does not close the gate.
+- The next proposed implementation slice is 9D.5, swing/FVG/zone projection. Before that slice
+  begins, Markeitect must explicitly close or defer the recorded 9D.3 and 9D.4C connected-
+  acceptance debt.
+- PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
+  compact evidence-recency profiles. Raw provider observations and transient numerical metric
+  values remain outside PostgreSQL.
+- The 18-member configuration-owned static watchlist is live-accepted. Dynamic membership remains
+  explicitly deferred.
+- Semantic interaction events, the bounded options proof, cross-instrument state, richer analytics,
+  Sir Loke, opportunity lifecycle, ML evaluation, replay, backtesting, and execution remain future
+  work.
+
+The remainder of this page is the chronological implementation record supporting this snapshot.
+When an older section describes a former review state, the snapshot above governs current status;
+the older wording is retained only as implementation history.
+
+## Chronological Implementation Record
+
+### Live-Accepted Foundation
 
 - Isolated V2 Python project, configuration, environment, dependencies, and runtime logs.
 - One PyCharm **Markeitech V2** run configuration with macOS caffeination.
@@ -122,7 +151,7 @@ capabilities, and temporary focus. The target is a broad continuous native marke
 feeding deterministic analysis and semantic state, with a later advisory agent directing
 attention through policy-checked intents. No Stage 8B runtime behavior has been implemented.
 
-Stage 8B.1 is committed. Stage 8B.2 and 8B.3 are ready for review:
+Stages 8B.1 through 8B.3 were completed before the Stage 8C connected proof:
 
 - reusable analytical capability requirements and instrument-bound feed demand;
 - explicit demand ownership, priority, optional expiry, and lifecycle vocabulary;
@@ -203,14 +232,17 @@ order. Demand, provider outcome, degradation, recovery, and release are operatio
 raw market observations remain memory-only. Session-unaware elapsed-time staleness is deliberately
 deferred.
 The complete 18-member baseline is now configured through Nautilus IB simplified `load_ids`, with
-required startup resolution and explicit September 2026 ES, NQ, YM, and CL contracts. This mapping
-is ready for live proof; automatic futures rolling is not implied.
+required startup resolution and explicit September 2026 ES, NQ, and YM contracts plus the October
+2026 CL contract. This mapping is live-accepted; automatic futures rolling is not implied. The
+manual procedure is documented in
+[`operations/v2-futures-rollover.md`](operations/v2-futures-rollover.md).
 
 ## Explicit Boundaries
 
-- PostgreSQL currently contains runtime runs and system-health transitions. It is the accepted
-  durable audit ledger for all future meaningful system intents, decisions, lifecycle changes,
-  publications, attempts, and outcomes.
+- PostgreSQL currently contains runtime runs, system-health events, generic operational events,
+  and compact evidence-recency profiles. It is the accepted durable audit ledger for future
+  meaningful system intents, decisions, lifecycle changes, publications, attempts, and outcomes
+  only after their schemas and retention are explicitly approved.
 - PostgreSQL does not contain raw ticks, quotes, bars, books, or option-chain payloads. Market-data
   requests, readiness, freshness, gaps, retries, and failures are system events and must be
   audited as their owning components are implemented.
@@ -219,29 +251,32 @@ is ready for live proof; automatic futures rolling is not implied.
   than retained speculatively.
 - Raw market-data persistence, Parquet, replay, and backtesting are outside current scope until
   Markeitect explicitly reopens them.
-- Redis, external message streams, actor snapshots, dynamic actor
-  composition, analytics, and trading models remain unimplemented.
+- Redis, external message streams, dynamic actor composition, semantic interaction events,
+  options intelligence, advisory models, and trading models remain unimplemented. Deterministic
+  measurements and the approved Stage 9D entity/state foundation are implemented as described
+  below.
 - V1 remains preserved for reference and reuse, but no V1 runtime behavior is implicitly active.
 
 ## Next Accepted Sequence
 
 The static watchlist and live acquisition ownership foundation are complete. Dynamic watchlist
-membership remains intentionally deferred. Stages 9A through the first Stage 9C runtime family are
-live-accepted. A proposed Stage 9C session-measurement extension now precedes Stage 9D so entity
-contracts are shaped by proven bar/session inputs rather than assumptions.
+membership remains intentionally deferred. Stages 9A through 9C are live-accepted. Stage 9D is
+active through approved and committed Slice 9D.4C, with the connected-acceptance debt stated in the
+current snapshot.
 
-The authoritative proposed coding order is:
+The canonical Stage 9 coding order is:
 
-1. session and calendar ownership;
-2. evidence-health contracts;
-3. historical dependency execution;
-4. baseline metric contracts;
-5. entities and rolling state;
-6. first semantic events;
-7. bounded options-data proof;
-8. cross-instrument state;
-9. richer analytics; and
-10. the live advisory agent.
+1. 9A session/calendar ownership and evidence-health truth;
+2. 9B historical dependency execution;
+3. 9C baseline metric contracts and runtime;
+4. 9D entities and rolling state;
+5. 9E first semantic events;
+6. 9F bounded options-data proof;
+7. 9G cross-instrument state;
+8. 9H richer analytics;
+9. 9I agent read model, policy, and tools;
+10. 9J concurrent advisory opportunities; and
+11. 9K evaluation and ML readiness.
 
 The agent maintains a plural opportunity set. No instrument is globally preferred, and the
 initial SPXW/SPY/QQQ expression universe remains configurable and expandable. All variable market,
@@ -252,7 +287,9 @@ The pre-coding design gate is accepted: opportunities are target-exposure and ep
 than source-instrument or contract based, and first-batch parameters are startup-configurable while
 carrying explicit future mutability and optimization metadata.
 
-The detailed sequence and gates are maintained in
+The canonical sequence is maintained in
+[`roadmap/v2-market-events-live-agent-plan.md`](roadmap/v2-market-events-live-agent-plan.md); the
+first focused implementation sequence remains available in
 [`roadmap/v2-first-market-intelligence-coding-sequence.md`](roadmap/v2-first-market-intelligence-coding-sequence.md).
 
 ## Stage 9A: Session And Evidence Truth
@@ -324,7 +361,7 @@ PostgreSQL stored 464 operational records and 3 system-health records, matching 
 runtime's 467 accepted/stored total with no failures or pending writes. Numerical metric values and
 raw quotes remain intentionally transient.
 
-The active extension is the Stage 9C session-measurement work documented in
+The completed extension is the Stage 9C session-measurement work documented in
 [`roadmap/v2-stage-9c-session-measurements-plan.md`](roadmap/v2-stage-9c-session-measurements-plan.md).
 It closes the completed-bar, session/prior-session, opening-range, gap, power-hour, volatility,
 efficiency, and expansion input gap before Stage 9D entity design. Slices 1-2 are enabled and
@@ -340,7 +377,7 @@ converge at the last interval actually received, and exact open, prior-close, re
 values remain unavailable when their session boundary was not directly observed rather than being
 inferred from partial coverage.
 
-Slice 4 is locally accepted. It adds
+Slice 4 is accepted. It adds
 configuration-owned calendar-relative opening-range families and close-relative power-hour
 measurements, including developing/completed truth, coverage, supported-volume isolation, and
 early-close handling. The initial acceptance scope configures two opening ranges and one power-hour
@@ -414,7 +451,7 @@ records with zero retries, failures, rejections, or pending writes. Process RSS 
 cache counts remained bounded, and Nautilus returned cleanly. The resource warning path and signal
 routing correction are connected-accepted; critical and recovery projection remain controlled
 follow-up cases rather than blockers for this hardening batch. The runtime-resource evidence gate
-is closed; Stage 9D remains the next accepted intelligence stage.
+closed before Stage 9D began.
 
 ## Stage 9D: Entities And Rolling State
 

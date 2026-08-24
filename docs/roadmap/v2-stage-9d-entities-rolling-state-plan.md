@@ -1,8 +1,13 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slices 9D.1 through 9D.4C approved and committed; 9D.3 RTH acceptance debt recorded
+**Status:** Slices 9D.1 through 9D.4C approved and committed; 9D.3 RTH and 9D.4C connected
+acceptance debt recorded
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
+
+**Next gate:** Markeitect must explicitly close or defer the recorded connected-acceptance debt
+before 9D.5 implementation begins. The latest reviewed ETH run did not exercise the optional
+`MarketStateEntityActor` and is not 9D.4C acceptance evidence.
 
 ## Purpose
 

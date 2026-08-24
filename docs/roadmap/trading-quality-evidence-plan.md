@@ -1,5 +1,9 @@
 # Trading Quality Evidence Plan
 
+> **Legacy V1 plan:** Preserved as trading-research and calibration history. It does not activate
+> V1 signals or define V2 evidence, analytics, events, models, or acceptance. Use the V2 charter,
+> current status, specialist traceability, and Stage 9A-9K blueprint for current authority.
+
 Started: 2026-07-18
 
 Owners: Markeitect and Kite

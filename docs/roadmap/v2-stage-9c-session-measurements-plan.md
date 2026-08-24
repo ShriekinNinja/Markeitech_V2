@@ -1,8 +1,11 @@
 # V2 Stage 9C Session Measurements Plan
 
-**Status:** Slices 1-4 accepted; Slice 5 implemented for local review
+**Status:** Closed and connected-accepted after the 2026-08-21 extended RTH run
 
-**Branch:** `v2-stage-9c-rolling-measurements`
+**Historical implementation branch:** `v2-stage-9c-rolling-measurements`
+
+The body preserves the reviewed design in delivery tense. `Closure Evidence` records the final
+accepted state and governs any earlier wording which describes work as future or pending.
 
 ## Purpose
 

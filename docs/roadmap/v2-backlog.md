@@ -200,12 +200,27 @@ provider-neutral contract are documented in
       kept system health `READY` until controlled shutdown, and reconciled all 726 PostgreSQL
       records without retry, rejection, failure, or pending work. Cache counts and process RSS
       remained bounded; no cache-policy or Redis change was justified.
-- [ ] **Stage 9D:** session entities, rolling state, and durable summaries.
+- [ ] **Stage 9D:** session entities, rolling state, and durable summaries. Slices 9D.1 through
+      9D.4C are approved and committed; 9D.3 RTH and 9D.4C connected acceptance remain explicit
+      debt before the 9D.5 review gate.
 - [ ] **Stage 9E:** first quiet semantic market events.
 - [ ] **Stage 9F:** bounded 0DTE options-data proof.
 - [ ] **Stage 9G:** cross-instrument relationship state.
 - [ ] **Stage 9H:** richer approved analytics.
-- [ ] **Stage 9I:** Sir Loke live advisory agent and plural opportunity set.
+- [ ] **Mandatory reliability gate before 9I:** prove bounded provider-subscription recovery,
+      connection loss/recovery, overflow containment, retry/lifecycle tests, and connected
+      reconciliation before any live model access or agent-directed runtime intent.
+- [ ] **Stage 9I:** Sir Loke agent read model, policy, and typed tools.
+- [ ] **Stage 9J:** concurrent advisory opportunity and expression lifecycle.
+- [ ] **Stage 9K:** evaluation and ML readiness. Approve historical acquisition, reproducible
+      features, labels, as-of/revision semantics, licensing/retention, dataset identity, and
+      leakage-safe temporal evaluation before model-training implementation.
+
+## Documentation Reliability
+
+- [ ] Add CI checks for Markdown links, required authority/status metadata, stale branch-status
+      claims, and canonical Stage 9A-9K numbering. Documentation automation reports drift; it does
+      not decide product status or rewrite accepted documents.
 
 The detailed product design remains in
 [`v2-first-market-intelligence-coding-sequence.md`](v2-first-market-intelligence-coding-sequence.md)

@@ -2,6 +2,10 @@
 
 **Status:** Foundation established; all later stages require Markeitect approval.
 
+> **Completed foundation gate record:** This checklist preserves how the V2 foundation was
+> accepted. Its early state definitions and unchecked follow-ups are historical gate evidence, not
+> a current runtime inventory or progress ledger. Use `docs/current-status.md` for present status.
+
 ## Working Agreement
 
 - [x] Markeitect has the final decision on scope and architecture.

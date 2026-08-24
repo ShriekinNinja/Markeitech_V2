@@ -20,7 +20,7 @@ claim behind it yet.
 | No counterfeit index volume | Volume-supported and volume-unsupported profiles are distinct | Implemented configuration |
 | No raw market-data persistence | Native observations and historical responses remain transient | Enforced architecture |
 | No universal score | Dimensions remain separate through measurements and rolling state | Enforced by plan |
-| Dynamic cross-market relationships | Relationship state is later evidence, not a fixed causal rule | Planned Stage 9F+ |
+| Dynamic cross-market relationships | Relationship state is later evidence, not a fixed causal rule | Planned Stage 9G |
 | Multiple simultaneous opportunities | Opportunity identity and state are plural | Planned advisory stage |
 
 ## Measurement And Event Families

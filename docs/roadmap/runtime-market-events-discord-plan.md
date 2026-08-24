@@ -1,5 +1,9 @@
 # Runtime, Market Events, And Discord Delivery Plan
 
+> **Legacy V1 plan:** Preserved for research and implementation history. It does not define V2
+> runtime, market-event, Discord, or signal behavior. Use `markeitech.md`, `docs/current-status.md`,
+> and the V2 Stage 9A-9K blueprint for current authority.
+
 Started: 2026-07-17
 
 Owners: Markeitect and Kite

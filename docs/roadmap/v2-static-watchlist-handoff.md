@@ -1,7 +1,7 @@
 # V2 Static Watchlist Handoff
 
-**Status:** Static runtime implementation complete for review; provider resolution and live proof
-remain approval-gated.
+**Status:** Static configuration-owned watchlist complete and live-accepted; dynamic membership
+remains explicitly deferred.
 
 ## Current Truth
 
@@ -37,8 +37,10 @@ Nautilus IB simplified `load_ids` for the complete baseline:
   `TSM.NYSE`, `AVGO.NASDAQ`, `SPCX.NASDAQ`, `META.NASDAQ`, `TSLA.NASDAQ`.
 
 All entries are required provider loads. Nautilus therefore fails client initialization rather
-than starting with a partially resolved watchlist. Dated September 2026 futures are explicit;
-automatic contract rolling remains a separately approved future policy.
+than starting with a partially resolved watchlist. ES, NQ, and YM use explicit September 2026
+contracts; `CLV6` is the explicit October 2026 CL contract. Automatic contract rolling remains a
+separately approved future policy. See
+[`../operations/v2-futures-rollover.md`](../operations/v2-futures-rollover.md).
 
 ## Mandatory Audit Boundary
 
@@ -52,27 +54,28 @@ specialized health storage remains valid. Watchlist membership and lifecycle eve
 new event families; future components use the same envelope rather than inventing unrelated audit
 tables. Read-optimized projections may be added only for concrete query needs.
 
-## Remaining Static Sequence
+## Historical Static Delivery Sequence
 
-1. [Implemented for review] Add the generic operational-event schema, idempotent store boundary,
+1. [Complete] Add the generic operational-event schema, idempotent store boundary,
    and restart queries.
-2. [Implemented for review] Persist current acquisition control events plus watchlist membership
+2. [Complete] Persist current acquisition control events plus watchlist membership
    and lifecycle events through one ordered worker before treating them as accepted audit history.
-3. [Implemented for live review] Gate system control, acquisition, and watchlist startup through a
+3. [Complete] Gate system control, acquisition, and watchlist startup through a
    versioned persistence request/ready handshake. This closes the missing startup lifecycle without
    an arbitrary timer and preserves `REQUESTED`, `ACCEPTED`, and `SUBSCRIBED` before `ACTIVE`.
-4. [Implemented for review] Add dedicated static watchlist configuration with permanent
+4. [Complete] Add dedicated static watchlist configuration with permanent
    configuration ownership.
-5. [Implemented for review] Watchlist publishes versioned, stable demand messages; Acquisition
+5. [Complete] Watchlist publishes versioned, stable demand messages; Acquisition
    owns provider subscriptions and returns outcomes on the acquisition lifecycle contract.
-6. [Implemented for review] Removed duplicated bootstrap feed configuration. Capabilities are the
+6. [Complete] Removed duplicated bootstrap feed configuration. Capabilities are the
    sole source of baseline feed requirements, including the optional native-consumer probe.
-7. [Implemented for review] Provider failures, rejection, expiry, and recovery produce durable
+7. [Complete] Provider failures, rejection, expiry, and recovery produce durable
    degradation/recovery lifecycle facts. Elapsed-time staleness is intentionally deferred until a
    session-aware policy exists; a quiet or closed market must not be mislabeled as degraded.
-8. [Implemented for live review] Resolve all 18 logical instruments through Nautilus IB simplified
-   provider IDs and explicit September 2026 futures contracts.
-9. Live-prove bounded operation, shared subscriptions, complete audit history, and shutdown.
+8. [Live-accepted] Resolve all 18 logical instruments through Nautilus IB simplified provider IDs
+   and explicit dated contracts: September 2026 ES/NQ/YM plus October 2026 CL.
+9. [Live-accepted] Prove bounded operation, shared subscriptions, complete audit history, and
+   shutdown.
 
 ## Runtime Contract
 

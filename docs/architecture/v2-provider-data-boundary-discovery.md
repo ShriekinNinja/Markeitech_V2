@@ -1,6 +1,12 @@
 # V2 Provider And Canonical Data Boundary Discovery
 
-**Status:** Decision Gate 7 accepted; implementation awaiting review.
+**Status:** Historical Decision Gate 7 record; provider/canonical boundary implemented and later
+extended by the accepted acquisition and measurement stages.
+
+> **Historical discovery record:** Present-tense instrument and actor references below describe
+> the Gate 7 checkout. The native-object and acquisition-context separation remains authoritative;
+> use `docs/current-status.md` and the adaptive market-data-plane documents for the current runtime
+> inventory.
 
 **Scope:** NautilusTrader `2.0.0rc1` as installed in `v2/.venv`, the Interactive Brokers
 adapter, and the current ES and SPY instrument configuration. This stage concerns source facts,

@@ -2,6 +2,11 @@
 
 **Status:** Stage 2 accepted after live review on 2026-08-05.
 
+> **Initial Stage 2 decision record:** The four-state table and explicit omissions below describe
+> the first control-plane slice. Later accepted supervision, persistence, evidence-health, and
+> recovery work added truthful `DEGRADED` and recovery behavior. Use `docs/current-status.md` and
+> the focused later architecture documents for current runtime semantics.
+
 ## Purpose
 
 The runtime control plane converts facts observable by Markeitech into immutable system-health

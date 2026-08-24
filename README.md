@@ -1,5 +1,5 @@
 <p align="center" style="background: black">
-  <img src="docs/assets/markeitech-logo.png" alt="Markeitech" width="100%">
+  <img src="docs/assets/markeitech-logo.png" alt="Markeitech" style="max-width: 100%">
 </p>
 
 >### **"When you have eliminated the impossible, whatever remains, however improbable, must be the truth."** - Sherlock Holmes
@@ -38,8 +38,9 @@ The accepted V2 runtime includes:
 - passive host/process/cache telemetry and sustained resource-health transitions; and
 - explicit supervision, bounded queues, deduplication, and failure isolation.
 
-Stage 9D, entities and rolling state, is next. No V1 analytics or trading model is implicitly
-active. See [current status](docs/current-status.md) for the exact implemented boundary.
+Stage 9D, entities and rolling state, is active through approved Slice 9D.4C. Connected acceptance
+debt and the next review gate are tracked in [current status](docs/current-status.md). No V1
+analytics or trading model is implicitly active.
 
 ## Supported Development Environment
 
