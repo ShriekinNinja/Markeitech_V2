@@ -1,7 +1,8 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slices 9D.1 through 9D.4C approved, committed, and connected-accepted; 9D.5A implemented
-locally for review; narrow 9D.3 window-boundary acceptance deferred
+**Status:** Slices 9D.1 through 9D.4C approved, committed, and connected-accepted; 9D.5A approved
+and committed; 9D.5B implemented locally for review; narrow 9D.3 window-boundary acceptance
+deferred
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
@@ -9,9 +10,9 @@ locally for review; narrow 9D.3 window-boundary acceptance deferred
 
 **9D.5 branch:** `v2-stage-9d5-market-structure`
 
-**Next gate:** Review 9D.5A, then implement 9D.5B swing legs and per-horizon pivot structure. The
-unobserved 9D.3 opening-range developing-to-complete transition is explicitly deferred until a run
-crosses that configured boundary and does not block 9D.5.
+**Next gate:** Review 9D.5B, then implement 9D.5C FVG and constituent-preserving zone projection.
+The unobserved 9D.3 opening-range developing-to-complete transition is explicitly deferred until a
+run crosses that configured boundary and does not block 9D.5.
 
 ## Purpose
 
@@ -918,6 +919,50 @@ chart renderer, connected run, swing leg, pivot relationship, FVG, or zone.
 
 **Exit:** later consumers receive one canonical, inspectable pivot relationship state per configured
 horizon instead of reconstructing HH/HL/LH/LL and swing legs independently.
+
+**Implementation evidence:** a separate pure relationship owner consumes immutable complete
+confirmed-swing revisions without changing or deleting confirmed-swing truth. Exact application,
+instrument, analytical profile/version, detector/version, horizon, source-bar specification, and
+chain-policy/version define each bounded subject. The policy explicitly owns source interval,
+same-kind terminal handling, resolved-run selection, equality tolerance, minimum leg displacement,
+leg expansion/compression tolerance, pivot/bar/normalization retention, and selected-chain bounds.
+Each numerical market threshold declares its current value, floor, ceiling, step, and dynamic
+eligibility under the versioned policy. Equal-price selection within a same-kind run uses an
+explicit earliest/latest tie-break policy.
+
+Alternating compatible pivots produce revisable swing-leg entities with exact endpoint entity and
+revision lineage. Each leg records signed price and percentage change, UTC duration, elapsed bars,
+price slope per bar and hour, optional volatility-normalized displacement and slope, available path
+efficiency, favorable/adverse excursion, optional path volume, exact completed-bar references,
+health, fidelity, and explicit missing context. Supporting completed bars and normalization
+evidence are retained independently before or after the first swing so callback order cannot erase
+available context. No configured normalization is fabricated when its metric evidence is absent.
+
+One active pivot-structure entity revises per exact subject. It preserves the bounded selected
+alternating chain, every selected leg revision, explicit same-kind predecessor comparisons for all
+retained confirmed pivots, structural bounds, consecutive-leg scale comparisons, superseded
+confirmed pivots, unresolved pivots, and minimum-displacement conflicts. Comparison records own
+price and percentage change, elapsed bars, UTC duration, and slope. Geometry labels are
+limited to the named policy's descriptive `UPWARD`, `DOWNWARD`, `ROTATIONAL`, `MIXED`, and
+`INSUFFICIENT` relationships; they are not a trend score, prediction, support/resistance claim, or
+cross-horizon composite.
+
+Every retained confirmed pivot after the first of its kind owns an explicit comparison to that
+same-kind predecessor, including pivots which the current alternating chain supersedes. Only
+comparisons whose endpoints remain selected may influence the current geometry label. The baseline
+supports more-extreme terminal replacement, latest-terminal selection, and
+unresolved-until-opposite behavior. Equal-price boundaries are inclusive of configured tolerance.
+Late swings are sorted by immutable pivot identity and converge to the same current payload as
+chronological arrival. Eleven focused tests cover policy-envelope rejection, complete leg geometry
+and lineage, equality-boundary comparisons, explicit same-kind replacement and tie-breaking,
+unresolved-run resolution, late path/normalization enrichment, minimum displacement, leg scale and
+geometry labels, arrival-order convergence, detector/horizon isolation, and bounded pivot
+retention. This slice adds no Nautilus actor, runtime configuration binding, PostgreSQL table,
+Discord output, semantic event, chart renderer, connected run, FVG, zone, cross-horizon weighting,
+trendline, Fibonacci, or trading meaning.
+Together with prerequisite coverage, 18 focused market-structure tests pass, the complete
+intelligence suite passes 145 tests, and the full non-PostgreSQL suite passes 376 tests with two
+PostgreSQL-marked tests deselected.
 
 #### 9D.5C: FVG And Constituent-Preserving Zone Projection
 

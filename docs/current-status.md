@@ -21,11 +21,12 @@ system. The preserved V1 status is available in
 
 - Stages 1 through 9C and the runtime-resource hardening gate are implemented and connected-
   accepted within the evidence recorded below.
-- Stage 9D is active. Slices 9D.1 through 9D.4C are approved and committed. Slice 9D.5A is
+- Stage 9D is active. Slices 9D.1 through 9D.5A are approved and committed. Slice 9D.5B is
   implemented locally for review. Together they provide typed
   analytical entity contracts, a bounded state book, a configuration-owned entity catalog,
   deterministic numerical prerequisites, pure rolling market-state projection, an optional
-  `MarketStateEntityActor` runtime boundary, and pure confirmed-swing entity projection.
+  `MarketStateEntityActor` runtime boundary, pure confirmed-swing entity projection, and pure
+  per-horizon swing-leg and pivot-structure relationship projection.
 - Stage 9D.3 still carries narrow opening-range developing-to-complete acceptance debt. Markeitect
   explicitly deferred that window-boundary proof until a run crosses the configured boundary; it
   does not block 9D.5. Stage 9D.4C connected acceptance closed on 2026-08-24 against liquid
@@ -39,8 +40,14 @@ system. The preserved V1 status is available in
   `UNAVAILABLE` as valid volatility-entity health outcomes, correcting the earlier actor-
   construction rejection without changing classification policy. Stage 9D.5A now projects only
   fully confirmed strict pivots with detector/horizon identity, contiguous completed-bar lineage,
-  bounded evidence and entity retention, and no market interpretation. Swing legs and per-horizon
-  pivot structure remain the next implementation slice; FVG and zone projection follow them.
+  bounded evidence and entity retention, and no market interpretation. Stage 9D.5B now relates
+  compatible alternating pivots through exact endpoint revisions and owns explicit price,
+  percentage, time, bar-count, slope, optional path/volume, and optional volatility-normalized
+  evidence. Its revisable per-horizon structure preserves same-kind comparisons, bounds,
+  leg-scale relationships, superseded/unresolved pivots, and conflicts without rewriting confirmed
+  swings or producing a trend score. The three numerical relationship thresholds carry explicit
+  versioned floors, ceilings, steps, and dynamic eligibility. FVG and constituent-preserving zone
+  projection remain next.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
