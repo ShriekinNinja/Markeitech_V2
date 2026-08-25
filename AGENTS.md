@@ -75,9 +75,11 @@ generic skills.
 
 Before a consequential NautilusTrader design, review, plan, or edit involving actors, LiveNode,
 indicators, cache, persistence, catalog, message bus, market data, adapters, lifecycle,
-concurrency, configuration, or framework alignment, invoke the bundled
-`$kite:markeitech-nautilus-v2-expert` skill. Complete its native-capability gate and Nautilus
-Alignment Matrix before recommending or implementing custom behavior.
+concurrency, configuration, or framework alignment, delegate a narrow read-only consultation to
+the project-scoped `markeitech_nautilus_advisor` custom agent. That advisor must invoke the bundled
+`$kite:markeitech-nautilus-v2-expert` skill and complete its native-capability gate and Nautilus
+Alignment Matrix before Kite recommends or implements custom behavior. Kite remains responsible
+for validating the returned evidence against tracked authority and the current checkout.
 
 If a required advisor is unavailable, stale, or cannot inspect its required sources, report that
 limitation and stop before the consequential decision or edit. Do not silently substitute memory,

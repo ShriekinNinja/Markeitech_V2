@@ -21,7 +21,8 @@ this router.
    coverage only when its stated scope includes the current decision and it can inspect the
    required authority and evidence.
 3. For each material domain, classify coverage as:
-   - `AVAILABLE`: name and invoke the applicable specialist before substantive planning or edits.
+   - `AVAILABLE`: name and consult the applicable specialist before substantive planning or edits,
+     using its project custom-agent role when one is defined.
    - `MISSING`: recommend a specialist advisor and stop before a consequential domain decision or
      edit until Markeitect approves creating it or explicitly chooses to proceed without it.
    - `NOT_NEEDED`: reserve this for trivial, administrative, or genuinely domain-neutral work and
@@ -40,6 +41,24 @@ Proposed advisor: <skill name>
 Why: <one sentence naming the consequential decision or failure mode>
 Gate: Awaiting Markeitect approval to create it or proceed without it.
 ```
+
+## Delegated Specialist Consultation
+
+For available NautilusTrader coverage, delegate one narrow, read-only consultation to the
+project-scoped `markeitech_nautilus_advisor` custom agent and wait for its result before substantive
+planning or edits. The delegated prompt must state the real task, the bounded decision or review
+question, the relevant repository scope, and the evidence expected. Do not prescribe the desired
+answer or ask the advisor to make changes.
+
+The custom agent owns invocation of the bundled `$kite:markeitech-nautilus-v2-expert` skill and its
+native-capability and alignment gates. Kite remains responsible for checking the returned evidence
+against tracked authority and the current checkout. Do not duplicate the specialist consultation in
+the primary thread merely to obtain a preferred conclusion.
+
+If the custom role cannot be spawned, cannot load its required skill, or cannot inspect a required
+source, report that limitation and stop before the consequential NautilusTrader decision or edit.
+For another available specialist without a defined custom-agent role, invoke its skill directly
+until Markeitect approves a corresponding delegated role.
 
 ## Missing Advisor Proposal
 
