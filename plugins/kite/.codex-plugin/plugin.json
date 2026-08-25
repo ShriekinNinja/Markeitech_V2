@@ -1,6 +1,6 @@
 {
   "name": "kite",
-  "version": "0.1.0+codex.20260825115516",
+  "version": "0.1.0+codex.20260825124201",
   "description": "Repository-owned engineering advisors for Markeitech",
   "author": {
     "name": "Markeitect and Kite"
@@ -11,6 +11,7 @@
     "markeitech",
     "nautilustrader",
     "market-evidence",
+    "statistical-learning",
     "architecture",
     "engineering",
     "audit"
@@ -27,13 +28,15 @@
       "Advisor Routing",
       "Architecture Review",
       "Code Review",
-      "Market Evidence Validation"
+      "Market Evidence Validation",
+      "Statistical Learning Review"
     ],
     "defaultPrompt": [
       "Handle this Markeitech task and automatically consult any required specialist advisor.",
       "Audit this Markeitech design before custom code.",
       "Check this change against native Nautilus capabilities.",
       "Validate whether this market measurement is defensibly correct for its downstream use.",
+      "Audit this feature, label, evaluation, or bounded optimization proposal before model work.",
       "Review this Markeitech batch defect-first."
     ]
   }

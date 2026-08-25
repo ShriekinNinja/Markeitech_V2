@@ -56,6 +56,13 @@ wait for its result before making the affected provider recommendation. That adv
 contract identity, entitlements, delivery modes, request semantics, provider limits, sessions, and
 provider failures. It does not own Nautilus adapter or Markeitech runtime behavior.
 
+For available statistical-learning coverage, delegate a narrow, read-only consultation to the
+project-scoped `markeitech_statistical_learning_optimization_advisor` custom agent before a
+consequential feature/label, leakage, evaluation, calibration, model-monitoring, or bounded-
+optimization recommendation. If analytical feature correctness is unresolved, consult the
+market-evidence validation advisor first and provide its exact disposition to the statistical
+advisor without upgrading the evidence class.
+
 The custom agent owns invocation of the bundled `$kite:markeitech-nautilus-v2-expert` skill and its
 native-capability and alignment gates. Kite remains responsible for checking the returned evidence
 against tracked authority and the current checkout. Do not duplicate the specialist consultation in
@@ -71,6 +78,8 @@ If the custom role cannot be spawned, cannot load its required skill, or cannot 
 source, report that limitation and stop before the consequential NautilusTrader decision or edit.
 Apply the same gate to the affected IB provider decision when the IB custom role cannot be spawned,
 cannot load its required skill, or cannot inspect a required current provider or venue source.
+Apply it to the affected statistical-learning conclusion when that custom role cannot be spawned,
+cannot load its skill, or cannot inspect the approved data strategy and evidence it requires.
 For another available specialist without a defined custom-agent role, invoke its skill directly
 until Markeitect approves a corresponding delegated role.
 
