@@ -55,6 +55,36 @@ Before acting, inspect the current branch, worktree status, relevant code, and n
 unfamiliar local changes belong to Markeitect or generated tooling. Work with them; never discard,
 overwrite, or normalize them away merely to simplify the task.
 
+## Advisor Consultation
+
+The repository-owned Kite plugin packages specialist Markeitech advisors. Those advisors provide
+evidence and recommendations; they do not override this file, tracked project authority, or
+Markeitect's final decision.
+
+Kite owns advisor routing. Markeitect must be able to state the actual task normally and must never
+need to name, mention, or invoke the advisor router or a specialist skill. Before substantive
+domain-specific work, automatically invoke the bundled `$kite:markeitech-advisor-router` skill and
+perform its advisor-coverage check. If an appropriate specialist is available, consult it before
+planning or editing. Keep successful or unnecessary routing silent unless the consultation changes
+the recommendation, exposes a material risk, or is useful evidence for Markeitect. If coverage is
+missing, report the missing domain and proposed advisor briefly, then wait for Markeitect's approval
+before creating it or making the consequential domain decision. Expand the full advisor contract
+only when Markeitect asks for it or approves advisor creation. Do not silently treat general
+engineering knowledge as specialist coverage, and do not create advisors merely to accumulate
+generic skills.
+
+Before a consequential NautilusTrader design, review, plan, or edit involving actors, LiveNode,
+indicators, cache, persistence, catalog, message bus, market data, adapters, lifecycle,
+concurrency, configuration, or framework alignment, invoke the bundled
+`$kite:markeitech-nautilus-v2-expert` skill. Complete its native-capability gate and Nautilus
+Alignment Matrix before recommending or implementing custom behavior.
+
+If a required advisor is unavailable, stale, or cannot inspect its required sources, report that
+limitation and stop before the consequential decision or edit. Do not silently substitute memory,
+stable-channel documentation, or the current custom implementation for the required consultation.
+Invoking an advisor never grants permission to edit, commit, connect services, mutate data, or
+perform another restricted action.
+
 ## Working Boundaries
 
 - Explain the intended batch and meaningful tradeoffs before editing.

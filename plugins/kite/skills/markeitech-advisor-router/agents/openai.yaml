@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markeitech Advisor Router"
+  short_description: "Match Markeitech work to specialist advisors"
+  default_prompt: "Assess specialist coverage automatically before planning this Markeitech task; keep routine routing silent and surface only missing coverage or material specialist findings."

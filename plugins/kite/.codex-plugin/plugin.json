@@ -1,0 +1,37 @@
+{
+  "name": "kite",
+  "version": "0.1.0+codex.20260825094530",
+  "description": "Repository-owned engineering advisors for Markeitech",
+  "author": {
+    "name": "Markeitect and Kite"
+  },
+  "repository": "https://github.com/ShriekinNinja/Markeitech_V2",
+  "license": "Proprietary",
+  "keywords": [
+    "markeitech",
+    "nautilustrader",
+    "architecture",
+    "engineering",
+    "audit"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Kite",
+    "shortDescription": "Markeitech's engineering advisor suite.",
+    "longDescription": "Kite bundles Markeitech-specific engineering advisors that inspect current repository authority, local executable contracts, and fresh upstream documentation before consequential design or implementation work.",
+    "developerName": "Markeitect and Kite",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Advisory",
+      "Advisor Routing",
+      "Architecture Review",
+      "Code Review"
+    ],
+    "defaultPrompt": [
+      "Handle this Markeitech task and automatically consult any required specialist advisor.",
+      "Audit this Markeitech design before custom code.",
+      "Check this change against native Nautilus capabilities.",
+      "Review this Markeitech batch defect-first."
+    ]
+  }
+}

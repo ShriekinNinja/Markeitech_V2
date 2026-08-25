@@ -44,6 +44,21 @@ uv sync --project v2 --locked --dev
 
 The locked install creates `v2/.venv`. Do not run root `uv sync`; the root project is preserved V1.
 
+### Install The Kite Advisor Plugin
+
+The repository includes the Kite source under `plugins/kite/` and a local Markeitech marketplace
+manifest under `.agents/plugins/`. Register the cloned repository as a marketplace, then install
+Kite:
+
+```bash
+codex plugin marketplace add .
+codex plugin add kite@markeitech
+```
+
+Start a new Codex task after installation so its bundled skills are discovered. The plugin contains
+engineering advisors and no runtime code, secrets, external connections, or autonomous authority.
+`AGENTS.md` remains the always-on repository authority even when the plugin is not installed.
+
 ## 2. Create Local Configuration
 
 The following commands never overwrite existing machine files:
@@ -200,9 +215,11 @@ workspace layout may be recreated or transferred separately; they do not affect 
 
 Open the repository root so the tracked `AGENTS.md` instructions apply. The agent must read the
 project charter, current status, development guidelines, and relevant stage plan before changing
-code. Git preserves those authorities, notes, and roadmaps; it does not preserve private account
-memory or prior chat transcripts. Record any durable decision in the smallest authoritative
-tracked document rather than relying on chat history alone.
+code. Install the tracked Kite plugin as described above so required specialist consultations are
+available on a fresh machine. Git preserves those authorities, plugin sources, notes, and roadmaps;
+it does not preserve plugin installation state, private account memory, or prior chat transcripts.
+Record any durable decision in the smallest authoritative tracked document rather than relying on
+chat history alone.
 
 ## Troubleshooting
 
