@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markeitech Python Runtime Expert"
+  short_description: "Production Python runtime review for Markeitech"
+  default_prompt: "Use $kite:markeitech-python-runtime-expert to review this Markeitech Python runtime design for lifecycle, concurrency, typing, and resource risks."
