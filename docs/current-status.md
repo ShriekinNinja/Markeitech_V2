@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-24
+Last reviewed: 2026-08-25
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -8,7 +8,7 @@ system. The preserved V1 status is available in
 
 ## Operating Posture
 
-- V2 is a clean runtime foundation on NautilusTrader `2.0.0rc1`.
+- V2 is a clean runtime foundation on NautilusTrader `2.0.0rc3`.
 - Interactive Brokers paper trading is the current provider connection.
 - The system provides observation and decision support only; automated execution is absent.
 - Components communicate through approved Nautilus actor facilities.
@@ -19,6 +19,14 @@ system. The preserved V1 status is available in
 
 ## Current Snapshot
 
+- The active audit-and-alignment branch upgrades NautilusTrader from `2.0.0rc1` to `2.0.0rc3`.
+  RC3 removed the generic Python network helpers and embedded `LiveNode.start()` lifecycle used by
+  Markeitech's Discord transport and integration-test harness. Discord now uses one isolated
+  standard-library HTTPS boundary, while embedded node tests use the public caller-owned
+  `run_async()` and `LiveNodeHandle` lifecycle. Production remains on hosted `LiveNode.run()`.
+  The migration passes all 409 offline tests. Markeitect's operator-owned connected run on
+  2026-08-25 confirmed RC3 startup and controlled shutdown, complete operational persistence
+  reconciliation, and successful Discord lifecycle delivery through the replacement transport.
 - Stages 1 through 9C and the runtime-resource hardening gate are implemented and connected-
   accepted within the evidence recorded below.
 - Stage 9D is active. Slices 9D.1 through 9D.5C are approved and committed. The runtime and

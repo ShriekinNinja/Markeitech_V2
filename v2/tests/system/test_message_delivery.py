@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 from decimal import Decimal
 from pathlib import Path
+from threading import Event
 
 from nautilus_trader.common import Environment, ImportableActorConfig
 from nautilus_trader.live import LiveNode
@@ -22,6 +24,19 @@ from tests.system.message_actor_fixtures import (
 )
 
 
+async def _run_node_until(node: LiveNode, *events: Event) -> None:
+    handle = node.handle()
+    run_task = asyncio.create_task(node.run_async())
+    try:
+        observed = await asyncio.gather(
+            *(asyncio.to_thread(event.wait, 2) for event in events),
+        )
+        assert all(observed)
+    finally:
+        handle.stop()
+        await run_task
+
+
 def test_health_signal_delivers_between_actors_in_one_live_node() -> None:
     received.clear()
     received_events.clear()
@@ -29,7 +44,7 @@ def test_health_signal_delivers_between_actors_in_one_live_node() -> None:
         "MARKEITECH-V2-MESSAGE-TEST",
         TraderId.from_str("MARKEITECH-TEST-001"),
         Environment.SANDBOX,
-    ).build()
+    ).with_delay_post_stop_secs(0).build()
     node.add_actor_from_config(
         ImportableActorConfig(
             actor_path="tests.system.message_actor_fixtures:HealthSubscriber",
@@ -45,11 +60,7 @@ def test_health_signal_delivers_between_actors_in_one_live_node() -> None:
         ),
     )
 
-    try:
-        node.start()
-        assert received.wait(timeout=2)
-    finally:
-        node.stop()
+    asyncio.run(_run_node_until(node, received))
 
     assert len(received_events) == 1
     assert received_events[0].state == "READY"
@@ -65,7 +76,7 @@ def test_acquisition_status_publication_advances_control_to_ready() -> None:
         "MARKEITECH-V2-ACQUISITION-STATUS-TEST",
         TraderId.from_str("MARKEITECH-TEST-001"),
         Environment.SANDBOX,
-    ).build()
+    ).with_delay_post_stop_secs(0).build()
     node.add_actor_from_config(
         ImportableActorConfig(
             actor_path="tests.system.message_actor_fixtures:HealthSubscriber",
@@ -98,11 +109,7 @@ def test_acquisition_status_publication_advances_control_to_ready() -> None:
     for actor in [control, acquisition, persistence]:
         node.add_actor_from_config(actor)
 
-    try:
-        node.start()
-        assert ready_received.wait(timeout=2)
-    finally:
-        node.stop()
+    asyncio.run(_run_node_until(node, ready_received))
 
     assert [event.state for event in received_events][:2] == ["STARTING", "READY"]
 
@@ -114,7 +121,7 @@ def test_metric_custom_data_projects_to_typed_entity_revision() -> None:
         "MARKEITECH-V2-ENTITY-MESSAGE-TEST",
         TraderId.from_str("MARKEITECH-TEST-001"),
         Environment.SANDBOX,
-    ).build()
+    ).with_delay_post_stop_secs(0).build()
     node.add_actor_from_config(
         ImportableActorConfig(
             actor_path="tests.system.message_actor_fixtures:EntityRevisionSubscriber",
@@ -165,11 +172,7 @@ def test_metric_custom_data_projects_to_typed_entity_revision() -> None:
         ),
     )
 
-    try:
-        node.start()
-        assert entity_received.wait(timeout=2)
-    finally:
-        node.stop()
+    asyncio.run(_run_node_until(node, entity_received))
 
     assert len(received_entity_revisions) == 1
     revision = received_entity_revisions[0]
@@ -184,7 +187,7 @@ def test_rolling_metrics_project_to_typed_volatility_state_revision() -> None:
         "MARKEITECH-V2-MARKET-STATE-MESSAGE-TEST",
         TraderId.from_str("MARKEITECH-TEST-001"),
         Environment.SANDBOX,
-    ).build()
+    ).with_delay_post_stop_secs(0).build()
     node.add_actor_from_config(
         ImportableActorConfig(
             actor_path="tests.system.message_actor_fixtures:EntityRevisionSubscriber",
@@ -233,11 +236,7 @@ def test_rolling_metrics_project_to_typed_volatility_state_revision() -> None:
         ),
     )
 
-    try:
-        node.start()
-        assert market_state_received.wait(timeout=2)
-    finally:
-        node.stop()
+    asyncio.run(_run_node_until(node, market_state_received))
 
     revision = next(
         item
@@ -279,7 +278,7 @@ def test_completed_bars_project_to_market_structure_revisions(tmp_path: Path) ->
         "MARKEITECH-V2-MARKET-STRUCTURE-MESSAGE-TEST",
         TraderId.from_str("MARKEITECH-TEST-001"),
         Environment.SANDBOX,
-    ).build()
+    ).with_delay_post_stop_secs(0).build()
     node.add_actor_from_config(
         ImportableActorConfig(
             actor_path="tests.system.message_actor_fixtures:EntityRevisionSubscriber",
@@ -336,12 +335,7 @@ def test_completed_bars_project_to_market_structure_revisions(tmp_path: Path) ->
         ),
     )
 
-    try:
-        node.start()
-        assert entity_received.wait(timeout=2)
-        assert snapshot_received.wait(timeout=2)
-    finally:
-        node.stop()
+    asyncio.run(_run_node_until(node, entity_received, snapshot_received))
 
     swing = next(
         item

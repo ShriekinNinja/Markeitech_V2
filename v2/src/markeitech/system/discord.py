@@ -11,9 +11,9 @@ from time import monotonic
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+import requests
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId
-from nautilus_trader.network import HttpResponse, http_post
 
 from markeitech.acquisition.historical_messages import (
     HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
@@ -55,7 +55,8 @@ _RESOURCE_STATE_COLORS = {
     "CRITICAL": 0xE74C3C,
 }
 
-PostCallable = Callable[..., HttpResponse]
+
+PostCallable = Callable[..., requests.Response]
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,7 +92,7 @@ class DiscordDeliveryWorker:
         timeout_seconds: int,
         queue_capacity: int = 32,
         *,
-        post: PostCallable = http_post,
+        post: PostCallable = requests.post,
     ) -> None:
         self._webhook_url = _with_wait_confirmation(webhook_url)
         self._timeout_seconds = timeout_seconds
@@ -169,8 +170,8 @@ class DiscordDeliveryWorker:
             response = self._post(
                 self._webhook_url,
                 headers={"Content-Type": "application/json"},
-                body=delivery.body,
-                timeout_secs=self._timeout_seconds,
+                data=delivery.body,
+                timeout=self._timeout_seconds,
             )
         except Exception as exc:  # Discord must not affect the runtime.
             return DiscordDeliveryResult(
@@ -180,9 +181,9 @@ class DiscordDeliveryWorker:
             )
         return DiscordDeliveryResult(
             state=delivery.state,
-            delivered=200 <= response.status < 300,
-            status=response.status,
-            error_code=None if 200 <= response.status < 300 else "http_status",
+            delivered=200 <= response.status_code < 300,
+            status=response.status_code,
+            error_code=None if 200 <= response.status_code < 300 else "http_status",
         )
 
 

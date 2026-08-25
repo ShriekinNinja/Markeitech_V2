@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from nautilus_trader.network import HttpResponse
+from requests import Response
 
 from markeitech.acquisition import (
     HistoricalDependencyDemandEvent,
@@ -173,9 +173,9 @@ def test_renders_operational_readiness_without_mentions() -> None:
 def test_worker_preserves_order_and_reports_confirmed_delivery() -> None:
     calls: list[tuple[str, dict]] = []
 
-    def post(url: str, **kwargs) -> HttpResponse:  # noqa: ANN003
+    def post(url: str, **kwargs) -> Response:  # noqa: ANN003
         calls.append((url, kwargs))
-        return HttpResponse(200, b"{}")
+        return _response(200)
 
     worker = DiscordDeliveryWorker(
         "https://discord.test/api/webhooks/id/token?thread_id=42",
@@ -191,9 +191,10 @@ def test_worker_preserves_order_and_reports_confirmed_delivery() -> None:
     assert [result.state for result in results] == ["STARTING", "READY"]
     assert all(result.delivered for result in results)
     assert all(result.status == 200 for result in results)
-    assert [call[1]["body"] for call in calls] == [b'{"sequence":1}', b'{"sequence":2}']
+    assert [call[1]["data"] for call in calls] == [b'{"sequence":1}', b'{"sequence":2}']
     assert calls[0][0].endswith("?thread_id=42&wait=true")
-    assert calls[0][1]["timeout_secs"] == 1
+    assert calls[0][1]["headers"] == {"Content-Type": "application/json"}
+    assert calls[0][1]["timeout"] == 1
     stats = worker.snapshot()
     assert stats.accepted == 2
     assert stats.delivered == 2
@@ -203,7 +204,7 @@ def test_worker_preserves_order_and_reports_confirmed_delivery() -> None:
 
 
 def test_worker_reports_sanitized_failure_without_webhook_url() -> None:
-    def post(_url: str, **_kwargs) -> HttpResponse:  # noqa: ANN003
+    def post(_url: str, **_kwargs) -> Response:  # noqa: ANN003
         raise RuntimeError("secret webhook URL would appear here")
 
     worker = DiscordDeliveryWorker(
@@ -230,13 +231,19 @@ def test_worker_rejects_delivery_after_close_and_counts_it() -> None:
     worker = DiscordDeliveryWorker(
         "https://discord.test/api/webhooks/id/token",
         1,
-        post=lambda *_args, **_kwargs: HttpResponse(200, b"{}"),
+        post=lambda *_args, **_kwargs: _response(200),
     )
     worker.start()
     assert worker.close()
 
     assert worker.submit(DiscordDelivery(state="READY", body=b"{}")) is False
     assert worker.snapshot().rejected == 1
+
+
+def _response(status_code: int) -> Response:
+    response = Response()
+    response.status_code = status_code
+    return response
 
 
 def _demand(instrument_id: str) -> HistoricalDependencyDemandEvent:
