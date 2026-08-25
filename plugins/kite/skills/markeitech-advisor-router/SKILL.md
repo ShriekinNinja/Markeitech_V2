@@ -56,6 +56,13 @@ wait for its result before making the affected provider recommendation. That adv
 contract identity, entitlements, delivery modes, request semantics, provider limits, sessions, and
 provider failures. It does not own Nautilus adapter or Markeitech runtime behavior.
 
+For consequential PostgreSQL schema objects, migrations, constraints, indexes, queries, database
+transactions, retention mechanics, backup, restore, or database-observability work, delegate one
+narrow, read-only consultation to the project-scoped `markeitech_postgres_persistence_advisor`
+custom agent and wait for its result before making the affected PostgreSQL recommendation. The
+logical durability requirement, canonical component owner, semantic meaning, and end-to-end event
+or runtime execution contract remain with their applicable authorities and specialists.
+
 The custom agent owns invocation of the bundled `$kite:markeitech-nautilus-v2-expert` skill and its
 native-capability and alignment gates. Kite remains responsible for checking the returned evidence
 against tracked authority and the current checkout. Do not duplicate the specialist consultation in
@@ -67,10 +74,21 @@ adapter or runtime use, consult both advisors in bounded scopes. Only the Nautil
 adapter evidence authoritatively; the primary Kite agent reconciles the results and remains
 responsible for the recommendation.
 
+The PostgreSQL custom agent owns invocation of the bundled
+`$kite:markeitech-postgres-persistence-expert` skill and its database evidence and decision matrix.
+When a request combines PostgreSQL with Nautilus ownership, component boundaries, semantic-evidence
+meaning, event delivery, or Python runtime execution, consult each applicable advisor in a bounded
+scope. The primary Kite agent reconciles the results without allowing one advisor to fill another's
+evidence column.
+
 If the custom role cannot be spawned, cannot load its required skill, or cannot inspect a required
 source, report that limitation and stop before the consequential NautilusTrader decision or edit.
 Apply the same gate to the affected IB provider decision when the IB custom role cannot be spawned,
 cannot load its required skill, or cannot inspect a required current provider or venue source.
+Apply the same gate to the affected PostgreSQL recommendation or edit when its custom role cannot be
+spawned, cannot load its required skill, or cannot inspect the current schema, migration history,
+driver/server contract required by the question, or relevant current primary source.
+
 For another available specialist without a defined custom-agent role, invoke its skill directly
 until Markeitect approves a corresponding delegated role.
 
