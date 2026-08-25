@@ -12,6 +12,8 @@ until the cache-busted Kite plugin is reinstalled and exercised in a fresh Codex
 | Determine whether an accepted feature was knowable at prediction time | Statistical learning; market evidence first when admissibility is unresolved | Consume the evidence disposition, then audit the as-of timeline | ALIGNED | PENDING |
 | Define a label's trading or opportunity meaning | Markeitect and applicable market/product specialist first | Statistical advisor reviews coherence and evaluation validity, not trading meaning | ALIGNED | PENDING |
 | Audit temporal folds, overlapping outcomes, calibration, uncertainty, or model search | Statistical learning | Named decision and approved Stage 9K data strategy remain mandatory | ALIGNED | PENDING |
+| Evaluate model-selective risk versus coverage | Statistical learning | Evaluate the model's abstention behavior without redefining downstream policy | ALIGNED | PENDING |
+| Define Sir Loke, opportunity, operator-facing, or tool-policy abstention | Live-agent governance or product authority | Statistical learning may supply model evidence but does not own agent or product abstention | ALIGNED | PENDING |
 | Optimize a trading threshold or opportunity score | Market/product owner first, then statistical learning | Optimization cannot manufacture semantics or authorize live influence | ALIGNED | PENDING |
 | Optimize a resource or runtime parameter | Architecture/runtime policy owner first; statistical learning for the experiment | Typed bounded candidate only; no runtime mutation authority | ALIGNED | PENDING |
 | Place a model in a Nautilus actor, bus, cache, or persistence path | Nautilus advisor plus statistical learning | Nautilus owns framework truth; statistical advisor owns model evidence | ALIGNED | PENDING |

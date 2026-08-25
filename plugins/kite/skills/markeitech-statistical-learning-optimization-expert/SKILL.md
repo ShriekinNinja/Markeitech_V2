@@ -41,10 +41,10 @@ Own advisory review of:
 - causal and temporal leakage threats, including preprocessing, selection, overlapping outcomes,
   entity revisions, contract identity, universe selection, feedback, and operator-action leakage;
 - evaluation design: temporal and regime sensitivity, simple baselines, nested selection where
-  needed, dependence-aware uncertainty, discrimination, calibration, abstention, stability, and
-  bounded decision utility;
+  needed, dependence-aware uncertainty, discrimination, calibration, model-selective abstention,
+  stability, and bounded decision utility;
 - probabilistic calibration and uncertainty claims, including their assumptions, resolution,
-  coverage scope, failure under shift, and abstention behavior;
+  coverage scope, failure under shift, and model-selective abstention behavior;
 - offline-to-shadow-to-advisory promotion evidence, champion/challenger comparison, drift and
   performance monitoring, rollback, and retirement;
 - proposals for online learning or bounded adaptive parameters, but only as typed, versioned,
@@ -104,10 +104,11 @@ Before recommending any statistical-learning experiment, model, adaptive policy,
    outcome windows, regime/session/instrument slices, simple baselines, selection protocol,
    uncertainty, and acceptance criteria. Keep a final untouched forward holdout when the approved
    data permits it. Report sensitivity and sample support, not only an aggregate score.
-6. **Probability and abstention:** If outputs are probabilistic, evaluate discrimination and
-   calibration separately, state uncertainty assumptions and population, and define unavailable,
-   out-of-envelope, and abstain behavior. Calibration data must not train the base model or select
-   the reported result.
+6. **Probability and model-selective abstention:** If outputs are probabilistic, evaluate
+   discrimination and calibration separately, state uncertainty assumptions and population, and
+   define unavailable, out-of-envelope, and model-abstain behavior. Calibration data must not train
+   the base model or select the reported result. Do not redefine evidence-health, Sir Loke,
+   opportunity, operator-facing, or tool-policy abstention.
 7. **Operational envelope:** Define approved inputs/output, model and feature identities, modes,
    resources, latency, health, monitoring, expiry, rollback, and failure isolation. A score may not
    subscribe, call IB, mutate canonical evidence or policy, or execute.

@@ -6,10 +6,10 @@ uncertainty, model monitoring, online learning, adaptive parameters, or optimiza
 ## 1. Define A Named Decision
 
 Record the consumer, decision timestamp, prediction horizon, eligible population, output meaning,
-permitted action, prohibited inference, abstention behavior, and simplest deterministic or constant
-baseline. Separate prediction quality from trading utility and contract-expression quality. The
-statistical advisor may test a definition's coherence; Markeitect and the relevant market-domain
-advisor own trading meaning.
+permitted action, prohibited inference, model-selective abstention behavior, and simplest
+deterministic or constant baseline. Separate prediction quality from trading utility and
+contract-expression quality. The statistical advisor may test a definition's coherence; Markeitect
+and the relevant market-domain advisor own trading meaning.
 
 Reject targets such as `price goes up`, universal opportunity scores, or labels reverse-engineered
 from a desired model. A candidate label is not validated merely because it is calculable.
@@ -101,11 +101,12 @@ Predeclare before examining final results:
   slices justified by the decision—never invented merely to find a winning subgroup;
 - constant, historical-frequency, simple deterministic, current-policy, and other credible
   baselines appropriate to the decision;
-- metrics for discrimination/ranking, calibration, abstention/coverage, stability, latency/resource
-  cost, and decision utility, kept separate;
+- metrics for discrimination/ranking, calibration, model-selective abstention/coverage, stability,
+  latency/resource cost, and decision utility, kept separate;
 - dependence-aware confidence intervals or uncertainty analysis, sample counts, event counts,
   effective support caveats, and multiple-comparison/search accounting; and
-- frozen acceptance criteria, including non-inferiority and rejection/abstention conditions.
+- frozen acceptance criteria, including non-inferiority, rejection, and model-selective-abstention
+  conditions.
 
 Random shuffles are inappropriate for claims about forward temporal use. A time-series splitter is
 only a mechanism: it does not solve revision, overlap, grouping, regime coverage, contract, or
@@ -113,7 +114,7 @@ feedback leakage. Do not call an offline chronological study a Markeitech backte
 those capabilities remain out of scope; if the approved data strategy cannot support evaluation
 without reopening those decisions, stop.
 
-## 6. Calibration, Uncertainty, And Abstention
+## 6. Calibration, Uncertainty, And Model-Selective Abstention
 
 For probabilistic outputs:
 
@@ -127,7 +128,12 @@ For probabilistic outputs:
 - test temporal, session, instrument, contract, regime, and evidence-health sensitivity;
 - state whether uncertainty is aleatoric, epistemic, sampling, model-selection, or distribution-
   shift uncertainty rather than collapsing them into one confidence field; and
-- define abstention and out-of-envelope behavior before promotion.
+- define model-selective abstention and out-of-envelope behavior before promotion.
+
+Model-selective abstention means the evaluated model declines to produce an otherwise eligible
+output or action class. It does not define evidence-health, Sir Loke, opportunity, operator-facing,
+or tool-policy abstention; those remain with their owning evidence, product, and governance
+contracts.
 
 Conformal or other coverage claims apply only under their stated exchangeability, sequential, or
 shift assumptions and to the tested population. Marginal coverage is not conditional validity,
@@ -140,18 +146,50 @@ requiring explicit approval. Define:
 
 - model, feature, label, dataset, calibration, policy, and configuration identities;
 - training/evaluation windows, intended use, prohibited use, operating envelope, and expiry;
-- input schema/quality, missingness, evidence-health, output, calibration, abstention, latency,
-  resource, and error monitoring;
+- input schema/quality, missingness, evidence-health, output, calibration, model-selective
+  abstention, latency, resource, and error monitoring;
 - delayed-label reconciliation and evaluation when outcomes become available;
 - comparison to frozen baselines and champion/challenger evidence;
 - alert thresholds as bounded configurable policy candidates with support, dwell, hysteresis,
   cooldown, severity, and false-alert review—not magic constants;
-- explicit responses: investigate, degrade, abstain, disable, rollback, or seek approval; and
+- explicit responses: investigate, degrade, model-abstain, disable, rollback, or seek approval; and
 - independent review, operator override records, incidents, exceptions, and retirement criteria.
 
-Input drift, prediction drift, calibration drift, performance drift, and concept drift are distinct.
-An alarm is diagnostic evidence. It does not identify cause and never authorizes automatic retraining
-or live parameter mutation.
+Freeze every shadow or advisory prediction before its outcome matures. The immutable prediction
+record must include:
+
+- prediction identity and UTC creation time;
+- decision/episode identity and eligibility-contract version;
+- model, code, feature, dataset, calibration, configuration, and model-selective-abstention-policy
+  versions;
+- the as-of information cutoff, immutable feature snapshot identity, and evidence health;
+- raw score, probability, interval, or set plus the final model action class and any
+  model-selective-abstention reason;
+- expected label maturity and current label state;
+- final label identity, version, provenance, and availability time when it becomes knowable; and
+- monitoring inclusion or exclusion reason.
+
+Preserve test-then-observe ordering: freeze the prediction first, attach the outcome only after it
+is knowable, and record the effective training time if that outcome later enters a training set.
+Keep unlabeled, delayed, corrected, censored, and excluded predictions visible rather than silently
+shrinking the evaluated population.
+
+Monitor these drift families separately:
+
+- **source/availability drift:** missingness, latency, staleness, revisions, provider, or contract
+  changes;
+- **covariate drift:** feature-distribution change;
+- **prediction drift:** score, class, uncertainty, and model-selective-abstention/coverage change;
+- **prior/label drift:** outcome prevalence after labels mature;
+- **conditional/performance drift:** change in the relationship between inputs, predictions, and
+  mature outcomes;
+- **calibration drift:** reliability change by time and supported slice; and
+- **operational drift:** latency, resource, failure, or version mismatch.
+
+Every monitor needs a versioned reference population/window, current window, statistic, sample
+floor, warning/failure threshold, multiple-testing policy where relevant, delayed-label behavior,
+owner, and deterministic response. An alarm is diagnostic evidence. It does not identify cause and
+never authorizes automatic retraining or live parameter mutation.
 
 ## 8. Online Learning And Bounded Optimization
 
