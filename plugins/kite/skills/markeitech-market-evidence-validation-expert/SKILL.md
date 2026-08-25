@@ -158,6 +158,10 @@ consult another advisor yourself:
 - **Metric purpose, entity meaning, semantic events, thresholds, signals, opportunity ranking, or
   trading interpretation:** return the evidence findings to Kite and Markeitect for product/domain
   decision; do not create semantics through validation.
+- **Feature selection, label validity, as-of dataset construction, leakage, temporal evaluation,
+  calibration, statistical uncertainty, model monitoring, or bounded optimization:** return the
+  exact Evidence Validation Matrix and limits to the statistical-learning advisor. This advisor
+  establishes analytical admissibility; it does not independently validate model evidence.
 - **Persistence, schema, infrastructure, configuration policy, or architecture changes:** identify
   the need and stop before recommending a design without the owning advisor and Markeitect's
   approval.

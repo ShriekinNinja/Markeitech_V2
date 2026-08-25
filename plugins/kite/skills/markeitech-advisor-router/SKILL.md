@@ -63,6 +63,20 @@ settlement, bounded-discovery, or expression-quality recommendation. It guards o
 flow and exposure claims but does not own underlying market structure, participant positioning,
 causal validation, provider entitlements, licensing, execution, or account risk.
 
+For consequential PostgreSQL schema objects, migrations, constraints, indexes, queries, database
+transactions, retention mechanics, backup, restore, or database-observability work, delegate one
+narrow, read-only consultation to the project-scoped `markeitech_postgres_persistence_advisor`
+custom agent and wait for its result before making the affected PostgreSQL recommendation. The
+logical durability requirement, canonical component owner, semantic meaning, and end-to-end event
+or runtime execution contract remain with their applicable authorities and specialists.
+
+For available statistical-learning coverage, delegate a narrow, read-only consultation to the
+project-scoped `markeitech_statistical_learning_optimization_advisor` custom agent before a
+consequential feature/label, leakage, evaluation, calibration, model-monitoring, or bounded-
+optimization recommendation. If analytical feature correctness is unresolved, consult the
+market-evidence validation advisor first and provide its exact disposition to the statistical
+advisor without upgrading the evidence class.
+
 The custom agent owns invocation of the bundled `$kite:markeitech-nautilus-v2-expert` skill and its
 native-capability and alignment gates. Kite remains responsible for checking the returned evidence
 against tracked authority and the current checkout. Do not duplicate the specialist consultation in
@@ -82,6 +96,13 @@ market-evidence validation for formula, timestamp, aggregation, overlap, lineage
 claims. Missing licensing, execution/risk, legal/tax, or causal-statistical coverage remains a
 `MISSING` gate rather than authority for the options advisor to fill the gap.
 
+The PostgreSQL custom agent owns invocation of the bundled
+`$kite:markeitech-postgres-persistence-expert` skill and its database evidence and decision matrix.
+When a request combines PostgreSQL with Nautilus ownership, component boundaries, semantic-evidence
+meaning, event delivery, or Python runtime execution, consult each applicable advisor in a bounded
+scope. The primary Kite agent reconciles the results without allowing one advisor to fill another's
+evidence column.
+
 If the custom role cannot be spawned, cannot load its required skill, or cannot inspect a required
 source, report that limitation and stop before the consequential NautilusTrader decision or edit.
 Apply the same gate to the affected IB provider decision when the IB custom role cannot be spawned,
@@ -89,6 +110,12 @@ cannot load its required skill, or cannot inspect a required current provider or
 Apply it to the affected options decision when the options custom role cannot be spawned, cannot
 load its required skill, or cannot inspect the required current product, contract, or evidence
 source.
+Apply the same gate to the affected PostgreSQL recommendation or edit when its custom role cannot be
+spawned, cannot load its required skill, or cannot inspect the current schema, migration history,
+driver/server contract required by the question, or relevant current primary source.
+Apply it to the affected statistical-learning conclusion when that custom role cannot be spawned,
+cannot load its skill, or cannot inspect the approved data strategy and evidence it requires.
+
 For another available specialist without a defined custom-agent role, invoke its skill directly
 until Markeitect approves a corresponding delegated role.
 
