@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markeitech PostgreSQL Persistence Expert"
+  short_description: "Evidence-first PostgreSQL persistence advice"
+  default_prompt: "Use $kite:markeitech-postgres-persistence-expert to review this Markeitech persistence decision against current repository authority and version-matched PostgreSQL evidence."
