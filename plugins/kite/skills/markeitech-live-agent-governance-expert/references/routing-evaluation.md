@@ -6,12 +6,14 @@ This matrix defines forward-routing acceptance for the advisor. Static review ch
 skill description, body, custom-agent role, generic router, and adjacent advisor contracts express
 the expected boundary. It does not prove automatic selection or delegated execution.
 
-Actual installed discovery, custom-role delegation, cross-advisor ordering, and proportional output
-remain `PENDING` until Kite is cache-busted, reinstalled, and exercised in a fresh Codex thread.
+Installed discovery and ordinary-request selection were observed on 2026-08-25 against Kite
+`0.1.0+codex.20260825124814`. The fresh thread selected this specialist, then its custom-role spawn
+failed because the ephemeral collaboration runtime could not resolve its own thread ID. Delegated
+execution, cross-advisor ordering, and proportional final output remain `PENDING`.
 
 | Request | Expected routing | Required boundary | Contract check | Installed result |
 |---|---|---|---|---|
-| Define Sir Loke's typed tools, approval boundary, abstention, or advisory-state authority | Live-agent governance advisor | Agent proposes; deterministic governor authorizes; named owner executes; Markeitect retains final authority | ALIGNED | PENDING |
+| Define Sir Loke's typed tools, approval boundary, abstention, or advisory-state authority | Live-agent governance advisor | Agent proposes; deterministic governor authorizes; named owner executes; Markeitect retains final authority | ALIGNED | SELECTED; DELEGATED EXECUTION BLOCKED by ephemeral collaboration thread resolution |
 | Review whether Sir Loke preserved an upstream evidence reference and class | Live-agent governance advisor | Preserve resolvable upstream identity, scope, version, health, and class without redefining evidence meaning | ALIGNED | PENDING |
 | Decide whether a market measurement is analytically correct or sufficient for a downstream use | Market-evidence-validation advisor; governance only if Sir Loke-facing admission is also at issue | Governance must not define formula, fidelity, timestamp, or sufficiency semantics | ALIGNED | PENDING |
 | Persist Sir Loke advisory state and recover it after restart | Governance for advisory-state meaning; architecture for owner placement; PostgreSQL specialist for mechanics; event-driven/runtime specialist for recovery execution | No specialist absorbs another's semantics or mechanics | ALIGNED | PENDING |

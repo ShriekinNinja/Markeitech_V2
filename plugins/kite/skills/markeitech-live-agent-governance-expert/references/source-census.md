@@ -22,11 +22,11 @@ outrank external patterns for Markeitech product decisions.
 - `docs/research/semantic-events-ai-options-baseline.md`: informative historical research only; no
   proposed schema, score, or confidence range was promoted into this skill.
 - Current Kite advisor/router conventions reviewed in the integrated
-  `v2-nautilus-audit-alignment` catalog after merge commit `6ca5be7`, including the architecture-
-  boundaries, evidence-visualization, Interactive Brokers market-data, market-evidence-validation,
-  market-structure, options-and-0DTE, PostgreSQL-persistence, NautilusTrader, Python-runtime, and
-  statistical-learning-and-optimization advisors. The candidate originated from foundation commit
-  `c6af7a5`; integration preserved the newer suite and still requires installed routing validation.
+  `v2-nautilus-audit-alignment` catalog at commit `74f47f4`, including the architecture-boundaries,
+  evidence-visualization, Interactive Brokers market-data, market-evidence-validation, market-
+  structure, options-and-0DTE, zero-DTE-risk, PostgreSQL-persistence, NautilusTrader, Python-
+  runtime, and statistical-learning-and-optimization advisors. The candidate originated from
+  foundation commit `c6af7a5`; integration preserved the newer suite.
 
 ## Current Primary And Institutional Sources
 
@@ -73,9 +73,12 @@ or configuration was copied.
 
 - The exact Sir Loke model/provider/runtime, tool protocol, persistence schema, and human-approval
   UX are not yet approved or implemented.
-- Fresh installed-plugin discovery, ordinary-request selection, delegated custom-role execution,
-  cross-advisor ordering, and proportional output remain unverified until the integrated plugin is
-  cache-busted, reinstalled, and exercised in a fresh Codex thread.
+- Fresh installed-plugin discovery and ordinary-request selection were observed on 2026-08-25
+  against Kite `0.1.0+codex.20260825124814`: an unnamed Sir Loke authority request selected the
+  live-agent governance specialist. Delegated custom-role execution remained unverified because
+  the ephemeral Codex collaboration runtime could not resolve its own thread ID; the bounded retry
+  was terminated after no further progress. Cross-advisor execution and proportional final output
+  therefore remain acceptance debt.
 - Security/privacy/legal review remains necessary for credentials, model data handling, trace
   retention, personal data, provider terms, prompt injection defenses, and identity protocols.
 - Current external guidance does not establish market-evidence sufficiency, option-chain semantics,
