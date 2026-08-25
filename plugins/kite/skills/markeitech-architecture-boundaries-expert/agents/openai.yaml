@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markeitech Architecture Boundaries Expert"
+  short_description: "Ownership and architecture-boundary review"
+  default_prompt: "Use $kite:markeitech-architecture-boundaries-expert to review this Markeitech change for component topology, scoped canonical authority, duplicated ownership, architecture drift, and change cost."
