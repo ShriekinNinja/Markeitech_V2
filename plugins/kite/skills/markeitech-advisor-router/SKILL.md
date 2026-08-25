@@ -56,6 +56,13 @@ wait for its result before making the affected provider recommendation. That adv
 contract identity, entitlements, delivery modes, request semantics, provider limits, sessions, and
 provider failures. It does not own Nautilus adapter or Markeitech runtime behavior.
 
+For available option-contract or same-day-expiry coverage, delegate one narrow, read-only
+consultation to the project-scoped `markeitech_options_0dte_advisor` custom agent and wait for its
+result before a consequential product, contract, chain, Greek, liquidity, expiration, exercise,
+settlement, bounded-discovery, or expression-quality recommendation. It guards option-specific
+flow and exposure claims but does not own underlying market structure, participant positioning,
+causal validation, provider entitlements, licensing, execution, or account risk.
+
 The custom agent owns invocation of the bundled `$kite:markeitech-nautilus-v2-expert` skill and its
 native-capability and alignment gates. Kite remains responsible for checking the returned evidence
 against tracked authority and the current checkout. Do not duplicate the specialist consultation in
@@ -67,10 +74,21 @@ adapter or runtime use, consult both advisors in bounded scopes. Only the Nautil
 adapter evidence authoritatively; the primary Kite agent reconciles the results and remains
 responsible for the recommendation.
 
+The options custom agent owns invocation of the bundled `$kite:markeitech-options-0dte-expert`
+skill. When a request combines option semantics with IB entitlements or delivery, consult both the
+options and IB advisors. When it combines option semantics with Nautilus adapter, subscription,
+cache, actor, lifecycle, or runtime behavior, consult both the options and Nautilus advisors. Add
+market-evidence validation for formula, timestamp, aggregation, overlap, lineage, or fitness-for-use
+claims. Missing licensing, execution/risk, legal/tax, or causal-statistical coverage remains a
+`MISSING` gate rather than authority for the options advisor to fill the gap.
+
 If the custom role cannot be spawned, cannot load its required skill, or cannot inspect a required
 source, report that limitation and stop before the consequential NautilusTrader decision or edit.
 Apply the same gate to the affected IB provider decision when the IB custom role cannot be spawned,
 cannot load its required skill, or cannot inspect a required current provider or venue source.
+Apply it to the affected options decision when the options custom role cannot be spawned, cannot
+load its required skill, or cannot inspect the required current product, contract, or evidence
+source.
 For another available specialist without a defined custom-agent role, invoke its skill directly
 until Markeitect approves a corresponding delegated role.
 

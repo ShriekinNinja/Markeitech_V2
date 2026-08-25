@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markeitech Options And 0DTE Expert"
+  short_description: "Evidence-bounded options and 0DTE review"
+  default_prompt: "Use $kite:markeitech-options-0dte-expert to review this options or 0DTE question against exact product identity, fresh primary sources, provider evidence, and Markeitech boundaries."
