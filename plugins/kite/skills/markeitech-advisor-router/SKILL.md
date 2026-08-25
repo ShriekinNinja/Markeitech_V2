@@ -50,13 +50,27 @@ planning or edits. The delegated prompt must state the real task, the bounded de
 question, the relevant repository scope, and the evidence expected. Do not prescribe the desired
 answer or ask the advisor to make changes.
 
+For available Interactive Brokers market-data provider-truth coverage, delegate one narrow,
+read-only consultation to the project-scoped `markeitech_ib_market_data_advisor` custom agent and
+wait for its result before making the affected provider recommendation. That advisor owns IB
+contract identity, entitlements, delivery modes, request semantics, provider limits, sessions, and
+provider failures. It does not own Nautilus adapter or Markeitech runtime behavior.
+
 The custom agent owns invocation of the bundled `$kite:markeitech-nautilus-v2-expert` skill and its
 native-capability and alignment gates. Kite remains responsible for checking the returned evidence
 against tracked authority and the current checkout. Do not duplicate the specialist consultation in
 the primary thread merely to obtain a preferred conclusion.
 
+The IB custom agent owns invocation of the bundled `$kite:markeitech-ib-market-data-expert` skill
+and its provider-truth and handoff matrices. When a request combines IB capability with Nautilus
+adapter or runtime use, consult both advisors in bounded scopes. Only the Nautilus advisor may fill
+adapter evidence authoritatively; the primary Kite agent reconciles the results and remains
+responsible for the recommendation.
+
 If the custom role cannot be spawned, cannot load its required skill, or cannot inspect a required
 source, report that limitation and stop before the consequential NautilusTrader decision or edit.
+Apply the same gate to the affected IB provider decision when the IB custom role cannot be spawned,
+cannot load its required skill, or cannot inspect a required current provider or venue source.
 For another available specialist without a defined custom-agent role, invoke its skill directly
 until Markeitect approves a corresponding delegated role.
 
