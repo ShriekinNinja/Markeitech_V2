@@ -63,6 +63,14 @@ settlement, bounded-discovery, or expression-quality recommendation. It guards o
 flow and exposure claims but does not own underlying market structure, participant positioning,
 causal validation, provider entitlements, licensing, execution, or account risk.
 
+For risk synthesis and disclosure about a supplied long, single-leg 0DTE candidate, delegate one
+narrow, read-only consultation to the project-scoped `markeitech_zero_dte_risk_advisor` only after
+the exact option mechanics and material evidence-validation dispositions are available. That
+advisor owns risk-review validity, bounded risk consequences, stop conditions, unknowns, and
+disclosure. It does not establish candidate identity, affordability, tradeability, product or
+provider mechanics, quote or Greek correctness, thesis direction, portfolio exposure, ranking,
+risk acceptance, or execution.
+
 For consequential PostgreSQL schema objects, migrations, constraints, indexes, queries, database
 transactions, retention mechanics, backup, restore, or database-observability work, delegate one
 narrow, read-only consultation to the project-scoped `markeitech_postgres_persistence_advisor`
@@ -96,6 +104,14 @@ market-evidence validation for formula, timestamp, aggregation, overlap, lineage
 claims. Missing licensing, execution/risk, legal/tax, or causal-statistical coverage remains a
 `MISSING` gate rather than authority for the options advisor to fill the gap.
 
+The zero-DTE risk custom agent owns invocation of the bundled
+`$kite:markeitech-zero-dte-risk-expert` skill. For a complete candidate review, consult the options
+advisor first for exact series, quotation, exercise, settlement, and provider-field mechanics;
+consult market-evidence validation for quote, spread, age, stability, IV, Greek, scenario, formula,
+and lineage fitness; then provide those exact dispositions to the risk advisor without upgrading
+their evidence class. Account-specific broker behavior, sizing, suitability, and portfolio risk
+remain a `MISSING` gate until separately approved coverage exists.
+
 The PostgreSQL custom agent owns invocation of the bundled
 `$kite:markeitech-postgres-persistence-expert` skill and its database evidence and decision matrix.
 When a request combines PostgreSQL with Nautilus ownership, component boundaries, semantic-evidence
@@ -110,6 +126,9 @@ cannot load its required skill, or cannot inspect a required current provider or
 Apply it to the affected options decision when the options custom role cannot be spawned, cannot
 load its required skill, or cannot inspect the required current product, contract, or evidence
 source.
+Apply it to the affected candidate-risk conclusion when the zero-DTE risk custom role cannot be
+spawned, cannot load its skill, or cannot inspect the supplied candidate, required mechanics,
+evidence-validation dispositions, or current public sources required by the exact question.
 Apply the same gate to the affected PostgreSQL recommendation or edit when its custom role cannot be
 spawned, cannot load its required skill, or cannot inspect the current schema, migration history,
 driver/server contract required by the question, or relevant current primary source.
