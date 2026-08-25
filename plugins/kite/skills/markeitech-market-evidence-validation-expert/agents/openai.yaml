@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markeitech Market Evidence Validation Expert"
+  short_description: "Review market evidence before downstream use"
+  default_prompt: "Use $kite:markeitech-market-evidence-validation-expert to recommend whether this market metric is defensibly correct for its named downstream use."
