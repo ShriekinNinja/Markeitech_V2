@@ -7,6 +7,8 @@ from enum import StrEnum
 
 from markeitech.intelligence.metrics import MetricFidelity, MetricHealth
 
+COMPLETED_BAR_INPUT_TYPE_NAME = "markeitech.completed_bar.input"
+
 
 class CompletedBarSource(StrEnum):
     HISTORICAL_PROVIDER = "historical_provider"
@@ -115,6 +117,14 @@ class CompletedBarInput:
     @property
     def interval_ns(self) -> int:
         return self.interval_end_ns - self.interval_start_ns
+
+    @property
+    def ts_event(self) -> int:
+        return self.interval_end_ns
+
+    @property
+    def ts_init(self) -> int:
+        return self.normalized_ts_ns
 
     @property
     def equivalence_key(self) -> tuple[object, ...]:

@@ -21,6 +21,7 @@ from markeitech.acquisition import (
     NautilusSubscriptionPort,
 )
 from markeitech.intelligence.completed_bars import (
+    COMPLETED_BAR_INPUT_TYPE_NAME,
     BarAdmissionStatus,
     BarConflictPolicy,
     CompletedBarInput,
@@ -50,7 +51,7 @@ from markeitech.intelligence.rolling_measurements import (
     RollingCandidateResult,
     RollingFamilyPolicy,
     RollingMeasurementPolicy,
-    calculate_rolling_candidates,
+    calculate_rolling_projection,
     rolling_metric_definitions,
     rolling_metric_values,
 )
@@ -311,6 +312,7 @@ class SessionMetricsActor(DataActor):
         self._registry = MetricRegistry(definitions)
         self._port = NautilusSubscriptionPort(self)
         self._metric_type = DataType(METRIC_VALUE_TYPE_NAME)
+        self._completed_bar_type = DataType(COMPLETED_BAR_INPUT_TYPE_NAME)
         self._batch_type = DataType(HISTORICAL_BATCH_TYPE_NAME)
         self._demand_retry_interval_ns = config.demand_retry_interval_ms * 1_000_000
         self._evidence_retry_interval_ns = config.evidence_snapshot_retry_interval_ms * 1_000_000
@@ -361,6 +363,7 @@ class SessionMetricsActor(DataActor):
         }
         self._window_signatures: dict[tuple[str, str], tuple[object, ...]] = {}
         self._rolling_signatures: dict[tuple[str, str], tuple[object, ...]] = {}
+        self._rolling_bar_ledgers: dict[tuple[str, str], CompletedBarLedger] = {}
         self._live_demand_ids = {
             instrument_id: f"metric:session:{instrument_id}:bars:{self._live_selector}"
             for instrument_id in self._instrument_ids
@@ -521,6 +524,9 @@ class SessionMetricsActor(DataActor):
             f" | window_values={self._counts['window_values']}"
             f" | rolling_batches={self._counts['rolling_batches']}"
             f" | rolling_values={self._counts['rolling_values']}"
+            f" | derived_completed_bars={self._counts['derived_completed_bars']}"
+            f" | derived_bar_duplicates={self._counts['derived_bar_duplicates']}"
+            f" | derived_bar_conflicts={self._counts['derived_bar_conflicts']}"
             f" | failures={self._counts['failures']}",
         )
 
@@ -674,6 +680,10 @@ class SessionMetricsActor(DataActor):
             )
             return
         self._counts["accepted"] += 1
+        self.publish_data(
+            self._completed_bar_type,
+            CustomData(self._completed_bar_type, admission.accepted),
+        )
         for target, prior in _recalculation_contexts(ledger.bars, admission.accepted.key):
             self._revisions[bar.instrument_id] += 1
             now_ns = max(self.clock.timestamp_ns(), target.normalized_ts_ns)
@@ -714,13 +724,14 @@ class SessionMetricsActor(DataActor):
             calendar = self._calendars[self._instrument_calendars[instrument_id]]
             latest_date = bars[-1].trade_date
             phase_windows = calendar.windows(latest_date - timedelta(days=45), latest_date)
-            results = calculate_rolling_candidates(
+            projection = calculate_rolling_projection(
                 bars,
                 phase_windows=phase_windows,
                 policy=self._rolling_policy,
             )
+            self._publish_derived_completed_bars(projection.completed_bars)
             pending: list[tuple[RollingCandidateResult, tuple[object, ...]]] = []
-            for result in results:
+            for result in projection.candidates:
                 signature = _rolling_result_signature(result)
                 key = (instrument_id, f"{result.family_id}:{result.candidate_id}")
                 if self._rolling_signatures.get(key) == signature:
@@ -754,6 +765,40 @@ class SessionMetricsActor(DataActor):
                 f" | instrument_id={instrument_id}"
                 f" | error={type(exc).__name__} | reason={exc}",
             )
+
+    def _publish_derived_completed_bars(
+        self,
+        bars: tuple[CompletedBarInput, ...],
+    ) -> None:
+        for bar in bars:
+            if bar.bar_specification == self._historical_selector:
+                continue
+            key = (bar.instrument_id, bar.bar_specification)
+            ledger = self._rolling_bar_ledgers.setdefault(
+                key,
+                CompletedBarLedger(
+                    maximum_observations=self._maximum_retained,
+                    conflict_policy=BarConflictPolicy.REJECT_CONFLICT,
+                ),
+            )
+            admission = ledger.admit(bar)
+            if admission.status is BarAdmissionStatus.DUPLICATE:
+                self._counts["derived_bar_duplicates"] += 1
+                continue
+            if admission.status is BarAdmissionStatus.CONFLICT:
+                self._counts["derived_bar_conflicts"] += 1
+                self.log.error(
+                    "ROLLING_COMPLETED_BAR_CONFLICT"
+                    f" | instrument_id={bar.instrument_id}"
+                    f" | bar_specification={bar.bar_specification}"
+                    f" | interval_end_ns={bar.interval_end_ns}",
+                )
+                continue
+            self.publish_data(
+                self._completed_bar_type,
+                CustomData(self._completed_bar_type, admission.accepted),
+            )
+            self._counts["derived_completed_bars"] += 1
 
     def _attach_consumers(self) -> None:
         for instrument_id in self._instrument_ids:

@@ -4,13 +4,25 @@ import json
 
 from nautilus_trader.network import HttpResponse
 
+from markeitech.acquisition import (
+    HistoricalDependencyDemandEvent,
+    HistoricalReadinessEvent,
+)
 from markeitech.system.discord import (
     DiscordDelivery,
     DiscordDeliveryWorker,
+    OperationalReadinessProjection,
+    OperationalReadinessSnapshot,
+    render_operational_readiness_message,
     render_runtime_resource_health_message,
     render_system_health_message,
 )
-from markeitech.system.messages import SystemHealthEvent
+from markeitech.system.messages import (
+    SystemHealthEvent,
+    WatchlistLifecycleEvent,
+    WatchlistMember,
+    WatchlistMembershipEvent,
+)
 from markeitech.system.resource_contracts import RuntimeResourceHealthEvent
 
 
@@ -85,6 +97,79 @@ def test_renders_resource_recovery_without_mentions() -> None:
     assert payload["allowed_mentions"] == {"parse": []}
 
 
+def test_operational_readiness_waits_for_every_existing_evidence_source() -> None:
+    projection = OperationalReadinessProjection()
+    health = SystemHealthEvent(
+        state="READY",
+        reason="system ready",
+        source="SYSTEM-CONTROL",
+        evidence={},
+    )
+    membership = WatchlistMembershipEvent(
+        event_id="watchlist-membership:1",
+        membership_revision=1,
+        source="WATCHLIST",
+        reason="configured baseline established",
+        members=(
+            WatchlistMember(
+                instrument_id="ESU6.CME",
+                calendar_id="cme_equity",
+                capabilities=("watchlist_last",),
+                owner_ids=("config:system",),
+            ),
+            WatchlistMember(
+                instrument_id="NQU6.CME",
+                calendar_id="cme_equity",
+                capabilities=("watchlist_last",),
+                owner_ids=("config:system",),
+            ),
+        ),
+    )
+    demands = (_demand("ESU6.CME"), _demand("NQU6.CME"))
+
+    assert projection.accept_system_health(health) is None
+    assert projection.accept_membership(membership) is None
+    assert projection.accept_lifecycle(_observed("ESU6.CME")) is None
+    for demand in demands:
+        assert projection.accept_demand(demand) is None
+    assert projection.accept_readiness(_readiness("ESU6.CME", "READY", 10)) is None
+    assert projection.accept_lifecycle(_observed("NQU6.CME")) is None
+
+    snapshot = projection.accept_readiness(_readiness("NQU6.CME", "READY", 20))
+
+    assert snapshot is not None
+    assert snapshot.is_ready is True
+    assert snapshot.expected_watchlist_count == 2
+    assert snapshot.observed_watchlist_count == 2
+    assert snapshot.historical_state_counts == {"READY": 2}
+    assert snapshot.completed_at_ns == 20
+    assert projection.accept_readiness(_readiness("NQU6.CME", "READY", 30)) is None
+
+
+def test_renders_operational_readiness_without_mentions() -> None:
+    snapshot = OperationalReadinessSnapshot(
+        system_state="READY",
+        observed_watchlist_count=18,
+        expected_watchlist_count=18,
+        historical_state_counts={"READY": 49},
+        completed_at_ns=1_787_578_567_090_742_016,
+    )
+
+    payload = json.loads(render_operational_readiness_message(snapshot))
+
+    assert payload["allowed_mentions"] == {"parse": []}
+    assert "content" not in payload
+    embed = payload["embeds"][0]
+    assert embed["title"] == "Markeitech V2 | Ready for Sir Loke"
+    assert {field["name"]: field["value"] for field in embed["fields"]} == {
+        "State": "READY",
+        "Watchlist": "18/18 observed",
+        "Historical warmup": "49/49 ready",
+        "Historical outcomes": "Ready: 49",
+        "System control": "READY",
+    }
+
+
 def test_worker_preserves_order_and_reports_confirmed_delivery() -> None:
     calls: list[tuple[str, dict]] = []
 
@@ -152,3 +237,54 @@ def test_worker_rejects_delivery_after_close_and_counts_it() -> None:
 
     assert worker.submit(DiscordDelivery(state="READY", body=b"{}")) is False
     assert worker.snapshot().rejected == 1
+
+
+def _demand(instrument_id: str) -> HistoricalDependencyDemandEvent:
+    return HistoricalDependencyDemandEvent(
+        demand_id=f"warmup:{instrument_id}",
+        consumer_id="SESSION-METRICS",
+        capability_id="session.baseline",
+        capability_version=1,
+        instrument_id=instrument_id,
+        selector="1-MINUTE-LAST-EXTERNAL",
+        window="recent_completed",
+        minimum_observations=5,
+        maximum_observations=10,
+        priority=10,
+        purpose="initial warmup",
+        as_of_ns=1,
+    )
+
+
+def _readiness(
+    instrument_id: str,
+    state: str,
+    completed_at_ns: int,
+) -> HistoricalReadinessEvent:
+    return HistoricalReadinessEvent(
+        event_id=f"warmup:{instrument_id}:{state}",
+        request_id=f"request:{instrument_id}",
+        consumer_id="SESSION-METRICS",
+        capability_id="session.baseline",
+        capability_version=1,
+        state=state,
+        instrument_id=instrument_id,
+        selector="1-MINUTE-LAST-EXTERNAL",
+        window="recent_completed",
+        minimum_observations=5,
+        observed_count=10,
+        completed_at_ns=completed_at_ns,
+        source="DATA-ACQUISITION",
+        reason="terminal",
+    )
+
+
+def _observed(instrument_id: str) -> WatchlistLifecycleEvent:
+    return WatchlistLifecycleEvent(
+        event_id=f"watchlist-observed:{instrument_id}",
+        membership_revision=1,
+        state="INSTRUMENT_OBSERVED",
+        source="WATCHLIST",
+        reason="all configured watchlist capabilities observed",
+        instrument_id=instrument_id,
+    )

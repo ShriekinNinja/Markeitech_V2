@@ -318,6 +318,28 @@ def test_duplicate_conflict_stale_and_parameter_mismatch_are_contained() -> None
     assert owner.retained_metric_values == 1
 
 
+def test_unusable_first_metric_publishes_warming_state_without_timestamp_failure() -> None:
+    owner = _owner(_volatility_spec())
+    unavailable = replace(
+        _metric("rolling.fast.atr", Decimal("0.5")),
+        value=None,
+        health=MetricHealth.WARMING,
+        fidelity=MetricFidelity.PARTIAL,
+        missing_reasons=("warmup_observations_insufficient",),
+    )
+
+    revisions = owner.ingest(unavailable, now_ns=101)
+
+    assert len(revisions) == 1
+    assert revisions[0].lifecycle is EntityLifecycle.WARMING
+    assert revisions[0].payload is None
+    assert revisions[0].published_ts_ns == 101
+    assert revisions[0].missing_reasons == (
+        "required_metric_unavailable:average_true_range",
+        "required_metric_unavailable:coverage_ratio",
+    )
+
+
 def test_reconcile_publishes_stale_revision_without_new_metric() -> None:
     owner = _owner(_volatility_spec())
     owner.ingest(_metric("rolling.fast.atr", Decimal("0.5")), now_ns=101)

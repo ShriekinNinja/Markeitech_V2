@@ -1037,6 +1037,59 @@ meaning, opportunity, option selection, or Sir Loke behavior.
 **Exit:** reusable market geometry and per-horizon pivot structure are available through the live
 runtime as truthful entities without pretending they are a trade setup or cross-horizon decision.
 
+**Runtime and visual implementation note (2026-08-24):** The optional bounded
+`MarketStructureEntityActor` is implemented locally for review. The accepted completed-bar ledger
+publishes only admitted `CompletedBarInput` observations through typed Nautilus custom data.
+Rolling calculation also returns the exact completed one-, five-, and fifteen-minute bars it used;
+`SessionMetricActor` publishes newly admitted derived bars on that same typed path while preserving
+historical/live aggregate lineage and rejecting duplicates or conflicts. The actor resolves the
+generic catalog into the exact 9D.5A-C owner contracts, requires every
+application to name one available parameter set, and never selects a latest or fallback set. The
+tracked catalog declares confirmed swing, swing leg, pivot structure state, fair value gap, and
+derived zone definitions for the reviewed 5-minute acceptance path. The actor publishes changed
+typed revisions, fans locally produced swings and FVGs into dependent owners without relying on
+bus loopback ordering, serves immutable filtered snapshots, logs every meaningful revision, and
+keeps failures and counters isolated by owner. Startup fails closed when relationship companions
+disagree on projection policy or when a relationship or derived-zone source does not cover the
+target application's exact instrument and analytical-profile scope. Offline tests prove the typed
+completed-bar path, all five entity types, exact parameter-set binding, companion-definition and
+scope rejection, and snapshot filtering. Numerical catalog values remain explicit test or
+operator-review candidates rather than
+calibrated trading policy. No PostgreSQL schema, Discord projection, support/resistance label,
+cross-horizon score, signal, opportunity, option selection, or Sir Loke behavior was added.
+The optional `VisualAcceptanceActor` is also implemented locally for review. It is a projection of
+canonical state, not another analytical owner: it subscribes only to accepted completed bars,
+metric values, and entity revisions and does not request provider data, read Nautilus cache state,
+read or write PostgreSQL, resample bars, or derive replacement analytics. It reuses the exact
+operational-readiness projection used by the Sir Loke readiness notification. The first render is
+therefore withheld until system health, configured watchlist membership, acquisition lifecycle,
+and historical-dependency evidence satisfy that existing contract. Subsequent bounded refreshes
+occur only when accepted evidence changes.
+
+Rendering is isolated on a background worker with a bounded queue and writes ignored review
+artifacts under `v2/data/visual-acceptance/`: one static PNG for every configured instrument and
+one-, five-, or fifteen-minute horizon. The PNG renderer uses Plotly with Kaleido in one bounded
+batch, publishes the complete batch atomically, removes the superseded HTML/JavaScript artifacts
+only after successful export, and never opens a browser. Each 1800-by-1000 image contains its own
+candles, volume, canonical overlays, and a right-side evidence panel covering retained/visible
+bars, source lineage, configured annotation coverage, lifecycle counts, selected-context metric
+values, health/fidelity, and latest entity counts. Confirmed swings, swing-leg comparisons, pivot
+structure, FVG lifecycle, derived zones, references, sessions, opening ranges, and objective levels
+are drawn only from their canonical entity payloads. Missing configured evidence and unconfigured
+horizons are shown explicitly rather than inferred. The tracked example keeps this actor disabled;
+the ignored local acceptance configuration may enable it. Visual comparison and
+Markeitect-owned connected acceptance remain open before 9D.5D closes.
+
+Each timeframe owns an independent visual viewport derived from its rolling family's already
+reviewed selected context candidate rather than a second renderer-only policy. The current fast,
+tactical, and structural-intraday selections therefore display 45 minutes of one-minute bars, four
+hours of five-minute bars, and eight hours of fifteen-minute bars. The renderer trims each image to
+that horizon's independent window, keeps candle and volume axes aligned, bounds the price scale to
+the visible candles so distant references cannot flatten price, and uses canonical source identity
+for human-readable objective labels. It does not copy an entity onto an unsupported horizon,
+create an annotation when no canonical revision exists, or derive display-only analytical
+replacements.
+
 ### 9D.6: Inferred Bar-Volume Distribution
 
 - implement deterministic bar-volume allocation and configurable price binning;

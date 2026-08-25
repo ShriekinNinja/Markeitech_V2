@@ -21,8 +21,9 @@ system. The preserved V1 status is available in
 
 - Stages 1 through 9C and the runtime-resource hardening gate are implemented and connected-
   accepted within the evidence recorded below.
-- Stage 9D is active. Slices 9D.1 through 9D.5B are approved and committed. Slice 9D.5C is
-  implemented locally for review. Together they provide typed
+- Stage 9D is active. Slices 9D.1 through 9D.5C are approved and committed. The runtime and
+  non-authoritative visual-acceptance portions of Slice 9D.5D are implemented locally for review.
+  Together they provide typed
   analytical entity contracts, a bounded state book, a configuration-owned entity catalog,
   deterministic numerical prerequisites, pure rolling market-state projection, an optional
   `MarketStateEntityActor` runtime boundary, pure confirmed-swing entity projection, and pure
@@ -51,8 +52,36 @@ system. The preserved V1 status is available in
   identity, exact completed-bar lineage, fill state, remaining interval, optional normalization,
   and configurable complete/invalidate/expire outcomes. Zones preserve exact source revisions and
   deterministic horizon, distance, padding, width, constituent-count, age, partition, weighting,
-  and retention policy without support/resistance or trading meaning. Runtime composition and
-  visual/connected acceptance remain next in 9D.5D.
+  and retention policy without support/resistance or trading meaning. The new optional
+  `MarketStructureEntityActor` receives only accepted completed bars through typed Nautilus custom
+  data. Rolling calculation exposes its exact accepted one-, five-, and fifteen-minute completed
+  inputs, and `SessionMetricActor` publishes newly accepted derived bars without changing their
+  source lineage. The structure actor resolves every application against one explicit named set,
+  and coordinates the reviewed confirmed-swing, pivot-relationship, FVG, and derived-zone owners.
+  Changed revisions are published as typed entity data and logged with instrument, type, lifecycle,
+  revision, and entity identity. Consumers may request immutable snapshots filtered by instrument,
+  entity type, analytical profile, and lifecycle. Projection failures are isolated per owner and
+  reconciled through bounded runtime counters. The tracked acceptance catalog now declares five
+  explicit 5-minute market-structure contracts; its numerical values are offline fixtures, not
+  trading calibration. Offline actor evidence proves completed-bar transport, all five entity
+  revision types, local fan-out, exact parameter-set selection, rejection of unavailable sets and
+  incomplete or scope-incompatible companion definitions, and filtered snapshots. Owner invariant
+  failures remain isolated to the affected projection and are counted rather than escaping the
+  Nautilus callback. The optional `VisualAcceptanceActor` consumes only canonical completed bars,
+  metric values, and entity revisions. It reuses the same operational-readiness projection as the
+  Sir Loke readiness notification, renders bounded one-, five-, and fifteen-minute static PNGs
+  only after that contract is ready, and refreshes only after canonical evidence changes. Each
+  image derives its independent viewport from that rolling family's selected context candidate;
+  the current reviewed choices are 45 minutes, four hours, and eight hours. Rendered bar payloads
+  are trimmed to those windows, visible candles own the price scale, and canonical objective levels
+  retain source-specific labels such as previous-session high and opening-range low. The renderer
+  runs outside live callbacks, exports one 1800-by-1000 Kaleido PNG per instrument and horizon in a
+  bounded atomic batch, writes ignored review artifacts under `v2/data/visual-acceptance/`, and
+  neither calculates market truth nor reads or writes PostgreSQL. Superseded HTML/JavaScript
+  artifacts are removed only after a successful PNG batch.
+  It is disabled in the tracked example configuration and enabled only in the ignored local
+  acceptance configuration. Markeitect-owned connected acceptance and visual comparison remain
+  open in 9D.5D.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -77,7 +106,8 @@ the older wording is retained only as implementation history.
 - Configured ES and SPY instrument-definition resolution.
 - Versioned system-health signal contract.
 - `SystemControlActor` with honest `STARTING`, `READY`, `FAILED`, and `STOPPING` ownership.
-- Read-only Discord projection of system-health transitions.
+- Read-only Discord projection of system-health transitions and one-shot startup operational
+  readiness from existing watchlist and historical evidence.
 - Discord failure isolation and bounded worker shutdown.
 
 ## Stage 4: Operational Persistence
@@ -107,7 +137,8 @@ Implementation is approved and committed on branch `v2-stage-5-actor-composition
 - A pure actor plan owns the complete static runtime topology.
 - System control and operational persistence are mandatory core actors.
 - Discord is explicitly enabled or disabled in typed configuration.
-- Enabled Discord requires its webhook before IB startup; later delivery failure remains isolated.
+- Enabled Discord requires its system-health and operational-events webhooks before IB startup;
+  later delivery failure remains isolated.
 - Actor and config import paths are code-owned rather than supplied through TOML.
 - Immutable startup prerequisites replace the transient persistence-ready signal.
 - Runtime persistence failure remains a separate fact; only system control may transition the

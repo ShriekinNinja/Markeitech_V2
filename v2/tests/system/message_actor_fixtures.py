@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 from threading import Event
 
@@ -7,10 +8,17 @@ from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, CustomData, DataType
 
 from markeitech.intelligence import (
+    COMPLETED_BAR_INPUT_TYPE_NAME,
     ENTITY_REVISION_TYPE_NAME,
+    ENTITY_SNAPSHOT_REQUEST_TYPE_NAME,
+    ENTITY_SNAPSHOT_TYPE_NAME,
     METRIC_VALUE_TYPE_NAME,
+    CompletedBarInput,
+    CompletedBarSource,
     EntityLifecycle,
     EntityRevision,
+    EntitySnapshotRequest,
+    EntitySnapshotResponse,
     MetricFidelity,
     MetricHealth,
     MetricValue,
@@ -35,6 +43,8 @@ received_events: list[SystemHealthEvent] = []
 entity_received = Event()
 market_state_received = Event()
 received_entity_revisions: list[EntityRevision] = []
+snapshot_received = Event()
+received_entity_snapshots: list[EntitySnapshotResponse] = []
 
 
 class PersistenceReadyFixtureConfig(DataActorConfig):
@@ -222,9 +232,11 @@ class EntityRevisionSubscriber(DataActor):
     def __init__(self, config: EntityRevisionSubscriberConfig) -> None:
         super().__init__(config)
         self._data_type = DataType(ENTITY_REVISION_TYPE_NAME)
+        self._snapshot_type = DataType(ENTITY_SNAPSHOT_TYPE_NAME)
 
     def on_start(self) -> None:
         self.subscribe_data(self._data_type)
+        self.subscribe_data(self._snapshot_type)
 
     def on_data(self, data) -> None:  # noqa: ANN001
         payload = data.data if isinstance(data, CustomData) else data
@@ -236,3 +248,81 @@ class EntityRevisionSubscriber(DataActor):
                 and payload.lifecycle is EntityLifecycle.ACTIVE
             ):
                 market_state_received.set()
+        elif isinstance(payload, EntitySnapshotResponse):
+            received_entity_snapshots.append(payload)
+            snapshot_received.set()
+
+
+class EntitySnapshotRequesterConfig(DataActorConfig):
+    def __new__(
+        cls,
+        actor_id: str | ActorId = "ENTITY-SNAPSHOT-REQUESTER",
+    ) -> EntitySnapshotRequesterConfig:
+        resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
+        return super().__new__(cls, actor_id=resolved)
+
+
+class EntitySnapshotRequester(DataActor):
+    def on_start(self) -> None:
+        data_type = DataType(ENTITY_SNAPSHOT_REQUEST_TYPE_NAME)
+        request = EntitySnapshotRequest(
+            request_id="market-structure-fixture-snapshot",
+            requester=str(self.actor_id),
+            requested_ts_ns=self.clock.timestamp_ns(),
+            instrument_id="ESU6.CME",
+            entity_type="confirmed_swing",
+        )
+        self.publish_data(data_type, CustomData(data_type, request))
+
+
+class CompletedBarPublisherConfig(DataActorConfig):
+    def __new__(
+        cls,
+        actor_id: str | ActorId = "COMPLETED-BAR-PUBLISHER",
+    ) -> CompletedBarPublisherConfig:
+        resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
+        return super().__new__(cls, actor_id=resolved)
+
+
+class CompletedBarPublisher(DataActor):
+    def on_start(self) -> None:
+        data_type = DataType(COMPLETED_BAR_INPUT_TYPE_NAME)
+        minute_ns = 60_000_000_000
+        for index, (open_, high, low, close) in enumerate(
+            (
+                ("98", "100", "95", "99"),
+                ("101", "106", "99", "104"),
+                ("102", "103", "101", "102"),
+                ("101", "102", "96", "97"),
+                ("99", "104", "98", "103"),
+                ("102", "103", "97", "98"),
+            ),
+        ):
+            start_ns = (index + 1) * 5 * minute_ns
+            value = CompletedBarInput(
+                instrument_id="ESU6.CME",
+                bar_specification="5-MINUTE-LAST-EXTERNAL",
+                calendar_id="cme_equity",
+                analytical_profile_id="cme_equity_primary",
+                analytical_profile_version=1,
+                trade_date=date(2026, 8, 24),
+                session_id="cme_equity:2026-08-24:OPEN",
+                window_id="primary",
+                interval_start_ns=start_ns,
+                interval_end_ns=start_ns + 5 * minute_ns,
+                open=Decimal(open_),
+                high=Decimal(high),
+                low=Decimal(low),
+                close=Decimal(close),
+                volume=Decimal("100"),
+                source=CompletedBarSource.LIVE_AGGREGATE,
+                observed_ts_ns=start_ns + 5 * minute_ns,
+                received_ts_ns=start_ns + 5 * minute_ns + 1,
+                normalized_ts_ns=start_ns + 5 * minute_ns + 2,
+                health=MetricHealth.READY,
+                fidelity=MetricFidelity.REPORTED,
+                evidence_refs=(f"bar:{index}",),
+                complete=True,
+                missing_reasons=(),
+            )
+            self.publish_data(data_type, CustomData(data_type, value))

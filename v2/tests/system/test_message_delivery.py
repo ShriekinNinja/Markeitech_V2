@@ -1,17 +1,24 @@
 from __future__ import annotations
 
+from decimal import Decimal
+from pathlib import Path
+
 from nautilus_trader.common import Environment, ImportableActorConfig
 from nautilus_trader.live import LiveNode
 from nautilus_trader.model import TraderId
 
 from markeitech.intelligence import EntityLifecycle, VolatilityStatePayload
+from markeitech.system.composition import _entity_definition_payload
+from markeitech.system.config import load_system_config
 from tests.system.message_actor_fixtures import (
     entity_received,
     market_state_received,
     ready_received,
     received,
     received_entity_revisions,
+    received_entity_snapshots,
     received_events,
+    snapshot_received,
 )
 
 
@@ -242,6 +249,120 @@ def test_rolling_metrics_project_to_typed_volatility_state_revision() -> None:
     assert revision.payload.normalized_value == revision.payload.classification.measure_value
     assert revision.payload.classification.category == "HIGH"
     assert revision.payload.classification.confirmed is True
+
+
+def test_completed_bars_project_to_market_structure_revisions(tmp_path: Path) -> None:
+    entity_received.clear()
+    received_entity_revisions.clear()
+    snapshot_received.clear()
+    received_entity_snapshots.clear()
+    root = Path(__file__).parents[2]
+    source = (root / "config/system.example.toml").read_text()
+    definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
+    config_path = tmp_path / "market-structure-message-config.toml"
+    config_path.write_text(
+        source.replace(
+            "[metrics.entity_analysis]\nenabled = false",
+            "[metrics.entity_analysis]\nenabled = true",
+        ).replace("definitions = []", definitions),
+    )
+    try:
+        system_config = load_system_config(config_path)
+    finally:
+        config_path.unlink(missing_ok=True)
+    definitions = tuple(
+        item
+        for item in system_config.metrics.entity_analysis.definitions
+        if item.group == "swing_fvg_zone"
+    )
+    node = LiveNode.builder(
+        "MARKEITECH-V2-MARKET-STRUCTURE-MESSAGE-TEST",
+        TraderId.from_str("MARKEITECH-TEST-001"),
+        Environment.SANDBOX,
+    ).build()
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:EntityRevisionSubscriber",
+            config_path="tests.system.message_actor_fixtures:EntityRevisionSubscriberConfig",
+            config={"actor_id": "ENTITY-REVISION-SUBSCRIBER"},
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path=(
+                "markeitech.intelligence.market_structure_actor:MarketStructureEntityActor"
+            ),
+            config_path=(
+                "markeitech.intelligence.market_structure_actor:"
+                "MarketStructureEntityActorConfig"
+            ),
+            config={
+                "actor_id": "MARKET-STRUCTURE-ENTITIES",
+                "instrument_profiles": {
+                    "ESU6.CME": {
+                        "profile_id": "cme_equity_primary",
+                        "profile_version": 1,
+                    },
+                },
+                "definitions": [_entity_definition_payload(item) for item in definitions],
+                "maximum_entities_global": 100,
+                "maximum_entities_per_instrument": 100,
+                "maximum_entities_per_type": 100,
+                "minimum_snapshot_interval_ms": 0,
+                "maximum_publications_per_cycle": 100,
+                "schema_version": 2,
+            },
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:PersistenceReadyFixture",
+            config_path="tests.system.message_actor_fixtures:PersistenceReadyFixtureConfig",
+            config={"actor_id": "PERSISTENCE-READY-FIXTURE"},
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:CompletedBarPublisher",
+            config_path="tests.system.message_actor_fixtures:CompletedBarPublisherConfig",
+            config={"actor_id": "COMPLETED-BAR-PUBLISHER"},
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:EntitySnapshotRequester",
+            config_path="tests.system.message_actor_fixtures:EntitySnapshotRequesterConfig",
+            config={"actor_id": "ENTITY-SNAPSHOT-REQUESTER"},
+        ),
+    )
+
+    try:
+        node.start()
+        assert entity_received.wait(timeout=2)
+        assert snapshot_received.wait(timeout=2)
+    finally:
+        node.stop()
+
+    swing = next(
+        item
+        for item in received_entity_revisions
+        if item.identity.entity_type == "confirmed_swing"
+    )
+    assert swing.lifecycle is EntityLifecycle.COMPLETE
+    assert swing.payload.pivot_price == Decimal("106")
+    assert {
+        "confirmed_swing",
+        "swing_leg",
+        "pivot_structure_state",
+        "fair_value_gap",
+        "derived_zone",
+    } <= {item.identity.entity_type for item in received_entity_revisions}
+    snapshot = received_entity_snapshots[0]
+    assert snapshot.request_id == "market-structure-fixture-snapshot"
+    assert snapshot.snapshot.revisions
+    assert {
+        item.identity.entity_type for item in snapshot.snapshot.revisions
+    } == {"confirmed_swing"}
 
 
 def _objective_level_definition() -> dict[str, object]:

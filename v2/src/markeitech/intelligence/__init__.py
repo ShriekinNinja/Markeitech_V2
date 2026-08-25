@@ -1,6 +1,7 @@
 """Deterministic market-intelligence foundations."""
 
 from markeitech.intelligence.completed_bars import (
+    COMPLETED_BAR_INPUT_TYPE_NAME,
     BarAdmission,
     BarAdmissionStatus,
     BarConflictPolicy,
@@ -260,6 +261,7 @@ __all__ = [
     "COMPLETED_BAR_VOLUME_METRIC_ID",
     "CompletedBarCatalogPolicy",
     "CompletedBarInput",
+    "COMPLETED_BAR_INPUT_TYPE_NAME",
     "CompletedBarLedger",
     "CompletedBarSource",
     "CompressionExpansionStatePayload",

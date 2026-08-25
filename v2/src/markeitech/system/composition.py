@@ -13,7 +13,17 @@ from markeitech.intelligence.rolling_measurements import (
 from markeitech.intelligence.session_references import SESSION_REFERENCE_METRIC_IDS
 from markeitech.intelligence.session_windows import OPENING_RANGE_FIELDS
 from markeitech.system.config import SystemConfig
-from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
+from markeitech.system.discord import (
+    OPERATIONAL_EVENTS_WEBHOOK_ENV,
+    SYSTEM_HEALTH_WEBHOOK_ENV,
+)
+
+_VISUAL_ENTITY_GROUPS = {
+    "objective_session_reference_level",
+    "volatility_compression_expansion",
+    "direction_trend_rotation_reference",
+    "swing_fvg_zone",
+}
 
 
 def _watchlist_feeds(config: SystemConfig) -> list[dict[str, str]]:
@@ -52,6 +62,103 @@ def _watchlist_instruments_with_capability(
     ]
 
 
+def _visual_bar_specifications(config: SystemConfig) -> list[str]:
+    families = config.metrics.session_measurements.rolling_measurements.families
+    ordered = sorted(families, key=lambda item: item.input_interval_seconds)
+    return list(dict.fromkeys(item.input_selector for item in ordered))
+
+
+def _visual_view_windows_ms(config: SystemConfig) -> dict[str, int]:
+    windows: dict[str, int] = {}
+    families = config.metrics.session_measurements.rolling_measurements.families
+    for family in families:
+        selected = next(
+            candidate
+            for candidate in family.candidates
+            if candidate.candidate_id == family.selected_context_candidate_id
+        )
+        duration_ms = selected.duration_seconds * 1_000
+        windows[family.input_selector] = max(
+            duration_ms,
+            windows.get(family.input_selector, 0),
+        )
+    return windows
+
+
+def _visual_horizon_selectors(config: SystemConfig) -> dict[str, str]:
+    selectors = {
+        family.family_id: family.input_selector
+        for family in config.metrics.session_measurements.rolling_measurements.families
+    }
+    for definition in config.metrics.entity_analysis.definitions:
+        if not definition.enabled or definition.group not in _VISUAL_ENTITY_GROUPS:
+            continue
+        for application in definition.applications:
+            existing = selectors.setdefault(application.horizon, application.source_selector)
+            if existing != application.source_selector:
+                raise ValueError(
+                    "visual acceptance horizon maps to multiple source selectors: "
+                    f"{application.horizon}",
+                )
+    return dict(sorted(selectors.items()))
+
+
+def _visual_selected_metric_prefixes(config: SystemConfig) -> dict[str, list[str]]:
+    prefixes: dict[str, list[str]] = {}
+    families = config.metrics.session_measurements.rolling_measurements.families
+    for family in families:
+        prefixes.setdefault(family.input_selector, []).append(
+            f"rolling.{family.family_id}.{family.selected_context_candidate_id}.",
+        )
+    return {
+        selector: sorted(set(values))
+        for selector, values in sorted(prefixes.items())
+    }
+
+
+def _visual_annotation_expectations(config: SystemConfig) -> list[dict[str, object]]:
+    entity_analysis = config.metrics.entity_analysis
+    if not entity_analysis.enabled:
+        return []
+    selected_instruments = set(
+        _watchlist_instruments_with_capability(
+            config,
+            entity_analysis.required_watchlist_capability,
+        ),
+    )
+    profile_by_instrument = {
+        instrument_id: binding.profile_id
+        for binding in config.metrics.session_measurements.profile_bindings
+        for instrument_id in binding.instrument_ids
+    }
+    expected: dict[tuple[str, str, str], set[str]] = {}
+    for definition in entity_analysis.definitions:
+        if not definition.enabled or definition.group not in _VISUAL_ENTITY_GROUPS:
+            continue
+        for application in definition.applications:
+            application_instruments = set(application.instrument_ids) or {
+                instrument_id
+                for instrument_id, profile_id in profile_by_instrument.items()
+                if profile_id in application.analytical_profile_ids
+            }
+            for instrument_id in sorted(application_instruments & selected_instruments):
+                key = (
+                    instrument_id,
+                    application.horizon,
+                    application.source_selector,
+                )
+                expected.setdefault(key, set()).add(definition.entity_type)
+    return [
+        {
+            "instrument_id": instrument_id,
+            "horizon": horizon,
+            "bar_specification": selector,
+            "entity_types": sorted(entity_types),
+        }
+        for (instrument_id, horizon, selector), entity_types in sorted(expected.items())
+    ]
+
+
 def _entity_definition_payload(definition) -> dict[str, object]:  # noqa: ANN001
     return {
         "definition_id": definition.definition_id,
@@ -71,10 +178,14 @@ def _entity_definition_payload(definition) -> dict[str, object]:  # noqa: ANN001
         "applications": [
             {
                 "application_id": application.application_id,
+                "parameter_set_id": application.parameter_set_id,
                 "analytical_profile_ids": list(application.analytical_profile_ids),
                 "instrument_ids": list(application.instrument_ids),
+                "instrument_classes": list(application.instrument_classes),
                 "session_phases": list(application.session_phases),
                 "horizon": application.horizon,
+                "source_selector": application.source_selector,
+                "requires_volume": application.requires_volume,
             }
             for application in definition.applications
         ],
@@ -163,18 +274,14 @@ def _entity_definition_payload(definition) -> dict[str, object]:  # noqa: ANN001
                                     {}
                                     if band.lower_bound_parameter_id is None
                                     else {
-                                        "lower_bound_parameter_id": (
-                                            band.lower_bound_parameter_id
-                                        ),
+                                        "lower_bound_parameter_id": (band.lower_bound_parameter_id),
                                     }
                                 ),
                                 **(
                                     {}
                                     if band.upper_bound_parameter_id is None
                                     else {
-                                        "upper_bound_parameter_id": (
-                                            band.upper_bound_parameter_id
-                                        ),
+                                        "upper_bound_parameter_id": (band.upper_bound_parameter_id),
                                     }
                                 ),
                             }
@@ -350,6 +457,70 @@ def build_actor_plan(
             ),
         ),
     ]
+    if config.discord.enabled:
+        registrations.append(
+            ActorRegistration(
+                key="discord_health",
+                actor_id="DISCORD-HEALTH",
+                config=ImportableActorConfig(
+                    actor_path="markeitech.system.discord:DiscordHealthActor",
+                    config_path="markeitech.system.discord:DiscordHealthActorConfig",
+                    config={
+                        "actor_id": "DISCORD-HEALTH",
+                        "request_timeout_seconds": config.discord.request_timeout_seconds,
+                        "queue_capacity": config.discord.queue_capacity,
+                        "ping_critical_resource_alerts": (
+                            config.discord.ping_critical_resource_alerts
+                        ),
+                        "webhook_env": SYSTEM_HEALTH_WEBHOOK_ENV,
+                        "operational_events_webhook_env": OPERATIONAL_EVENTS_WEBHOOK_ENV,
+                    },
+                ),
+            ),
+        )
+    if config.visual_acceptance.enabled:
+        registrations.append(
+            ActorRegistration(
+                key="visual_acceptance",
+                actor_id="VISUAL-ACCEPTANCE",
+                config=ImportableActorConfig(
+                    actor_path=(
+                        "markeitech.intelligence.visual_acceptance:VisualAcceptanceActor"
+                    ),
+                    config_path=(
+                        "markeitech.intelligence.visual_acceptance:"
+                        "VisualAcceptanceActorConfig"
+                    ),
+                    config={
+                        "actor_id": "VISUAL-ACCEPTANCE",
+                        "runtime_name": config.runtime.name,
+                        "output_directory": str(config.visual_acceptance.output_directory),
+                        "refresh_interval_ms": (
+                            config.visual_acceptance.refresh_interval_ms
+                        ),
+                        "maximum_bars_per_series": (
+                            config.visual_acceptance.maximum_bars_per_series
+                        ),
+                        "maximum_metric_values": (
+                            config.visual_acceptance.maximum_metric_values
+                        ),
+                        "maximum_entity_revisions": (
+                            config.visual_acceptance.maximum_entity_revisions
+                        ),
+                        "instrument_ids": instrument_ids,
+                        "bar_specifications": _visual_bar_specifications(config),
+                        "view_windows_ms": _visual_view_windows_ms(config),
+                        "horizon_selectors": _visual_horizon_selectors(config),
+                        "selected_metric_prefixes": (
+                            _visual_selected_metric_prefixes(config)
+                        ),
+                        "annotation_expectations": (
+                            _visual_annotation_expectations(config)
+                        ),
+                    },
+                ),
+            ),
+        )
     if config.metrics.quote_quality.enabled:
         quote_metrics = config.metrics.quote_quality
         registrations.append(
@@ -730,8 +901,7 @@ def build_actor_plan(
                 actor_id="SESSION-REFERENCE-ENTITIES",
                 config=ImportableActorConfig(
                     actor_path=(
-                        "markeitech.intelligence.session_entity_actor:"
-                        "SessionReferenceEntityActor"
+                        "markeitech.intelligence.session_entity_actor:SessionReferenceEntityActor"
                     ),
                     config_path=(
                         "markeitech.intelligence.session_entity_actor:"
@@ -751,9 +921,7 @@ def build_actor_plan(
                         "definitions": [
                             _entity_definition_payload(definition) for definition in group_one
                         ],
-                        "maximum_entities_global": (
-                            entity_analysis.maximum_entities_global
-                        ),
+                        "maximum_entities_global": (entity_analysis.maximum_entities_global),
                         "maximum_entities_per_instrument": (
                             entity_analysis.maximum_entities_per_instrument
                         ),
@@ -825,8 +993,7 @@ def build_actor_plan(
                     actor_id="MARKET-STATE-ENTITIES",
                     config=ImportableActorConfig(
                         actor_path=(
-                            "markeitech.intelligence.market_state_actor:"
-                            "MarketStateEntityActor"
+                            "markeitech.intelligence.market_state_actor:MarketStateEntityActor"
                         ),
                         config_path=(
                             "markeitech.intelligence.market_state_actor:"
@@ -847,9 +1014,7 @@ def build_actor_plan(
                                 _entity_definition_payload(definition)
                                 for definition in market_state_definitions
                             ],
-                            "maximum_entities_global": (
-                                entity_analysis.maximum_entities_global
-                            ),
+                            "maximum_entities_global": (entity_analysis.maximum_entities_global),
                             "maximum_entities_per_instrument": (
                                 entity_analysis.maximum_entities_per_instrument
                             ),
@@ -859,6 +1024,58 @@ def build_actor_plan(
                             "maximum_metric_values": entity_analysis.maximum_metric_values,
                             "reconciliation_interval_ms": (
                                 entity_analysis.market_state_reconciliation_interval_ms
+                            ),
+                            "minimum_snapshot_interval_ms": (
+                                entity_analysis.minimum_snapshot_interval_ms
+                            ),
+                            "maximum_publications_per_cycle": (
+                                entity_analysis.maximum_publications_per_cycle
+                            ),
+                            "schema_version": entity_analysis.catalog_version,
+                        },
+                    ),
+                ),
+            )
+        market_structure_definitions = [
+            definition
+            for definition in entity_analysis.definitions
+            if definition.enabled and definition.group == "swing_fvg_zone"
+        ]
+        if market_structure_definitions:
+            registrations.append(
+                ActorRegistration(
+                    key="market_structure_entities",
+                    actor_id="MARKET-STRUCTURE-ENTITIES",
+                    config=ImportableActorConfig(
+                        actor_path=(
+                            "markeitech.intelligence.market_structure_actor:"
+                            "MarketStructureEntityActor"
+                        ),
+                        config_path=(
+                            "markeitech.intelligence.market_structure_actor:"
+                            "MarketStructureEntityActorConfig"
+                        ),
+                        config={
+                            "actor_id": "MARKET-STRUCTURE-ENTITIES",
+                            "instrument_profiles": {
+                                instrument_id: {
+                                    "profile_id": profile_by_instrument[instrument_id],
+                                    "profile_version": profile_by_id[
+                                        profile_by_instrument[instrument_id]
+                                    ].version,
+                                }
+                                for instrument_id in selected_instruments
+                            },
+                            "definitions": [
+                                _entity_definition_payload(definition)
+                                for definition in market_structure_definitions
+                            ],
+                            "maximum_entities_global": (entity_analysis.maximum_entities_global),
+                            "maximum_entities_per_instrument": (
+                                entity_analysis.maximum_entities_per_instrument
+                            ),
+                            "maximum_entities_per_type": (
+                                entity_analysis.maximum_entities_per_instrument_type
                             ),
                             "minimum_snapshot_interval_ms": (
                                 entity_analysis.minimum_snapshot_interval_ms
@@ -1005,26 +1222,6 @@ def build_actor_plan(
                 ),
             ),
         )
-    if config.discord.enabled:
-        registrations.append(
-            ActorRegistration(
-                key="discord_health",
-                actor_id="DISCORD-HEALTH",
-                config=ImportableActorConfig(
-                    actor_path="markeitech.system.discord:DiscordHealthActor",
-                    config_path="markeitech.system.discord:DiscordHealthActorConfig",
-                    config={
-                        "actor_id": "DISCORD-HEALTH",
-                        "request_timeout_seconds": config.discord.request_timeout_seconds,
-                        "queue_capacity": config.discord.queue_capacity,
-                        "ping_critical_resource_alerts": (
-                            config.discord.ping_critical_resource_alerts
-                        ),
-                        "webhook_env": SYSTEM_HEALTH_WEBHOOK_ENV,
-                    },
-                ),
-            ),
-        )
     if config.runtime_resources.enabled:
         registrations.append(
             ActorRegistration(
@@ -1107,7 +1304,7 @@ def validate_runtime_environment(
 ) -> None:
     required = [config.persistence.dsn_env]
     if config.discord.enabled:
-        required.append(SYSTEM_HEALTH_WEBHOOK_ENV)
+        required.extend((SYSTEM_HEALTH_WEBHOOK_ENV, OPERATIONAL_EVENTS_WEBHOOK_ENV))
     missing = [name for name in required if not environment.get(name, "").strip()]
     if missing:
         raise RuntimeError(f"required runtime environment is missing: {', '.join(sorted(missing))}")

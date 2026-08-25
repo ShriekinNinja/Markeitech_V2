@@ -352,6 +352,7 @@ class SessionMeasurementsConfig:
 @dataclass(frozen=True, slots=True)
 class EntityApplicationConfig:
     application_id: str
+    parameter_set_id: str
     analytical_profile_ids: tuple[str, ...]
     instrument_ids: tuple[str, ...]
     instrument_classes: tuple[str, ...]
@@ -507,6 +508,16 @@ class DiscordConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class VisualAcceptanceConfig:
+    enabled: bool
+    output_directory: Path
+    refresh_interval_ms: int
+    maximum_bars_per_series: int
+    maximum_metric_values: int
+    maximum_entity_revisions: int
+
+
+@dataclass(frozen=True, slots=True)
 class RuntimeResourceThresholdConfig:
     host_memory_available_percent: float
     host_cpu_percent: float
@@ -579,6 +590,7 @@ class SystemConfig:
     ib: InteractiveBrokersConfig
     logging: LoggingConfig
     discord: DiscordConfig
+    visual_acceptance: VisualAcceptanceConfig
     runtime_resources: RuntimeResourcesConfig
     persistence: PersistenceConfig
     acquisition: AcquisitionConfig
@@ -606,6 +618,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "ib",
             "logging",
             "discord",
+            "visual_acceptance",
             "runtime_resources",
             "persistence",
             "acquisition",
@@ -617,13 +630,17 @@ def load_system_config(path: str | Path) -> SystemConfig:
         },
         "root",
     )
-    if raw["schema_version"] != 16:
+    if raw["schema_version"] != 17:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
     ib = _load_ib(raw["ib"])
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
+    visual_acceptance = _load_visual_acceptance(
+        raw["visual_acceptance"],
+        config_path.parent,
+    )
     runtime_resources = _load_runtime_resources(raw["runtime_resources"])
     persistence = _load_persistence(raw["persistence"])
     watchlist = _load_watchlist(raw["watchlist"])
@@ -773,6 +790,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         ib=ib,
         logging=logging,
         discord=discord,
+        visual_acceptance=visual_acceptance,
         runtime_resources=runtime_resources,
         persistence=persistence,
         acquisition=acquisition,
@@ -894,6 +912,53 @@ def _load_discord(raw: Any) -> DiscordConfig:
         ping_critical_resource_alerts=_bool(
             values["ping_critical_resource_alerts"],
             "discord.ping_critical_resource_alerts",
+        ),
+    )
+
+
+def _load_visual_acceptance(
+    raw: Any,
+    config_directory: Path,
+) -> VisualAcceptanceConfig:
+    values = _mapping(raw, "visual_acceptance")
+    _require_keys(
+        values,
+        {
+            "enabled",
+            "output_directory",
+            "refresh_interval_ms",
+            "maximum_bars_per_series",
+            "maximum_metric_values",
+            "maximum_entity_revisions",
+        },
+        "visual_acceptance",
+    )
+    output_directory = Path(
+        _non_empty_string(
+            values["output_directory"],
+            "visual_acceptance.output_directory",
+        ),
+    )
+    if not output_directory.is_absolute():
+        output_directory = (config_directory / output_directory).resolve()
+    return VisualAcceptanceConfig(
+        enabled=_bool(values["enabled"], "visual_acceptance.enabled"),
+        output_directory=output_directory,
+        refresh_interval_ms=_positive_int(
+            values["refresh_interval_ms"],
+            "visual_acceptance.refresh_interval_ms",
+        ),
+        maximum_bars_per_series=_positive_int(
+            values["maximum_bars_per_series"],
+            "visual_acceptance.maximum_bars_per_series",
+        ),
+        maximum_metric_values=_positive_int(
+            values["maximum_metric_values"],
+            "visual_acceptance.maximum_metric_values",
+        ),
+        maximum_entity_revisions=_positive_int(
+            values["maximum_entity_revisions"],
+            "visual_acceptance.maximum_entity_revisions",
         ),
     )
 
@@ -1752,6 +1817,18 @@ def _load_entity_definition(raw: Any, *, index: int) -> EntityDefinitionConfig:
     parameter_set_ids = tuple(item.parameter_set_id for item in parameter_sets)
     if len(parameter_set_ids) != len(set(parameter_set_ids)):
         raise ValueError(f"{label} parameter-set IDs must be unique")
+    unavailable_parameter_sets = sorted(
+        {
+            application.parameter_set_id
+            for application in applications
+            if application.parameter_set_id not in set(parameter_set_ids)
+        },
+    )
+    if unavailable_parameter_sets:
+        raise ValueError(
+            f"{label} applications reference unavailable parameter sets: "
+            + ", ".join(unavailable_parameter_sets),
+        )
     market_state = (
         None
         if "market_state" not in values
@@ -1814,6 +1891,7 @@ def _load_entity_application(raw: Any, *, label: str) -> EntityApplicationConfig
         values,
         {
             "application_id",
+            "parameter_set_id",
             "analytical_profile_ids",
             "instrument_ids",
             "instrument_classes",
@@ -1833,6 +1911,10 @@ def _load_entity_application(raw: Any, *, label: str) -> EntityApplicationConfig
         raise ValueError(f"{label} must select instrument IDs or instrument classes")
     return EntityApplicationConfig(
         application_id=_non_empty_string(values["application_id"], f"{label}.application_id"),
+        parameter_set_id=_non_empty_string(
+            values["parameter_set_id"],
+            f"{label}.parameter_set_id",
+        ),
         analytical_profile_ids=_unique_non_empty_strings(
             values["analytical_profile_ids"],
             f"{label}.analytical_profile_ids",

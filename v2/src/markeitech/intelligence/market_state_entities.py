@@ -469,8 +469,7 @@ class MarketStateProjectionOwner:
             *(item.calculated_ts_ns for item in usable.values()),
         )
         published_ns = max(
-            calculated_ns,
-            *(item.published_ts_ns for item in usable.values()),
+            (calculated_ns, *(item.published_ts_ns for item in usable.values())),
         )
         effective_ns = max((item.effective_ts_ns for item in usable.values()), default=now_ns)
         return EntityRevision(

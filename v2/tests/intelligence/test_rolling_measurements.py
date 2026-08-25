@@ -13,6 +13,7 @@ from markeitech.intelligence.rolling_measurements import (
     RollingFamilyPolicy,
     RollingMeasurementPolicy,
     calculate_rolling_candidates,
+    calculate_rolling_projection,
     rolling_metric_definitions,
     rolling_metric_id,
     rolling_metric_values,
@@ -129,6 +130,43 @@ def test_recent_equal_duration_baseline_uses_midrank_and_excludes_current() -> N
     assert result.recent_health is MetricHealth.READY
     assert result.phase_health is MetricHealth.WARMING
     assert result.expansion_ratio_phase is None
+
+
+def test_projection_exposes_exact_derived_family_bars() -> None:
+    base = _policy()
+    candidate = replace(
+        base.families[0].candidates[0],
+        candidate_id="context_10m",
+        duration_seconds=600,
+        minimum_duration_seconds=300,
+        maximum_duration_seconds=1800,
+        duration_step_seconds=300,
+    )
+    family = replace(
+        base.families[0],
+        family_id="tactical",
+        input_selector="5-MINUTE-LAST-EXTERNAL",
+        input_interval_seconds=300,
+        aggregation_policy="utc_fixed_intraday",
+        selected_context_candidate_id=candidate.candidate_id,
+        candidates=(candidate,),
+    )
+    policy = replace(base, families=(family,))
+
+    projection = calculate_rolling_projection(
+        tuple(_bar(index) for index in range(10)),
+        phase_windows=(),
+        policy=policy,
+    )
+
+    assert len(projection.completed_bars) == 2
+    assert all(
+        item.bar_specification == "5-MINUTE-LAST-EXTERNAL"
+        for item in projection.completed_bars
+    )
+    assert projection.completed_bars[0].evidence_refs == tuple(
+        f"bar:{index}" for index in range(5)
+    )
 
 
 def test_phase_baseline_matches_authoritative_phase_offset_independently() -> None:

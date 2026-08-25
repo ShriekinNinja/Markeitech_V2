@@ -12,7 +12,10 @@ from markeitech.system.composition import (
     validate_runtime_environment,
 )
 from markeitech.system.config import load_system_config
-from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
+from markeitech.system.discord import (
+    OPERATIONAL_EVENTS_WEBHOOK_ENV,
+    SYSTEM_HEALTH_WEBHOOK_ENV,
+)
 
 
 def _config():  # noqa: ANN202
@@ -34,11 +37,11 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "system_control",
         "session_state",
         "evidence_health",
+        "discord_health",
         "quote_quality_metrics",
         "session_metrics",
         "watchlist",
         "data_acquisition",
-        "discord_health",
         "runtime_resources",
         "runtime_resource_health",
         "operational_persistence",
@@ -127,6 +130,10 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
     assert health.config.config["threshold_version"] == "2026-08-22-v2"
     assert health.config.config["warning"]["host_memory_available_percent"] == 15.0
     assert health.config.config["critical"]["disk_free_percent"] == 2.0
+    discord = next(item for item in plan if item.key == "discord_health")
+    assert discord.config.config["operational_events_webhook_env"] == (
+        OPERATIONAL_EVENTS_WEBHOOK_ENV
+    )
 
 
 def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
@@ -160,6 +167,40 @@ def test_actor_plan_omits_disabled_runtime_resource_telemetry() -> None:
 
     assert "runtime_resources" not in {registration.key for registration in plan}
     assert "runtime_resource_health" not in {registration.key for registration in plan}
+
+
+def test_actor_plan_adds_enabled_visual_acceptance_before_analytical_producers() -> None:
+    config = _config()
+    config = replace(
+        config,
+        visual_acceptance=replace(config.visual_acceptance, enabled=True),
+    )
+
+    plan = build_actor_plan(config, _prerequisites())
+
+    keys = [registration.key for registration in plan]
+    assert keys.index("visual_acceptance") < keys.index("quote_quality_metrics")
+    visual = next(item for item in plan if item.key == "visual_acceptance")
+    assert visual.config.config["instrument_ids"] == list(config.instrument_ids)
+    assert visual.config.config["bar_specifications"] == [
+        "1-MINUTE-LAST-EXTERNAL",
+        "5-MINUTE-LAST-EXTERNAL",
+        "15-MINUTE-LAST-EXTERNAL",
+    ]
+    assert visual.config.config["refresh_interval_ms"] == 60000
+    assert visual.config.config["view_windows_ms"] == {
+        "1-MINUTE-LAST-EXTERNAL": 2_700_000,
+        "5-MINUTE-LAST-EXTERNAL": 14_400_000,
+        "15-MINUTE-LAST-EXTERNAL": 28_800_000,
+    }
+    assert visual.config.config["selected_metric_prefixes"] == {
+        "1-MINUTE-LAST-EXTERNAL": ["rolling.fast.context_45m."],
+        "5-MINUTE-LAST-EXTERNAL": ["rolling.tactical.context_4h."],
+        "15-MINUTE-LAST-EXTERNAL": [
+            "rolling.structural_intraday.context_8h.",
+        ],
+    }
+    assert visual.config.config["annotation_expectations"] == []
 
 
 def test_actor_plan_omits_disabled_native_consumer_probe() -> None:
@@ -366,9 +407,7 @@ def test_actor_plan_adds_enabled_session_reference_entity_owner(tmp_path: Path) 
     actor = next(item for item in plan if item.key == "session_reference_entities")
     assert actor.actor_id == "SESSION-REFERENCE-ENTITIES"
     assert len(actor.config.config["instrument_profiles"]) == len(config.instrument_ids)
-    assert {
-        definition["entity_type"] for definition in actor.config.config["definitions"]
-    } == {
+    assert {definition["entity_type"] for definition in actor.config.config["definitions"]} == {
         "analytical_session",
         "previous_session_reference",
         "opening_range",
@@ -404,12 +443,8 @@ def test_actor_plan_adds_only_runtime_bound_market_state_definitions(tmp_path: P
         "volatility-state-v1",
     ]
     definition = actor.config.config["definitions"][0]
-    assert definition["market_state"]["parameter_set_id"] == (
-        "volatility-percentile-fixture"
-    )
-    assert definition["market_state"]["policies"][0]["measure_role"] == (
-        "normalized_volatility"
-    )
+    assert definition["market_state"]["parameter_set_id"] == ("volatility-percentile-fixture")
+    assert definition["market_state"]["policies"][0]["measure_role"] == ("normalized_volatility")
 
 
 def test_actor_plan_rejects_market_state_metric_without_runtime_producer(tmp_path: Path) -> None:
@@ -466,6 +501,15 @@ def test_enabled_discord_and_postgres_environment_are_required() -> None:
         validate_runtime_environment(
             config,
             {config.persistence.dsn_env: "postgresql://configured"},
+        )
+
+    with pytest.raises(RuntimeError, match=OPERATIONAL_EVENTS_WEBHOOK_ENV):
+        validate_runtime_environment(
+            config,
+            {
+                config.persistence.dsn_env: "postgresql://configured",
+                SYSTEM_HEALTH_WEBHOOK_ENV: "https://configured",
+            },
         )
 
 

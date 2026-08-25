@@ -4,19 +4,24 @@
 
 ## Responsibility
 
-`DiscordHealthActor` is a read-only projection of accepted system-health events. It does not
-determine state, publish health transitions, supervise Interactive Brokers, or participate in
-runtime readiness.
+`DiscordHealthActor` is a read-only projection of accepted system-health and operational-readiness
+evidence. It does not determine state, publish health transitions, supervise Interactive Brokers,
+or participate in runtime readiness.
 
-The initial actor subscribes only to `markeitech.system.health` and accepts the Stage 2 states:
+The actor projects `markeitech.system.health` and accepted runtime-resource health transitions to
+the system-health webhook. It also observes existing watchlist membership/lifecycle and historical
+demand/readiness signals for the one-shot operational-readiness card.
+
+System-health states are:
 
 - `STARTING`
 - `READY`
 - `FAILED`
 - `STOPPING`
 
-There are no analytics, market events, mentions, retries, startup test messages, durable outbox,
-or general notification router in this stage.
+There are no analytics, market events, delivery retries, startup test messages, durable outbox, or
+general notification router. Critical resource messages may mention `@here` when explicitly
+configured; the operational-readiness card never mentions anyone.
 
 ## Configuration And Secrets
 
@@ -28,9 +33,10 @@ tracked `v2/config/system.example.toml`:
 request_timeout_seconds = 5
 ```
 
-The webhook is read only from `MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK` after the V2 environment
-file is loaded. The actor configuration contains the environment-variable name, never its value.
-An absent webhook disables delivery with a warning and does not prevent the system from starting.
+Webhook URLs are read only from `MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK` and
+`MARKEITECH_DISCORD_OPERATIONAL_EVENTS_WEBHOOK` after the V2 environment file is loaded. Actor
+configuration contains environment-variable names, never their values. Runtime environment
+validation requires both values whenever Discord is enabled.
 
 Webhook URLs and exception messages that may contain URLs are never written to runtime logs.
 
@@ -64,6 +70,21 @@ Each event becomes one Discord embed containing:
 `allowed_mentions` explicitly disables all mention parsing. The request sets `wait=true` so a
 successful response confirms that Discord saved the message rather than merely accepting the
 request.
+
+The operational-events webhook receives one unmentioned startup card after existing canonical
+evidence proves all three conditions:
+
+- system control is `READY`;
+- every configured watchlist member has emitted `INSTRUMENT_OBSERVED`; and
+- every historical dependency published during initial warmup has reached terminal readiness.
+
+The card reports watchlist and historical outcome counts. It says `READY` only when every terminal
+historical outcome is `READY`; otherwise it reports completion with gaps. This projection creates
+no new readiness event, state owner, or persistence schema.
+
+Because membership and historical demands are one-shot startup evidence, runtime composition starts
+the Discord observer before their producers. Readiness outcomes may then arrive in any order without
+losing the declarations needed to prove the final join.
 
 ## Shutdown
 

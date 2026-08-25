@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 16
+schema_version = 17
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -37,6 +37,14 @@ enabled = true
 request_timeout_seconds = 5
 queue_capacity = 32
 ping_critical_resource_alerts = true
+
+[visual_acceptance]
+enabled = false
+output_directory = "../data/visual-acceptance"
+refresh_interval_ms = 60000
+maximum_bars_per_series = 1000
+maximum_metric_values = 20000
+maximum_entity_revisions = 20000
 
 [runtime_resources]
 enabled = true
@@ -384,6 +392,10 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.discord.enabled is True
     assert config.discord.queue_capacity == 32
     assert config.discord.ping_critical_resource_alerts is True
+    assert config.visual_acceptance.enabled is False
+    assert config.visual_acceptance.output_directory == tmp_path.parent / "data/visual-acceptance"
+    assert config.visual_acceptance.refresh_interval_ms == 60000
+    assert config.visual_acceptance.maximum_bars_per_series == 1000
     assert config.runtime_resources.enabled is True
     assert config.runtime_resources.sample_interval_ms == 10000
     assert config.runtime_resources.log_every_samples == 1
@@ -460,7 +472,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         config.metrics.session_measurements.profiles[0].windows[1].maximum_historical_observations
         == 4
     )
-    assert config.schema_version == 16
+    assert config.schema_version == 17
     assert config.metrics.entity_analysis.enabled is False
     assert config.metrics.entity_analysis.catalog_version == 2
     assert config.metrics.entity_analysis.completed_session_retention == 2
@@ -521,7 +533,14 @@ def test_rejects_market_state_binding_in_legacy_entity_catalog(tmp_path: Path) -
 
 def test_rejects_market_state_binding_without_explicit_runtime_limits(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(_entity_enabled_config().replace("maximum_metric_values = 20000\n", ""))
+    path.write_text(
+        _entity_enabled_config().replace(
+            "maximum_input_age_ms = 120000\nmaximum_metric_values = 20000\n"
+            "market_state_reconciliation_interval_ms = 1000\n",
+            "maximum_input_age_ms = 120000\n"
+            "market_state_reconciliation_interval_ms = 1000\n",
+        ),
+    )
 
     with pytest.raises(ValueError, match="require explicit runtime limits.*maximum_metric_values"):
         load_system_config(path)
