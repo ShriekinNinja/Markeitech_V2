@@ -21,11 +21,12 @@ outrank external patterns for Markeitech product decisions.
   9I, and no-execution boundary.
 - `docs/research/semantic-events-ai-options-baseline.md`: informative historical research only; no
   proposed schema, score, or confidence range was promoted into this skill.
-- Current Kite advisor/router conventions reviewed against target-suite commit `f029715`
-  (`v2-nautilus-audit-alignment`), including the architecture-boundaries, Interactive Brokers
-  market-data, market-evidence-validation, market-structure, NautilusTrader, and Python-runtime
-  advisors. The candidate branch remains based on foundation commit `c6af7a5`; integration must
-  preserve the newer suite and revalidate routing after cachebusting and reinstalling Kite.
+- Current Kite advisor/router conventions reviewed in the integrated
+  `v2-nautilus-audit-alignment` catalog after merge commit `6ca5be7`, including the architecture-
+  boundaries, evidence-visualization, Interactive Brokers market-data, market-evidence-validation,
+  market-structure, options-and-0DTE, PostgreSQL-persistence, NautilusTrader, Python-runtime, and
+  statistical-learning-and-optimization advisors. The candidate originated from foundation commit
+  `c6af7a5`; integration preserved the newer suite and still requires installed routing validation.
 
 ## Current Primary And Institutional Sources
 
