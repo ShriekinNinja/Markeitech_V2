@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markeitech Security And Tool Boundary"
+  short_description: "Review least-authority security boundaries"
+  default_prompt: "Use $kite:markeitech-security-tool-boundary-expert to review this credential, tool, dependency, network, logging, or approval boundary."

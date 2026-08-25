@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markeitech Data Quality And Lineage"
+  short_description: "Audit market evidence identity and lineage"
+  default_prompt: "Use $kite:markeitech-data-quality-lineage-expert to audit this evidence path's identity, lineage, time, coverage, and fidelity."

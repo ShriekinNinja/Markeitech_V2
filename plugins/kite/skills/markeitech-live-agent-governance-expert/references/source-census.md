@@ -23,9 +23,10 @@ outrank external patterns for Markeitech product decisions.
   proposed schema, score, or confidence range was promoted into this skill.
 - Current Kite advisor/router conventions reviewed in the integrated
   `v2-nautilus-audit-alignment` catalog at commit `74f47f4`, including the architecture-boundaries,
-  evidence-visualization, Interactive Brokers market-data, market-evidence-validation, market-
-  structure, options-and-0DTE, zero-DTE-risk, PostgreSQL-persistence, NautilusTrader, Python-
-  runtime, and statistical-learning-and-optimization advisors. The candidate originated from
+  evidence-visualization, Interactive Brokers market-data, data-quality-and-lineage,
+  quantitative-metric-validation, evidence-fitness, market-structure, options-and-0DTE,
+  zero-DTE-risk, PostgreSQL-persistence, NautilusTrader, Python-runtime, and
+  statistical-learning-and-optimization advisors. The candidate originated from
   foundation commit `c6af7a5`; integration preserved the newer suite.
 
 ## Current Primary And Institutional Sources

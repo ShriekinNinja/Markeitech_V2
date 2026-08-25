@@ -81,8 +81,10 @@ Do not own or authorize:
   delivery, admission, cancellation milestone, and shutdown outcome are established. Require the
   Nautilus advisor first when a Nautilus callback or lifecycle contract controls the mechanics.
 - For market-evidence identity, duplicates, revisions, timestamps, timezones, sessions, staleness,
-  conflicts, lineage, or fidelity, require `markeitech_market_evidence_validation_advisor`. This
-  advisor consumes those meanings and reviews their delivery consequences; it does not define them.
+  conflicts, lineage, or fidelity, require `markeitech_data_quality_lineage_advisor`; for formula,
+  window, warmup, aggregation, or numerics require
+  `markeitech_quantitative_metric_validation_advisor`; and for a named downstream use require
+  `markeitech_evidence_fitness_advisor`. This advisor reviews delivery consequences only.
 - For Sir Loke authority, tools, approvals, abstention, advisory-state meaning, or agent failure
   containment, require the live-agent governance specialist when the advisor router reports that
   coverage is available.

@@ -98,6 +98,13 @@ system. The preserved V1 status is available in
 - Semantic interaction events, the bounded options proof, cross-instrument state, richer analytics,
   Sir Loke, opportunity lifecycle, ML evaluation, replay, backtesting, and execution remain future
   work.
+- The repository-owned Kite plugin now defines a 20-role read-only advisor council with explicit
+  manager routing, deterministic dependency order, a three-part evidence-validation boundary,
+  narrow security and licensing gates, source records, and static routing evaluations. This is
+  engineering-review infrastructure, not V2 runtime implementation. Kite
+  `0.1.0+codex.20260825140114` is installed and enabled from the local `markeitech` marketplace;
+  its installed cache matches repository source byte-for-byte. Fresh-task discovery, automatic
+  routing, advisor ordering, stop-gate behavior, and delegated execution remain unmeasured.
 
 The remainder of this page is the chronological implementation record supporting this snapshot.
 When an older section describes a former review state, the snapshot above governs current status;

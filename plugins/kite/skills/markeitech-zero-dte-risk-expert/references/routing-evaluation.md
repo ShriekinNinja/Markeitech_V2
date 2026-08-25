@@ -20,7 +20,8 @@ When material to the question:
 1. options-market mechanics establishes exact series, exchange, exercise, settlement, quotation,
    and provider-field semantics;
 2. provider and Nautilus specialists establish delivery prerequisites and adapter exposure;
-3. market-evidence validation determines whether quote, Greek, IV, formula, scenario, timestamp,
+3. data quality and quantitative validation determine their separate dispositions, then evidence
+   fitness determines whether quote, Greek, IV, formula, scenario, timestamp,
    and lineage evidence is admissible for the use;
 4. zero-DTE risk synthesizes the risk consequences and review validity; and
 5. the advisory owner may consume the bounded review without treating it as ranking, suitability,

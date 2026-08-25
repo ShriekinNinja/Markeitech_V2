@@ -1,160 +1,109 @@
 ---
 name: markeitech-advisor-router
-description: Automatically assess specialist-advisor coverage before substantive Markeitech domain work, invoke an available advisor, or briefly identify missing specialist coverage for Markeitect's approval. Kite must use this proactively for planning, design, implementation, review, analysis, or research that depends on subject-specific expertise; Markeitect never needs to mention or invoke the router. Do not use for trivial repository operations or ordinary conversation.
+description: Route substantive Markeitech work to the repository advisor council with explicit domain ownership, dependency ordering, stop gates, and conflict handling. Use before domain-specific planning, design, implementation, review, analysis, or research; do not delegate trivial repository operations or ordinary conversation.
 ---
 
 # Markeitech Advisor Router
 
-Run an advisor-coverage check automatically before substantive domain work. The purpose is to
-expose missing expertise before general engineering judgment hardens into a product, market,
-provider, data, or framework decision. Advisor selection is Kite's internal responsibility:
-Markeitect must be able to describe the real task normally and must never be asked to name or invoke
-this router.
+Kite owns advisor selection and orchestration. Markeitect describes the real task normally and
+never needs to name this router or a specialist. Advisors supply read-only analysis; they do not
+accept architecture, product, trading, review, release, or implementation decisions.
 
-## Coverage Check
+## Mandatory Routing Contract
 
-1. Identify the material subject domains, decision stakes, required evidence, and important
-   unknowns in the request.
-2. Inspect the currently available Kite skills and other applicable specialist skills. Prefer the
-   known plugin skill catalog and targeted scope checks; do not perform broad filesystem, memory,
-   or network searches merely to prove that an advisor is absent. A similarly named skill is
-   coverage only when its stated scope includes the current decision and it can inspect the
-   required authority and evidence.
-3. For each material domain, classify coverage as:
-   - `AVAILABLE`: name and consult the applicable specialist before substantive planning or edits,
-     using its project custom-agent role when one is defined.
-   - `MISSING`: recommend a specialist advisor and stop before a consequential domain decision or
-     edit until Markeitect approves creating it or explicitly chooses to proceed without it.
-   - `NOT_NEEDED`: reserve this for trivial, administrative, or genuinely domain-neutral work and
-     state why specialist judgment cannot materially change the outcome.
-4. When several domains apply, identify all of them and prioritize consultation by risk. One
-   advisor must not impersonate expertise outside its contract.
+Before substantive domain work:
 
-Routine routing is silent. Do not print a coverage banner for `AVAILABLE` or `NOT_NEEDED` unless the
-consultation materially changes the recommendation, reveals a risk, or provides evidence useful to
-Markeitect. For `MISSING`, stop with only this compact gate:
+1. Read current repository authority, inspect the branch/worktree, and identify the decision,
+   consequence, required evidence, material domains, and unknowns.
+2. Read [references/council-routing-contracts.md](references/council-routing-contracts.md). Select
+   only materially relevant advisors and build dependency edges from its route contracts.
+3. Classify each material domain `AVAILABLE`, `MISSING`, or `NOT_NEEDED`. A similarly named skill
+   is coverage only when its contract owns the exact decision and it can inspect the required
+   evidence.
+4. Delegate every `AVAILABLE` domain through its exact project custom-agent role. Do not use a
+   generic direct-skill fallback when a custom role exists.
+5. Execute the dependency graph deterministically. Preserve each advisor's evidence labels and
+   exact disposition; never let a downstream advisor upgrade an upstream `UNKNOWN`, rejection, or
+   stop gate.
+6. Reconcile the columns as primary Kite. Specialists never delegate, accept another specialist's
+   decision, or claim canonical authority outside their route.
+
+Use [references/routing-evaluation.md](references/routing-evaluation.md) only for router QA. Its
+designed cases and static results are not installed fresh-task evidence.
+
+## Default Dependency Order
+
+Apply only the relevant tiers:
+
+1. architecture and authority ownership;
+2. framework and provider contracts;
+3. runtime delivery and concurrency;
+4. persistence and data-quality boundaries;
+5. quantitative validity and final evidence fitness;
+6. market semantics, including structure, microstructure, and accepted semantic lifecycle;
+7. options mechanics and vendor options-flow interpretation;
+8. named-candidate risk;
+9. statistical learning and bounded optimization;
+10. live-agent governance; and
+11. evidence projection and visualization.
+
+Within one tier, explicit evidence dependency wins. Genuinely independent consultations may run
+concurrently; stable custom-role name is only a deterministic tie-breaker and does not create
+semantic precedence.
+
+Security and licensing are cross-cutting preconditions:
+
+- consult `markeitech_security_tool_boundary_advisor` before a consequential recommendation that
+  introduces or changes secrets, permissions, tools, dependencies, credentials, network surfaces,
+  external services, logging/redaction, or safe-failure behavior;
+- consult `markeitech_vendor_data_licensing_provenance_advisor` after exact source/vendor identity
+  is established and before recommending acquisition, external processing, retention,
+  redistribution, display, derived-data use, or agent/model use.
+
+## No Cycles Or Duplicate Authority
+
+- Only primary Kite invokes advisors.
+- Advisors return `REQUIRED_HANDOFF` with the exact question and evidence; they never invoke one
+  another.
+- Record selected role IDs, dependency edges, required inputs, completion state, and dispositions.
+- Invoke a role once per scoped question. A bounded follow-up is allowed only when new evidence
+  materially changes the question and the router records why it is not recursive delegation.
+- No two advisors may fill the same canonical semantic column. Preserve a conflict and stop rather
+  than averaging or choosing the convenient answer.
+- Architecture may census ownership first. A second architecture consultation is justified only
+  when specialist evidence leaves materially different owner candidates.
+
+## Stop And Escalation Gates
+
+Stop the affected consequential conclusion when:
+
+- tracked authorities materially conflict;
+- a required custom role, bundled skill, current primary source, exact contract, or raw artifact
+  is unavailable or stale;
+- a required upstream disposition is absent, conflicting, or `UNKNOWN` and can change the result;
+- two advisors claim the same scoped authority or authorized writer;
+- source plugin and installed cache differ for a claim about installed routing;
+- provider documentation and measured behavior materially conflict;
+- security, licensing, legal, execution, account-risk, or another required specialist is missing;
+  or
+- an advisor recommends action outside its read-only authority.
+
+Unresolved canonical-owner, product-semantic, or competing-authority conflicts return
+`REQUIRES MARKEITECT DECISION`. Name the smallest evidence or decision that could release the
+gate. Continue only independent portions whose conclusions cannot be changed by the gap.
+
+For missing coverage, return:
 
 ```text
 Advisor check: MISSING
 Domain: <subject>
-Proposed advisor: <skill name>
-Why: <one sentence naming the consequential decision or failure mode>
+Proposed advisor: markeitech-<domain>-expert
+Why: <consequential decision or failure mode>
 Gate: Awaiting Markeitect approval to create it or proceed without it.
 ```
 
-## Delegated Specialist Consultation
+Do not create or broaden coverage without approval. Consultation never grants permission to edit,
+commit, push, connect services, consume paid data, mutate persistence, or make a product decision.
 
-For available NautilusTrader coverage, delegate one narrow, read-only consultation to the
-project-scoped `markeitech_nautilus_advisor` custom agent and wait for its result before substantive
-planning or edits. The delegated prompt must state the real task, the bounded decision or review
-question, the relevant repository scope, and the evidence expected. Do not prescribe the desired
-answer or ask the advisor to make changes.
-
-For available Interactive Brokers market-data provider-truth coverage, delegate one narrow,
-read-only consultation to the project-scoped `markeitech_ib_market_data_advisor` custom agent and
-wait for its result before making the affected provider recommendation. That advisor owns IB
-contract identity, entitlements, delivery modes, request semantics, provider limits, sessions, and
-provider failures. It does not own Nautilus adapter or Markeitech runtime behavior.
-
-For available option-contract or same-day-expiry coverage, delegate one narrow, read-only
-consultation to the project-scoped `markeitech_options_0dte_advisor` custom agent and wait for its
-result before a consequential product, contract, chain, Greek, liquidity, expiration, exercise,
-settlement, bounded-discovery, or expression-quality recommendation. It guards option-specific
-flow and exposure claims but does not own underlying market structure, participant positioning,
-causal validation, provider entitlements, licensing, execution, or account risk.
-
-For risk synthesis and disclosure about a supplied long, single-leg 0DTE candidate, delegate one
-narrow, read-only consultation to the project-scoped `markeitech_zero_dte_risk_advisor` only after
-the exact option mechanics and material evidence-validation dispositions are available. That
-advisor owns risk-review validity, bounded risk consequences, stop conditions, unknowns, and
-disclosure. It does not establish candidate identity, affordability, tradeability, product or
-provider mechanics, quote or Greek correctness, thesis direction, portfolio exposure, ranking,
-risk acceptance, or execution.
-
-For consequential PostgreSQL schema objects, migrations, constraints, indexes, queries, database
-transactions, retention mechanics, backup, restore, or database-observability work, delegate one
-narrow, read-only consultation to the project-scoped `markeitech_postgres_persistence_advisor`
-custom agent and wait for its result before making the affected PostgreSQL recommendation. The
-logical durability requirement, canonical component owner, semantic meaning, and end-to-end event
-or runtime execution contract remain with their applicable authorities and specialists.
-
-For available statistical-learning coverage, delegate a narrow, read-only consultation to the
-project-scoped `markeitech_statistical_learning_optimization_advisor` custom agent before a
-consequential feature/label, leakage, evaluation, calibration, model-monitoring, or bounded-
-optimization recommendation. If analytical feature correctness is unresolved, consult the
-market-evidence validation advisor first and provide its exact disposition to the statistical
-advisor without upgrading the evidence class.
-
-The custom agent owns invocation of the bundled `$kite:markeitech-nautilus-v2-expert` skill and its
-native-capability and alignment gates. Kite remains responsible for checking the returned evidence
-against tracked authority and the current checkout. Do not duplicate the specialist consultation in
-the primary thread merely to obtain a preferred conclusion.
-
-The IB custom agent owns invocation of the bundled `$kite:markeitech-ib-market-data-expert` skill
-and its provider-truth and handoff matrices. When a request combines IB capability with Nautilus
-adapter or runtime use, consult both advisors in bounded scopes. Only the Nautilus advisor may fill
-adapter evidence authoritatively; the primary Kite agent reconciles the results and remains
-responsible for the recommendation.
-
-The options custom agent owns invocation of the bundled `$kite:markeitech-options-0dte-expert`
-skill. When a request combines option semantics with IB entitlements or delivery, consult both the
-options and IB advisors. When it combines option semantics with Nautilus adapter, subscription,
-cache, actor, lifecycle, or runtime behavior, consult both the options and Nautilus advisors. Add
-market-evidence validation for formula, timestamp, aggregation, overlap, lineage, or fitness-for-use
-claims. Missing licensing, execution/risk, legal/tax, or causal-statistical coverage remains a
-`MISSING` gate rather than authority for the options advisor to fill the gap.
-
-The zero-DTE risk custom agent owns invocation of the bundled
-`$kite:markeitech-zero-dte-risk-expert` skill. For a complete candidate review, consult the options
-advisor first for exact series, quotation, exercise, settlement, and provider-field mechanics;
-consult market-evidence validation for quote, spread, age, stability, IV, Greek, scenario, formula,
-and lineage fitness; then provide those exact dispositions to the risk advisor without upgrading
-their evidence class. Account-specific broker behavior, sizing, suitability, and portfolio risk
-remain a `MISSING` gate until separately approved coverage exists.
-
-The PostgreSQL custom agent owns invocation of the bundled
-`$kite:markeitech-postgres-persistence-expert` skill and its database evidence and decision matrix.
-When a request combines PostgreSQL with Nautilus ownership, component boundaries, semantic-evidence
-meaning, event delivery, or Python runtime execution, consult each applicable advisor in a bounded
-scope. The primary Kite agent reconciles the results without allowing one advisor to fill another's
-evidence column.
-
-If the custom role cannot be spawned, cannot load its required skill, or cannot inspect a required
-source, report that limitation and stop before the consequential NautilusTrader decision or edit.
-Apply the same gate to the affected IB provider decision when the IB custom role cannot be spawned,
-cannot load its required skill, or cannot inspect a required current provider or venue source.
-Apply it to the affected options decision when the options custom role cannot be spawned, cannot
-load its required skill, or cannot inspect the required current product, contract, or evidence
-source.
-Apply it to the affected candidate-risk conclusion when the zero-DTE risk custom role cannot be
-spawned, cannot load its skill, or cannot inspect the supplied candidate, required mechanics,
-evidence-validation dispositions, or current public sources required by the exact question.
-Apply the same gate to the affected PostgreSQL recommendation or edit when its custom role cannot be
-spawned, cannot load its required skill, or cannot inspect the current schema, migration history,
-driver/server contract required by the question, or relevant current primary source.
-Apply it to the affected statistical-learning conclusion when that custom role cannot be spawned,
-cannot load its skill, or cannot inspect the approved data strategy and evidence it requires.
-
-For another available specialist without a defined custom-agent role, invoke its skill directly
-until Markeitect approves a corresponding delegated role.
-
-## Missing Advisor Proposal
-
-Internally define a proposed name such as `markeitech-<domain>-expert`. Do not emit a full advisor
-specification during routine routing. Expand the following contract only when Markeitect asks for
-details or approves creating the advisor:
-
-- the exact questions and decisions it owns;
-- the tracked project authority, installed contracts, primary documentation, and domain evidence
-  it must inspect;
-- evidence-freshness and source-fidelity requirements;
-- likely failure modes, overclaims, and boundary violations it must guard;
-- its expected output and when an independent audit is warranted.
-
-Do not create, install, or broaden a skill without Markeitect's approval. Do not let consultation
-grant permission to edit, connect services, consume paid data, mutate persistence, commit, push, or
-make a product decision. Advisors recommend; Markeitect decides; Kite remains responsible for
-reviewing the evidence and integrated work.
-
-Read [references/advisor-design.md](references/advisor-design.md) when proposing or creating a new
-specialist.
+Read [references/advisor-design.md](references/advisor-design.md) only when Markeitect approves a
+new or materially changed specialist.

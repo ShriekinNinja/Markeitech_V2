@@ -150,9 +150,11 @@ Stop and invoke the repository advisor router when the work materially crosses d
 - Nautilus actors, adapters, native option types, cache, message bus, subscription ownership,
   lifecycle, concurrency, persistence, or installed-version behavior require the project-scoped
   Nautilus advisor and its native-capability gate.
-- Provider entitlements, exchange routing, feed normalization, OPRA redistribution/non-display
-  use, or vendor licensing require suitable provider/data-licensing coverage; if unavailable,
-  report missing coverage and stop.
+- Vendor schemas, sweeps/blocks/repeats, complex-order ambiguity, classifications, premium
+  aggregation, filters and transformations require `markeitech_options_flow_advisor`.
+- Provider entitlements or exchange routing require the provider advisor; OPRA redistribution,
+  non-display use, retention, derived data, or vendor licensing require
+  `markeitech_vendor_data_licensing_provenance_advisor`. If unavailable, stop.
 - Execution, fill models, order types, margin, liquidation, exercise instructions, assignment,
   position/risk limits, or automated actions require separately approved execution and risk
   specialists. This options advisor does not supply that authority.

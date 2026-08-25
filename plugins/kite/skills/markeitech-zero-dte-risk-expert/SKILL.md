@@ -80,8 +80,13 @@ forecasts.
   affordability, tradeability, degradation, and lifecycle.
 - **Options-market mechanics owner:** supplies exact series, exchange, quotation, exercise,
   settlement, and provider-field semantics. If unavailable, return `REQUIRED_CONSULTATION`.
-- **Market evidence validation advisor:** determines whether quote, spread, timestamp, freshness,
-  stability, IV, Greek, formula, scenario, and lineage evidence is defensibly correct for this use.
+- **Data-quality and lineage advisor:** determines whether quote, spread, timestamp, freshness,
+  stability, source identity, coverage, corrections, and lineage evidence are defensible.
+- **Quantitative metric validation advisor:** validates applicable IV, Greek, formula, scenario,
+  aggregation, numerical, and model-output claims.
+- **Evidence fitness advisor:** consumes every material upstream disposition and determines whether
+  the identified evidence is fit for this exact candidate-risk use; non-material lanes require an
+  explicit `NOT_APPLICABLE_WITH_REASON`.
 - **Underlying/advisory owner:** supplies thesis, direction, horizon, trigger, and thesis
   invalidation. This advisor does not endorse them.
 - **Options-flow owner:** owns prints, side inference, blocks, sweeps, open interest, and dealer

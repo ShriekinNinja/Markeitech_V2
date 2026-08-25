@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markeitech Vendor Data Licensing"
+  short_description: "Review vendor data rights and provenance"
+  default_prompt: "Use $kite:markeitech-vendor-data-licensing-provenance-expert to review this vendor data use, retention, display, derived-data, or redistribution plan."

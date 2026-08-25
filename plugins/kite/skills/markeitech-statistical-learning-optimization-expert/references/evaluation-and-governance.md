@@ -29,11 +29,11 @@ For every feature, require:
   unavailable evidence; and
 - a reproducible proof that only information knowable at the cutoff contributed.
 
-Formula, units, timestamp/session/grain meaning, source lineage, revision handling, fidelity, and
-analytical admissibility remain owned by the market-evidence validation advisor. When any of those
-properties materially controls the statistical conclusion, record its exact disposition and
-limits in the as-of ledger. Statistical review begins from that accepted or explicitly limited
-evidence contract; it does not independently recalculate market truth.
+Source identity, timestamps, lineage, revision handling and fidelity remain with data quality;
+formula, units, windows, warmup, aggregation and numerical behavior remain with quantitative
+validation; and analytical admissibility for the named feature use remains with evidence fitness.
+Record every exact disposition and limit in the as-of ledger. Statistical review begins from those
+accepted or explicitly limited contracts; it does not independently recalculate market truth.
 
 Maintain an as-of ledger for every evaluation row: prediction identity, cutoff, feature-set and
 definition versions, exact source revisions, label identity/version, and eventual label-availability

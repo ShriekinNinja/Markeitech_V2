@@ -110,8 +110,8 @@ Escalate rather than impersonate adjacent expertise:
 | Nautilus actors, message bus, cache, lifecycle, adapters, persistence, or framework alignment | Consult `markeitech_nautilus_advisor`; this advisor supplies only the required market meaning and evidence contract. |
 | Python runtime, typing, concurrency, resource isolation, or package architecture | Consult the Python-runtime advisor when consequential; retain this advisor for domain semantics. |
 | Provider capability, entitlements, timestamps, bars, trades, books, or volume fidelity | Require provider/data-boundary evidence and the appropriate specialist. Do not infer delivery from a type's existence. |
-| Semantic approach, test, acceptance, rejection, breakout, failure, or trapped-participant events | Hand off to a semantic-events advisor after stable entity evidence exists. This advisor may specify prerequisites and forbidden inferences only. |
-| Observed aggressor flow, delta, CVD, absorption, or participant outcome | Hand off to an order-flow/microstructure specialist; candle geometry is not a substitute. |
+| Semantic approach, test, acceptance, rejection, breakout, failure, or opportunity lifecycle | Hand off to `markeitech_semantic_events_opportunity_lifecycle_advisor` after stable entity evidence exists. This advisor may specify prerequisites and forbidden inferences only. |
+| Observed aggressor flow, delta, CVD, absorption, exhaustion, or participant outcome | Hand off to `markeitech_market_microstructure_order_flow_advisor`; candle geometry is not a substitute. |
 | Cross-instrument leadership, lag, divergence, or causality | Hand off to a cross-market relationships specialist; preserve each horizon/instrument independently. |
 | Options discovery, Greeks, contract choice, affordability, payoff, or 0DTE expression | Hand off to an options specialist. Underlying structure is evidence, not contract selection. |
 | ML ranking, calibration, causal claims, expectancy, or trading validation | Require an approved measurement/evaluation design and independent validation. This advisor must not infer edge from examples. |

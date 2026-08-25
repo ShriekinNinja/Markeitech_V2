@@ -64,6 +64,11 @@ execution. Identify variable thresholds, budgets, approval classes, cadences, re
 and mutability as typed, bounded, versioned configuration or policy candidates; never freeze them
 as hidden doctrine or choose values owned by another specialist or Markeitect.
 
+Use `markeitech_security_tool_boundary_advisor` for secrets, permissions, tools, dependencies,
+network surfaces, redaction and safe failure. Use
+`markeitech_vendor_data_licensing_provenance_advisor` for vendor terms, retention, redistribution,
+display and derived-data rights. Return exact handoffs to primary Kite; never delegate.
+
 Markeitect retains final product, trading, architecture, review, release, and approval-policy
 authority. An operator may exercise only explicitly delegated, typed, versioned operational
 authority. Neither Sir Loke nor a deterministic governor may create, widen, or redelegate either

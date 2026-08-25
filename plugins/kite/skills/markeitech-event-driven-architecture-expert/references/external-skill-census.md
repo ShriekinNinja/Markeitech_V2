@@ -20,7 +20,9 @@ The repository-owned Kite plugin is the controlling implementation pattern:
 - `plugins/kite/skills/markeitech-nautilus-v2-expert/`
 - `plugins/kite/skills/markeitech-architecture-boundaries-expert/`
 - `plugins/kite/skills/markeitech-python-runtime-expert/`
-- `plugins/kite/skills/markeitech-market-evidence-validation-expert/`
+- `plugins/kite/skills/markeitech-data-quality-lineage-expert/`
+- `plugins/kite/skills/markeitech-quantitative-metric-validation-expert/`
+- `plugins/kite/skills/markeitech-evidence-fitness-expert/`
 - `.codex/agents/markeitech-nautilus-advisor.toml`
 
 This candidate therefore uses:

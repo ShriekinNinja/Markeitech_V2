@@ -1,7 +1,7 @@
 {
   "name": "kite",
-  "version": "0.1.0+codex.20260825130357",
-  "description": "Repository-owned engineering advisors for Markeitech",
+  "version": "0.1.0+codex.20260825140114",
+  "description": "Repository-owned routed engineering and market-evidence advisor council for Markeitech",
   "author": {
     "name": "Markeitect and Kite"
   },
@@ -11,6 +11,10 @@
     "markeitech",
     "nautilustrader",
     "market-evidence",
+    "data-lineage",
+    "microstructure",
+    "security",
+    "data-licensing",
     "options",
     "0dte",
     "statistical-learning",
@@ -22,7 +26,7 @@
   "interface": {
     "displayName": "Kite",
     "shortDescription": "Markeitech's engineering advisor suite.",
-    "longDescription": "Kite bundles Markeitech-specific engineering advisors that inspect current repository authority, local executable contracts, and fresh upstream documentation before consequential design or implementation work.",
+    "longDescription": "Kite routes Markeitech work through a repository-owned council with narrow advisory authority, deterministic dependencies, evidence and conflict gates, current source requirements, and read-only custom roles.",
     "developerName": "Markeitect and Kite",
     "category": "Developer Tools",
     "capabilities": [
@@ -32,15 +36,13 @@
       "Code Review",
       "Market Evidence Validation",
       "Options Evidence Review",
-      "Statistical Learning Review"
+      "Statistical Learning Review",
+      "Security Boundary Review",
+      "Vendor Data Licensing Review"
     ],
     "defaultPrompt": [
-      "Handle this Markeitech task and automatically consult any required specialist advisor.",
-      "Audit this Markeitech design before custom code.",
-      "Check this change against native Nautilus capabilities.",
-      "Validate whether this market measurement is defensibly correct for its downstream use.",
-      "Review this options or 0DTE question against exact product identity and current evidence.",
-      "Audit this feature, label, evaluation, or bounded optimization proposal before model work.",
+      "Route this Markeitech task through the required specialist council.",
+      "Audit this evidence or design against its exact owners.",
       "Review this Markeitech batch defect-first."
     ]
   }

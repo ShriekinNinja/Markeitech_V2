@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markeitech Microstructure And Order Flow"
+  short_description: "Audit observed and inferred order flow"
+  default_prompt: "Use $kite:markeitech-market-microstructure-order-flow-expert to audit what this trade, quote, book, or flow evidence can actually prove."

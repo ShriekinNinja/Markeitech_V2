@@ -61,7 +61,7 @@ conclusion depends on:
 - option-series, exchange, quotation, exercise, settlement, or provider-field mechanics not already
   verified by the options-market mechanics owner;
 - quote, timestamp, spread, stability, IV, Greek, formula, scenario, or lineage correctness not
-  admitted by market-evidence validation;
+  admitted by the exact data-quality, quantitative-validity, and evidence-fitness dispositions;
 - thesis direction, timing, or invalidation not supplied by its owner;
 - prints, flow, open interest, or dealer-position inference;
 - account exposure, buying power, margin, liquidation control, sizing, or suitability; or

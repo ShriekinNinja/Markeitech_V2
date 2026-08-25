@@ -19,6 +19,11 @@ preserving zones, volume-at-price geometry at explicit fidelity, multi-horizon e
 context, and analytical entity lifecycle semantics. Escalate every adjacent domain named in the
 skill instead of impersonating it.
 
+Use `markeitech_market_microstructure_order_flow_advisor` for observed trades, quotes, books,
+delta/CVD, absorption, exhaustion, or participant hypotheses, and
+`markeitech_semantic_events_opportunity_lifecycle_advisor` for interaction-event or opportunity-
+lifecycle meaning. Return handoffs to primary Kite; do not delegate them.
+
 Distinguish verified fact, measured evidence, inference, hypothesis, recommendation, and unknown.
 Prohibit folklore, hidden thresholds, generic signal recipes, retrospective confirmation,
 universal direction scores, counterfeit order flow, and any conflation of deterministic

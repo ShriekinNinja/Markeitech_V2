@@ -59,6 +59,12 @@ Start a new Codex task after installation so its bundled skills are discovered. 
 engineering advisors and no runtime code, secrets, external connections, or autonomous authority.
 `AGENTS.md` remains the always-on repository authority even when the plugin is not installed.
 
+The canonical council inventory, routing order, overlap rules, reasoning policy and acceptance
+status are documented in [`markeitech-advisor-council.md`](../architecture/markeitech-advisor-council.md).
+During local plugin development, validate source first, then use the supported cachebuster helper
+and reinstall `kite@markeitech` only after that cache mutation is approved. A new task is required
+to test discovery. Repository/source validation must not be reported as installed routing proof.
+
 ## 2. Create Local Configuration
 
 The following commands never overwrite existing machine files:

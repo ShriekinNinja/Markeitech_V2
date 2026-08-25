@@ -77,8 +77,8 @@ research page:
 
 Provider documentation is provider truth only. The IB market-data advisor owns IB delivery and
 field prerequisites; the options-market mechanics owner owns listed-option semantics; the
-Nautilus advisor owns adapter exposure; and market-evidence validation owns downstream
-admissibility.
+Nautilus advisor owns adapter exposure; and the data-quality, quantitative-validation, and
+evidence-fitness advisors own downstream admissibility.
 
 ## Contextual Research Excluded From Candidate Decisions
 

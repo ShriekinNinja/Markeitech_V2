@@ -18,7 +18,7 @@ domain boundaries; they are not trading scenarios or approved product policy.
 |---|---|---|
 | Define an ES swing, pivot, FVG, zone, or auction relationship | Market-structure advisor | Underlying price structure is not option-contract expertise |
 | Review ordinary IB bar delivery with no option-specific decision | IB and, when applicable, Nautilus advisors | No options-domain decision is present |
-| Validate a generic rolling metric formula or historical/live overlap | Market-evidence validation advisor | Formula and analytical fitness are not option-product semantics |
+| Validate a generic rolling metric formula or historical/live overlap | Quantitative-validation advisor for formula; data-quality advisor for overlap; evidence-fitness advisor only for a named downstream use | Formula, overlap integrity, and downstream fitness are distinct and are not option-product semantics |
 
 ## Required Multi-Advisor Handoffs
 
@@ -27,7 +27,7 @@ domain boundaries; they are not trading scenarios or approved product policy.
 | Discover SPXW/SPY/QQQ chains through the current IB account | Options plus IB advisors | Options owns exact contract/chain meaning; IB owns entitlement, delivery, request, and account/provider truth |
 | Implement option discovery or quote subscriptions through Nautilus | Options plus IB plus Nautilus advisors | Options owns product evidence; IB owns provider truth; Nautilus owns installed adapter and runtime behavior |
 | Normalize and retain vendor options-flow data | Options plus licensing coverage, and architecture/persistence advisors when material | Options guards semantics; other owners decide rights, storage, ownership, and schema |
-| Validate GEX or dealer-positioning claims | Options plus market-evidence validation and an approved statistical/microstructure specialist | Options guards contract/Greek inputs; it cannot supply missing position signs, methodology validation, or causal authority |
+| Validate GEX or dealer-positioning claims | Options plus data-quality, quantitative-validation, evidence-fitness, and approved statistical/microstructure specialists | Options guards contract/Greek inputs; it cannot supply missing position signs, methodology validation, or causal authority |
 
 ## Stop Or Refusal Cases
 
