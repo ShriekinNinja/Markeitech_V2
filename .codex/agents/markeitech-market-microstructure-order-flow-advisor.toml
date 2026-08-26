@@ -17,3 +17,6 @@ consume paid capacity, or make architecture, product, trading, review, release, 
 decisions. Stop when source, coverage, order, quote, classifier, correction, book-recovery or terms
 evidence is materially unresolved.
 """
+
+[mcp_servers.pycharm]
+enabled = false

@@ -55,15 +55,32 @@ codex plugin marketplace add .
 codex plugin add kite@markeitech
 ```
 
-Start a new Codex task after installation so its bundled skills are discovered. The plugin contains
-engineering advisors and no runtime code, secrets, external connections, or autonomous authority.
-`AGENTS.md` remains the always-on repository authority even when the plugin is not installed.
+Start a new Codex task after installation so its bundled skills are discovered. A new task remains
+normal Codex: installing or enabling Kite makes it available, not active. Explicitly select Kite or
+invoke `$kite:markeitech-advisor-router` to activate Kite for one task and its direct follow-ups;
+Kite then selects required advisors by default. The plugin contains engineering advisors and
+declares no runtime code, package dependency, credential, MCP server, app connector, or autonomous
+authority. Some advisors require approved unauthenticated public documentation for current
+evidence. Repository or global Codex configuration is a separate trust surface and is not made safe
+by the plugin manifest. `AGENTS.md` remains the always-on repository authority while keeping Kite
+dormant unless explicitly invoked.
 
-The canonical council inventory, routing order, overlap rules, reasoning policy and acceptance
-status are documented in [`markeitech-advisor-council.md`](../architecture/markeitech-advisor-council.md).
+The council overview and acceptance status are documented in
+[`markeitech-advisor-council.md`](../architecture/markeitech-advisor-council.md); that document
+links the canonical machine-checkable policy and observed acceptance ledger.
 During local plugin development, validate source first, then use the supported cachebuster helper
 and reinstall `kite@markeitech` only after that cache mutation is approved. A new task is required
 to test discovery. Repository/source validation must not be reported as installed routing proof.
+
+Run the dependency-free source validator from the repository root:
+
+```bash
+python3 -B plugins/kite/scripts/validate_advisor_council.py
+python3 -B -m unittest plugins/kite/tests/test_validate_advisor_council.py
+```
+
+The validator proves structural policy only. It does not prove fresh-task selection, delegated
+execution, effective read-only tool isolation, redaction, safe failure, or plugin revocation.
 
 ## 2. Create Local Configuration
 
@@ -221,11 +238,12 @@ workspace layout may be recreated or transferred separately; they do not affect 
 
 Open the repository root so the tracked `AGENTS.md` instructions apply. The agent must read the
 project charter, current status, development guidelines, and relevant stage plan before changing
-code. Install the tracked Kite plugin as described above so required specialist consultations are
-available on a fresh machine. Git preserves those authorities, plugin sources, notes, and roadmaps;
-it does not preserve plugin installation state, private account memory, or prior chat transcripts.
-Record any durable decision in the smallest authoritative tracked document rather than relying on
-chat history alone.
+code. Normal Codex work does not require Kite. Install the tracked Kite plugin as described above
+when its explicit engineering-council mode should be available; invoking Kite then makes its
+specialist consultations automatic for that task. Git preserves those authorities, plugin sources,
+notes, and roadmaps; it does not preserve plugin installation state, private account memory, or
+prior chat transcripts. Record any durable decision in the smallest authoritative tracked document
+rather than relying on chat history alone.
 
 ## Troubleshooting
 

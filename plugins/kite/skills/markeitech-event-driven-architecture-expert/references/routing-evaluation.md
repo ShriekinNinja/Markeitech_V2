@@ -3,9 +3,9 @@
 Last reviewed: 2026-08-25.
 
 This matrix defines forward-routing acceptance. Static review checks whether the skill description,
-body, custom-agent role, and generic router express each boundary; it does not prove automatic
-selection. Record installed behavior only after Kite is cache-busted, reinstalled, and exercised in
-a fresh Codex thread.
+body, custom-agent role, and generic router express each boundary; it does not prove normal-task
+dormancy or selection after explicit Kite activation. Record installed behavior only after Kite is
+cache-busted, reinstalled, and exercised in fresh Codex tasks.
 
 | Request | Expected routing | Required boundary | Static contract | Installed result |
 |---|---|---|---|---|

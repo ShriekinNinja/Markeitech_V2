@@ -24,4 +24,4 @@ recommendation.
 """
 
 [mcp_servers.pycharm]
-url = "http://127.0.0.1:64462/stream"
+enabled = false

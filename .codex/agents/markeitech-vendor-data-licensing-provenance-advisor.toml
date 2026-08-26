@@ -16,3 +16,6 @@ entitlements, retain/delete data, edit, commit, push, connect services, mutate d
 legal, architecture, product, trading, review, release or execution decisions. Stop when terms or
 identity are missing/conflicting, permission is unclear, or qualified counsel is required.
 """
+
+[mcp_servers.pycharm]
+enabled = false

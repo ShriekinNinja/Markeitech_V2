@@ -28,3 +28,6 @@ further. If a required current source, exact identity, entitlement,
 session/calendar rule, or measured/adapter evidence is unavailable or conflicting, report the
 limitation and stop before the consequential recommendation.
 """
+
+[mcp_servers.pycharm]
+enabled = false

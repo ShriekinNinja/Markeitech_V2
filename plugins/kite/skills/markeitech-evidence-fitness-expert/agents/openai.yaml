@@ -1,3 +1,6 @@
+policy:
+  allow_implicit_invocation: false
+
 interface:
   display_name: "Markeitech Evidence Fitness"
   short_description: "Gate evidence for one named use"

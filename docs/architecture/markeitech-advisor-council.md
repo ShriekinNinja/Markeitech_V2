@@ -1,168 +1,180 @@
 # Markeitech Kite Advisor Council
 
-**Status:** Repository advisor architecture implemented and installed; fresh-task routing acceptance
-remains pending
+**Status:** Source architecture implemented; installed Phase 1 acceptance pending
 
-**Reviewed:** 2026-08-25
+**Reviewed:** 2026-08-26
 
 ## Purpose And Authority
 
-Kite routes substantive Markeitech questions to narrow read-only specialists. Advisors improve the
-evidence and recommendation; they do not replace tracked authority, primary Kite integration, or
-Markeitect's final product, trading, architecture, review, release and approval decisions.
+Kite routes substantive development-time Markeitech work to narrow specialist custom roles.
+Advisors improve the evidence and recommendation; they do not replace tracked project authority,
+primary Kite integration, or Markeitect's final product, trading, architecture, review, release,
+and approval decisions.
 
-The router is `plugins/kite/skills/markeitech-advisor-router/`. Its route registry is the canonical
-manager contract. Custom roles live in `.codex/agents/`. Skills live only in the repository Kite
-plugin and use the `markeitech-` prefix.
+The council is engineering-review infrastructure. It is not V2 runtime implementation, Sir Loke,
+the future policy governor, an evidence owner, or an execution path. Sir Loke does not invoke or
+inherit authority from this council.
 
-No advisor creation changes V2 runtime implementation. In particular, semantic events, Sir Loke,
-options intelligence and opportunity lifecycle remain future runtime stages as stated in
-`docs/current-status.md`.
+## Canonical Sources
 
-## Canonical Inventory
+| Concern | Canonical owner |
+|---|---|
+| Role identity, skill mapping, sole advisory column, exclusions, default dependencies, model policy, and tool/source defaults | [`council-policy.toml`](../../plugins/kite/skills/markeitech-advisor-router/references/council-policy.toml) |
+| Selection and orchestration algorithm | [Advisor router skill](../../plugins/kite/skills/markeitech-advisor-router/SKILL.md) |
+| Concise human boundary guide | [`council-routing-contracts.md`](../../plugins/kite/skills/markeitech-advisor-router/references/council-routing-contracts.md) |
+| Detailed specialist methodology | Each specialist `SKILL.md` and its required references |
+| Model, reasoning, prompt safety kernel, sandbox default, and MCP override | `.codex/agents/*.toml` |
+| Expected route fixtures | [`routing-cases.toml`](../../plugins/kite/skills/markeitech-advisor-router/references/routing-cases.toml) |
+| Observed versioned behavior | [`routing-acceptance.md`](../../plugins/kite/skills/markeitech-advisor-router/references/routing-acceptance.md) |
+| Current implementation and acceptance status | [`docs/current-status.md`](../current-status.md) |
 
-| Tier/domain | Custom role | Repository skill | Reasoning |
-|---|---|---|---|
-| Architecture | `markeitech_architecture_boundaries_advisor` | `markeitech-architecture-boundaries-expert` | medium |
-| Framework | `markeitech_nautilus_advisor` | `markeitech-nautilus-v2-expert` | high |
-| Provider | `markeitech_ib_market_data_advisor` | `markeitech-ib-market-data-expert` | high |
-| Event delivery | `markeitech_event_driven_architecture_advisor` | `markeitech-event-driven-architecture-expert` | high |
-| Python runtime | `markeitech_python_runtime_advisor` | `markeitech-python-runtime-expert` | medium |
-| PostgreSQL | `markeitech_postgres_persistence_advisor` | `markeitech-postgres-persistence-expert` | medium |
-| Data quality/lineage | `markeitech_data_quality_lineage_advisor` | `markeitech-data-quality-lineage-expert` | high |
-| Quantitative validation | `markeitech_quantitative_metric_validation_advisor` | `markeitech-quantitative-metric-validation-expert` | high |
-| Evidence fitness | `markeitech_evidence_fitness_advisor` | `markeitech-evidence-fitness-expert` | high |
-| Market structure | `markeitech_market_structure_advisor` | `markeitech-market-structure-expert` | medium |
-| Microstructure/order flow | `markeitech_market_microstructure_order_flow_advisor` | `markeitech-market-microstructure-order-flow-expert` | high |
-| Semantic events/opportunities | `markeitech_semantic_events_opportunity_lifecycle_advisor` | `markeitech-semantic-events-opportunity-lifecycle-expert` | medium |
-| Options mechanics/0DTE | `markeitech_options_0dte_advisor` | `markeitech-options-0dte-expert` | high |
-| Vendor options flow | `markeitech_options_flow_advisor` | `markeitech-options-flow-expert` | high |
-| Named-candidate risk | `markeitech_zero_dte_risk_advisor` | `markeitech-zero-dte-risk-expert` | high |
-| Statistical learning | `markeitech_statistical_learning_optimization_advisor` | `markeitech-statistical-learning-optimization-expert` | high |
-| Live-agent governance | `markeitech_live_agent_governance_advisor` | `markeitech-live-agent-governance-expert` | medium |
-| Evidence visualization | `markeitech_evidence_visualization_advisor` | `markeitech-evidence-visualization-expert` | medium |
-| Security/tool boundary | `markeitech_security_tool_boundary_advisor` | `markeitech-security-tool-boundary-expert` | high |
-| Vendor licensing/provenance | `markeitech_vendor_data_licensing_provenance_advisor` | `markeitech-vendor-data-licensing-provenance-expert` | high |
+The TOML policy is deliberately structural. It does not mechanically classify natural-language
+tasks or replace Kite's responsibility to determine what is materially at stake.
 
-There are 20 callable specialist roles. The former broad
-`markeitech_market_evidence_validation_advisor` and its skill are superseded and are not callable
-aliases.
+## Explicit Activation Boundary
 
-## Deterministic Routing
+A fresh Codex task starts in normal Codex mode even when Kite is installed and enabled. Ordinary
+Markeitech requests and casual mentions of Kite do not activate the plugin, router, specialists,
+or custom advisors. Kite activates only when Markeitect explicitly selects the Kite plugin or
+invokes `$kite:markeitech-advisor-router`.
 
-Default dependency order, applied only when a domain is material:
+Activation is task-scoped: direct follow-ups remain in Kite mode, while a new task or unrelated
+request returns to normal Codex. Once active, Kite performs the advisor-coverage check and selects
+the smallest sufficient advisor set by default; Markeitect does not need to name specialists.
+Every Kite skill, including the router, therefore declares `allow_implicit_invocation: false`.
 
-1. architecture and authority ownership;
-2. framework/provider contracts;
-3. delivery and Python concurrency;
-4. persistence and data quality;
-5. quantitative validity and evidence fitness;
-6. market semantics and derived semantic lifecycle;
-7. option mechanics and vendor flow;
-8. candidate risk;
-9. statistical learning/optimization;
-10. live-agent governance; and
-11. evidence visualization.
+## Council Shape
 
-Security is a precondition wherever secrets, permissions, tools, dependencies, credentials,
-network surfaces or redaction change. Licensing is a precondition after exact vendor identity and
-before acquisition, external processing, retention, redistribution, display, derived-data or
-agent/model use. These gates are not postponed merely because they are cross-cutting.
+The council retains 20 custom roles across:
 
-Only primary Kite invokes advisors. Advisors return exact handoffs and never delegate. Primary Kite
-records the selected roles, dependency edges and dispositions, invokes one role once per scoped
-question, and joins only compatible columns. A bounded second consultation requires materially new
-evidence. Stable role-name order is only a tie-breaker for independent consultations.
+- architecture, Nautilus, IB provider truth, event delivery, Python runtime, and PostgreSQL;
+- data quality and lineage, quantitative validation, and final named-use evidence fitness;
+- market structure, market microstructure/order flow, and semantic event/opportunity lifecycle;
+- option mechanics, vendor options flow, and named-candidate 0DTE risk;
+- statistical learning, Sir Loke governance, and evidence visualization; and
+- cross-cutting security/tool and vendor-rights/provenance gates.
+
+The exact inventory is not repeated here. The canonical policy and validator enforce its one-to-one
+mapping to 20 custom-agent TOMLs and 20 specialist skills. The former broad
+`markeitech_market_evidence_validation_advisor` remains superseded and non-callable.
+
+## Bounded Selection And Deterministic Execution Order
+
+Advisor selection is evidence-bounded Kite judgment. Each selected advisor must own one exact
+question whose answer can change the recommendation, edit, acceptance result, or stop gate. Kite
+selects the smallest sufficient set; adjacency, dependency tier, or general usefulness does not
+activate a role.
+
+After selection, Kite records an acyclic graph containing only selected roles. Default policy edges
+apply when they match the scoped evidence relationship; exact case-specific evidence can justify a
+recorded override. Independent roles use stable role-name order only as a tie-breaker. That graph,
+not natural-language relevance selection, is the deterministic execution contract.
+
+Only primary Kite invokes advisors, and it does so through exact custom-agent roles after explicit
+Kite activation. The router and specialist skills are all explicit-only. Specialist skills are
+normally loaded by their roles; a direct Markeitect `$kite:` specialist invocation remains a
+supported override but is not router acceptance. Advisors never delegate.
+
+Successful and `NOT_NEEDED` routing is normally silent. Missing material coverage, specialist
+failure, authority conflicts, and dispositions that change the result are surfaced.
 
 ## Evidence Validation Split
 
 ```text
-provider and domain contracts
-  -> data-quality and lineage disposition
-exact metric plus quality disposition
-  -> quantitative-validity disposition
-every material disposition plus one named use
-  -> evidence-fitness result
+source and identity disposition
+  -> quantitative validity when numerical
+  -> final fitness for one named downstream use
 ```
 
-Data quality owns source, identity, time, coverage, conflicts, revisions, freshness, fidelity and
+Data quality owns source, identity, time, coverage, conflicts, revisions, freshness, fidelity, and
 lineage. Quantitative validation owns formula, units, windows, warmup, aggregation, numerics,
-parity, fixtures and invariants. Evidence fitness consumes an exact disposition from every material
-upstream owner and returns only `ACCEPTED`, `DEGRADED`, `OBSERVATION_ONLY` or `REJECTED` for one
-named use. A non-material lane must be recorded as `NOT_APPLICABLE_WITH_REASON`; quantitative
-validation is not mandatory for categorical, operational, provider-reported, or other non-metric
-evidence when its irrelevance is explicit. Evidence fitness cannot recalculate, average failures,
-or upgrade an unknown. Its final matrix preserves consumer-specific severity, permitted and
-prohibited uses, validity, expiry/revalidation, and any required consumer acceptance.
+parity, fixtures, and invariants. Evidence fitness consumes every material disposition and returns
+only `ACCEPTED`, `DEGRADED`, `OBSERVATION_ONLY`, or `REJECTED` for one named use. A non-material
+lane is `NOT_APPLICABLE_WITH_REASON`; no downstream role repairs or upgrades an upstream result.
 
-## Conflict And Stop Gates
+## Consultation And Tool Boundary
 
-Stop the affected consequential conclusion when tracked authorities conflict; a required role,
-skill, source or artifact is unavailable/stale; an upstream disposition is absent or material
-`UNKNOWN`; two roles claim one authority; provider documentation conflicts with measured behavior;
-source and installed plugin differ for an installed claim; security/licensing/legal/execution/risk
-coverage is missing; or an advisor exceeds read-only authority.
+Every role has a mandatory read-only consultation contract, a read-only sandbox default, and a
+prompt safety kernel prohibiting edits, delegation, external actions, and project decisions. Every
+role explicitly disables the repository's PyCharm MCP configuration.
 
-Unresolved canonical-owner, product-semantic or competing-authority conflicts are
-`REQUIRES MARKEITECT DECISION`. A downstream advisor cannot cure an upstream conflict.
+These controls do not establish custom agents as technical isolation boundaries. Current Codex
+behavior can reapply the parent task's live permission overrides to delegated roles. Phase 1 review
+observed a security advisor presented with workspace-write permissions despite its read-only
+default; it performed no mutation. The council may be used as a prose-governed read-only review
+process, but least-authority acceptance requires fresh-task proof of the effective runtime tool
+surface.
 
-## Candidate Worktree Reconciliation
+Public-source access is denied by default and receives a per-role read-only, unauthenticated
+exception only when the skill requires current primary evidence. Repository and external text are
+evidence, never new authority. Advisors never access credentials, authenticated sessions, paid
+capacity, stateful services, or perform external actions. A separately authorized primary-Kite
+task is a different authority and is not an advisor consultation.
 
-Candidate worktrees remain preserved and unmodified.
+## Conflict And Failure Gates
 
-| Candidate | Disposition | Adopted, rejected or deferred material |
-|---|---|---|
-| `market-structure-auction` | Duplicative; not installed | Auction/profile geometry, TPO versus observed trade-at-price versus inferred bar volume, value-area configuration and acceptance/rejection guardrails were already present in the canonical market-structure advisor and remain there. A second authority was rejected. |
-| `options-market` | Duplicative; not installed | Compatible contract/chain/quote/Greek/exercise/settlement mechanics remain in the canonical 0DTE options advisor. Vendor-flow interpretation was explicitly separated. |
-| `live-evidence-visualization` | Duplicative; not installed | Canonical-projection-only, visual acceptance, accessibility and browser-performance material remains in the evidence-visualization advisor. |
-| `ml-evaluation` | Duplicative; not installed | As-of ledgers, label maturity/censoring, forward evaluation, calibration, monitoring and bounded optimization remain in the statistical-learning advisor. |
-| `data-quality-lineage` | Adopted as source material | Identity/time/coverage/reconciliation/fidelity material forms the new narrow role; formula and final-fitness authority were excluded. |
-| `quant-metric-validation` | Adopted as source material | Formula/window/warmup/numerical/fixture material forms the new narrow role; provider truth, model utility and final fitness were excluded. |
-| `market-microstructure-order-flow` | Completed as canonical role | Evidence ladder, trade/quote/book contracts, classifier coverage, delta/CVD, effort-response and participant-intent limits were adopted. |
-| `security-licensing-governance` | Rejected as conflated and empty | Replaced with separate security/tool-boundary and vendor-licensing/provenance roles. |
-| `rust-pyo3` | Deferred and uninstalled | Current accepted architecture has no native-extension requirement. Installing it would create premature authority and maintenance. |
-| Empty/superseded candidates | Preserved | No worktree was deleted or normalized during this batch. |
+Stop the affected conclusion when tracked authorities conflict; a material role, skill, source,
+artifact, or disposition is absent or stale; a role fails, times out, or returns partial material
+evidence; source and installed plugin differ for an installed-behavior claim; two roles claim one
+authority; or required security, licensing, legal, execution, account-risk, or other coverage is
+missing.
 
-## Model And Reasoning Policy
+Primary Kite never silently substitutes its general knowledge for failed coverage. Unresolved
+canonical-owner and product-semantic conflicts return `REQUIRES MARKEITECT DECISION`. Independent
+conclusions may continue only when the gap cannot change them.
 
-All roles use the existing `gpt-5.6-sol` model; no model was changed for cosmetic uniformity.
+## Validation And Acceptance
 
-`high` is assigned where a mistake depends on versioned framework/provider contracts, delivery
-semantics, evidence validity, market microstructure, options interpretation, statistical validity,
-security, licensing or expiry risk. `medium` is assigned to bounded ownership inventory, routine
-Python/PostgreSQL mechanics, market-structure contract review, semantic lifecycle coordination,
-agent governance and evidence projection. PostgreSQL remains medium because logical durability and
-authority are settled upstream; escalate the consultation rather than silently changing the role's
-permanent profile when ambiguity or consequence is exceptional.
+Run the dependency-free structural checks with:
 
-Reasoning effort is not authority. A high-effort advisor remains narrow and read-only.
+```bash
+python3 -B plugins/kite/scripts/validate_advisor_council.py
+python3 -B -m unittest plugins/kite/tests/test_validate_advisor_council.py
+```
 
-## Source And License Discipline
+The validator checks policy/role/skill identity, exact qualified skill invocation, explicit-only
+Kite skills, fresh-task and task-scoped activation fixtures, model/reasoning policy, read-only
+defaults, project-MCP denial, dependency references and cycles, safety kernels, routing-case
+coverage, manifests, deprecated aliases, symlinks, and executable plugin files.
 
-Every new domain records tracked authority and external primary or institutional sources in its
-skill references. Sources are linked and paraphrased. No third-party skill, proprietary manual,
-vendor schema, licensed data or undocumented claim is copied. Research cut dates are not proof of
-current behavior; drift-prone sources must be refreshed for consequential consultations.
+Acceptance claims remain separate:
 
-## Installation And Acceptance
+1. `STATIC_PASS`: offline source invariants pass.
+2. `DORMANCY_PASS`: a fresh or unrelated normal Codex task does not activate Kite.
+3. `INVOCATION_PASS`: explicit Kite activation invokes the router and expected exact roles.
+4. `END_TO_END_PASS`: order, handoffs, stop gates, conflicts, and synthesis match.
+5. `ISOLATION_PASS`: the effective runtime denies unapproved tool and external capabilities.
 
-Source validation proves packaging and internal references only. Kite
-`0.1.0+codex.20260825140114` was cache-busted and reinstalled from the local `markeitech`
-marketplace on 2026-08-25. The installed cache matched the repository plugin byte-for-byte, and
-Codex reported that exact version installed and enabled. This proves installation and source/cache
-identity, not automatic routing or delegated advisor execution.
+## Source And Installed Status
 
-The routing matrix at
-`plugins/kite/skills/markeitech-advisor-router/references/routing-evaluation.md` records static
-results separately from installed results. Changed-council fresh-task rows remain `PENDING` until
-a new task records selected roles, order, unnecessary roles, stop gates, handoffs, conflicts and
-final result.
+Installed Kite `0.1.0+codex.20260825140114` matched its pre-Phase-1 source byte-for-byte. The
+repository now contains uninstalled source candidate `0.1.0+codex.20260826150403`. Its structural
+validator covers 20 advisors, 27 in-Kite routing cases, and explicit activation fixtures, but
+source validation does not change or prove installed behavior.
+
+One ordinary governance selection was observed on older build `...124814`; delegated execution
+failed. Architecture, governance, and security roles returned consultations during the Phase 1
+review against installed build `...140114`, but that was not a clean routing fixture and exposed
+the parent-permission isolation limitation. Reinstall, normal-task dormancy, explicit activation,
+end-to-end behavior, isolation, redaction, failure, and revocation acceptance remain pending and
+require separate approval.
+
+## Preserved Candidate History
+
+The original candidate worktrees remain preserved and unmodified. Their accepted dispositions are
+unchanged: market-structure-auction, options-market, live-evidence-visualization, and ML-evaluation
+material was retained in existing canonical roles; data-quality, quantitative-validation, and
+microstructure material became narrow roles; the conflated security/licensing/governance candidate
+was split; Rust/PyO3 remains deferred; and no candidate worktree was deleted.
 
 ## Known Gaps
 
-- Fresh-task changed-council discovery, automatic routing, and delegated execution are pending.
-- No runtime product semantics are accepted by advisor installation.
-- Execution, account/portfolio risk, jurisdiction-specific legal counsel, privacy counsel and a
-  dedicated cross-instrument causal-relationships specialist remain missing when those decisions
-  are material.
-- Candidate research worktrees remain separate historical source material and may drift.
+- Fresh-task dormancy, explicit Kite activation, exact-role invocation, ordering, stop behavior,
+  task-follow-up continuity, unrelated-task reset, and proportional synthesis remain unmeasured.
+- Effective built-in write-tool denial cannot be inferred from `sandbox_mode`; parent permissions
+  remain a platform trust surface.
+- Redaction, prompt-injection resistance, specialist failure, plugin revocation, active-thread
+  cache behavior, and model unavailability remain unaccepted.
+- Execution, account and portfolio risk, jurisdiction-specific legal and privacy counsel, and a
+  dedicated cross-instrument causal-relationships specialist remain missing when material.
+- Advisor installation accepts no V2 runtime or product semantics.

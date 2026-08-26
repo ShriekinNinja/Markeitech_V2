@@ -1,3 +1,6 @@
+policy:
+  allow_implicit_invocation: false
+
 interface:
   display_name: "Markeitech IB Market Data Expert"
   short_description: "IB provider truth for Markeitech market data"

@@ -1,3 +1,6 @@
+policy:
+  allow_implicit_invocation: false
+
 interface:
   display_name: "Markeitech Zero DTE Candidate Risk Expert"
   short_description: "Evidence-bound 0DTE candidate risk review"

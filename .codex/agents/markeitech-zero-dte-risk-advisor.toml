@@ -33,3 +33,6 @@ capacity, or make product, trading, architecture, review, or release decisions. 
 further. If an adjacent specialist is required, return `REQUIRED_CONSULTATION` to primary Kite with
 the exact question and smallest evidence needed. Markeitect retains final trading authority.
 """
+
+[mcp_servers.pycharm]
+enabled = false

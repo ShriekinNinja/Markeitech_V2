@@ -1,8 +1,8 @@
 # Market Structure Advisor Routing Evaluation
 
-Use this reference when validating discovery, custom-agent delegation, adjacent-specialist
-handoffs, or proportional output. These are static expectations until exercised after the Kite
-plugin is refreshed and reinstalled in a fresh Codex thread.
+Use this reference after explicit Kite activation when validating selection, custom-agent
+delegation, adjacent-specialist handoffs, or proportional output. These are static expectations
+until exercised after the Kite plugin is refreshed and reinstalled in fresh Codex tasks.
 
 ## Canonical Coverage Decision
 

@@ -1,6 +1,6 @@
 {
   "name": "kite",
-  "version": "0.1.0+codex.20260825140114",
+  "version": "0.1.0+codex.20260826150403",
   "description": "Repository-owned routed engineering and market-evidence advisor council for Markeitech",
   "author": {
     "name": "Markeitect and Kite"
@@ -25,8 +25,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Kite",
-    "shortDescription": "Markeitech's engineering advisor suite.",
-    "longDescription": "Kite routes Markeitech work through a repository-owned council with narrow advisory authority, deterministic dependencies, evidence and conflict gates, current source requirements, and read-only custom roles.",
+    "shortDescription": "Explicitly invoked Markeitech engineering advisor suite.",
+    "longDescription": "When explicitly invoked, Kite uses bounded selection to route Markeitech work through the smallest sufficient set of repository custom advisors, then executes explicit dependencies while preserving evidence, conflict, authority, and read-only consultation boundaries.",
     "developerName": "Markeitect and Kite",
     "category": "Developer Tools",
     "capabilities": [
@@ -41,9 +41,9 @@
       "Vendor Data Licensing Review"
     ],
     "defaultPrompt": [
-      "Route this Markeitech task through the required specialist council.",
-      "Audit this evidence or design against its exact owners.",
-      "Review this Markeitech batch defect-first."
+      "Use $kite:markeitech-advisor-router to activate Kite and route this Markeitech task through the required specialist council.",
+      "Use $kite:markeitech-advisor-router to activate Kite and audit this evidence or design against its exact owners.",
+      "Use $kite:markeitech-advisor-router to activate Kite and review this Markeitech batch defect-first."
     ]
   }
 }

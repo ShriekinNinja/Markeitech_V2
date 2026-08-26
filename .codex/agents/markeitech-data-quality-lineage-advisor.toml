@@ -18,3 +18,6 @@ consume paid data, repair evidence, or make architecture, product, trading, revi
 execution decisions. If required identity, time, lineage, source, terms, or raw evidence is absent,
 stop the affected conclusion and return REQUIRED_HANDOFF with the exact need.
 """
+
+[mcp_servers.pycharm]
+enabled = false

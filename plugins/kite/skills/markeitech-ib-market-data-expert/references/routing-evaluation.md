@@ -4,9 +4,9 @@ Last reviewed: 2026-08-25.
 
 This matrix defines forward-routing and boundary acceptance for the advisor. Static contract
 review checks whether the skill, custom-agent role, generic router, and source workflow express
-each expected behavior; it does not prove automatic selection or provider delivery. Actual
-discovery, delegated execution, and cross-advisor ordering remain `PENDING` until Kite is
-cache-busted, reinstalled, and exercised in a fresh Codex thread.
+each expected behavior; it does not prove normal-task dormancy, explicit-Kite selection, or
+provider delivery. Activation, delegated execution, and cross-advisor ordering remain `PENDING`
+until Kite is cache-busted, reinstalled, and exercised in fresh Codex tasks.
 
 | Request | Expected routing | Required boundary | Contract check | Installed result |
 |---|---|---|---|---|

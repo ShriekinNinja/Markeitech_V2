@@ -33,3 +33,6 @@ or execution decisions. Do not delegate further. If a required source, skill, ca
 advisor, version, or license is unavailable or stale, report the limitation and stop before the
 affected consequential recommendation.
 """
+
+[mcp_servers.pycharm]
+enabled = false

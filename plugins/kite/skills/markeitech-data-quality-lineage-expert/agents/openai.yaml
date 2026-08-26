@@ -1,3 +1,6 @@
+policy:
+  allow_implicit_invocation: false
+
 interface:
   display_name: "Markeitech Data Quality And Lineage"
   short_description: "Audit market evidence identity and lineage"

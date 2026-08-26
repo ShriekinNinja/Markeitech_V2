@@ -1,3 +1,6 @@
+policy:
+  allow_implicit_invocation: false
+
 interface:
   display_name: "Markeitech Nautilus V2 Expert"
   short_description: "Native-first Nautilus alignment for Markeitech"

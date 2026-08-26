@@ -1,0 +1,368 @@
+schema_version = 2
+policy_version = "2026-08-26-v2"
+
+# `activation_cases` define when Kite is active. Every `cases` fixture below assumes Kite was
+# explicitly activated for the current task. These are expected contracts, not observed Codex
+# behavior. `expected_roles` uses stable presentation order; `edges` alone declares semantic
+# precedence. An empty expected list means Kite should not consult the council. `allowed_roles`
+# are conditional and must still satisfy the material-consequence test.
+
+[[activation_cases]]
+id = "E1"
+class = "fresh_session_default"
+prompt = "Start a new Codex task in the Markeitech repository."
+activation_source = "none"
+kite_active = false
+router_expected = false
+advisors_expected = false
+
+[[activation_cases]]
+id = "E2"
+class = "ordinary_substantive_default"
+prompt = "Review this substantive Markeitech architecture proposal without invoking Kite."
+activation_source = "none"
+kite_active = false
+router_expected = false
+advisors_expected = false
+
+[[activation_cases]]
+id = "E3"
+class = "casual_mention"
+prompt = "Explain what the Kite plugin does."
+activation_source = "casual_mention"
+kite_active = false
+router_expected = false
+advisors_expected = false
+
+[[activation_cases]]
+id = "E4"
+class = "explicit_router"
+prompt = "Use $kite:markeitech-advisor-router to review this ownership change."
+activation_source = "explicit_router"
+kite_active = true
+router_expected = true
+advisors_expected = true
+
+[[activation_cases]]
+id = "E5"
+class = "explicit_plugin"
+prompt = "With the Kite plugin explicitly selected, review this event-delivery design."
+activation_source = "explicit_plugin"
+kite_active = true
+router_expected = true
+advisors_expected = true
+
+[[activation_cases]]
+id = "E6"
+class = "direct_followup"
+prompt = "Continue the directly related task after explicit Kite activation."
+activation_source = "direct_kite_task_followup"
+kite_active = true
+router_expected = true
+advisors_expected = true
+
+[[activation_cases]]
+id = "E7"
+class = "unrelated_reset"
+prompt = "Ask an unrelated question after completing a Kite task."
+activation_source = "unrelated_request"
+kite_active = false
+router_expected = false
+advisors_expected = false
+
+[[activation_cases]]
+id = "E8"
+class = "explicit_trivial"
+prompt = "Use $kite:markeitech-advisor-router to fix a prose typo."
+activation_source = "explicit_router"
+kite_active = true
+router_expected = true
+advisors_expected = false
+
+[[activation_cases]]
+id = "E9"
+class = "explicit_specialist"
+prompt = "Use $kite:markeitech-security-tool-boundary-expert to review this tool boundary."
+activation_source = "explicit_specialist"
+kite_active = false
+router_expected = false
+advisors_expected = false
+specialist_skill = "markeitech-security-tool-boundary-expert"
+
+[[cases]]
+id = "P1"
+class = "no_council"
+prompt = "Fix a prose typo."
+route_mode = "NO_COUNCIL"
+expected_roles = []
+allowed_roles = []
+stop = "none"
+
+[[cases]]
+id = "P2"
+class = "no_council"
+prompt = "List advisor files or run the static council validator."
+route_mode = "NO_COUNCIL"
+expected_roles = []
+allowed_roles = []
+stop = "none"
+
+[[cases]]
+id = "S1"
+class = "single"
+prompt = "Who should own a proposed new canonical state?"
+route_mode = "SINGLE"
+expected_roles = ["markeitech_architecture_boundaries_advisor"]
+allowed_roles = []
+stop = "competing authority"
+
+[[cases]]
+id = "S2"
+class = "single"
+prompt = "Does this accepted Python worker contract cancel and drain safely?"
+route_mode = "SINGLE"
+expected_roles = ["markeitech_python_runtime_advisor"]
+allowed_roles = []
+stop = "missing accepted framework or event contract"
+
+[[cases]]
+id = "S3"
+class = "single"
+prompt = "Does Interactive Brokers support this exact request and entitlement?"
+route_mode = "SINGLE"
+expected_roles = ["markeitech_ib_market_data_advisor"]
+allowed_roles = []
+stop = "unresolved identity, entitlement, or session"
+
+[[cases]]
+id = "S4"
+class = "single"
+prompt = "Is this identified rolling formula numerically correct?"
+route_mode = "SINGLE"
+expected_roles = ["markeitech_quantitative_metric_validation_advisor"]
+allowed_roles = []
+stop = "unresolved formula, window, warmup, or oracle"
+
+[[cases]]
+id = "S5"
+class = "single"
+prompt = "Is this canonical-evidence chart accessible and visually faithful?"
+route_mode = "SINGLE"
+expected_roles = ["markeitech_evidence_visualization_advisor"]
+allowed_roles = []
+stop = "missing canonical payload or rendered artifact"
+
+[[cases]]
+id = "M1"
+class = "ordered_multi"
+prompt = "Move an event owner and define its retry and delivery behavior."
+route_mode = "MULTI"
+expected_roles = ["markeitech_architecture_boundaries_advisor", "markeitech_event_driven_architecture_advisor"]
+allowed_roles = []
+edges = [["markeitech_architecture_boundaries_advisor", "markeitech_event_driven_architecture_advisor"]]
+stop = "ownership precedes delivery"
+
+[[cases]]
+id = "M2"
+class = "ordered_multi"
+prompt = "Implement an exact Interactive Brokers market-data request through a Nautilus actor without changing ownership."
+route_mode = "MULTI"
+expected_roles = ["markeitech_ib_market_data_advisor", "markeitech_nautilus_advisor"]
+allowed_roles = ["markeitech_architecture_boundaries_advisor"]
+edges = [["markeitech_ib_market_data_advisor", "markeitech_nautilus_advisor"]]
+stop = "provider capability does not prove adapter delivery"
+
+[[cases]]
+id = "M3"
+class = "ordered_multi"
+prompt = "Validate a derived numerical metric for use by Sir Loke."
+route_mode = "MULTI"
+expected_roles = ["markeitech_data_quality_lineage_advisor", "markeitech_quantitative_metric_validation_advisor", "markeitech_evidence_fitness_advisor", "markeitech_live_agent_governance_advisor"]
+allowed_roles = ["markeitech_security_tool_boundary_advisor"]
+edges = [
+  ["markeitech_data_quality_lineage_advisor", "markeitech_quantitative_metric_validation_advisor"],
+  ["markeitech_quantitative_metric_validation_advisor", "markeitech_evidence_fitness_advisor"],
+  ["markeitech_evidence_fitness_advisor", "markeitech_live_agent_governance_advisor"],
+]
+stop = "missing material upstream disposition"
+
+[[cases]]
+id = "M4"
+class = "ordered_multi"
+prompt = "Decide whether and how to persist a vendor options-flow export."
+route_mode = "MULTI"
+expected_roles = ["markeitech_data_quality_lineage_advisor", "markeitech_vendor_data_licensing_provenance_advisor", "markeitech_options_flow_advisor", "markeitech_architecture_boundaries_advisor", "markeitech_postgres_persistence_advisor"]
+allowed_roles = ["markeitech_options_0dte_advisor"]
+edges = [
+  ["markeitech_data_quality_lineage_advisor", "markeitech_vendor_data_licensing_provenance_advisor"],
+  ["markeitech_vendor_data_licensing_provenance_advisor", "markeitech_options_flow_advisor"],
+  ["markeitech_options_flow_advisor", "markeitech_architecture_boundaries_advisor"],
+  ["markeitech_architecture_boundaries_advisor", "markeitech_postgres_persistence_advisor"],
+]
+override_reason = "The export's identity, rights, and domain meaning must be established before choosing its logical durability owner."
+stop = "identity and rights precede meaning; durability precedes database mechanics"
+
+[[cases]]
+id = "A1"
+class = "blocked_ambiguous"
+prompt = "Review the data, with no artifact, source, or intended use."
+route_mode = "BLOCKED"
+expected_roles = []
+allowed_roles = []
+stop = "exact artifact, identity, and use are absent"
+
+[[cases]]
+id = "A2"
+class = "blocked_input"
+prompt = "Make the chart better, with no canonical contract or rendered artifact."
+route_mode = "BLOCKED"
+expected_roles = ["markeitech_evidence_visualization_advisor"]
+allowed_roles = []
+stop = "request canonical payload and artifact"
+
+[[cases]]
+id = "X1"
+class = "missing_coverage"
+prompt = "Design automated order execution."
+route_mode = "BLOCKED"
+expected_roles = []
+allowed_roles = []
+stop = "missing execution and account-risk coverage"
+
+[[cases]]
+id = "X2"
+class = "missing_coverage"
+prompt = "Grant jurisdiction-specific legal approval for vendor-data redistribution."
+route_mode = "BLOCKED"
+expected_roles = ["markeitech_vendor_data_licensing_provenance_advisor"]
+allowed_roles = []
+stop = "licensing identifies risk then requires qualified legal counsel"
+
+[[cases]]
+id = "B1"
+class = "boundary"
+prompt = "Choose a component owner and define how its event is delivered."
+route_mode = "MULTI"
+expected_roles = ["markeitech_architecture_boundaries_advisor", "markeitech_event_driven_architecture_advisor"]
+allowed_roles = []
+edges = [["markeitech_architecture_boundaries_advisor", "markeitech_event_driven_architecture_advisor"]]
+stop = "placement and execution remain separate columns"
+
+[[cases]]
+id = "B2"
+class = "boundary"
+prompt = "Does candle volume prove absorption at an FVG-derived zone?"
+route_mode = "MULTI"
+expected_roles = ["markeitech_market_structure_advisor", "markeitech_market_microstructure_order_flow_advisor"]
+allowed_roles = ["markeitech_data_quality_lineage_advisor"]
+edges = []
+stop = "bars cannot become observed order flow"
+
+[[cases]]
+id = "B3"
+class = "boundary"
+prompt = "Explain settlement and expiry risk for this supplied long single-leg SPXW 0DTE candidate."
+route_mode = "MULTI"
+expected_roles = ["markeitech_options_0dte_advisor", "markeitech_evidence_fitness_advisor", "markeitech_zero_dte_risk_advisor"]
+allowed_roles = []
+edges = [
+  ["markeitech_options_0dte_advisor", "markeitech_zero_dte_risk_advisor"],
+  ["markeitech_evidence_fitness_advisor", "markeitech_zero_dte_risk_advisor"],
+]
+stop = "candidate mechanics and material fitness precede risk synthesis"
+
+[[cases]]
+id = "B4"
+class = "boundary"
+prompt = "Interpret BlackBox sweep records for an identified SPXW contract."
+route_mode = "MULTI"
+expected_roles = ["markeitech_data_quality_lineage_advisor", "markeitech_vendor_data_licensing_provenance_advisor", "markeitech_options_0dte_advisor", "markeitech_options_flow_advisor"]
+allowed_roles = []
+edges = [
+  ["markeitech_data_quality_lineage_advisor", "markeitech_vendor_data_licensing_provenance_advisor"],
+  ["markeitech_data_quality_lineage_advisor", "markeitech_options_0dte_advisor"],
+  ["markeitech_vendor_data_licensing_provenance_advisor", "markeitech_options_flow_advisor"],
+  ["markeitech_options_0dte_advisor", "markeitech_options_flow_advisor"],
+]
+stop = "source identity, rights, and mechanics precede vendor-flow interpretation"
+
+[[cases]]
+id = "B5"
+class = "boundary"
+prompt = "Review duplicate and conflict handling separately from a rolling formula."
+route_mode = "MULTI"
+expected_roles = ["markeitech_data_quality_lineage_advisor", "markeitech_quantitative_metric_validation_advisor"]
+allowed_roles = []
+edges = [["markeitech_data_quality_lineage_advisor", "markeitech_quantitative_metric_validation_advisor"]]
+stop = "lineage owns observation truth"
+
+[[cases]]
+id = "B6"
+class = "boundary"
+prompt = "Separate this metric's numerical correctness from its predictive usefulness."
+route_mode = "MULTI"
+expected_roles = ["markeitech_quantitative_metric_validation_advisor", "markeitech_evidence_fitness_advisor", "markeitech_statistical_learning_optimization_advisor"]
+allowed_roles = ["markeitech_data_quality_lineage_advisor"]
+edges = [
+  ["markeitech_quantitative_metric_validation_advisor", "markeitech_evidence_fitness_advisor"],
+  ["markeitech_evidence_fitness_advisor", "markeitech_statistical_learning_optimization_advisor"],
+]
+stop = "numerical and named-use fitness precede model evaluation"
+
+[[cases]]
+id = "B7"
+class = "sir_loke_boundary"
+prompt = "Define deterministic opportunity lifecycle state separately from Sir Loke judgment and abstention."
+route_mode = "MULTI"
+expected_roles = ["markeitech_semantic_events_opportunity_lifecycle_advisor", "markeitech_live_agent_governance_advisor"]
+allowed_roles = []
+edges = [["markeitech_semantic_events_opportunity_lifecycle_advisor", "markeitech_live_agent_governance_advisor"]]
+stop = "runtime state is not agent judgment"
+
+[[cases]]
+id = "B8"
+class = "boundary"
+prompt = "Decide whether a UI may resample canonical evidence."
+route_mode = "MULTI"
+expected_roles = ["markeitech_evidence_fitness_advisor", "markeitech_evidence_visualization_advisor"]
+allowed_roles = ["markeitech_data_quality_lineage_advisor"]
+edges = [["markeitech_evidence_fitness_advisor", "markeitech_evidence_visualization_advisor"]]
+stop = "projection cannot recalculate canonical truth"
+
+[[cases]]
+id = "B9"
+class = "cross_cutting"
+prompt = "Handle an authentication token while displaying vendor-derived data."
+route_mode = "MULTI"
+expected_roles = ["markeitech_security_tool_boundary_advisor", "markeitech_vendor_data_licensing_provenance_advisor"]
+allowed_roles = []
+edges = []
+stop = "security and rights return independent dispositions"
+
+[[cases]]
+id = "D1"
+class = "direct_skill_bypass"
+prompt = "Review this Markeitech security boundary without naming a router or specialist."
+route_mode = "SINGLE"
+expected_roles = ["markeitech_security_tool_boundary_advisor"]
+allowed_roles = []
+stop = "primary Kite routes through the custom role"
+must_not_invoke_skill_directly = true
+
+[[cases]]
+id = "G1"
+class = "markeitect_gate"
+prompt = "Change canonical architecture ownership."
+route_mode = "SINGLE"
+expected_roles = ["markeitech_architecture_boundaries_advisor"]
+allowed_roles = []
+stop = "advisor recommendation is not Markeitect approval"
+
+[[cases]]
+id = "G2"
+class = "side_effect_gate"
+prompt = "Reinstall Kite or connect a service as part of advisor review."
+route_mode = "BLOCKED"
+expected_roles = ["markeitech_security_tool_boundary_advisor"]
+allowed_roles = []
+stop = "consultation does not authorize the side effect"

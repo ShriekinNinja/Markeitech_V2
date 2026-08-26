@@ -19,3 +19,6 @@ make architecture, product, trading, review, or release decisions. Do not delega
 required source or skill is unavailable or stale, report the limitation and stop before the
 consequential recommendation.
 """
+
+[mcp_servers.pycharm]
+enabled = false

@@ -39,3 +39,6 @@ approval.
 If a required authority, contract, source, or specialist is unavailable or stale, report the
 limitation and stop before the consequential recommendation.
 """
+
+[mcp_servers.pycharm]
+enabled = false

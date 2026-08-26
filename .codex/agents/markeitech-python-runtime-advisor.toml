@@ -32,3 +32,6 @@ mechanics only after those architecture and delivery contracts are established.
 If a required authority, source, runtime contract, or cross-domain advisor is unavailable or stale,
 report the limitation and stop before the consequential recommendation.
 """
+
+[mcp_servers.pycharm]
+enabled = false

@@ -1,9 +1,9 @@
 # Zero DTE Candidate Risk Advisor Routing Evaluation
 
-Use this matrix to validate automatic discovery, delegated execution, specialist ordering,
-missing-coverage behavior, and proportional output. Static contract review does not prove installed
-behavior; installed results remain `PENDING` until a cachebuster refresh, reinstall, and fresh-thread
-exercise.
+Use this matrix after explicit Kite activation to validate advisor selection, delegated execution,
+specialist ordering, missing-coverage behavior, and proportional output. Static contract review
+does not prove installed behavior; installed results remain `PENDING` until a cachebuster refresh,
+reinstall, and fresh-task exercise.
 
 ## Canonical Coverage Decision
 
@@ -58,5 +58,5 @@ After integration:
    behavior, output proportionality, and unexpected routing; and
 6. replace `PENDING` only with observed results.
 
-Repository parsing and offline fixtures do not prove automatic selection, current source accuracy,
-provider delivery, broker behavior, or market/trading validity.
+Repository parsing and offline fixtures do not prove normal-task dormancy, explicit-Kite selection,
+current source accuracy, provider delivery, broker behavior, or market/trading validity.

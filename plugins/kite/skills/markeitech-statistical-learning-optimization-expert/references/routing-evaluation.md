@@ -3,8 +3,9 @@
 Last reviewed: 2026-08-25.
 
 This matrix defines static routing and handoff acceptance for the statistical-learning advisor.
-It does not prove automatic discovery or delegated execution. Installed routing remains `PENDING`
-until the cache-busted Kite plugin is reinstalled and exercised in a fresh Codex thread.
+It does not prove normal-task dormancy, explicit Kite activation, or delegated execution. Installed
+routing remains `PENDING` until the cache-busted Kite plugin is reinstalled and exercised in fresh
+Codex tasks.
 
 | Request | Expected routing | Required boundary | Contract check | Installed result |
 |---|---|---|---|---|

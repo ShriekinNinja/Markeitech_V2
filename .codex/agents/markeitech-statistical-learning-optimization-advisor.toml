@@ -27,3 +27,6 @@ source, license, or a specialist owning a material unresolved prerequisite is un
 only the affected conclusion, report the limitation, and name the smallest resolving evidence or
 handoff.
 """
+
+[mcp_servers.pycharm]
+enabled = false

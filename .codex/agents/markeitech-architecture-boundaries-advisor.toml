@@ -56,3 +56,6 @@ analysis where the remaining evidence supports it. Stop the entire consequential
 only when the gap prevents a responsible comparison between materially different owner or contract
 candidates.
 """
+
+[mcp_servers.pycharm]
+enabled = false

@@ -1,46 +1,68 @@
-# Advisor Council Routing Contracts
+# Advisor Council Routing Guide
 
-This is the manager-owned route registry. Custom role names are exact. Every role is read-only.
-“May recommend edits” means it may propose a bounded change; it never edits or accepts the change.
+The machine-checkable [council policy](council-policy.toml) is the canonical registry for role
+identity, skill mapping, ownership, exclusions, default dependencies, model policy, and tool/source
+defaults. This document is a concise human guide. The validator checks that it lists every role,
+but it does not compare prose semantics; if the guide drifts, the TOML policy governs.
 
-## Architecture, Framework, Provider, Runtime, And Persistence
+Every custom role is a bounded consultation. “May recommend” never means it may edit, approve, or
+perform the action. Primary Kite selects the smallest sufficient set and assigns one exact owned
+question to every selected role.
 
-| Custom role | Triggers and sole advisory ownership | Exclusions | Required inputs and output | Stop/dependencies/handoff | Edit recommendation |
-|---|---|---|---|---|---|
-| `markeitech_architecture_boundaries_advisor` | Topology, canonical authority, owner placement, duplicated authority, logical durability owner, change cost | Event execution, Python mechanics, database mechanics, market meaning | Tracked authority and owner/writer inventory -> ownership census, boundary matrix, drift and change-cost assessment | Stop on competing authority; use domain/Nautilus evidence; hand off mechanics and Markeitect owner choices | Bounded responsibility proposals |
-| `markeitech_nautilus_advisor` | Installed/native Nautilus capability, adapter, actor, bus, cache, catalog, lifecycle, persistence and alignment truth | Product meaning, provider truth, generic Python policy | Exact question, installed contracts, code/tests and fresh nightly sources -> native-capability gate and Alignment Matrix | Stop when installed/current upstream evidence is absent; hand off owner, delivery, Python, PostgreSQL and domain consequences | Framework-aligned alternatives |
-| `markeitech_ib_market_data_advisor` | IB request, entitlement, delivery-mode, session, pacing, field and provider-failure truth | Nautilus adapter behavior, market meaning, licensing approval | Exact provider product/request/instrument and official IB evidence -> Provider Truth and IB-to-Nautilus matrices | Stop on unresolved identity/entitlement/session; hand off data quality, Nautilus and licensing | Provider-contract alternatives |
-| `markeitech_event_driven_architecture_advisor` | Delivery, ordering, acknowledgement, idempotency, retry, admission, backpressure, recovery and partial-failure execution | Component placement, Python implementation, persistence schema, event meaning | Accepted topology/event meaning and lifecycle/failure requirements -> Event-Driven Architecture Matrix | Architecture/event meaning/Nautilus precede it; hand off executable mechanics to Python/Nautilus/PostgreSQL | Delivery-contract proposals |
-| `markeitech_python_runtime_advisor` | Python tasks, threads, processes, queues, cancellation, shutdown/restart, typing/package mechanics and measured resources | Nautilus guarantees, event policy, component placement | Accepted owner/delivery contract and exact environment/code/tests -> ownership-and-lifecycle table | Stop without framework/event contract; hand off responsibility moves to architecture | Python-mechanics proposals |
-| `markeitech_postgres_persistence_advisor` | PostgreSQL schema, migration, constraint, index, query, transaction, recovery, retention and observability mechanics | Logical durability choice, raw retention approval, event meaning | Approved durability/owner and exact DB evidence -> database decision matrix | Stop without approved durability/owner; consume data identity/event contract; hand off owner consequences | Database-mechanics proposals |
+## Activation Boundary
 
-## Evidence, Market, And Options
+Kite is explicit-only. A fresh Codex task, an ordinary Markeitech request, and a casual mention of
+Kite remain normal Codex and do not invoke the router or advisors. Explicitly selecting Kite or
+invoking `$kite:markeitech-advisor-router` activates Kite for that task and its direct follow-ups.
+A new or unrelated task returns to normal Codex. Once active, Kite performs the coverage check and
+uses the smallest sufficient advisor set by default; Markeitect never needs to name specialists.
 
-| Custom role | Triggers and sole advisory ownership | Exclusions | Required inputs and output | Stop/dependencies/handoff | Edit recommendation |
-|---|---|---|---|---|---|
-| `markeitech_data_quality_lineage_advisor` | Provider/source, instrument/contract, lineage, clocks, sessions, completeness, grain/join cardinality, historical/live overlap, duplicates/conflicts, revisions, freshness, fidelity, schema identity and evidence-health inputs | Formula validation, permitted-use licensing decisions, market meaning, final fitness, storage design | Exact source/artifact/schema/filter/time/identity -> quality/lineage disposition and matrices | Stop on missing identity/clock/denominator/correction/provenance; terms block quality only when they define semantics/coverage; hand off licensing, quant, fitness, persistence | Data-contract remediation |
-| `markeitech_quantitative_metric_validation_advisor` | Formula, units, normalization, warmup, rolling/aggregation behavior, cross-grain aggregation algebra, numerical stability, missing values, bounded state, parity, fixtures and invariants | Provider truth, market/trading meaning, model utility, final fitness | Exact metric, quality disposition, code/tests/fixtures/reference -> quantitative-validity disposition and acceptance matrix | Stop on unresolved formula/cutoff/window/warmup/numerics/oracle; hand off fitness and statistics | Formula/test remediation |
-| `markeitech_evidence_fitness_advisor` | Final question: is identified evidence fit for one named downstream use? | Recalculation, repair, formula design, market meaning, model evaluation | Intended use, evidence identity and every material upstream disposition -> fidelity/freshness/limitations/unknowns, consumer severity/use/expiry matrix, and `ACCEPTED`, `DEGRADED`, `OBSERVATION_ONLY`, or `REJECTED` | Stop if a material disposition is absent/stale or hard conflict remains; record non-material lanes as `NOT_APPLICABLE_WITH_REASON`; hand off to named consumer | Analysis only; remediation handoffs |
-| `markeitech_market_structure_advisor` | Swings, pivots, legs, objective levels, FVGs, zones, profile/auction geometry and multi-horizon structure | Observed flow, provider truth, semantic interactions, options, execution | Accepted evidence and exact subject/fidelity -> Market Structure Evidence Matrix | Stop on look-ahead/hidden policy/counterfeit flow/missing identity; hand off flow and semantic lifecycle | Definition/test proposals |
-| `markeitech_market_microstructure_order_flow_advisor` | Trades/quotes, NBBO/BBO, classification, delta/CVD, books, liquidity, bursts, absorption/exhaustion and bounded participant hypotheses | Bar geometry, provider entitlements, options mechanics, trading/execution | Exact feed/venue/instrument/time/coverage and quality -> source census and evidence-fidelity matrix | Stop on unknown coverage/order/quote/classifier/terms or intent overclaim; hand off lifecycle, fitness, visualization | Evidence-definition/test proposals |
-| `markeitech_semantic_events_opportunity_lifecycle_advisor` | Meaning/lifecycle of derived market events and plural opportunity state | Raw metrics, invented structure, options selection, Sir Loke judgment, execution | Accepted evidence/entity/domain dispositions -> typed transition/lifecycle matrix | Stop on unaccepted inputs, unapproved product meaning or conflated agent state; hand off delivery, governance, visualization | Typed semantic proposals; never acceptance |
-| `markeitech_options_0dte_advisor` | Option identity, chain, quote/liquidity, IV/Greeks, expiration, exercise, settlement and bounded 0DTE mechanics | Vendor-flow interpretation, underlying structure, risk acceptance, trade advice | Exact product/contract/session/provider evidence -> product/contract/session and mechanics disposition | Stop on unresolved identity/session/source/settlement; hand off options flow, risk, fitness | Mechanics/discovery proposals |
-| `markeitech_options_flow_advisor` | Vendor schemas, OPRA/NBBO implications, sweeps/blocks/splits/repeats, complex ambiguity, classifications, premium, OI/volume, filters/transforms/provenance | General option mechanics, directional positioning, ranking/sizing/execution | Immutable export/feed identity, vendor docs/terms/filters and option mechanics -> separate measured/interpretation ledgers | Stop on undocumented semantics/missing filters/terms/quote context or intent overclaim; hand off fitness/microstructure/risk | Parser/evidence-contract proposals |
-| `markeitech_zero_dte_risk_advisor` | Risk synthesis/disclosure for a named long single-leg 0DTE candidate | Candidate selection, quote/Greek validation, affordability, sizing, portfolio risk, execution | Exact candidate, verified mechanics and material fitness dispositions -> risk lanes, validity/expiry and disclosures | Stop without candidate/mechanics/fitness/event evidence; hand off to primary Kite/Markeitect | Analysis/disclosure only |
+## Ownership Guide
 
-## Learning, Governance, Projection, Security, And Licensing
+| Exact custom role | Sole advisory column | Important exclusion |
+|---|---|---|
+| `markeitech_architecture_boundaries_advisor` | Topology, canonical authority, owner placement, duplication, durability ownership, change cost | Event, Python, database, or market mechanics |
+| `markeitech_nautilus_advisor` | Installed/current Nautilus capability and framework alignment | IB provider truth and product meaning |
+| `markeitech_ib_market_data_advisor` | IB requests, entitlements, pacing, sessions, fields, delivery, provider failure | Nautilus adapter behavior and market meaning |
+| `markeitech_event_driven_architecture_advisor` | Delivery, ordering, idempotency, retry, backpressure, recovery, partial failure | Component placement, Python implementation, event meaning |
+| `markeitech_python_runtime_advisor` | Python concurrency, cancellation, shutdown/restart, typing/packages, measured resources | Nautilus guarantees and event policy |
+| `markeitech_postgres_persistence_advisor` | Approved PostgreSQL schema, migration, transaction, recovery, retention, observability mechanics | Logical durability and raw-retention approval |
+| `markeitech_data_quality_lineage_advisor` | Identity, lineage, clocks, sessions, completeness, revisions, freshness, fidelity | Formula validity, licensing permission, final fitness |
+| `markeitech_quantitative_metric_validation_advisor` | Formula, units, windows, warmup, aggregation, numerics, parity, fixtures | Provider truth, market meaning, final fitness |
+| `markeitech_evidence_fitness_advisor` | Fitness of identified evidence for one named use | Recalculation, repair, market meaning, model evaluation |
+| `markeitech_market_structure_advisor` | Swings, pivots, legs, objective levels, FVGs, zones, profiles, auction geometry | Observed flow, semantic interactions, options |
+| `markeitech_market_microstructure_order_flow_advisor` | Trades, quotes, BBO/NBBO, classification, delta/CVD, books, effort-response | Bar geometry, participant intent, options mechanics |
+| `markeitech_semantic_events_opportunity_lifecycle_advisor` | Derived-event and plural-opportunity identity, transitions, time, conflict, revision, non-admission | Sir Loke judgment or abstention, option selection, execution |
+| `markeitech_options_0dte_advisor` | Option identity, chain, quotes/Greeks, expiry, exercise, settlement, bounded discovery | Vendor-flow interpretation, candidate risk acceptance |
+| `markeitech_options_flow_advisor` | Vendor-flow schemas, prints, classifications, premium, OI timing, filters, provenance | General options mechanics, positioning claims, trade advice |
+| `markeitech_zero_dte_risk_advisor` | Risk synthesis for an already named long single-leg 0DTE candidate | Candidate selection, validation, sizing, portfolio risk |
+| `markeitech_statistical_learning_optimization_advisor` | Feature/label validity, leakage-safe evaluation, calibration, monitoring, bounded optimization | Model building, training, metric calculation, trading semantics |
+| `markeitech_live_agent_governance_advisor` | Sir Loke intent schemas, authority, approval lifecycle, evidence admission, abstention, audit, no execution | Security mechanics, delivery, persistence, market meaning |
+| `markeitech_evidence_visualization_advisor` | Projection integrity, financial presentation, accessibility, browser acceptance, visual QA | Canonical analytics, delivery protocol, agent meaning |
+| `markeitech_security_tool_boundary_advisor` | Secrets, authentication, permissions, MCP/tools, redaction, supply chain, external surfaces, safe failure | Sir Loke approval taxonomy, component placement, legal approval |
+| `markeitech_vendor_data_licensing_provenance_advisor` | Terms, permitted use, retention, display/redistribution, derived data, provenance, legal escalation | Engineering truth, market meaning, legal approval |
 
-| Custom role | Triggers and sole advisory ownership | Exclusions | Required inputs and output | Stop/dependencies/handoff | Edit recommendation |
-|---|---|---|---|---|---|
-| `markeitech_statistical_learning_optimization_advisor` | Feature/label validity, leakage, evaluation, calibration, uncertainty, monitoring and bounded optimization | Metric calculation, provenance, model building/training, trading semantics | Approved data strategy, fit features, as-of/label/licensing contracts -> Statistical Learning Readiness Matrix | Stop on missing data strategy/point-in-time/label/license or leakage; hand off agent use to governance | Evaluation/control proposals |
-| `markeitech_live_agent_governance_advisor` | Sir Loke evidence references, tools, approvals, abstention, advisory state, audit and no-execution governance | Market meaning, delivery, persistence/security/licensing mechanics | Accepted evidence/opportunity semantics, tool/authority proposal, security disposition -> governance contract | Stop on unresolved authority/evidence/security/audit/no-execution; hand off projection | Governance-policy proposals |
-| `markeitech_evidence_visualization_advisor` | Projection integrity, financial presentation, accessibility, browser acceptance and visual QA | Canonical analytics, delivery, agent meaning, frontend topology | Canonical payload/semantics and rendered artifact/target -> Projection Integrity Matrix | Stop without canonical contract/artifact/browser/accessibility/license evidence; hand off operator acceptance | Presentation-only proposals |
-| `markeitech_security_tool_boundary_advisor` | Secrets/tokens/webhooks, permissions, least privilege, logs/redaction, supply chain, network/database/plugin/MCP/tool boundaries and safe failure | Market analysis, component ownership, legal approval | Exact surface/tool/dependency/credential flow and threat consequence -> threat/boundary matrix | Stop on exposure, authority ambiguity, unsafe default or unreviewed surface; hand off governance/architecture/implementation | Security-control proposals; no approval |
-| `markeitech_vendor_data_licensing_provenance_advisor` | Terms, permitted use, retention, redistribution/display, derived data, export provenance, source/version/filter identity, audit and legal escalation | Engineering truth, market meaning, legal advice/approval | Exact vendor/product/terms and intended use -> rights/provenance matrix | Stop on unavailable/conflicting terms, unclear permission or counsel requirement; hand off data quality/persistence/visualization/options flow | Analysis/compliance controls only |
+## Evidence Validation Chain
 
-## Conflict Handling
+```text
+source and identity disposition
+  -> quantitative validity when the evidence is numerical
+  -> final fitness for one named downstream use
+```
 
-The registry assigns one semantic owner per column. If an advisor crosses a boundary, primary Kite
-keeps only the supported portion and requests the exact handoff. A downstream synthesis cannot
-cure an upstream conflict. Unresolved competing authority or product meaning is
-`REQUIRES MARKEITECT DECISION`.
+Data quality owns observation truth. Quantitative validation owns mathematical truth. Evidence
+fitness consumes all material dispositions and cannot repair or upgrade them. A non-numerical lane
+may be `NOT_APPLICABLE_WITH_REASON`; it is never silently skipped.
+
+## Boundary Examples
+
+- Component placement precedes delivery mechanics when ownership is unsettled.
+- IB capability does not prove Nautilus adapter delivery.
+- Bars may support price geometry; they do not become observed order flow.
+- Opportunity lifecycle state is not Sir Loke judgment or abstention.
+- Sir Loke governance owns approval meaning; security owns permission and tool enforcement.
+- A visually attractive projection cannot repair rejected evidence.
+
+Conflicts remain explicit. A downstream advisor cannot cure an upstream `UNKNOWN`, rejection,
+missing authority, or competing owner. Primary Kite returns unresolved product or ownership choices
+to Markeitect.

@@ -4,9 +4,9 @@ Last reviewed: 2026-08-25.
 
 This matrix defines forward-routing acceptance for the advisor. Independent static contract review
 checks whether the skill description, body, custom-agent role, and generic router express each
-expected boundary; it does not observe automatic selection.
-Actual automatic discovery and delegated execution remain `PENDING` until Kite is cache-busted,
-reinstalled, and exercised in a fresh Codex thread.
+expected boundary; it does not observe normal-task dormancy or explicit-Kite selection.
+Activation and delegated execution remain `PENDING` until Kite is cache-busted, reinstalled, and
+exercised in fresh Codex tasks.
 
 | Request | Expected routing | Required boundary | Contract check | Installed result |
 |---|---|---|---|---|

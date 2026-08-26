@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-25
+Last reviewed: 2026-08-26
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -98,13 +98,24 @@ system. The preserved V1 status is available in
 - Semantic interaction events, the bounded options proof, cross-instrument state, richer analytics,
   Sir Loke, opportunity lifecycle, ML evaluation, replay, backtesting, and execution remain future
   work.
-- The repository-owned Kite plugin now defines a 20-role read-only advisor council with explicit
-  manager routing, deterministic dependency order, a three-part evidence-validation boundary,
-  narrow security and licensing gates, source records, and static routing evaluations. This is
-  engineering-review infrastructure, not V2 runtime implementation. Kite
-  `0.1.0+codex.20260825140114` is installed and enabled from the local `markeitech` marketplace;
-  its installed cache matches repository source byte-for-byte. Fresh-task discovery, automatic
-  routing, advisor ordering, stop-gate behavior, and delegated execution remain unmeasured.
+- The repository-owned Kite plugin defines a 20-role advisor council for development-time
+  engineering consultation, not V2 runtime implementation or Sir Loke behavior. Installed Kite
+  `0.1.0+codex.20260825140114` remains enabled from the local `markeitech` marketplace and matched
+  its pre-Phase-1 repository source byte-for-byte. The uninstalled
+  `0.1.0+codex.20260826150403` source candidate adds one canonical council policy, bounded
+  selection with deterministic selected-role dependency execution, explicit-only Kite activation
+  and specialist skills, explicit advisor denial of the project PyCharm MCP, and a dependency-free
+  structural validator. A fresh or unrelated Codex task remains normal Codex; explicitly invoking
+  Kite activates its router for that task and direct follow-ups, after which Kite uses the smallest
+  sufficient advisor set by default. One ordinary governance selection was observed on older build
+  `...124814`, but its
+  delegated execution failed. Architecture, governance, and security roles returned consultations
+  during the 2026-08-26 Phase 1 review, but that was not a clean routing fixture; the security role
+  was presented a workspace-write parent permission surface despite its read-only default.
+  Therefore read-only is a mandatory consultation contract and custom-agent default, not an
+  accepted runtime isolation boundary. Fresh-task dormancy, explicit activation, task-scoped
+  continuity/reset, end-to-end order and stop behavior, isolation, redaction, failure, reinstall,
+  and revocation acceptance remain pending.
 
 The remainder of this page is the chronological implementation record supporting this snapshot.
 When an older section describes a former review state, the snapshot above governs current status;

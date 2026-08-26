@@ -1,5 +1,5 @@
 name = "markeitech_live_agent_governance_advisor"
-description = "Read-only specialist for Sir Loke-facing evidence references, tools, authorization, approvals, audit requirements, abstention, advisory state, and no-execution governance."
+description = "Read-only specialist for Sir Loke-facing intent schemas, delegated authority, approval lifecycle, evidence admission, advisory state, abstention, audit, and no-execution governance."
 model = "gpt-5.6-sol"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
@@ -35,3 +35,6 @@ approval-policy authority; an operator has only explicitly delegated, typed oper
 Do not delegate further. If a required authority, current source, or adjacent specialist is
 unavailable, report the limitation and stop before the consequential recommendation.
 """
+
+[mcp_servers.pycharm]
+enabled = false

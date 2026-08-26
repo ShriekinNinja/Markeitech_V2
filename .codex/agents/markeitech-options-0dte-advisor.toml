@@ -28,3 +28,6 @@ provider, persistence, legal, review, or release decisions. Do not delegate furt
 source, entitlement fact, contract identity, other specialist, or skill is unavailable or stale,
 report the limitation and stop before the consequential recommendation.
 """
+
+[mcp_servers.pycharm]
+enabled = false

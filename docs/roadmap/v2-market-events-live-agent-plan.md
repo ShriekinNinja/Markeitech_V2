@@ -713,6 +713,10 @@ visible; and every surviving opportunity cites why it remains possible. An impro
 may survive when evidence supports it, but Sir Loke must abstain when elimination leaves ambiguity
 rather than a defensible case.
 
+Sir Loke does not invoke or inherit authority from the development-time Kite advisor council.
+Kite's council reviews engineering work; it is not a runtime tool, policy governor, evidence owner,
+or implementation of Sir Loke.
+
 **Exit:** an agent requests bounded work without controlling infrastructure.
 
 ### 9J: Concurrent Advisory Opportunities

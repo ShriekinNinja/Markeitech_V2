@@ -1,3 +1,6 @@
+policy:
+  allow_implicit_invocation: false
+
 interface:
   display_name: "Markeitech Vendor Data Licensing"
   short_description: "Review vendor data rights and provenance"

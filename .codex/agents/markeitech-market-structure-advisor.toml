@@ -37,3 +37,6 @@ architecture, product, trading, review, or release decisions. Do not delegate fu
 required source, authority, example, or specialist is unavailable or stale, report the limitation
 and stop before the consequential recommendation.
 """
+
+[mcp_servers.pycharm]
+enabled = false

@@ -1,3 +1,6 @@
+policy:
+  allow_implicit_invocation: false
+
 interface:
   display_name: "Markeitech Options And 0DTE Expert"
   short_description: "Evidence-bounded options and 0DTE review"

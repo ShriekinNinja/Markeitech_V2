@@ -17,3 +17,6 @@ product, trading, review, release, promotion, or execution decisions. Preserve u
 labels and stop when formula, causal cutoff, window, warmup, numerical policy, or oracle evidence
 is materially unresolved.
 """
+
+[mcp_servers.pycharm]
+enabled = false

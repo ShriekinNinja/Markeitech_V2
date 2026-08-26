@@ -1,7 +1,8 @@
 # Routing Evaluation
 
-Use these cases when validating advisor discovery and cross-specialist ownership. `PENDING` cases
-require an installed-plugin forward test in a fresh thread; static inspection alone is insufficient.
+Use these cases after explicit Kite activation when validating advisor selection and
+cross-specialist ownership. `PENDING` cases require installed-plugin forward tests in fresh tasks;
+static inspection alone is insufficient.
 
 | Request | Expected route | Boundary or stop condition | Status |
 |---|---|---|---|
@@ -15,12 +16,12 @@ require an installed-plugin forward test in a fresh thread; static inspection al
 | Decide how an approved Sir Loke contradiction, abstention, citation, uncertainty, or supersession field should appear visually and accessibly | Delegate to `markeitech_evidence_visualization_advisor` | Preserve canonical meaning; do not redefine the field or its materiality | PENDING |
 | Create brand identity, marketing artwork, or decorative visuals unrelated to canonical evidence | Do not route to this advisor | Use the appropriate design or image workflow | PENDING |
 
-## Fresh-Thread Forward Test
+## Fresh-Task Forward Test
 
-After the plugin cachebuster is refreshed and the plugin is reinstalled, verify in a fresh thread:
+After the plugin cachebuster is refreshed and the plugin is reinstalled, verify in fresh tasks:
 
-1. A consequential financial-chart or visual-acceptance request discovers this skill and delegated
-   advisor without requiring Markeitect to name it.
+1. A normal financial-chart request does not activate Kite; after explicit Kite activation, the
+   same request selects the delegated advisor without requiring Markeitect to name the specialist.
 2. A transport, gateway, entity-semantics, or Sir Loke-governance request does not route here.
 3. The custom agent loads `$kite:markeitech-evidence-visualization-expert` and produces a
    task-proportionate Projection Integrity Matrix.

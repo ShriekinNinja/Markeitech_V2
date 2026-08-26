@@ -1,5 +1,5 @@
 name = "markeitech_semantic_events_opportunity_lifecycle_advisor"
-description = "Read-only specialist for derived market-event and plural opportunity semantics, typed transitions, evidence references, identity, temporal validity, conflict, abstention, and auditability."
+description = "Read-only specialist for derived market-event and plural opportunity semantics, typed transitions, evidence references, identity, temporal validity, conflict, revision, deterministic non-admission, and auditability; not Sir Loke judgment or abstention."
 model = "gpt-5.6-sol"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
@@ -17,3 +17,6 @@ edit, commit, push, connect services, mutate data/databases, consume paid capaci
 architecture, product, trading, review, release or execution decisions. Stop on missing upstream
 fitness, undefined/unapproved meaning, identity collision, temporal ambiguity or history rewrite.
 """
+
+[mcp_servers.pycharm]
+enabled = false

@@ -1,0 +1,343 @@
+schema_version = 2
+policy_version = "2026-08-26-v2"
+plugin_version = "0.1.0+codex.20260826150403"
+router_skill = "markeitech-advisor-router"
+
+[defaults]
+kite_activation = "explicit_task_only"
+fresh_session = "normal_codex"
+continuation = "direct_kite_task_followups_only"
+casual_mention = "does_not_activate"
+filesystem = "read_only_consultation"
+external_actions = "deny"
+authenticated_sessions = "deny"
+secrets = "deny"
+mcp_servers = []
+network = "deny"
+direct_primary_invocation = "custom_role_or_explicit_user_only"
+direct_specialist_invocation = "narrow_override_no_kite_mode"
+failure = "stop_affected_conclusion"
+selection = "smallest_sufficient_set"
+ordering = "explicit_selected_role_dag"
+
+[[advisors]]
+role = "markeitech_architecture_boundaries_advisor"
+skill = "markeitech-architecture-boundaries-expert"
+domain = "architecture_boundaries"
+model = "gpt-5.6-sol"
+reasoning = "medium"
+tier = 10
+owns = "Component topology, scoped canonical authority, owner placement, duplicated authority, logical durability ownership, architecture drift, and change cost."
+excludes = ["event execution", "Python mechanics", "database mechanics", "market meaning"]
+inputs = "Tracked authority and owner/writer inventory."
+output = "Ownership census, boundary matrix, drift analysis, and change-cost assessment."
+default_after = []
+handoffs = ["markeitech_nautilus_advisor", "markeitech_event_driven_architecture_advisor", "markeitech_python_runtime_advisor", "markeitech_postgres_persistence_advisor"]
+fresh_primary_sources = false
+network = "deny"
+
+[[advisors]]
+role = "markeitech_security_tool_boundary_advisor"
+skill = "markeitech-security-tool-boundary-expert"
+domain = "security_tool_boundary"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 15
+cross_cutting = true
+owns = "Secrets, authentication, permissions, least privilege, MCP and tool exposure, redaction, supply chain, external surfaces, and safe failure."
+excludes = ["Sir Loke operational approval taxonomy", "market analysis", "component placement", "legal approval"]
+inputs = "Exact trust surface, tool or dependency contract, sanitized evidence, and consequence."
+output = "Threat/control matrix, least-authority disposition, residual risks, and acceptance requirements."
+default_after = []
+handoffs = ["markeitech_architecture_boundaries_advisor", "markeitech_live_agent_governance_advisor", "markeitech_vendor_data_licensing_provenance_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_ib_market_data_advisor"
+skill = "markeitech-ib-market-data-expert"
+domain = "ib_provider_truth"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 20
+owns = "Interactive Brokers request, entitlement, delivery mode, session, pacing, field, and provider-failure truth."
+excludes = ["Nautilus adapter behavior", "market meaning", "licensing approval"]
+inputs = "Exact provider product, request, instrument, session, and current official IB evidence."
+output = "Provider Truth and IB-to-Nautilus handoff matrices."
+default_after = ["markeitech_architecture_boundaries_advisor"]
+handoffs = ["markeitech_nautilus_advisor", "markeitech_data_quality_lineage_advisor", "markeitech_vendor_data_licensing_provenance_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_nautilus_advisor"
+skill = "markeitech-nautilus-v2-expert"
+domain = "nautilus_alignment"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 20
+owns = "Installed and current Nautilus capability, adapter, actor, bus, cache, catalog, lifecycle, persistence, and framework-alignment truth."
+excludes = ["product meaning", "IB provider truth", "generic Python policy"]
+inputs = "Exact question, installed contract, code and tests, and fresh nightly sources."
+output = "Native-capability gate and Nautilus Alignment Matrix."
+default_after = ["markeitech_architecture_boundaries_advisor", "markeitech_ib_market_data_advisor"]
+handoffs = ["markeitech_event_driven_architecture_advisor", "markeitech_python_runtime_advisor", "markeitech_postgres_persistence_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_event_driven_architecture_advisor"
+skill = "markeitech-event-driven-architecture-expert"
+domain = "event_delivery"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 30
+owns = "Delivery, ordering, acknowledgement, idempotency, retry, admission, backpressure, recovery, lifecycle execution, and partial-failure behavior."
+excludes = ["component placement", "Python implementation", "persistence schema", "event meaning"]
+inputs = "Accepted topology and event meaning plus lifecycle and failure requirements."
+output = "Event-Driven Architecture Matrix."
+default_after = ["markeitech_architecture_boundaries_advisor", "markeitech_nautilus_advisor"]
+handoffs = ["markeitech_python_runtime_advisor", "markeitech_postgres_persistence_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_python_runtime_advisor"
+skill = "markeitech-python-runtime-expert"
+domain = "python_runtime"
+model = "gpt-5.6-sol"
+reasoning = "medium"
+tier = 40
+owns = "Python tasks, threads, processes, queues, cancellation, shutdown and restart, typing and package mechanics, failure isolation, and measured resources."
+excludes = ["Nautilus guarantees", "event policy", "component placement"]
+inputs = "Accepted owner and delivery contract plus the exact environment, code, tests, and measurements."
+output = "Python ownership-and-lifecycle findings and bounded mechanics proposals."
+default_after = ["markeitech_architecture_boundaries_advisor", "markeitech_nautilus_advisor", "markeitech_event_driven_architecture_advisor"]
+handoffs = ["markeitech_architecture_boundaries_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_data_quality_lineage_advisor"
+skill = "markeitech-data-quality-lineage-expert"
+domain = "data_quality_lineage"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 50
+owns = "Source, instrument and contract identity; lineage; clocks; sessions; completeness; duplicates; conflicts; revisions; freshness; fidelity; schema identity; and evidence-health inputs."
+excludes = ["formula validation", "licensing permission", "market meaning", "final fitness", "storage design"]
+inputs = "Exact source, artifact, schema, filter, time, and identity evidence."
+output = "Quality and lineage disposition with supporting matrices."
+default_after = ["markeitech_ib_market_data_advisor", "markeitech_nautilus_advisor"]
+handoffs = ["markeitech_vendor_data_licensing_provenance_advisor", "markeitech_quantitative_metric_validation_advisor", "markeitech_evidence_fitness_advisor", "markeitech_postgres_persistence_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_vendor_data_licensing_provenance_advisor"
+skill = "markeitech-vendor-data-licensing-provenance-expert"
+domain = "vendor_rights_provenance"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 55
+cross_cutting = true
+owns = "Vendor terms, permitted use, retention, redistribution and display, derived-data boundaries, export provenance, audit duties, and legal escalation."
+excludes = ["engineering truth", "market meaning", "legal advice or approval"]
+inputs = "Exact vendor, product, governing terms, account/source/filter identity, and intended use."
+output = "Rights and provenance matrix with duties, risks, controls, and escalation gates."
+default_after = ["markeitech_data_quality_lineage_advisor", "markeitech_security_tool_boundary_advisor"]
+handoffs = ["markeitech_postgres_persistence_advisor", "markeitech_evidence_visualization_advisor", "markeitech_options_flow_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_postgres_persistence_advisor"
+skill = "markeitech-postgres-persistence-expert"
+domain = "postgres_mechanics"
+model = "gpt-5.6-sol"
+reasoning = "medium"
+tier = 60
+owns = "PostgreSQL schema, migration, constraints, indexes, queries, transactions, recovery, retention mechanics, operational audit, and database observability."
+excludes = ["logical durability choice", "raw-retention approval", "event meaning"]
+inputs = "Approved durability and owner plus exact database implementation, versions, and evidence."
+output = "PostgreSQL decision matrix and bounded mechanics proposals."
+default_after = ["markeitech_architecture_boundaries_advisor", "markeitech_event_driven_architecture_advisor", "markeitech_data_quality_lineage_advisor"]
+handoffs = ["markeitech_architecture_boundaries_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_quantitative_metric_validation_advisor"
+skill = "markeitech-quantitative-metric-validation-expert"
+domain = "quantitative_validation"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 70
+owns = "Formula, units, normalization, warmup, rolling and aggregation behavior, numerical stability, missing values, bounded state, parity, fixtures, and measurement invariants."
+excludes = ["provider truth", "market or trading meaning", "model utility", "final fitness"]
+inputs = "Exact metric, upstream quality disposition, code, tests, fixtures, and named references."
+output = "Quantitative-validity disposition and acceptance matrix."
+default_after = ["markeitech_data_quality_lineage_advisor"]
+handoffs = ["markeitech_evidence_fitness_advisor", "markeitech_statistical_learning_optimization_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_evidence_fitness_advisor"
+skill = "markeitech-evidence-fitness-expert"
+domain = "evidence_fitness"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 80
+owns = "Final fitness of specifically identified evidence for one named downstream use."
+excludes = ["recalculation", "repair", "formula design", "market meaning", "model evaluation"]
+inputs = "Named use, evidence identity, and every material upstream disposition."
+output = "Consumer-specific matrix and ACCEPTED, DEGRADED, OBSERVATION_ONLY, or REJECTED result."
+default_after = ["markeitech_data_quality_lineage_advisor", "markeitech_quantitative_metric_validation_advisor"]
+handoffs = []
+fresh_primary_sources = false
+network = "deny"
+
+[[advisors]]
+role = "markeitech_market_structure_advisor"
+skill = "markeitech-market-structure-expert"
+domain = "market_structure"
+model = "gpt-5.6-sol"
+reasoning = "medium"
+tier = 90
+owns = "Swings, pivots, legs, objective levels, FVGs, zones, profile and auction geometry, and multi-horizon market structure."
+excludes = ["observed order flow", "provider truth", "semantic interactions", "options", "execution"]
+inputs = "Accepted evidence and exact subject, horizon, identity, and fidelity."
+output = "Market Structure Evidence Matrix or bounded evidence record."
+default_after = ["markeitech_data_quality_lineage_advisor", "markeitech_evidence_fitness_advisor"]
+handoffs = ["markeitech_market_microstructure_order_flow_advisor", "markeitech_semantic_events_opportunity_lifecycle_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_market_microstructure_order_flow_advisor"
+skill = "markeitech-market-microstructure-order-flow-expert"
+domain = "market_microstructure_order_flow"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 90
+owns = "Trades, quotes, BBO or NBBO, classification, delta and CVD, liquidity and books, bursts, effort-response, and bounded participant hypotheses."
+excludes = ["bar geometry", "provider entitlements", "options mechanics", "trading or execution"]
+inputs = "Exact feed, venue, instrument, time, coverage, classifier, corrections, and quality disposition."
+output = "Source census and evidence-fidelity matrix."
+default_after = ["markeitech_data_quality_lineage_advisor", "markeitech_evidence_fitness_advisor"]
+handoffs = ["markeitech_semantic_events_opportunity_lifecycle_advisor", "markeitech_evidence_visualization_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_semantic_events_opportunity_lifecycle_advisor"
+skill = "markeitech-semantic-events-opportunity-lifecycle-expert"
+domain = "semantic_events_opportunities"
+model = "gpt-5.6-sol"
+reasoning = "medium"
+tier = 100
+owns = "Meaning and lifecycle of derived market events and plural opportunity state, including typed transitions, identity, evidence references, temporal validity, conflict, revision, and deterministic non-admission."
+excludes = ["raw metric calculation", "invented market structure", "option selection", "Sir Loke judgment or abstention", "execution"]
+inputs = "Accepted evidence, entity, fitness, and domain dispositions."
+output = "Typed transition and lifecycle matrix with forbidden inferences and approval gates."
+default_after = ["markeitech_evidence_fitness_advisor", "markeitech_market_structure_advisor", "markeitech_market_microstructure_order_flow_advisor"]
+handoffs = ["markeitech_event_driven_architecture_advisor", "markeitech_live_agent_governance_advisor", "markeitech_evidence_visualization_advisor"]
+fresh_primary_sources = false
+network = "deny"
+
+[[advisors]]
+role = "markeitech_options_0dte_advisor"
+skill = "markeitech-options-0dte-expert"
+domain = "options_0dte_mechanics"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 110
+owns = "Option identity, chain, quotes and liquidity, IV and Greeks, expiration, exercise, settlement, and bounded 0DTE mechanics."
+excludes = ["vendor-flow interpretation", "underlying structure", "risk acceptance", "trade advice"]
+inputs = "Exact product, contract, session, provider, and current primary-source evidence."
+output = "Product, contract, session, and mechanics disposition."
+default_after = ["markeitech_ib_market_data_advisor", "markeitech_data_quality_lineage_advisor"]
+handoffs = ["markeitech_options_flow_advisor", "markeitech_zero_dte_risk_advisor", "markeitech_evidence_fitness_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_options_flow_advisor"
+skill = "markeitech-options-flow-expert"
+domain = "vendor_options_flow"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 120
+owns = "Vendor schemas, prints, OPRA and quote-coverage implications, sweeps, blocks, splits, repeated prints, complex-order ambiguity, classifications, premium, OI timing, filters, transformations, and provenance."
+excludes = ["general option mechanics", "directional positioning", "ranking, sizing, or execution"]
+inputs = "Immutable feed or export identity, vendor documentation and terms, filters, and verified option mechanics."
+output = "Separate measured and interpretation ledgers with provenance and inference limits."
+default_after = ["markeitech_data_quality_lineage_advisor", "markeitech_vendor_data_licensing_provenance_advisor", "markeitech_options_0dte_advisor"]
+handoffs = ["markeitech_evidence_fitness_advisor", "markeitech_market_microstructure_order_flow_advisor", "markeitech_zero_dte_risk_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_zero_dte_risk_advisor"
+skill = "markeitech-zero-dte-risk-expert"
+domain = "zero_dte_candidate_risk"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 130
+owns = "Risk synthesis and disclosure for a named long, single-leg 0DTE candidate or bounded candidate set."
+excludes = ["candidate selection", "quote or Greek validation", "affordability", "sizing", "portfolio risk", "execution"]
+inputs = "Exact candidate, verified mechanics, material fitness dispositions, and current event or broker evidence."
+output = "Risk-lane dispositions, validity and expiry, unknowns, and disclosures."
+default_after = ["markeitech_options_0dte_advisor", "markeitech_evidence_fitness_advisor"]
+handoffs = []
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_statistical_learning_optimization_advisor"
+skill = "markeitech-statistical-learning-optimization-expert"
+domain = "statistical_learning_optimization"
+model = "gpt-5.6-sol"
+reasoning = "high"
+tier = 140
+owns = "Feature and label validity, leakage-safe evaluation, calibration, uncertainty, monitoring, drift, and bounded optimization governance."
+excludes = ["metric calculation", "model building or training", "trading semantics", "dependency adoption"]
+inputs = "Approved data strategy, fit features, as-of and label contracts, licensing disposition, and evaluation evidence."
+output = "Statistical Learning Readiness Matrix and bounded control proposals."
+default_after = ["markeitech_data_quality_lineage_advisor", "markeitech_quantitative_metric_validation_advisor", "markeitech_evidence_fitness_advisor", "markeitech_vendor_data_licensing_provenance_advisor"]
+handoffs = ["markeitech_live_agent_governance_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_live_agent_governance_advisor"
+skill = "markeitech-live-agent-governance-expert"
+domain = "sir_loke_governance"
+model = "gpt-5.6-sol"
+reasoning = "medium"
+tier = 150
+owns = "Sir Loke-facing intent schemas, delegated authority, approval lifecycle, evidence admission, advisory state, abstention, audit, and no-execution governance."
+excludes = ["market meaning", "event delivery mechanics", "persistence mechanics", "security and redaction mechanics", "vendor rights"]
+inputs = "Accepted evidence and opportunity semantics; the exact Sir Loke-facing authority or tool proposal; and a security disposition when context release, permissions, tools, MCP, external processing, redaction, or another trust surface is material."
+output = "Sir Loke governance contract, policy candidates, risks, and acceptance questions."
+default_after = ["markeitech_evidence_fitness_advisor", "markeitech_semantic_events_opportunity_lifecycle_advisor", "markeitech_security_tool_boundary_advisor"]
+handoffs = ["markeitech_evidence_visualization_advisor"]
+fresh_primary_sources = true
+network = "approved_public_read_only"
+
+[[advisors]]
+role = "markeitech_evidence_visualization_advisor"
+skill = "markeitech-evidence-visualization-expert"
+domain = "evidence_visualization"
+model = "gpt-5.6-sol"
+reasoning = "medium"
+tier = 160
+owns = "Projection integrity, financial time-series presentation, accessibility, browser acceptance, and visual QA."
+excludes = ["canonical analytics", "delivery protocol", "agent meaning", "frontend topology"]
+inputs = "Canonical payload and semantics plus rendered artifact, target, and acceptance evidence."
+output = "Projection Integrity Matrix and presentation-only proposals."
+default_after = ["markeitech_evidence_fitness_advisor", "markeitech_semantic_events_opportunity_lifecycle_advisor", "markeitech_live_agent_governance_advisor"]
+handoffs = []
+fresh_primary_sources = true
+network = "approved_public_read_only"

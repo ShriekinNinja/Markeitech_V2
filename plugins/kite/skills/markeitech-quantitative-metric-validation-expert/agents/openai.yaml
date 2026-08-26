@@ -1,3 +1,6 @@
+policy:
+  allow_implicit_invocation: false
+
 interface:
   display_name: "Markeitech Quantitative Metric Validation"
   short_description: "Validate formulas and numerical invariants"

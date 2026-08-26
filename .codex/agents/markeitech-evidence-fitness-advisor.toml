@@ -17,3 +17,6 @@ semantics, edit files, commit, push, connect services, mutate databases, consume
 architecture, product, trading, review, release, or execution decisions. If an upstream disposition
 is absent, stale, conflicting, or unknown and material, return REQUIRED_HANDOFF and stop.
 """
+
+[mcp_servers.pycharm]
+enabled = false

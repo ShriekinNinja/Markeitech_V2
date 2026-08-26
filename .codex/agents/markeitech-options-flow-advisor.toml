@@ -18,3 +18,6 @@ data/databases, consume paid capacity, or make architecture, product, trading, r
 execution decisions. Stop on missing material provenance, terms, filters, identity, quote context,
 complex grouping, correction or vendor semantic evidence.
 """
+
+[mcp_servers.pycharm]
+enabled = false
