@@ -147,17 +147,19 @@ Acceptance claims remain separate:
 
 ## Source And Installed Status
 
-Installed Kite `0.1.0+codex.20260825140114` matched its pre-Phase-1 source byte-for-byte. The
-repository now contains uninstalled source candidate `0.1.0+codex.20260826150403`. Its structural
+Kite `0.1.0+codex.20260826132235` is installed and enabled from the local `markeitech` marketplace;
+its installed cache matched the cache-busted repository source byte-for-byte. Its structural
 validator covers 20 advisors, 27 in-Kite routing cases, and explicit activation fixtures, but
-source validation does not change or prove installed behavior.
+packaging and source validation do not prove fresh-task routing behavior. Codex 0.149.1's actual
+startup/prompt parser loads all 20 custom roles without malformed-role warnings after each disabled
+PyCharm MCP entry was corrected to retain its exact HTTP transport.
 
 One ordinary governance selection was observed on older build `...124814`; delegated execution
 failed. Architecture, governance, and security roles returned consultations during the Phase 1
 review against installed build `...140114`, but that was not a clean routing fixture and exposed
-the parent-permission isolation limitation. Reinstall, normal-task dormancy, explicit activation,
-end-to-end behavior, isolation, redaction, failure, and revocation acceptance remain pending and
-require separate approval.
+the parent-permission isolation limitation. Normal-task dormancy, explicit activation, end-to-end
+behavior, isolation, redaction, failure, and revocation acceptance remain pending and require
+fresh-task evidence.
 
 ## Preserved Candidate History
 

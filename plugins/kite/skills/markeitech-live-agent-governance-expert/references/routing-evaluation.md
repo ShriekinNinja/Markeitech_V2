@@ -11,13 +11,14 @@ Installed discovery and ordinary-request selection were observed on 2026-08-25 a
 failed because the ephemeral collaboration runtime could not resolve its own thread ID. Delegated
 execution, cross-advisor ordering, and proportional final output remain `PENDING`.
 
-The currently installed `0.1.0+codex.20260825140114` build had source/cache identity acceptance.
+The previously installed `0.1.0+codex.20260825140114` build had source/cache identity acceptance.
 Architecture, governance, and security custom roles returned consultations during the 2026-08-26
 Phase 1 review, but that task was not a clean governance routing fixture and did not establish
-automatic selection, end-to-end ordering, or tool isolation. The uninstalled
-`0.1.0+codex.20260826150403` source candidate makes Kite, the router, and specialist skills
-explicit-only. Its dormancy and explicit-activation behavior remain pending until a separately
-approved reinstall and fresh-task acceptance.
+automatic selection, end-to-end ordering, or tool isolation. Installed build
+`0.1.0+codex.20260826132235` makes Kite, the router, and specialist skills explicit-only, preserves
+a valid transport while disabling the project PyCharm MCP in every custom role, and has
+source/cache identity acceptance. Its dormancy and explicit-activation behavior remain pending
+until fresh-task acceptance.
 
 | Request | Expected routing | Required boundary | Contract check | Installed result |
 |---|---|---|---|---|

@@ -18,4 +18,5 @@ identity are missing/conflicting, permission is unclear, or qualified counsel is
 """
 
 [mcp_servers.pycharm]
+url = "http://127.0.0.1:64462/stream"
 enabled = false

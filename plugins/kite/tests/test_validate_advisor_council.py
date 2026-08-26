@@ -231,7 +231,9 @@ class AdvisorCouncilValidatorTests(unittest.TestCase):
             agent = root / ".codex/agents/markeitech-nautilus-advisor.toml"
             agent.write_text(
                 agent.read_text(encoding="utf-8").replace(
-                    '\n[mcp_servers.pycharm]\nenabled = false\n',
+                    '\n[mcp_servers.pycharm]\n'
+                    'url = "http://127.0.0.1:64462/stream"\n'
+                    'enabled = false\n',
                     "\n",
                 ),
                 encoding="utf-8",
@@ -239,6 +241,26 @@ class AdvisorCouncilValidatorTests(unittest.TestCase):
             self.assertTrue(
                 any(
                     "MCP override IDs must exactly match" in error
+                    for error in VALIDATOR.validate_repo(root)
+                )
+            )
+
+    def test_disabled_mcp_without_transport_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.copy_validation_tree(root)
+            agent = root / ".codex/agents/markeitech-nautilus-advisor.toml"
+            agent.write_text(
+                agent.read_text(encoding="utf-8").replace(
+                    'url = "http://127.0.0.1:64462/stream"\n'
+                    'enabled = false\n',
+                    'enabled = false\n',
+                ),
+                encoding="utf-8",
+            )
+            self.assertTrue(
+                any(
+                    "must preserve the exact project transport" in error
                     for error in VALIDATOR.validate_repo(root)
                 )
             )
@@ -275,7 +297,7 @@ class AdvisorCouncilValidatorTests(unittest.TestCase):
             manifest = root / "plugins/kite/.codex-plugin/plugin.json"
             manifest.write_text(
                 manifest.read_text(encoding="utf-8").replace(
-                    "0.1.0+codex.20260826150403",
+                    "0.1.0+codex.20260826132235",
                     "0.1.0+codex.invalid",
                 ),
                 encoding="utf-8",

@@ -331,9 +331,16 @@ def validate_repo(root: Path) -> list[str]:
             override = agent_mcp.get(server_id)
             if not isinstance(override, dict) or override.get("enabled") is not False:
                 errors.append(f"{role}: project MCP {server_id!r} must be explicitly disabled")
-            elif override != {"enabled": False}:
+                continue
+            project_server = project_mcp.get(server_id)
+            if not isinstance(project_server, dict):
+                errors.append(f"project MCP {server_id!r} must be a table")
+                continue
+            expected_override = {**project_server, "enabled": False}
+            if override != expected_override:
                 errors.append(
-                    f"{role}: disabled MCP {server_id!r} may contain only enabled = false"
+                    f"{role}: disabled MCP {server_id!r} must preserve the exact project "
+                    "transport and configuration plus enabled = false"
                 )
 
     for duplicate in sorted(duplicates(agent_role_names)):

@@ -1,6 +1,6 @@
 schema_version = 2
 policy_version = "2026-08-26-v2"
-plugin_version = "0.1.0+codex.20260826150403"
+plugin_version = "0.1.0+codex.20260826132235"
 router_skill = "markeitech-advisor-router"
 
 [defaults]

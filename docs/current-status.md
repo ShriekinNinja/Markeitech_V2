@@ -99,10 +99,10 @@ system. The preserved V1 status is available in
   Sir Loke, opportunity lifecycle, ML evaluation, replay, backtesting, and execution remain future
   work.
 - The repository-owned Kite plugin defines a 20-role advisor council for development-time
-  engineering consultation, not V2 runtime implementation or Sir Loke behavior. Installed Kite
-  `0.1.0+codex.20260825140114` remains enabled from the local `markeitech` marketplace and matched
-  its pre-Phase-1 repository source byte-for-byte. The uninstalled
-  `0.1.0+codex.20260826150403` source candidate adds one canonical council policy, bounded
+  engineering consultation, not V2 runtime implementation or Sir Loke behavior. Kite
+  `0.1.0+codex.20260826132235` is installed and enabled from the local `markeitech` marketplace;
+  its installed cache matched the cache-busted repository source byte-for-byte. This build adds
+  one canonical council policy, bounded
   selection with deterministic selected-role dependency execution, explicit-only Kite activation
   and specialist skills, explicit advisor denial of the project PyCharm MCP, and a dependency-free
   structural validator. A fresh or unrelated Codex task remains normal Codex; explicitly invoking
@@ -114,8 +114,8 @@ system. The preserved V1 status is available in
   was presented a workspace-write parent permission surface despite its read-only default.
   Therefore read-only is a mandatory consultation contract and custom-agent default, not an
   accepted runtime isolation boundary. Fresh-task dormancy, explicit activation, task-scoped
-  continuity/reset, end-to-end order and stop behavior, isolation, redaction, failure, reinstall,
-  and revocation acceptance remain pending.
+  continuity/reset, end-to-end order and stop behavior, isolation, redaction, failure, and
+  revocation acceptance remain pending.
 
 The remainder of this page is the chronological implementation record supporting this snapshot.
 When an older section describes a former review state, the snapshot above governs current status;

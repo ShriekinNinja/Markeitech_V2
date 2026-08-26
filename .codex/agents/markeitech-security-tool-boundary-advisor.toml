@@ -18,4 +18,5 @@ secret exposure, authority ambiguity, unbounded tools/surfaces or missing contro
 """
 
 [mcp_servers.pycharm]
+url = "http://127.0.0.1:64462/stream"
 enabled = false

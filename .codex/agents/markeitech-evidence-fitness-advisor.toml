@@ -19,4 +19,5 @@ is absent, stale, conflicting, or unknown and material, return REQUIRED_HANDOFF 
 """
 
 [mcp_servers.pycharm]
+url = "http://127.0.0.1:64462/stream"
 enabled = false
