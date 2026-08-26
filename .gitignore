@@ -16,6 +16,7 @@ data/logs/
 v2/data/logs/
 v2/data/
 v2/config/system.local.toml
+v2/config/system.es-visual-review.local.toml
 data/charts/
 data/research/
 frontend/node_modules/

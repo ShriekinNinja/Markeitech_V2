@@ -6,6 +6,10 @@ from uuid import UUID
 
 from nautilus_trader.common import ImportableActorConfig
 
+from markeitech.intelligence.live_evidence_review import (
+    build_review_inventory,
+    to_json_value,
+)
 from markeitech.intelligence.rolling_measurements import (
     ROLLING_METRIC_SUFFIXES,
     rolling_metric_id,
@@ -517,6 +521,51 @@ def build_actor_plan(
                         "annotation_expectations": (
                             _visual_annotation_expectations(config)
                         ),
+                    },
+                ),
+            ),
+        )
+    if config.live_evidence_review.enabled:
+        review = config.live_evidence_review
+        inventory = build_review_inventory(
+            config,
+            checkout_identity=review.checkout_identity,
+            configuration_identity=review.configuration_identity,
+        )
+        registrations.append(
+            ActorRegistration(
+                key="live_evidence_review",
+                actor_id="LIVE-EVIDENCE-REVIEW",
+                config=ImportableActorConfig(
+                    actor_path=(
+                        "markeitech.intelligence.live_evidence_review_actor:"
+                        "LiveEvidenceReviewActor"
+                    ),
+                    config_path=(
+                        "markeitech.intelligence.live_evidence_review_actor:"
+                        "LiveEvidenceReviewActorConfig"
+                    ),
+                    config={
+                        "actor_id": "LIVE-EVIDENCE-REVIEW",
+                        "run_id": str(prerequisites.run_id),
+                        "inventory": to_json_value(inventory),
+                        "instrument_id": review.instrument_id,
+                        "analytical_profile_id": review.analytical_profile_id,
+                        "analytical_profile_version": review.analytical_profile_version,
+                        "bar_specification": review.bar_specification,
+                        "output_directory": str(review.output_directory),
+                        "capture_policy_version": review.capture_policy_version,
+                        "coalescing_interval_ms": review.coalescing_interval_ms,
+                        "readiness_deadline_ms": review.readiness_deadline_ms,
+                        "live_bar_deadline_ms": review.live_bar_deadline_ms,
+                        "output_drain_timeout_ms": review.output_drain_timeout_ms,
+                        "visible_window_ms": review.visible_window_ms,
+                        "image_width": review.image_width,
+                        "image_height": review.image_height,
+                        "maximum_bars_per_series": review.maximum_bars_per_series,
+                        "maximum_metric_subjects": review.maximum_metric_subjects,
+                        "maximum_entity_subjects": review.maximum_entity_subjects,
+                        "contextual_bar_specifications": _visual_bar_specifications(config),
                     },
                 ),
             ),

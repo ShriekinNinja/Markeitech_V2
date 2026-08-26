@@ -46,6 +46,28 @@ maximum_bars_per_series = 1000
 maximum_metric_values = 20000
 maximum_entity_revisions = 20000
 
+[live_evidence_review]
+enabled = false
+checkout_identity = "test-checkout"
+configuration_identity = "es-live-evidence-review-v1"
+instrument_id = "ESU6.CME"
+analytical_profile_id = "cme_equity_primary"
+analytical_profile_version = 1
+bar_specification = "5-MINUTE-LAST-EXTERNAL"
+output_directory = "../data/es-live-knowledge-review"
+capture_policy_version = 1
+coalescing_interval_ms = 2000
+readiness_deadline_ms = 2700000
+live_bar_deadline_ms = 600000
+output_drain_timeout_ms = 30000
+visible_window_ms = 28800000
+image_width = 1920
+image_height = 1080
+maximum_bars_per_series = 1000
+maximum_metric_subjects = 20000
+maximum_entity_subjects = 20000
+
+
 [runtime_resources]
 enabled = true
 sample_interval_ms = 10000
@@ -396,6 +418,12 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.visual_acceptance.output_directory == tmp_path.parent / "data/visual-acceptance"
     assert config.visual_acceptance.refresh_interval_ms == 60000
     assert config.visual_acceptance.maximum_bars_per_series == 1000
+    assert config.live_evidence_review.enabled is False
+    assert config.live_evidence_review.instrument_id == "ESU6.CME"
+    assert config.live_evidence_review.bar_specification == "5-MINUTE-LAST-EXTERNAL"
+    assert config.live_evidence_review.coalescing_interval_ms == 2000
+    assert config.live_evidence_review.image_width == 1920
+    assert config.live_evidence_review.image_height == 1080
     assert config.runtime_resources.enabled is True
     assert config.runtime_resources.sample_interval_ms == 10000
     assert config.runtime_resources.log_every_samples == 1
@@ -484,6 +512,35 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
     assert config.watchlist.members[0].capabilities == ("top_of_book", "watchlist_last")
+
+
+def test_live_evidence_review_rejects_non_isolated_runtime(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            "[live_evidence_review]\nenabled = false",
+            "[live_evidence_review]\nenabled = true",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="requires Discord off"):
+        load_system_config(path)
+
+
+def test_live_evidence_review_is_safely_disabled_when_section_is_absent(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "system.toml"
+    start = VALID_CONFIG.index("[live_evidence_review]")
+    end = VALID_CONFIG.index("[runtime_resources]", start)
+    path.write_text(VALID_CONFIG[:start] + VALID_CONFIG[end:])
+
+    review = load_system_config(path).live_evidence_review
+
+    assert review.enabled is False
+    assert review.configuration_identity == "not-configured"
+
+
 
 
 def test_loads_complete_entity_analysis_configuration_envelope(tmp_path: Path) -> None:

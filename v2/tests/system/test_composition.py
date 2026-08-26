@@ -203,6 +203,35 @@ def test_actor_plan_adds_enabled_visual_acceptance_before_analytical_producers()
     assert visual.config.config["annotation_expectations"] == []
 
 
+def test_actor_plan_adds_live_evidence_review_before_analytical_producers() -> None:
+    config = _config()
+    config = replace(
+        config,
+        discord=replace(config.discord, enabled=False),
+        watchlist=replace(config.watchlist, members=(config.watchlist.members[0],)),
+        live_evidence_review=replace(
+            config.live_evidence_review,
+            enabled=True,
+            checkout_identity="test-checkout",
+            configuration_identity="test-es-review",
+        ),
+    )
+
+    plan = build_actor_plan(config, _prerequisites())
+
+    keys = [registration.key for registration in plan]
+    assert keys.index("live_evidence_review") < keys.index("quote_quality_metrics")
+    review = next(item for item in plan if item.key == "live_evidence_review")
+    assert review.config.config["instrument_id"] == "ESU6.CME"
+    assert review.config.config["bar_specification"] == "5-MINUTE-LAST-EXTERNAL"
+    assert len(review.config.config["inventory"]["items"]) == 365
+    assert review.config.config["contextual_bar_specifications"] == [
+        "1-MINUTE-LAST-EXTERNAL",
+        "5-MINUTE-LAST-EXTERNAL",
+        "15-MINUTE-LAST-EXTERNAL",
+    ]
+
+
 def test_actor_plan_omits_disabled_native_consumer_probe() -> None:
     config = _config()
     config = replace(

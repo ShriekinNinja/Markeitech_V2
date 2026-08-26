@@ -11,6 +11,7 @@ dependencies = [
   "kaleido>=1.1,<2",
   "nautilus_trader==2.0.0rc3",
   "pandas-market-calendars>=5.4,<6",
+  "pillow>=12,<13",
   "plotly>=6.9,<7",
   "psutil>=7,<8",
   "psycopg[binary]>=3.2,<4",
