@@ -20,6 +20,7 @@ from markeitech.intelligence.live_evidence_review import (
 from markeitech.intelligence.live_evidence_review_actor import (
     LiveEvidenceReviewActor,
     LiveEvidenceReviewActorConfig,
+    _capture_schedule,
 )
 from markeitech.intelligence.live_evidence_review_renderer import render_review
 from markeitech.intelligence.metrics import MetricFidelity, MetricHealth, MetricValue
@@ -155,7 +156,29 @@ def test_actor_qualifies_only_exact_live_completed_es_bar(tmp_path) -> None:  # 
 
     assert actor._qualifies(live) is True
     assert actor._qualifies(historical) is False
+    actor._trigger_bar = live
+    actor._state = "COALESCING"
+    assert actor._trigger_revision_changed(live) is False
+    assert actor._trigger_revision_changed(_bar(revision=2)) is True
     actor.on_dispose()
+
+
+def test_capture_schedule_never_freezes_before_trigger_interval_end() -> None:
+    assert _capture_schedule(100, 300, 20) == (
+        "DEFERRED_TO_INTERVAL_END",
+        300,
+        320,
+    )
+    assert _capture_schedule(300, 300, 20) == (
+        "IMMEDIATE_AT_OR_AFTER_INTERVAL_END",
+        300,
+        320,
+    )
+    assert _capture_schedule(350, 300, 20) == (
+        "IMMEDIATE_AT_OR_AFTER_INTERVAL_END",
+        350,
+        370,
+    )
 
 
 def test_projection_publication_and_sequential_renderer_are_reconciled(tmp_path) -> None:  # noqa: ANN001
@@ -210,6 +233,15 @@ def test_projection_publication_and_sequential_renderer_are_reconciled(tmp_path)
             "image_width": 1920,
             "image_height": 1080,
         },
+        capture_timing={
+            "trigger_received_at_ns": 301_000_000_001,
+            "trigger_interval_end_ns": 301_000_000_000,
+            "temporal_disposition": "IMMEDIATE_AT_OR_AFTER_INTERVAL_END",
+            "coalescing_started_ns": 301_000_000_001,
+            "expected_freeze_ns": 303_000_000_001,
+            "actual_frozen_at_ns": 303_000_000_001,
+            "freeze_lateness_ns": 0,
+        },
     )
     pending = publish_projection_payload(payload, tmp_path)
     final = render_review(pending)
@@ -223,6 +255,7 @@ def test_projection_publication_and_sequential_renderer_are_reconciled(tmp_path)
     manifest = json.loads((final / "manifest.json").read_text())
     assert manifest["artifact_count"] == 2
     assert manifest["inventory_count"] == 1
+    assert payload["capture_timing"]["actual_frozen_at_ns"] >= bar.interval_end_ns
     focused_path = next(
         path
         for path in manifest["source_to_mark_references"]

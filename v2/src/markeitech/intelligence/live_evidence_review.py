@@ -543,6 +543,7 @@ def build_projection_payload(
     inventory: ReviewInventory,
     collector: ProjectionCollector,
     capture_policy: Mapping[str, Any],
+    capture_timing: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     if not collector.frozen:
         raise ValueError("projection collector must be frozen")
@@ -602,6 +603,7 @@ def build_projection_payload(
         "capture_completeness": "BOUNDED_RECEIVE_CUT_NOT_TRANSACTIONALLY_COMPLETE",
         "identity": identity,
         "capture_policy": to_json_value(capture_policy),
+        "capture_timing": to_json_value(capture_timing or {}),
         "readiness": to_json_value(readiness),
         "inventory": to_json_value(inventory),
         "collector_counters": to_json_value(collector.counters),
