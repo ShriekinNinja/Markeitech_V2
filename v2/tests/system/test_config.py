@@ -424,6 +424,11 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.live_evidence_review.coalescing_interval_ms == 2000
     assert config.live_evidence_review.image_width == 1920
     assert config.live_evidence_review.image_height == 1080
+    assert config.visual_debug_capture.enabled is False
+    assert config.visual_debug_capture.instrument_id == "ESU6.CME"
+    assert config.visual_debug_capture.bar_specification == "1-MINUTE-LAST-EXTERNAL"
+    assert config.visual_debug_capture.historical_bar_count == 5
+    assert config.visual_debug_capture.live_bar_count == 5
     assert config.runtime_resources.enabled is True
     assert config.runtime_resources.sample_interval_ms == 10000
     assert config.runtime_resources.log_every_samples == 1
@@ -541,8 +546,6 @@ def test_live_evidence_review_is_safely_disabled_when_section_is_absent(
     assert review.configuration_identity == "not-configured"
 
 
-
-
 def test_loads_complete_entity_analysis_configuration_envelope(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
     path.write_text(_entity_enabled_config())
@@ -594,8 +597,7 @@ def test_rejects_market_state_binding_without_explicit_runtime_limits(tmp_path: 
         _entity_enabled_config().replace(
             "maximum_input_age_ms = 120000\nmaximum_metric_values = 20000\n"
             "market_state_reconciliation_interval_ms = 1000\n",
-            "maximum_input_age_ms = 120000\n"
-            "market_state_reconciliation_interval_ms = 1000\n",
+            "maximum_input_age_ms = 120000\nmarket_state_reconciliation_interval_ms = 1000\n",
         ),
     )
 

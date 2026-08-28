@@ -131,8 +131,13 @@ configuration to the actual TWS/Gateway port. Common defaults are:
 Markeitech's tracked example currently reflects the project's paper Gateway-style port. A custom
 TWS port is valid when TWS and `system.local.toml` agree.
 
-Configure IB API timestamps for the instrument timezone expected by the pinned Nautilus V2 adapter.
-Keep execution unavailable. Each user must supply their own account, permissions, and subscriptions.
+Configure TWS or IB Gateway to send instrument-specific API attributes in **instrument timezone**
+for the pinned Nautilus `2.0.0rc3` runtime. Its Rust `ibapi 3.3.0` dependency cannot parse IB's
+valid dashed UTC `HistoricalDataEnd` metadata. This is a temporary transport compatibility setting:
+Nautilus and Markeitech still normalize bar instants to Unix nanoseconds and use UTC internally.
+Keep execution unavailable. Each user must supply their own account, permissions, and
+subscriptions. A dependency or TWS/Gateway change requires one bounded connected timestamp
+calibration before historical-data acceptance.
 
 See [V2 Interactive Brokers setup](ib-setup.md) for the complete checklist.
 

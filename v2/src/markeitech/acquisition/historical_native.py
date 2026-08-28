@@ -34,7 +34,10 @@ class NautilusHistoricalPort:
         self._actor.request_bars(
             bar_type,
             start=_utc_datetime(request.start_ns),
-            end=_utc_datetime(request.end_ns),
+            # Historical windows retain an inclusive nanosecond end so request identity remains
+            # exact. Nautilus/IB expects the completed, exclusive boundary; reconstruct it before
+            # reducing the timestamp to the provider's whole-second precision.
+            end=_utc_datetime(request.end_ns + 1),
             limit=request.limit,
             client_id=self._client_id,
             params=dict(request.parameters) or None,
@@ -92,4 +95,7 @@ def validate_historical_bars(
 
 def _utc_datetime(timestamp_ns: int) -> datetime:
     seconds = timestamp_ns // 1_000_000_000
-    return datetime.fromtimestamp(seconds, UTC)
+    try:
+        return datetime.fromtimestamp(seconds, UTC)
+    except (OverflowError, OSError, ValueError) as exc:
+        raise ValueError("historical request timestamp is outside datetime range") from exc

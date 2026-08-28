@@ -6,6 +6,10 @@ from uuid import uuid4
 
 import pytest
 
+from markeitech.intelligence.visual_debug_capture_actor import (
+    VisualDebugCaptureActor,
+    VisualDebugCaptureActorConfig,
+)
 from markeitech.system.composition import (
     StartupPrerequisites,
     build_actor_plan,
@@ -232,6 +236,32 @@ def test_actor_plan_adds_live_evidence_review_before_analytical_producers() -> N
     ]
 
 
+def test_actor_plan_adds_visual_debug_capture_before_session_metrics() -> None:
+    config = _config()
+    config = replace(
+        config,
+        watchlist=replace(config.watchlist, members=(config.watchlist.members[0],)),
+        visual_debug_capture=replace(
+            config.visual_debug_capture,
+            enabled=True,
+            configuration_identity="test-v3-completed-bar-review",
+        ),
+    )
+
+    plan = build_actor_plan(config, _prerequisites())
+
+    keys = [registration.key for registration in plan]
+    assert keys.index("visual_debug_capture") < keys.index("session_metrics")
+    capture = next(item for item in plan if item.key == "visual_debug_capture")
+    assert capture.actor_id == "VISUAL-DEBUG-CAPTURE"
+    assert capture.config.config["historical_bar_count"] == 5
+    assert capture.config.config["live_bar_count"] == 5
+    assert capture.config.config["bar_specification"] == "1-MINUTE-LAST-EXTERNAL"
+    actor_config = VisualDebugCaptureActorConfig(**capture.config.config)
+    actor = VisualDebugCaptureActor(actor_config)
+    assert str(actor.actor_id) == "VISUAL-DEBUG-CAPTURE"
+
+
 def test_actor_plan_omits_disabled_native_consumer_probe() -> None:
     config = _config()
     config = replace(
@@ -313,6 +343,8 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
     assert actor.config.config["profile_bindings"]["ESU6.CME"] == "cme_equity_primary"
     assert actor.config.config["profile_bindings"]["^SPX.CBOE"] == "us_index_primary"
     assert actor.config.config["profiles"][0]["overnight_enabled"] is False
+    assert actor.config.config["visual_snapshot_enabled"] is False
+    assert actor.config.config["visual_snapshot_maximum_intervals"] == 10
     assert actor.config.config["completed_bars"] == {
         "live_selector": "5-SECOND-LAST-EXTERNAL",
         "historical_selector": "1-MINUTE-LAST-EXTERNAL",

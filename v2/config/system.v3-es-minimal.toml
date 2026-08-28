@@ -1,0 +1,487 @@
+# V3 progressive-capability review baseline.
+#
+# ENABLED SURFACE:
+# - one explicit instrument: ESU6.CME
+# - one acquisition capability: watchlist_last
+# - mandatory control, calendar, evidence-health, acquisition, and persistence infrastructure
+#
+# DISABLED SURFACE:
+# - quote metrics, session measurements, rolling calculations, and entity analysis
+# - Discord, telemetry, probes, and every visual-review component
+#
+# Values inside disabled sections are schema-required inert placeholders. They are not accepted
+# analytical defaults and must be reviewed before their owning engine is enabled.
+# Never place secrets in this file; local secrets belong in the ignored v2/.env.
+
+schema_version = 17
+
+[runtime]
+name = "MARKEITECH-V3-ES-PROGRESSIVE-001"
+trader_id = "MARKEITECH-001"
+environment = "live"
+
+[ib]
+host = "127.0.0.1"
+port = 4002
+client_id = 20
+symbology_method = "simplified"
+convert_exchange_to_mic_venue = false
+market_data_type = "realtime"
+use_regular_trading_hours = false
+batch_quotes = true
+ignore_quote_tick_size_updates = false
+handle_revised_bars = false
+connection_timeout_seconds = 30
+request_timeout_seconds = 30
+
+# V3 TIMESTAMP BOUNDARY — BOUNDED CONNECTED PATH ACCEPTED:
+# Installed Nautilus 2.0.0rc3 sends intraday historical bounds in UTC, but its pinned Rust ibapi
+# 3.3.0 rejects IB's valid dashed UTC HistoricalDataEnd form. TWS/Gateway must temporarily send
+# instrument-timezone attributes so that dependency can parse the response metadata; Nautilus and
+# Markeitech still retain absolute Unix nanoseconds internally. Two connected ES runs then exposed
+# a separate inclusive-to-exclusive end conversion defect (repeatable 4/5 bars). After the native
+# port correction, one connected ES request returned exactly five consecutive one-minute closes,
+# READY 5/5, no forming bar, no retry/late callback, and fully reconciled persistence. Acceptance is
+# limited to that single recent-completed request path. Daily and coarser provider bars remain
+# date-semantic and are not accepted as exchange-session boundary truth.
+
+[logging]
+directory = "../data/logs"
+file_name = "markeitech-v3-es-progressive.log"
+
+# V3 REVIEW DEBT — NOT ACCEPTED:
+# Only directory and file_name are configuration-owned. The node builder currently hardcodes
+# stdout/file levels to INFO, append behavior (clear_log_file = false), and synchronous flush.
+# Review whether those native logging controls require typed TOML fields before this process is
+# accepted; do not treat the hardcoded values as approved defaults merely because this config loads.
+
+[discord]
+enabled = false
+request_timeout_seconds = 5
+queue_capacity = 32
+ping_critical_resource_alerts = true
+
+# V3 REMOVAL CANDIDATE — NOT YET AUTHORIZED FOR DELETION:
+# This is the rejected periodic Plotly/Kaleido static-PNG visual path. Keep it disabled for V3 and
+# propose removal after checking composition, tests, documentation, dependencies, and preserved
+# historical review evidence. It is not the future progressive interactive review surface.
+[visual_acceptance]
+enabled = false
+output_directory = "../data/visual-acceptance"
+refresh_interval_ms = 60000
+maximum_bars_per_series = 1000
+maximum_metric_values = 20000
+maximum_entity_revisions = 20000
+
+# V3 REMOVAL CANDIDATE — NOT YET AUTHORIZED FOR DELETION:
+# This is the rejected V1/V2 exhaustive one-shot capture plus Pillow static-frame review path.
+# Keep it disabled for V3 and propose removal after checking composition, tests, documentation,
+# dependencies, and preserved historical capture evidence. It is not the future progressive
+# interactive review surface.
+[live_evidence_review]
+enabled = false
+checkout_identity = "NOT_CONFIGURED"
+configuration_identity = "v3-disabled-placeholder"
+instrument_id = "ESU6.CME"
+analytical_profile_id = "cme_equity_primary"
+analytical_profile_version = 1
+bar_specification = "5-MINUTE-LAST-EXTERNAL"
+output_directory = "../data/es-live-knowledge-review"
+capture_policy_version = 1
+coalescing_interval_ms = 2000
+readiness_deadline_ms = 2700000
+live_bar_deadline_ms = 600000
+output_drain_timeout_ms = 30000
+visible_window_ms = 28800000
+image_width = 1920
+image_height = 1080
+maximum_bars_per_series = 1000
+maximum_metric_subjects = 20000
+maximum_entity_subjects = 20000
+
+# V3 ONE-HOUR CONNECTED VISUAL TEST — ACTIVE, NOT YET ACCEPTED:
+# A new isolated projection captures exactly 55 historical plus five live-aggregate canonical
+# one-minute bars: one contiguous hour with seven direct metric records for every candle. It uses a
+# bounded producer-owned snapshot handshake to remove actor-start-order dependence, then writes one
+# frozen self-contained HTML and manifest. The first connected attempt proved that a startup
+# history request can end at the start
+# of a partial live minute, making the strict contiguous historical/live seam impossible. In this
+# visual-review mode only, the completed-bar producer now waits for the first full live aggregate
+# and submits its one bounded 55-bar history request with that live interval start as the exclusive
+# history boundary. The UTC-stamped identity names this corrected bounded activation; it is not a
+# configuration-file digest. The timing values below remain provisional test settings. Review them
+# against the measured render and lifecycle evidence.
+[visual_debug_capture]
+enabled = true
+configuration_identity = "v3-es-completed-bar-foundation-review-v3-20260827T150256Z"
+instrument_id = "ESU6.CME"
+analytical_profile_id = "cme_equity_primary"
+analytical_profile_version = 1
+bar_specification = "1-MINUTE-LAST-EXTERNAL"
+parameter_version = 1
+output_directory = "../data/visual-debug-captures"
+capture_policy_version = 2
+historical_bar_count = 55
+live_bar_count = 5
+quiet_period_ms = 2000
+snapshot_retry_interval_ms = 1000
+completion_deadline_ms = 900000
+output_drain_timeout_ms = 30000
+
+[runtime_resources]
+enabled = false
+sample_interval_ms = 10000
+log_every_samples = 1
+include_cache_counts = true
+disk_path = "/"
+
+[runtime_resources.health]
+enabled = false
+threshold_version = "v3-disabled-placeholder"
+warning_consecutive_samples = 6
+critical_consecutive_samples = 3
+recovery_consecutive_samples = 6
+notification_cooldown_ms = 900000
+rss_growth_window_samples = 90
+stale_warning_ms = 30000
+stale_critical_ms = 120000
+
+[runtime_resources.health.warning]
+host_memory_available_percent = 15.0
+host_cpu_percent = 90.0
+host_swap_percent = 50.0
+disk_free_bytes = 16106127360
+disk_free_percent = 10.0
+process_rss_bytes = 4294967296
+process_rss_growth_bytes = 536870912
+process_cpu_percent = 400.0
+thread_count = 100
+open_fd_ratio = 0.70
+
+[runtime_resources.health.critical]
+host_memory_available_percent = 8.0
+host_cpu_percent = 98.0
+host_swap_percent = 80.0
+disk_free_bytes = 5368709120
+disk_free_percent = 2.0
+process_rss_bytes = 8589934592
+process_rss_growth_bytes = 1073741824
+process_cpu_percent = 800.0
+thread_count = 250
+open_fd_ratio = 0.90
+
+# V3 REVIEW DEBT — CURRENT VALUES RETAINED FOR THE FIRST HEALTHY SANITY RUN:
+# - Retry and shutdown budgets are not mutually bounded: three 5s connection attempts plus two
+#   100ms backoffs can exceed the 10s worker shutdown wait before SQL/commit time is included.
+# - CLI STOPPED closure is not gated by an actor-to-CLI acknowledgement that the persistence
+#   worker terminated, STOPPING was stored, and accepted/stored/failed/rejected/pending reconciled.
+# - Startup schema verification checks required table and column names, not exact types,
+#   nullability, defaults, constraints, indexes, ownership, or privileges.
+# - System-health duplicate suppression does not compare stored content for a conflicting
+#   (run_id, sequence), unlike generic operational-event identity collision handling.
+# - Every write exception receives the same whole-batch retry policy; transient, permanent, and
+#   ambiguous-commit failures are not classified separately.
+# - The pending-write queue is bounded, but the worker result queue is unbounded.
+# - PostgreSQL volume durability is not backup/restore acceptance; no reviewed recovery objective
+#   or restore drill is established.
+# These debts do not authorize a no-database mode, raw market-data retention, native persistence,
+# or a policy change. Any retry, failure, rejection, pending write, worker timeout, sequence gap,
+# or unreconciled STOPPED run rejects persistence acceptance for this first connected run.
+[persistence]
+dsn_env = "MARKEITECH_POSTGRES_DSN"
+connect_timeout_seconds = 5
+queue_capacity = 512
+critical_queue_reserve = 32
+write_batch_size = 64
+result_poll_interval_ms = 250
+shutdown_timeout_seconds = 10
+write_max_attempts = 3
+write_retry_backoff_ms = 100
+
+# V3 REMOVAL / TEST-TOOL RELOCATION CANDIDATE — NOT YET AUTHORIZED FOR DELETION:
+# The native-consumer probe is a completed multi-consumer diagnostic, not the acquisition owner.
+# It accepts quote/trade feeds only, while this profile supplies a bar feed; enabling it here would
+# fail actor construction and the loader does not detect that incompatibility. Keep it disabled.
+# Preserve its historical proof and tests before removing it from the production configuration.
+[acquisition]
+native_consumer_probe_enabled = false
+native_consumer_probe_unsubscribe_after_seconds = 15
+
+# V3 REVIEW DEBT — HISTORICAL PROVIDER ACQUISITION IS DISABLED AFTER CALIBRATION:
+# - The 2026-08-27 ES sanity run published global READY after instrument-definition and
+#   persistence readiness but before the bar stream became ACTIVE or produced its first live
+#   observation. READY is therefore control-plane startup readiness, not proof of usable live
+#   market evidence; future acceptance must inspect the acquisition/evidence lifecycle until a
+#   separate live-evidence readiness contract is reviewed.
+# - The same sanity run produced duplicate startup acquisition-status publications. They were
+#   detected and caused no duplicate provider subscription, but add avoidable lifecycle/audit noise
+#   and should be reconciled at the acquisition owner rather than normalized by projections.
+# - The mandatory acquisition actor still constructs historical machinery and advances an empty
+#   coordinator every 100ms even when no historical-demand producer is composed.
+# - maximum_plan_requests and maximum_total_observations are checked per independently compiled
+#   demand, not as aggregate outstanding/session/run budgets across all consumers.
+# - There is no explicit successful-request pacing interval; retry_backoff_ms is not IB pacing.
+# - Provider errors are not classified by entitlement, pacing, unavailable range, farm/session,
+#   permanent request defect, timeout, or adapter/local failure before retry policy is applied.
+# - Some planning/capacity/deferred/shutdown rejections do not publish one typed terminal result to
+#   the consumer; log-only rejection can leave demand lifecycle and audit incomplete.
+# - Historical producers use one-shot startup publication without a receipt acknowledgement or
+#   stable-demand reconciliation contract.
+# - Native historical cancellation is a no-op at this boundary. A late response can be attributed
+#   to a newer attempt or another active request because the callback exposes no request identity.
+# - Sequential shutdown cancellation can dispatch pending work after stopping has begun.
+# - Scheduling is priority then request identity, not FIFO, and has no aging/fairness contract.
+# - A next request can be submitted before the prior batch/readiness outcome is published.
+# - Live provider-subscription failure has no autonomous acquisition-owner retry; any FAILED
+#   transition rejects this first run rather than being awaited as self-recovering.
+# - No typed deadline currently bounds SUBSCRIBED to first matching bar/ACTIVE for this profile.
+# - Nautilus RC3's pinned Rust ibapi 3.3.0 rejects IB's dashed UTC HistoricalDataEnd metadata, so
+#   instrument-timezone transport is required until the dependency accepts both official forms.
+# - Nautilus turns that native parse failure into an empty response; Markeitech then records an
+#   accepted/completed zero-observation result before correctly degrading consumer readiness.
+# - Two instrument-timezone calibration runs returned a repeatable 4/5 because the prior native
+#   port submitted the inclusive `...:59.999999999` end at whole-second `...:59` instead of the
+#   completed exclusive minute boundary. The corrected port is connected-accepted for one exact
+#   five-bar ES recent-completed path; other selectors/windows remain unaccepted.
+# The values below authorize one 55-minute request for the one-hour visual review. They are not IB
+# limits or accepted analytical-history policy; a short response or timeout must fail honestly and
+# must not trigger request splitting or an automatic second request.
+[historical]
+maximum_plan_requests = 1
+maximum_observations_per_request = 55
+maximum_total_observations = 55
+maximum_outstanding_requests = 1
+maximum_in_flight_requests = 1
+timeout_seconds = 30
+maximum_attempts = 1
+retry_backoff_ms = 500
+poll_interval_ms = 100
+
+# V3 REMOVAL / TEST-TOOL RELOCATION CANDIDATE — NOT YET AUTHORIZED FOR DELETION:
+# This two-consumer one-minute-history probe is a completed Stage 9B acceptance harness, not an
+# analytical warmup definition. V3 used one probe consumer for exactly one five-bar historical
+# calibration and returned it to disabled after READY 5/5. The result does not accept the probe as a
+# production capability or close value-level historical/live parity. Future history must be
+# declared by the exact reviewed analytical capability; preserve deterministic tests and historical
+# evidence before removing the probe from the production configuration.
+[historical.probe]
+enabled = false
+actor_ids = ["HISTORICAL-PROBE-A"]
+instrument_id = "ESU6.CME"
+selector = "1-MINUTE-LAST-EXTERNAL"
+window = "recent_completed"
+minimum_observations = 5
+maximum_observations = 5
+priority = 10
+
+# SessionStateActor is mandatory infrastructure in the current topology. This calendar enables
+# time identity and does not enable optional session measurements or analytical windows. All
+# resulting boundaries are absolute UTC nanoseconds; timezone below is civil-rule/trade-date
+# provenance, not an alternate internal timestamp format.
+# V3 REVIEW DEBT — NOT ACCEPTED AS FINAL ANALYTICAL SESSION POLICY:
+# - schedule_version is published metadata but startup does not verify it against the installed
+#   pandas-market-calendars package or calendar definition.
+# - Empty phases intentionally yield one broad provider OPEN envelope. The implementation ignores
+#   provider break_start/break_end, so CME's 15:15-15:30 America/Chicago break remains OPEN and can
+#   produce a false evidence-health deterioration if a run crosses it.
+# - Explicit analytical phases must later declare whether their wall-clock authority is native CME
+#   America/Chicago or an intentionally separate clock such as the New York cash-session open.
+[sessions]
+evaluation_interval_ms = 1000
+
+[[sessions.calendars]]
+calendar_id = "cme_equity"
+provider_calendar = "CME_Equity"
+timezone = "America/Chicago"
+schedule_version = "pmc-5.4"
+phases = []
+overrides = []
+
+[evidence_health]
+evaluation_interval_ms = 1000
+consumer_retry_interval_ms = 1000
+provider_id = "IB"
+profile_checkpoint_samples = 25
+
+[[evidence_health.policies]]
+feed_kind = "bars"
+selector = "5-SECOND-LAST-EXTERNAL"
+fresh_for_ms = 7000
+stale_after_ms = 15000
+unavailable_after_ms = 30000
+adaptive = false
+minimum_samples = 20
+decay_factor = 0.95
+fresh_stddev_multiplier = 2.0
+stale_stddev_multiplier = 4.0
+unavailable_stddev_multiplier = 8.0
+min_fresh_ms = 5000
+max_fresh_ms = 10000
+min_stale_ms = 10000
+max_stale_ms = 20000
+min_unavailable_ms = 20000
+max_unavailable_ms = 60000
+
+# Disabled metric engines retain complete typed placeholder schemas because the current loader
+# validates their structure even when composition omits their actors.
+[metrics.quote_quality]
+enabled = false
+required_watchlist_capability = "top_of_book"
+parameter_version = 1
+minimum_update_interval_ms = 250
+maximum_output_age_ms = 15000
+demand_retry_interval_ms = 1000
+evidence_snapshot_retry_interval_ms = 1000
+priority = 50
+
+[metrics.session_measurements]
+enabled = true
+required_watchlist_capability = "watchlist_last"
+parameter_version = 1
+# Reviewed completed-bar foundation identity, active only for the one-hour interactive test.
+# This exact UTC instant records preparation of the activation configuration. The current actor
+# stores but does not enforce or publish it on MetricValue, which remains recorded debt.
+parameter_source = "v3-es-completed-bar-foundation"
+parameter_effective_from = "2026-08-27T15:02:56Z"
+conflict_policy = "reject_conflict"
+maximum_active_sessions = 1
+demand_retry_interval_ms = 1000
+evidence_snapshot_retry_interval_ms = 1000
+priority = 40
+
+[metrics.session_measurements.completed_bars]
+live_selector = "5-SECOND-LAST-EXTERNAL"
+historical_selector = "1-MINUTE-LAST-EXTERNAL"
+historical_window = "recent_completed"
+minimum_historical_observations = 2
+maximum_historical_observations = 55
+calculation_interval_seconds = 60
+minimum_interval_seconds = 60
+maximum_interval_seconds = 60
+interval_step_seconds = 60
+interval_dynamic = false
+aggregation_boundary_policy = "utc_fixed_intraday"
+timestamp_policy = "interval_end"
+revision_policy = "reject_revision"
+# Provisionally retained at 1000 because the loader couples this bound to the still-disabled
+# rolling placeholder. This is not accepted analytical retention policy. Likewise, output age is
+# currently resource metadata rather than an actor-enforced expiry policy.
+maximum_retained_observations = 1000
+maximum_output_age_ms = 120000
+
+[metrics.session_measurements.rolling_measurements]
+enabled = false
+minimum_coverage_ratio = 0.9
+minimum_coverage_ratio_floor = 0.7
+minimum_coverage_ratio_ceiling = 1.0
+minimum_coverage_ratio_step = 0.05
+minimum_coverage_ratio_dynamic = true
+maximum_retained_observations = 1000
+maximum_output_age_ms = 120000
+
+[metrics.session_measurements.rolling_measurements.baseline]
+eligible_reference_health = ["READY"]
+eligible_reference_fidelities = ["REPORTED", "DERIVED"]
+recent_reference_count = 8
+recent_reference_count_minimum = 8
+recent_reference_count_maximum = 64
+recent_reference_count_step = 1
+recent_reference_count_dynamic = true
+minimum_recent_references = 8
+phase_reference_count = 5
+phase_reference_count_minimum = 5
+phase_reference_count_maximum = 30
+phase_reference_count_step = 1
+phase_reference_count_dynamic = true
+minimum_phase_references = 5
+
+# Schema-required inert rolling placeholder. The parent engine is disabled; this period and its
+# bounds are not accepted and must be replaced or approved before rolling measurements are enabled.
+[[metrics.session_measurements.rolling_measurements.families]]
+family_id = "fast_placeholder"
+source_selector = "1-MINUTE-LAST-EXTERNAL"
+input_selector = "1-MINUTE-LAST-EXTERNAL"
+input_interval_seconds = 60
+aggregation_policy = "identity"
+selected_context_candidate_id = "context_placeholder_10m"
+
+[[metrics.session_measurements.rolling_measurements.families.candidates]]
+candidate_id = "context_placeholder_10m"
+purpose = "context"
+duration_seconds = 600
+minimum_duration_seconds = 600
+maximum_duration_seconds = 3600
+duration_step_seconds = 60
+dynamic = true
+active = true
+
+[metrics.session_measurements.session_references]
+enabled = false
+historical_selector = "15-MINUTE-LAST-EXTERNAL"
+active_window = "session_to_date"
+previous_window = "previous_sessions"
+overnight_window = "current_overnight"
+minimum_historical_observations = 1
+maximum_historical_observations = 4
+vwap_price_basis = "typical"
+vwap_price_basis_dynamic = true
+minimum_coverage_ratio = 0.8
+minimum_coverage_ratio_floor = 0.5
+minimum_coverage_ratio_ceiling = 1.0
+minimum_coverage_ratio_step = 0.05
+minimum_coverage_ratio_dynamic = true
+maximum_retained_sessions = 1
+maximum_output_age_ms = 120000
+
+[metrics.session_measurements.session_windows]
+enabled = false
+price_basis = "typical"
+price_basis_dynamic = true
+minimum_coverage_ratio = 0.8
+minimum_coverage_ratio_floor = 0.5
+minimum_coverage_ratio_ceiling = 1.0
+minimum_coverage_ratio_step = 0.05
+minimum_coverage_ratio_dynamic = true
+maximum_retained_sessions = 1
+maximum_output_age_ms = 120000
+
+[[metrics.session_measurements.profiles]]
+profile_id = "cme_equity_primary"
+version = 1
+calendar_id = "cme_equity"
+primary_phase = "OPEN"
+overnight_enabled = false
+overnight_phase = "OPEN"
+volume_supported = true
+windows = []
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "cme_equity_primary"
+instrument_ids = ["ESU6.CME"]
+
+[metrics.entity_analysis]
+enabled = false
+required_watchlist_capability = "watchlist_last"
+catalog_version = 2
+parameter_source = "v3-disabled-placeholder"
+parameter_effective_from = "2026-08-27T00:00:00Z"
+maximum_entities_global = 1000
+maximum_entities_per_instrument = 1000
+maximum_entities_per_instrument_type = 250
+completed_session_retention = 1
+completed_session_maximum_age_days = 14
+maximum_input_age_ms = 120000
+maximum_metric_values = 1000
+market_state_reconciliation_interval_ms = 1000
+minimum_snapshot_interval_ms = 1000
+maximum_publications_per_cycle = 100
+definitions = []
+
+[watchlist]
+consumer_retry_interval_ms = 1000
+
+[[watchlist.members]]
+instrument_id = "ESU6.CME"
+calendar_id = "cme_equity"
+owner_ids = ["config:system"]
+capabilities = ["watchlist_last"]

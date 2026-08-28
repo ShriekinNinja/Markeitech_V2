@@ -541,6 +541,25 @@ class LiveEvidenceReviewConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class VisualDebugCaptureConfig:
+    enabled: bool
+    configuration_identity: str
+    instrument_id: str
+    analytical_profile_id: str
+    analytical_profile_version: int
+    bar_specification: str
+    parameter_version: int
+    output_directory: Path
+    capture_policy_version: int
+    historical_bar_count: int
+    live_bar_count: int
+    quiet_period_ms: int
+    snapshot_retry_interval_ms: int
+    completion_deadline_ms: int
+    output_drain_timeout_ms: int
+
+
+@dataclass(frozen=True, slots=True)
 class RuntimeResourceThresholdConfig:
     host_memory_available_percent: float
     host_cpu_percent: float
@@ -615,6 +634,7 @@ class SystemConfig:
     discord: DiscordConfig
     visual_acceptance: VisualAcceptanceConfig
     live_evidence_review: LiveEvidenceReviewConfig
+    visual_debug_capture: VisualDebugCaptureConfig
     runtime_resources: RuntimeResourcesConfig
     persistence: PersistenceConfig
     acquisition: AcquisitionConfig
@@ -652,6 +672,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
         }
     if "live_evidence_review" in raw:
         root_keys.add("live_evidence_review")
+    if "visual_debug_capture" in raw:
+        root_keys.add("visual_debug_capture")
     _require_keys(
         raw,
         root_keys,
@@ -695,6 +717,29 @@ def load_system_config(path: str | Path) -> SystemConfig:
         ),
         config_path.parent,
     )
+    visual_debug_capture = _load_visual_debug_capture(
+        raw.get(
+            "visual_debug_capture",
+            {
+                "enabled": False,
+                "configuration_identity": "not-configured",
+                "instrument_id": "ESU6.CME",
+                "analytical_profile_id": "cme_equity_primary",
+                "analytical_profile_version": 1,
+                "bar_specification": "1-MINUTE-LAST-EXTERNAL",
+                "parameter_version": 1,
+                "output_directory": "../data/visual-debug-captures",
+                "capture_policy_version": 1,
+                "historical_bar_count": 5,
+                "live_bar_count": 5,
+                "quiet_period_ms": 2000,
+                "snapshot_retry_interval_ms": 1000,
+                "completion_deadline_ms": 900000,
+                "output_drain_timeout_ms": 30000,
+            },
+        ),
+        config_path.parent,
+    )
     runtime_resources = _load_runtime_resources(raw["runtime_resources"])
     persistence = _load_persistence(raw["persistence"])
     watchlist = _load_watchlist(raw["watchlist"])
@@ -722,6 +767,22 @@ def load_system_config(path: str | Path) -> SystemConfig:
             raise ValueError(
                 "live evidence review requires ES top_of_book and watchlist_last capabilities",
             )
+    if visual_debug_capture.enabled:
+        if visual_acceptance.enabled or live_evidence_review.enabled:
+            raise ValueError("visual debug capture cannot run with rejected visual components")
+        if not metrics.session_measurements.enabled:
+            raise ValueError("visual debug capture requires session measurements enabled")
+        if tuple(member.instrument_id for member in watchlist.members) != (
+            visual_debug_capture.instrument_id,
+        ):
+            raise ValueError("visual debug capture requires an exact matching one-member watchlist")
+        completed = metrics.session_measurements.completed_bars
+        if (
+            visual_debug_capture.bar_specification != completed.historical_selector
+            or visual_debug_capture.parameter_version
+            != metrics.session_measurements.parameter_version
+        ):
+            raise ValueError("visual debug capture must match the completed-bar producer identity")
     known_calendars = {calendar.calendar_id for calendar in sessions.calendars}
     unknown_calendars = sorted(
         {member.calendar_id for member in watchlist.members} - known_calendars,
@@ -865,6 +926,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         discord=discord,
         visual_acceptance=visual_acceptance,
         live_evidence_review=live_evidence_review,
+        visual_debug_capture=visual_debug_capture,
         runtime_resources=runtime_resources,
         persistence=persistence,
         acquisition=acquisition,
@@ -1146,6 +1208,88 @@ def _load_live_evidence_review(
     if (config.image_width, config.image_height) != (1920, 1080):
         raise ValueError("live evidence review output must be exactly 1920x1080")
     return config
+
+
+def _load_visual_debug_capture(
+    raw: Any,
+    config_directory: Path,
+) -> VisualDebugCaptureConfig:
+    values = _mapping(raw, "visual_debug_capture")
+    keys = {
+        "enabled",
+        "configuration_identity",
+        "instrument_id",
+        "analytical_profile_id",
+        "analytical_profile_version",
+        "bar_specification",
+        "parameter_version",
+        "output_directory",
+        "capture_policy_version",
+        "historical_bar_count",
+        "live_bar_count",
+        "quiet_period_ms",
+        "snapshot_retry_interval_ms",
+        "completion_deadline_ms",
+        "output_drain_timeout_ms",
+    }
+    _require_keys(values, keys, "visual_debug_capture")
+    output_directory = Path(
+        _non_empty_string(values["output_directory"], "visual_debug_capture.output_directory"),
+    )
+    if not output_directory.is_absolute():
+        output_directory = (config_directory / output_directory).resolve()
+    return VisualDebugCaptureConfig(
+        enabled=_bool(values["enabled"], "visual_debug_capture.enabled"),
+        configuration_identity=_non_empty_string(
+            values["configuration_identity"],
+            "visual_debug_capture.configuration_identity",
+        ),
+        instrument_id=_non_empty_string(
+            values["instrument_id"], "visual_debug_capture.instrument_id"
+        ),
+        analytical_profile_id=_non_empty_string(
+            values["analytical_profile_id"],
+            "visual_debug_capture.analytical_profile_id",
+        ),
+        analytical_profile_version=_positive_int(
+            values["analytical_profile_version"],
+            "visual_debug_capture.analytical_profile_version",
+        ),
+        bar_specification=_non_empty_string(
+            values["bar_specification"],
+            "visual_debug_capture.bar_specification",
+        ),
+        parameter_version=_positive_int(
+            values["parameter_version"], "visual_debug_capture.parameter_version"
+        ),
+        output_directory=output_directory,
+        capture_policy_version=_positive_int(
+            values["capture_policy_version"],
+            "visual_debug_capture.capture_policy_version",
+        ),
+        historical_bar_count=_positive_int(
+            values["historical_bar_count"],
+            "visual_debug_capture.historical_bar_count",
+        ),
+        live_bar_count=_positive_int(
+            values["live_bar_count"], "visual_debug_capture.live_bar_count"
+        ),
+        quiet_period_ms=_positive_int(
+            values["quiet_period_ms"], "visual_debug_capture.quiet_period_ms"
+        ),
+        snapshot_retry_interval_ms=_positive_int(
+            values["snapshot_retry_interval_ms"],
+            "visual_debug_capture.snapshot_retry_interval_ms",
+        ),
+        completion_deadline_ms=_positive_int(
+            values["completion_deadline_ms"],
+            "visual_debug_capture.completion_deadline_ms",
+        ),
+        output_drain_timeout_ms=_positive_int(
+            values["output_drain_timeout_ms"],
+            "visual_debug_capture.output_drain_timeout_ms",
+        ),
+    )
 
 
 def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:

@@ -423,8 +423,17 @@ calibration; this does not block Stage 9B.
 Stage 9B is complete and live-accepted as of 2026-08-17. One shared provider request served two
 independent consumers and produced separate readiness results while unrelated runtime activity
 continued. Historical observations remained transient; PostgreSQL stored only request, execution,
-and readiness lifecycle records. The accepted timestamp boundary is UTC internally with
-instrument-timezone formatting confined to the Nautilus IB adapter request boundary.
+and readiness lifecycle records. UTC remains the internal timestamp boundary. Installed Nautilus
+`2.0.0rc3` sends intraday historical bounds in UTC, but its pinned Rust `ibapi 3.3.0` rejects IB's
+valid dashed UTC `HistoricalDataEnd` form. TWS/Gateway therefore temporarily remains in instrument-
+timezone mode so the dependency can parse response metadata; Nautilus still normalizes resulting
+bar instants to Unix nanoseconds. A bounded connected calibration also exposed and reproduced an
+inclusive-to-exclusive native request-end defect as 4/5 returned one-minute bars. After the narrow
+port correction, one ES request returned five consecutive completed one-minute bars, READY 5/5,
+no forming bar, no retry or late callback, an independently active live stream, and fully
+reconciled operational persistence. This acceptance is limited to that exact recent-completed path.
+Daily and coarser provider bars remain date-semantic and are not accepted as exchange-session
+boundary truth.
 
 ## Stage 9C: Baseline Metric Contracts
 
@@ -449,6 +458,75 @@ instruments, published 1,281 completed-bar values from 183 accepted bars, and re
 calculation failure, duplicate, or conflict. Closed-session recent-history requests degraded
 independently without stopping live processing; this confirmed the need for Slice 3's exact,
 purpose-specific session windows rather than a universal recent-history warmup.
+
+The uncommitted V3 ES progressive-review configuration now activates, for one bounded connected
+visual test, the reviewed one-minute completed-bar foundation definition for `ESU6.CME`. It fixes
+the interval at 60 seconds, uses close-timestamped native bars through
+`timestamp_policy = "interval_end"`, requires two observations for prior-close metrics, and rejects
+unequal same-interval observations. The current one-hour visual policy expands the single bounded
+request to 55 historical minutes and retains five live minutes; this is test authorization, not an
+accepted IB limit, general history policy, or value-level acceptance. Three implementation debts are
+explicit: parameter effective time is stored but neither enforced nor published on metric values;
+the 1,000-observation retention limit is provisionally coupled to the disabled rolling schema and
+is not accepted analytical policy; and the 120-second maximum output age is metadata rather than
+actor-enforced expiry. The broad `cme_equity` `OPEN` envelope supplies trade-date identity only and
+does not accept future analytical-session semantics.
+
+The same uncommitted V3 batch now includes a new, isolated `visual_debug_capture` implementation,
+enabled only for this bounded connected review. It does not reuse either rejected visual component. A
+projection-only actor observes canonical `CompletedBarInput` and the seven completed-bar
+`MetricValue` subjects, merges incrementals with a bounded producer-owned `SESSION-METRICS` snapshot
+response so actor startup order cannot lose transient history, and admits only one coherent metric
+revision cohort per interval. Its current scope is exactly 55 contiguous historical-provider bars
+followed by five contiguous live aggregates: one hour in one ES one-minute session/window identity,
+with 60 candles and 420 canonical metric records. A
+capacity-one worker produces one self-contained Plotly HTML plus manifest through an atomic capture-
+directory publication; rendering failure, incomplete subject accounting, identity conflict, gap,
+source-order mismatch, session boundary, deadline, or shutdown before freeze cannot create an
+accepted-looking artifact. The output is explicitly a subject-complete bounded receive cut, not
+globally final truth, raw-data persistence, restart state, or proof of provider completeness.
+Upstream rejected-bar conflicts and the twelve five-second live constituents are not supplied to
+the projection and must remain disclosed as unavailable.
+
+The first connected capture attempt did not publish an artifact and is rejected as visual
+acceptance, but it supplied useful runtime evidence. History returned exactly five bars ending at
+13:53 UTC. The run then began inside the 13:53-13:54 live aggregation bucket, so that partial minute
+could never supply all twelve five-second constituents. The first possible complete live aggregate
+therefore began at 13:54, leaving a one-minute gap after the historical cohort. The projection
+correctly refused that non-contiguous `HHHHHLLLLL` sequence and expired its 15-minute deadline at
+14:08:21 UTC. The run processed 279 live five-second bars; session metrics reported one historical
+batch, 27 accepted completed bars, 189 completed-bar values, and zero duplicate, conflict, or
+calculation failures. Persistence reconciled 35 accepted/stored records with zero retry, failure,
+rejection, or pending write, and SIGINT shutdown completed cleanly. These observations refute the
+earlier timer-stall hypothesis: the deadline and live processing both progressed, but their log
+records were not visible in the file until shutdown.
+
+The uncommitted Option 1 correction preserves the strict contiguous review contract. Only when
+`visual_debug_capture` is enabled, the session-metric producer defers its one completed-bar
+foundation history demand until it accepts the first complete live aggregate. It then uses that
+live interval's start as the historical request's exclusive `as_of_ns`, so the successful bounded
+55-bar response must end exactly where the five-bar live cohort begins. The acquisition actor
+remains the sole provider-facing request owner; the visual projection never calls IB; no partial
+live minute, synthetic bar, source relabeling, second history request, or general session-metric
+bootstrap change is introduced. This correction has deterministic offline coverage but has not yet received a
+second connected run or visual approval. The 55-minute request is 3,300 seconds and remains one
+native request with one in-flight slot; a short response or timeout must fail rather than split or
+retry automatically. This first test should avoid an exchange maintenance break, session/window
+transition, or trade-date boundary because the capture intentionally requires all 60 bars to share
+one identity and exact contiguity.
+
+The 2-second quiet period, 1-second snapshot retry, 15-minute completion deadline, and 30-second
+output drain remain provisional test settings, not accepted operating policy. The activation uses
+an exact UTC preparation instant and a unique bounded identity which is explicitly not a
+configuration-file digest. The snapshot code contract is not yet schema-versioned; `MetricValue`
+still lacks bar specification/profile/trade-date/window identity; parameter effective time remains
+unenforced; prior-close metrics omit predecessor lineage and do not yet define health, contiguity,
+or session-transition compatibility completely. File logging also has measured live-observability
+debt: consequential READY, live-progress, and deadline records from the first capture attempt were
+buffered and appeared only during shutdown, so tailing the configured log file cannot currently be
+treated as reliable evidence that the runtime is stalled or progressing. Browser acceptance,
+formula-parity acceptance, accessibility acceptance, provider licensing decision, and final
+evidence-fitness decision remain incomplete for this component.
 
 Slice 3 is accepted at commit `8696acf`. It adds only deterministic active-session,
 previous-session, optional overnight, and gap measurements. Historical and live observations

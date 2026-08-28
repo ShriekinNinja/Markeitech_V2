@@ -46,9 +46,12 @@ The repository does not include account credentials or entitlements.
 4. Allow localhost connections.
 5. Note the configured socket port.
 6. Ensure the selected client ID is not already in use.
-7. Keep the accepted API timestamp/timezone behavior compatible with the pinned Nautilus V2
-   adapter. Markeitech normalizes internal event timestamps to UTC; do not infer API behavior from
-   the TWS chart display timezone.
+7. Set “Send instrument-specific attributes for dual-mode API client” to **instrument timezone**
+   for pinned Nautilus `2.0.0rc3`. Its Rust `ibapi 3.3.0` dependency rejects IB's valid dashed UTC
+   `HistoricalDataEnd` metadata. This affects response transport syntax only: Nautilus and
+   Markeitech retain absolute Unix-nanosecond timestamps internally. Do not infer API behavior from
+   the TWS chart display timezone. Recalibrate with one bounded connected request after a
+   consequential TWS/Gateway, Nautilus adapter, or `ibapi` parser change.
 
 Common IB defaults:
 
