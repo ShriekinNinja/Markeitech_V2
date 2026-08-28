@@ -109,18 +109,18 @@ maximum_entity_subjects = 20000
 # operator label, not a configuration-file digest.
 [visual_debug_capture]
 enabled = true
-configuration_identity = "v3-es-completed-bar-foundation-review-v3-20260827T150256Z"
+configuration_identity = "v3-es-5m-historical-60-review-v1-20260828T110307Z"
 instrument_id = "ESU6.CME"
 analytical_profile_id = "cme_equity_primary"
 analytical_profile_version = 1
-bar_specification = "1-MINUTE-LAST-EXTERNAL"
-parameter_version = 1
+bar_specification = "5-MINUTE-LAST-EXTERNAL"
+parameter_version = 2
 output_directory = "../data/visual-debug-captures"
 capture_policy_version = 3
 # Projection targets only. They select canonical records which the normal runtime already
 # produced; they never add, suppress, align, resize, or retime a historical or live request.
 # Set either target to zero for a historical-only or live-only artifact. Both cannot be zero.
-target_historical_bars = 55
+target_historical_bars = 60
 target_live_bars = 0
 quiet_period_ms = 2000
 completion_deadline_ms = 900000
@@ -246,13 +246,14 @@ native_consumer_probe_unsubscribe_after_seconds = 15
 #   port submitted the inclusive `...:59.999999999` end at whole-second `...:59` instead of the
 #   completed exclusive minute boundary. The corrected port is connected-accepted for one exact
 #   five-bar ES recent-completed path; other selectors/windows remain unaccepted.
-# The values below authorize one 55-minute request for the one-hour visual review. They are not IB
-# limits or accepted analytical-history policy; a short response or timeout must fail honestly and
-# must not trigger request splitting or an automatic second request.
+# The values below authorize one 60-observation request for the five-minute historical-only visual
+# review: a nominal five hours before any real market/session gaps. They are not IB limits or
+# accepted analytical-history policy; a short response or timeout must remain visible and must not
+# trigger request splitting or an automatic second request.
 [historical]
 maximum_plan_requests = 1
-maximum_observations_per_request = 55
-maximum_total_observations = 55
+maximum_observations_per_request = 60
+maximum_total_observations = 60
 maximum_outstanding_requests = 1
 maximum_in_flight_requests = 1
 timeout_seconds = 30
@@ -340,12 +341,12 @@ priority = 50
 [metrics.session_measurements]
 enabled = true
 required_watchlist_capability = "watchlist_last"
-parameter_version = 1
-# Reviewed completed-bar foundation identity, active only for the one-hour interactive test.
+parameter_version = 2
+# Reviewed completed-bar foundation identity for the 60-bar five-minute historical-only test.
 # This exact UTC instant records preparation of the activation configuration. The current actor
 # stores but does not enforce or publish it on MetricValue, which remains recorded debt.
-parameter_source = "v3-es-completed-bar-foundation"
-parameter_effective_from = "2026-08-27T15:02:56Z"
+parameter_source = "v3-es-5m-completed-bar-foundation"
+parameter_effective_from = "2026-08-28T11:03:07Z"
 conflict_policy = "reject_conflict"
 maximum_active_sessions = 1
 demand_retry_interval_ms = 1000
@@ -354,14 +355,14 @@ priority = 40
 
 [metrics.session_measurements.completed_bars]
 live_selector = "5-SECOND-LAST-EXTERNAL"
-historical_selector = "1-MINUTE-LAST-EXTERNAL"
+historical_selector = "5-MINUTE-LAST-EXTERNAL"
 historical_window = "recent_completed"
 minimum_historical_observations = 2
-maximum_historical_observations = 55
-calculation_interval_seconds = 60
-minimum_interval_seconds = 60
-maximum_interval_seconds = 60
-interval_step_seconds = 60
+maximum_historical_observations = 60
+calculation_interval_seconds = 300
+minimum_interval_seconds = 300
+maximum_interval_seconds = 300
+interval_step_seconds = 300
 interval_dynamic = false
 aggregation_boundary_policy = "utc_fixed_intraday"
 timestamp_policy = "interval_end"
@@ -402,9 +403,9 @@ minimum_phase_references = 5
 # bounds are not accepted and must be replaced or approved before rolling measurements are enabled.
 [[metrics.session_measurements.rolling_measurements.families]]
 family_id = "fast_placeholder"
-source_selector = "1-MINUTE-LAST-EXTERNAL"
-input_selector = "1-MINUTE-LAST-EXTERNAL"
-input_interval_seconds = 60
+source_selector = "5-MINUTE-LAST-EXTERNAL"
+input_selector = "5-MINUTE-LAST-EXTERNAL"
+input_interval_seconds = 300
 aggregation_policy = "identity"
 selected_context_candidate_id = "context_placeholder_10m"
 
@@ -414,7 +415,7 @@ purpose = "context"
 duration_seconds = 600
 minimum_duration_seconds = 600
 maximum_duration_seconds = 3600
-duration_step_seconds = 60
+duration_step_seconds = 300
 dynamic = true
 active = true
 

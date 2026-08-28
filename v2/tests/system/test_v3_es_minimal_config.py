@@ -29,8 +29,8 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     assert config.discord.enabled is False
     assert config.runtime_resources.enabled is False
     assert config.historical.maximum_plan_requests == 1
-    assert config.historical.maximum_observations_per_request == 55
-    assert config.historical.maximum_total_observations == 55
+    assert config.historical.maximum_observations_per_request == 60
+    assert config.historical.maximum_total_observations == 60
     assert config.historical.maximum_outstanding_requests == 1
     assert config.historical.maximum_in_flight_requests == 1
     assert config.historical.maximum_attempts == 1
@@ -44,22 +44,24 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     assert config.metrics.quote_quality.enabled is False
     assert config.metrics.session_measurements.enabled is True
     completed_bars = config.metrics.session_measurements.completed_bars
-    assert config.metrics.session_measurements.parameter_version == 1
-    assert config.metrics.session_measurements.parameter_source == "v3-es-completed-bar-foundation"
+    assert config.metrics.session_measurements.parameter_version == 2
+    assert config.metrics.session_measurements.parameter_source == (
+        "v3-es-5m-completed-bar-foundation"
+    )
     assert config.metrics.session_measurements.parameter_effective_from_ns == int(
-        datetime(2026, 8, 27, 15, 2, 56, tzinfo=UTC).timestamp() * 1_000_000_000
+        datetime(2026, 8, 28, 11, 3, 7, tzinfo=UTC).timestamp() * 1_000_000_000
     )
     assert config.metrics.session_measurements.conflict_policy == "reject_conflict"
     assert config.metrics.session_measurements.maximum_active_sessions == 1
     assert completed_bars.live_selector == "5-SECOND-LAST-EXTERNAL"
-    assert completed_bars.historical_selector == "1-MINUTE-LAST-EXTERNAL"
+    assert completed_bars.historical_selector == "5-MINUTE-LAST-EXTERNAL"
     assert completed_bars.historical_window == "recent_completed"
     assert completed_bars.minimum_historical_observations == 2
-    assert completed_bars.maximum_historical_observations == 55
-    assert completed_bars.calculation_interval_seconds == 60
-    assert completed_bars.minimum_interval_seconds == 60
-    assert completed_bars.maximum_interval_seconds == 60
-    assert completed_bars.interval_step_seconds == 60
+    assert completed_bars.maximum_historical_observations == 60
+    assert completed_bars.calculation_interval_seconds == 300
+    assert completed_bars.minimum_interval_seconds == 300
+    assert completed_bars.maximum_interval_seconds == 300
+    assert completed_bars.interval_step_seconds == 300
     assert completed_bars.interval_dynamic is False
     assert completed_bars.aggregation_boundary_policy == "utc_fixed_intraday"
     assert completed_bars.timestamp_policy == "interval_end"
@@ -71,15 +73,16 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     assert config.live_evidence_review.enabled is False
     assert config.visual_debug_capture.enabled is True
     assert config.visual_debug_capture.configuration_identity == (
-        "v3-es-completed-bar-foundation-review-v3-20260827T150256Z"
+        "v3-es-5m-historical-60-review-v1-20260828T110307Z"
     )
     assert config.visual_debug_capture.instrument_id == "ESU6.CME"
-    assert config.visual_debug_capture.bar_specification == "1-MINUTE-LAST-EXTERNAL"
-    assert config.visual_debug_capture.target_historical_bars == 55
-    assert config.visual_debug_capture.target_live_bars == 5
+    assert config.visual_debug_capture.bar_specification == "5-MINUTE-LAST-EXTERNAL"
+    assert config.visual_debug_capture.parameter_version == 2
+    assert config.visual_debug_capture.target_historical_bars == 60
+    assert config.visual_debug_capture.target_live_bars == 0
     assert config.visual_debug_capture.candle_pane_height_px == 720
     assert config.visual_debug_capture.capture_policy_version == 3
-    assert config.visual_debug_capture.parameter_version == 1
+    assert config.visual_debug_capture.parameter_version == 2
     assert [registration.key for registration in plan] == [
         "system_control",
         "session_state",

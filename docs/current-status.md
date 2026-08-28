@@ -459,14 +459,18 @@ calculation failure, duplicate, or conflict. Closed-session recent-history reque
 independently without stopping live processing; this confirmed the need for Slice 3's exact,
 purpose-specific session windows rather than a universal recent-history warmup.
 
-The V3 ES progressive-review configuration activates, for one bounded connected visual test, the
-reviewed one-minute completed-bar foundation definition for `ESU6.CME`. It fixes the interval at 60
-seconds, uses close-timestamped native bars through `timestamp_policy = "interval_end"`, requires
-two observations for prior-close metrics, and rejects unequal same-interval observations. The
-normal producer independently requests up to 55 historical observations. The visual observer
-separately targets 55 historical and five live bars for display; those targets do not set provider
-request size, retention, or runtime duration. This is test authorization, not an accepted IB
-limit, general history policy, or value-level acceptance. Parameter effective time remains stored
+The current temporary V3 ES debug baseline selects a bounded historical-only review of 60 direct
+five-minute `ESU6.CME` completed bars. It fixes the producer interval at 300 seconds, keeps the
+normal five-second live input operating, uses close-timestamped native bars through
+`timestamp_policy = "interval_end"`, requires two observations for prior-close metrics, and rejects
+unequal same-interval observations. The normal producer independently requests up to 60 historical
+observations. The visual observer targets those 60 historical bars and zero live-source bars for
+display; those projection targets do not set provider request size, retention, or runtime duration.
+The nominal selected span is five hours before any real gaps. Markeitect accepted the coordinated
+configuration changes as a usable baseline for continuing the debug, while explicitly recording
+that the number of coupled settings is not an accepted configuration interface. This is test
+authorization, not an accepted IB limit, general history policy, direct-five-minute provider
+acceptance, visual acceptance, or value-level acceptance. Parameter effective time remains stored
 but unenforced and unpublished; the 1,000-observation retention remains provisionally coupled to a
 disabled rolling placeholder; and maximum output age remains metadata rather than enforced expiry.
 
@@ -511,6 +515,14 @@ buffered and appeared only during shutdown, so tailing the configured log file c
 treated as reliable evidence that the runtime is stalled or progressing. Browser acceptance,
 formula-parity acceptance, accessibility acceptance, provider licensing decision, and final
 evidence-fitness decision remain incomplete for this component.
+
+The next proposed V3 walkthrough gate is the five-minute completed-bar source and series itself,
+before any metric is visually accepted. One connected run should reconcile the resolved
+configuration with exactly one direct five-minute historical request, its UTC bounds and terminal
+state, the canonical completed bars actually published, the observer's exact 60-bar historical
+selection, source identities, interval continuity or explicit gaps, and the artifact manifest.
+Only after that source/series evidence agrees should the review advance one-by-one through OHLCV
+and derived metrics.
 
 Slice 3 is accepted at commit `8696acf`. It adds only deterministic active-session,
 previous-session, optional overnight, and gap measurements. Historical and live observations

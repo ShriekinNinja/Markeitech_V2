@@ -240,7 +240,7 @@ not accepted analytical-session semantics.
 - Browser accessibility, performance, exact formula parity, licensing, and final evidence-fitness
   acceptance remain incomplete.
 
-## Current Uncommitted Correction
+## Current Temporary Baseline
 
 ### 1. Increase candle-panel height
 
@@ -277,25 +277,61 @@ One-, five-, and fifteen-minute sequential configuration is structurally support
 completed-bar foundation series may be active per run while `MetricValue` lacks full series
 identity. Five- and fifteen-minute provider parity and metric acceptance remain open.
 
+After passive baseline `1f3ead2`, the current temporary configuration baseline selects one direct
+`5-MINUTE-LAST-EXTERNAL` producer series, up to 60 normal historical observations, 60 historical
+artifact bars, and zero live-source artifact bars. The normal five-second live stream remains
+configured and operating; zero live bars is a projection choice only. The nominal artifact span is
+five hours before real gaps. Direct five-minute IB behavior and visual output remain unaccepted
+until the next connected run is reviewed.
+
+Markeitect accepted this as a usable debug baseline, not as the desired final configuration
+experience. Producing the single review series currently requires coordinated edits to the active
+producer selector and interval, acquisition capacities, projection selector and counts, and an
+inert rolling placeholder used by validation/retention. That coupling is recorded configuration
+interface debt. It must not be hidden by treating the projection as an operating mode or by letting
+`visual_debug_capture` alter normal acquisition and calculation.
+
+## Recommended Next Debug Step — Not Yet Implemented
+
+Review the five-minute completed-bar source and series before reviewing any metric formula or
+annotation. For one Markeitect-owned connected run, reconcile these facts in order:
+
+1. The normal five-second live selector remains the live constituent stream even though the
+   artifact selects zero live-source bars.
+2. The direct five-minute historical selector and 300-second calculation interval identify the
+   single active completed-bar foundation series.
+3. Producer history count, global per-request/total capacities, and observer target are all 60,
+   but remain separate contracts rather than one visual setting controlling runtime behavior.
+4. Acquisition emits one direct five-minute historical request; record its exact UTC bounds,
+   requested limit, request identity, terminal state, and returned observation count.
+5. SessionMetrics publishes canonical five-minute completed bars with explicit historical source
+   identity and UTC interval ends; the observer selects up to exactly 60 of those records and zero
+   live-source records without changing their production.
+6. Reconcile logs, capture manifest, canonical-bar table, interval continuity, and every real gap
+   before judging the chart.
+
+If that gate passes, continue the one-by-one visual walkthrough with raw OHLCV first, then simple
+return, then true range. Return and true-range acceptance must remain blocked until predecessor
+identity, lineage, contiguity, and session-transition debt is resolved or explicitly bounded.
+
 ## Handoff Procedure For The Next Agent
 
 1. Read `AGENTS.md`, `markeitech.md`, `docs/current-status.md`,
    `docs/development-guidelines.md`, and `docs/README.md` before planning or editing.
-2. Confirm branch `v3-es-progressive-capability-review`, baseline `623f0b7`, and current worktree.
-3. Preserve the two unrelated untracked note documents listed above.
-4. Treat this handoff document itself as an uncommitted review artifact until Markeitect approves
-   its disposition.
-5. Do not run connected IB, PostgreSQL-destructive paths, or external integrations unless
+2. Confirm branch `v3-es-progressive-capability-review`, passive-observer baseline `1f3ead2`, the
+   latest five-minute configuration baseline, and current worktree.
+3. Do not run connected IB, PostgreSQL-destructive paths, or external integrations unless
    Markeitect explicitly authorizes that exact run.
-6. While Kite mode is active, obtain the required narrow Nautilus advisor consultation before a
+4. While Kite mode is active, obtain the required narrow Nautilus advisor consultation before a
    consequential timeframe, request, actor, or configuration design/edit.
-7. Preserve the non-interference contract in `v3-visual-debug-review-contract.md`; capture modes
+5. Preserve the non-interference contract in `v3-visual-debug-review-contract.md`; capture modes
    select artifact records only and must not become runtime operating modes.
-8. Explain the candle-height and multi-timeframe/historical-only design before implementing either.
-9. Keep the next implementation batch separate and uncommitted for local review.
-10. Verify focused contracts, the proportional offline suite, Ruff, `git diff --check`, the final
+6. Execute the completed-bar source/series gate above before visually accepting any metric.
+7. Keep the next implementation batch separate and uncommitted for local review.
+8. Verify focused contracts, the proportional offline suite, Ruff, `git diff --check`, the final
    diff, and worktree contents before presenting it.
-11. Do not claim visual acceptance until Markeitect reviews the connected artifact.
+9. Do not claim provider, source-series, metric, or visual acceptance until Markeitect reviews the
+   corresponding connected evidence.
 
 ## Current Run Command
 
