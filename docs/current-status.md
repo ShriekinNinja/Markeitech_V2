@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-26
+Last reviewed: 2026-08-28
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -459,34 +459,27 @@ calculation failure, duplicate, or conflict. Closed-session recent-history reque
 independently without stopping live processing; this confirmed the need for Slice 3's exact,
 purpose-specific session windows rather than a universal recent-history warmup.
 
-The uncommitted V3 ES progressive-review configuration now activates, for one bounded connected
-visual test, the reviewed one-minute completed-bar foundation definition for `ESU6.CME`. It fixes
-the interval at 60 seconds, uses close-timestamped native bars through
-`timestamp_policy = "interval_end"`, requires two observations for prior-close metrics, and rejects
-unequal same-interval observations. The current one-hour visual policy expands the single bounded
-request to 55 historical minutes and retains five live minutes; this is test authorization, not an
-accepted IB limit, general history policy, or value-level acceptance. Three implementation debts are
-explicit: parameter effective time is stored but neither enforced nor published on metric values;
-the 1,000-observation retention limit is provisionally coupled to the disabled rolling schema and
-is not accepted analytical policy; and the 120-second maximum output age is metadata rather than
-actor-enforced expiry. The broad `cme_equity` `OPEN` envelope supplies trade-date identity only and
-does not accept future analytical-session semantics.
+The V3 ES progressive-review configuration activates, for one bounded connected visual test, the
+reviewed one-minute completed-bar foundation definition for `ESU6.CME`. It fixes the interval at 60
+seconds, uses close-timestamped native bars through `timestamp_policy = "interval_end"`, requires
+two observations for prior-close metrics, and rejects unequal same-interval observations. The
+normal producer independently requests up to 55 historical observations. The visual observer
+separately targets 55 historical and five live bars for display; those targets do not set provider
+request size, retention, or runtime duration. This is test authorization, not an accepted IB
+limit, general history policy, or value-level acceptance. Parameter effective time remains stored
+but unenforced and unpublished; the 1,000-observation retention remains provisionally coupled to a
+disabled rolling placeholder; and maximum output age remains metadata rather than enforced expiry.
 
-The same uncommitted V3 batch now includes a new, isolated `visual_debug_capture` implementation,
-enabled only for this bounded connected review. It does not reuse either rejected visual component. A
-projection-only actor observes canonical `CompletedBarInput` and the seven completed-bar
-`MetricValue` subjects, merges incrementals with a bounded producer-owned `SESSION-METRICS` snapshot
-response so actor startup order cannot lose transient history, and admits only one coherent metric
-revision cohort per interval. Its current scope is exactly 55 contiguous historical-provider bars
-followed by five contiguous live aggregates: one hour in one ES one-minute session/window identity,
-with 60 candles and 420 canonical metric records. A
-capacity-one worker produces one self-contained Plotly HTML plus manifest through an atomic capture-
-directory publication; rendering failure, incomplete subject accounting, identity conflict, gap,
-source-order mismatch, session boundary, deadline, or shutdown before freeze cannot create an
-accepted-looking artifact. The output is explicitly a subject-complete bounded receive cut, not
-globally final truth, raw-data persistence, restart state, or proof of provider completeness.
-Upstream rejected-bar conflicts and the twelve five-second live constituents are not supplied to
-the projection and must remain disclosed as unavailable.
+The current uncommitted correction makes `visual_debug_capture` a strictly passive observer. It
+does not reuse either rejected visual component and it does not request a producer snapshot.
+Capture on/off composition differs only by the observer; SessionMetrics configuration, startup
+history, live demand, calculation, retention, persistence, and lifecycle remain identical. The
+observer selects already-published canonical bars and metrics into historical-only, live-only, or
+mixed projections. Real gaps, short populations, missing readiness, and incomplete metric cohorts
+produce prominently partial diagnostic artifacts. Unequal same-identity records remain terminal
+integrity failures. A capacity-one worker writes one self-contained Plotly HTML plus manifest
+through atomic directory publication. The artifact is a bounded observer receive cut, not globally
+final truth, review acceptance, raw-data persistence, restart state, or provider completeness.
 
 The first connected capture attempt did not publish an artifact and is rejected as visual
 acceptance, but it supplied useful runtime evidence. History returned exactly five bars ending at
@@ -501,24 +494,15 @@ rejection, or pending write, and SIGINT shutdown completed cleanly. These observ
 earlier timer-stall hypothesis: the deadline and live processing both progressed, but their log
 records were not visible in the file until shutdown.
 
-The uncommitted Option 1 correction preserves the strict contiguous review contract. Only when
-`visual_debug_capture` is enabled, the session-metric producer defers its one completed-bar
-foundation history demand until it accepts the first complete live aggregate. It then uses that
-live interval's start as the historical request's exclusive `as_of_ns`, so the successful bounded
-55-bar response must end exactly where the five-bar live cohort begins. The acquisition actor
-remains the sole provider-facing request owner; the visual projection never calls IB; no partial
-live minute, synthetic bar, source relabeling, second history request, or general session-metric
-bootstrap change is introduced. This correction has deterministic offline coverage but has not yet received a
-second connected run or visual approval. The 55-minute request is 3,300 seconds and remains one
-native request with one in-flight slot; a short response or timeout must fail rather than split or
-retry automatically. This first test should avoid an exchange maintenance break, session/window
-transition, or trade-date boundary because the capture intentionally requires all 60 bars to share
-one identity and exact contiguity.
+The rejected Option 1 capture-alignment behavior is removed. SessionMetrics publishes its normal
+startup foundation-history demand whether capture is enabled or disabled. The visual observer
+never calls IB, emits demand, chooses an upstream boundary, or publishes canonical truth. A natural
+mid-bucket startup gap is now useful debug evidence and remains `UNCLASSIFIED_TEMPORAL_GAP` until a
+stronger canonical schedule fact explains it.
 
-The 2-second quiet period, 1-second snapshot retry, 15-minute completion deadline, and 30-second
-output drain remain provisional test settings, not accepted operating policy. The activation uses
-an exact UTC preparation instant and a unique bounded identity which is explicitly not a
-configuration-file digest. The snapshot code contract is not yet schema-versioned; `MetricValue`
+The 2-second quiet period, 15-minute completion deadline, and 30-second output drain remain
+provisional projection settings. The activation identity is an operator label, not a configuration
+digest. The capture schema and renderer policy are versioned separately; `MetricValue`
 still lacks bar specification/profile/trade-date/window identity; parameter effective time remains
 unenforced; prior-close metrics omit predecessor lineage and do not yet define health, contiguity,
 or session-transition compatibility completely. File logging also has measured live-observability

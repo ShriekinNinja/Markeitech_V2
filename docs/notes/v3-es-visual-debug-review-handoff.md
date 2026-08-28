@@ -133,13 +133,15 @@ visual debug is disabled.
 
 The behavior above is committed recovery evidence, not an accepted final boundary. Markeitect has
 clarified that enabling `visual_debug_capture` must have no effect on normal runtime operation.
-The committed `visual_snapshot_enabled` coupling currently changes SessionMetrics historical-demand
-timing and therefore breaches the current non-interference invariant.
+The committed `visual_snapshot_enabled` coupling changed SessionMetrics historical-demand timing
+and therefore breached the current non-interference invariant. The uncommitted correction removes
+that path.
 
-The next design must make the capture a passive selector of canonical records the independently
-configured runtime already produces. Capture mode may control which records enter the artifact; it
-must not add, suppress, align, refresh, or retime historical/live provider demand or change what a
-producer calculates. Capture-off versus capture-on equivalence is a required acceptance fixture.
+The corrected design makes capture a passive selector of canonical records the independently
+configured runtime already produces. Capture mode controls which records enter the artifact; it
+does not add, suppress, align, refresh, or retime historical/live provider demand or change what a
+producer calculates. Capture-off versus capture-on composition equivalence is covered offline;
+connected operational equivalence remains open.
 
 ### Native historical boundary correction
 
@@ -213,15 +215,14 @@ not accepted analytical-session semantics.
 ## Known Debt And Non-Acceptance
 
 - The chart is almost acceptable, not approved.
-- `visual_debug_capture.enabled` currently changes SessionMetrics history bootstrap through
-  `visual_snapshot_enabled`; this violates the clarified passive-projection boundary.
-- The candle panel is too short for the intended review and needs at least 200 additional vertical
-  pixels without shrinking the three metric panels.
+- The committed baseline changed SessionMetrics history bootstrap through
+  `visual_snapshot_enabled`; the current uncommitted correction removes that coupling.
+- The candle pane is configured at 720 pixels; exact browser geometry and overlap acceptance remain
+  open.
 - Historical/live counts are configurable, but the configuration is spread across capture,
   session-metric, and global historical-resource fields.
-- `live_bar_count` is currently required to be positive. Historical-only capture is not supported.
-- Option 1 history alignment depends on a first complete live bar, so historical-only mode requires
-  a separately defined boundary policy rather than setting the current value to zero.
+- Projection targets now allow historical-only, live-only, or mixed selection; they never change
+  normal live operation or create a historical request.
 - Only the one-minute completed-bar definition is composed and tested in this V3 profile.
 - Multi-timeframe review must coordinate the historical bar specification, live aggregation target,
   interval bounds, capture specification, request limits, and duration/count semantics.
@@ -239,7 +240,7 @@ not accepted analytical-session semantics.
 - Browser accessibility, performance, exact formula parity, licensing, and final evidence-fitness
   acceptance remain incomplete.
 
-## Requested Next Decisions — Not Implemented
+## Current Uncommitted Correction
 
 ### 1. Increase candle-panel height
 
@@ -249,7 +250,9 @@ current approximate pixel heights of volume, simple return, and true range. Mere
 total height while keeping the current 60/15/12.5/12.5 percentages would distribute part of the
 increase to the metric rows and would not satisfy the request precisely.
 
-No height change is included after baseline commit `623f0b7`.
+The current uncommitted renderer uses a 720-pixel candle pane, 130-pixel volume pane, two 110-pixel
+metric panes, 18-pixel gaps, and a 1,204-pixel Plotly figure. Browser geometry and accessibility
+acceptance remain open.
 
 ### 2. Make timeframe and historical/live composition understandable
 
@@ -257,19 +260,22 @@ Three different choices must remain explicit:
 
 1. candle timeframe, such as one, five, or fifteen minutes;
 2. historical and live bar counts; and
-3. capture mode and boundary policy, especially when live bars are unnecessary.
+3. capture selection mode, especially when live bars are unnecessary.
 
-The current TOML exposes counts under `[visual_debug_capture]`, but timeframe changes require
-coordinated edits in the session-measurement completed-bar definition. Historical-only mode cannot
-be enabled honestly through the current schema because the live count must be positive and the
-aligned history request is anchored by the first complete live aggregate.
+The current TOML exposes `target_historical_bars` and `target_live_bars` under
+`[visual_debug_capture]`. Either may be zero; both cannot be zero. These values select artifact
+records only. Timeframe remains a normal SessionMetrics producer choice: historical selector,
+calculation interval, fixed interval envelope, and matching capture bar specification change
+together between sequential runs. The loader verifies that the historical selector equals the
+calculation interval and that the live selector divides it exactly.
 
-A future batch should first present the exact proposed configuration contract to Markeitect. It
-must not silently treat zero as a normal count, infer a historical boundary, or make the visual
-actor call Interactive Brokers. Provider ownership remains with acquisition, and the
-session-metric producer remains the owner of canonical completed bars and metric cohorts.
+The visual actor does not infer a historical boundary or call Interactive Brokers. Provider
+ownership remains with acquisition, and SessionMetrics remains the owner of canonical completed
+bars and metric cohorts.
 
-No multi-timeframe or historical-only change is included after baseline commit `623f0b7`.
+One-, five-, and fifteen-minute sequential configuration is structurally supported, but only one
+completed-bar foundation series may be active per run while `MetricValue` lacks full series
+identity. Five- and fifteen-minute provider parity and metric acceptance remain open.
 
 ## Handoff Procedure For The Next Agent
 

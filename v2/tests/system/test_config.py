@@ -427,8 +427,8 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.visual_debug_capture.enabled is False
     assert config.visual_debug_capture.instrument_id == "ESU6.CME"
     assert config.visual_debug_capture.bar_specification == "1-MINUTE-LAST-EXTERNAL"
-    assert config.visual_debug_capture.historical_bar_count == 5
-    assert config.visual_debug_capture.live_bar_count == 5
+    assert config.visual_debug_capture.target_historical_bars == 5
+    assert config.visual_debug_capture.target_live_bars == 5
     assert config.runtime_resources.enabled is True
     assert config.runtime_resources.sample_interval_ms == 10000
     assert config.runtime_resources.log_every_samples == 1
@@ -517,6 +517,38 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
     assert config.watchlist.members[0].capabilities == ("top_of_book", "watchlist_last")
+
+
+def test_rejects_completed_bar_historical_selector_interval_mismatch(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'historical_selector = "1-MINUTE-LAST-EXTERNAL"',
+            'historical_selector = "5-MINUTE-LAST-EXTERNAL"',
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="historical selector interval"):
+        load_system_config(path)
+
+
+def test_rejects_completed_bar_live_selector_that_does_not_divide_target(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'live_selector = "5-SECOND-LAST-EXTERNAL"',
+            'live_selector = "2-MINUTE-LAST-EXTERNAL"',
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="live selector interval"):
+        load_system_config(path)
 
 
 def test_live_evidence_review_rejects_non_isolated_runtime(tmp_path: Path) -> None:

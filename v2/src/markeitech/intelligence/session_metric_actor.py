@@ -44,7 +44,6 @@ from markeitech.intelligence.metrics import (
     MetricFidelity,
     MetricHealth,
     MetricRegistry,
-    MetricValue,
 )
 from markeitech.intelligence.rolling_measurements import (
     RollingBaselinePolicy,
@@ -79,13 +78,6 @@ from markeitech.intelligence.session_windows import (
     calculate_analytical_window_metrics,
     resolve_analytical_window,
     resolve_historical_analytical_window,
-)
-from markeitech.intelligence.visual_debug_capture import (
-    VISUAL_DEBUG_SNAPSHOT_REQUEST_TYPE_NAME,
-    VISUAL_DEBUG_SNAPSHOT_RESPONSE_TYPE_NAME,
-    CompletedBarFoundationSnapshotRequest,
-    CompletedBarFoundationSnapshotResponse,
-    build_completed_bar_foundation_snapshot,
 )
 from markeitech.system.messages import (
     ACQUISITION_STREAM_SIGNAL,
@@ -132,15 +124,11 @@ def _completed_bar_foundation_historical_demand(
     as_of_ns: int,
     calculation_interval_seconds: int,
     parameter_version: int,
-    capture_aligned: bool,
 ) -> HistoricalDependencyDemandEvent:
     parameters: dict[str, str | int | float | bool] = {
         "calculation_interval_seconds": calculation_interval_seconds,
         "parameter_version": parameter_version,
     }
-    if capture_aligned:
-        parameters["capture_aligned"] = True
-        parameters["capture_alignment_interval_start_ns"] = as_of_ns
     return HistoricalDependencyDemandEvent(
         demand_id=demand_id,
         consumer_id=consumer_id,
@@ -152,11 +140,7 @@ def _completed_bar_foundation_historical_demand(
         minimum_observations=minimum_observations,
         maximum_observations=maximum_observations,
         priority=priority,
-        purpose=(
-            "align completed-bar foundation history to first complete live interval"
-            if capture_aligned
-            else "warm completed-bar foundation metrics"
-        ),
+        purpose="warm completed-bar foundation metrics",
         as_of_ns=as_of_ns,
         parameters=parameters,
     )
@@ -177,8 +161,6 @@ class SessionMetricsActorConfig(DataActorConfig):
         demand_retry_interval_ms: int,
         evidence_snapshot_retry_interval_ms: int,
         priority: int,
-        visual_snapshot_enabled: bool,
-        visual_snapshot_maximum_intervals: int,
         completed_bars: dict[str, object],
         session_references: dict[str, object],
         session_windows: dict[str, object],
@@ -199,8 +181,6 @@ class SessionMetricsActorConfig(DataActorConfig):
         obj.demand_retry_interval_ms = demand_retry_interval_ms
         obj.evidence_snapshot_retry_interval_ms = evidence_snapshot_retry_interval_ms
         obj.priority = priority
-        obj.visual_snapshot_enabled = visual_snapshot_enabled
-        obj.visual_snapshot_maximum_intervals = visual_snapshot_maximum_intervals
         obj.completed_bars = dict(completed_bars)
         obj.session_references = dict(session_references)
         obj.session_windows = dict(session_windows)
@@ -244,12 +224,6 @@ class SessionMetricsActor(DataActor):
         self._timestamp_policy = str(completed["timestamp_policy"])
         self._maximum_retained = int(completed["maximum_retained_observations"])
         self._priority = config.priority
-        self._visual_snapshot_enabled = bool(config.visual_snapshot_enabled)
-        self._visual_snapshot_maximum_intervals = int(
-            config.visual_snapshot_maximum_intervals,
-        )
-        if not 0 < self._visual_snapshot_maximum_intervals <= self._maximum_retained:
-            raise ValueError("visual snapshot interval bound must fit completed-bar retention")
         policy = CompletedBarCatalogPolicy(
             live_selector=self._live_selector,
             historical_selector=self._historical_selector,
@@ -375,12 +349,6 @@ class SessionMetricsActor(DataActor):
         self._metric_type = DataType(METRIC_VALUE_TYPE_NAME)
         self._completed_bar_type = DataType(COMPLETED_BAR_INPUT_TYPE_NAME)
         self._batch_type = DataType(HISTORICAL_BATCH_TYPE_NAME)
-        self._visual_snapshot_request_type = DataType(
-            VISUAL_DEBUG_SNAPSHOT_REQUEST_TYPE_NAME,
-        )
-        self._visual_snapshot_response_type = DataType(
-            VISUAL_DEBUG_SNAPSHOT_RESPONSE_TYPE_NAME,
-        )
         self._demand_retry_interval_ns = config.demand_retry_interval_ms * 1_000_000
         self._evidence_retry_interval_ns = config.evidence_snapshot_retry_interval_ms * 1_000_000
         if config.conflict_policy != BarConflictPolicy.REJECT_CONFLICT.value:
@@ -398,11 +366,9 @@ class SessionMetricsActor(DataActor):
         self._attached: set[str] = set()
         self._acknowledged_demands: set[str] = set()
         self._historical_readiness: dict[str, str] = {}
-        self._historical_readiness_events: dict[str, HistoricalReadinessEvent] = {}
         self._foundation_history_requested: set[str] = set()
         self._revisions: defaultdict[str, int] = defaultdict(int)
         self._counts: defaultdict[str, int] = defaultdict(int)
-        self._completed_metric_cohorts: dict[tuple[str, int], tuple[MetricValue, ...]] = {}
         self._reference_books = {
             instrument_id: SessionReferenceBook(
                 instrument_id=instrument_id,
@@ -466,8 +432,6 @@ class SessionMetricsActor(DataActor):
         ):
             self.subscribe_signal(signal_name)
         self.subscribe_data(self._batch_type)
-        if self._visual_snapshot_enabled:
-            self.subscribe_data(self._visual_snapshot_request_type)
         self._attach_consumers()
         self._publish_live_demands(None)
         self._request_evidence_snapshot(None)
@@ -501,12 +465,6 @@ class SessionMetricsActor(DataActor):
 
     def on_data(self, data) -> None:  # noqa: ANN001
         payload = data.data if isinstance(data, CustomData) else data
-        if self._visual_snapshot_enabled and isinstance(
-            payload,
-            CompletedBarFoundationSnapshotRequest,
-        ):
-            self._publish_visual_snapshot(payload)
-            return
         if not isinstance(payload, HistoricalBatch):
             return
         dependencies = {dependency.consumer_id for dependency in payload.request.dependencies}
@@ -586,8 +544,6 @@ class SessionMetricsActor(DataActor):
         ):
             self.unsubscribe_signal(signal_name)
         self.unsubscribe_data(self._batch_type)
-        if self._visual_snapshot_enabled:
-            self.unsubscribe_data(self._visual_snapshot_request_type)
         self.log.info(
             "SESSION_METRICS_STOPPED"
             f" | instruments={len(self._instrument_ids)}"
@@ -611,10 +567,7 @@ class SessionMetricsActor(DataActor):
             f" | historical_completed_bars={self._counts['historical_completed_bars']}"
             f" | live_aggregate_completed_bars="
             f"{self._counts['live_aggregate_completed_bars']}"
-            f" | foundation_history_demands={self._counts['foundation_history_demands']}"
-            f" | capture_aligned_history_demands="
-            f"{self._counts['capture_aligned_history_demands']}"
-            f" | visual_snapshots={self._counts['visual_snapshots']}",
+            f" | foundation_history_demands={self._counts['foundation_history_demands']}",
         )
 
     def _process_provider_bar(
@@ -771,7 +724,6 @@ class SessionMetricsActor(DataActor):
             self._counts["historical_completed_bars"] += 1
         elif bar.source is CompletedBarSource.LIVE_AGGREGATE:
             self._counts["live_aggregate_completed_bars"] += 1
-            self._publish_capture_aligned_foundation_history(bar)
         self.publish_data(
             self._completed_bar_type,
             CustomData(self._completed_bar_type, admission.accepted),
@@ -789,17 +741,6 @@ class SessionMetricsActor(DataActor):
                 source=str(self.actor_id),
                 revision=self._revisions[bar.instrument_id],
             )
-            if self._visual_snapshot_enabled:
-                self._completed_metric_cohorts[
-                    (target.instrument_id, target.interval_end_ns)
-                ] = values
-                retained = {
-                    item.interval_end_ns
-                    for item in ledger.bars[-self._visual_snapshot_maximum_intervals :]
-                }
-                for cohort_key in tuple(self._completed_metric_cohorts):
-                    if cohort_key[0] == target.instrument_id and cohort_key[1] not in retained:
-                        del self._completed_metric_cohorts[cohort_key]
             for value in values:
                 self.publish_data(self._metric_type, CustomData(self._metric_type, value))
             self._counts["values"] += len(values)
@@ -818,37 +759,6 @@ class SessionMetricsActor(DataActor):
             CompletedBarSource.LIVE_AGGREGATE,
         }:
             self._publish_rolling_metrics(bar.instrument_id)
-
-    def _publish_visual_snapshot(
-        self,
-        request: CompletedBarFoundationSnapshotRequest,
-    ) -> None:
-        if (
-            request.instrument_id not in self._instrument_set
-            or request.bar_specification != self._historical_selector
-            or request.parameter_version != self._parameter_version
-        ):
-            return
-        snapshot = build_completed_bar_foundation_snapshot(
-            request,
-            generated_ts_ns=self.clock.timestamp_ns(),
-            producer_id=str(self.actor_id),
-            bars=self._ledgers[request.instrument_id].bars,
-            metric_cohorts=self._completed_metric_cohorts,
-            historical_readiness=self._historical_readiness_events.get(
-                f"{request.instrument_id}:metric:completed-bar-foundation",
-            ),
-        )
-        response = CompletedBarFoundationSnapshotResponse(
-            request_id=request.request_id,
-            requester=request.requester,
-            snapshot=snapshot,
-        )
-        self.publish_data(
-            self._visual_snapshot_response_type,
-            CustomData(self._visual_snapshot_response_type, response),
-        )
-        self._counts["visual_snapshots"] += 1
 
     def _publish_rolling_metrics(self, instrument_id: str) -> None:
         bars = self._ledgers[instrument_id].bars
@@ -973,12 +883,10 @@ class SessionMetricsActor(DataActor):
         now_ns = self.clock.timestamp_ns()
         active_retry_ns: int | None = None
         for instrument_id in self._instrument_ids:
-            if not self._visual_snapshot_enabled:
-                self._publish_foundation_historical_demand(
-                    instrument_id,
-                    as_of_ns=now_ns,
-                    capture_aligned=False,
-                )
+            self._publish_foundation_historical_demand(
+                instrument_id,
+                as_of_ns=now_ns,
+            )
             if self._references_enabled:
                 for role in SessionReferenceRole:
                     if (instrument_id, role) not in self._reference_demand_ids:
@@ -1007,33 +915,11 @@ class SessionMetricsActor(DataActor):
         if active_retry_ns is not None:
             self._schedule_active_reference_retry(active_retry_ns)
 
-    def _publish_capture_aligned_foundation_history(self, bar: CompletedBarInput) -> None:
-        if (
-            not self._visual_snapshot_enabled
-            or bar.source is not CompletedBarSource.LIVE_AGGREGATE
-            or bar.instrument_id in self._foundation_history_requested
-        ):
-            return
-        self._publish_foundation_historical_demand(
-            bar.instrument_id,
-            as_of_ns=bar.interval_start_ns,
-            capture_aligned=True,
-        )
-        self.log.info(
-            "SESSION_METRIC_CAPTURE_HISTORY_ALIGNED"
-            f" | instrument_id={bar.instrument_id}"
-            f" | as_of_ns={bar.interval_start_ns}"
-            f" | first_live_interval_end_ns={bar.interval_end_ns}"
-            f" | observations={self._minimum_historical_observations}-"
-            f"{self._maximum_historical_observations}",
-        )
-
     def _publish_foundation_historical_demand(
         self,
         instrument_id: str,
         *,
         as_of_ns: int,
-        capture_aligned: bool,
     ) -> None:
         if instrument_id in self._foundation_history_requested:
             return
@@ -1050,7 +936,6 @@ class SessionMetricsActor(DataActor):
             as_of_ns=as_of_ns,
             calculation_interval_seconds=self._target_interval_seconds,
             parameter_version=self._parameter_version,
-            capture_aligned=capture_aligned,
         )
         try:
             self.publish_signal(
@@ -1061,8 +946,6 @@ class SessionMetricsActor(DataActor):
             self._foundation_history_requested.discard(instrument_id)
             raise
         self._counts["foundation_history_demands"] += 1
-        if capture_aligned:
-            self._counts["capture_aligned_history_demands"] += 1
 
     def _request_active_reference(self, instrument_id: str, now_ns: int) -> int | None:
         capability_id = f"metric:session-reference:{SessionReferenceRole.ACTIVE.value}"
@@ -1566,10 +1449,6 @@ class SessionMetricsActor(DataActor):
         if event.consumer_id != str(self.actor_id):
             return
         self._historical_readiness[f"{event.instrument_id}:{event.capability_id}"] = event.state
-        if self._visual_snapshot_enabled:
-            self._historical_readiness_events[
-                f"{event.instrument_id}:{event.capability_id}"
-            ] = event
         if self._references_enabled and event.capability_id.startswith("metric:session-reference:"):
             self._publish_reference_metrics(event.instrument_id)
         if self._windows_enabled and event.capability_id.startswith("metric:session-window:"):

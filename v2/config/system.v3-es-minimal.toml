@@ -99,18 +99,14 @@ maximum_bars_per_series = 1000
 maximum_metric_subjects = 20000
 maximum_entity_subjects = 20000
 
-# V3 ONE-HOUR CONNECTED VISUAL TEST — ACTIVE, NOT YET ACCEPTED:
-# A new isolated projection captures exactly 55 historical plus five live-aggregate canonical
-# one-minute bars: one contiguous hour with seven direct metric records for every candle. It uses a
-# bounded producer-owned snapshot handshake to remove actor-start-order dependence, then writes one
-# frozen self-contained HTML and manifest. The first connected attempt proved that a startup
-# history request can end at the start
-# of a partial live minute, making the strict contiguous historical/live seam impossible. In this
-# visual-review mode only, the completed-bar producer now waits for the first full live aggregate
-# and submits its one bounded 55-bar history request with that live interval start as the exclusive
-# history boundary. The UTC-stamped identity names this corrected bounded activation; it is not a
-# configuration-file digest. The timing values below remain provisional test settings. Review them
-# against the measured render and lifecycle evidence.
+# V3 PASSIVE CONNECTED VISUAL TEST — ACTIVE, NOT YET ACCEPTED:
+# This actor only observes canonical bars and metrics which normal SessionMetrics operation already
+# publishes. Enabling it does not alter the watchlist, provider demands, historical boundary, live
+# subscriptions, calculations, retention, persistence, or lifecycle. Because Nautilus pub/sub has
+# no startup replay guarantee, a late subscription or natural historical/live seam can yield a
+# prominently partial or gapped diagnostic artifact. The observer must show that fact; it must not
+# repair the runtime to manufacture a preferred chart. The UTC-stamped identity below is an
+# operator label, not a configuration-file digest.
 [visual_debug_capture]
 enabled = true
 configuration_identity = "v3-es-completed-bar-foundation-review-v3-20260827T150256Z"
@@ -120,13 +116,20 @@ analytical_profile_version = 1
 bar_specification = "1-MINUTE-LAST-EXTERNAL"
 parameter_version = 1
 output_directory = "../data/visual-debug-captures"
-capture_policy_version = 2
-historical_bar_count = 55
-live_bar_count = 5
+capture_policy_version = 3
+# Projection targets only. They select canonical records which the normal runtime already
+# produced; they never add, suppress, align, resize, or retime a historical or live request.
+# Set either target to zero for a historical-only or live-only artifact. Both cannot be zero.
+target_historical_bars = 55
+target_live_bars = 0
 quiet_period_ms = 2000
-snapshot_retry_interval_ms = 1000
 completion_deadline_ms = 900000
 output_drain_timeout_ms = 30000
+# Renderer-only geometry. It cannot change the canonical capture payload.
+candle_pane_height_px = 720
+volume_pane_height_px = 130
+metric_pane_height_px = 110
+pane_gap_px = 18
 
 [runtime_resources]
 enabled = false

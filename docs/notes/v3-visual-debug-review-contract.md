@@ -78,12 +78,13 @@ The capture must never:
 The capture may select only canonical series and records independently configured and produced by
 normal runtime components. A capture mode controls projection selection, not runtime operation.
 
-### Baseline correction still required
+### Baseline correction status
 
-Commit `623f0b7` is an almost-acceptable recovery point, not acceptance of this invariant. Its
-`visual_snapshot_enabled` path currently causes SessionMetrics to suppress ordinary startup
-history and issue capture-aligned history after the first full live aggregate. That is a known
-scope breach and must be removed before final visual-debug acceptance.
+Commit `623f0b7` remains the almost-acceptable recovery point. The current uncommitted correction
+removes its `visual_snapshot_enabled` path, producer snapshot handshake, capture-aligned history,
+and capture-derived producer retention. Offline equivalence proves that capture on/off actor plans
+differ only by the passive observer registration. Connected equivalence and visual acceptance
+remain open.
 
 No replacement may move the same coupling into Watchlist, acquisition, another capture flag, or a
 hidden configuration derivation.

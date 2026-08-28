@@ -8,6 +8,8 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from nautilus_trader.model import BarSpecification
+
 type EntityConfigScalar = str | int | float | bool
 
 _ENTITY_GROUPS = {
@@ -551,12 +553,15 @@ class VisualDebugCaptureConfig:
     parameter_version: int
     output_directory: Path
     capture_policy_version: int
-    historical_bar_count: int
-    live_bar_count: int
+    target_historical_bars: int
+    target_live_bars: int
     quiet_period_ms: int
-    snapshot_retry_interval_ms: int
     completion_deadline_ms: int
     output_drain_timeout_ms: int
+    candle_pane_height_px: int
+    volume_pane_height_px: int
+    metric_pane_height_px: int
+    pane_gap_px: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -730,12 +735,15 @@ def load_system_config(path: str | Path) -> SystemConfig:
                 "parameter_version": 1,
                 "output_directory": "../data/visual-debug-captures",
                 "capture_policy_version": 1,
-                "historical_bar_count": 5,
-                "live_bar_count": 5,
+                "target_historical_bars": 5,
+                "target_live_bars": 5,
                 "quiet_period_ms": 2000,
-                "snapshot_retry_interval_ms": 1000,
                 "completion_deadline_ms": 900000,
                 "output_drain_timeout_ms": 30000,
+                "candle_pane_height_px": 720,
+                "volume_pane_height_px": 130,
+                "metric_pane_height_px": 110,
+                "pane_gap_px": 18,
             },
         ),
         config_path.parent,
@@ -1225,12 +1233,15 @@ def _load_visual_debug_capture(
         "parameter_version",
         "output_directory",
         "capture_policy_version",
-        "historical_bar_count",
-        "live_bar_count",
+        "target_historical_bars",
+        "target_live_bars",
         "quiet_period_ms",
-        "snapshot_retry_interval_ms",
         "completion_deadline_ms",
         "output_drain_timeout_ms",
+        "candle_pane_height_px",
+        "volume_pane_height_px",
+        "metric_pane_height_px",
+        "pane_gap_px",
     }
     _require_keys(values, keys, "visual_debug_capture")
     output_directory = Path(
@@ -1238,6 +1249,16 @@ def _load_visual_debug_capture(
     )
     if not output_directory.is_absolute():
         output_directory = (config_directory / output_directory).resolve()
+    target_historical_bars = _non_negative_int(
+        values["target_historical_bars"],
+        "visual_debug_capture.target_historical_bars",
+    )
+    target_live_bars = _non_negative_int(
+        values["target_live_bars"],
+        "visual_debug_capture.target_live_bars",
+    )
+    if target_historical_bars + target_live_bars == 0:
+        raise ValueError("visual debug capture requires at least one positive population target")
     return VisualDebugCaptureConfig(
         enabled=_bool(values["enabled"], "visual_debug_capture.enabled"),
         configuration_identity=_non_empty_string(
@@ -1267,19 +1288,10 @@ def _load_visual_debug_capture(
             values["capture_policy_version"],
             "visual_debug_capture.capture_policy_version",
         ),
-        historical_bar_count=_positive_int(
-            values["historical_bar_count"],
-            "visual_debug_capture.historical_bar_count",
-        ),
-        live_bar_count=_positive_int(
-            values["live_bar_count"], "visual_debug_capture.live_bar_count"
-        ),
+        target_historical_bars=target_historical_bars,
+        target_live_bars=target_live_bars,
         quiet_period_ms=_positive_int(
             values["quiet_period_ms"], "visual_debug_capture.quiet_period_ms"
-        ),
-        snapshot_retry_interval_ms=_positive_int(
-            values["snapshot_retry_interval_ms"],
-            "visual_debug_capture.snapshot_retry_interval_ms",
         ),
         completion_deadline_ms=_positive_int(
             values["completion_deadline_ms"],
@@ -1288,6 +1300,22 @@ def _load_visual_debug_capture(
         output_drain_timeout_ms=_positive_int(
             values["output_drain_timeout_ms"],
             "visual_debug_capture.output_drain_timeout_ms",
+        ),
+        candle_pane_height_px=_positive_int(
+            values["candle_pane_height_px"],
+            "visual_debug_capture.candle_pane_height_px",
+        ),
+        volume_pane_height_px=_positive_int(
+            values["volume_pane_height_px"],
+            "visual_debug_capture.volume_pane_height_px",
+        ),
+        metric_pane_height_px=_positive_int(
+            values["metric_pane_height_px"],
+            "visual_debug_capture.metric_pane_height_px",
+        ),
+        pane_gap_px=_positive_int(
+            values["pane_gap_px"],
+            "visual_debug_capture.pane_gap_px",
         ),
     )
 
@@ -2905,6 +2933,34 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
         )
     if 86_400 % interval:
         raise ValueError("completed-bar UTC-fixed interval must divide one UTC day exactly")
+    historical_selector = _non_empty_string(
+        completed["historical_selector"],
+        "metrics.session_measurements.completed_bars.historical_selector",
+    )
+    live_selector = _non_empty_string(
+        completed["live_selector"],
+        "metrics.session_measurements.completed_bars.live_selector",
+    )
+    try:
+        historical_interval = BarSpecification.from_str(
+            historical_selector.rsplit("-", maxsplit=1)[0],
+        ).get_interval_ns()
+        live_interval = BarSpecification.from_str(
+            live_selector.rsplit("-", maxsplit=1)[0],
+        ).get_interval_ns()
+    except ValueError as exc:
+        raise ValueError(
+            "completed-bar selectors must be valid Nautilus bar specifications",
+        ) from exc
+    interval_ns = interval * 1_000_000_000
+    if historical_interval != interval_ns:
+        raise ValueError(
+            "completed-bar historical selector interval must equal calculation interval",
+        )
+    if live_interval > interval_ns or interval_ns % live_interval:
+        raise ValueError(
+            "completed-bar live selector interval must divide calculation interval",
+        )
     timestamp_policy = _non_empty_string(
         completed["timestamp_policy"],
         "metrics.session_measurements.completed_bars.timestamp_policy",

@@ -17,16 +17,11 @@ from markeitech.intelligence.completed_bars import COMPLETED_BAR_INPUT_TYPE_NAME
 from markeitech.intelligence.metrics import METRIC_VALUE_TYPE_NAME, MetricValue
 from markeitech.intelligence.session_measurements import COMPLETED_BAR_METRIC_IDS
 from markeitech.intelligence.visual_debug_capture import (
-    VISUAL_DEBUG_SNAPSHOT_REQUEST_TYPE_NAME,
-    VISUAL_DEBUG_SNAPSHOT_RESPONSE_TYPE_NAME,
-    CompletedBarFoundationSnapshotRequest,
-    CompletedBarFoundationSnapshotResponse,
     FrozenVisualDebugCapture,
     VisualDebugCaptureCollector,
     frozen_capture_manifest,
 )
 
-_SNAPSHOT_RETRY_TIMER = "visual-debug-snapshot-retry"
 _COMPLETION_DEADLINE = "visual-debug-completion-deadline"
 _QUIET_ALERT = "visual-debug-quiet-alert"
 _RESULT_TIMER = "visual-debug-result"
@@ -40,8 +35,9 @@ class VisualDebugWriterResult:
 
 
 class VisualDebugCaptureWriter:
-    def __init__(self, output_directory: Path) -> None:
+    def __init__(self, output_directory: Path, renderer_layout: dict[str, int]) -> None:
         self._output_directory = output_directory
+        self._renderer_layout = dict(renderer_layout)
         self._jobs: queue.Queue[FrozenVisualDebugCapture | None] = queue.Queue(maxsize=1)
         self.results: queue.Queue[VisualDebugWriterResult] = queue.Queue(maxsize=1)
         self._cancelled = threading.Event()
@@ -102,13 +98,14 @@ class VisualDebugCaptureWriter:
             render_visual_debug_html,
         )
 
-        html_text = render_visual_debug_html(capture)
+        html_text = render_visual_debug_html(capture, layout=self._renderer_layout)
         html_bytes = html_text.encode()
         html_digest = hashlib.sha256(html_bytes).hexdigest()
         manifest = frozen_capture_manifest(
             capture,
             html_sha256=html_digest,
             plotly_version=version("plotly"),
+            renderer_layout=self._renderer_layout,
         )
         staging = Path(
             tempfile.mkdtemp(
@@ -132,7 +129,12 @@ class VisualDebugCaptureWriter:
                 if final.exists():
                     raise FileExistsError("capture output already exists")
                 staging.rename(final)
-            self._result("OUTPUT_PUBLISHED", str(final))
+            state = (
+                "OUTPUT_PUBLISHED"
+                if capture.selection_state.startswith("COMPLETE")
+                else "PARTIAL_OUTPUT_PUBLISHED"
+            )
+            self._result(state, str(final))
         finally:
             if staging.exists():
                 shutil.rmtree(staging)
@@ -156,12 +158,15 @@ class VisualDebugCaptureActorConfig(DataActorConfig):
         parameter_version: int,
         output_directory: str,
         capture_policy_version: int,
-        historical_bar_count: int,
-        live_bar_count: int,
+        target_historical_bars: int,
+        target_live_bars: int,
         quiet_period_ms: int,
-        snapshot_retry_interval_ms: int,
         completion_deadline_ms: int,
         output_drain_timeout_ms: int,
+        candle_pane_height_px: int,
+        volume_pane_height_px: int,
+        metric_pane_height_px: int,
+        pane_gap_px: int,
         actor_id: str | ActorId,
     ) -> VisualDebugCaptureActorConfig:
         resolved_actor_id = (
@@ -177,12 +182,15 @@ class VisualDebugCaptureActorConfig(DataActorConfig):
         obj.parameter_version = parameter_version
         obj.output_directory = output_directory
         obj.capture_policy_version = capture_policy_version
-        obj.historical_bar_count = historical_bar_count
-        obj.live_bar_count = live_bar_count
+        obj.target_historical_bars = target_historical_bars
+        obj.target_live_bars = target_live_bars
         obj.quiet_period_ms = quiet_period_ms
-        obj.snapshot_retry_interval_ms = snapshot_retry_interval_ms
         obj.completion_deadline_ms = completion_deadline_ms
         obj.output_drain_timeout_ms = output_drain_timeout_ms
+        obj.candle_pane_height_px = candle_pane_height_px
+        obj.volume_pane_height_px = volume_pane_height_px
+        obj.metric_pane_height_px = metric_pane_height_px
+        obj.pane_gap_px = pane_gap_px
         return obj
 
 
@@ -197,27 +205,32 @@ class VisualDebugCaptureActor(DataActor):
         self._bar_specification = config.bar_specification
         self._parameter_version = config.parameter_version
         self._capture_policy_version = config.capture_policy_version
-        self._historical_bar_count = config.historical_bar_count
+        self._target_historical_bars = config.target_historical_bars
         self._quiet_ns = config.quiet_period_ms * 1_000_000
-        self._retry_ns = config.snapshot_retry_interval_ms * 1_000_000
         self._deadline_ns = config.completion_deadline_ms * 1_000_000
         self._drain_seconds = config.output_drain_timeout_ms / 1000
         self._collector = VisualDebugCaptureCollector(
             instrument_id=config.instrument_id,
+            analytical_profile_id=config.analytical_profile_id,
+            analytical_profile_version=config.analytical_profile_version,
             bar_specification=config.bar_specification,
             parameter_version=config.parameter_version,
-            historical_bar_count=config.historical_bar_count,
-            live_bar_count=config.live_bar_count,
+            target_historical_bars=config.target_historical_bars,
+            target_live_bars=config.target_live_bars,
         )
-        self._writer = VisualDebugCaptureWriter(Path(config.output_directory))
+        self._writer = VisualDebugCaptureWriter(
+            Path(config.output_directory),
+            {
+                "candle_pane_height_px": config.candle_pane_height_px,
+                "volume_pane_height_px": config.volume_pane_height_px,
+                "metric_pane_height_px": config.metric_pane_height_px,
+                "pane_gap_px": config.pane_gap_px,
+            },
+        )
         self._bar_type = DataType(COMPLETED_BAR_INPUT_TYPE_NAME)
         self._metric_type = DataType(METRIC_VALUE_TYPE_NAME)
-        self._request_type = DataType(VISUAL_DEBUG_SNAPSHOT_REQUEST_TYPE_NAME)
-        self._response_type = DataType(VISUAL_DEBUG_SNAPSHOT_RESPONSE_TYPE_NAME)
-        self._request_id = hashlib.sha256(
-            f"{self._run_id}:{self.actor_id}:foundation".encode(),
-        ).hexdigest()
         self._readiness: HistoricalReadinessEvent | None = None
+        self._collection_started_ns = 0
         self._stopping = False
         self._frozen = False
         self._state = "STARTING"
@@ -225,13 +238,9 @@ class VisualDebugCaptureActor(DataActor):
     def on_start(self) -> None:
         self.subscribe_data(self._bar_type)
         self.subscribe_data(self._metric_type)
-        self.subscribe_data(self._response_type)
         self.subscribe_signal(HISTORICAL_READINESS_SIGNAL)
         self._writer.start()
-        self._request_snapshot(None)
-        self.clock.set_timer_ns(
-            _SNAPSHOT_RETRY_TIMER, self._retry_ns, callback=self._request_snapshot
-        )
+        self._collection_started_ns = self.clock.timestamp_ns()
         self.clock.set_time_alert_ns(
             _COMPLETION_DEADLINE,
             self.clock.timestamp_ns() + self._deadline_ns,
@@ -259,18 +268,6 @@ class VisualDebugCaptureActor(DataActor):
                 and payload.metric_id in COMPLETED_BAR_METRIC_IDS
             )
             accepted = self._collector.accept_metric(payload)
-        elif (
-            isinstance(payload, CompletedBarFoundationSnapshotResponse)
-            and payload.request_id == self._request_id
-            and payload.requester == str(self.actor_id)
-        ):
-            if _SNAPSHOT_RETRY_TIMER in self.clock.timer_names():
-                self.clock.cancel_timer(_SNAPSHOT_RETRY_TIMER)
-            self._collector.accept_snapshot(payload.snapshot)
-            if payload.snapshot.historical_readiness is not None:
-                self._accept_readiness(payload.snapshot.historical_readiness)
-            accepted = True
-            relevant = True
         if self._collector.conflict is not None:
             self._fail(self._collector.conflict)
         elif accepted or relevant:
@@ -291,8 +288,6 @@ class VisualDebugCaptureActor(DataActor):
             and event.capability_id == "metric:completed-bar-foundation"
             and event.instrument_id == self._instrument_id
             and event.selector == self._bar_specification
-            and event.state == "READY"
-            and event.observed_count == self._historical_bar_count
         ):
             self._readiness = event
             self._evaluate_completion()
@@ -301,13 +296,12 @@ class VisualDebugCaptureActor(DataActor):
         self._stopping = True
         if not self._frozen:
             self._state = "STOPPED_BEFORE_FREEZE"
-        for name in (_SNAPSHOT_RETRY_TIMER, _COMPLETION_DEADLINE, _QUIET_ALERT, _RESULT_TIMER):
+        for name in (_COMPLETION_DEADLINE, _QUIET_ALERT, _RESULT_TIMER):
             if name in self.clock.timer_names():
                 self.clock.cancel_timer(name)
         self.unsubscribe_signal(HISTORICAL_READINESS_SIGNAL)
         self.unsubscribe_data(self._bar_type)
         self.unsubscribe_data(self._metric_type)
-        self.unsubscribe_data(self._response_type)
         if not self._writer.close(self._drain_seconds):
             self._state = "OUTPUT_UNFINISHED"
         self._drain_result(None)
@@ -316,22 +310,16 @@ class VisualDebugCaptureActor(DataActor):
     def on_dispose(self) -> None:
         self._writer.close(0.0)
 
-    def _request_snapshot(self, _event) -> None:  # noqa: ANN001
-        if self._stopping or self._frozen:
-            return
-        request = CompletedBarFoundationSnapshotRequest(
-            request_id=self._request_id,
-            requester=str(self.actor_id),
-            requested_ts_ns=self.clock.timestamp_ns(),
-            instrument_id=self._instrument_id,
-            bar_specification=self._bar_specification,
-            parameter_version=self._parameter_version,
-            maximum_intervals=self._collector.maximum_intervals,
-        )
-        self.publish_data(self._request_type, CustomData(self._request_type, request))
-
     def _evaluate_completion(self) -> None:
-        if self._readiness is None or self._collector.selected_records() is None:
+        if not self._collector.target_population_is_complete():
+            if _QUIET_ALERT in self.clock.timer_names():
+                self.clock.cancel_timer(_QUIET_ALERT)
+            self._state = "COLLECTING"
+            return
+        if self._target_historical_bars and self._readiness is None:
+            if _QUIET_ALERT in self.clock.timer_names():
+                self.clock.cancel_timer(_QUIET_ALERT)
+            self._state = "COLLECTING"
             return
         if _QUIET_ALERT in self.clock.timer_names():
             self.clock.cancel_timer(_QUIET_ALERT)
@@ -343,13 +331,14 @@ class VisualDebugCaptureActor(DataActor):
         self._state = "COALESCING"
 
     def _freeze(self, _event) -> None:  # noqa: ANN001
-        if self._stopping or self._frozen or self._readiness is None:
+        if self._stopping or self._frozen:
             return
         try:
             capture = self._collector.freeze(
                 run_id=self._run_id,
                 configuration_identity=self._configuration_identity,
                 capture_policy_version=self._capture_policy_version,
+                collection_started_ns=self._collection_started_ns,
                 frozen_at_ns=self.clock.timestamp_ns(),
                 historical_readiness=self._readiness,
             )
@@ -357,8 +346,6 @@ class VisualDebugCaptureActor(DataActor):
             self._fail(type(exc).__name__)
             return
         self._frozen = True
-        if _SNAPSHOT_RETRY_TIMER in self.clock.timer_names():
-            self.clock.cancel_timer(_SNAPSHOT_RETRY_TIMER)
         if _COMPLETION_DEADLINE in self.clock.timer_names():
             self.clock.cancel_timer(_COMPLETION_DEADLINE)
         if not self._writer.submit(capture):
@@ -368,7 +355,7 @@ class VisualDebugCaptureActor(DataActor):
 
     def _on_deadline(self, _event) -> None:  # noqa: ANN001
         if not self._frozen:
-            self._fail("CAPTURE_DEADLINE_EXPIRED")
+            self._freeze(_event)
 
     def _drain_result(self, _event) -> None:  # noqa: ANN001
         try:
@@ -378,13 +365,17 @@ class VisualDebugCaptureActor(DataActor):
         self._state = result.state
         if result.state == "OUTPUT_PUBLISHED":
             self.log.info(f"VISUAL_DEBUG_CAPTURE_OUTPUT_PUBLISHED | path={result.detail}")
+        elif result.state == "PARTIAL_OUTPUT_PUBLISHED":
+            self.log.warning(
+                f"VISUAL_DEBUG_CAPTURE_PARTIAL_OUTPUT_PUBLISHED | path={result.detail}",
+            )
         else:
             self.log.error(f"VISUAL_DEBUG_CAPTURE_{result.state} | detail={result.detail}")
 
     def _fail(self, reason: str) -> None:
         self._state = reason
         self._frozen = True
-        for name in (_SNAPSHOT_RETRY_TIMER, _COMPLETION_DEADLINE, _QUIET_ALERT):
+        for name in (_COMPLETION_DEADLINE, _QUIET_ALERT):
             if name in self.clock.timer_names():
                 self.clock.cancel_timer(name)
         self.log.error(f"VISUAL_DEBUG_CAPTURE_FAILED | reason={reason}")

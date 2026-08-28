@@ -254,8 +254,8 @@ def test_actor_plan_adds_visual_debug_capture_before_session_metrics() -> None:
     assert keys.index("visual_debug_capture") < keys.index("session_metrics")
     capture = next(item for item in plan if item.key == "visual_debug_capture")
     assert capture.actor_id == "VISUAL-DEBUG-CAPTURE"
-    assert capture.config.config["historical_bar_count"] == 5
-    assert capture.config.config["live_bar_count"] == 5
+    assert capture.config.config["target_historical_bars"] == 5
+    assert capture.config.config["target_live_bars"] == 5
     assert capture.config.config["bar_specification"] == "1-MINUTE-LAST-EXTERNAL"
     actor_config = VisualDebugCaptureActorConfig(**capture.config.config)
     actor = VisualDebugCaptureActor(actor_config)
@@ -343,8 +343,8 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
     assert actor.config.config["profile_bindings"]["ESU6.CME"] == "cme_equity_primary"
     assert actor.config.config["profile_bindings"]["^SPX.CBOE"] == "us_index_primary"
     assert actor.config.config["profiles"][0]["overnight_enabled"] is False
-    assert actor.config.config["visual_snapshot_enabled"] is False
-    assert actor.config.config["visual_snapshot_maximum_intervals"] == 10
+    assert "visual_snapshot_enabled" not in actor.config.config
+    assert "visual_snapshot_maximum_intervals" not in actor.config.config
     assert actor.config.config["completed_bars"] == {
         "live_selector": "5-SECOND-LAST-EXTERNAL",
         "historical_selector": "1-MINUTE-LAST-EXTERNAL",

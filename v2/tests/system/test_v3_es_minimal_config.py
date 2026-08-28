@@ -75,9 +75,10 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     )
     assert config.visual_debug_capture.instrument_id == "ESU6.CME"
     assert config.visual_debug_capture.bar_specification == "1-MINUTE-LAST-EXTERNAL"
-    assert config.visual_debug_capture.historical_bar_count == 55
-    assert config.visual_debug_capture.live_bar_count == 5
-    assert config.visual_debug_capture.capture_policy_version == 2
+    assert config.visual_debug_capture.target_historical_bars == 55
+    assert config.visual_debug_capture.target_live_bars == 5
+    assert config.visual_debug_capture.candle_pane_height_px == 720
+    assert config.visual_debug_capture.capture_policy_version == 3
     assert config.visual_debug_capture.parameter_version == 1
     assert [registration.key for registration in plan] == [
         "system_control",
@@ -117,5 +118,5 @@ def test_v3_completed_bar_review_composes_only_approved_foundation_and_projectio
     assert "live_evidence_review" not in keys
     assert "entity_analysis" not in keys
     session_metrics = next(item for item in plan if item.key == "session_metrics")
-    assert session_metrics.config.config["visual_snapshot_enabled"] is True
-    assert session_metrics.config.config["visual_snapshot_maximum_intervals"] == 60
+    assert "visual_snapshot_enabled" not in session_metrics.config.config
+    assert "visual_snapshot_maximum_intervals" not in session_metrics.config.config

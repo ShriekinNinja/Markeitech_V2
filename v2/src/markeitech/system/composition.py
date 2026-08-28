@@ -595,12 +595,15 @@ def build_actor_plan(
                         "parameter_version": capture.parameter_version,
                         "output_directory": str(capture.output_directory),
                         "capture_policy_version": capture.capture_policy_version,
-                        "historical_bar_count": capture.historical_bar_count,
-                        "live_bar_count": capture.live_bar_count,
+                        "target_historical_bars": capture.target_historical_bars,
+                        "target_live_bars": capture.target_live_bars,
                         "quiet_period_ms": capture.quiet_period_ms,
-                        "snapshot_retry_interval_ms": capture.snapshot_retry_interval_ms,
                         "completion_deadline_ms": capture.completion_deadline_ms,
                         "output_drain_timeout_ms": capture.output_drain_timeout_ms,
+                        "candle_pane_height_px": capture.candle_pane_height_px,
+                        "volume_pane_height_px": capture.volume_pane_height_px,
+                        "metric_pane_height_px": capture.metric_pane_height_px,
+                        "pane_gap_px": capture.pane_gap_px,
                     },
                 ),
             ),
@@ -746,11 +749,6 @@ def build_actor_plan(
                             session_metrics.evidence_snapshot_retry_interval_ms
                         ),
                         "priority": session_metrics.priority,
-                        "visual_snapshot_enabled": config.visual_debug_capture.enabled,
-                        "visual_snapshot_maximum_intervals": (
-                            config.visual_debug_capture.historical_bar_count
-                            + config.visual_debug_capture.live_bar_count
-                        ),
                         "completed_bars": {
                             "live_selector": completed.live_selector,
                             "historical_selector": completed.historical_selector,
