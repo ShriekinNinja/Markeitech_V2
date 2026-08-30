@@ -69,6 +69,7 @@ Show provider capability, native Nautilus boundary, acquisition ownership, histo
 
 - Node text carries implementation, composition, and active-profile status; color is supplementary.
 - The graphical DOT/SVG/PNG view uses the manifest-selected opaque dark theme; Markdown appearance follows the reviewer's viewer settings.
+- Graphical cards, relationships, and nested boundaries use Diagrams C4 primitives with escaped Graphviz-native labels and no external assets.
 - Dashed nodes are disabled, historical, rejected, or future, as stated in their text.
 - Edge labels state category, required/optional status, and carried contract.
 - External projections consume canonical state; they do not create market truth.

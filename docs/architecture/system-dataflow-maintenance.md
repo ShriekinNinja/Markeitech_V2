@@ -98,6 +98,11 @@ authority. Any palette change must retain explicit status text and shape/line-st
 pass the declared text and graphical contrast tests, regenerate all artifacts, and receive renewed
 visual review.
 
+Graphical component cards, relationships, and nested system boundaries use the installed
+Diagrams C4 primitives plus escaped Graphviz-native labels. Manifest text is always treated as
+plain content, never executable HTML. The canonical views intentionally use no external icon or
+font assets, so SVGs remain standalone and generation remains offline and repository-portable.
+
 The current source census mechanically checks the actor-registration roster and IDs, literal
 signal/custom-data identities in its closed source allowlist, named-profile schema/hash and
 supported Boolean enablement conditions, implementation symbols, LiveNode construction shape, and

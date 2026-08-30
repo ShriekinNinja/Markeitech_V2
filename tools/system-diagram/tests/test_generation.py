@@ -4,11 +4,17 @@ import hashlib
 import json
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from xml.etree import ElementTree
 
 from markeitech_system_diagram import load_manifest
-from markeitech_system_diagram.render import _DARK_THEME, generate_all
+from markeitech_system_diagram.render import (
+    _DARK_THEME,
+    _component_card_label,
+    _graph_header,
+    generate_all,
+)
 from markeitech_system_diagram.source_census import validate_source_census
 from markeitech_system_diagram.view_model import select_view
 
@@ -50,7 +56,8 @@ class GenerationTests(unittest.TestCase):
             ("canvas_text", "canvas"),
             ("cluster_text", "cluster_fill"),
             ("current_text", "current_fill"),
-            ("current_text", "external_fill"),
+            ("actor_text", "actor_fill"),
+            ("external_text", "external_fill"),
             ("current_text", "future_fill"),
             ("disabled_text", "disabled_fill"),
             ("store_text", "store_fill"),
@@ -61,10 +68,17 @@ class GenerationTests(unittest.TestCase):
             ("persistence_edge_text", "canvas"),
             ("projection_edge_text", "canvas"),
             ("failure_edge_text", "canvas"),
+            ("actor_text", "badge_enabled"),
+            ("current_text", "badge_enabled"),
+            ("disabled_text", "badge_disabled"),
+            ("external_text", "badge_external"),
+            ("current_text", "badge_future"),
+            ("historical_text", "badge_historical"),
         )
         graphical_pairs = (
             ("cluster_border", "cluster_fill"),
             ("current_border", "current_fill"),
+            ("actor_border", "actor_fill"),
             ("external_border", "external_fill"),
             ("future_border", "future_fill"),
             ("disabled_border", "disabled_fill"),
@@ -89,6 +103,24 @@ class GenerationTests(unittest.TestCase):
                 3.0,
                 foreground,
             )
+
+    def test_html_card_and_header_escape_manifest_text(self) -> None:
+        manifest = load_manifest(CANONICAL, repository_root=REPOSITORY_ROOT)
+        selected = select_view(manifest, "view.current-runtime")
+        component = replace(
+            selected.components[0],
+            id='actor.escape-test[one]&"two"',
+            label='<Actor & "quoted">',
+        )
+        card = _component_card_label(component, selected.definition.profile)
+        self.assertIn("&lt;Actor &amp; &quot;quoted&quot;&gt;", card)
+        self.assertIn("actor.escape-test[one]&amp;&quot;two&quot;", card)
+        self.assertNotIn('<Actor & "quoted">', card)
+
+        escaped_view = replace(selected.definition, label='<View & "quoted">')
+        header = _graph_header(manifest, replace(selected, definition=escaped_view))
+        self.assertIn("&lt;View &amp; &quot;quoted&quot;&gt;", header)
+        self.assertNotIn('<View & "quoted">', header)
 
     def test_canonical_manifest_passes_source_and_configuration_census(self) -> None:
         manifest = load_manifest(CANONICAL, repository_root=REPOSITORY_ROOT)
@@ -163,7 +195,7 @@ class GenerationTests(unittest.TestCase):
     def test_generated_canonical_views_use_opaque_dark_theme(self) -> None:
         manifest = load_manifest(CANONICAL, repository_root=REPOSITORY_ROOT)
         theme = next(style for style in manifest.styles if style.id == "style.theme")
-        self.assertEqual(theme.label, "Markeitech accessible dark theme v1")
+        self.assertEqual(theme.label, "Markeitech polished dark theme v2")
 
         retired_light_colors = {
             "#FFFFFF",
@@ -182,6 +214,11 @@ class GenerationTests(unittest.TestCase):
             svg = (GENERATED / f"{stem}.svg").read_text(encoding="utf-8")
             self.assertIn(f'bgcolor="{_DARK_THEME["canvas"]}"', dot)
             self.assertIn(f'fontcolor="{_DARK_THEME["canvas_text"]}"', dot)
+            self.assertIn('id="boundary.process"', dot)
+            self.assertIn("IMPLEMENTATION:", dot)
+            self.assertIn("CHECKOUT EVIDENCE:", dot)
+            self.assertNotIn("[...]", dot)
+            self.assertNotIn("image=", dot)
             self.assertIn(f'fill="{_DARK_THEME["canvas"].lower()}"', svg)
             for color in retired_light_colors:
                 self.assertNotIn(color, dot)

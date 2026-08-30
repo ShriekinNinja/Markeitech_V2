@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import importlib.metadata
 import json
 import os
@@ -13,12 +14,14 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from diagrams import Cluster, Diagram, Edge as DiagramEdge, Node, setdiagram
+from diagrams import Diagram, Edge as DiagramEdge, Node, setdiagram
+from diagrams.c4 import C4Node, Container, Database, Person, Relationship, System, SystemBoundary
 
 from . import __version__
 from .diagnostics import ManifestError
 from .models import (
     ArchitectureManifest,
+    Boundary,
     Component,
     DiagramDirection,
     Edge,
@@ -47,8 +50,12 @@ _DARK_THEME = {
     "current_fill": "#172332",
     "current_border": "#6FA8CC",
     "current_text": "#F4F7FA",
-    "external_fill": "#202A33",
-    "external_border": "#A5B4C0",
+    "actor_fill": "#102B28",
+    "actor_border": "#43D9AE",
+    "actor_text": "#ECFFF8",
+    "external_fill": "#2B2017",
+    "external_border": "#F0A45D",
+    "external_text": "#FFF4E8",
     "future_fill": "#261C35",
     "future_border": "#C49AFA",
     "disabled_fill": "#2B2416",
@@ -74,6 +81,12 @@ _DARK_THEME = {
     "projection_edge_text": "#E8DFAF",
     "failure_edge": "#FF8A80",
     "failure_edge_text": "#FFC1BB",
+    "muted_text": "#C7D2DD",
+    "badge_enabled": "#164C3E",
+    "badge_disabled": "#5B4316",
+    "badge_external": "#5A3419",
+    "badge_future": "#452B60",
+    "badge_historical": "#3D444B",
 }
 _DIRECTION = {
     DiagramDirection.LEFT_TO_RIGHT: "LR",
@@ -215,11 +228,48 @@ def _node_appearance(component: Component, profile_id: str | None) -> dict[str, 
         "fontcolor": _DARK_THEME["current_text"],
         "penwidth": "1.5",
     }
+    if component.kind.value == "markeitech_actor":
+        attrs.update(
+            fillcolor=_DARK_THEME["actor_fill"],
+            color=_DARK_THEME["actor_border"],
+            fontcolor=_DARK_THEME["actor_text"],
+        )
+    elif component.kind.value == "provider":
+        attrs.update(shape="box3d")
+    elif component.kind.value == "data_store":
+        attrs.update(
+            shape="cylinder",
+            fillcolor=_DARK_THEME["store_fill"],
+            color=_DARK_THEME["store_border"],
+            fontcolor=_DARK_THEME["store_text"],
+        )
+    elif component.kind.value in {"queue", "worker"}:
+        attrs.update(
+            shape="component",
+            fillcolor=_DARK_THEME["worker_fill"],
+            color=_DARK_THEME["worker_border"],
+            fontcolor=_DARK_THEME["worker_text"],
+        )
+    elif component.kind.value == "projection":
+        attrs.update(
+            shape="note",
+            fillcolor=_DARK_THEME["projection_fill"],
+            color=_DARK_THEME["projection_border"],
+            fontcolor=_DARK_THEME["projection_text"],
+        )
+    elif component.kind.value == "operator":
+        attrs.update(
+            shape="tab",
+            fillcolor=_DARK_THEME["projection_fill"],
+            color=_DARK_THEME["projection_border"],
+            fontcolor=_DARK_THEME["projection_text"],
+        )
+
     if component.implementation_state is ImplementationState.EXTERNAL:
         attrs.update(
-            shape="box3d",
             fillcolor=_DARK_THEME["external_fill"],
             color=_DARK_THEME["external_border"],
+            fontcolor=_DARK_THEME["external_text"],
         )
     elif component.implementation_state is ImplementationState.FUTURE:
         attrs.update(
@@ -240,55 +290,136 @@ def _node_appearance(component: Component, profile_id: str | None) -> dict[str, 
         )
     elif state == EnablementState.DISABLED.value:
         attrs.update(
-            style="dashed,rounded,filled",
+            style="dashed,filled",
             fillcolor=_DARK_THEME["disabled_fill"],
             color=_DARK_THEME["disabled_border"],
             fontcolor=_DARK_THEME["disabled_text"],
         )
-    elif component.kind.value == "data_store":
-        attrs.update(
-            shape="cylinder",
-            fillcolor=_DARK_THEME["store_fill"],
-            color=_DARK_THEME["store_border"],
-            fontcolor=_DARK_THEME["store_text"],
-        )
-    elif component.kind.value in {"queue", "worker"}:
-        attrs.update(
-            shape="component",
-            fillcolor=_DARK_THEME["worker_fill"],
-            color=_DARK_THEME["worker_border"],
-            fontcolor=_DARK_THEME["worker_text"],
-        )
-    elif component.kind.value in {"projection", "operator"}:
-        attrs.update(
-            shape="note",
-            fillcolor=_DARK_THEME["projection_fill"],
-            color=_DARK_THEME["projection_border"],
-            fontcolor=_DARK_THEME["projection_text"],
-        )
     return attrs
 
 
-def _node_label(component: Component, profile_id: str | None) -> str:
-    active = _profile_state(component, profile_id).upper()
-    label = (
-        f"{component.label}\n"
-        f"[{component.id}]\n"
-        f"{component.implementation_state.value.upper()} | "
-        f"{component.composition_policy.value.upper()}\n"
-        f"ACTIVE PROFILE: {active}"
-    )
-    if component.composition_order is not None:
-        label += f"\nCOMPOSITION ORDER: {component.composition_order}"
-    return label
+def _component_badge(component: Component, profile_id: str | None) -> tuple[str, str]:
+    state = _profile_state(component, profile_id)
+    if component.implementation_state is ImplementationState.EXTERNAL:
+        return "EXTERNAL", _DARK_THEME["badge_external"]
+    if component.implementation_state is ImplementationState.FUTURE:
+        return "FUTURE", _DARK_THEME["badge_future"]
+    if component.implementation_state in {
+        ImplementationState.REMOVED,
+        ImplementationState.REJECTED,
+    }:
+        return "HISTORICAL", _DARK_THEME["badge_historical"]
+    if state == EnablementState.DISABLED.value:
+        return "DISABLED", _DARK_THEME["badge_disabled"]
+    if state == EnablementState.ENABLED.value:
+        return "ENABLED", _DARK_THEME["badge_enabled"]
+    return "NOT APPLICABLE", _DARK_THEME["badge_historical"]
 
 
-def _tombstone_label(tombstone: Tombstone) -> str:
+def _badge_html(text: str, fill: str, border: str, fontcolor: str) -> str:
     return (
-        f"{tombstone.label}\n"
-        f"[{tombstone.id}]\n"
-        f"{tombstone.disposition.value.upper()} | HISTORICAL\n"
-        "ACTIVE PROFILE: NOT_APPLICABLE"
+        f'<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" '
+        f'COLOR="{border}" BGCOLOR="{fill}"><TR><TD><FONT COLOR="{fontcolor}" '
+        f'POINT-SIZE="9"><B>{html.escape(text)}</B></FONT></TD></TR></TABLE>'
+    )
+
+
+def _component_card_label(component: Component, profile_id: str | None) -> str:
+    appearance = _node_appearance(component, profile_id)
+    badge, badge_fill = _component_badge(component, profile_id)
+    order = (
+        f"ORDER {component.composition_order}"
+        if component.composition_order is not None
+        else "ORDER NOT APPLICABLE"
+    )
+    profile = _profile_state(component, profile_id).upper()
+    badge_html = _badge_html(
+        badge,
+        badge_fill,
+        appearance["color"],
+        appearance["fontcolor"],
+    )
+    return (
+        '<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">'
+        f'<TR><TD ALIGN="LEFT"><FONT COLOR="{appearance["fontcolor"]}" '
+        f'POINT-SIZE="12"><B>{html.escape(component.label)}</B></FONT></TD>'
+        f'<TD ALIGN="RIGHT">{badge_html}</TD></TR><HR/>'
+        f'<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="{_DARK_THEME["muted_text"]}" '
+        f'POINT-SIZE="9">{html.escape(component.id)}</FONT></TD></TR>'
+        f'<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="{appearance["fontcolor"]}" '
+        f'POINT-SIZE="9">IMPLEMENTATION: '
+        f'{html.escape(component.implementation_state.value.upper())} &#183; COMPOSITION: '
+        f'{html.escape(component.composition_policy.value.upper())}</FONT></TD></TR>'
+        f'<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="{appearance["fontcolor"]}" '
+        f'POINT-SIZE="9">PROFILE: {html.escape(profile)} &#183; {order}</FONT></TD></TR>'
+        "</TABLE>>"
+    )
+
+
+def _tombstone_card_label(tombstone: Tombstone) -> str:
+    badge_html = _badge_html(
+        "HISTORICAL",
+        _DARK_THEME["badge_historical"],
+        _DARK_THEME["historical_border"],
+        _DARK_THEME["historical_text"],
+    )
+    return (
+        '<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">'
+        f'<TR><TD ALIGN="LEFT"><FONT COLOR="{_DARK_THEME["historical_text"]}" '
+        f'POINT-SIZE="12"><B>{html.escape(tombstone.label)}</B></FONT></TD>'
+        f'<TD ALIGN="RIGHT">{badge_html}</TD></TR><HR/>'
+        f'<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="{_DARK_THEME["muted_text"]}" '
+        f'POINT-SIZE="9">{html.escape(tombstone.id)}</FONT></TD></TR>'
+        f'<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT '
+        f'COLOR="{_DARK_THEME["historical_text"]}" POINT-SIZE="9">DISPOSITION: '
+        f'{html.escape(tombstone.disposition.value.upper())} &#183; FORMER KIND: '
+        f'{html.escape(tombstone.former_kind.upper())}</FONT></TD></TR>'
+        "</TABLE>>"
+    )
+
+
+def _component_node(component: Component, profile_id: str | None) -> Node:
+    attrs = {
+        **_node_appearance(component, profile_id),
+        "fixedsize": "false",
+        "group": component.boundary,
+        "height": "0.82",
+        "id": component.id,
+        "label": _component_card_label(component, profile_id),
+        "labelloc": "c",
+        "margin": "0.12,0.09",
+        "nodeid": component.id,
+        "tooltip": component.id,
+        "width": "2.7",
+    }
+    if component.kind.value == "data_store":
+        return Database(component.label, **attrs)
+    if component.kind.value == "operator":
+        return Person(component.label, external=True, **attrs)
+    if component.kind.value in {"provider", "projection"}:
+        return System(component.label, external=True, **attrs)
+    return Container(component.label, **attrs)
+
+
+def _tombstone_node(tombstone: Tombstone) -> Node:
+    return C4Node(
+        tombstone.label,
+        nodeid=tombstone.id,
+        id=tombstone.id,
+        label=_tombstone_card_label(tombstone),
+        shape="box",
+        style="dashed,filled",
+        fillcolor=_DARK_THEME["historical_fill"],
+        color=_DARK_THEME["historical_border"],
+        fontcolor=_DARK_THEME["historical_text"],
+        fixedsize="false",
+        group=tombstone.former_boundary,
+        height="0.82",
+        labelloc="c",
+        margin="0.12,0.09",
+        penwidth="1.5",
+        tooltip=tombstone.id,
+        width="2.7",
     )
 
 
@@ -320,43 +451,138 @@ def _edge_appearance(edge: Edge) -> dict[str, str]:
     return attrs
 
 
-def _edge_label(edge: Edge, manifest: ArchitectureManifest) -> str:
+def _edge_label(edge: Edge, manifest: ArchitectureManifest) -> tuple[str, str]:
     contract = next(item for item in manifest.contracts if item.id == edge.contract)
     requirement = "R" if edge.required else "O"
-    return f"{requirement}:{_EDGE_PREFIX[edge.category.value]}\n{contract.label}"
+    return f"{requirement} · {_EDGE_PREFIX[edge.category.value]}", contract.label
 
 
 def _diagram_edge(edge: Edge, manifest: ArchitectureManifest) -> DiagramEdge:
     attrs = _edge_appearance(edge)
-    label = _edge_label(edge, manifest)
-    if edge.category.value == "subscription_command":
-        label = label.splitlines()[0]
-        attrs.update(taillabel=label, labeldistance="4.0", labelangle="-35")
-        label = ""
-    elif edge.category.value == "callback":
-        label = label.splitlines()[0]
-        attrs.update(taillabel=label, labeldistance="4.0", labelangle="35")
-        label = ""
-    elif edge.contract == "contract.native-historical-request":
-        label = label.splitlines()[0]
-        attrs.update(headlabel=label, labeldistance="4.0", labelangle="-35")
-        label = ""
-    return DiagramEdge(label=label, forward=True, id=edge.id, **attrs)
+    identity, contract_label = _edge_label(edge, manifest)
+    attrs.update(
+        arrowhead="vee",
+        id=edge.id,
+        style=attrs.get("style", "solid"),
+        tooltip=edge.id,
+    )
+    return Relationship(
+        label=f"{identity} — {contract_label}",
+        forward=True,
+        **attrs,
+    )
+
+
+def _graph_header(manifest: ArchitectureManifest, selected: SelectedView) -> str:
+    view = selected.definition
+    statuses: dict[str, tuple[str, str, str]] = {}
+    for component in selected.components:
+        badge, fill = _component_badge(component, view.profile)
+        appearance = _node_appearance(component, view.profile)
+        statuses[badge] = (fill, appearance["color"], appearance["fontcolor"])
+    if selected.tombstones:
+        statuses["HISTORICAL"] = (
+            _DARK_THEME["badge_historical"],
+            _DARK_THEME["historical_border"],
+            _DARK_THEME["historical_text"],
+        )
+    status_order = ("ENABLED", "DISABLED", "EXTERNAL", "FUTURE", "HISTORICAL")
+    status_cells = "".join(
+        f'<TD>{_badge_html(label, *statuses[label])}</TD>'
+        for label in status_order
+        if label in statuses
+    )
+
+    edge_groups: list[tuple[str, str]] = []
+    categories = {edge.category.value for edge in selected.edges}
+    if categories - {
+        "failure",
+        "release",
+        "persistence",
+        "queue_admission",
+        "worker_result",
+        "projection",
+        "notification",
+    }:
+        edge_groups.append(("DATA · SOLID/DASHED", _DARK_THEME["data_edge_text"]))
+    if categories & {"persistence", "queue_admission", "worker_result"}:
+        edge_groups.append(("PERSIST · SOLID", _DARK_THEME["persistence_edge_text"]))
+    if categories & {"projection", "notification"}:
+        edge_groups.append(("PROJECT · DOTTED", _DARK_THEME["projection_edge_text"]))
+    if categories & {"failure", "release"}:
+        edge_groups.append(("FAILURE/RELEASE · DASHED", _DARK_THEME["failure_edge_text"]))
+    edge_cells = "".join(
+        f'<TD><FONT COLOR="{color}" POINT-SIZE="9"><B>{label}</B></FONT></TD>'
+        for label, color in edge_groups
+    )
+    legend = ""
+    if status_cells or edge_cells:
+        legend = (
+            '<TR><TD ALIGN="LEFT"><TABLE BORDER="0" CELLBORDER="0" CELLSPACING="8" '
+            f'CELLPADDING="0"><TR>{status_cells}{edge_cells}'
+            f'<TD><FONT COLOR="{_DARK_THEME["muted_text"]}" POINT-SIZE="9">'
+            "R = REQUIRED &#183; O = OPTIONAL</FONT></TD></TR></TABLE></TD></TR>"
+        )
+    profile = html.escape(view.profile or "not applicable")
+    return (
+        '<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2">'
+        f'<TR><TD ALIGN="LEFT"><FONT COLOR="{_DARK_THEME["canvas_text"]}" '
+        f'POINT-SIZE="20"><B>{html.escape(view.label)}</B></FONT></TD></TR>'
+        f'<TR><TD ALIGN="LEFT"><FONT COLOR="{_DARK_THEME["failure_edge_text"]}" '
+        'POINT-SIZE="11"><B>OFFLINE DOCUMENTATION &#8212; NO CURRENT ORDER SUBMISSION '
+        "OR EXECUTION</B></FONT></TD></TR>"
+        f'<TR><TD ALIGN="LEFT"><FONT COLOR="{_DARK_THEME["muted_text"]}" '
+        f'POINT-SIZE="10">PROFILE: {profile} &#183; REVIEW: '
+        f'{html.escape(manifest.header.review_status.value.upper())} &#183; MANIFEST SCHEMA: '
+        f'{manifest.header.schema_version} &#183; COMPONENTS: {len(selected.components)} &#183; '
+        f'CAPABILITIES: {len(selected.capabilities)} &#183; FLOWS: {len(selected.edges)}'
+        "</FONT></TD></TR>"
+        f'<TR><TD ALIGN="LEFT"><FONT COLOR="{_DARK_THEME["muted_text"]}" '
+        f'POINT-SIZE="9">CHECKOUT EVIDENCE: '
+        f'{html.escape(manifest.header.checkout_commit)}</FONT></TD></TR>'
+        f"{legend}</TABLE>>"
+    )
+
+
+def _boundary_appearance(boundary: Boundary, has_children: bool) -> dict[str, str]:
+    border_by_kind = {
+        "actor_runtime": _DARK_THEME["actor_border"],
+        "future_governed": _DARK_THEME["future_border"],
+        "nautilus_engine": _DARK_THEME["current_border"],
+        "persistence": _DARK_THEME["persistence_edge"],
+        "projection": _DARK_THEME["projection_edge"],
+        "provider": _DARK_THEME["external_border"],
+        "worker": _DARK_THEME["worker_border"],
+    }
+    border = border_by_kind.get(boundary.kind.value, _DARK_THEME["cluster_border"])
+    fill = "#0E1721" if has_children else _DARK_THEME["cluster_fill"]
+    label = (
+        f'<<FONT COLOR="{_DARK_THEME["cluster_text"]}" POINT-SIZE="11"><B>'
+        f'{html.escape(boundary.label.upper())}</B></FONT><BR ALIGN="LEFT"/>'
+        f'<FONT COLOR="{_DARK_THEME["muted_text"]}" POINT-SIZE="8">'
+        f'{html.escape(boundary.kind.value.upper())}</FONT>>'
+    )
+    return {
+        "bgcolor": fill,
+        "color": border,
+        "fontcolor": _DARK_THEME["cluster_text"],
+        "fontname": "Helvetica",
+        "fontsize": "11",
+        "id": boundary.id,
+        "label": label,
+        "margin": "20" if has_children else "14",
+        "pencolor": border,
+        "penwidth": "1.4" if has_children else "1.0",
+        "style": "rounded",
+    }
 
 
 def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
     view = selected.definition
     if view.routing is RoutingStyle.PENDING_APPROVAL:
         raise ManifestError("VIEW_ROUTING_UNAPPROVED", view.id, "view routing is not approved")
-    provenance_title = (
-        f"{view.label}\n"
-        "OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION\n"
-        f"PROFILE: {view.profile or 'not applicable'} — "
-        f"REVIEW: {manifest.header.review_status.value}\n"
-        f"CHECKOUT EVIDENCE: {manifest.header.checkout_commit}"
-    )
     diagram = Diagram(
-        provenance_title,
+        view.label,
         filename=view.id,
         direction=_DIRECTION[view.direction],
         outformat="dot",
@@ -367,10 +593,14 @@ def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
             "fontcolor": _DARK_THEME["canvas_text"],
             "fontname": "Helvetica",
             "fontsize": "18",
+            "forcelabels": "true",
+            "label": _graph_header(manifest, selected),
             "labeljust": "l",
             "labelloc": "t",
             "margin": "0.15",
             "nodesep": "0.45",
+            "outputorder": "edgesfirst",
+            "overlap": "false",
             "pack": "true",
             "packmode": (
                 f"array_u{view.grid_columns}" if view.pack_mode == "array" else "graph"
@@ -389,7 +619,7 @@ def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
             "width": "2.2",
         },
         edge_attr={
-            "arrowsize": "0.75",
+            "arrowsize": "0.8",
             "color": _DARK_THEME["data_edge"],
             "fontcolor": _DARK_THEME["data_edge_text"],
             "fontname": "Helvetica",
@@ -404,52 +634,39 @@ def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
     for tombstone in selected.tombstones:
         tombstones_by_boundary[tombstone.former_boundary].append(tombstone)
     boundaries = {boundary.id: boundary for boundary in selected.boundaries}
+    children_by_boundary: dict[str, list[str]] = defaultdict(list)
+    for boundary in selected.boundaries:
+        if boundary.parent in boundaries:
+            children_by_boundary[boundary.parent].append(boundary.id)
+    root_boundaries = sorted(
+        boundary.id
+        for boundary in selected.boundaries
+        if boundary.parent not in boundaries
+    )
     nodes: dict[str, Node] = {}
+
+    def render_boundary(boundary_id: str) -> None:
+        boundary = boundaries[boundary_id]
+        child_ids = sorted(children_by_boundary[boundary_id])
+        with SystemBoundary(
+            boundary.label,
+            **_boundary_appearance(boundary, bool(child_ids)),
+        ):
+            for component in sorted(
+                components_by_boundary[boundary_id], key=lambda item: item.id
+            ):
+                nodes[component.id] = _component_node(component, view.profile)
+            for tombstone in sorted(
+                tombstones_by_boundary[boundary_id], key=lambda item: item.id
+            ):
+                nodes[tombstone.id] = _tombstone_node(tombstone)
+            for child_id in child_ids:
+                render_boundary(child_id)
+
     setdiagram(diagram)
     try:
-        for boundary_id in sorted(set(components_by_boundary) | set(tombstones_by_boundary)):
-            boundary = boundaries[boundary_id]
-            parent_label = (
-                boundaries[boundary.parent].label if boundary.parent in boundaries else None
-            )
-            label = boundary.label if parent_label is None else f"{parent_label} / {boundary.label}"
-            with Cluster(
-                label,
-                graph_attr={
-                    "id": boundary.id,
-                    "bgcolor": _DARK_THEME["cluster_fill"],
-                    "color": _DARK_THEME["cluster_border"],
-                    "pencolor": _DARK_THEME["cluster_border"],
-                    "fontcolor": _DARK_THEME["cluster_text"],
-                    "fontname": "Helvetica",
-                    "fontsize": "11",
-                    "margin": "14",
-                    "style": "rounded",
-                },
-            ):
-                for component in sorted(
-                    components_by_boundary[boundary_id], key=lambda item: item.id
-                ):
-                    nodes[component.id] = Node(
-                        _node_label(component, view.profile),
-                        nodeid=component.id,
-                        id=component.id,
-                        **_node_appearance(component, view.profile),
-                    )
-                for tombstone in sorted(
-                    tombstones_by_boundary[boundary_id], key=lambda item: item.id
-                ):
-                    nodes[tombstone.id] = Node(
-                        _tombstone_label(tombstone),
-                        nodeid=tombstone.id,
-                        id=tombstone.id,
-                        shape="box",
-                        style="dashed,filled",
-                        fillcolor=_DARK_THEME["historical_fill"],
-                        color=_DARK_THEME["historical_border"],
-                        fontcolor=_DARK_THEME["historical_text"],
-                        penwidth="1.5",
-                    )
+        for boundary_id in root_boundaries:
+            render_boundary(boundary_id)
         if view.pack_mode == "array":
             boundary_ids = sorted(set(components_by_boundary) | set(tombstones_by_boundary))
             for boundary_id in boundary_ids:
@@ -607,6 +824,8 @@ def _markdown(manifest: ArchitectureManifest, selected: SelectedView) -> str:
             "color is supplementary.",
             "- The graphical DOT/SVG/PNG view uses the manifest-selected opaque dark theme; "
             "Markdown appearance follows the reviewer's viewer settings.",
+            "- Graphical cards, relationships, and nested boundaries use Diagrams C4 "
+            "primitives with escaped Graphviz-native labels and no external assets.",
             "- Dashed nodes are disabled, historical, rejected, or future, as stated "
             "in their text.",
             "- Edge labels state category, required/optional status, and carried contract.",
