@@ -92,6 +92,12 @@ DOT/index/hash changes. Future, disabled, external, and current states must rema
 without relying on color alone. No current view may admit disabled, removed, rejected, or future
 behavior.
 
+The generated DOT, SVG, and PNG views use the manifest-selected opaque dark theme. Markdown
+companions follow the reviewer's viewer theme and must not embed CSS or become a second visual
+authority. Any palette change must retain explicit status text and shape/line-style redundancy,
+pass the declared text and graphical contrast tests, regenerate all artifacts, and receive renewed
+visual review.
+
 The current source census mechanically checks the actor-registration roster and IDs, literal
 signal/custom-data identities in its closed source allowlist, named-profile schema/hash and
 supported Boolean enablement conditions, implementation symbols, LiveNode construction shape, and

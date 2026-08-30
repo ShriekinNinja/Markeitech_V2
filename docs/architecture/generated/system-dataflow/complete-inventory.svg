@@ -14,435 +14,435 @@ CHECKOUT EVIDENCE: c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce Pages: 1 -->
 OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION
 PROFILE: profile.v3&#45;es&#45;minimal — REVIEW: proposed
 CHECKOUT EVIDENCE: c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce</title>
-<polygon fill="#ffffff" stroke="none" points="-25.2,25.2 -25.2,-2265.36 1298.2,-2265.36 1298.2,25.2 -25.2,25.2"/>
-<text xml:space="preserve" text-anchor="middle" x="365.38" y="-2219.06" font-family="Helvetica,sans-Serif" font-size="18.00" fill="#2d3436">Complete Component and Capability Inventory</text>
-<text xml:space="preserve" text-anchor="middle" x="365.38" y="-2200.31" font-family="Helvetica,sans-Serif" font-size="18.00" fill="#2d3436">OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION</text>
-<text xml:space="preserve" text-anchor="middle" x="365.38" y="-2181.56" font-family="Helvetica,sans-Serif" font-size="18.00" fill="#2d3436">PROFILE: profile.v3&#45;es&#45;minimal — REVIEW: proposed</text>
-<text xml:space="preserve" text-anchor="middle" x="365.38" y="-2162.81" font-family="Helvetica,sans-Serif" font-size="18.00" fill="#2d3436">CHECKOUT EVIDENCE: c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce</text>
+<polygon fill="#0b1118" stroke="none" points="-25.2,25.2 -25.2,-2265.36 1298.2,-2265.36 1298.2,25.2 -25.2,25.2"/>
+<text xml:space="preserve" text-anchor="middle" x="365.38" y="-2219.06" font-family="Helvetica,sans-Serif" font-size="18.00" fill="#f2f6fa">Complete Component and Capability Inventory</text>
+<text xml:space="preserve" text-anchor="middle" x="365.38" y="-2200.31" font-family="Helvetica,sans-Serif" font-size="18.00" fill="#f2f6fa">OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION</text>
+<text xml:space="preserve" text-anchor="middle" x="365.38" y="-2181.56" font-family="Helvetica,sans-Serif" font-size="18.00" fill="#f2f6fa">PROFILE: profile.v3&#45;es&#45;minimal — REVIEW: proposed</text>
+<text xml:space="preserve" text-anchor="middle" x="365.38" y="-2162.81" font-family="Helvetica,sans-Serif" font-size="18.00" fill="#f2f6fa">CHECKOUT EVIDENCE: c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce</text>
 <g id="boundary.acquisition" class="cluster">
 <title>cluster_Markeitech V2 process / Data acquisition actors</title>
-<path fill="#f7fafc" stroke="#aeb6be" d="M386,-193C386,-193 605,-193 605,-193 611,-193 617,-199 617,-205 617,-205 617,-554.31 617,-554.31 617,-560.31 611,-566.31 605,-566.31 605,-566.31 386,-566.31 386,-566.31 380,-566.31 374,-560.31 374,-554.31 374,-554.31 374,-205 374,-205 374,-199 380,-193 386,-193"/>
-<text xml:space="preserve" text-anchor="middle" x="495.62" y="-551.86" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#304f60">Markeitech V2 process / Data acquisition actors</text>
+<path fill="#111a24" stroke="#566b7d" d="M386,-193C386,-193 605,-193 605,-193 611,-193 617,-199 617,-205 617,-205 617,-554.31 617,-554.31 617,-560.31 611,-566.31 605,-566.31 605,-566.31 386,-566.31 386,-566.31 380,-566.31 374,-560.31 374,-554.31 374,-554.31 374,-205 374,-205 374,-199 380,-193 386,-193"/>
+<text xml:space="preserve" text-anchor="middle" x="495.62" y="-551.86" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#d6e2ea">Markeitech V2 process / Data acquisition actors</text>
 </g>
 <g id="boundary.future" class="cluster">
 <title>cluster_Future governed advisory and controlled boundaries</title>
-<path fill="#f7fafc" stroke="#aeb6be" d="M335,-1349C335,-1349 655,-1349 655,-1349 661,-1349 667,-1355 667,-1361 667,-1361 667,-1937.19 667,-1937.19 667,-1943.19 661,-1949.19 655,-1949.19 655,-1949.19 335,-1949.19 335,-1949.19 329,-1949.19 323,-1943.19 323,-1937.19 323,-1937.19 323,-1361 323,-1361 323,-1355 329,-1349 335,-1349"/>
-<text xml:space="preserve" text-anchor="middle" x="455.5" y="-1934.74" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#304f60">Future governed advisory and controlled boundaries</text>
+<path fill="#111a24" stroke="#566b7d" d="M335,-1349C335,-1349 655,-1349 655,-1349 661,-1349 667,-1355 667,-1361 667,-1361 667,-1937.19 667,-1937.19 667,-1943.19 661,-1949.19 655,-1949.19 655,-1949.19 335,-1949.19 335,-1949.19 329,-1949.19 323,-1943.19 323,-1937.19 323,-1937.19 323,-1361 323,-1361 323,-1355 329,-1349 335,-1349"/>
+<text xml:space="preserve" text-anchor="middle" x="455.5" y="-1934.74" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#d6e2ea">Future governed advisory and controlled boundaries</text>
 </g>
 <g id="boundary.historical" class="cluster">
 <title>cluster_Historical removed and rejected runtime identities</title>
-<path fill="#f7fafc" stroke="#aeb6be" d="M687,-1529C687,-1529 915,-1529 915,-1529 921,-1529 927,-1535 927,-1541 927,-1541 927,-1755.6 927,-1755.6 927,-1761.6 921,-1767.6 915,-1767.6 915,-1767.6 687,-1767.6 687,-1767.6 681,-1767.6 675,-1761.6 675,-1755.6 675,-1755.6 675,-1541 675,-1541 675,-1535 681,-1529 687,-1529"/>
-<text xml:space="preserve" text-anchor="middle" x="800.75" y="-1753.15" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#304f60">Historical removed and rejected runtime identities</text>
+<path fill="#111a24" stroke="#566b7d" d="M687,-1529C687,-1529 915,-1529 915,-1529 921,-1529 927,-1535 927,-1541 927,-1541 927,-1755.6 927,-1755.6 927,-1761.6 921,-1767.6 915,-1767.6 915,-1767.6 687,-1767.6 687,-1767.6 681,-1767.6 675,-1761.6 675,-1755.6 675,-1755.6 675,-1541 675,-1541 675,-1535 681,-1529 687,-1529"/>
+<text xml:space="preserve" text-anchor="middle" x="800.75" y="-1753.15" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#d6e2ea">Historical removed and rejected runtime identities</text>
 </g>
 <g id="boundary.intelligence" class="cluster">
 <title>cluster_Markeitech V2 process / Processing, metrics, intelligence, and state</title>
-<path fill="#f7fafc" stroke="#aeb6be" d="M947,-1140C947,-1140 1261,-1140 1261,-1140 1267,-1140 1273,-1146 1273,-1152 1273,-1152 1273,-2145.16 1273,-2145.16 1273,-2151.16 1267,-2157.16 1261,-2157.16 1261,-2157.16 947,-2157.16 947,-2157.16 941,-2157.16 935,-2151.16 935,-2145.16 935,-2145.16 935,-1152 935,-1152 935,-1146 941,-1140 947,-1140"/>
-<text xml:space="preserve" text-anchor="middle" x="1103.88" y="-2142.71" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#304f60">Markeitech V2 process / Processing, metrics, intelligence, and state</text>
+<path fill="#111a24" stroke="#566b7d" d="M947,-1140C947,-1140 1261,-1140 1261,-1140 1267,-1140 1273,-1146 1273,-1152 1273,-1152 1273,-2145.16 1273,-2145.16 1273,-2151.16 1267,-2157.16 1261,-2157.16 1261,-2157.16 947,-2157.16 947,-2157.16 941,-2157.16 935,-2151.16 935,-2145.16 935,-2145.16 935,-1152 935,-1152 935,-1146 941,-1140 947,-1140"/>
+<text xml:space="preserve" text-anchor="middle" x="1103.88" y="-2142.71" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#d6e2ea">Markeitech V2 process / Processing, metrics, intelligence, and state</text>
 </g>
 <g id="boundary.nautilus" class="cluster">
 <title>cluster_Markeitech V2 process / Nautilus LiveNode and native engines</title>
-<path fill="#f7fafc" stroke="#aeb6be" d="M12,-768C12,-768 303,-768 303,-768 309,-768 315,-774 315,-780 315,-780 315,-1120.4 315,-1120.4 315,-1126.4 309,-1132.4 303,-1132.4 303,-1132.4 12,-1132.4 12,-1132.4 6,-1132.4 0,-1126.4 0,-1120.4 0,-1120.4 0,-780 0,-780 0,-774 6,-768 12,-768"/>
-<text xml:space="preserve" text-anchor="middle" x="157.62" y="-1117.95" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#304f60">Markeitech V2 process / Nautilus LiveNode and native engines</text>
+<path fill="#111a24" stroke="#566b7d" d="M12,-768C12,-768 303,-768 303,-768 309,-768 315,-774 315,-780 315,-780 315,-1120.4 315,-1120.4 315,-1126.4 309,-1132.4 303,-1132.4 303,-1132.4 12,-1132.4 12,-1132.4 6,-1132.4 0,-1126.4 0,-1120.4 0,-1120.4 0,-780 0,-780 0,-774 6,-768 12,-768"/>
+<text xml:space="preserve" text-anchor="middle" x="157.62" y="-1117.95" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#d6e2ea">Markeitech V2 process / Nautilus LiveNode and native engines</text>
 </g>
 <g id="boundary.persistence" class="cluster">
 <title>cluster_Operational persistence</title>
-<path fill="#f7fafc" stroke="#aeb6be" d="M396,-893C396,-893 594,-893 594,-893 600,-893 606,-899 606,-905 606,-905 606,-993.8 606,-993.8 606,-999.8 600,-1005.8 594,-1005.8 594,-1005.8 396,-1005.8 396,-1005.8 390,-1005.8 384,-999.8 384,-993.8 384,-993.8 384,-905 384,-905 384,-899 390,-893 396,-893"/>
-<text xml:space="preserve" text-anchor="middle" x="448.62" y="-991.35" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#304f60">Operational persistence</text>
+<path fill="#111a24" stroke="#566b7d" d="M396,-893C396,-893 594,-893 594,-893 600,-893 606,-899 606,-905 606,-905 606,-993.8 606,-993.8 606,-999.8 600,-1005.8 594,-1005.8 594,-1005.8 396,-1005.8 396,-1005.8 390,-1005.8 384,-999.8 384,-993.8 384,-993.8 384,-905 384,-905 384,-899 390,-893 396,-893"/>
+<text xml:space="preserve" text-anchor="middle" x="448.62" y="-991.35" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#d6e2ea">Operational persistence</text>
 </g>
 <g id="boundary.projections" class="cluster">
 <title>cluster_External projections and operator</title>
-<path fill="#f7fafc" stroke="#aeb6be" d="M702,-768C702,-768 900,-768 900,-768 906,-768 912,-774 912,-780 912,-780 912,-1120.4 912,-1120.4 912,-1126.4 906,-1132.4 900,-1132.4 900,-1132.4 702,-1132.4 702,-1132.4 696,-1132.4 690,-1126.4 690,-1120.4 690,-1120.4 690,-780 690,-780 690,-774 696,-768 702,-768"/>
-<text xml:space="preserve" text-anchor="middle" x="777.5" y="-1117.95" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#304f60">External projections and operator</text>
+<path fill="#111a24" stroke="#566b7d" d="M702,-768C702,-768 900,-768 900,-768 906,-768 912,-774 912,-780 912,-780 912,-1120.4 912,-1120.4 912,-1126.4 906,-1132.4 900,-1132.4 900,-1132.4 702,-1132.4 702,-1132.4 696,-1132.4 690,-1126.4 690,-1120.4 690,-1120.4 690,-780 690,-780 690,-774 696,-768 702,-768"/>
+<text xml:space="preserve" text-anchor="middle" x="777.5" y="-1117.95" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#d6e2ea">External projections and operator</text>
 </g>
 <g id="boundary.providers" class="cluster">
 <title>cluster_External providers</title>
-<path fill="#f7fafc" stroke="#aeb6be" d="M1005,-893C1005,-893 1203,-893 1203,-893 1209,-893 1215,-899 1215,-905 1215,-905 1215,-993.8 1215,-993.8 1215,-999.8 1209,-1005.8 1203,-1005.8 1203,-1005.8 1005,-1005.8 1005,-1005.8 999,-1005.8 993,-999.8 993,-993.8 993,-993.8 993,-905 993,-905 993,-899 999,-893 1005,-893"/>
-<text xml:space="preserve" text-anchor="middle" x="1044.5" y="-991.35" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#304f60">External providers</text>
+<path fill="#111a24" stroke="#566b7d" d="M1005,-893C1005,-893 1203,-893 1203,-893 1209,-893 1215,-899 1215,-905 1215,-905 1215,-993.8 1215,-993.8 1215,-999.8 1209,-1005.8 1203,-1005.8 1203,-1005.8 1005,-1005.8 1005,-1005.8 999,-1005.8 993,-999.8 993,-993.8 993,-993.8 993,-905 993,-905 993,-899 999,-893 1005,-893"/>
+<text xml:space="preserve" text-anchor="middle" x="1044.5" y="-991.35" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#d6e2ea">External providers</text>
 </g>
 <g id="boundary.system" class="cluster">
 <title>cluster_Markeitech V2 process / System and infrastructure actors</title>
-<path fill="#f7fafc" stroke="#aeb6be" d="M25,0C25,0 291,0 291,0 297,0 303,-6 303,-12 303,-12 303,-747.62 303,-747.62 303,-753.62 297,-759.62 291,-759.62 291,-759.62 25,-759.62 25,-759.62 19,-759.62 13,-753.62 13,-747.62 13,-747.62 13,-12 13,-12 13,-6 19,0 25,0"/>
-<text xml:space="preserve" text-anchor="middle" x="157.88" y="-745.17" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#304f60">Markeitech V2 process / System and infrastructure actors</text>
+<path fill="#111a24" stroke="#566b7d" d="M25,0C25,0 291,0 291,0 297,0 303,-6 303,-12 303,-12 303,-747.62 303,-747.62 303,-753.62 297,-759.62 291,-759.62 291,-759.62 25,-759.62 25,-759.62 19,-759.62 13,-753.62 13,-747.62 13,-747.62 13,-12 13,-12 13,-6 19,0 25,0"/>
+<text xml:space="preserve" text-anchor="middle" x="157.88" y="-745.17" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#d6e2ea">Markeitech V2 process / System and infrastructure actors</text>
 </g>
 <g id="boundary.workers" class="cluster">
 <title>cluster_Markeitech V2 process / In&#45;process workers and queues</title>
-<path fill="#f7fafc" stroke="#aeb6be" d="M27,-1404C27,-1404 288,-1404 288,-1404 294,-1404 300,-1410 300,-1416 300,-1416 300,-1882.2 300,-1882.2 300,-1888.2 294,-1894.2 288,-1894.2 288,-1894.2 27,-1894.2 27,-1894.2 21,-1894.2 15,-1888.2 15,-1882.2 15,-1882.2 15,-1416 15,-1416 15,-1410 21,-1404 27,-1404"/>
-<text xml:space="preserve" text-anchor="middle" x="157.62" y="-1879.75" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#304f60">Markeitech V2 process / In&#45;process workers and queues</text>
+<path fill="#111a24" stroke="#566b7d" d="M27,-1404C27,-1404 288,-1404 288,-1404 294,-1404 300,-1410 300,-1416 300,-1416 300,-1882.2 300,-1882.2 300,-1888.2 294,-1894.2 288,-1894.2 288,-1894.2 27,-1894.2 27,-1894.2 21,-1894.2 15,-1888.2 15,-1882.2 15,-1882.2 15,-1416 15,-1416 15,-1410 21,-1404 27,-1404"/>
+<text xml:space="preserve" text-anchor="middle" x="157.62" y="-1879.75" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#d6e2ea">Markeitech V2 process / In&#45;process workers and queues</text>
 </g>
 <!-- actor.data&#45;acquisition -->
 <g id="actor.data&#45;acquisition" class="node">
 <title>actor.data&#45;acquisition</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M562.2,-532.31C562.2,-532.31 427.8,-532.31 427.8,-532.31 421.8,-532.31 415.8,-526.31 415.8,-520.31 415.8,-520.31 415.8,-476.54 415.8,-476.54 415.8,-470.54 421.8,-464.54 427.8,-464.54 427.8,-464.54 562.2,-464.54 562.2,-464.54 568.2,-464.54 574.2,-470.54 574.2,-476.54 574.2,-476.54 574.2,-520.31 574.2,-520.31 574.2,-526.31 568.2,-532.31 562.2,-532.31"/>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-511.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Data Acquisition</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-500.04" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.data&#45;acquisition]</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-488.79" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | ALWAYS</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-477.54" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-466.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 12</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M562.2,-532.31C562.2,-532.31 427.8,-532.31 427.8,-532.31 421.8,-532.31 415.8,-526.31 415.8,-520.31 415.8,-520.31 415.8,-476.54 415.8,-476.54 415.8,-470.54 421.8,-464.54 427.8,-464.54 427.8,-464.54 562.2,-464.54 562.2,-464.54 568.2,-464.54 574.2,-470.54 574.2,-476.54 574.2,-476.54 574.2,-520.31 574.2,-520.31 574.2,-526.31 568.2,-532.31 562.2,-532.31"/>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-511.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Data Acquisition</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-500.04" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[actor.data&#45;acquisition]</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-488.79" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | ALWAYS</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-477.54" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-466.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">COMPOSITION ORDER: 12</text>
 </g>
 <!-- actor.historical&#45;probe -->
 <g id="actor.historical&#45;probe" class="node">
 <title>actor.historical&#45;probe</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M566.64,-403.54C566.64,-403.54 423.36,-403.54 423.36,-403.54 417.36,-403.54 411.36,-397.54 411.36,-391.54 411.36,-391.54 411.36,-347.77 411.36,-347.77 411.36,-341.77 417.36,-335.77 423.36,-335.77 423.36,-335.77 566.64,-335.77 566.64,-335.77 572.64,-335.77 578.64,-341.77 578.64,-347.77 578.64,-347.77 578.64,-391.54 578.64,-391.54 578.64,-397.54 572.64,-403.54 566.64,-403.54"/>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-382.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Historical Dependency Probe</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-371.27" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.historical&#45;probe]</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-360.02" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-348.77" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-337.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 13</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M566.64,-403.54C566.64,-403.54 423.36,-403.54 423.36,-403.54 417.36,-403.54 411.36,-397.54 411.36,-391.54 411.36,-391.54 411.36,-347.77 411.36,-347.77 411.36,-341.77 417.36,-335.77 423.36,-335.77 423.36,-335.77 566.64,-335.77 566.64,-335.77 572.64,-335.77 578.64,-341.77 578.64,-347.77 578.64,-347.77 578.64,-391.54 578.64,-391.54 578.64,-397.54 572.64,-403.54 566.64,-403.54"/>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-382.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Historical Dependency Probe</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-371.27" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[actor.historical&#45;probe]</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-360.02" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-348.77" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-337.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">COMPOSITION ORDER: 13</text>
 </g>
 <!-- actor.data&#45;acquisition&#45;&gt;actor.historical&#45;probe -->
 <!-- actor.watchlist -->
 <g id="actor.watchlist" class="node">
 <title>actor.watchlist</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M562.2,-274.77C562.2,-274.77 427.8,-274.77 427.8,-274.77 421.8,-274.77 415.8,-268.77 415.8,-262.77 415.8,-262.77 415.8,-219 415.8,-219 415.8,-213 421.8,-207 427.8,-207 427.8,-207 562.2,-207 562.2,-207 568.2,-207 574.2,-213 574.2,-219 574.2,-219 574.2,-262.77 574.2,-262.77 574.2,-268.77 568.2,-274.77 562.2,-274.77"/>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-253.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Watchlist</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-242.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.watchlist]</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-231.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | ALWAYS</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-220" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-208.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 11</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M562.2,-274.77C562.2,-274.77 427.8,-274.77 427.8,-274.77 421.8,-274.77 415.8,-268.77 415.8,-262.77 415.8,-262.77 415.8,-219 415.8,-219 415.8,-213 421.8,-207 427.8,-207 427.8,-207 562.2,-207 562.2,-207 568.2,-207 574.2,-213 574.2,-219 574.2,-219 574.2,-262.77 574.2,-262.77 574.2,-268.77 568.2,-274.77 562.2,-274.77"/>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-253.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Watchlist</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-242.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[actor.watchlist]</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-231.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | ALWAYS</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-220" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-208.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">COMPOSITION ORDER: 11</text>
 </g>
 <!-- actor.historical&#45;probe&#45;&gt;actor.watchlist -->
 <!-- future.controlled&#45;execution -->
 <g id="future.controlled&#45;execution" class="node">
 <title>future.controlled&#45;execution</title>
-<polygon fill="#f6f0ff" stroke="#6d4aa2" stroke-width="1.5" stroke-dasharray="5,2" points="653.02,-1869.04 574.01,-1915.19 415.99,-1915.19 336.98,-1869.04 415.99,-1822.89 574.01,-1822.89 653.02,-1869.04"/>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1876.28" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Future Controlled Execution Boundary</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1865.03" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[future.controlled&#45;execution]</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1853.78" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">FUTURE | NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1842.53" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#261c35" stroke="#c49afa" stroke-width="1.5" stroke-dasharray="5,2" points="653.02,-1869.04 574.01,-1915.19 415.99,-1915.19 336.98,-1869.04 415.99,-1822.89 574.01,-1822.89 653.02,-1869.04"/>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1876.28" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Future Controlled Execution Boundary</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1865.03" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[future.controlled&#45;execution]</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1853.78" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">FUTURE | NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1842.53" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- future.opportunities -->
 <g id="future.opportunities" class="node">
 <title>future.opportunities</title>
-<polygon fill="#f6f0ff" stroke="#6d4aa2" stroke-width="1.5" stroke-dasharray="5,2" points="653.02,-1715.74 574.01,-1761.89 415.99,-1761.89 336.98,-1715.74 415.99,-1669.59 574.01,-1669.59 653.02,-1715.74"/>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1722.98" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Plural Opportunities</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1711.73" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[future.opportunities]</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1700.48" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">FUTURE | NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1689.23" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#261c35" stroke="#c49afa" stroke-width="1.5" stroke-dasharray="5,2" points="653.02,-1715.74 574.01,-1761.89 415.99,-1761.89 336.98,-1715.74 415.99,-1669.59 574.01,-1669.59 653.02,-1715.74"/>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1722.98" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Plural Opportunities</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1711.73" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[future.opportunities]</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1700.48" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">FUTURE | NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1689.23" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- future.controlled&#45;execution&#45;&gt;future.opportunities -->
 <!-- future.semantic&#45;events -->
 <g id="future.semantic&#45;events" class="node">
 <title>future.semantic&#45;events</title>
-<polygon fill="#f6f0ff" stroke="#6d4aa2" stroke-width="1.5" stroke-dasharray="5,2" points="653.02,-1562.45 574.01,-1608.59 415.99,-1608.59 336.98,-1562.45 415.99,-1516.3 574.01,-1516.3 653.02,-1562.45"/>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1569.69" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Semantic Events</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1558.44" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[future.semantic&#45;events]</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1547.19" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">FUTURE | NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1535.94" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#261c35" stroke="#c49afa" stroke-width="1.5" stroke-dasharray="5,2" points="653.02,-1562.45 574.01,-1608.59 415.99,-1608.59 336.98,-1562.45 415.99,-1516.3 574.01,-1516.3 653.02,-1562.45"/>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1569.69" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Semantic Events</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1558.44" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[future.semantic&#45;events]</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1547.19" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">FUTURE | NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1535.94" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- future.opportunities&#45;&gt;future.semantic&#45;events -->
 <!-- future.sir&#45;loke -->
 <g id="future.sir&#45;loke" class="node">
 <title>future.sir&#45;loke</title>
-<polygon fill="#f6f0ff" stroke="#6d4aa2" stroke-width="1.5" stroke-dasharray="5,2" points="653.02,-1409.15 574.01,-1455.3 415.99,-1455.3 336.98,-1409.15 415.99,-1363 574.01,-1363 653.02,-1409.15"/>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1416.39" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Sir Loke Advisory Agent</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1405.14" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[future.sir&#45;loke]</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1393.89" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">FUTURE | NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-1382.64" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#261c35" stroke="#c49afa" stroke-width="1.5" stroke-dasharray="5,2" points="653.02,-1409.15 574.01,-1455.3 415.99,-1455.3 336.98,-1409.15 415.99,-1363 574.01,-1363 653.02,-1409.15"/>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1416.39" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Sir Loke Advisory Agent</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1405.14" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[future.sir&#45;loke]</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1393.89" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">FUTURE | NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-1382.64" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- future.semantic&#45;events&#45;&gt;future.sir&#45;loke -->
 <!-- tombstone.live&#45;evidence&#45;review&#45;actor -->
 <g id="tombstone.live&#45;evidence&#45;review&#45;actor" class="node">
 <title>tombstone.live&#45;evidence&#45;review&#45;actor</title>
-<polygon fill="#f2f2f2" stroke="#6b6b6b" stroke-width="1.5" stroke-dasharray="5,2" points="897.76,-1733.6 704.24,-1733.6 704.24,-1668.8 897.76,-1668.8 897.76,-1733.6"/>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1704.3" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#303030">Live Evidence Review Actor</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1693.05" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#303030">[tombstone.live&#45;evidence&#45;review&#45;actor]</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1681.8" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#303030">REJECTED | HISTORICAL</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1670.55" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#303030">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#24272b" stroke="#a9b0b7" stroke-width="1.5" stroke-dasharray="5,2" points="897.76,-1733.6 704.24,-1733.6 704.24,-1668.8 897.76,-1668.8 897.76,-1733.6"/>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1704.3" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#e8eaed">Live Evidence Review Actor</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1693.05" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#e8eaed">[tombstone.live&#45;evidence&#45;review&#45;actor]</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1681.8" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#e8eaed">REJECTED | HISTORICAL</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1670.55" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#e8eaed">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- tombstone.visual&#45;acceptance&#45;actor -->
 <g id="tombstone.visual&#45;acceptance&#45;actor" class="node">
 <title>tombstone.visual&#45;acceptance&#45;actor</title>
-<polygon fill="#f2f2f2" stroke="#6b6b6b" stroke-width="1.5" stroke-dasharray="5,2" points="897.76,-1607.8 704.24,-1607.8 704.24,-1543 897.76,-1543 897.76,-1607.8"/>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1578.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#303030">Visual Acceptance Actor</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1567.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#303030">[tombstone.visual&#45;acceptance&#45;actor]</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1556" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#303030">REJECTED | HISTORICAL</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1544.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#303030">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#24272b" stroke="#a9b0b7" stroke-width="1.5" stroke-dasharray="5,2" points="897.76,-1607.8 704.24,-1607.8 704.24,-1543 897.76,-1543 897.76,-1607.8"/>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1578.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#e8eaed">Visual Acceptance Actor</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1567.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#e8eaed">[tombstone.visual&#45;acceptance&#45;actor]</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1556" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#e8eaed">REJECTED | HISTORICAL</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1544.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#e8eaed">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- tombstone.live&#45;evidence&#45;review&#45;actor&#45;&gt;tombstone.visual&#45;acceptance&#45;actor -->
 <!-- actor.evidence&#45;health -->
 <g id="actor.evidence&#45;health" class="node">
 <title>actor.evidence&#45;health</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M1171.2,-2123.16C1171.2,-2123.16 1036.8,-2123.16 1036.8,-2123.16 1030.8,-2123.16 1024.8,-2117.16 1024.8,-2111.16 1024.8,-2111.16 1024.8,-2067.39 1024.8,-2067.39 1024.8,-2061.39 1030.8,-2055.39 1036.8,-2055.39 1036.8,-2055.39 1171.2,-2055.39 1171.2,-2055.39 1177.2,-2055.39 1183.2,-2061.39 1183.2,-2067.39 1183.2,-2067.39 1183.2,-2111.16 1183.2,-2111.16 1183.2,-2117.16 1177.2,-2123.16 1171.2,-2123.16"/>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-2102.14" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Evidence Health</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-2090.89" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.evidence&#45;health]</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-2079.64" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | ALWAYS</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-2068.39" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-2057.14" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 3</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M1171.2,-2123.16C1171.2,-2123.16 1036.8,-2123.16 1036.8,-2123.16 1030.8,-2123.16 1024.8,-2117.16 1024.8,-2111.16 1024.8,-2111.16 1024.8,-2067.39 1024.8,-2067.39 1024.8,-2061.39 1030.8,-2055.39 1036.8,-2055.39 1036.8,-2055.39 1171.2,-2055.39 1171.2,-2055.39 1177.2,-2055.39 1183.2,-2061.39 1183.2,-2067.39 1183.2,-2067.39 1183.2,-2111.16 1183.2,-2111.16 1183.2,-2117.16 1177.2,-2123.16 1171.2,-2123.16"/>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-2102.14" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Evidence Health</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-2090.89" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[actor.evidence&#45;health]</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-2079.64" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | ALWAYS</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-2068.39" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-2057.14" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">COMPOSITION ORDER: 3</text>
 </g>
 <!-- actor.market&#45;state&#45;entities -->
 <g id="actor.market&#45;state&#45;entities" class="node">
 <title>actor.market&#45;state&#45;entities</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M1175.64,-1994.39C1175.64,-1994.39 1032.36,-1994.39 1032.36,-1994.39 1026.36,-1994.39 1020.36,-1988.39 1020.36,-1982.39 1020.36,-1982.39 1020.36,-1938.62 1020.36,-1938.62 1020.36,-1932.62 1026.36,-1926.62 1032.36,-1926.62 1032.36,-1926.62 1175.64,-1926.62 1175.64,-1926.62 1181.64,-1926.62 1187.64,-1932.62 1187.64,-1938.62 1187.64,-1938.62 1187.64,-1982.39 1187.64,-1982.39 1187.64,-1988.39 1181.64,-1994.39 1175.64,-1994.39"/>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1973.37" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Market State Entities</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1962.12" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.market&#45;state&#45;entities]</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1950.87" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1939.62" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1928.37" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 9</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M1175.64,-1994.39C1175.64,-1994.39 1032.36,-1994.39 1032.36,-1994.39 1026.36,-1994.39 1020.36,-1988.39 1020.36,-1982.39 1020.36,-1982.39 1020.36,-1938.62 1020.36,-1938.62 1020.36,-1932.62 1026.36,-1926.62 1032.36,-1926.62 1032.36,-1926.62 1175.64,-1926.62 1175.64,-1926.62 1181.64,-1926.62 1187.64,-1932.62 1187.64,-1938.62 1187.64,-1938.62 1187.64,-1982.39 1187.64,-1982.39 1187.64,-1988.39 1181.64,-1994.39 1175.64,-1994.39"/>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1973.37" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Market State Entities</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1962.12" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[actor.market&#45;state&#45;entities]</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1950.87" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1939.62" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1928.37" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">COMPOSITION ORDER: 9</text>
 </g>
 <!-- actor.evidence&#45;health&#45;&gt;actor.market&#45;state&#45;entities -->
 <!-- actor.market&#45;structure&#45;entities -->
 <g id="actor.market&#45;structure&#45;entities" class="node">
 <title>actor.market&#45;structure&#45;entities</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M1175.64,-1865.62C1175.64,-1865.62 1032.36,-1865.62 1032.36,-1865.62 1026.36,-1865.62 1020.36,-1859.62 1020.36,-1853.62 1020.36,-1853.62 1020.36,-1809.85 1020.36,-1809.85 1020.36,-1803.85 1026.36,-1797.85 1032.36,-1797.85 1032.36,-1797.85 1175.64,-1797.85 1175.64,-1797.85 1181.64,-1797.85 1187.64,-1803.85 1187.64,-1809.85 1187.64,-1809.85 1187.64,-1853.62 1187.64,-1853.62 1187.64,-1859.62 1181.64,-1865.62 1175.64,-1865.62"/>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1844.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Market Structure Entities</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1833.35" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.market&#45;structure&#45;entities]</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1822.1" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1810.85" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1799.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 10</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M1175.64,-1865.62C1175.64,-1865.62 1032.36,-1865.62 1032.36,-1865.62 1026.36,-1865.62 1020.36,-1859.62 1020.36,-1853.62 1020.36,-1853.62 1020.36,-1809.85 1020.36,-1809.85 1020.36,-1803.85 1026.36,-1797.85 1032.36,-1797.85 1032.36,-1797.85 1175.64,-1797.85 1175.64,-1797.85 1181.64,-1797.85 1187.64,-1803.85 1187.64,-1809.85 1187.64,-1809.85 1187.64,-1853.62 1187.64,-1853.62 1187.64,-1859.62 1181.64,-1865.62 1175.64,-1865.62"/>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1844.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Market Structure Entities</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1833.35" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[actor.market&#45;structure&#45;entities]</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1822.1" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1810.85" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1799.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">COMPOSITION ORDER: 10</text>
 </g>
 <!-- actor.market&#45;state&#45;entities&#45;&gt;actor.market&#45;structure&#45;entities -->
 <!-- actor.quote&#45;quality -->
 <g id="actor.quote&#45;quality" class="node">
 <title>actor.quote&#45;quality</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M1175.64,-1736.85C1175.64,-1736.85 1032.36,-1736.85 1032.36,-1736.85 1026.36,-1736.85 1020.36,-1730.85 1020.36,-1724.85 1020.36,-1724.85 1020.36,-1681.08 1020.36,-1681.08 1020.36,-1675.08 1026.36,-1669.08 1032.36,-1669.08 1032.36,-1669.08 1175.64,-1669.08 1175.64,-1669.08 1181.64,-1669.08 1187.64,-1675.08 1187.64,-1681.08 1187.64,-1681.08 1187.64,-1724.85 1187.64,-1724.85 1187.64,-1730.85 1181.64,-1736.85 1175.64,-1736.85"/>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1715.83" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Quote Quality Metrics</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1704.58" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.quote&#45;quality]</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1693.33" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1682.08" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1670.83" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 6</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M1175.64,-1736.85C1175.64,-1736.85 1032.36,-1736.85 1032.36,-1736.85 1026.36,-1736.85 1020.36,-1730.85 1020.36,-1724.85 1020.36,-1724.85 1020.36,-1681.08 1020.36,-1681.08 1020.36,-1675.08 1026.36,-1669.08 1032.36,-1669.08 1032.36,-1669.08 1175.64,-1669.08 1175.64,-1669.08 1181.64,-1669.08 1187.64,-1675.08 1187.64,-1681.08 1187.64,-1681.08 1187.64,-1724.85 1187.64,-1724.85 1187.64,-1730.85 1181.64,-1736.85 1175.64,-1736.85"/>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1715.83" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Quote Quality Metrics</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1704.58" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[actor.quote&#45;quality]</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1693.33" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1682.08" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1670.83" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">COMPOSITION ORDER: 6</text>
 </g>
 <!-- actor.market&#45;structure&#45;entities&#45;&gt;actor.quote&#45;quality -->
 <!-- actor.session&#45;metrics -->
 <g id="actor.session&#45;metrics" class="node">
 <title>actor.session&#45;metrics</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M1175.64,-1608.08C1175.64,-1608.08 1032.36,-1608.08 1032.36,-1608.08 1026.36,-1608.08 1020.36,-1602.08 1020.36,-1596.08 1020.36,-1596.08 1020.36,-1552.31 1020.36,-1552.31 1020.36,-1546.31 1026.36,-1540.31 1032.36,-1540.31 1032.36,-1540.31 1175.64,-1540.31 1175.64,-1540.31 1181.64,-1540.31 1187.64,-1546.31 1187.64,-1552.31 1187.64,-1552.31 1187.64,-1596.08 1187.64,-1596.08 1187.64,-1602.08 1181.64,-1608.08 1175.64,-1608.08"/>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1587.06" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Session Metrics</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1575.81" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.session&#45;metrics]</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1564.56" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1553.31" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1542.06" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 7</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M1175.64,-1608.08C1175.64,-1608.08 1032.36,-1608.08 1032.36,-1608.08 1026.36,-1608.08 1020.36,-1602.08 1020.36,-1596.08 1020.36,-1596.08 1020.36,-1552.31 1020.36,-1552.31 1020.36,-1546.31 1026.36,-1540.31 1032.36,-1540.31 1032.36,-1540.31 1175.64,-1540.31 1175.64,-1540.31 1181.64,-1540.31 1187.64,-1546.31 1187.64,-1552.31 1187.64,-1552.31 1187.64,-1596.08 1187.64,-1596.08 1187.64,-1602.08 1181.64,-1608.08 1175.64,-1608.08"/>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1587.06" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Session Metrics</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1575.81" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[actor.session&#45;metrics]</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1564.56" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1553.31" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1542.06" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">COMPOSITION ORDER: 7</text>
 </g>
 <!-- actor.quote&#45;quality&#45;&gt;actor.session&#45;metrics -->
 <!-- actor.session&#45;reference&#45;entities -->
 <g id="actor.session&#45;reference&#45;entities" class="node">
 <title>actor.session&#45;reference&#45;entities</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M1175.64,-1479.31C1175.64,-1479.31 1032.36,-1479.31 1032.36,-1479.31 1026.36,-1479.31 1020.36,-1473.31 1020.36,-1467.31 1020.36,-1467.31 1020.36,-1423.54 1020.36,-1423.54 1020.36,-1417.54 1026.36,-1411.54 1032.36,-1411.54 1032.36,-1411.54 1175.64,-1411.54 1175.64,-1411.54 1181.64,-1411.54 1187.64,-1417.54 1187.64,-1423.54 1187.64,-1423.54 1187.64,-1467.31 1187.64,-1467.31 1187.64,-1473.31 1181.64,-1479.31 1175.64,-1479.31"/>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1458.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Session Reference Entities</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1447.04" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.session&#45;reference&#45;entities]</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1435.79" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1424.54" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1413.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 8</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M1175.64,-1479.31C1175.64,-1479.31 1032.36,-1479.31 1032.36,-1479.31 1026.36,-1479.31 1020.36,-1473.31 1020.36,-1467.31 1020.36,-1467.31 1020.36,-1423.54 1020.36,-1423.54 1020.36,-1417.54 1026.36,-1411.54 1032.36,-1411.54 1032.36,-1411.54 1175.64,-1411.54 1175.64,-1411.54 1181.64,-1411.54 1187.64,-1417.54 1187.64,-1423.54 1187.64,-1423.54 1187.64,-1467.31 1187.64,-1467.31 1187.64,-1473.31 1181.64,-1479.31 1175.64,-1479.31"/>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1458.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Session Reference Entities</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1447.04" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[actor.session&#45;reference&#45;entities]</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1435.79" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1424.54" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1413.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">COMPOSITION ORDER: 8</text>
 </g>
 <!-- actor.session&#45;metrics&#45;&gt;actor.session&#45;reference&#45;entities -->
 <!-- actor.session&#45;state -->
 <g id="actor.session&#45;state" class="node">
 <title>actor.session&#45;state</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M1171.2,-1350.54C1171.2,-1350.54 1036.8,-1350.54 1036.8,-1350.54 1030.8,-1350.54 1024.8,-1344.54 1024.8,-1338.54 1024.8,-1338.54 1024.8,-1294.77 1024.8,-1294.77 1024.8,-1288.77 1030.8,-1282.77 1036.8,-1282.77 1036.8,-1282.77 1171.2,-1282.77 1171.2,-1282.77 1177.2,-1282.77 1183.2,-1288.77 1183.2,-1294.77 1183.2,-1294.77 1183.2,-1338.54 1183.2,-1338.54 1183.2,-1344.54 1177.2,-1350.54 1171.2,-1350.54"/>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1329.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Session State</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1318.27" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.session&#45;state]</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1307.02" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | ALWAYS</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1295.77" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1284.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 2</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M1171.2,-1350.54C1171.2,-1350.54 1036.8,-1350.54 1036.8,-1350.54 1030.8,-1350.54 1024.8,-1344.54 1024.8,-1338.54 1024.8,-1338.54 1024.8,-1294.77 1024.8,-1294.77 1024.8,-1288.77 1030.8,-1282.77 1036.8,-1282.77 1036.8,-1282.77 1171.2,-1282.77 1171.2,-1282.77 1177.2,-1282.77 1183.2,-1288.77 1183.2,-1294.77 1183.2,-1294.77 1183.2,-1338.54 1183.2,-1338.54 1183.2,-1344.54 1177.2,-1350.54 1171.2,-1350.54"/>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1329.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Session State</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1318.27" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[actor.session&#45;state]</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1307.02" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | ALWAYS</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1295.77" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1284.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">COMPOSITION ORDER: 2</text>
 </g>
 <!-- actor.session&#45;reference&#45;entities&#45;&gt;actor.session&#45;state -->
 <!-- actor.visual&#45;debug -->
 <g id="actor.visual&#45;debug" class="node">
 <title>actor.visual&#45;debug</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M1175.64,-1221.77C1175.64,-1221.77 1032.36,-1221.77 1032.36,-1221.77 1026.36,-1221.77 1020.36,-1215.77 1020.36,-1209.77 1020.36,-1209.77 1020.36,-1166 1020.36,-1166 1020.36,-1160 1026.36,-1154 1032.36,-1154 1032.36,-1154 1175.64,-1154 1175.64,-1154 1181.64,-1154 1187.64,-1160 1187.64,-1166 1187.64,-1166 1187.64,-1209.77 1187.64,-1209.77 1187.64,-1215.77 1181.64,-1221.77 1175.64,-1221.77"/>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1200.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Visual Debug Capture</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1189.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.visual&#45;debug]</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1178.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1167" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-1155.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 5</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M1175.64,-1221.77C1175.64,-1221.77 1032.36,-1221.77 1032.36,-1221.77 1026.36,-1221.77 1020.36,-1215.77 1020.36,-1209.77 1020.36,-1209.77 1020.36,-1166 1020.36,-1166 1020.36,-1160 1026.36,-1154 1032.36,-1154 1032.36,-1154 1175.64,-1154 1175.64,-1154 1181.64,-1154 1187.64,-1160 1187.64,-1166 1187.64,-1166 1187.64,-1209.77 1187.64,-1209.77 1187.64,-1215.77 1181.64,-1221.77 1175.64,-1221.77"/>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1200.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Visual Debug Capture</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1189.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[actor.visual&#45;debug]</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1178.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1167" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-1155.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">COMPOSITION ORDER: 5</text>
 </g>
 <!-- actor.session&#45;state&#45;&gt;actor.visual&#45;debug -->
 <!-- component.cache -->
 <g id="component.cache" class="node">
 <title>component.cache</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M224.2,-1098.4C224.2,-1098.4 89.8,-1098.4 89.8,-1098.4 83.8,-1098.4 77.8,-1092.4 77.8,-1086.4 77.8,-1086.4 77.8,-1045.6 77.8,-1045.6 77.8,-1039.6 83.8,-1033.6 89.8,-1033.6 89.8,-1033.6 224.2,-1033.6 224.2,-1033.6 230.2,-1033.6 236.2,-1039.6 236.2,-1045.6 236.2,-1045.6 236.2,-1086.4 236.2,-1086.4 236.2,-1092.4 230.2,-1098.4 224.2,-1098.4"/>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1069.1" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Nautilus Cache</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1057.85" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[component.cache]</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1046.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | ALWAYS</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1035.35" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M224.2,-1098.4C224.2,-1098.4 89.8,-1098.4 89.8,-1098.4 83.8,-1098.4 77.8,-1092.4 77.8,-1086.4 77.8,-1086.4 77.8,-1045.6 77.8,-1045.6 77.8,-1039.6 83.8,-1033.6 89.8,-1033.6 89.8,-1033.6 224.2,-1033.6 224.2,-1033.6 230.2,-1033.6 236.2,-1039.6 236.2,-1045.6 236.2,-1045.6 236.2,-1086.4 236.2,-1086.4 236.2,-1092.4 230.2,-1098.4 224.2,-1098.4"/>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1069.1" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Nautilus Cache</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1057.85" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[component.cache]</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1046.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | ALWAYS</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1035.35" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
 </g>
 <!-- component.data&#45;engine -->
 <g id="component.data&#45;engine" class="node">
 <title>component.data&#45;engine</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M224.2,-972.6C224.2,-972.6 89.8,-972.6 89.8,-972.6 83.8,-972.6 77.8,-966.6 77.8,-960.6 77.8,-960.6 77.8,-919.8 77.8,-919.8 77.8,-913.8 83.8,-907.8 89.8,-907.8 89.8,-907.8 224.2,-907.8 224.2,-907.8 230.2,-907.8 236.2,-913.8 236.2,-919.8 236.2,-919.8 236.2,-960.6 236.2,-960.6 236.2,-966.6 230.2,-972.6 224.2,-972.6"/>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-943.3" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Nautilus Data Engine</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-932.05" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[component.data&#45;engine]</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-920.8" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | ALWAYS</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-909.55" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M224.2,-972.6C224.2,-972.6 89.8,-972.6 89.8,-972.6 83.8,-972.6 77.8,-966.6 77.8,-960.6 77.8,-960.6 77.8,-919.8 77.8,-919.8 77.8,-913.8 83.8,-907.8 89.8,-907.8 89.8,-907.8 224.2,-907.8 224.2,-907.8 230.2,-907.8 236.2,-913.8 236.2,-919.8 236.2,-919.8 236.2,-960.6 236.2,-960.6 236.2,-966.6 230.2,-972.6 224.2,-972.6"/>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-943.3" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Nautilus Data Engine</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-932.05" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[component.data&#45;engine]</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-920.8" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | ALWAYS</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-909.55" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
 </g>
 <!-- component.cache&#45;&gt;component.data&#45;engine -->
 <!-- component.live&#45;node -->
 <g id="component.live&#45;node" class="node">
 <title>component.live&#45;node</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M224.2,-846.8C224.2,-846.8 89.8,-846.8 89.8,-846.8 83.8,-846.8 77.8,-840.8 77.8,-834.8 77.8,-834.8 77.8,-794 77.8,-794 77.8,-788 83.8,-782 89.8,-782 89.8,-782 224.2,-782 224.2,-782 230.2,-782 236.2,-788 236.2,-794 236.2,-794 236.2,-834.8 236.2,-834.8 236.2,-840.8 230.2,-846.8 224.2,-846.8"/>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-817.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Nautilus LiveNode</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-806.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[component.live&#45;node]</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-795" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | ALWAYS</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-783.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M224.2,-846.8C224.2,-846.8 89.8,-846.8 89.8,-846.8 83.8,-846.8 77.8,-840.8 77.8,-834.8 77.8,-834.8 77.8,-794 77.8,-794 77.8,-788 83.8,-782 89.8,-782 89.8,-782 224.2,-782 224.2,-782 230.2,-782 236.2,-788 236.2,-794 236.2,-794 236.2,-834.8 236.2,-834.8 236.2,-840.8 230.2,-846.8 224.2,-846.8"/>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-817.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Nautilus LiveNode</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-806.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[component.live&#45;node]</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-795" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | ALWAYS</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-783.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
 </g>
 <!-- component.data&#45;engine&#45;&gt;component.live&#45;node -->
 <!-- store.postgres -->
 <g id="store.postgres" class="node">
 <title>store.postgres</title>
-<polygon fill="#eef3f6" stroke="#475a66" stroke-width="1.5" points="591.77,-971.8 402.24,-971.8 398.24,-967.8 398.24,-907 587.77,-907 591.77,-911 591.77,-971.8"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="587.77,-967.8 398.24,-967.8"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="587.77,-967.8 587.77,-907"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="587.77,-967.8 591.77,-971.8"/>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-942.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">PostgreSQL Operational Audit</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-931.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[store.postgres]</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-920" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">EXTERNAL | EXTERNAL</text>
-<text xml:space="preserve" text-anchor="middle" x="495" y="-908.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#202a33" stroke="#a5b4c0" stroke-width="1.5" points="591.77,-971.8 402.24,-971.8 398.24,-967.8 398.24,-907 587.77,-907 591.77,-911 591.77,-971.8"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="587.77,-967.8 398.24,-967.8"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="587.77,-967.8 587.77,-907"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="587.77,-967.8 591.77,-971.8"/>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-942.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">PostgreSQL Operational Audit</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-931.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[store.postgres]</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-920" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">EXTERNAL | EXTERNAL</text>
+<text xml:space="preserve" text-anchor="middle" x="495" y="-908.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- operator.markeitect -->
 <g id="operator.markeitect" class="node">
 <title>operator.markeitect</title>
-<polygon fill="#eef3f6" stroke="#475a66" stroke-width="1.5" points="897.76,-1098.4 708.24,-1098.4 704.24,-1094.4 704.24,-1033.6 893.76,-1033.6 897.76,-1037.6 897.76,-1098.4"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="893.76,-1094.4 704.24,-1094.4"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="893.76,-1094.4 893.76,-1033.6"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="893.76,-1094.4 897.76,-1098.4"/>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1069.1" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Markeitect / Operator</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1057.85" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[operator.markeitect]</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1046.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">EXTERNAL | EXTERNAL</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-1035.35" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#202a33" stroke="#a5b4c0" stroke-width="1.5" points="897.76,-1098.4 708.24,-1098.4 704.24,-1094.4 704.24,-1033.6 893.76,-1033.6 897.76,-1037.6 897.76,-1098.4"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="893.76,-1094.4 704.24,-1094.4"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="893.76,-1094.4 893.76,-1033.6"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="893.76,-1094.4 897.76,-1098.4"/>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1069.1" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Markeitect / Operator</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1057.85" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[operator.markeitect]</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1046.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">EXTERNAL | EXTERNAL</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-1035.35" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- projection.discord -->
 <g id="projection.discord" class="node">
 <title>projection.discord</title>
-<polygon fill="#eef3f6" stroke="#475a66" stroke-width="1.5" points="897.76,-972.6 708.24,-972.6 704.24,-968.6 704.24,-907.8 893.76,-907.8 897.76,-911.8 897.76,-972.6"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="893.76,-968.6 704.24,-968.6"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="893.76,-968.6 893.76,-907.8"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="893.76,-968.6 897.76,-972.6"/>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-943.3" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Discord</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-932.05" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[projection.discord]</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-920.8" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">EXTERNAL | EXTERNAL</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-909.55" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#202a33" stroke="#a5b4c0" stroke-width="1.5" points="897.76,-972.6 708.24,-972.6 704.24,-968.6 704.24,-907.8 893.76,-907.8 897.76,-911.8 897.76,-972.6"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="893.76,-968.6 704.24,-968.6"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="893.76,-968.6 893.76,-907.8"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="893.76,-968.6 897.76,-972.6"/>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-943.3" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Discord</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-932.05" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[projection.discord]</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-920.8" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">EXTERNAL | EXTERNAL</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-909.55" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- operator.markeitect&#45;&gt;projection.discord -->
 <!-- projection.visual&#45;files -->
 <g id="projection.visual&#45;files" class="node">
 <title>projection.visual&#45;files</title>
-<polygon fill="#eef3f6" stroke="#475a66" stroke-width="1.5" points="897.76,-846.8 708.24,-846.8 704.24,-842.8 704.24,-782 893.76,-782 897.76,-786 897.76,-846.8"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="893.76,-842.8 704.24,-842.8"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="893.76,-842.8 893.76,-782"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="893.76,-842.8 897.76,-846.8"/>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-817.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Visual Debug Files</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-806.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[projection.visual&#45;files]</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-795" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">EXTERNAL | EXTERNAL</text>
-<text xml:space="preserve" text-anchor="middle" x="801" y="-783.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#202a33" stroke="#a5b4c0" stroke-width="1.5" points="897.76,-846.8 708.24,-846.8 704.24,-842.8 704.24,-782 893.76,-782 897.76,-786 897.76,-846.8"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="893.76,-842.8 704.24,-842.8"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="893.76,-842.8 893.76,-782"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="893.76,-842.8 897.76,-846.8"/>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-817.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Visual Debug Files</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-806.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[projection.visual&#45;files]</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-795" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">EXTERNAL | EXTERNAL</text>
+<text xml:space="preserve" text-anchor="middle" x="801" y="-783.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- projection.discord&#45;&gt;projection.visual&#45;files -->
 <!-- provider.interactive&#45;brokers -->
 <g id="provider.interactive&#45;brokers" class="node">
 <title>provider.interactive&#45;brokers</title>
-<polygon fill="#eef3f6" stroke="#475a66" stroke-width="1.5" points="1200.77,-971.8 1011.24,-971.8 1007.24,-967.8 1007.24,-907 1196.77,-907 1200.77,-911 1200.77,-971.8"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="1196.77,-967.8 1007.24,-967.8"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="1196.77,-967.8 1196.77,-907"/>
-<polyline fill="none" stroke="#475a66" stroke-width="1.5" points="1196.77,-967.8 1200.77,-971.8"/>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-942.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Interactive Brokers / TWS / Gateway</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-931.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[provider.interactive&#45;brokers]</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-920" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">EXTERNAL | EXTERNAL</text>
-<text xml:space="preserve" text-anchor="middle" x="1104" y="-908.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: NOT_APPLICABLE</text>
+<polygon fill="#202a33" stroke="#a5b4c0" stroke-width="1.5" points="1200.77,-971.8 1011.24,-971.8 1007.24,-967.8 1007.24,-907 1196.77,-907 1200.77,-911 1200.77,-971.8"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="1196.77,-967.8 1007.24,-967.8"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="1196.77,-967.8 1196.77,-907"/>
+<polyline fill="none" stroke="#a5b4c0" stroke-width="1.5" points="1196.77,-967.8 1200.77,-971.8"/>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-942.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Interactive Brokers / TWS / Gateway</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-931.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[provider.interactive&#45;brokers]</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-920" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">EXTERNAL | EXTERNAL</text>
+<text xml:space="preserve" text-anchor="middle" x="1104" y="-908.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: NOT_APPLICABLE</text>
 </g>
 <!-- actor.discord&#45;health -->
 <g id="actor.discord&#45;health" class="node">
 <title>actor.discord&#45;health</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M229.64,-725.62C229.64,-725.62 86.36,-725.62 86.36,-725.62 80.36,-725.62 74.36,-719.62 74.36,-713.62 74.36,-713.62 74.36,-669.85 74.36,-669.85 74.36,-663.85 80.36,-657.85 86.36,-657.85 86.36,-657.85 229.64,-657.85 229.64,-657.85 235.64,-657.85 241.64,-663.85 241.64,-669.85 241.64,-669.85 241.64,-713.62 241.64,-713.62 241.64,-719.62 235.64,-725.62 229.64,-725.62"/>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-704.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Discord Health Projection</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-693.35" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.discord&#45;health]</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-682.1" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-670.85" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-659.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 4</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M229.64,-725.62C229.64,-725.62 86.36,-725.62 86.36,-725.62 80.36,-725.62 74.36,-719.62 74.36,-713.62 74.36,-713.62 74.36,-669.85 74.36,-669.85 74.36,-663.85 80.36,-657.85 86.36,-657.85 86.36,-657.85 229.64,-657.85 229.64,-657.85 235.64,-657.85 241.64,-663.85 241.64,-669.85 241.64,-669.85 241.64,-713.62 241.64,-713.62 241.64,-719.62 235.64,-725.62 229.64,-725.62"/>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-704.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Discord Health Projection</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-693.35" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[actor.discord&#45;health]</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-682.1" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-670.85" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-659.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">COMPOSITION ORDER: 4</text>
 </g>
 <!-- actor.native&#45;consumer&#45;probe -->
 <g id="actor.native&#45;consumer&#45;probe" class="node">
 <title>actor.native&#45;consumer&#45;probe</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M229.64,-596.85C229.64,-596.85 86.36,-596.85 86.36,-596.85 80.36,-596.85 74.36,-590.85 74.36,-584.85 74.36,-584.85 74.36,-541.08 74.36,-541.08 74.36,-535.08 80.36,-529.08 86.36,-529.08 86.36,-529.08 229.64,-529.08 229.64,-529.08 235.64,-529.08 241.64,-535.08 241.64,-541.08 241.64,-541.08 241.64,-584.85 241.64,-584.85 241.64,-590.85 235.64,-596.85 229.64,-596.85"/>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-575.83" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Native Consumer Probe</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-564.58" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.native&#45;consumer&#45;probe]</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-553.33" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-542.08" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-530.83" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 14</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M229.64,-596.85C229.64,-596.85 86.36,-596.85 86.36,-596.85 80.36,-596.85 74.36,-590.85 74.36,-584.85 74.36,-584.85 74.36,-541.08 74.36,-541.08 74.36,-535.08 80.36,-529.08 86.36,-529.08 86.36,-529.08 229.64,-529.08 229.64,-529.08 235.64,-529.08 241.64,-535.08 241.64,-541.08 241.64,-541.08 241.64,-584.85 241.64,-584.85 241.64,-590.85 235.64,-596.85 229.64,-596.85"/>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-575.83" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Native Consumer Probe</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-564.58" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[actor.native&#45;consumer&#45;probe]</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-553.33" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-542.08" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-530.83" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">COMPOSITION ORDER: 14</text>
 </g>
 <!-- actor.discord&#45;health&#45;&gt;actor.native&#45;consumer&#45;probe -->
 <!-- actor.operational&#45;persistence -->
 <g id="actor.operational&#45;persistence" class="node">
 <title>actor.operational&#45;persistence</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M225.2,-468.08C225.2,-468.08 90.8,-468.08 90.8,-468.08 84.8,-468.08 78.8,-462.08 78.8,-456.08 78.8,-456.08 78.8,-412.31 78.8,-412.31 78.8,-406.31 84.8,-400.31 90.8,-400.31 90.8,-400.31 225.2,-400.31 225.2,-400.31 231.2,-400.31 237.2,-406.31 237.2,-412.31 237.2,-412.31 237.2,-456.08 237.2,-456.08 237.2,-462.08 231.2,-468.08 225.2,-468.08"/>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-447.06" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Operational Persistence</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-435.81" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.operational&#45;persistence]</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-424.56" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | ALWAYS</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-413.31" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-402.06" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 17</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M225.2,-468.08C225.2,-468.08 90.8,-468.08 90.8,-468.08 84.8,-468.08 78.8,-462.08 78.8,-456.08 78.8,-456.08 78.8,-412.31 78.8,-412.31 78.8,-406.31 84.8,-400.31 90.8,-400.31 90.8,-400.31 225.2,-400.31 225.2,-400.31 231.2,-400.31 237.2,-406.31 237.2,-412.31 237.2,-412.31 237.2,-456.08 237.2,-456.08 237.2,-462.08 231.2,-468.08 225.2,-468.08"/>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-447.06" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">Operational Persistence</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-435.81" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[actor.operational&#45;persistence]</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-424.56" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | ALWAYS</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-413.31" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-402.06" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">COMPOSITION ORDER: 17</text>
 </g>
 <!-- actor.native&#45;consumer&#45;probe&#45;&gt;actor.operational&#45;persistence -->
 <!-- actor.runtime&#45;resource&#45;health -->
 <g id="actor.runtime&#45;resource&#45;health" class="node">
 <title>actor.runtime&#45;resource&#45;health</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M229.64,-339.31C229.64,-339.31 86.36,-339.31 86.36,-339.31 80.36,-339.31 74.36,-333.31 74.36,-327.31 74.36,-327.31 74.36,-283.54 74.36,-283.54 74.36,-277.54 80.36,-271.54 86.36,-271.54 86.36,-271.54 229.64,-271.54 229.64,-271.54 235.64,-271.54 241.64,-277.54 241.64,-283.54 241.64,-283.54 241.64,-327.31 241.64,-327.31 241.64,-333.31 235.64,-339.31 229.64,-339.31"/>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-318.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Runtime Resource Health</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-307.04" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.runtime&#45;resource&#45;health]</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-295.79" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-284.54" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-273.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 16</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M229.64,-339.31C229.64,-339.31 86.36,-339.31 86.36,-339.31 80.36,-339.31 74.36,-333.31 74.36,-327.31 74.36,-327.31 74.36,-283.54 74.36,-283.54 74.36,-277.54 80.36,-271.54 86.36,-271.54 86.36,-271.54 229.64,-271.54 229.64,-271.54 235.64,-271.54 241.64,-277.54 241.64,-283.54 241.64,-283.54 241.64,-327.31 241.64,-327.31 241.64,-333.31 235.64,-339.31 229.64,-339.31"/>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-318.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Runtime Resource Health</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-307.04" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[actor.runtime&#45;resource&#45;health]</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-295.79" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-284.54" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-273.29" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">COMPOSITION ORDER: 16</text>
 </g>
 <!-- actor.operational&#45;persistence&#45;&gt;actor.runtime&#45;resource&#45;health -->
 <!-- actor.runtime&#45;resources -->
 <g id="actor.runtime&#45;resources" class="node">
 <title>actor.runtime&#45;resources</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M229.64,-210.54C229.64,-210.54 86.36,-210.54 86.36,-210.54 80.36,-210.54 74.36,-204.54 74.36,-198.54 74.36,-198.54 74.36,-154.77 74.36,-154.77 74.36,-148.77 80.36,-142.77 86.36,-142.77 86.36,-142.77 229.64,-142.77 229.64,-142.77 235.64,-142.77 241.64,-148.77 241.64,-154.77 241.64,-154.77 241.64,-198.54 241.64,-198.54 241.64,-204.54 235.64,-210.54 229.64,-210.54"/>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-189.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Runtime Resources</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-178.27" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.runtime&#45;resources]</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-167.02" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-155.77" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-144.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 15</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M229.64,-210.54C229.64,-210.54 86.36,-210.54 86.36,-210.54 80.36,-210.54 74.36,-204.54 74.36,-198.54 74.36,-198.54 74.36,-154.77 74.36,-154.77 74.36,-148.77 80.36,-142.77 86.36,-142.77 86.36,-142.77 229.64,-142.77 229.64,-142.77 235.64,-142.77 241.64,-148.77 241.64,-154.77 241.64,-154.77 241.64,-198.54 241.64,-198.54 241.64,-204.54 235.64,-210.54 229.64,-210.54"/>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-189.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Runtime Resources</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-178.27" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[actor.runtime&#45;resources]</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-167.02" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-155.77" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-144.52" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">COMPOSITION ORDER: 15</text>
 </g>
 <!-- actor.runtime&#45;resource&#45;health&#45;&gt;actor.runtime&#45;resources -->
 <!-- actor.system&#45;control -->
 <g id="actor.system&#45;control" class="node">
 <title>actor.system&#45;control</title>
-<path fill="#ffffff" stroke="#24445c" stroke-width="1.5" d="M225.2,-81.77C225.2,-81.77 90.8,-81.77 90.8,-81.77 84.8,-81.77 78.8,-75.77 78.8,-69.77 78.8,-69.77 78.8,-26 78.8,-26 78.8,-20 84.8,-14 90.8,-14 90.8,-14 225.2,-14 225.2,-14 231.2,-14 237.2,-20 237.2,-26 237.2,-26 237.2,-69.77 237.2,-69.77 237.2,-75.77 231.2,-81.77 225.2,-81.77"/>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-60.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">System Control</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-49.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[actor.system&#45;control]</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-38.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | ALWAYS</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-27" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
-<text xml:space="preserve" text-anchor="middle" x="158" y="-15.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">COMPOSITION ORDER: 1</text>
+<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M225.2,-81.77C225.2,-81.77 90.8,-81.77 90.8,-81.77 84.8,-81.77 78.8,-75.77 78.8,-69.77 78.8,-69.77 78.8,-26 78.8,-26 78.8,-20 84.8,-14 90.8,-14 90.8,-14 225.2,-14 225.2,-14 231.2,-14 237.2,-20 237.2,-26 237.2,-26 237.2,-69.77 237.2,-69.77 237.2,-75.77 231.2,-81.77 225.2,-81.77"/>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-60.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">System Control</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-49.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">[actor.system&#45;control]</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-38.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">IMPLEMENTED | ALWAYS</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-27" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">ACTIVE PROFILE: ENABLED</text>
+<text xml:space="preserve" text-anchor="middle" x="158" y="-15.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#f4f7fa">COMPOSITION ORDER: 1</text>
 </g>
 <!-- actor.runtime&#45;resources&#45;&gt;actor.system&#45;control -->
 <!-- queue.discord -->
 <g id="queue.discord" class="node">
 <title>queue.discord</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M236.51,-1860.2C236.51,-1860.2 77.49,-1860.2 77.49,-1860.2 71.49,-1860.2 65.48,-1854.2 65.48,-1848.2 65.48,-1848.2 65.48,-1807.4 65.48,-1807.4 65.48,-1801.4 71.48,-1795.4 77.48,-1795.4 77.48,-1795.4 236.51,-1795.4 236.51,-1795.4 242.51,-1795.4 248.51,-1801.4 248.51,-1807.4 248.51,-1807.4 248.51,-1848.2 248.51,-1848.2 248.51,-1854.2 242.51,-1860.2 236.51,-1860.2"/>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1830.9" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Discord Delivery Queue</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1819.65" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[queue.discord]</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1808.4" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1797.15" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M236.51,-1860.2C236.51,-1860.2 77.49,-1860.2 77.49,-1860.2 71.49,-1860.2 65.48,-1854.2 65.48,-1848.2 65.48,-1848.2 65.48,-1807.4 65.48,-1807.4 65.48,-1801.4 71.48,-1795.4 77.48,-1795.4 77.48,-1795.4 236.51,-1795.4 236.51,-1795.4 242.51,-1795.4 248.51,-1801.4 248.51,-1807.4 248.51,-1807.4 248.51,-1848.2 248.51,-1848.2 248.51,-1854.2 242.51,-1860.2 236.51,-1860.2"/>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1830.9" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Discord Delivery Queue</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1819.65" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[queue.discord]</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1808.4" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1797.15" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
 </g>
 <!-- queue.persistence -->
 <g id="queue.persistence" class="node">
 <title>queue.persistence</title>
-<polygon fill="#eaf2ff" stroke="#315c9a" stroke-width="1.5" points="248.51,-1734.4 65.48,-1734.4 65.48,-1730.4 61.48,-1730.4 61.48,-1726.4 65.48,-1726.4 65.48,-1677.6 61.48,-1677.6 61.48,-1673.6 65.48,-1673.6 65.48,-1669.6 248.51,-1669.6 248.51,-1734.4"/>
-<polyline fill="none" stroke="#315c9a" stroke-width="1.5" points="65.48,-1730.4 69.49,-1730.4 69.49,-1726.4 65.48,-1726.4"/>
-<polyline fill="none" stroke="#315c9a" stroke-width="1.5" points="65.48,-1677.6 69.48,-1677.6 69.48,-1673.6 65.48,-1673.6"/>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1705.1" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Persistence Admission Queue</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1693.85" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[queue.persistence]</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1682.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1671.35" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
+<polygon fill="#17243a" stroke="#78a9f5" stroke-width="1.5" points="248.51,-1734.4 65.48,-1734.4 65.48,-1730.4 61.48,-1730.4 61.48,-1726.4 65.48,-1726.4 65.48,-1677.6 61.48,-1677.6 61.48,-1673.6 65.48,-1673.6 65.48,-1669.6 248.51,-1669.6 248.51,-1734.4"/>
+<polyline fill="none" stroke="#78a9f5" stroke-width="1.5" points="65.48,-1730.4 69.49,-1730.4 69.49,-1726.4 65.48,-1726.4"/>
+<polyline fill="none" stroke="#78a9f5" stroke-width="1.5" points="65.48,-1677.6 69.48,-1677.6 69.48,-1673.6 65.48,-1673.6"/>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1705.1" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#eef5ff">Persistence Admission Queue</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1693.85" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#eef5ff">[queue.persistence]</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1682.6" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#eef5ff">IMPLEMENTED | NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1671.35" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#eef5ff">ACTIVE PROFILE: ENABLED</text>
 </g>
 <!-- queue.discord&#45;&gt;queue.persistence -->
 <!-- worker.discord -->
 <g id="worker.discord" class="node">
 <title>worker.discord</title>
-<path fill="#fff8e8" stroke="#9b6b16" stroke-width="1.5" stroke-dasharray="5,2" d="M236.51,-1608.6C236.51,-1608.6 77.49,-1608.6 77.49,-1608.6 71.49,-1608.6 65.48,-1602.6 65.48,-1596.6 65.48,-1596.6 65.48,-1555.8 65.48,-1555.8 65.48,-1549.8 71.48,-1543.8 77.48,-1543.8 77.48,-1543.8 236.51,-1543.8 236.51,-1543.8 242.51,-1543.8 248.51,-1549.8 248.51,-1555.8 248.51,-1555.8 248.51,-1596.6 248.51,-1596.6 248.51,-1602.6 242.51,-1608.6 236.51,-1608.6"/>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1579.3" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Discord Delivery Worker</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1568.05" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[worker.discord]</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1556.8" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1545.55" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: DISABLED</text>
+<path fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" d="M236.51,-1608.6C236.51,-1608.6 77.49,-1608.6 77.49,-1608.6 71.49,-1608.6 65.48,-1602.6 65.48,-1596.6 65.48,-1596.6 65.48,-1555.8 65.48,-1555.8 65.48,-1549.8 71.48,-1543.8 77.48,-1543.8 77.48,-1543.8 236.51,-1543.8 236.51,-1543.8 242.51,-1543.8 248.51,-1549.8 248.51,-1555.8 248.51,-1555.8 248.51,-1596.6 248.51,-1596.6 248.51,-1602.6 242.51,-1608.6 236.51,-1608.6"/>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1579.3" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">Discord Delivery Worker</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1568.05" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">[worker.discord]</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1556.8" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">IMPLEMENTED | NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1545.55" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#fff3d6">ACTIVE PROFILE: DISABLED</text>
 </g>
 <!-- queue.persistence&#45;&gt;worker.discord -->
 <!-- worker.persistence -->
 <g id="worker.persistence" class="node">
 <title>worker.persistence</title>
-<polygon fill="#eaf2ff" stroke="#315c9a" stroke-width="1.5" points="248.51,-1482.8 65.48,-1482.8 65.48,-1478.8 61.48,-1478.8 61.48,-1474.8 65.48,-1474.8 65.48,-1426 61.48,-1426 61.48,-1422 65.48,-1422 65.48,-1418 248.51,-1418 248.51,-1482.8"/>
-<polyline fill="none" stroke="#315c9a" stroke-width="1.5" points="65.48,-1478.8 69.49,-1478.8 69.49,-1474.8 65.48,-1474.8"/>
-<polyline fill="none" stroke="#315c9a" stroke-width="1.5" points="65.48,-1426 69.48,-1426 69.48,-1422 65.48,-1422"/>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1453.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">Persistence Writer Worker</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1442.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">[worker.persistence]</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1431" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">IMPLEMENTED | NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="middle" x="157" y="-1419.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#102a3a">ACTIVE PROFILE: ENABLED</text>
+<polygon fill="#17243a" stroke="#78a9f5" stroke-width="1.5" points="248.51,-1482.8 65.48,-1482.8 65.48,-1478.8 61.48,-1478.8 61.48,-1474.8 65.48,-1474.8 65.48,-1426 61.48,-1426 61.48,-1422 65.48,-1422 65.48,-1418 248.51,-1418 248.51,-1482.8"/>
+<polyline fill="none" stroke="#78a9f5" stroke-width="1.5" points="65.48,-1478.8 69.49,-1478.8 69.49,-1474.8 65.48,-1474.8"/>
+<polyline fill="none" stroke="#78a9f5" stroke-width="1.5" points="65.48,-1426 69.48,-1426 69.48,-1422 65.48,-1422"/>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1453.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#eef5ff">Persistence Writer Worker</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1442.25" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#eef5ff">[worker.persistence]</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1431" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#eef5ff">IMPLEMENTED | NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1419.75" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#eef5ff">ACTIVE PROFILE: ENABLED</text>
 </g>
 <!-- worker.discord&#45;&gt;worker.persistence -->
 </g>

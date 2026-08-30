@@ -2,88 +2,88 @@ digraph "Provider to Canonical Data Flow
 OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION
 PROFILE: profile.v3-es-minimal — REVIEW: proposed
 CHECKOUT EVIDENCE: c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce" {
-	graph [bgcolor="#FFFFFF" fontcolor="#2D3436" fontname=Helvetica fontsize=18 label="Provider to Canonical Data Flow
+	graph [bgcolor="#0B1118" fontcolor="#F2F6FA" fontname=Helvetica fontsize=18 label="Provider to Canonical Data Flow
 OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION
 PROFILE: profile.v3-es-minimal — REVIEW: proposed
 CHECKOUT EVIDENCE: c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce" labeljust=l labelloc=t margin=0.15 nodesep=0.45 pack=true packmode="graph" pad=0.35 rankdir=LR ranksep=0.85 splines=spline]
-	node [fixedsize=false fontcolor="#2D3436" fontname=Helvetica fontsize=10 height=0.9 imagescale=true labelloc=b margin="0.12,0.08" shape=box style=rounded width=2.2]
-	edge [arrowsize=0.75 color="#7B8894" fontname=Helvetica fontsize=9]
+	node [fixedsize=false fontcolor="#F4F7FA" fontname=Helvetica fontsize=10 height=0.9 imagescale=true labelloc=b margin="0.12,0.08" shape=box style=rounded width=2.2]
+	edge [arrowsize=0.75 color="#8DC5E3" fontcolor="#B9DDF0" fontname=Helvetica fontsize=9]
 	subgraph "cluster_Markeitech V2 process / Data acquisition actors" {
-		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.acquisition" label="Markeitech V2 process / Data acquisition actors" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		graph [bgcolor="#111A24" color="#566B7D" fontcolor="#D6E2EA" fontname=Helvetica fontsize=11 id="boundary.acquisition" label="Markeitech V2 process / Data acquisition actors" labeljust=l margin=14 pencolor="#566B7D" rankdir=LR shape=box style=rounded]
 		"actor.data-acquisition" [label="Data Acquisition
 [actor.data-acquisition]
 IMPLEMENTED | ALWAYS
 ACTIVE PROFILE: ENABLED
-COMPOSITION ORDER: 12" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.data-acquisition" penwidth=1.5 shape=box style="rounded,filled"]
+COMPOSITION ORDER: 12" color="#6FA8CC" fillcolor="#172332" fontcolor="#F4F7FA" id="actor.data-acquisition" penwidth=1.5 shape=box style="rounded,filled"]
 		"actor.watchlist" [label="Watchlist
 [actor.watchlist]
 IMPLEMENTED | ALWAYS
 ACTIVE PROFILE: ENABLED
-COMPOSITION ORDER: 11" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.watchlist" penwidth=1.5 shape=box style="rounded,filled"]
+COMPOSITION ORDER: 11" color="#6FA8CC" fillcolor="#172332" fontcolor="#F4F7FA" id="actor.watchlist" penwidth=1.5 shape=box style="rounded,filled"]
 	}
 	subgraph "cluster_Markeitech V2 process / Processing, metrics, intelligence, and state" {
-		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.intelligence" label="Markeitech V2 process / Processing, metrics, intelligence, and state" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		graph [bgcolor="#111A24" color="#566B7D" fontcolor="#D6E2EA" fontname=Helvetica fontsize=11 id="boundary.intelligence" label="Markeitech V2 process / Processing, metrics, intelligence, and state" labeljust=l margin=14 pencolor="#566B7D" rankdir=LR shape=box style=rounded]
 		"actor.evidence-health" [label="Evidence Health
 [actor.evidence-health]
 IMPLEMENTED | ALWAYS
 ACTIVE PROFILE: ENABLED
-COMPOSITION ORDER: 3" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.evidence-health" penwidth=1.5 shape=box style="rounded,filled"]
+COMPOSITION ORDER: 3" color="#6FA8CC" fillcolor="#172332" fontcolor="#F4F7FA" id="actor.evidence-health" penwidth=1.5 shape=box style="rounded,filled"]
 		"actor.session-metrics" [label="Session Metrics
 [actor.session-metrics]
 IMPLEMENTED | CONDITIONAL
 ACTIVE PROFILE: ENABLED
-COMPOSITION ORDER: 7" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.session-metrics" penwidth=1.5 shape=box style="rounded,filled"]
+COMPOSITION ORDER: 7" color="#6FA8CC" fillcolor="#172332" fontcolor="#F4F7FA" id="actor.session-metrics" penwidth=1.5 shape=box style="rounded,filled"]
 		"actor.session-state" [label="Session State
 [actor.session-state]
 IMPLEMENTED | ALWAYS
 ACTIVE PROFILE: ENABLED
-COMPOSITION ORDER: 2" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.session-state" penwidth=1.5 shape=box style="rounded,filled"]
+COMPOSITION ORDER: 2" color="#6FA8CC" fillcolor="#172332" fontcolor="#F4F7FA" id="actor.session-state" penwidth=1.5 shape=box style="rounded,filled"]
 	}
 	subgraph "cluster_Markeitech V2 process / Nautilus LiveNode and native engines" {
-		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.nautilus" label="Markeitech V2 process / Nautilus LiveNode and native engines" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		graph [bgcolor="#111A24" color="#566B7D" fontcolor="#D6E2EA" fontname=Helvetica fontsize=11 id="boundary.nautilus" label="Markeitech V2 process / Nautilus LiveNode and native engines" labeljust=l margin=14 pencolor="#566B7D" rankdir=LR shape=box style=rounded]
 		"component.cache" [label="Nautilus Cache
 [component.cache]
 IMPLEMENTED | ALWAYS
-ACTIVE PROFILE: ENABLED" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="component.cache" penwidth=1.5 shape=box style="rounded,filled"]
+ACTIVE PROFILE: ENABLED" color="#6FA8CC" fillcolor="#172332" fontcolor="#F4F7FA" id="component.cache" penwidth=1.5 shape=box style="rounded,filled"]
 		"component.data-engine" [label="Nautilus Data Engine
 [component.data-engine]
 IMPLEMENTED | ALWAYS
-ACTIVE PROFILE: ENABLED" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="component.data-engine" penwidth=1.5 shape=box style="rounded,filled"]
+ACTIVE PROFILE: ENABLED" color="#6FA8CC" fillcolor="#172332" fontcolor="#F4F7FA" id="component.data-engine" penwidth=1.5 shape=box style="rounded,filled"]
 	}
 	subgraph "cluster_External providers" {
-		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.providers" label="External providers" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		graph [bgcolor="#111A24" color="#566B7D" fontcolor="#D6E2EA" fontname=Helvetica fontsize=11 id="boundary.providers" label="External providers" labeljust=l margin=14 pencolor="#566B7D" rankdir=LR shape=box style=rounded]
 		"provider.interactive-brokers" [label="Interactive Brokers / TWS / Gateway
 [provider.interactive-brokers]
 EXTERNAL | EXTERNAL
-ACTIVE PROFILE: NOT_APPLICABLE" color="#475A66" fillcolor="#EEF3F6" fontcolor="#102A3A" id="provider.interactive-brokers" penwidth=1.5 shape=box3d style="rounded,filled"]
+ACTIVE PROFILE: NOT_APPLICABLE" color="#A5B4C0" fillcolor="#202A33" fontcolor="#F4F7FA" id="provider.interactive-brokers" penwidth=1.5 shape=box3d style="rounded,filled"]
 	}
 	"actor.data-acquisition" -> "actor.watchlist" [label="R:RESP
-Acquisition status" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.acquisition-status-watchlist" penwidth=1.4]
+Acquisition status" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.acquisition-status-watchlist" penwidth=1.7]
 	"actor.data-acquisition" -> "actor.evidence-health" [label="R:PUB
-Acquisition stream state" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.acquisition-stream-health" penwidth=1.4]
-	"actor.data-acquisition" -> "component.data-engine" [color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.acquisition-subscribe" labelangle=-35 labeldistance=4.0 penwidth=1.4 style=dashed taillabel="R:SUB"]
-	"component.data-engine" -> "actor.data-acquisition" [color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.data-engine-live-callback" labelangle=35 labeldistance=4.0 penwidth=1.4 taillabel="R:CALLBACK"]
+Acquisition stream state" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.acquisition-stream-health" penwidth=1.7]
+	"actor.data-acquisition" -> "component.data-engine" [color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.acquisition-subscribe" labelangle=-35 labeldistance=4.0 penwidth=1.7 style=dashed taillabel="R:SUB"]
+	"component.data-engine" -> "actor.data-acquisition" [color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.data-engine-live-callback" labelangle=35 labeldistance=4.0 penwidth=1.7 taillabel="R:CALLBACK"]
 	"component.data-engine" -> "actor.session-metrics" [label="R:DATA
-Nautilus native bar" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.data-engine-metric-bars" penwidth=1.4]
+Nautilus native bar" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.data-engine-metric-bars" penwidth=1.7]
 	"actor.data-acquisition" -> "actor.session-metrics" [label="R:RESP
-Historical bar batch" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.historical-batch" penwidth=1.4 style=dashed]
+Historical bar batch" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.historical-batch" penwidth=1.7 style=dashed]
 	"actor.session-metrics" -> "actor.data-acquisition" [label="R:REQ
-Historical dependency demand" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.historical-demand" penwidth=1.4]
+Historical dependency demand" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.historical-demand" penwidth=1.7]
 	"provider.interactive-brokers" -> "component.data-engine" [label="R:RESP
-Nautilus native bar" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.historical-provider-response" penwidth=1.4 style=dashed]
+Nautilus native bar" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.historical-provider-response" penwidth=1.7 style=dashed]
 	"actor.data-acquisition" -> "actor.session-metrics" [label="R:READY
-Historical readiness" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.historical-readiness" penwidth=1.4 style=dashed]
+Historical readiness" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.historical-readiness" penwidth=1.7 style=dashed]
 	"actor.session-metrics" -> "actor.data-acquisition" [label="R:RELEASE
-Historical execution lifecycle" color="#A33A31" dir=forward fontcolor="#7E2822" fontname="Sans-Serif" fontsize=13 id="edge.historical-release" penwidth=1.4 style=dashed]
+Historical execution lifecycle" color="#FF8A80" dir=forward fontcolor="#FFC1BB" fontname="Sans-Serif" fontsize=13 id="edge.historical-release" penwidth=1.7 style=dashed]
 	"provider.interactive-brokers" -> "component.data-engine" [label="R:DATA
-Nautilus native bar" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.ib-native-bars" penwidth=1.4]
-	"actor.data-acquisition" -> "component.data-engine" [color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 headlabel="R:REQ" id="edge.native-historical-request" labelangle=-35 labeldistance=4.0 penwidth=1.4 style=dashed]
+Nautilus native bar" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.ib-native-bars" penwidth=1.7]
+	"actor.data-acquisition" -> "component.data-engine" [color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 headlabel="R:REQ" id="edge.native-historical-request" labelangle=-35 labeldistance=4.0 penwidth=1.7 style=dashed]
 	"actor.session-state" -> "actor.evidence-health" [label="R:PUB
-Session state" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.session-state-health" penwidth=1.4]
+Session state" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.session-state-health" penwidth=1.7]
 	"actor.session-state" -> "actor.session-metrics" [label="R:PUB
-Session state" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.session-state-metrics" penwidth=1.4]
+Session state" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.session-state-metrics" penwidth=1.7]
 	"actor.watchlist" -> "actor.data-acquisition" [label="R:PUB
-Watchlist demand" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.watchlist-demand" penwidth=1.4]
+Watchlist demand" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.watchlist-demand" penwidth=1.7]
 	"actor.watchlist" -> "actor.data-acquisition" [label="R:REQ
-Acquisition status request" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.watchlist-status-request" penwidth=1.4]
+Acquisition status request" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.watchlist-status-request" penwidth=1.7]
 }

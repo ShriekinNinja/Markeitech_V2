@@ -3080,7 +3080,7 @@ limitations = []
 [[styles]]
 id = "style.theme"
 semantic_role = "theme"
-label = "Markeitech accessible light theme"
+label = "Markeitech accessible dark theme v1"
 
 [[styles]]
 id = "style.component.current"

@@ -65,6 +65,7 @@ Show implemented metrics/state and profile-disabled entity capabilities with the
 ## Visual grammar
 
 - Node text carries implementation, composition, and active-profile status; color is supplementary.
+- The graphical DOT/SVG/PNG view uses the manifest-selected opaque dark theme; Markdown appearance follows the reviewer's viewer settings.
 - Dashed nodes are disabled, historical, rejected, or future, as stated in their text.
 - Edge labels state category, required/optional status, and carried contract.
 - External projections consume canonical state; they do not create market truth.

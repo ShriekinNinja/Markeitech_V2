@@ -2,10 +2,14 @@
   "authority": "generated documentation only; canonical content is the validated TOML manifest",
   "checkout_commit": "c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce",
   "generator_contract_version": 1,
-  "generator_sha256": "a1d69a3c5b19b720630f2dd5b0c83662b7a1cee829c3c00de54e08471df18fc1",
+  "generator_sha256": "b72f26bbc98e21a96b553823c864021eefd25a22d20d4948e12b0a9f26344ed8",
   "generator_version": "0.1.0",
   "manifest": "markeitech-v3-system-dataflow",
-  "manifest_sha256": "eca4969263750f0eaa745e3e43d64671f25e9f2227f0533cd7fe45f01a4dbb2a",
+  "manifest_sha256": "f02edb068bdcd4720582dcc5268279982bb8d4ea4662a057c71eeff188a1649a",
+  "theme": {
+    "id": "style.theme",
+    "label": "Markeitech accessible dark theme v1"
+  },
   "toolchain": {
     "diagrams": "0.25.1",
     "font": "Helvetica resolved by Graphviz/system; byte portability is not claimed",

@@ -38,6 +38,43 @@ _GRAPHVIZ_CANDIDATES = (
 _REQUIRED_DIAGRAMS_VERSION = "0.25.1"
 _REQUIRED_PYTHON_GRAPHVIZ_VERSION = "0.20.3"
 _REQUIRED_GRAPHVIZ_VERSION = "15.1.1"
+_DARK_THEME = {
+    "canvas": "#0B1118",
+    "canvas_text": "#F2F6FA",
+    "cluster_fill": "#111A24",
+    "cluster_border": "#566B7D",
+    "cluster_text": "#D6E2EA",
+    "current_fill": "#172332",
+    "current_border": "#6FA8CC",
+    "current_text": "#F4F7FA",
+    "external_fill": "#202A33",
+    "external_border": "#A5B4C0",
+    "future_fill": "#261C35",
+    "future_border": "#C49AFA",
+    "disabled_fill": "#2B2416",
+    "disabled_border": "#E2B75C",
+    "disabled_text": "#FFF3D6",
+    "store_fill": "#142921",
+    "store_border": "#69C7A5",
+    "store_text": "#E9FFF7",
+    "worker_fill": "#17243A",
+    "worker_border": "#78A9F5",
+    "worker_text": "#EEF5FF",
+    "projection_fill": "#29261D",
+    "projection_border": "#D4C484",
+    "projection_text": "#FFF9DF",
+    "historical_fill": "#24272B",
+    "historical_border": "#A9B0B7",
+    "historical_text": "#E8EAED",
+    "data_edge": "#8DC5E3",
+    "data_edge_text": "#B9DDF0",
+    "persistence_edge": "#6FD0AC",
+    "persistence_edge_text": "#A5E3CD",
+    "projection_edge": "#D7C77B",
+    "projection_edge_text": "#E8DFAF",
+    "failure_edge": "#FF8A80",
+    "failure_edge_text": "#FFC1BB",
+}
 _DIRECTION = {
     DiagramDirection.LEFT_TO_RIGHT: "LR",
     DiagramDirection.TOP_TO_BOTTOM: "TB",
@@ -173,28 +210,62 @@ def _node_appearance(component: Component, profile_id: str | None) -> dict[str, 
     attrs = {
         "shape": "box",
         "style": "rounded,filled",
-        "fillcolor": "#FFFFFF",
-        "color": "#24445C",
-        "fontcolor": "#102A3A",
+        "fillcolor": _DARK_THEME["current_fill"],
+        "color": _DARK_THEME["current_border"],
+        "fontcolor": _DARK_THEME["current_text"],
         "penwidth": "1.5",
     }
     if component.implementation_state is ImplementationState.EXTERNAL:
-        attrs.update(shape="box3d", fillcolor="#EEF3F6", color="#475A66")
+        attrs.update(
+            shape="box3d",
+            fillcolor=_DARK_THEME["external_fill"],
+            color=_DARK_THEME["external_border"],
+        )
     elif component.implementation_state is ImplementationState.FUTURE:
-        attrs.update(shape="hexagon", style="dashed,filled", fillcolor="#F6F0FF", color="#6D4AA2")
+        attrs.update(
+            shape="hexagon",
+            style="dashed,filled",
+            fillcolor=_DARK_THEME["future_fill"],
+            color=_DARK_THEME["future_border"],
+        )
     elif component.implementation_state in {
         ImplementationState.REMOVED,
         ImplementationState.REJECTED,
     }:
-        attrs.update(style="dashed,filled", fillcolor="#F2F2F2", color="#6B6B6B")
+        attrs.update(
+            style="dashed,filled",
+            fillcolor=_DARK_THEME["historical_fill"],
+            color=_DARK_THEME["historical_border"],
+            fontcolor=_DARK_THEME["historical_text"],
+        )
     elif state == EnablementState.DISABLED.value:
-        attrs.update(style="dashed,rounded,filled", fillcolor="#FFF8E8", color="#9B6B16")
+        attrs.update(
+            style="dashed,rounded,filled",
+            fillcolor=_DARK_THEME["disabled_fill"],
+            color=_DARK_THEME["disabled_border"],
+            fontcolor=_DARK_THEME["disabled_text"],
+        )
     elif component.kind.value == "data_store":
-        attrs.update(shape="cylinder", fillcolor="#E9F5F1", color="#246B58")
+        attrs.update(
+            shape="cylinder",
+            fillcolor=_DARK_THEME["store_fill"],
+            color=_DARK_THEME["store_border"],
+            fontcolor=_DARK_THEME["store_text"],
+        )
     elif component.kind.value in {"queue", "worker"}:
-        attrs.update(shape="component", fillcolor="#EAF2FF", color="#315C9A")
+        attrs.update(
+            shape="component",
+            fillcolor=_DARK_THEME["worker_fill"],
+            color=_DARK_THEME["worker_border"],
+            fontcolor=_DARK_THEME["worker_text"],
+        )
     elif component.kind.value in {"projection", "operator"}:
-        attrs.update(shape="note", fillcolor="#F7F4EC", color="#6E6241")
+        attrs.update(
+            shape="note",
+            fillcolor=_DARK_THEME["projection_fill"],
+            color=_DARK_THEME["projection_border"],
+            fontcolor=_DARK_THEME["projection_text"],
+        )
     return attrs
 
 
@@ -222,13 +293,28 @@ def _tombstone_label(tombstone: Tombstone) -> str:
 
 
 def _edge_appearance(edge: Edge) -> dict[str, str]:
-    attrs = {"color": "#35586D", "fontcolor": "#203F51", "penwidth": "1.4"}
+    attrs = {
+        "color": _DARK_THEME["data_edge"],
+        "fontcolor": _DARK_THEME["data_edge_text"],
+        "penwidth": "1.7",
+    }
     if edge.category.value in {"failure", "release"}:
-        attrs.update(color="#A33A31", fontcolor="#7E2822", style="dashed")
+        attrs.update(
+            color=_DARK_THEME["failure_edge"],
+            fontcolor=_DARK_THEME["failure_edge_text"],
+            style="dashed",
+        )
     elif edge.category.value in {"persistence", "queue_admission", "worker_result"}:
-        attrs.update(color="#246B58", fontcolor="#1F594A")
+        attrs.update(
+            color=_DARK_THEME["persistence_edge"],
+            fontcolor=_DARK_THEME["persistence_edge_text"],
+        )
     elif edge.category.value in {"projection", "notification"}:
-        attrs.update(color="#6E6241", fontcolor="#5B5136", style="dotted")
+        attrs.update(
+            color=_DARK_THEME["projection_edge"],
+            fontcolor=_DARK_THEME["projection_edge_text"],
+            style="dotted",
+        )
     elif not edge.required or edge.enablement_condition is not None:
         attrs.update(style="dashed")
     return attrs
@@ -277,7 +363,8 @@ def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
         show=False,
         curvestyle="ortho" if view.routing is RoutingStyle.ORTHO else "curved",
         graph_attr={
-            "bgcolor": "#FFFFFF",
+            "bgcolor": _DARK_THEME["canvas"],
+            "fontcolor": _DARK_THEME["canvas_text"],
             "fontname": "Helvetica",
             "fontsize": "18",
             "labeljust": "l",
@@ -294,6 +381,7 @@ def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
         },
         node_attr={
             "fixedsize": "false",
+            "fontcolor": _DARK_THEME["current_text"],
             "fontname": "Helvetica",
             "fontsize": str(view.minimum_text_size_pt or 10),
             "height": "0.9",
@@ -302,6 +390,8 @@ def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
         },
         edge_attr={
             "arrowsize": "0.75",
+            "color": _DARK_THEME["data_edge"],
+            "fontcolor": _DARK_THEME["data_edge_text"],
             "fontname": "Helvetica",
             "fontsize": str(max(8, (view.minimum_text_size_pt or 10) - 1)),
         },
@@ -327,9 +417,10 @@ def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
                 label,
                 graph_attr={
                     "id": boundary.id,
-                    "bgcolor": "#F7FAFC",
-                    "color": "#9DB0BC",
-                    "fontcolor": "#304F60",
+                    "bgcolor": _DARK_THEME["cluster_fill"],
+                    "color": _DARK_THEME["cluster_border"],
+                    "pencolor": _DARK_THEME["cluster_border"],
+                    "fontcolor": _DARK_THEME["cluster_text"],
                     "fontname": "Helvetica",
                     "fontsize": "11",
                     "margin": "14",
@@ -354,9 +445,9 @@ def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
                         id=tombstone.id,
                         shape="box",
                         style="dashed,filled",
-                        fillcolor="#F2F2F2",
-                        color="#6B6B6B",
-                        fontcolor="#303030",
+                        fillcolor=_DARK_THEME["historical_fill"],
+                        color=_DARK_THEME["historical_border"],
+                        fontcolor=_DARK_THEME["historical_text"],
                         penwidth="1.5",
                     )
         if view.pack_mode == "array":
@@ -514,6 +605,8 @@ def _markdown(manifest: ArchitectureManifest, selected: SelectedView) -> str:
             "",
             "- Node text carries implementation, composition, and active-profile status; "
             "color is supplementary.",
+            "- The graphical DOT/SVG/PNG view uses the manifest-selected opaque dark theme; "
+            "Markdown appearance follows the reviewer's viewer settings.",
             "- Dashed nodes are disabled, historical, rejected, or future, as stated "
             "in their text.",
             "- Edge labels state category, required/optional status, and carried contract.",
@@ -658,6 +751,12 @@ def generate_all(
             "generator_contract_version": manifest.header.generator_contract_version,
             "generator_version": __version__,
             "generator_sha256": _generator_sha256(),
+            "theme": {
+                "id": "style.theme",
+                "label": next(
+                    style.label for style in manifest.styles if style.id == "style.theme"
+                ),
+            },
             "toolchain": {
                 "python": toolchain.python,
                 "diagrams": toolchain.diagrams,

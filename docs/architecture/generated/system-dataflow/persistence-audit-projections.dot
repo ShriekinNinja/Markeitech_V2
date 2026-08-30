@@ -2,105 +2,105 @@ digraph "Persistence, Operational Audit, and External Projections
 OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION
 PROFILE: profile.v3-es-minimal — REVIEW: proposed
 CHECKOUT EVIDENCE: c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce" {
-	graph [bgcolor="#FFFFFF" fontcolor="#2D3436" fontname=Helvetica fontsize=18 label="Persistence, Operational Audit, and External Projections
+	graph [bgcolor="#0B1118" fontcolor="#F2F6FA" fontname=Helvetica fontsize=18 label="Persistence, Operational Audit, and External Projections
 OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION
 PROFILE: profile.v3-es-minimal — REVIEW: proposed
 CHECKOUT EVIDENCE: c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce" labeljust=l labelloc=t margin=0.15 nodesep=0.45 pack=true packmode="graph" pad=0.35 rankdir=LR ranksep=0.85 splines=spline]
-	node [fixedsize=false fontcolor="#2D3436" fontname=Helvetica fontsize=10 height=0.9 imagescale=true labelloc=b margin="0.12,0.08" shape=box style=rounded width=2.2]
-	edge [arrowsize=0.75 color="#7B8894" fontname=Helvetica fontsize=9]
+	node [fixedsize=false fontcolor="#F4F7FA" fontname=Helvetica fontsize=10 height=0.9 imagescale=true labelloc=b margin="0.12,0.08" shape=box style=rounded width=2.2]
+	edge [arrowsize=0.75 color="#8DC5E3" fontcolor="#B9DDF0" fontname=Helvetica fontsize=9]
 	subgraph "cluster_Markeitech V2 process / Processing, metrics, intelligence, and state" {
-		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.intelligence" label="Markeitech V2 process / Processing, metrics, intelligence, and state" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		graph [bgcolor="#111A24" color="#566B7D" fontcolor="#D6E2EA" fontname=Helvetica fontsize=11 id="boundary.intelligence" label="Markeitech V2 process / Processing, metrics, intelligence, and state" labeljust=l margin=14 pencolor="#566B7D" rankdir=LR shape=box style=rounded]
 		"actor.visual-debug" [label="Visual Debug Capture
 [actor.visual-debug]
 IMPLEMENTED | CONDITIONAL
 ACTIVE PROFILE: ENABLED
-COMPOSITION ORDER: 5" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.visual-debug" penwidth=1.5 shape=box style="rounded,filled"]
+COMPOSITION ORDER: 5" color="#6FA8CC" fillcolor="#172332" fontcolor="#F4F7FA" id="actor.visual-debug" penwidth=1.5 shape=box style="rounded,filled"]
 	}
 	subgraph "cluster_Operational persistence" {
-		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.persistence" label="Operational persistence" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		graph [bgcolor="#111A24" color="#566B7D" fontcolor="#D6E2EA" fontname=Helvetica fontsize=11 id="boundary.persistence" label="Operational persistence" labeljust=l margin=14 pencolor="#566B7D" rankdir=LR shape=box style=rounded]
 		"store.postgres" [label="PostgreSQL Operational Audit
 [store.postgres]
 EXTERNAL | EXTERNAL
-ACTIVE PROFILE: NOT_APPLICABLE" color="#475A66" fillcolor="#EEF3F6" fontcolor="#102A3A" id="store.postgres" penwidth=1.5 shape=box3d style="rounded,filled"]
+ACTIVE PROFILE: NOT_APPLICABLE" color="#A5B4C0" fillcolor="#202A33" fontcolor="#F4F7FA" id="store.postgres" penwidth=1.5 shape=box3d style="rounded,filled"]
 	}
 	subgraph "cluster_External projections and operator" {
-		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.projections" label="External projections and operator" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		graph [bgcolor="#111A24" color="#566B7D" fontcolor="#D6E2EA" fontname=Helvetica fontsize=11 id="boundary.projections" label="External projections and operator" labeljust=l margin=14 pencolor="#566B7D" rankdir=LR shape=box style=rounded]
 		"operator.markeitect" [label="Markeitect / Operator
 [operator.markeitect]
 EXTERNAL | EXTERNAL
-ACTIVE PROFILE: NOT_APPLICABLE" color="#475A66" fillcolor="#EEF3F6" fontcolor="#102A3A" id="operator.markeitect" penwidth=1.5 shape=box3d style="rounded,filled"]
+ACTIVE PROFILE: NOT_APPLICABLE" color="#A5B4C0" fillcolor="#202A33" fontcolor="#F4F7FA" id="operator.markeitect" penwidth=1.5 shape=box3d style="rounded,filled"]
 		"projection.discord" [label="Discord
 [projection.discord]
 EXTERNAL | EXTERNAL
-ACTIVE PROFILE: NOT_APPLICABLE" color="#475A66" fillcolor="#EEF3F6" fontcolor="#102A3A" id="projection.discord" penwidth=1.5 shape=box3d style="rounded,filled"]
+ACTIVE PROFILE: NOT_APPLICABLE" color="#A5B4C0" fillcolor="#202A33" fontcolor="#F4F7FA" id="projection.discord" penwidth=1.5 shape=box3d style="rounded,filled"]
 		"projection.visual-files" [label="Visual Debug Files
 [projection.visual-files]
 EXTERNAL | EXTERNAL
-ACTIVE PROFILE: NOT_APPLICABLE" color="#475A66" fillcolor="#EEF3F6" fontcolor="#102A3A" id="projection.visual-files" penwidth=1.5 shape=box3d style="rounded,filled"]
+ACTIVE PROFILE: NOT_APPLICABLE" color="#A5B4C0" fillcolor="#202A33" fontcolor="#F4F7FA" id="projection.visual-files" penwidth=1.5 shape=box3d style="rounded,filled"]
 	}
 	subgraph "cluster_Markeitech V2 process / System and infrastructure actors" {
-		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.system" label="Markeitech V2 process / System and infrastructure actors" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		graph [bgcolor="#111A24" color="#566B7D" fontcolor="#D6E2EA" fontname=Helvetica fontsize=11 id="boundary.system" label="Markeitech V2 process / System and infrastructure actors" labeljust=l margin=14 pencolor="#566B7D" rankdir=LR shape=box style=rounded]
 		"actor.discord-health" [label="Discord Health Projection
 [actor.discord-health]
 IMPLEMENTED | CONDITIONAL
 ACTIVE PROFILE: DISABLED
-COMPOSITION ORDER: 4" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="actor.discord-health" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+COMPOSITION ORDER: 4" color="#E2B75C" fillcolor="#2B2416" fontcolor="#FFF3D6" id="actor.discord-health" penwidth=1.5 shape=box style="dashed,rounded,filled"]
 		"actor.operational-persistence" [label="Operational Persistence
 [actor.operational-persistence]
 IMPLEMENTED | ALWAYS
 ACTIVE PROFILE: ENABLED
-COMPOSITION ORDER: 17" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.operational-persistence" penwidth=1.5 shape=box style="rounded,filled"]
+COMPOSITION ORDER: 17" color="#6FA8CC" fillcolor="#172332" fontcolor="#F4F7FA" id="actor.operational-persistence" penwidth=1.5 shape=box style="rounded,filled"]
 		"actor.system-control" [label="System Control
 [actor.system-control]
 IMPLEMENTED | ALWAYS
 ACTIVE PROFILE: ENABLED
-COMPOSITION ORDER: 1" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.system-control" penwidth=1.5 shape=box style="rounded,filled"]
+COMPOSITION ORDER: 1" color="#6FA8CC" fillcolor="#172332" fontcolor="#F4F7FA" id="actor.system-control" penwidth=1.5 shape=box style="rounded,filled"]
 	}
 	subgraph "cluster_Markeitech V2 process / In-process workers and queues" {
-		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.workers" label="Markeitech V2 process / In-process workers and queues" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		graph [bgcolor="#111A24" color="#566B7D" fontcolor="#D6E2EA" fontname=Helvetica fontsize=11 id="boundary.workers" label="Markeitech V2 process / In-process workers and queues" labeljust=l margin=14 pencolor="#566B7D" rankdir=LR shape=box style=rounded]
 		"queue.discord" [label="Discord Delivery Queue
 [queue.discord]
 IMPLEMENTED | NOT_COMPOSED
-ACTIVE PROFILE: DISABLED" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="queue.discord" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+ACTIVE PROFILE: DISABLED" color="#E2B75C" fillcolor="#2B2416" fontcolor="#FFF3D6" id="queue.discord" penwidth=1.5 shape=box style="dashed,rounded,filled"]
 		"queue.persistence" [label="Persistence Admission Queue
 [queue.persistence]
 IMPLEMENTED | NOT_COMPOSED
-ACTIVE PROFILE: ENABLED" color="#315C9A" fillcolor="#EAF2FF" fontcolor="#102A3A" id="queue.persistence" penwidth=1.5 shape=component style="rounded,filled"]
+ACTIVE PROFILE: ENABLED" color="#78A9F5" fillcolor="#17243A" fontcolor="#EEF5FF" id="queue.persistence" penwidth=1.5 shape=component style="rounded,filled"]
 		"worker.discord" [label="Discord Delivery Worker
 [worker.discord]
 IMPLEMENTED | NOT_COMPOSED
-ACTIVE PROFILE: DISABLED" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="worker.discord" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+ACTIVE PROFILE: DISABLED" color="#E2B75C" fillcolor="#2B2416" fontcolor="#FFF3D6" id="worker.discord" penwidth=1.5 shape=box style="dashed,rounded,filled"]
 		"worker.persistence" [label="Persistence Writer Worker
 [worker.persistence]
 IMPLEMENTED | NOT_COMPOSED
-ACTIVE PROFILE: ENABLED" color="#315C9A" fillcolor="#EAF2FF" fontcolor="#102A3A" id="worker.persistence" penwidth=1.5 shape=component style="rounded,filled"]
+ACTIVE PROFILE: ENABLED" color="#78A9F5" fillcolor="#17243A" fontcolor="#EEF5FF" id="worker.persistence" penwidth=1.5 shape=component style="rounded,filled"]
 	}
 	"worker.discord" -> "projection.discord" [label="O:NOTIFY
-Discord health notification" color="#6E6241" dir=forward fontcolor="#5B5136" fontname="Sans-Serif" fontsize=13 id="edge.discord-external" penwidth=1.4 style=dotted]
+Discord health notification" color="#D7C77B" dir=forward fontcolor="#E8DFAF" fontname="Sans-Serif" fontsize=13 id="edge.discord-external" penwidth=1.7 style=dotted]
 	"actor.discord-health" -> "queue.discord" [label="O:QUEUE
-Discord health notification" color="#246B58" dir=forward fontcolor="#1F594A" fontname="Sans-Serif" fontsize=13 id="edge.discord-queue" penwidth=1.4]
+Discord health notification" color="#6FD0AC" dir=forward fontcolor="#A5E3CD" fontname="Sans-Serif" fontsize=13 id="edge.discord-queue" penwidth=1.7]
 	"queue.discord" -> "worker.discord" [label="O:QUEUE
-Discord health notification" color="#246B58" dir=forward fontcolor="#1F594A" fontname="Sans-Serif" fontsize=13 id="edge.discord-worker" penwidth=1.4]
+Discord health notification" color="#6FD0AC" dir=forward fontcolor="#A5E3CD" fontname="Sans-Serif" fontsize=13 id="edge.discord-worker" penwidth=1.7]
 	"actor.operational-persistence" -> "actor.system-control" [label="R:FAILURE
-Component failure" color="#A33A31" dir=forward fontcolor="#7E2822" fontname="Sans-Serif" fontsize=13 id="edge.persistence-failure" penwidth=1.4 style=dashed]
+Component failure" color="#FF8A80" dir=forward fontcolor="#FFC1BB" fontname="Sans-Serif" fontsize=13 id="edge.persistence-failure" penwidth=1.7 style=dashed]
 	"actor.operational-persistence" -> "queue.persistence" [label="R:QUEUE
-Operational audit event" color="#246B58" dir=forward fontcolor="#1F594A" fontname="Sans-Serif" fontsize=13 id="edge.persistence-queue" penwidth=1.4]
+Operational audit event" color="#6FD0AC" dir=forward fontcolor="#A5E3CD" fontname="Sans-Serif" fontsize=13 id="edge.persistence-queue" penwidth=1.7]
 	"actor.system-control" -> "actor.operational-persistence" [label="R:REQ
-Persistence readiness request" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.persistence-ready-request" penwidth=1.4]
+Persistence readiness request" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.persistence-ready-request" penwidth=1.7]
 	"actor.operational-persistence" -> "actor.system-control" [label="R:READY
-Persistence readiness" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.persistence-ready-response" penwidth=1.4]
+Persistence readiness" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.persistence-ready-response" penwidth=1.7]
 	"queue.persistence" -> "worker.persistence" [label="R:QUEUE
-Operational audit event" color="#246B58" dir=forward fontcolor="#1F594A" fontname="Sans-Serif" fontsize=13 id="edge.queue-worker" penwidth=1.4]
+Operational audit event" color="#6FD0AC" dir=forward fontcolor="#A5E3CD" fontname="Sans-Serif" fontsize=13 id="edge.queue-worker" penwidth=1.7]
 	"actor.system-control" -> "actor.discord-health" [label="O:NOTIFY
-System health" color="#6E6241" dir=forward fontcolor="#5B5136" fontname="Sans-Serif" fontsize=13 id="edge.system-health-discord" penwidth=1.4 style=dotted]
+System health" color="#D7C77B" dir=forward fontcolor="#E8DFAF" fontname="Sans-Serif" fontsize=13 id="edge.system-health-discord" penwidth=1.7 style=dotted]
 	"actor.system-control" -> "actor.operational-persistence" [label="R:PUB
-System health" color="#35586D" dir=forward fontcolor="#203F51" fontname="Sans-Serif" fontsize=13 id="edge.system-health-persistence" penwidth=1.4]
+System health" color="#8DC5E3" dir=forward fontcolor="#B9DDF0" fontname="Sans-Serif" fontsize=13 id="edge.system-health-persistence" penwidth=1.7]
 	"actor.visual-debug" -> "projection.visual-files" [label="R:PROJECT
-Visual debug artifact" color="#6E6241" dir=forward fontcolor="#5B5136" fontname="Sans-Serif" fontsize=13 id="edge.visual-files" penwidth=1.4 style=dotted]
+Visual debug artifact" color="#D7C77B" dir=forward fontcolor="#E8DFAF" fontname="Sans-Serif" fontsize=13 id="edge.visual-files" penwidth=1.7 style=dotted]
 	"projection.visual-files" -> "operator.markeitect" [label="O:PROJECT
-Visual debug artifact" color="#6E6241" dir=forward fontcolor="#5B5136" fontname="Sans-Serif" fontsize=13 id="edge.visual-review" penwidth=1.4 style=dotted]
+Visual debug artifact" color="#D7C77B" dir=forward fontcolor="#E8DFAF" fontname="Sans-Serif" fontsize=13 id="edge.visual-review" penwidth=1.7 style=dotted]
 	"worker.persistence" -> "store.postgres" [label="R:PERSIST
-Operational audit event" color="#246B58" dir=forward fontcolor="#1F594A" fontname="Sans-Serif" fontsize=13 id="edge.worker-postgres" penwidth=1.4]
+Operational audit event" color="#6FD0AC" dir=forward fontcolor="#A5E3CD" fontname="Sans-Serif" fontsize=13 id="edge.worker-postgres" penwidth=1.7]
 	"worker.persistence" -> "actor.operational-persistence" [label="R:RESULT
-Persistence worker result" color="#246B58" dir=forward fontcolor="#1F594A" fontname="Sans-Serif" fontsize=13 id="edge.worker-result" penwidth=1.4]
+Persistence worker result" color="#6FD0AC" dir=forward fontcolor="#A5E3CD" fontname="Sans-Serif" fontsize=13 id="edge.worker-result" penwidth=1.7]
 }
