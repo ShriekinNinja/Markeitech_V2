@@ -29,9 +29,8 @@ system. The preserved V1 status is available in
   reconciliation, and successful Discord lifecycle delivery through the replacement transport.
 - Stages 1 through 9C and the runtime-resource hardening gate are implemented and connected-
   accepted within the evidence recorded below.
-- Stage 9D is active. Slices 9D.1 through 9D.5C are approved and committed. The runtime and
-  non-authoritative visual-acceptance portions of Slice 9D.5D are implemented locally for review.
-  Together they provide typed
+- Stage 9D is active. Slices 9D.1 through 9D.5C are approved and committed. The market-structure
+  runtime portion of Slice 9D.5D is implemented. Together they provide typed
   analytical entity contracts, a bounded state book, a configuration-owned entity catalog,
   deterministic numerical prerequisites, pure rolling market-state projection, an optional
   `MarketStateEntityActor` runtime boundary, pure confirmed-swing entity projection, and pure
@@ -75,21 +74,12 @@ system. The preserved V1 status is available in
   revision types, local fan-out, exact parameter-set selection, rejection of unavailable sets and
   incomplete or scope-incompatible companion definitions, and filtered snapshots. Owner invariant
   failures remain isolated to the affected projection and are counted rather than escaping the
-  Nautilus callback. The optional `VisualAcceptanceActor` consumes only canonical completed bars,
-  metric values, and entity revisions. It reuses the same operational-readiness projection as the
-  Sir Loke readiness notification, renders bounded one-, five-, and fifteen-minute static PNGs
-  only after that contract is ready, and refreshes only after canonical evidence changes. Each
-  image derives its independent viewport from that rolling family's selected context candidate;
-  the current reviewed choices are 45 minutes, four hours, and eight hours. Rendered bar payloads
-  are trimmed to those windows, visible candles own the price scale, and canonical objective levels
-  retain source-specific labels such as previous-session high and opening-range low. The renderer
-  runs outside live callbacks, exports one 1800-by-1000 Kaleido PNG per instrument and horizon in a
-  bounded atomic batch, writes ignored review artifacts under `v2/data/visual-acceptance/`, and
-  neither calculates market truth nor reads or writes PostgreSQL. Superseded HTML/JavaScript
-  artifacts are removed only after a successful PNG batch.
-  It is disabled in the tracked example configuration and enabled only in the ignored local
-  acceptance configuration. Markeitect-owned connected acceptance and visual comparison remain
-  open in 9D.5D.
+  Nautilus callback. The rejected `VisualAcceptanceActor` and `LiveEvidenceReviewActor` were
+  subsequently retired from runtime composition, typed configuration, source, and tests. Their
+  exclusive Kaleido and Pillow dependencies were also removed. Configuration schema 18 no longer
+  accepts either dead section. The progressive `VisualDebugCaptureActor` remains a separate,
+  passive observer and was not changed by that removal. Historical ignored artifacts and local
+  configurations remain outside Git as recovery evidence; they are not runnable current profiles.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -477,12 +467,17 @@ display; those projection targets do not set provider request size, retention, o
 The nominal selected span is five hours before any real gaps. Markeitect accepted the coordinated
 configuration changes as a usable baseline for continuing the debug, while explicitly recording
 that the number of coupled settings is not an accepted configuration interface. This is test
-authorization, not an accepted IB limit, general history policy, direct-five-minute provider
-acceptance, visual acceptance, or value-level acceptance. Parameter effective time remains stored
+authorization, not an accepted IB limit, general history policy, other-timeframe provider
+acceptance, or derived-metric value acceptance. The bounded 2026-08-28 connected run is accepted
+for its direct five-minute source/series gate: IB returned 60/60 requested bars, SessionMetrics
+accepted 60 historical completed bars with zero duplicates, conflicts, or calculation failures,
+and the passive artifact selected the same 60 historical bars and zero live bars with no declared
+gap. The current layout is a provisional debug baseline; repeated per-bar historical-source markers
+are recorded visual cleanup debt. Parameter effective time remains stored
 but unenforced and unpublished; the 1,000-observation retention remains provisionally coupled to a
 disabled rolling placeholder; and maximum output age remains metadata rather than enforced expiry.
 
-The current uncommitted correction makes `visual_debug_capture` a strictly passive observer. It
+The committed correction makes `visual_debug_capture` a strictly passive observer. It
 does not reuse either rejected visual component and it does not request a producer snapshot.
 Capture on/off composition differs only by the observer; SessionMetrics configuration, startup
 history, live demand, calculation, retention, persistence, and lifecycle remain identical. The
@@ -524,13 +519,16 @@ treated as reliable evidence that the runtime is stalled or progressing. Browser
 formula-parity acceptance, accessibility acceptance, provider licensing decision, and final
 evidence-fitness decision remain incomplete for this component.
 
-The next proposed V3 walkthrough gate is the five-minute completed-bar source and series itself,
-before any metric is visually accepted. One connected run should reconcile the resolved
-configuration with exactly one direct five-minute historical request, its UTC bounds and terminal
-state, the canonical completed bars actually published, the observer's exact 60-bar historical
-selection, source identities, interval continuity or explicit gaps, and the artifact manifest.
-Only after that source/series evidence agrees should the review advance one-by-one through OHLCV
-and derived metrics.
+The five-minute completed-bar source/series gate is accepted for that bounded run. The next V3
+walkthrough gate is the completed-bar configuration itself, followed by one-by-one OHLCV and
+derived-metric review. `SessionMetricsActor` currently groups completed-bar foundation, session
+reference, calendar-window, and rolling-measurement responsibilities in one configured actor
+instance. Its completed-bar foundation configuration is singular: one live selector, one
+historical selector, and one calculation interval. This does not impose a system-wide historical
+timeframe; other capabilities can declare independent selectors such as fifteen-minute bars.
+However, the temporary profile permits only one outstanding historical request, and a second
+parallel canonical completed-bar foundation cannot currently be configured. Both restrictions are
+explicit architecture/configuration debt, not accepted production policy; no redesign is selected.
 
 Slice 3 is accepted at commit `8696acf`. It adds only deterministic active-session,
 previous-session, optional overnight, and gap measurements. Historical and live observations

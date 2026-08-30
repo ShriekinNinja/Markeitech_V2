@@ -69,8 +69,6 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     assert completed_bars.maximum_retained_observations == 1000
     assert completed_bars.maximum_output_age_ms == 120000
     assert config.metrics.entity_analysis.enabled is False
-    assert config.visual_acceptance.enabled is False
-    assert config.live_evidence_review.enabled is False
     assert config.visual_debug_capture.enabled is True
     assert config.visual_debug_capture.configuration_identity == (
         "v3-es-5m-historical-60-review-v1-20260828T110307Z"
@@ -117,8 +115,6 @@ def test_v3_completed_bar_review_composes_only_approved_foundation_and_projectio
         "data_acquisition",
         "operational_persistence",
     ]
-    assert "visual_acceptance" not in keys
-    assert "live_evidence_review" not in keys
     assert "entity_analysis" not in keys
     session_metrics = next(item for item in plan if item.key == "session_metrics")
     assert "visual_snapshot_enabled" not in session_metrics.config.config

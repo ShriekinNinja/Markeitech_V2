@@ -6,10 +6,6 @@ from uuid import UUID
 
 from nautilus_trader.common import ImportableActorConfig
 
-from markeitech.intelligence.live_evidence_review import (
-    build_review_inventory,
-    to_json_value,
-)
 from markeitech.intelligence.rolling_measurements import (
     ROLLING_METRIC_SUFFIXES,
     rolling_metric_id,
@@ -21,13 +17,6 @@ from markeitech.system.discord import (
     OPERATIONAL_EVENTS_WEBHOOK_ENV,
     SYSTEM_HEALTH_WEBHOOK_ENV,
 )
-
-_VISUAL_ENTITY_GROUPS = {
-    "objective_session_reference_level",
-    "volatility_compression_expansion",
-    "direction_trend_rotation_reference",
-    "swing_fvg_zone",
-}
 
 
 def _watchlist_feeds(config: SystemConfig) -> list[dict[str, str]]:
@@ -63,103 +52,6 @@ def _watchlist_instruments_with_capability(
         member.instrument_id
         for member in config.watchlist.members
         if capability in member.capabilities
-    ]
-
-
-def _visual_bar_specifications(config: SystemConfig) -> list[str]:
-    families = config.metrics.session_measurements.rolling_measurements.families
-    ordered = sorted(families, key=lambda item: item.input_interval_seconds)
-    return list(dict.fromkeys(item.input_selector for item in ordered))
-
-
-def _visual_view_windows_ms(config: SystemConfig) -> dict[str, int]:
-    windows: dict[str, int] = {}
-    families = config.metrics.session_measurements.rolling_measurements.families
-    for family in families:
-        selected = next(
-            candidate
-            for candidate in family.candidates
-            if candidate.candidate_id == family.selected_context_candidate_id
-        )
-        duration_ms = selected.duration_seconds * 1_000
-        windows[family.input_selector] = max(
-            duration_ms,
-            windows.get(family.input_selector, 0),
-        )
-    return windows
-
-
-def _visual_horizon_selectors(config: SystemConfig) -> dict[str, str]:
-    selectors = {
-        family.family_id: family.input_selector
-        for family in config.metrics.session_measurements.rolling_measurements.families
-    }
-    for definition in config.metrics.entity_analysis.definitions:
-        if not definition.enabled or definition.group not in _VISUAL_ENTITY_GROUPS:
-            continue
-        for application in definition.applications:
-            existing = selectors.setdefault(application.horizon, application.source_selector)
-            if existing != application.source_selector:
-                raise ValueError(
-                    "visual acceptance horizon maps to multiple source selectors: "
-                    f"{application.horizon}",
-                )
-    return dict(sorted(selectors.items()))
-
-
-def _visual_selected_metric_prefixes(config: SystemConfig) -> dict[str, list[str]]:
-    prefixes: dict[str, list[str]] = {}
-    families = config.metrics.session_measurements.rolling_measurements.families
-    for family in families:
-        prefixes.setdefault(family.input_selector, []).append(
-            f"rolling.{family.family_id}.{family.selected_context_candidate_id}.",
-        )
-    return {
-        selector: sorted(set(values))
-        for selector, values in sorted(prefixes.items())
-    }
-
-
-def _visual_annotation_expectations(config: SystemConfig) -> list[dict[str, object]]:
-    entity_analysis = config.metrics.entity_analysis
-    if not entity_analysis.enabled:
-        return []
-    selected_instruments = set(
-        _watchlist_instruments_with_capability(
-            config,
-            entity_analysis.required_watchlist_capability,
-        ),
-    )
-    profile_by_instrument = {
-        instrument_id: binding.profile_id
-        for binding in config.metrics.session_measurements.profile_bindings
-        for instrument_id in binding.instrument_ids
-    }
-    expected: dict[tuple[str, str, str], set[str]] = {}
-    for definition in entity_analysis.definitions:
-        if not definition.enabled or definition.group not in _VISUAL_ENTITY_GROUPS:
-            continue
-        for application in definition.applications:
-            application_instruments = set(application.instrument_ids) or {
-                instrument_id
-                for instrument_id, profile_id in profile_by_instrument.items()
-                if profile_id in application.analytical_profile_ids
-            }
-            for instrument_id in sorted(application_instruments & selected_instruments):
-                key = (
-                    instrument_id,
-                    application.horizon,
-                    application.source_selector,
-                )
-                expected.setdefault(key, set()).add(definition.entity_type)
-    return [
-        {
-            "instrument_id": instrument_id,
-            "horizon": horizon,
-            "bar_specification": selector,
-            "entity_types": sorted(entity_types),
-        }
-        for (instrument_id, horizon, selector), entity_types in sorted(expected.items())
     ]
 
 
@@ -478,94 +370,6 @@ def build_actor_plan(
                         ),
                         "webhook_env": SYSTEM_HEALTH_WEBHOOK_ENV,
                         "operational_events_webhook_env": OPERATIONAL_EVENTS_WEBHOOK_ENV,
-                    },
-                ),
-            ),
-        )
-    if config.visual_acceptance.enabled:
-        registrations.append(
-            ActorRegistration(
-                key="visual_acceptance",
-                actor_id="VISUAL-ACCEPTANCE",
-                config=ImportableActorConfig(
-                    actor_path=(
-                        "markeitech.intelligence.visual_acceptance:VisualAcceptanceActor"
-                    ),
-                    config_path=(
-                        "markeitech.intelligence.visual_acceptance:"
-                        "VisualAcceptanceActorConfig"
-                    ),
-                    config={
-                        "actor_id": "VISUAL-ACCEPTANCE",
-                        "runtime_name": config.runtime.name,
-                        "output_directory": str(config.visual_acceptance.output_directory),
-                        "refresh_interval_ms": (
-                            config.visual_acceptance.refresh_interval_ms
-                        ),
-                        "maximum_bars_per_series": (
-                            config.visual_acceptance.maximum_bars_per_series
-                        ),
-                        "maximum_metric_values": (
-                            config.visual_acceptance.maximum_metric_values
-                        ),
-                        "maximum_entity_revisions": (
-                            config.visual_acceptance.maximum_entity_revisions
-                        ),
-                        "instrument_ids": instrument_ids,
-                        "bar_specifications": _visual_bar_specifications(config),
-                        "view_windows_ms": _visual_view_windows_ms(config),
-                        "horizon_selectors": _visual_horizon_selectors(config),
-                        "selected_metric_prefixes": (
-                            _visual_selected_metric_prefixes(config)
-                        ),
-                        "annotation_expectations": (
-                            _visual_annotation_expectations(config)
-                        ),
-                    },
-                ),
-            ),
-        )
-    if config.live_evidence_review.enabled:
-        review = config.live_evidence_review
-        inventory = build_review_inventory(
-            config,
-            checkout_identity=review.checkout_identity,
-            configuration_identity=review.configuration_identity,
-        )
-        registrations.append(
-            ActorRegistration(
-                key="live_evidence_review",
-                actor_id="LIVE-EVIDENCE-REVIEW",
-                config=ImportableActorConfig(
-                    actor_path=(
-                        "markeitech.intelligence.live_evidence_review_actor:"
-                        "LiveEvidenceReviewActor"
-                    ),
-                    config_path=(
-                        "markeitech.intelligence.live_evidence_review_actor:"
-                        "LiveEvidenceReviewActorConfig"
-                    ),
-                    config={
-                        "actor_id": "LIVE-EVIDENCE-REVIEW",
-                        "run_id": str(prerequisites.run_id),
-                        "inventory": to_json_value(inventory),
-                        "instrument_id": review.instrument_id,
-                        "analytical_profile_id": review.analytical_profile_id,
-                        "analytical_profile_version": review.analytical_profile_version,
-                        "bar_specification": review.bar_specification,
-                        "output_directory": str(review.output_directory),
-                        "capture_policy_version": review.capture_policy_version,
-                        "coalescing_interval_ms": review.coalescing_interval_ms,
-                        "readiness_deadline_ms": review.readiness_deadline_ms,
-                        "live_bar_deadline_ms": review.live_bar_deadline_ms,
-                        "output_drain_timeout_ms": review.output_drain_timeout_ms,
-                        "visible_window_ms": review.visible_window_ms,
-                        "image_width": review.image_width,
-                        "image_height": review.image_height,
-                        "maximum_bars_per_series": review.maximum_bars_per_series,
-                        "maximum_metric_subjects": review.maximum_metric_subjects,
-                        "maximum_entity_subjects": review.maximum_entity_subjects,
-                        "contextual_bar_specifications": _visual_bar_specifications(config),
                     },
                 ),
             ),

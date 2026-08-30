@@ -173,69 +173,6 @@ def test_actor_plan_omits_disabled_runtime_resource_telemetry() -> None:
     assert "runtime_resource_health" not in {registration.key for registration in plan}
 
 
-def test_actor_plan_adds_enabled_visual_acceptance_before_analytical_producers() -> None:
-    config = _config()
-    config = replace(
-        config,
-        visual_acceptance=replace(config.visual_acceptance, enabled=True),
-    )
-
-    plan = build_actor_plan(config, _prerequisites())
-
-    keys = [registration.key for registration in plan]
-    assert keys.index("visual_acceptance") < keys.index("quote_quality_metrics")
-    visual = next(item for item in plan if item.key == "visual_acceptance")
-    assert visual.config.config["instrument_ids"] == list(config.instrument_ids)
-    assert visual.config.config["bar_specifications"] == [
-        "1-MINUTE-LAST-EXTERNAL",
-        "5-MINUTE-LAST-EXTERNAL",
-        "15-MINUTE-LAST-EXTERNAL",
-    ]
-    assert visual.config.config["refresh_interval_ms"] == 60000
-    assert visual.config.config["view_windows_ms"] == {
-        "1-MINUTE-LAST-EXTERNAL": 2_700_000,
-        "5-MINUTE-LAST-EXTERNAL": 14_400_000,
-        "15-MINUTE-LAST-EXTERNAL": 28_800_000,
-    }
-    assert visual.config.config["selected_metric_prefixes"] == {
-        "1-MINUTE-LAST-EXTERNAL": ["rolling.fast.context_45m."],
-        "5-MINUTE-LAST-EXTERNAL": ["rolling.tactical.context_4h."],
-        "15-MINUTE-LAST-EXTERNAL": [
-            "rolling.structural_intraday.context_8h.",
-        ],
-    }
-    assert visual.config.config["annotation_expectations"] == []
-
-
-def test_actor_plan_adds_live_evidence_review_before_analytical_producers() -> None:
-    config = _config()
-    config = replace(
-        config,
-        discord=replace(config.discord, enabled=False),
-        watchlist=replace(config.watchlist, members=(config.watchlist.members[0],)),
-        live_evidence_review=replace(
-            config.live_evidence_review,
-            enabled=True,
-            checkout_identity="test-checkout",
-            configuration_identity="test-es-review",
-        ),
-    )
-
-    plan = build_actor_plan(config, _prerequisites())
-
-    keys = [registration.key for registration in plan]
-    assert keys.index("live_evidence_review") < keys.index("quote_quality_metrics")
-    review = next(item for item in plan if item.key == "live_evidence_review")
-    assert review.config.config["instrument_id"] == "ESU6.CME"
-    assert review.config.config["bar_specification"] == "5-MINUTE-LAST-EXTERNAL"
-    assert len(review.config.config["inventory"]["items"]) == 365
-    assert review.config.config["contextual_bar_specifications"] == [
-        "1-MINUTE-LAST-EXTERNAL",
-        "5-MINUTE-LAST-EXTERNAL",
-        "15-MINUTE-LAST-EXTERNAL",
-    ]
-
-
 def test_actor_plan_adds_visual_debug_capture_before_session_metrics() -> None:
     config = _config()
     config = replace(

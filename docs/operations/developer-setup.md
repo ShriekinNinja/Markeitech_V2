@@ -94,6 +94,13 @@ test -e v2/config/system.local.toml || \
 
 Both destination files are ignored by Git.
 
+Existing local configurations created before schema 18 require a manual migration: set
+`schema_version = 18` and remove the retired `[visual_acceptance]` and
+`[live_evidence_review]` sections. The loader rejects schema 17 and either dead section so an old
+profile cannot appear to enable components which no longer exist. Do not overwrite the rest of an
+existing machine-local profile; compare it with `system.example.toml` and preserve its reviewed IB,
+instrument, calendar, persistence, and metric settings.
+
 ### Environment file
 
 Set these values in `v2/.env`:

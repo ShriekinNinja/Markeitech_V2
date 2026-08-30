@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 17
+schema_version = 18
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -37,36 +37,6 @@ enabled = true
 request_timeout_seconds = 5
 queue_capacity = 32
 ping_critical_resource_alerts = true
-
-[visual_acceptance]
-enabled = false
-output_directory = "../data/visual-acceptance"
-refresh_interval_ms = 60000
-maximum_bars_per_series = 1000
-maximum_metric_values = 20000
-maximum_entity_revisions = 20000
-
-[live_evidence_review]
-enabled = false
-checkout_identity = "test-checkout"
-configuration_identity = "es-live-evidence-review-v1"
-instrument_id = "ESU6.CME"
-analytical_profile_id = "cme_equity_primary"
-analytical_profile_version = 1
-bar_specification = "5-MINUTE-LAST-EXTERNAL"
-output_directory = "../data/es-live-knowledge-review"
-capture_policy_version = 1
-coalescing_interval_ms = 2000
-readiness_deadline_ms = 2700000
-live_bar_deadline_ms = 600000
-output_drain_timeout_ms = 30000
-visible_window_ms = 28800000
-image_width = 1920
-image_height = 1080
-maximum_bars_per_series = 1000
-maximum_metric_subjects = 20000
-maximum_entity_subjects = 20000
-
 
 [runtime_resources]
 enabled = true
@@ -414,16 +384,6 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.discord.enabled is True
     assert config.discord.queue_capacity == 32
     assert config.discord.ping_critical_resource_alerts is True
-    assert config.visual_acceptance.enabled is False
-    assert config.visual_acceptance.output_directory == tmp_path.parent / "data/visual-acceptance"
-    assert config.visual_acceptance.refresh_interval_ms == 60000
-    assert config.visual_acceptance.maximum_bars_per_series == 1000
-    assert config.live_evidence_review.enabled is False
-    assert config.live_evidence_review.instrument_id == "ESU6.CME"
-    assert config.live_evidence_review.bar_specification == "5-MINUTE-LAST-EXTERNAL"
-    assert config.live_evidence_review.coalescing_interval_ms == 2000
-    assert config.live_evidence_review.image_width == 1920
-    assert config.live_evidence_review.image_height == 1080
     assert config.visual_debug_capture.enabled is False
     assert config.visual_debug_capture.instrument_id == "ESU6.CME"
     assert config.visual_debug_capture.bar_specification == "1-MINUTE-LAST-EXTERNAL"
@@ -505,7 +465,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         config.metrics.session_measurements.profiles[0].windows[1].maximum_historical_observations
         == 4
     )
-    assert config.schema_version == 17
+    assert config.schema_version == 18
     assert config.metrics.entity_analysis.enabled is False
     assert config.metrics.entity_analysis.catalog_version == 2
     assert config.metrics.entity_analysis.completed_session_retention == 2
@@ -549,33 +509,6 @@ def test_rejects_completed_bar_live_selector_that_does_not_divide_target(
 
     with pytest.raises(ValueError, match="live selector interval"):
         load_system_config(path)
-
-
-def test_live_evidence_review_rejects_non_isolated_runtime(tmp_path: Path) -> None:
-    path = tmp_path / "system.toml"
-    path.write_text(
-        VALID_CONFIG.replace(
-            "[live_evidence_review]\nenabled = false",
-            "[live_evidence_review]\nenabled = true",
-        ),
-    )
-
-    with pytest.raises(ValueError, match="requires Discord off"):
-        load_system_config(path)
-
-
-def test_live_evidence_review_is_safely_disabled_when_section_is_absent(
-    tmp_path: Path,
-) -> None:
-    path = tmp_path / "system.toml"
-    start = VALID_CONFIG.index("[live_evidence_review]")
-    end = VALID_CONFIG.index("[runtime_resources]", start)
-    path.write_text(VALID_CONFIG[:start] + VALID_CONFIG[end:])
-
-    review = load_system_config(path).live_evidence_review
-
-    assert review.enabled is False
-    assert review.configuration_identity == "not-configured"
 
 
 def test_loads_complete_entity_analysis_configuration_envelope(tmp_path: Path) -> None:
@@ -745,6 +678,23 @@ def test_rejects_unknown_configuration(tmp_path: Path) -> None:
     path.write_text(VALID_CONFIG.replace("environment =", "legacy_option = true\nenvironment ="))
 
     with pytest.raises(ValueError, match="runtime has unknown keys: legacy_option"):
+        load_system_config(path)
+
+
+@pytest.mark.parametrize("section", ["visual_acceptance", "live_evidence_review"])
+def test_rejects_retired_visual_review_sections(tmp_path: Path, section: str) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG + f"\n[{section}]\nenabled = false\n")
+
+    with pytest.raises(ValueError, match=rf"root has unknown keys: {section}"):
+        load_system_config(path)
+
+
+def test_rejects_pre_retirement_schema(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace("schema_version = 18", "schema_version = 17", 1))
+
+    with pytest.raises(ValueError, match="unsupported schema_version: 17"):
         load_system_config(path)
 
 

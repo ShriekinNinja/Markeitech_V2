@@ -24,6 +24,13 @@ covered by offline tests.
 - Runtime: connected Interactive Brokers through installed NautilusTrader `2.0.0rc3`
 - Active local configuration: `v2/config/system.v3-es-minimal.toml`
 
+The rejected `VisualAcceptanceActor` and `LiveEvidenceReviewActor` have been removed from the
+current runtime, configuration schema, source tree, and test suite. Schema 18 rejects their old
+configuration sections. The progressive `visual_debug_capture` path is independent and remains
+the sole visual-review actor in this profile. Ignored historical artifacts and ignored obsolete
+local configurations were preserved as recovery evidence and must not be treated as runnable
+current profiles.
+
 The baseline commit intentionally excludes these unrelated, untracked documents:
 
 - `docs/notes/current-indicators-and-intelligence-report.md`
@@ -70,10 +77,10 @@ multi-timeframe or historical-only review process.
 - the isolated visual-debug projection;
 - bounded operational PostgreSQL audit; and
 - no Discord, entity analysis, quote-quality metrics, rolling measurements, session references,
-  analytical windows, legacy visual acceptance, or legacy live-evidence review.
+  analytical windows, or legacy visual-review actors.
 
-The configuration still contains schema-required disabled placeholders. Those values are not
-accepted analytical defaults.
+The configuration still contains schema-required disabled placeholders for inactive analytical
+capabilities. Those values are not accepted analytical defaults.
 
 ### Current capture policy
 
@@ -275,14 +282,26 @@ bars and metric cohorts.
 
 One-, five-, and fifteen-minute sequential configuration is structurally supported, but only one
 completed-bar foundation series may be active per run while `MetricValue` lacks full series
-identity. Five- and fifteen-minute provider parity and metric acceptance remain open.
+identity. This is a singular `SessionMetricsActor` configuration shape, not a system-wide
+historical-timeframe rule. Other actors/capabilities may declare their own historical selectors;
+the disabled session-reference configuration already carries a separate fifteen-minute selector.
+The temporary profile nevertheless allows only one distinct outstanding historical request, so a
+concurrent second selector would currently be rejected rather than queued. Five-minute connected
+source/series evidence is accepted only for the bounded run below; other-timeframe provider parity
+and metric acceptance remain open.
 
 After passive baseline `1f3ead2`, the current temporary configuration baseline selects one direct
 `5-MINUTE-LAST-EXTERNAL` producer series, up to 60 normal historical observations, 60 historical
 artifact bars, and zero live-source artifact bars. The normal five-second live stream remains
 configured and operating; zero live bars is a projection choice only. The nominal artifact span is
-five hours before real gaps. Direct five-minute IB behavior and visual output remain unaccepted
-until the next connected run is reviewed.
+five hours before real gaps.
+
+The 2026-08-28 connected run passed and Markeitect accepted the bounded five-minute source/series
+gate. IB returned 60/60 direct five-minute bars for the exact UTC request, SessionMetrics accepted
+all 60 with zero duplicates, conflicts, or calculation failures, and the passive artifact selected
+60 historical and zero live bars as `COMPLETE_CONTIGUOUS` with no declared gaps. The current chart
+layout is provisionally accepted as the working debug baseline. Repeated per-bar historical-source
+markers are visual cleanup debt; simple-return and true-range formulas remain unaccepted.
 
 Markeitect accepted this as a usable debug baseline, not as the desired final configuration
 experience. Producing the single review series currently requires coordinated edits to the active
@@ -291,10 +310,9 @@ inert rolling placeholder used by validation/retention. That coupling is recorde
 interface debt. It must not be hidden by treating the projection as an operating mode or by letting
 `visual_debug_capture` alter normal acquisition and calculation.
 
-## Recommended Next Debug Step — Not Yet Implemented
+## Accepted Source/Series Gate And Next Walkthrough
 
-Review the five-minute completed-bar source and series before reviewing any metric formula or
-annotation. For one Markeitect-owned connected run, reconcile these facts in order:
+The accepted connected run reconciled these facts:
 
 1. The normal five-second live selector remains the live constituent stream even though the
    artifact selects zero live-source bars.
@@ -310,9 +328,20 @@ annotation. For one Markeitect-owned connected run, reconcile these facts in ord
 6. Reconcile logs, capture manifest, canonical-bar table, interval continuity, and every real gap
    before judging the chart.
 
-If that gate passes, continue the one-by-one visual walkthrough with raw OHLCV first, then simple
-return, then true range. Return and true-range acceptance must remain blocked until predecessor
-identity, lineage, contiguity, and session-transition debt is resolved or explicitly bounded.
+The next step is a setting-by-setting walkthrough of
+`[metrics.session_measurements.completed_bars]`, then raw OHLCV, simple return, and true range.
+Return and true-range acceptance must remain blocked until predecessor identity, lineage,
+contiguity, and session-transition debt is resolved or explicitly bounded.
+
+`SessionMetricsActor` currently combines four responsibility families: the completed-bar
+foundation, session references, calendar-relative windows, and rolling measurements. The composed
+runtime has one such actor instance, and the foundation fields are singular. Therefore it cannot
+currently maintain parallel canonical five-minute and fifteen-minute foundations even though the
+historical-demand protocol and Nautilus `BarType` identity permit another actor to request its own
+fifteen-minute history. The temporary `maximum_outstanding_requests = 1` profile further prevents
+a second distinct request from waiting while the first is active. Record both limitations as
+architecture/configuration debt; do not infer that all history must be five minutes, and do not
+select a redesign until the later multi-series review.
 
 ## Handoff Procedure For The Next Agent
 
@@ -326,7 +355,7 @@ identity, lineage, contiguity, and session-transition debt is resolved or explic
    consequential timeframe, request, actor, or configuration design/edit.
 5. Preserve the non-interference contract in `v3-visual-debug-review-contract.md`; capture modes
    select artifact records only and must not become runtime operating modes.
-6. Execute the completed-bar source/series gate above before visually accepting any metric.
+6. Continue the completed-bar configuration walkthrough before visually accepting any metric.
 7. Keep the next implementation batch separate and uncommitted for local review.
 8. Verify focused contracts, the proportional offline suite, Ruff, `git diff --check`, the final
    diff, and worktree contents before presenting it.

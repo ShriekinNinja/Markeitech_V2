@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored v2/.env.
 
-schema_version = 17
+schema_version = 18
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -32,36 +32,6 @@ enabled = true
 request_timeout_seconds = 5
 queue_capacity = 32
 ping_critical_resource_alerts = true
-
-[visual_acceptance]
-enabled = false
-output_directory = "../data/visual-acceptance"
-refresh_interval_ms = 60000
-maximum_bars_per_series = 1000
-maximum_metric_values = 20000
-maximum_entity_revisions = 20000
-
-[live_evidence_review]
-enabled = false
-checkout_identity = "NOT_CONFIGURED"
-configuration_identity = "es-live-evidence-review-v1"
-instrument_id = "ESU6.CME"
-analytical_profile_id = "cme_equity_primary"
-analytical_profile_version = 1
-bar_specification = "5-MINUTE-LAST-EXTERNAL"
-output_directory = "../data/es-live-knowledge-review"
-capture_policy_version = 1
-coalescing_interval_ms = 2000
-readiness_deadline_ms = 2700000
-live_bar_deadline_ms = 600000
-output_drain_timeout_ms = 30000
-visible_window_ms = 28800000
-image_width = 1920
-image_height = 1080
-maximum_bars_per_series = 1000
-maximum_metric_subjects = 20000
-maximum_entity_subjects = 20000
-
 
 [runtime_resources]
 enabled = true

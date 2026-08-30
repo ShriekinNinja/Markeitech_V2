@@ -510,39 +510,6 @@ class DiscordConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class VisualAcceptanceConfig:
-    enabled: bool
-    output_directory: Path
-    refresh_interval_ms: int
-    maximum_bars_per_series: int
-    maximum_metric_values: int
-    maximum_entity_revisions: int
-
-
-@dataclass(frozen=True, slots=True)
-class LiveEvidenceReviewConfig:
-    enabled: bool
-    checkout_identity: str
-    configuration_identity: str
-    instrument_id: str
-    analytical_profile_id: str
-    analytical_profile_version: int
-    bar_specification: str
-    output_directory: Path
-    capture_policy_version: int
-    coalescing_interval_ms: int
-    readiness_deadline_ms: int
-    live_bar_deadline_ms: int
-    output_drain_timeout_ms: int
-    visible_window_ms: int
-    image_width: int
-    image_height: int
-    maximum_bars_per_series: int
-    maximum_metric_subjects: int
-    maximum_entity_subjects: int
-
-
-@dataclass(frozen=True, slots=True)
 class VisualDebugCaptureConfig:
     enabled: bool
     configuration_identity: str
@@ -637,8 +604,6 @@ class SystemConfig:
     ib: InteractiveBrokersConfig
     logging: LoggingConfig
     discord: DiscordConfig
-    visual_acceptance: VisualAcceptanceConfig
-    live_evidence_review: LiveEvidenceReviewConfig
     visual_debug_capture: VisualDebugCaptureConfig
     runtime_resources: RuntimeResourcesConfig
     persistence: PersistenceConfig
@@ -665,7 +630,6 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "ib",
             "logging",
             "discord",
-            "visual_acceptance",
             "runtime_resources",
             "persistence",
             "acquisition",
@@ -675,8 +639,6 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "evidence_health",
             "metrics",
         }
-    if "live_evidence_review" in raw:
-        root_keys.add("live_evidence_review")
     if "visual_debug_capture" in raw:
         root_keys.add("visual_debug_capture")
     _require_keys(
@@ -684,44 +646,13 @@ def load_system_config(path: str | Path) -> SystemConfig:
         root_keys,
         "root",
     )
-    if raw["schema_version"] != 17:
+    if raw["schema_version"] != 18:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
     ib = _load_ib(raw["ib"])
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
-    visual_acceptance = _load_visual_acceptance(
-        raw["visual_acceptance"],
-        config_path.parent,
-    )
-    live_evidence_review = _load_live_evidence_review(
-        raw.get(
-            "live_evidence_review",
-            {
-                "enabled": False,
-                "checkout_identity": "NOT_CONFIGURED",
-                "configuration_identity": "not-configured",
-                "instrument_id": "ESU6.CME",
-                "analytical_profile_id": "cme_equity_primary",
-                "analytical_profile_version": 1,
-                "bar_specification": "5-MINUTE-LAST-EXTERNAL",
-                "output_directory": "../data/es-live-knowledge-review",
-                "capture_policy_version": 1,
-                "coalescing_interval_ms": 2000,
-                "readiness_deadline_ms": 2_700_000,
-                "live_bar_deadline_ms": 600_000,
-                "output_drain_timeout_ms": 30_000,
-                "visible_window_ms": 28_800_000,
-                "image_width": 1920,
-                "image_height": 1080,
-                "maximum_bars_per_series": 1000,
-                "maximum_metric_subjects": 20_000,
-                "maximum_entity_subjects": 20_000,
-            },
-        ),
-        config_path.parent,
-    )
     visual_debug_capture = _load_visual_debug_capture(
         raw.get(
             "visual_debug_capture",
@@ -756,28 +687,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
     sessions = _load_sessions(raw["sessions"])
     evidence_health = _load_evidence_health(raw["evidence_health"])
     metrics = _load_metrics(raw["metrics"])
-    if live_evidence_review.enabled:
-        if visual_acceptance.enabled:
-            raise ValueError(
-                "live evidence review cannot run with rejected visual_acceptance enabled",
-            )
-        if discord.enabled:
-            raise ValueError("live evidence review acceptance configuration requires Discord off")
-        if tuple(member.instrument_id for member in watchlist.members) != (
-            live_evidence_review.instrument_id,
-        ):
-            raise ValueError(
-                "live evidence review requires an exact one-member watchlist "
-                "matching instrument_id",
-            )
-        capabilities = set(watchlist.members[0].capabilities)
-        if not {"top_of_book", "watchlist_last"}.issubset(capabilities):
-            raise ValueError(
-                "live evidence review requires ES top_of_book and watchlist_last capabilities",
-            )
     if visual_debug_capture.enabled:
-        if visual_acceptance.enabled or live_evidence_review.enabled:
-            raise ValueError("visual debug capture cannot run with rejected visual components")
         if not metrics.session_measurements.enabled:
             raise ValueError("visual debug capture requires session measurements enabled")
         if tuple(member.instrument_id for member in watchlist.members) != (
@@ -932,8 +842,6 @@ def load_system_config(path: str | Path) -> SystemConfig:
         ib=ib,
         logging=logging,
         discord=discord,
-        visual_acceptance=visual_acceptance,
-        live_evidence_review=live_evidence_review,
         visual_debug_capture=visual_debug_capture,
         runtime_resources=runtime_resources,
         persistence=persistence,
@@ -1058,164 +966,6 @@ def _load_discord(raw: Any) -> DiscordConfig:
             "discord.ping_critical_resource_alerts",
         ),
     )
-
-
-def _load_visual_acceptance(
-    raw: Any,
-    config_directory: Path,
-) -> VisualAcceptanceConfig:
-    values = _mapping(raw, "visual_acceptance")
-    _require_keys(
-        values,
-        {
-            "enabled",
-            "output_directory",
-            "refresh_interval_ms",
-            "maximum_bars_per_series",
-            "maximum_metric_values",
-            "maximum_entity_revisions",
-        },
-        "visual_acceptance",
-    )
-    output_directory = Path(
-        _non_empty_string(
-            values["output_directory"],
-            "visual_acceptance.output_directory",
-        ),
-    )
-    if not output_directory.is_absolute():
-        output_directory = (config_directory / output_directory).resolve()
-    return VisualAcceptanceConfig(
-        enabled=_bool(values["enabled"], "visual_acceptance.enabled"),
-        output_directory=output_directory,
-        refresh_interval_ms=_positive_int(
-            values["refresh_interval_ms"],
-            "visual_acceptance.refresh_interval_ms",
-        ),
-        maximum_bars_per_series=_positive_int(
-            values["maximum_bars_per_series"],
-            "visual_acceptance.maximum_bars_per_series",
-        ),
-        maximum_metric_values=_positive_int(
-            values["maximum_metric_values"],
-            "visual_acceptance.maximum_metric_values",
-        ),
-        maximum_entity_revisions=_positive_int(
-            values["maximum_entity_revisions"],
-            "visual_acceptance.maximum_entity_revisions",
-        ),
-    )
-
-
-def _load_live_evidence_review(
-    raw: Any,
-    config_directory: Path,
-) -> LiveEvidenceReviewConfig:
-    values = _mapping(raw, "live_evidence_review")
-    keys = {
-        "enabled",
-        "checkout_identity",
-        "configuration_identity",
-        "instrument_id",
-        "analytical_profile_id",
-        "analytical_profile_version",
-        "bar_specification",
-        "output_directory",
-        "capture_policy_version",
-        "coalescing_interval_ms",
-        "readiness_deadline_ms",
-        "live_bar_deadline_ms",
-        "output_drain_timeout_ms",
-        "visible_window_ms",
-        "image_width",
-        "image_height",
-        "maximum_bars_per_series",
-        "maximum_metric_subjects",
-        "maximum_entity_subjects",
-    }
-    _require_keys(values, keys, "live_evidence_review")
-    output_directory = Path(
-        _non_empty_string(
-            values["output_directory"],
-            "live_evidence_review.output_directory",
-        ),
-    )
-    if not output_directory.is_absolute():
-        output_directory = (config_directory / output_directory).resolve()
-    config = LiveEvidenceReviewConfig(
-        enabled=_bool(values["enabled"], "live_evidence_review.enabled"),
-        checkout_identity=_non_empty_string(
-            values["checkout_identity"],
-            "live_evidence_review.checkout_identity",
-        ),
-        configuration_identity=_non_empty_string(
-            values["configuration_identity"],
-            "live_evidence_review.configuration_identity",
-        ),
-        instrument_id=_non_empty_string(
-            values["instrument_id"],
-            "live_evidence_review.instrument_id",
-        ),
-        analytical_profile_id=_non_empty_string(
-            values["analytical_profile_id"],
-            "live_evidence_review.analytical_profile_id",
-        ),
-        analytical_profile_version=_positive_int(
-            values["analytical_profile_version"],
-            "live_evidence_review.analytical_profile_version",
-        ),
-        bar_specification=_non_empty_string(
-            values["bar_specification"],
-            "live_evidence_review.bar_specification",
-        ),
-        output_directory=output_directory,
-        capture_policy_version=_positive_int(
-            values["capture_policy_version"],
-            "live_evidence_review.capture_policy_version",
-        ),
-        coalescing_interval_ms=_positive_int(
-            values["coalescing_interval_ms"],
-            "live_evidence_review.coalescing_interval_ms",
-        ),
-        readiness_deadline_ms=_positive_int(
-            values["readiness_deadline_ms"],
-            "live_evidence_review.readiness_deadline_ms",
-        ),
-        live_bar_deadline_ms=_positive_int(
-            values["live_bar_deadline_ms"],
-            "live_evidence_review.live_bar_deadline_ms",
-        ),
-        output_drain_timeout_ms=_positive_int(
-            values["output_drain_timeout_ms"],
-            "live_evidence_review.output_drain_timeout_ms",
-        ),
-        visible_window_ms=_positive_int(
-            values["visible_window_ms"],
-            "live_evidence_review.visible_window_ms",
-        ),
-        image_width=_positive_int(values["image_width"], "live_evidence_review.image_width"),
-        image_height=_positive_int(
-            values["image_height"],
-            "live_evidence_review.image_height",
-        ),
-        maximum_bars_per_series=_positive_int(
-            values["maximum_bars_per_series"],
-            "live_evidence_review.maximum_bars_per_series",
-        ),
-        maximum_metric_subjects=_positive_int(
-            values["maximum_metric_subjects"],
-            "live_evidence_review.maximum_metric_subjects",
-        ),
-        maximum_entity_subjects=_positive_int(
-            values["maximum_entity_subjects"],
-            "live_evidence_review.maximum_entity_subjects",
-        ),
-    )
-    if config.coalescing_interval_ms >= 300_000:
-        raise ValueError("live evidence review coalescing interval must be below five minutes")
-    if (config.image_width, config.image_height) != (1920, 1080):
-        raise ValueError("live evidence review output must be exactly 1920x1080")
-    return config
 
 
 def _load_visual_debug_capture(

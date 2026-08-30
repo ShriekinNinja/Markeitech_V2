@@ -1024,6 +1024,13 @@ meaning, opportunity, option selection, or Sir Loke behavior.
 
 #### 9D.5D: Runtime, Snapshot, Visual, And Connected Acceptance
 
+**Retirement note (2026-08-30):** The `VisualAcceptanceActor` described below was rejected and has
+been removed from current source, composition, configuration, dependencies, and tests. The text is
+retained as historical design and implementation evidence only. It does not describe a runnable
+current component. The independently implemented passive `VisualDebugCaptureActor` is the current
+progressive review projection and is governed by
+`docs/notes/v3-visual-debug-review-contract.md`.
+
 - compose the optional bounded `MarketStructureEntityActor` only for enabled reviewed definitions;
 - publish changed revisions through typed Nautilus custom data and serve immutable filtered
   snapshots;

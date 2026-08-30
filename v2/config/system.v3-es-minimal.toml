@@ -3,17 +3,19 @@
 # ENABLED SURFACE:
 # - one explicit instrument: ESU6.CME
 # - one acquisition capability: watchlist_last
+# - one direct five-minute historical completed-bar foundation with its five-second live input
+# - one passive visual_debug_capture projection selecting 60 historical and zero live-source bars
 # - mandatory control, calendar, evidence-health, acquisition, and persistence infrastructure
 #
 # DISABLED SURFACE:
-# - quote metrics, session measurements, rolling calculations, and entity analysis
-# - Discord, telemetry, probes, and every visual-review component
+# - quote metrics, session references, analytical windows, rolling calculations, and entity analysis
+# - Discord, telemetry, and probes
 #
 # Values inside disabled sections are schema-required inert placeholders. They are not accepted
 # analytical defaults and must be reviewed before their owning engine is enabled.
 # Never place secrets in this file; local secrets belong in the ignored v2/.env.
 
-schema_version = 17
+schema_version = 18
 
 [runtime]
 name = "MARKEITECH-V3-ES-PROGRESSIVE-001"
@@ -60,44 +62,6 @@ enabled = false
 request_timeout_seconds = 5
 queue_capacity = 32
 ping_critical_resource_alerts = true
-
-# V3 REMOVAL CANDIDATE — NOT YET AUTHORIZED FOR DELETION:
-# This is the rejected periodic Plotly/Kaleido static-PNG visual path. Keep it disabled for V3 and
-# propose removal after checking composition, tests, documentation, dependencies, and preserved
-# historical review evidence. It is not the future progressive interactive review surface.
-[visual_acceptance]
-enabled = false
-output_directory = "../data/visual-acceptance"
-refresh_interval_ms = 60000
-maximum_bars_per_series = 1000
-maximum_metric_values = 20000
-maximum_entity_revisions = 20000
-
-# V3 REMOVAL CANDIDATE — NOT YET AUTHORIZED FOR DELETION:
-# This is the rejected V1/V2 exhaustive one-shot capture plus Pillow static-frame review path.
-# Keep it disabled for V3 and propose removal after checking composition, tests, documentation,
-# dependencies, and preserved historical capture evidence. It is not the future progressive
-# interactive review surface.
-[live_evidence_review]
-enabled = false
-checkout_identity = "NOT_CONFIGURED"
-configuration_identity = "v3-disabled-placeholder"
-instrument_id = "ESU6.CME"
-analytical_profile_id = "cme_equity_primary"
-analytical_profile_version = 1
-bar_specification = "5-MINUTE-LAST-EXTERNAL"
-output_directory = "../data/es-live-knowledge-review"
-capture_policy_version = 1
-coalescing_interval_ms = 2000
-readiness_deadline_ms = 2700000
-live_bar_deadline_ms = 600000
-output_drain_timeout_ms = 30000
-visible_window_ms = 28800000
-image_width = 1920
-image_height = 1080
-maximum_bars_per_series = 1000
-maximum_metric_subjects = 20000
-maximum_entity_subjects = 20000
 
 # V3 PASSIVE CONNECTED VISUAL TEST — ACTIVE, NOT YET ACCEPTED:
 # This actor only observes canonical bars and metrics which normal SessionMetrics operation already
