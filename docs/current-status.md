@@ -88,6 +88,11 @@ system. The preserved V1 status is available in
 - Semantic interaction events, the bounded options proof, cross-instrument state, richer analytics,
   Sir Loke, opportunity lifecycle, ML evaluation, replay, backtesting, and execution remain future
   work.
+- A separate offline documentation utility now validates one versioned TOML architecture manifest,
+  reconciles its supported actor/contract/profile anchors against repository source, and generates
+  six tracked SVG/PNG/DOT/Markdown views plus an artifact index and hashes. It is not imported or
+  composed by V2, reads no runtime state or secrets, and changes no runtime behavior. The shared
+  PyCharm **Generate Sys Diagram** configuration runs only this locked documentation environment.
 - The repository-owned Kite plugin defines a 20-role advisor council for development-time
   engineering consultation, not V2 runtime implementation or Sir Loke behavior. Kite
   `0.1.0+codex.20260829091645` is installed and enabled from the local `markeitech` marketplace;

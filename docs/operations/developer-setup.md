@@ -34,6 +34,19 @@ authority; transfer the required local items explicitly as described below.
 
 The terminal workflow is fully supported. PyCharm is a convenience layer over the same commands.
 
+The project also contains a separately locked, offline architecture-documentation environment at
+`tools/system-diagram`. Provision it only when generating diagrams:
+
+```bash
+uv sync --project tools/system-diagram --locked
+```
+
+The shared PyCharm configuration **Generate Sys Diagram** then validates the canonical TOML,
+checks supported source/configuration drift, and atomically regenerates the tracked documentation
+artifacts. It does not use the V2 runtime environment, `.env`, IB, Docker, PostgreSQL, Discord, or
+the network. See the
+[system/data-flow maintenance procedure](../architecture/system-dataflow-maintenance.md).
+
 ## 1. Clone And Install
 
 ```bash

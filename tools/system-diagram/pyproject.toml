@@ -1,0 +1,19 @@
+[project]
+name = "markeitech-system-diagram"
+version = "0.1.0"
+description = "Offline schema, validation, and generation tooling for Markeitech architecture diagrams."
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "diagrams==0.25.1",
+  "graphviz==0.20.3",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

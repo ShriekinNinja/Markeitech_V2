@@ -145,6 +145,12 @@ live-runtime behavior.
 
 ## Documentation Discipline
 
+Architecture-sensitive changes must follow the
+[system/data-flow manifest maintenance procedure](architecture/system-dataflow-maintenance.md).
+Update the canonical TOML and its complete generated artifact set in the same reviewed batch.
+Generated diagrams are never hand-edited authority, and successful generation does not prove live
+runtime behavior.
+
 Keep current status, implementation history, and future plans separate. Update
 present-tense architecture when a future boundary becomes implemented. Preserve
 accepted decision rationale, but do not use the decisions register as a task
