@@ -151,6 +151,12 @@ Update the canonical TOML and its complete generated artifact set in the same re
 Generated diagrams are never hand-edited authority, and successful generation does not prove live
 runtime behavior.
 
+Public V2 Python APIs follow the separately locked, static
+[API documentation procedure](operations/v2-api-documentation.md). Use Google-style docstrings and
+the versioned public-surface denominator. Custom docstring attributes remain schema-gated discovery
+evidence: they do not establish caller/callee relationships, ownership, accepted architecture, or
+runtime truth, and unknown or invalid values must never escape into generated artifacts.
+
 Keep current status, implementation history, and future plans separate. Update
 present-tense architecture when a future boundary becomes implemented. Preserve
 accepted decision rationale, but do not use the decisions register as a task

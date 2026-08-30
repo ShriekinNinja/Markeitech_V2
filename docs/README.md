@@ -65,6 +65,7 @@ Preserved V1 architecture remains available in
 - [Legacy V1 runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
 - [V2 Stage 9C session measurements plan](roadmap/v2-stage-9c-session-measurements-plan.md)
 - [V2 Stage 9D entities and rolling state plan](roadmap/v2-stage-9d-entities-rolling-state-plan.md)
+- [V2 API documentation plan](roadmap/v2-api-documentation-plan.md)
 - [Legacy V1 trading quality evidence plan](roadmap/trading-quality-evidence-plan.md)
 - [Detailed implementation history](roadmap/implementation-history.md)
 
@@ -74,6 +75,7 @@ for investigation and context, but it does not reopen old stage gates.
 ## Operations
 
 - [V2 developer setup and machine handoff](operations/developer-setup.md)
+- [V2 static API documentation](operations/v2-api-documentation.md)
 - [GitHub workflow](operations/github-workflow.md)
 - [V2 runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
 - [V2 operational PostgreSQL](operations/v2-postgresql.md)

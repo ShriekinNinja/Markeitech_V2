@@ -173,6 +173,35 @@ change.
 - External messages and alerts are projections of canonical state. Discord, console, UI, and future
   agents must not calculate or mutate market truth.
 
+## V2 API Documentation
+
+The V2 API documentation utility is an isolated, static source-analysis tool under
+`tools/api-docs`. Future agents working on V2 public APIs or this tool must follow these rules:
+
+- Write Google-style docstrings for intentionally public V2 objects. Use annotations as type
+  authority; document meaning, units, lineage, side effects, failures, and abstention where they
+  matter.
+- Do not run bare `mkdocs` or `mkdocstrings` commands. Provision with the locked tool project and
+  invoke only the first-party `markeitech_api_docs validate` or `generate` wrapper documented in
+  `docs/operations/v2-api-documentation.md`.
+- Generation must stay offline and static. It must not import Markeitech, inspect modules
+  dynamically, resolve external inventories, connect services, read runtime configuration or
+  secrets, or mutate runtime source.
+- The public denominator is the versioned `schema/public-surface.toml` registry. An intentional
+  export change requires a reviewed count/hash update and registry-version bump; never weaken or
+  bypass the drift check to make a build pass.
+- Custom attributes are permitted only in the exact `Markeitech Metadata:` docstring section and
+  only acquire typed meaning through `schema/attribute-registry.toml`. A new field requires
+  Markeitect approval, a namespace, exact type, cardinality, bounds, exposure policy, registry-
+  version bump, and parser/render/leak tests.
+- Unknown, invalid, hidden, or conflicting custom values must remain quarantined. Do not copy raw
+  values into HTML, JSON, logs, errors, hashes intended for display, or other generated artifacts.
+- Caller/callee, ownership, flow, or dependency attributes are not currently approved. If later
+  approved, treat them as author-declared discovery evidence only. They cannot create accepted
+  architecture, mutate the canonical system/data-flow manifest, or prove runtime behavior.
+- Generated `tools/api-docs/site` and `.build` content is untracked and must not be hand-edited.
+  Commit source/configuration/registries/tests/lockfiles, then regenerate locally or in approved CI.
+
 ## Completion Standard
 
 A batch is not complete until its implementation and documentation agree, focused verification

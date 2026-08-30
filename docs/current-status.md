@@ -113,6 +113,16 @@ system. The preserved V1 status is available in
   six tracked SVG/PNG/DOT/Markdown views plus an artifact index and hashes. It is not imported or
   composed by V2, reads no runtime state or secrets, and changes no runtime behavior. The shared
   PyCharm **Generate Sys Diagram** configuration runs only this locked documentation environment.
+- A separate locked API-documentation utility now statically analyzes the curated V2 Python public
+  surface and produces an untracked MkDocs site plus sanitized metadata and artifact indexes. Its
+  versioned denominator currently selects 257 package exports plus one explicit operator entry
+  point, 258 objects in total; 16 selected objects have source docstrings and 242 are reported as
+  missing rather than inferred. Static analysis and rendering deny target imports, dynamic
+  inspection, external inventories, network access, and child processes; the wrapper first uses
+  bounded read-only Git queries for source identity. It verifies source stability and publishes
+  complete artifact sets atomically. The version-1 custom-attribute registry approves no production
+  fields yet. Caller/callee and architecture-flow examples remain unapproved future discovery
+  concepts, not implemented semantics or architecture authority.
 - The repository-owned Kite plugin defines a 20-role advisor council for development-time
   engineering consultation, not V2 runtime implementation or Sir Loke behavior. Kite
   `0.1.0+codex.20260829091645` is installed and enabled from the local `markeitech` marketplace;

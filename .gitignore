@@ -8,6 +8,8 @@ __pycache__/
 .mypy_cache/
 .coverage
 htmlcov/
+tools/api-docs/.build/
+tools/api-docs/site/
 *.dump
 data/catalog/
 data/runtime/
