@@ -1,0 +1,196 @@
+[manifest]
+schema_version = 1
+id = "markeitech-v3-system-dataflow"
+title = "Minimal schema fixture"
+description = "A dependency-free Stage 1 manifest fixture."
+scope = "architecture documentation test"
+authority = "architecture_representation_only"
+not_runtime_configuration = true
+checkout_commit = "c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce"
+owner = "markeitect"
+review_status = "approved"
+architecture_effective_at = "2026-08-30"
+generator_contract_version = 1
+default_profile = "profile.v3"
+limitations = ["No current order submission or execution"]
+
+[[evidence]]
+id = "evidence.current-status"
+evidence_class = "tracked_authority"
+source_path = "docs/current-status.md"
+source_symbol = "Current V2 status"
+observed_at = "2026-08-30"
+proves = ["Current status authority exists"]
+limitations = ["Does not prove provider delivery"]
+
+[[profiles]]
+id = "profile.v3"
+config_path = "v2/config/system.v3-es-minimal.toml"
+config_schema_version = 18
+status = "tracked_profile"
+limitations = ["Not an ignored operator-local profile"]
+evidence = ["evidence.current-status"]
+
+[[boundaries]]
+id = "boundary.provider"
+label = "External provider"
+kind = "provider"
+temporal_status = "current"
+evidence = ["evidence.current-status"]
+limitations = ["Provider delivery is not established by this fixture"]
+
+[[boundaries]]
+id = "boundary.node"
+label = "Nautilus LiveNode"
+kind = "nautilus_engine"
+temporal_status = "current"
+evidence = ["evidence.current-status"]
+limitations = ["Registration is not delivery order"]
+
+[[styles]]
+id = "style.theme"
+semantic_role = "theme"
+label = "Fixture theme"
+
+[[styles]]
+id = "style.flow"
+semantic_role = "edge"
+label = "Fixture flow"
+
+[[styles]]
+id = "style.current"
+semantic_role = "component"
+label = "Current component"
+
+[[components]]
+id = "actor.data-acquisition"
+label = "Data Acquisition"
+kind = "markeitech_actor"
+logical_area = "data-acquisition-processing-intelligence-state"
+boundary = "boundary.node"
+implementation_ref = "v2/src/markeitech/system/acquisition.py:DataAcquisitionActor"
+composition_key = "data_acquisition"
+composition_order = 1
+actor_id = "DATA-ACQUISITION"
+responsibilities = ["logical provider demand ownership"]
+semantic_owner = "actor.data-acquisition"
+mutation_owner = "actor.data-acquisition"
+transport_owner = "boundary.node"
+persistence_owner = "none_current"
+recovery_owner = "actor.data-acquisition"
+projection_owner = "not_applicable"
+policy_owner = "actor.data-acquisition"
+implementation_state = "implemented"
+composition_policy = "always"
+temporal_status = "current"
+acceptance_state = "bounded_evidence"
+evidence_certainty = "verified_source"
+failure_isolation = "actor_local"
+cardinality = "one_per_node"
+style = "style.current"
+evidence = ["evidence.current-status"]
+limitations = ["Native command issuance is not provider acknowledgement"]
+
+[[components.profile_states]]
+profile = "profile.v3"
+enablement = "enabled"
+
+[[capabilities]]
+id = "capability.live-bars"
+component = "actor.data-acquisition"
+label = "Live bars"
+implementation_state = "implemented"
+composition_policy = "conditional"
+configuration_path = "watchlist.capabilities.watchlist_last"
+profile = "profile.v3"
+enablement = "enabled"
+evidence = ["evidence.current-status"]
+limitations = ["Returned provider mode is unknown"]
+
+[[contracts]]
+id = "contract.native-bar"
+label = "Native bar"
+transport_kind = "nautilus_native_data"
+type_name = "nautilus.model.data.Bar"
+python_symbol = "nautilus_trader.model.data.Bar"
+schema_version_kind = "installed_contract"
+canonical_owner = "actor.data-acquisition"
+producers = ["boundary.provider"]
+consumers = ["actor.data-acquisition"]
+parent_contracts = []
+identity_fields = ["bar_type", "ts_event"]
+join_key = ["bar_type", "ts_event"]
+expected_cardinality = "zero_or_more"
+event_clock = "ts_event"
+availability_clock = "ts_init"
+clock_unit = "unix_nanoseconds_utc"
+source_classes = ["provider_observation"]
+reconciliation_policy = "unknown"
+retention = "transient"
+evidence = ["evidence.current-status"]
+limitations = ["Provider population completeness is unknown"]
+
+[[delivery_claims]]
+id = "delivery.provider-unknown"
+scope = "provider_network"
+transport = "nautilus_native_data"
+guarantee = "unknown"
+replay = "unknown"
+acknowledgement_milestone = "first_observation"
+ordering_scope = "unknown"
+cross_producer_ordering = "unknown"
+duplicate_possible = true
+evidence = ["evidence.current-status"]
+limitations = ["No exactly-once or global-order claim"]
+
+[[edges]]
+id = "edge.provider-to-acquisition"
+source = "boundary.provider"
+target = "actor.data-acquisition"
+category = "native_observation"
+contract = "contract.native-bar"
+transport = "nautilus_native_data"
+correlation = "provider_owned_unknown"
+sync_semantics = "unknown"
+delivery_claim = "delivery.provider-unknown"
+enablement_condition = "watchlist.capabilities.watchlist_last"
+authority_direction = "provider_observation_to_logical_owner"
+required = true
+style = "style.flow"
+evidence = ["evidence.current-status"]
+limitations = ["First observation is not continuity"]
+
+[[views]]
+id = "view.current-v3"
+label = "Current V3 topology"
+kind = "current_runtime"
+purpose = "Show the tracked V3 configured runtime"
+profile = "profile.v3"
+include_temporal_status = ["current"]
+include_implementation_state = ["implemented", "external"]
+include_profile_enablement = ["enabled", "not_applicable"]
+explicit_components = ["actor.data-acquisition"]
+explicit_tombstones = []
+explicit_edges = []
+direction = "left_to_right"
+layout_engine = "dot"
+routing = "spline"
+pack_mode = "graph"
+formats = ["svg", "png", "dot", "md"]
+theme = "style.theme"
+accessibility_companion_required = true
+no_execution_banner = true
+target_width_px = 1600
+target_height_px = 900
+minimum_text_size_pt = 10
+evidence = ["evidence.current-status"]
+limitations = ["Fixture view only"]
+
+[[authority_conflicts]]
+id = "conflict.persistence-readiness"
+label = "Persistence-readiness documentation mismatch"
+affected_ids = ["actor.data-acquisition"]
+evidence = ["evidence.current-status"]
+required_decision = "Show implemented behavior and retain limitation"
+status = "deferred_reconciliation"
+limitations = ["Fixture does not model the complete handshake"]

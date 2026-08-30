@@ -48,6 +48,8 @@ accidental disagreement.
 - [V2 adaptive market-data plane](architecture/v2-adaptive-market-data-plane.md)
 - [V2 historical dependency execution](architecture/v2-historical-dependency-execution.md)
 - [Kite advisor council](architecture/markeitech-advisor-council.md)
+- [TOML-driven system/data-flow manifest maintenance](architecture/system-dataflow-maintenance.md)
+- [TOML-driven system/data-flow implementation plan](architecture/toml-driven-system-dataflow-plan.md)
 
 Preserved V1 architecture remains available in
 [runtime architecture](architecture/runtime-architecture.md),

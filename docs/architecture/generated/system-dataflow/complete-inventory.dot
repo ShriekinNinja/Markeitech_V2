@@ -1,0 +1,223 @@
+digraph "Complete Component and Capability Inventory
+OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION
+PROFILE: profile.v3-es-minimal — REVIEW: proposed
+CHECKOUT EVIDENCE: c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce" {
+	graph [bgcolor="#FFFFFF" fontcolor="#2D3436" fontname=Helvetica fontsize=18 label="Complete Component and Capability Inventory
+OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION
+PROFILE: profile.v3-es-minimal — REVIEW: proposed
+CHECKOUT EVIDENCE: c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce" labeljust=l labelloc=t margin=0.15 nodesep=0.45 pack=true packmode=array_u4 pad=0.35 rankdir=TB ranksep=0.85 splines=spline]
+	node [fixedsize=false fontcolor="#2D3436" fontname=Helvetica fontsize=10 height=0.9 imagescale=true labelloc=b margin="0.12,0.08" shape=box style=rounded width=2.2]
+	edge [arrowsize=0.75 color="#7B8894" fontname=Helvetica fontsize=9]
+	subgraph "cluster_Markeitech V2 process / Data acquisition actors" {
+		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.acquisition" label="Markeitech V2 process / Data acquisition actors" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"actor.data-acquisition" [label="Data Acquisition
+[actor.data-acquisition]
+IMPLEMENTED | ALWAYS
+ACTIVE PROFILE: ENABLED
+COMPOSITION ORDER: 12" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.data-acquisition" penwidth=1.5 shape=box style="rounded,filled"]
+		"actor.historical-probe" [label="Historical Dependency Probe
+[actor.historical-probe]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: DISABLED
+COMPOSITION ORDER: 13" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="actor.historical-probe" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"actor.watchlist" [label="Watchlist
+[actor.watchlist]
+IMPLEMENTED | ALWAYS
+ACTIVE PROFILE: ENABLED
+COMPOSITION ORDER: 11" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.watchlist" penwidth=1.5 shape=box style="rounded,filled"]
+	}
+	subgraph "cluster_Future governed advisory and controlled boundaries" {
+		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.future" label="Future governed advisory and controlled boundaries" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"future.controlled-execution" [label="Future Controlled Execution Boundary
+[future.controlled-execution]
+FUTURE | NOT_COMPOSED
+ACTIVE PROFILE: NOT_APPLICABLE" color="#6D4AA2" fillcolor="#F6F0FF" fontcolor="#102A3A" id="future.controlled-execution" penwidth=1.5 shape=hexagon style="dashed,filled"]
+		"future.opportunities" [label="Plural Opportunities
+[future.opportunities]
+FUTURE | NOT_COMPOSED
+ACTIVE PROFILE: NOT_APPLICABLE" color="#6D4AA2" fillcolor="#F6F0FF" fontcolor="#102A3A" id="future.opportunities" penwidth=1.5 shape=hexagon style="dashed,filled"]
+		"future.semantic-events" [label="Semantic Events
+[future.semantic-events]
+FUTURE | NOT_COMPOSED
+ACTIVE PROFILE: NOT_APPLICABLE" color="#6D4AA2" fillcolor="#F6F0FF" fontcolor="#102A3A" id="future.semantic-events" penwidth=1.5 shape=hexagon style="dashed,filled"]
+		"future.sir-loke" [label="Sir Loke Advisory Agent
+[future.sir-loke]
+FUTURE | NOT_COMPOSED
+ACTIVE PROFILE: NOT_APPLICABLE" color="#6D4AA2" fillcolor="#F6F0FF" fontcolor="#102A3A" id="future.sir-loke" penwidth=1.5 shape=hexagon style="dashed,filled"]
+	}
+	subgraph "cluster_Historical removed and rejected runtime identities" {
+		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.historical" label="Historical removed and rejected runtime identities" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"tombstone.live-evidence-review-actor" [label="Live Evidence Review Actor
+[tombstone.live-evidence-review-actor]
+REJECTED | HISTORICAL
+ACTIVE PROFILE: NOT_APPLICABLE" color="#6B6B6B" fillcolor="#F2F2F2" fontcolor="#303030" id="tombstone.live-evidence-review-actor" penwidth=1.5 shape=box style="dashed,filled"]
+		"tombstone.visual-acceptance-actor" [label="Visual Acceptance Actor
+[tombstone.visual-acceptance-actor]
+REJECTED | HISTORICAL
+ACTIVE PROFILE: NOT_APPLICABLE" color="#6B6B6B" fillcolor="#F2F2F2" fontcolor="#303030" id="tombstone.visual-acceptance-actor" penwidth=1.5 shape=box style="dashed,filled"]
+	}
+	subgraph "cluster_Markeitech V2 process / Processing, metrics, intelligence, and state" {
+		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.intelligence" label="Markeitech V2 process / Processing, metrics, intelligence, and state" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"actor.evidence-health" [label="Evidence Health
+[actor.evidence-health]
+IMPLEMENTED | ALWAYS
+ACTIVE PROFILE: ENABLED
+COMPOSITION ORDER: 3" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.evidence-health" penwidth=1.5 shape=box style="rounded,filled"]
+		"actor.market-state-entities" [label="Market State Entities
+[actor.market-state-entities]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: DISABLED
+COMPOSITION ORDER: 9" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="actor.market-state-entities" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"actor.market-structure-entities" [label="Market Structure Entities
+[actor.market-structure-entities]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: DISABLED
+COMPOSITION ORDER: 10" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="actor.market-structure-entities" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"actor.quote-quality" [label="Quote Quality Metrics
+[actor.quote-quality]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: DISABLED
+COMPOSITION ORDER: 6" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="actor.quote-quality" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"actor.session-metrics" [label="Session Metrics
+[actor.session-metrics]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: ENABLED
+COMPOSITION ORDER: 7" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.session-metrics" penwidth=1.5 shape=box style="rounded,filled"]
+		"actor.session-reference-entities" [label="Session Reference Entities
+[actor.session-reference-entities]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: DISABLED
+COMPOSITION ORDER: 8" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="actor.session-reference-entities" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"actor.session-state" [label="Session State
+[actor.session-state]
+IMPLEMENTED | ALWAYS
+ACTIVE PROFILE: ENABLED
+COMPOSITION ORDER: 2" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.session-state" penwidth=1.5 shape=box style="rounded,filled"]
+		"actor.visual-debug" [label="Visual Debug Capture
+[actor.visual-debug]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: ENABLED
+COMPOSITION ORDER: 5" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.visual-debug" penwidth=1.5 shape=box style="rounded,filled"]
+	}
+	subgraph "cluster_Markeitech V2 process / Nautilus LiveNode and native engines" {
+		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.nautilus" label="Markeitech V2 process / Nautilus LiveNode and native engines" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"component.cache" [label="Nautilus Cache
+[component.cache]
+IMPLEMENTED | ALWAYS
+ACTIVE PROFILE: ENABLED" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="component.cache" penwidth=1.5 shape=box style="rounded,filled"]
+		"component.data-engine" [label="Nautilus Data Engine
+[component.data-engine]
+IMPLEMENTED | ALWAYS
+ACTIVE PROFILE: ENABLED" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="component.data-engine" penwidth=1.5 shape=box style="rounded,filled"]
+		"component.live-node" [label="Nautilus LiveNode
+[component.live-node]
+IMPLEMENTED | ALWAYS
+ACTIVE PROFILE: ENABLED" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="component.live-node" penwidth=1.5 shape=box style="rounded,filled"]
+	}
+	subgraph "cluster_Operational persistence" {
+		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.persistence" label="Operational persistence" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"store.postgres" [label="PostgreSQL Operational Audit
+[store.postgres]
+EXTERNAL | EXTERNAL
+ACTIVE PROFILE: NOT_APPLICABLE" color="#475A66" fillcolor="#EEF3F6" fontcolor="#102A3A" id="store.postgres" penwidth=1.5 shape=box3d style="rounded,filled"]
+	}
+	subgraph "cluster_External projections and operator" {
+		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.projections" label="External projections and operator" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"operator.markeitect" [label="Markeitect / Operator
+[operator.markeitect]
+EXTERNAL | EXTERNAL
+ACTIVE PROFILE: NOT_APPLICABLE" color="#475A66" fillcolor="#EEF3F6" fontcolor="#102A3A" id="operator.markeitect" penwidth=1.5 shape=box3d style="rounded,filled"]
+		"projection.discord" [label="Discord
+[projection.discord]
+EXTERNAL | EXTERNAL
+ACTIVE PROFILE: NOT_APPLICABLE" color="#475A66" fillcolor="#EEF3F6" fontcolor="#102A3A" id="projection.discord" penwidth=1.5 shape=box3d style="rounded,filled"]
+		"projection.visual-files" [label="Visual Debug Files
+[projection.visual-files]
+EXTERNAL | EXTERNAL
+ACTIVE PROFILE: NOT_APPLICABLE" color="#475A66" fillcolor="#EEF3F6" fontcolor="#102A3A" id="projection.visual-files" penwidth=1.5 shape=box3d style="rounded,filled"]
+	}
+	subgraph "cluster_External providers" {
+		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.providers" label="External providers" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"provider.interactive-brokers" [label="Interactive Brokers / TWS / Gateway
+[provider.interactive-brokers]
+EXTERNAL | EXTERNAL
+ACTIVE PROFILE: NOT_APPLICABLE" color="#475A66" fillcolor="#EEF3F6" fontcolor="#102A3A" id="provider.interactive-brokers" penwidth=1.5 shape=box3d style="rounded,filled"]
+	}
+	subgraph "cluster_Markeitech V2 process / System and infrastructure actors" {
+		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.system" label="Markeitech V2 process / System and infrastructure actors" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"actor.discord-health" [label="Discord Health Projection
+[actor.discord-health]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: DISABLED
+COMPOSITION ORDER: 4" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="actor.discord-health" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"actor.native-consumer-probe" [label="Native Consumer Probe
+[actor.native-consumer-probe]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: DISABLED
+COMPOSITION ORDER: 14" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="actor.native-consumer-probe" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"actor.operational-persistence" [label="Operational Persistence
+[actor.operational-persistence]
+IMPLEMENTED | ALWAYS
+ACTIVE PROFILE: ENABLED
+COMPOSITION ORDER: 17" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.operational-persistence" penwidth=1.5 shape=box style="rounded,filled"]
+		"actor.runtime-resource-health" [label="Runtime Resource Health
+[actor.runtime-resource-health]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: DISABLED
+COMPOSITION ORDER: 16" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="actor.runtime-resource-health" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"actor.runtime-resources" [label="Runtime Resources
+[actor.runtime-resources]
+IMPLEMENTED | CONDITIONAL
+ACTIVE PROFILE: DISABLED
+COMPOSITION ORDER: 15" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="actor.runtime-resources" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"actor.system-control" [label="System Control
+[actor.system-control]
+IMPLEMENTED | ALWAYS
+ACTIVE PROFILE: ENABLED
+COMPOSITION ORDER: 1" color="#24445C" fillcolor="#FFFFFF" fontcolor="#102A3A" id="actor.system-control" penwidth=1.5 shape=box style="rounded,filled"]
+	}
+	subgraph "cluster_Markeitech V2 process / In-process workers and queues" {
+		graph [bgcolor="#F7FAFC" color="#9DB0BC" fontcolor="#304F60" fontname=Helvetica fontsize=11 id="boundary.workers" label="Markeitech V2 process / In-process workers and queues" labeljust=l margin=14 pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"queue.discord" [label="Discord Delivery Queue
+[queue.discord]
+IMPLEMENTED | NOT_COMPOSED
+ACTIVE PROFILE: DISABLED" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="queue.discord" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"queue.persistence" [label="Persistence Admission Queue
+[queue.persistence]
+IMPLEMENTED | NOT_COMPOSED
+ACTIVE PROFILE: ENABLED" color="#315C9A" fillcolor="#EAF2FF" fontcolor="#102A3A" id="queue.persistence" penwidth=1.5 shape=component style="rounded,filled"]
+		"worker.discord" [label="Discord Delivery Worker
+[worker.discord]
+IMPLEMENTED | NOT_COMPOSED
+ACTIVE PROFILE: DISABLED" color="#9B6B16" fillcolor="#FFF8E8" fontcolor="#102A3A" id="worker.discord" penwidth=1.5 shape=box style="dashed,rounded,filled"]
+		"worker.persistence" [label="Persistence Writer Worker
+[worker.persistence]
+IMPLEMENTED | NOT_COMPOSED
+ACTIVE PROFILE: ENABLED" color="#315C9A" fillcolor="#EAF2FF" fontcolor="#102A3A" id="worker.persistence" penwidth=1.5 shape=component style="rounded,filled"]
+	}
+	"actor.data-acquisition" -> "actor.historical-probe" [id="layout.actor.data-acquisition.actor.historical-probe" style=invis weight=100]
+	"actor.historical-probe" -> "actor.watchlist" [id="layout.actor.historical-probe.actor.watchlist" style=invis weight=100]
+	"future.controlled-execution" -> "future.opportunities" [id="layout.future.controlled-execution.future.opportunities" style=invis weight=100]
+	"future.opportunities" -> "future.semantic-events" [id="layout.future.opportunities.future.semantic-events" style=invis weight=100]
+	"future.semantic-events" -> "future.sir-loke" [id="layout.future.semantic-events.future.sir-loke" style=invis weight=100]
+	"tombstone.live-evidence-review-actor" -> "tombstone.visual-acceptance-actor" [id="layout.tombstone.live-evidence-review-actor.tombstone.visual-acceptance-actor" style=invis weight=100]
+	"actor.evidence-health" -> "actor.market-state-entities" [id="layout.actor.evidence-health.actor.market-state-entities" style=invis weight=100]
+	"actor.market-state-entities" -> "actor.market-structure-entities" [id="layout.actor.market-state-entities.actor.market-structure-entities" style=invis weight=100]
+	"actor.market-structure-entities" -> "actor.quote-quality" [id="layout.actor.market-structure-entities.actor.quote-quality" style=invis weight=100]
+	"actor.quote-quality" -> "actor.session-metrics" [id="layout.actor.quote-quality.actor.session-metrics" style=invis weight=100]
+	"actor.session-metrics" -> "actor.session-reference-entities" [id="layout.actor.session-metrics.actor.session-reference-entities" style=invis weight=100]
+	"actor.session-reference-entities" -> "actor.session-state" [id="layout.actor.session-reference-entities.actor.session-state" style=invis weight=100]
+	"actor.session-state" -> "actor.visual-debug" [id="layout.actor.session-state.actor.visual-debug" style=invis weight=100]
+	"component.cache" -> "component.data-engine" [id="layout.component.cache.component.data-engine" style=invis weight=100]
+	"component.data-engine" -> "component.live-node" [id="layout.component.data-engine.component.live-node" style=invis weight=100]
+	"operator.markeitect" -> "projection.discord" [id="layout.operator.markeitect.projection.discord" style=invis weight=100]
+	"projection.discord" -> "projection.visual-files" [id="layout.projection.discord.projection.visual-files" style=invis weight=100]
+	"actor.discord-health" -> "actor.native-consumer-probe" [id="layout.actor.discord-health.actor.native-consumer-probe" style=invis weight=100]
+	"actor.native-consumer-probe" -> "actor.operational-persistence" [id="layout.actor.native-consumer-probe.actor.operational-persistence" style=invis weight=100]
+	"actor.operational-persistence" -> "actor.runtime-resource-health" [id="layout.actor.operational-persistence.actor.runtime-resource-health" style=invis weight=100]
+	"actor.runtime-resource-health" -> "actor.runtime-resources" [id="layout.actor.runtime-resource-health.actor.runtime-resources" style=invis weight=100]
+	"actor.runtime-resources" -> "actor.system-control" [id="layout.actor.runtime-resources.actor.system-control" style=invis weight=100]
+	"queue.discord" -> "queue.persistence" [id="layout.queue.discord.queue.persistence" style=invis weight=100]
+	"queue.persistence" -> "worker.discord" [id="layout.queue.persistence.worker.discord" style=invis weight=100]
+	"worker.discord" -> "worker.persistence" [id="layout.worker.discord.worker.persistence" style=invis weight=100]
+}
