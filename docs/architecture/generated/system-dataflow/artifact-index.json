@@ -1,11 +1,11 @@
 {
   "authority": "generated documentation only; canonical content is the validated TOML manifest",
-  "checkout_commit": "c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce",
+  "checkout_commit": "5b00af3e4e61b8b1f32aa5680b267f9f7904814d",
   "generator_contract_version": 1,
-  "generator_sha256": "96ee904632ce66b3d592a6bc39423a8518a45fdb66a50f792a933be53f9fa71d",
+  "generator_sha256": "537f7b58eb756a3a978bb8271c3d5ee7875055daace2df0d14191ca06682b73c",
   "generator_version": "0.1.0",
   "manifest": "markeitech-v3-system-dataflow",
-  "manifest_sha256": "295b8e6fffd3094b1af3baca5053a1111611f0463c0ee63cca4b6042dc35400c",
+  "manifest_sha256": "6dc8abcc7bfd03481fbb7dbe0422d01ba3978fd29248e034042504b0bd6fbf37",
   "theme": {
     "id": "style.theme",
     "label": "Markeitech polished dark theme v2"
@@ -33,11 +33,11 @@
         "complete-inventory.svg"
       ],
       "id": "view.complete-inventory",
-      "nodes": 35
+      "nodes": 40
     },
     {
       "capabilities": 7,
-      "edges": 32,
+      "edges": 38,
       "files": [
         "current-runtime.dot",
         "current-runtime.md",
@@ -45,7 +45,7 @@
         "current-runtime.svg"
       ],
       "id": "view.current-runtime",
-      "nodes": 17
+      "nodes": 19
     },
     {
       "capabilities": 0,
@@ -61,7 +61,7 @@
     },
     {
       "capabilities": 5,
-      "edges": 13,
+      "edges": 18,
       "files": [
         "metrics-entities-intelligence.dot",
         "metrics-entities-intelligence.md",
@@ -69,11 +69,11 @@
         "metrics-entities-intelligence.svg"
       ],
       "id": "view.metrics-entities-intelligence",
-      "nodes": 10
+      "nodes": 12
     },
     {
       "capabilities": 2,
-      "edges": 14,
+      "edges": 15,
       "files": [
         "persistence-audit-projections.dot",
         "persistence-audit-projections.md",
@@ -81,11 +81,11 @@
         "persistence-audit-projections.svg"
       ],
       "id": "view.persistence-audit-projections",
-      "nodes": 12
+      "nodes": 13
     },
     {
       "capabilities": 6,
-      "edges": 16,
+      "edges": 23,
       "files": [
         "provider-canonical-data.dot",
         "provider-canonical-data.md",
@@ -93,7 +93,7 @@
         "provider-canonical-data.svg"
       ],
       "id": "view.provider-canonical-data",
-      "nodes": 8
+      "nodes": 10
     }
   ]
 }

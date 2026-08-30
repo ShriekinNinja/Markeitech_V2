@@ -436,7 +436,7 @@ def validate_manifest(manifest: ArchitectureManifest) -> None:
                         )
         _require_evidence(view.evidence, evidence_ids, f"views.{view.id}.evidence")
 
-    active_ids = component_ids | capability_ids | boundary_ids | contract_ids
+    active_ids = component_ids | capability_ids | boundary_ids | contract_ids | edge_ids
     for tombstone in manifest.tombstones:
         _require_reference(
             tombstone.former_boundary,

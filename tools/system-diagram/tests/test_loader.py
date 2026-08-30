@@ -45,8 +45,18 @@ class ManifestLoaderTests(unittest.TestCase):
             ImplementationState.IMPLEMENTED,
         )
         self.assertIn(OutputFormat.MARKDOWN, manifest.views[0].formats)
+        self.assertEqual(manifest.views[0].node_separation, 0.4)
+        self.assertEqual(manifest.views[0].rank_separation, 0.75)
         with self.assertRaises(FrozenInstanceError):
             manifest.header.title = "mutated"  # type: ignore[misc]
+
+    def test_rejects_out_of_range_rank_separation(self) -> None:
+        text = FIXTURE.read_text().replace(
+            "rank_separation = 0.75",
+            "rank_separation = 0.1",
+        )
+        error = self._error_for(text)
+        self.assertEqual(error.code, "MANIFEST_TYPE")
 
     def test_loads_repository_relative_manifest_path(self) -> None:
         relative_path = FIXTURE.relative_to(REPOSITORY_ROOT)
@@ -80,6 +90,28 @@ class ManifestLoaderTests(unittest.TestCase):
         )
         error = self._error_for(text)
         self.assertEqual(error.code, "MANIFEST_DANGLING_REFERENCE")
+
+    def test_allows_tombstone_replacement_with_active_edge(self) -> None:
+        text = FIXTURE.read_text() + """
+
+[[tombstones]]
+id = "tombstone.provider-to-acquisition"
+label = "Former provider-to-acquisition edge"
+former_kind = "edge"
+former_boundary = "boundary.node"
+disposition = "removed"
+removed_at_commit = "c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce"
+replacement = "edge.provider-to-acquisition"
+evidence = ["evidence.current-status"]
+limitations = ["Fixture tombstone only"]
+"""
+
+        manifest = self._load_text(text)
+
+        self.assertEqual(
+            manifest.tombstones[0].replacement,
+            "edge.provider-to-acquisition",
+        )
 
     def test_rejects_unsafe_evidence_path(self) -> None:
         text = FIXTURE.read_text().replace(

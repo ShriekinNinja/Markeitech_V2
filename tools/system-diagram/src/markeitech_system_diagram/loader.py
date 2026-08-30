@@ -116,6 +116,27 @@ def _optional_integer(value: Any, location: str, *, minimum: int = 1) -> int | N
     return _integer(value, location, minimum=minimum)
 
 
+def _optional_number(
+    value: Any,
+    location: str,
+    *,
+    minimum: float,
+    maximum: float,
+) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ManifestError("MANIFEST_TYPE", location, "expected a number")
+    result = float(value)
+    if not minimum <= result <= maximum:
+        raise ManifestError(
+            "MANIFEST_TYPE",
+            location,
+            f"expected a number between {minimum} and {maximum}",
+        )
+    return result
+
+
 def _boolean(value: Any, location: str) -> bool:
     if not isinstance(value, bool):
         raise ManifestError("MANIFEST_TYPE", location, "expected a boolean")
@@ -518,6 +539,18 @@ def _parse_view(value: Mapping[str, Any], location: str) -> View:
         pack_mode=_string(row.take("pack_mode"), f"{location}.pack_mode"),
         grid_columns=_optional_integer(
             row.take("grid_columns", default=None), f"{location}.grid_columns"
+        ),
+        node_separation=_optional_number(
+            row.take("node_separation", default=None),
+            f"{location}.node_separation",
+            minimum=0.20,
+            maximum=3.0,
+        ),
+        rank_separation=_optional_number(
+            row.take("rank_separation", default=None),
+            f"{location}.rank_separation",
+            minimum=0.25,
+            maximum=3.0,
         ),
         formats=_enums(row.take("formats"), OutputFormat, f"{location}.formats"),
         theme=_string(row.take("theme"), f"{location}.theme"),

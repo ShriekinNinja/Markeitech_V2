@@ -7,31 +7,33 @@ Show implemented, conditional, disabled, external, and future components without
 - View ID: `view.complete-inventory`
 - Profile: `profile.v3-es-minimal`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce`
+- Checkout evidence: `5b00af3e4e61b8b1f32aa5680b267f9f7904814d`
 - Review status: `proposed`
 
 ## Components
 
 | ID | Component | Kind | Implementation | Composition | Order | Active profile | Semantic owner | Boundary |
 |---|---|---|---|---|---:|---|---|---|
-| `actor.data-acquisition` | Data Acquisition | markeitech_actor | implemented | always | 12 | enabled | `actor.data-acquisition` | `boundary.acquisition` |
+| `actor.data-acquisition` | Data Acquisition | markeitech_actor | implemented | always | 13 | enabled | `actor.data-acquisition` | `boundary.acquisition` |
 | `actor.discord-health` | Discord Health Projection | markeitech_actor | implemented | conditional | 4 | disabled | `actor.discord-health` | `boundary.system` |
 | `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | always | 3 | enabled | `actor.evidence-health` | `boundary.intelligence` |
-| `actor.historical-probe` | Historical Dependency Probe | markeitech_actor | implemented | conditional | 13 | disabled | `actor.historical-probe` | `boundary.acquisition` |
+| `actor.historical-planner` | Historical Evidence Planner | markeitech_actor | implemented | always | 11 | enabled | `actor.historical-planner` | `boundary.intelligence` |
+| `actor.historical-probe` | Historical Dependency Probe | markeitech_actor | implemented | conditional | 14 | disabled | `actor.historical-probe` | `boundary.acquisition` |
 | `actor.market-state-entities` | Market State Entities | markeitech_actor | implemented | conditional | 9 | disabled | `actor.market-state-entities` | `boundary.intelligence` |
 | `actor.market-structure-entities` | Market Structure Entities | markeitech_actor | implemented | conditional | 10 | disabled | `actor.market-structure-entities` | `boundary.intelligence` |
-| `actor.native-consumer-probe` | Native Consumer Probe | markeitech_actor | implemented | conditional | 14 | disabled | `actor.native-consumer-probe` | `boundary.system` |
-| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 17 | enabled | `actor.operational-persistence` | `boundary.system` |
+| `actor.native-consumer-probe` | Native Consumer Probe | markeitech_actor | implemented | conditional | 15 | disabled | `actor.native-consumer-probe` | `boundary.system` |
+| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 18 | enabled | `actor.operational-persistence` | `boundary.system` |
 | `actor.quote-quality` | Quote Quality Metrics | markeitech_actor | implemented | conditional | 6 | disabled | `actor.quote-quality` | `boundary.intelligence` |
-| `actor.runtime-resource-health` | Runtime Resource Health | markeitech_actor | implemented | conditional | 16 | disabled | `actor.runtime-resource-health` | `boundary.system` |
-| `actor.runtime-resources` | Runtime Resources | markeitech_actor | implemented | conditional | 15 | disabled | `actor.runtime-resources` | `boundary.system` |
+| `actor.runtime-resource-health` | Runtime Resource Health | markeitech_actor | implemented | conditional | 17 | disabled | `actor.runtime-resource-health` | `boundary.system` |
+| `actor.runtime-resources` | Runtime Resources | markeitech_actor | implemented | conditional | 16 | disabled | `actor.runtime-resources` | `boundary.system` |
 | `actor.session-metrics` | Session Metrics | markeitech_actor | implemented | conditional | 7 | enabled | `actor.session-metrics` | `boundary.intelligence` |
 | `actor.session-reference-entities` | Session Reference Entities | markeitech_actor | implemented | conditional | 8 | disabled | `actor.session-reference-entities` | `boundary.intelligence` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
 | `actor.system-control` | System Control | markeitech_actor | implemented | always | 1 | enabled | `actor.system-control` | `boundary.system` |
 | `actor.visual-debug` | Visual Debug Capture | markeitech_actor | implemented | conditional | 5 | enabled | `actor.visual-debug` | `boundary.intelligence` |
-| `actor.watchlist` | Watchlist | markeitech_actor | implemented | always | 11 | enabled | `actor.watchlist` | `boundary.acquisition` |
+| `actor.watchlist` | Watchlist | markeitech_actor | implemented | always | 12 | enabled | `actor.watchlist` | `boundary.acquisition` |
 | `component.cache` | Nautilus Cache | engine | implemented | always | not applicable | enabled | `component.cache` | `boundary.nautilus` |
+| `component.canonical-calendar` | Canonical Calendar | engine | implemented | not_composed | not applicable | enabled | `actor.session-state` | `boundary.intelligence` |
 | `component.data-engine` | Nautilus Data Engine | engine | implemented | always | not applicable | enabled | `component.data-engine` | `boundary.nautilus` |
 | `component.live-node` | Nautilus LiveNode | framework | implemented | always | not applicable | enabled | `component.live-node` | `boundary.nautilus` |
 | `future.controlled-execution` | Future Controlled Execution Boundary | future_component | future | not_composed | not applicable | not_applicable | `future.controlled-execution` | `boundary.future` |
@@ -67,6 +69,9 @@ Show implemented, conditional, disabled, external, and future components without
 
 | ID | Former component | Disposition | Former boundary | Removed at commit |
 |---|---|---|---|---|
+| `tombstone.direct-historical-demand-edge` | Direct Session Metrics to Data Acquisition historical demand | removed | `boundary.acquisition` | `b09e7ddf75b730f23aefa4c263d64b5dc3961979` |
+| `tombstone.historical-release-edge` | Session Metrics historical execution release | removed | `boundary.acquisition` | `b09e7ddf75b730f23aefa4c263d64b5dc3961979` |
+| `tombstone.legacy-session-state-contract` | Legacy SessionStateEvent signal | removed | `boundary.intelligence` | `b09e7ddf75b730f23aefa4c263d64b5dc3961979` |
 | `tombstone.live-evidence-review-actor` | Live Evidence Review Actor | rejected | `boundary.historical` | `c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce` |
 | `tombstone.visual-acceptance-actor` | Visual Acceptance Actor | rejected | `boundary.historical` | `c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce` |
 
@@ -80,6 +85,7 @@ Show implemented, conditional, disabled, external, and future components without
 - Static source and configuration checks cannot prove connected runtime behavior.
 - Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.
 - Generated artifacts are documentation projections and must never be edited or treated as authority.
+- The generated artifact directory was intentionally not regenerated or visually reviewed for the 2026-08-30 calendar merge and therefore remains a stale projection of the prior manifest until the recorded exception is removed.
 - Markeitech is read-only and advisory; no current order submission or execution exists.
 - Removed and rejected implementation identities are represented as tombstones in the manifest and companion record, not as active nodes.
 - Configuration-gated subcapabilities are listed in the accessible Markdown companion under their owning components rather than duplicated as visual nodes.

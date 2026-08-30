@@ -7,7 +7,7 @@ Separate bounded operational persistence from optional notifications and diagnos
 - View ID: `view.persistence-audit-projections`
 - Profile: `profile.v3-es-minimal`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce`
+- Checkout evidence: `5b00af3e4e61b8b1f32aa5680b267f9f7904814d`
 - Review status: `proposed`
 
 ## Components
@@ -15,7 +15,8 @@ Separate bounded operational persistence from optional notifications and diagnos
 | ID | Component | Kind | Implementation | Composition | Order | Active profile | Semantic owner | Boundary |
 |---|---|---|---|---|---:|---|---|---|
 | `actor.discord-health` | Discord Health Projection | markeitech_actor | implemented | conditional | 4 | disabled | `actor.discord-health` | `boundary.system` |
-| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 17 | enabled | `actor.operational-persistence` | `boundary.system` |
+| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 18 | enabled | `actor.operational-persistence` | `boundary.system` |
+| `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
 | `actor.system-control` | System Control | markeitech_actor | implemented | always | 1 | enabled | `actor.system-control` | `boundary.system` |
 | `actor.visual-debug` | Visual Debug Capture | markeitech_actor | implemented | conditional | 5 | enabled | `actor.visual-debug` | `boundary.intelligence` |
 | `operator.markeitect` | Markeitect / Operator | operator | external | external | not applicable | not_applicable | `operator.markeitect` | `boundary.projections` |
@@ -38,6 +39,7 @@ Separate bounded operational persistence from optional notifications and diagnos
 
 | ID | Source | Target | Category | Contract | Transport | Required | Condition | Delivery |
 |---|---|---|---|---|---|---|---|---|
+| `edge.calendar-transition-persistence` | `actor.session-state` | `actor.operational-persistence` | persistence | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
 | `edge.discord-external` | `worker.discord` | `projection.discord` | notification | `contract.discord-notification` | external_http | no | discord.enabled | at_least_once_attempt |
 | `edge.discord-queue` | `actor.discord-health` | `queue.discord` | queue_admission | `contract.discord-notification` | thread_queue | no | discord.enabled | at_least_once_attempt |
 | `edge.discord-worker` | `queue.discord` | `worker.discord` | queue_admission | `contract.discord-notification` | thread_queue | no | discord.enabled | at_least_once_attempt |
@@ -58,6 +60,7 @@ Separate bounded operational persistence from optional notifications and diagnos
 - Static source and configuration checks cannot prove connected runtime behavior.
 - Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.
 - Generated artifacts are documentation projections and must never be edited or treated as authority.
+- The generated artifact directory was intentionally not regenerated or visually reviewed for the 2026-08-30 calendar merge and therefore remains a stale projection of the prior manifest until the recorded exception is removed.
 - Markeitech is read-only and advisory; no current order submission or execution exists.
 - PostgreSQL stores approved operational facts, not raw provider observations by default.
 - Queue admission is not storage and storage does not acknowledge the original event producer.

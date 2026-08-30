@@ -598,7 +598,11 @@ def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
             "labeljust": "l",
             "labelloc": "t",
             "margin": "0.15",
-            "nodesep": "0.45",
+            "nodesep": (
+                f"{view.node_separation:.3g}"
+                if view.node_separation is not None
+                else "0.45"
+            ),
             "outputorder": "edgesfirst",
             "overlap": "false",
             "pack": "true",
@@ -606,7 +610,11 @@ def _build_dot(manifest: ArchitectureManifest, selected: SelectedView) -> str:
                 f"array_u{view.grid_columns}" if view.pack_mode == "array" else "graph"
             ),
             "pad": "0.35",
-            "ranksep": "0.85",
+            "ranksep": (
+                f"{view.rank_separation:.3g}"
+                if view.rank_separation is not None
+                else "0.85"
+            ),
             "splines": _ROUTING[view.routing],
         },
         node_attr={

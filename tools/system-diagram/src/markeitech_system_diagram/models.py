@@ -393,6 +393,8 @@ class View:
     routing: RoutingStyle
     pack_mode: str
     grid_columns: int | None
+    node_separation: float | None
+    rank_separation: float | None
     formats: tuple[OutputFormat, ...]
     theme: str
     accessibility_companion_required: bool
