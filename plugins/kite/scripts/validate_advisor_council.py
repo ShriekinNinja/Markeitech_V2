@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 ALLOWED_MODELS = {"gpt-5.6-sol"}
-ALLOWED_REASONING = {"medium", "high"}
+ALLOWED_REASONING = {"medium", "high", "xhigh"}
 ROUTE_MODES = {"NO_COUNCIL", "SINGLE", "MULTI", "BLOCKED"}
 ACTIVATION_SOURCES = {
     "none": False,

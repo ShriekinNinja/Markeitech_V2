@@ -1,8 +1,9 @@
 # Markeitech Kite Advisor Council
 
-**Status:** Source architecture implemented; installed Phase 1 acceptance pending
+**Status:** Source architecture implemented; bounded desired-runtime review completed; general
+Phase 1 acceptance pending
 
-**Reviewed:** 2026-08-26
+**Reviewed:** 2026-08-30
 
 ## Purpose And Authority
 
@@ -147,12 +148,24 @@ Acceptance claims remain separate:
 
 ## Source And Installed Status
 
-Kite `0.1.0+codex.20260826132235` is installed and enabled from the local `markeitech` marketplace;
+Kite `0.1.0+codex.20260829091645` is installed and enabled from the local `markeitech` marketplace;
 its installed cache matched the cache-busted repository source byte-for-byte. Its structural
 validator covers 20 advisors, 27 in-Kite routing cases, and explicit activation fixtures, but
 packaging and source validation do not prove fresh-task routing behavior. Codex 0.149.1's actual
 startup/prompt parser loads all 20 custom roles without malformed-role warnings after each disabled
 PyCharm MCP entry was corrected to retain its exact HTTP transport.
+
+Council policy `2026-08-29-v3` configures the architecture-boundaries, Nautilus, live-agent
+governance, data-quality/lineage, market-structure, market-microstructure/order-flow,
+event-driven-architecture, and statistical-learning/optimization advisors to use `gpt-5.6-sol`
+with `xhigh` reasoning for the desired-runtime gap review. The other twelve advisor settings are
+unchanged. The source validator, 20 focused validator tests, generic plugin validation, reinstall,
+and source-to-cache comparison pass. A fresh task exposed all eight exact role settings, completed
+all eight read-only consultations through the approved dependency graph, and produced the
+informative council discovery record at
+[`docs/notes/desired-arch-council-review-report.md`](../notes/desired-arch-council-review-report.md).
+That report is a proposal source, not accepted V2 architecture, a roadmap, implementation approval,
+or general council acceptance.
 
 One ordinary governance selection was observed on older build `...124814`; delegated execution
 failed. Architecture, governance, and security roles returned consultations during the Phase 1

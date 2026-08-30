@@ -97,6 +97,13 @@ decision or roadmap item promotes a tested result.
 
 ## Notes And Archive
 
+- [Desired runtime requirements](notes/desired-arch.md) — informative Markeitect requirements and
+  council input; not accepted architecture or a roadmap.
+- [Desired-runtime council review handoff](notes/desired-arch-council-review-handoff.md) — completed
+  historical process record; not an active instruction.
+- [Desired-runtime council review report](notes/desired-arch-council-review-report.md) — informative
+  council discovery record and proposal source; not a plan, authoritative debt ledger, or
+  implementation approval.
 - [Preserved V1 project boundary](../LEGACY.md)
 - [Markeitect notes](notes/markeitect-notes.md)
 - [Original greenfield brief](archive/initial-greenfield-brief.md)

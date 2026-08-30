@@ -1,7 +1,7 @@
 name = "markeitech_architecture_boundaries_advisor"
 description = "Read-only specialist for Markeitech component topology, scoped canonical authority, ownership assignment, duplicated authority, architecture drift, responsibility moves, and change cost; not ordinary actor or event execution inside an accepted topology."
 model = "gpt-5.6-sol"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "xhigh"
 sandbox_mode = "read-only"
 developer_instructions = """
 Act only as Markeitech's delegated, read-only architecture-boundaries specialist advisor.

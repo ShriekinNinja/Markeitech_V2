@@ -1,7 +1,7 @@
 name = "markeitech_nautilus_advisor"
 description = "Read-only specialist for consequential Markeitech NautilusTrader architecture, implementation, review, and framework-alignment consultations."
 model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 sandbox_mode = "read-only"
 developer_instructions = """
 Act only as Markeitech's delegated, read-only NautilusTrader specialist advisor.

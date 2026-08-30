@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import shutil
 import tempfile
 import unittest
@@ -295,16 +296,35 @@ class AdvisorCouncilValidatorTests(unittest.TestCase):
             root = Path(temporary)
             self.copy_validation_tree(root)
             manifest = root / "plugins/kite/.codex-plugin/plugin.json"
-            manifest.write_text(
-                manifest.read_text(encoding="utf-8").replace(
-                    "0.1.0+codex.20260826132235",
-                    "0.1.0+codex.invalid",
-                ),
-                encoding="utf-8",
-            )
+            manifest_doc = json.loads(manifest.read_text(encoding="utf-8"))
+            manifest_doc["version"] = "0.1.0+codex.invalid"
+            manifest.write_text(json.dumps(manifest_doc, indent=2) + "\n", encoding="utf-8")
             self.assertIn(
                 "plugin version differs from council policy",
                 VALIDATOR.validate_repo(root),
+            )
+
+    def test_unsupported_reasoning_effort_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.copy_validation_tree(root)
+            policy = (
+                root
+                / "plugins/kite/skills/markeitech-advisor-router/references/council-policy.toml"
+            )
+            policy.write_text(
+                policy.read_text(encoding="utf-8").replace(
+                    'reasoning = "xhigh"',
+                    'reasoning = "ultra"',
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertTrue(
+                any(
+                    "unsupported reasoning 'ultra'" in error
+                    for error in VALIDATOR.validate_repo(root)
+                )
             )
 
     def test_network_default_drift_is_rejected(self) -> None:

@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-28
+Last reviewed: 2026-08-30
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -100,7 +100,7 @@ system. The preserved V1 status is available in
   work.
 - The repository-owned Kite plugin defines a 20-role advisor council for development-time
   engineering consultation, not V2 runtime implementation or Sir Loke behavior. Kite
-  `0.1.0+codex.20260826132235` is installed and enabled from the local `markeitech` marketplace;
+  `0.1.0+codex.20260829091645` is installed and enabled from the local `markeitech` marketplace;
   its installed cache matched the cache-busted repository source byte-for-byte. This build adds
   one canonical council policy, bounded
   selection with deterministic selected-role dependency execution, explicit-only Kite activation
@@ -115,7 +115,15 @@ system. The preserved V1 status is available in
   Therefore read-only is a mandatory consultation contract and custom-agent default, not an
   accepted runtime isolation boundary. Fresh-task dormancy, explicit activation, task-scoped
   continuity/reset, end-to-end order and stop behavior, isolation, redaction, failure, and
-  revocation acceptance remain pending.
+  revocation acceptance remain pending. Policy version `2026-08-29-v3` fixes the eight advisors
+  selected for the desired-runtime gap review at `gpt-5.6-sol` with `xhigh` reasoning; the other
+  twelve role settings are unchanged. Source validation, 20 focused validator tests, generic
+  plugin validation, installation, and source-to-cache comparison pass. A fresh task exposed all
+  eight exact role settings and completed the approved read-only desired-runtime consultations.
+  Their [desired-runtime report](notes/desired-arch-council-review-report.md) is an informative
+  council discovery record and proposal source; it is not accepted architecture, a roadmap, an
+  authoritative debt ledger, or implementation approval. General council acceptance remains
+  pending as described above.
 
 The remainder of this page is the chronological implementation record supporting this snapshot.
 When an older section describes a former review state, the snapshot above governs current status;
