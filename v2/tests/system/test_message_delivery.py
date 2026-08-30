@@ -4,24 +4,39 @@ import asyncio
 from decimal import Decimal
 from pathlib import Path
 from threading import Event
+from uuid import UUID
 
+import pytest
 from nautilus_trader.common import Environment, ImportableActorConfig
 from nautilus_trader.live import LiveNode
 from nautilus_trader.model import TraderId
 
 from markeitech.intelligence import EntityLifecycle, VolatilityStatePayload
-from markeitech.system.composition import _entity_definition_payload
+from markeitech.system.composition import (
+    StartupPrerequisites,
+    _entity_definition_payload,
+    build_actor_plan,
+)
 from markeitech.system.config import load_system_config
 from tests.system.message_actor_fixtures import (
+    calendar_received,
     entity_received,
     market_state_received,
     ready_received,
     received,
+    received_calendar_projections,
+    received_calendar_transitions,
     received_entity_revisions,
     received_entity_snapshots,
     received_events,
     snapshot_received,
 )
+
+
+@pytest.fixture(autouse=True)
+def _write_calendar_catalog(tmp_path: Path) -> None:
+    source = Path(__file__).parents[2] / "config/market-calendars.toml"
+    (tmp_path / "market-calendars.toml").write_text(source.read_text())
 
 
 async def _run_node_until(node: LiveNode, *events: Event) -> None:
@@ -65,6 +80,59 @@ def test_health_signal_delivers_between_actors_in_one_live_node() -> None:
     assert len(received_events) == 1
     assert received_events[0].state == "READY"
     assert received_events[0].evidence == {"probe": True}
+
+
+def test_session_state_delivers_typed_transition_and_projection() -> None:
+    calendar_received.clear()
+    received_calendar_transitions.clear()
+    received_calendar_projections.clear()
+    root = Path(__file__).parents[2]
+    config = load_system_config(root / "config/system.v3-es-minimal.toml")
+    session_state = next(
+        item
+        for item in build_actor_plan(
+            config,
+            StartupPrerequisites(
+                run_id=UUID("00000000-0000-0000-0000-000000000001"),
+                operational_persistence_ready=True,
+            ),
+        )
+        if item.key == "session_state"
+    )
+    node = LiveNode.builder(
+        "MARKEITECH-V2-CALENDAR-MESSAGE-TEST",
+        TraderId.from_str("MARKEITECH-TEST-001"),
+        Environment.SANDBOX,
+    ).with_delay_post_stop_secs(0).build()
+    node.add_actor_from_config(session_state.config)
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:CalendarProjectionProbe",
+            config_path="tests.system.message_actor_fixtures:CalendarProjectionProbeConfig",
+            config={
+                "actor_id": "CALENDAR-PROJECTION-PROBE",
+                "calendar_id": "cme_equity",
+            },
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:PersistenceReadyFixture",
+            config_path="tests.system.message_actor_fixtures:PersistenceReadyFixtureConfig",
+            config={"actor_id": "PERSISTENCE-READY-FIXTURE"},
+        ),
+    )
+
+    asyncio.run(_run_node_until(node, calendar_received))
+
+    assert received_calendar_transitions
+    assert received_calendar_transitions[0].source_epoch == (
+        "00000000-0000-0000-0000-000000000001"
+    )
+    assert received_calendar_projections[0].status == "READY"
+    assert received_calendar_projections[0].projections[0].definition_digest == (
+        received_calendar_transitions[0].definition_digest
+    )
 
 
 def test_acquisition_status_publication_advances_control_to_ready() -> None:

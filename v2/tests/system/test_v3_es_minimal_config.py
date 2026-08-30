@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID
 
+from markeitech.intelligence.actors import SessionStateActor, SessionStateActorConfig
 from markeitech.system.composition import StartupPrerequisites, build_actor_plan
 from markeitech.system.config import load_system_config
 
@@ -17,15 +18,59 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
         ),
     )
 
+    session_state = next(item for item in plan if item.key == "session_state")
+    acquisition = next(item for item in plan if item.key == "data_acquisition")
+    session_metrics = next(item for item in plan if item.key == "session_metrics")
+    planner = next(item for item in plan if item.key == "historical_evidence_planner")
+    assert len(session_state.config.config["calendars"]) == 1
+    assert all(
+        "definition_digest" in calendar
+        for calendar in session_state.config.config["calendars"]
+    )
+    assert "calendars" not in acquisition.config.config
+    assert "calendars" not in session_metrics.config.config
+    assert session_metrics.config.config["expected_calendar_digests"]
+    assert planner.config.config["expected_calendar_digests"]
+
+    actor = SessionStateActor(SessionStateActorConfig(**session_state.config.config))
+    assert len(actor._calendars) == len(config.sessions.calendars)
+    assert set(actor._calendars) == {
+        calendar.calendar_id for calendar in config.sessions.calendars
+    }
+    maintenance_break_ns = int(
+        datetime(2026, 8, 24, 20, 20, tzinfo=UTC).timestamp() * 1_000_000_000
+    )
+    assert actor._calendars["cme_equity"].evaluate(maintenance_break_ns).market_state == "OPEN"
+
     assert config.instrument_ids == ("ESU6.CME",)
     assert config.watchlist.members[0].capabilities == ("watchlist_last",)
     assert len(config.sessions.calendars) == 1
-    assert config.sessions.calendars[0].calendar_id == "cme_equity"
-    assert config.sessions.calendars[0].provider_calendar == "CME_Equity"
-    assert config.sessions.calendars[0].timezone == "America/Chicago"
-    assert config.sessions.calendars[0].schedule_version == "pmc-5.4"
-    assert config.sessions.calendars[0].phases == ()
-    assert config.sessions.calendars[0].overrides == ()
+    assert len(config.sessions.available_calendars) == 5
+    assert config.sessions.catalog_id == "markeitech-market-calendars"
+    assert config.sessions.catalog_version == 3
+    cme_equity = next(
+        calendar
+        for calendar in config.sessions.calendars
+        if calendar.calendar_id == "cme_equity"
+    )
+    assert cme_equity.provider_calendar == "CME_Equity"
+    assert cme_equity.exchange_timezone == "America/Chicago"
+    assert cme_equity.schedule_version.startswith("pmc-5.4.0:cme_equity:v3:")
+    assert cme_equity.schedule_columns == (
+        "market_open",
+        "break_start",
+        "break_end",
+        "market_close",
+    )
+    assert tuple(phase.name for phase in cme_equity.phases) == (
+        "GLOBEX",
+        "ASIA",
+        "LONDON",
+        "NEW_YORK",
+    )
+    assert tuple(item.correction_id for item in cme_equity.corrections) == (
+        "cme-equity-remove-1515-pause",
+    )
     assert config.discord.enabled is False
     assert config.runtime_resources.enabled is False
     assert config.historical.maximum_plan_requests == 1
@@ -87,6 +132,7 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
         "evidence_health",
         "visual_debug_capture",
         "session_metrics",
+        "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
         "operational_persistence",
@@ -111,6 +157,7 @@ def test_v3_completed_bar_review_composes_only_approved_foundation_and_projectio
         "evidence_health",
         "visual_debug_capture",
         "session_metrics",
+        "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
         "operational_persistence",

@@ -3,8 +3,6 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass
 
-SESSION_STATE_SIGNAL = "markeitech.session.state"
-SESSION_STATE_SCHEMA_VERSION = 1
 EVIDENCE_HEALTH_SIGNAL = "markeitech.evidence.health"
 EVIDENCE_HEALTH_SCHEMA_VERSION = 1
 EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL = "markeitech.evidence.health.snapshot.request"
@@ -23,52 +21,6 @@ EVIDENCE_STATES = {
     "UNSUPPORTED",
 }
 EVIDENCE_FIDELITIES = {"REPORTED", "DERIVED", "INFERRED", "PARTIAL", "UNAVAILABLE"}
-
-
-@dataclass(frozen=True, slots=True)
-class SessionStateEvent:
-    event_id: str
-    calendar_id: str
-    schedule_version: str
-    timezone: str
-    trade_date: str | None
-    phase: str
-    previous_phase: str | None
-    is_open: bool
-    phase_open_ns: int | None
-    phase_close_ns: int | None
-    next_transition_ns: int | None
-    source: str
-    reason: str
-    revision: int
-    schema_version: int = SESSION_STATE_SCHEMA_VERSION
-
-    def __post_init__(self) -> None:
-        _schema(self.schema_version, SESSION_STATE_SCHEMA_VERSION, "session state")
-        for field in (
-            "event_id",
-            "calendar_id",
-            "schedule_version",
-            "timezone",
-            "source",
-            "reason",
-        ):
-            _text(getattr(self, field), field)
-        _phase(self.phase, "phase")
-        if self.previous_phase is not None:
-            _phase(self.previous_phase, "previous_phase")
-        if self.is_open != (self.phase != "CLOSED"):
-            raise ValueError("is_open must agree with phase")
-        _positive(self.revision, "revision")
-        for field in ("phase_open_ns", "phase_close_ns", "next_transition_ns"):
-            _optional_ns(getattr(self, field), field)
-
-    def to_signal_value(self) -> str:
-        return json.dumps(asdict(self), separators=(",", ":"), sort_keys=True)
-
-    @classmethod
-    def from_signal_value(cls, value: str) -> SessionStateEvent:
-        return cls(**_payload(value, set(cls.__dataclass_fields__)))
 
 
 @dataclass(frozen=True, slots=True)

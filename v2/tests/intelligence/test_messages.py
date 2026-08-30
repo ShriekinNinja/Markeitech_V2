@@ -7,50 +7,7 @@ from markeitech.intelligence.messages import (
     EvidenceHealthSnapshot,
     EvidenceHealthSnapshotRequest,
     EvidenceRecencyProfileEvent,
-    SessionStateEvent,
 )
-
-
-def test_session_state_round_trip() -> None:
-    event = SessionStateEvent(
-        event_id="session:cboe_spxw:1",
-        calendar_id="cboe_spxw",
-        schedule_version="test-1",
-        timezone="America/New_York",
-        trade_date="2026-08-17",
-        phase="GTH",
-        previous_phase=None,
-        is_open=True,
-        phase_open_ns=1,
-        phase_close_ns=2,
-        next_transition_ns=2,
-        source="SESSION-STATE",
-        reason="initial session evaluation",
-        revision=1,
-    )
-
-    assert SessionStateEvent.from_signal_value(event.to_signal_value()) == event
-
-
-def test_session_state_accepts_configured_uppercase_phase_names() -> None:
-    event = SessionStateEvent(
-        event_id="session:cme_equity:1",
-        calendar_id="cme_equity",
-        schedule_version="test-v1",
-        timezone="America/New_York",
-        trade_date="2026-08-17",
-        phase="OVERNIGHT",
-        previous_phase="CLOSED",
-        is_open=True,
-        phase_open_ns=1,
-        phase_close_ns=2,
-        next_transition_ns=2,
-        source="SESSION-STATE",
-        reason="session phase changed",
-        revision=1,
-    )
-
-    assert SessionStateEvent.from_signal_value(event.to_signal_value()).phase == "OVERNIGHT"
 
 
 def test_evidence_health_round_trip() -> None:
@@ -148,4 +105,4 @@ def test_evidence_health_accepts_non_failure_silence_states(state: str) -> None:
 
 def test_message_contract_rejects_unknown_fields() -> None:
     with pytest.raises(ValueError, match="fields"):
-        SessionStateEvent.from_signal_value('{"schema_version":1,"unexpected":true}')
+        EvidenceHealthEvent.from_signal_value('{"schema_version":1,"unexpected":true}')

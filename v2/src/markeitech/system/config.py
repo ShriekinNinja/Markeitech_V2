@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import tomllib
 from dataclasses import dataclass
@@ -7,7 +9,9 @@ from datetime import UTC, date, datetime, time
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+import pandas_market_calendars as market_calendars
 from nautilus_trader.model import BarSpecification
 
 type EntityConfigScalar = str | int | float | bool
@@ -116,33 +120,68 @@ class HistoricalConfig:
 @dataclass(frozen=True, slots=True)
 class SessionPhaseConfig:
     name: str
-    start: str
-    end: str
+    timezone: str
+    start_kind: str
+    start_value: str
     start_day_offset: int
+    end_kind: str
+    end_value: str
+    end_day_offset: int
+    exchange_constraint: str
 
 
 @dataclass(frozen=True, slots=True)
-class SessionOverrideConfig:
-    trade_date: str
-    phase: str
-    start: str
-    end: str
-    start_day_offset: int
+class CalendarSourceConfig:
+    source_id: str
+    title: str
+    url: str
+    retrieved_at_ns: int
+    content_sha256: str | None
+    retrieval_status: str
+
+
+@dataclass(frozen=True, slots=True)
+class CalendarCorrectionConfig:
+    correction_id: str
+    kind: str
+    source_id: str
+    product_roots: tuple[str, ...]
+    effective_from_trade_date: str
+    timezone: str
+    expected_start: str
+    expected_end: str
 
 
 @dataclass(frozen=True, slots=True)
 class SessionCalendarConfig:
     calendar_id: str
+    calendar_engine: str
+    calendar_engine_version: str
     provider_calendar: str
-    timezone: str
+    provider_calendar_class: str
+    exchange_timezone: str
+    schedule_columns: tuple[str, ...]
+    definition_version: int
+    effective_from_ns: int
+    definition_digest: str
     schedule_version: str
     phases: tuple[SessionPhaseConfig, ...]
-    overrides: tuple[SessionOverrideConfig, ...]
+    corrections: tuple[CalendarCorrectionConfig, ...]
+    sources: tuple[CalendarSourceConfig, ...]
 
 
 @dataclass(frozen=True, slots=True)
 class SessionsConfig:
     evaluation_interval_ms: int
+    projection_lookback_days: int
+    projection_lookahead_days: int
+    maximum_projection_days: int
+    maximum_calendars_per_request: int
+    catalog_id: str
+    catalog_version: int
+    catalog_path: Path
+    catalog_digest: str
+    available_calendars: tuple[SessionCalendarConfig, ...]
     calendars: tuple[SessionCalendarConfig, ...]
 
 
@@ -646,7 +685,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         root_keys,
         "root",
     )
-    if raw["schema_version"] != 18:
+    if raw["schema_version"] != 20:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -684,7 +723,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
     watchlist = _load_watchlist(raw["watchlist"])
     acquisition = _load_acquisition(raw["acquisition"], watchlist)
     historical = _load_historical(raw["historical"], watchlist)
-    sessions = _load_sessions(raw["sessions"])
+    sessions = _load_sessions(raw["sessions"], config_path.parent)
     evidence_health = _load_evidence_health(raw["evidence_health"])
     metrics = _load_metrics(raw["metrics"])
     if visual_debug_capture.enabled:
@@ -1361,26 +1400,86 @@ def _load_watchlist(raw: Any) -> WatchlistConfig:
     )
 
 
-def _load_sessions(raw: Any) -> SessionsConfig:
+def _load_sessions(raw: Any, config_directory: Path) -> SessionsConfig:
     values = _mapping(raw, "sessions")
-    _require_keys(values, {"evaluation_interval_ms", "calendars"}, "sessions")
-    calendars_raw = values["calendars"]
+    _require_keys(
+        values,
+        {
+            "evaluation_interval_ms",
+            "projection_lookback_days",
+            "projection_lookahead_days",
+            "maximum_projection_days",
+            "maximum_calendars_per_request",
+            "calendar_catalog",
+            "calendar_ids",
+        },
+        "sessions",
+    )
+    catalog_path = config_directory / _non_empty_string(
+        values["calendar_catalog"],
+        "sessions.calendar_catalog",
+    )
+    try:
+        with catalog_path.open("rb") as file:
+            catalog_raw = tomllib.load(file)
+    except FileNotFoundError as exc:
+        raise ValueError(f"session calendar catalog does not exist: {catalog_path}") from exc
+    catalog = _mapping(catalog_raw, "calendar_catalog")
+    _require_keys(
+        catalog,
+        {
+            "schema_version",
+            "catalog_id",
+            "catalog_version",
+            "calendar_engine_version",
+            "sources",
+            "corrections",
+            "calendars",
+        },
+        "calendar_catalog",
+    )
+    if catalog["schema_version"] != 3:
+        raise ValueError(
+            "unsupported calendar_catalog.schema_version: "
+            f"{catalog['schema_version']!r}",
+        )
+    catalog_id = _non_empty_string(catalog["catalog_id"], "calendar_catalog.catalog_id")
+    catalog_version = _positive_int(
+        catalog["catalog_version"],
+        "calendar_catalog.catalog_version",
+    )
+    calendar_engine_version = _non_empty_string(
+        catalog["calendar_engine_version"],
+        "calendar_catalog.calendar_engine_version",
+    )
+    if calendar_engine_version != market_calendars.__version__:
+        raise ValueError(
+            "calendar catalog requires pandas-market-calendars "
+            f"{calendar_engine_version}, installed {market_calendars.__version__}",
+        )
+    sources = _load_calendar_sources(catalog["sources"])
+    sources_by_id = {source.source_id: source for source in sources}
+    corrections = _load_calendar_corrections(catalog["corrections"], sources_by_id)
+    corrections_by_id = {correction.correction_id: correction for correction in corrections}
+    calendars_raw = catalog["calendars"]
     if not isinstance(calendars_raw, list) or not calendars_raw:
-        raise ValueError("sessions.calendars must be a non-empty array")
+        raise ValueError("calendar_catalog.calendars must be a non-empty array")
     calendars: list[SessionCalendarConfig] = []
     seen: set[str] = set()
     for index, item in enumerate(calendars_raw):
-        label = f"sessions.calendars[{index}]"
+        label = f"calendar_catalog.calendars[{index}]"
         calendar = _mapping(item, label)
         _require_keys(
             calendar,
             {
                 "calendar_id",
+                "calendar_engine",
                 "provider_calendar",
-                "timezone",
-                "schedule_version",
+                "schedule_columns",
+                "definition_version",
+                "effective_from",
                 "phases",
-                "overrides",
+                "correction_ids",
             },
             label,
         )
@@ -1389,38 +1488,220 @@ def _load_sessions(raw: Any) -> SessionsConfig:
             raise ValueError(f"duplicate session calendar id: {calendar_id}")
         seen.add(calendar_id)
         phases = _load_session_phases(calendar["phases"], f"{label}.phases")
-        overrides = _load_session_overrides(calendar["overrides"], f"{label}.overrides")
-        phase_names = {phase.name for phase in phases}
-        unknown_override_phases = sorted(
-            {override.phase for override in overrides} - phase_names,
+        correction_ids = _unique_strings(
+            calendar["correction_ids"],
+            f"{label}.correction_ids",
         )
-        if unknown_override_phases:
+        unknown_corrections = sorted(set(correction_ids) - set(corrections_by_id))
+        if unknown_corrections:
             raise ValueError(
-                f"{label}.overrides reference undefined phases: "
-                f"{', '.join(unknown_override_phases)}",
+                f"{label}.correction_ids reference unknown corrections: "
+                f"{', '.join(unknown_corrections)}",
             )
+        selected_corrections = tuple(corrections_by_id[item] for item in correction_ids)
+        calendar_engine = _non_empty_string(
+            calendar["calendar_engine"],
+            f"{label}.calendar_engine",
+        )
+        if calendar_engine != "pandas_market_calendars":
+            raise ValueError(
+                f"{label}.calendar_engine must be 'pandas_market_calendars'",
+            )
+        provider_calendar = _non_empty_string(
+            calendar["provider_calendar"],
+            f"{label}.provider_calendar",
+        )
+        try:
+            provider = market_calendars.get_calendar(provider_calendar)
+        except (KeyError, RuntimeError) as exc:
+            raise ValueError(
+                f"{label}.provider_calendar is unavailable: {provider_calendar}",
+            ) from exc
+        exchange_timezone = str(provider.tz)
+        schedule_columns = _unique_strings(
+            calendar["schedule_columns"],
+            f"{label}.schedule_columns",
+        )
+        if not schedule_columns:
+            raise ValueError(f"{label}.schedule_columns must not be empty")
+        for phase in phases:
+            timezone = exchange_timezone if phase.timezone == "provider" else phase.timezone
+            try:
+                ZoneInfo(timezone)
+            except ZoneInfoNotFoundError as exc:
+                raise ValueError(
+                    f"{label}.phases[{phase.name}].timezone is not an IANA timezone",
+                ) from exc
+            for kind, value, boundary in (
+                (phase.start_kind, phase.start_value, "start"),
+                (phase.end_kind, phase.end_value, "end"),
+            ):
+                if kind == "schedule_boundary" and value not in schedule_columns:
+                    raise ValueError(
+                        f"{label}.phases[{phase.name}].{boundary}_value must be admitted "
+                        "in schedule_columns",
+                    )
+        if schedule_columns[0] != "market_open" or schedule_columns[-1] != "market_close":
+            raise ValueError(
+                f"{label}.schedule_columns must start with market_open and end with market_close",
+            )
+        available_market_times = set(provider.regular_market_times)
+        unknown_schedule_columns = sorted(set(schedule_columns) - available_market_times)
+        if unknown_schedule_columns:
+            raise ValueError(
+                f"{label}.schedule_columns are unavailable from {provider_calendar}: "
+                f"{', '.join(unknown_schedule_columns)}",
+            )
+        if ("break_start" in schedule_columns) != ("break_end" in schedule_columns):
+            raise ValueError(
+                f"{label}.schedule_columns must admit break_start and break_end together",
+            )
+        definition_version = _positive_int(
+            calendar["definition_version"],
+            f"{label}.definition_version",
+        )
+        effective_from_ns = _utc_timestamp_ns(
+            calendar["effective_from"],
+            f"{label}.effective_from",
+        )
+        provider_calendar_class = (
+            f"{provider.__class__.__module__}.{provider.__class__.__qualname__}"
+        )
+        normalized_definition = {
+            "calendar_id": calendar_id,
+            "calendar_engine": calendar_engine,
+            "calendar_engine_version": calendar_engine_version,
+            "provider_calendar": provider_calendar,
+            "provider_calendar_class": provider_calendar_class,
+            "exchange_timezone": exchange_timezone,
+            "schedule_columns": schedule_columns,
+            "definition_version": definition_version,
+            "effective_from_ns": effective_from_ns,
+            "phases": [
+                {
+                    "name": phase.name,
+                    "timezone": phase.timezone,
+                    "start_kind": phase.start_kind,
+                    "start_value": phase.start_value,
+                    "start_day_offset": phase.start_day_offset,
+                    "end_kind": phase.end_kind,
+                    "end_value": phase.end_value,
+                    "end_day_offset": phase.end_day_offset,
+                    "exchange_constraint": phase.exchange_constraint,
+                }
+                for phase in phases
+            ],
+            "corrections": [
+                {
+                    "correction_id": correction.correction_id,
+                    "kind": correction.kind,
+                    "source_id": correction.source_id,
+                    "product_roots": correction.product_roots,
+                    "effective_from_trade_date": correction.effective_from_trade_date,
+                    "timezone": correction.timezone,
+                    "expected_start": correction.expected_start,
+                    "expected_end": correction.expected_end,
+                }
+                for correction in selected_corrections
+            ],
+            "sources": [
+                {
+                    "source_id": source.source_id,
+                    "title": source.title,
+                    "url": source.url,
+                    "retrieved_at_ns": source.retrieved_at_ns,
+                    "content_sha256": source.content_sha256,
+                    "retrieval_status": source.retrieval_status,
+                }
+                for source in sources
+                if source.source_id in {item.source_id for item in selected_corrections}
+            ],
+        }
+        definition_digest = _sha256_digest(normalized_definition)
+        schedule_version = (
+            f"pmc-{calendar_engine_version}:{calendar_id}:"
+            f"v{definition_version}:{definition_digest[:12]}"
+        )
         calendars.append(
             SessionCalendarConfig(
                 calendar_id=calendar_id,
-                provider_calendar=_non_empty_string(
-                    calendar["provider_calendar"],
-                    f"{label}.provider_calendar",
-                ),
-                timezone=_non_empty_string(calendar["timezone"], f"{label}.timezone"),
-                schedule_version=_non_empty_string(
-                    calendar["schedule_version"],
-                    f"{label}.schedule_version",
-                ),
+                calendar_engine=calendar_engine,
+                calendar_engine_version=calendar_engine_version,
+                provider_calendar=provider_calendar,
+                provider_calendar_class=provider_calendar_class,
+                exchange_timezone=exchange_timezone,
+                schedule_columns=schedule_columns,
+                definition_version=definition_version,
+                effective_from_ns=effective_from_ns,
+                definition_digest=definition_digest,
+                schedule_version=schedule_version,
                 phases=phases,
-                overrides=overrides,
+                corrections=selected_corrections,
+                sources=tuple(
+                    source
+                    for source in sources
+                    if source.source_id in {item.source_id for item in selected_corrections}
+                ),
             ),
+        )
+    selected_calendar_ids = _unique_strings(values["calendar_ids"], "sessions.calendar_ids")
+    if not selected_calendar_ids:
+        raise ValueError("sessions.calendar_ids must not be empty")
+    calendars_by_id = {calendar.calendar_id: calendar for calendar in calendars}
+    unknown_selected_calendars = sorted(set(selected_calendar_ids) - set(calendars_by_id))
+    if unknown_selected_calendars:
+        raise ValueError(
+            "sessions.calendar_ids reference unknown catalog calendars: "
+            f"{', '.join(unknown_selected_calendars)}",
+        )
+    selected_calendars = tuple(calendars_by_id[item] for item in selected_calendar_ids)
+    catalog_digest = _sha256_digest(
+        {
+            "catalog_id": catalog_id,
+            "catalog_version": catalog_version,
+            "definitions": [calendar.definition_digest for calendar in calendars],
+        },
+    )
+    projection_lookback_days = _positive_int(
+        values["projection_lookback_days"],
+        "sessions.projection_lookback_days",
+    )
+    projection_lookahead_days = _positive_int(
+        values["projection_lookahead_days"],
+        "sessions.projection_lookahead_days",
+    )
+    maximum_projection_days = _positive_int(
+        values["maximum_projection_days"],
+        "sessions.maximum_projection_days",
+    )
+    requested_projection_days = projection_lookback_days + projection_lookahead_days + 1
+    if requested_projection_days > maximum_projection_days:
+        raise ValueError(
+            "sessions projection lookback and lookahead exceed maximum_projection_days",
+        )
+    maximum_calendars_per_request = _positive_int(
+        values["maximum_calendars_per_request"],
+        "sessions.maximum_calendars_per_request",
+    )
+    if len(selected_calendars) > maximum_calendars_per_request:
+        raise ValueError(
+            "sessions.calendar_ids exceed maximum_calendars_per_request",
         )
     return SessionsConfig(
         evaluation_interval_ms=_positive_int(
             values["evaluation_interval_ms"],
             "sessions.evaluation_interval_ms",
         ),
-        calendars=tuple(calendars),
+        projection_lookback_days=projection_lookback_days,
+        projection_lookahead_days=projection_lookahead_days,
+        maximum_projection_days=maximum_projection_days,
+        maximum_calendars_per_request=maximum_calendars_per_request,
+        catalog_id=catalog_id,
+        catalog_version=catalog_version,
+        catalog_path=catalog_path.resolve(),
+        catalog_digest=catalog_digest,
+        available_calendars=tuple(calendars),
+        calendars=selected_calendars,
     )
 
 
@@ -1432,59 +1713,207 @@ def _load_session_phases(raw: Any, label: str) -> tuple[SessionPhaseConfig, ...]
     for index, item in enumerate(raw):
         item_label = f"{label}[{index}]"
         phase = _mapping(item, item_label)
-        _require_keys(phase, {"name", "start", "end", "start_day_offset"}, item_label)
+        _require_keys(
+            phase,
+            {
+                "name",
+                "timezone",
+                "start_kind",
+                "start_value",
+                "start_day_offset",
+                "end_kind",
+                "end_value",
+                "end_day_offset",
+                "exchange_constraint",
+            },
+            item_label,
+        )
         name = _non_empty_string(phase["name"], f"{item_label}.name").upper()
-        if name == "CLOSED":
-            raise ValueError(f"{item_label}.name cannot use reserved phase CLOSED")
+        if name in {"CLOSED", "BREAK"}:
+            raise ValueError(f"{item_label}.name uses a reserved market state")
         if name in seen:
             raise ValueError(f"duplicate session phase: {name}")
         seen.add(name)
+        timezone = _non_empty_string(phase["timezone"], f"{item_label}.timezone")
+        start_kind = _phase_boundary_kind(phase["start_kind"], f"{item_label}.start_kind")
+        end_kind = _phase_boundary_kind(phase["end_kind"], f"{item_label}.end_kind")
         phases.append(
             SessionPhaseConfig(
                 name=name,
-                start=_clock_time(phase["start"], f"{item_label}.start"),
-                end=_clock_time(phase["end"], f"{item_label}.end"),
+                timezone=timezone,
+                start_kind=start_kind,
+                start_value=_phase_boundary_value(
+                    phase["start_value"],
+                    start_kind,
+                    f"{item_label}.start_value",
+                ),
                 start_day_offset=_small_day_offset(
                     phase["start_day_offset"],
                     f"{item_label}.start_day_offset",
+                ),
+                end_kind=end_kind,
+                end_value=_phase_boundary_value(
+                    phase["end_value"],
+                    end_kind,
+                    f"{item_label}.end_value",
+                ),
+                end_day_offset=_small_day_offset(
+                    phase["end_day_offset"],
+                    f"{item_label}.end_day_offset",
+                ),
+                exchange_constraint=_enum_string(
+                    phase["exchange_constraint"],
+                    {"none", "clip", "omit_if_exchange_closes_before_start"},
+                    f"{item_label}.exchange_constraint",
                 ),
             ),
         )
     return tuple(phases)
 
 
-def _load_session_overrides(raw: Any, label: str) -> tuple[SessionOverrideConfig, ...]:
+def _load_calendar_sources(raw: Any) -> tuple[CalendarSourceConfig, ...]:
     if not isinstance(raw, list):
-        raise ValueError(f"{label} must be an array")
-    overrides: list[SessionOverrideConfig] = []
-    seen: set[tuple[str, str]] = set()
+        raise ValueError("calendar_catalog.sources must be an array")
+    sources: list[CalendarSourceConfig] = []
+    seen: set[str] = set()
     for index, item in enumerate(raw):
-        item_label = f"{label}[{index}]"
-        override = _mapping(item, item_label)
+        label = f"calendar_catalog.sources[{index}]"
+        source = _mapping(item, label)
         _require_keys(
-            override,
-            {"trade_date", "phase", "start", "end", "start_day_offset"},
-            item_label,
+            source,
+            {
+                "source_id",
+                "title",
+                "url",
+                "retrieved_at",
+                "content_sha256",
+                "retrieval_status",
+            },
+            label,
         )
-        trade_date = _iso_date(override["trade_date"], f"{item_label}.trade_date")
-        phase = _non_empty_string(override["phase"], f"{item_label}.phase").upper()
-        identity = (trade_date, phase)
-        if identity in seen:
-            raise ValueError(f"duplicate session override: {trade_date}/{phase}")
-        seen.add(identity)
-        overrides.append(
-            SessionOverrideConfig(
-                trade_date=trade_date,
-                phase=phase,
-                start=_clock_time(override["start"], f"{item_label}.start"),
-                end=_clock_time(override["end"], f"{item_label}.end"),
-                start_day_offset=_small_day_offset(
-                    override["start_day_offset"],
-                    f"{item_label}.start_day_offset",
+        source_id = _non_empty_string(source["source_id"], f"{label}.source_id")
+        if source_id in seen:
+            raise ValueError(f"duplicate calendar source: {source_id}")
+        seen.add(source_id)
+        digest = source["content_sha256"]
+        if digest == "":
+            digest = None
+        if digest is not None and (
+            not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        ):
+            raise ValueError(f"{label}.content_sha256 must be null or lowercase SHA-256")
+        retrieval_status = _non_empty_string(
+            source["retrieval_status"],
+            f"{label}.retrieval_status",
+        ).upper()
+        if retrieval_status not in {"VERIFIED", "HASH_UNAVAILABLE"}:
+            raise ValueError(f"{label}.retrieval_status is unsupported")
+        if retrieval_status == "VERIFIED" and digest is None:
+            raise ValueError(f"{label} VERIFIED source requires content_sha256")
+        sources.append(
+            CalendarSourceConfig(
+                source_id=source_id,
+                title=_non_empty_string(source["title"], f"{label}.title"),
+                url=_non_empty_string(source["url"], f"{label}.url"),
+                retrieved_at_ns=_utc_timestamp_ns(
+                    source["retrieved_at"],
+                    f"{label}.retrieved_at",
+                ),
+                content_sha256=digest,
+                retrieval_status=retrieval_status,
+            ),
+        )
+    return tuple(sources)
+
+
+def _load_calendar_corrections(
+    raw: Any,
+    sources: dict[str, CalendarSourceConfig],
+) -> tuple[CalendarCorrectionConfig, ...]:
+    if not isinstance(raw, list):
+        raise ValueError("calendar_catalog.corrections must be an array")
+    corrections: list[CalendarCorrectionConfig] = []
+    seen: set[str] = set()
+    for index, item in enumerate(raw):
+        label = f"calendar_catalog.corrections[{index}]"
+        correction = _mapping(item, label)
+        _require_keys(
+            correction,
+            {
+                "correction_id",
+                "kind",
+                "source_id",
+                "product_roots",
+                "effective_from_trade_date",
+                "timezone",
+                "expected_start",
+                "expected_end",
+            },
+            label,
+        )
+        correction_id = _non_empty_string(
+            correction["correction_id"],
+            f"{label}.correction_id",
+        )
+        if correction_id in seen:
+            raise ValueError(f"duplicate calendar correction: {correction_id}")
+        seen.add(correction_id)
+        kind = _non_empty_string(correction["kind"], f"{label}.kind")
+        if kind != "remove_regular_break":
+            raise ValueError(f"{label}.kind is unsupported")
+        source_id = _non_empty_string(correction["source_id"], f"{label}.source_id")
+        if source_id not in sources:
+            raise ValueError(f"{label}.source_id references unknown source: {source_id}")
+        timezone = _non_empty_string(correction["timezone"], f"{label}.timezone")
+        try:
+            ZoneInfo(timezone)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError(f"{label}.timezone is not an IANA timezone") from exc
+        corrections.append(
+            CalendarCorrectionConfig(
+                correction_id=correction_id,
+                kind=kind,
+                source_id=source_id,
+                product_roots=_unique_non_empty_strings(
+                    correction["product_roots"],
+                    f"{label}.product_roots",
+                ),
+                effective_from_trade_date=_iso_date(
+                    correction["effective_from_trade_date"],
+                    f"{label}.effective_from_trade_date",
+                ),
+                timezone=timezone,
+                expected_start=_clock_time(
+                    correction["expected_start"],
+                    f"{label}.expected_start",
+                ),
+                expected_end=_clock_time(
+                    correction["expected_end"],
+                    f"{label}.expected_end",
                 ),
             ),
         )
-    return tuple(overrides)
+    return tuple(corrections)
+
+
+def _phase_boundary_kind(value: Any, label: str) -> str:
+    kind = _non_empty_string(value, label)
+    if kind not in {"schedule_boundary", "local_time"}:
+        raise ValueError(f"{label} must be schedule_boundary or local_time")
+    return kind
+
+
+def _enum_string(value: Any, allowed: set[str], label: str) -> str:
+    normalized = _non_empty_string(value, label)
+    if normalized not in allowed:
+        raise ValueError(f"{label} must be one of: {', '.join(sorted(allowed))}")
+    return normalized
+
+
+def _phase_boundary_value(value: Any, kind: str, label: str) -> str:
+    if kind == "local_time":
+        return _clock_time(value, label)
+    return _non_empty_string(value, label)
 
 
 def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
@@ -3792,6 +4221,16 @@ def _small_day_offset(value: Any, label: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or not -7 <= value <= 7:
         raise ValueError(f"{label} must be an integer from -7 through 7")
     return value
+
+
+def _sha256_digest(value: object) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _bool(value: Any, label: str) -> bool:

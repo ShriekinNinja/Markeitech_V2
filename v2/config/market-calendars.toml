@@ -1,0 +1,257 @@
+# Canonical temporal catalog. mcal supplies exchange dates, holidays, special closes, DST-aware
+# schedule rows, and the admitted schedule columns. Markeitech supplies source-cited structural
+# corrections and independently timezoned product phases. Concrete instruments bind to these
+# reusable definitions through the runtime watchlist, never through this catalog. All runtime
+# instants produced from this catalog are UTC nanoseconds.
+
+schema_version = 3
+catalog_id = "markeitech-market-calendars"
+catalog_version = 3
+calendar_engine_version = "5.4.0"
+
+[[sources]]
+source_id = "cme-equity-index-hours-2021-06-21"
+title = "CME Globex Equity Index trading-hours change, effective trade date 2021-06-28"
+url = "https://www.cmegroup.com/notices/electronic-trading/2021/06/20210621.html"
+retrieved_at = "2026-08-30T00:00:00Z"
+# The official page was inspected, but this environment could not retrieve stable response bytes.
+# Do not substitute the SHA-256 of an empty response; hash verification remains explicitly absent.
+content_sha256 = ""
+retrieval_status = "HASH_UNAVAILABLE"
+
+[[corrections]]
+correction_id = "cme-equity-remove-1515-pause"
+kind = "remove_regular_break"
+source_id = "cme-equity-index-hours-2021-06-21"
+product_roots = ["ES", "NQ", "YM"]
+effective_from_trade_date = "2021-06-28"
+timezone = "America/Chicago"
+expected_start = "15:15"
+expected_end = "15:30"
+
+[[calendars]]
+calendar_id = "cboe_spxw"
+calendar_engine = "pandas_market_calendars"
+# CBOE_Index_Options supplies holidays and early closes, but does not supply the overnight GTH
+# phase. These phase clocks are retained as provisional Markeitech product semantics.
+provider_calendar = "CBOE_Index_Options"
+schedule_columns = ["market_open", "market_close"]
+definition_version = 2
+effective_from = "2026-08-30T00:00:00Z"
+correction_ids = []
+
+[[calendars.phases]]
+name = "GTH"
+timezone = "America/New_York"
+start_kind = "local_time"
+start_value = "20:15"
+start_day_offset = -1
+end_kind = "local_time"
+end_value = "09:25"
+end_day_offset = 0
+exchange_constraint = "none"
+
+[[calendars.phases]]
+name = "RTH"
+timezone = "America/New_York"
+start_kind = "local_time"
+start_value = "09:30"
+start_day_offset = 0
+end_kind = "local_time"
+end_value = "16:15"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+[[calendars.phases]]
+name = "CURB"
+timezone = "America/New_York"
+start_kind = "local_time"
+start_value = "16:15"
+start_day_offset = 0
+end_kind = "local_time"
+end_value = "17:00"
+end_day_offset = 0
+exchange_constraint = "omit_if_exchange_closes_before_start"
+
+[[calendars]]
+calendar_id = "us_equities"
+calendar_engine = "pandas_market_calendars"
+provider_calendar = "NYSE"
+schedule_columns = ["market_open", "market_close"]
+definition_version = 2
+effective_from = "2026-08-30T00:00:00Z"
+correction_ids = []
+
+[[calendars.phases]]
+name = "EXCHANGE_SESSION"
+timezone = "provider"
+start_kind = "schedule_boundary"
+start_value = "market_open"
+start_day_offset = 0
+end_kind = "schedule_boundary"
+end_value = "market_close"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+[[calendars]]
+calendar_id = "cme_equity"
+calendar_engine = "pandas_market_calendars"
+provider_calendar = "CME_Equity"
+schedule_columns = ["market_open", "break_start", "break_end", "market_close"]
+definition_version = 3
+effective_from = "2026-08-30T00:00:00Z"
+correction_ids = ["cme-equity-remove-1515-pause"]
+
+[[calendars.phases]]
+name = "GLOBEX"
+timezone = "provider"
+start_kind = "schedule_boundary"
+start_value = "market_open"
+start_day_offset = 0
+end_kind = "schedule_boundary"
+end_value = "market_close"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+# CME Asian Trading Hours are defined as 16:00-00:00 America/Chicago. The exchange constraint
+# clips the 16:00 start to the actual post-maintenance Globex open for this calendar.
+[[calendars.phases]]
+name = "ASIA"
+timezone = "America/Chicago"
+start_kind = "local_time"
+start_value = "16:00"
+start_day_offset = -1
+end_kind = "local_time"
+end_value = "00:00"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+# Markeitech market-region phase. This is not an mcal exchange boundary or an analytical window.
+[[calendars.phases]]
+name = "LONDON"
+timezone = "Europe/London"
+start_kind = "local_time"
+start_value = "08:00"
+start_day_offset = 0
+end_kind = "local_time"
+end_value = "11:30"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+# Markeitech market-region phase aligned to the New York cash session.
+[[calendars.phases]]
+name = "NEW_YORK"
+timezone = "America/New_York"
+start_kind = "local_time"
+start_value = "09:30"
+start_day_offset = 0
+end_kind = "local_time"
+end_value = "16:00"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+[[calendars]]
+calendar_id = "cbot_equity"
+calendar_engine = "pandas_market_calendars"
+provider_calendar = "CBOT_Equity"
+schedule_columns = ["market_open", "break_start", "break_end", "market_close"]
+definition_version = 3
+effective_from = "2026-08-30T00:00:00Z"
+correction_ids = ["cme-equity-remove-1515-pause"]
+
+[[calendars.phases]]
+name = "GLOBEX"
+timezone = "provider"
+start_kind = "schedule_boundary"
+start_value = "market_open"
+start_day_offset = 0
+end_kind = "schedule_boundary"
+end_value = "market_close"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+[[calendars.phases]]
+name = "ASIA"
+timezone = "America/Chicago"
+start_kind = "local_time"
+start_value = "16:00"
+start_day_offset = -1
+end_kind = "local_time"
+end_value = "00:00"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+[[calendars.phases]]
+name = "LONDON"
+timezone = "Europe/London"
+start_kind = "local_time"
+start_value = "08:00"
+start_day_offset = 0
+end_kind = "local_time"
+end_value = "11:30"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+[[calendars.phases]]
+name = "NEW_YORK"
+timezone = "America/New_York"
+start_kind = "local_time"
+start_value = "09:30"
+start_day_offset = 0
+end_kind = "local_time"
+end_value = "16:00"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+[[calendars]]
+calendar_id = "cme_energy"
+calendar_engine = "pandas_market_calendars"
+provider_calendar = "CMEGlobex_CL"
+schedule_columns = ["market_open", "market_close"]
+definition_version = 3
+effective_from = "2026-08-30T00:00:00Z"
+correction_ids = []
+
+[[calendars.phases]]
+name = "GLOBEX"
+timezone = "provider"
+start_kind = "schedule_boundary"
+start_value = "market_open"
+start_day_offset = 0
+end_kind = "schedule_boundary"
+end_value = "market_close"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+[[calendars.phases]]
+name = "ASIA"
+timezone = "America/Chicago"
+start_kind = "local_time"
+start_value = "16:00"
+start_day_offset = -1
+end_kind = "local_time"
+end_value = "00:00"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+[[calendars.phases]]
+name = "LONDON"
+timezone = "Europe/London"
+start_kind = "local_time"
+start_value = "08:00"
+start_day_offset = 0
+end_kind = "local_time"
+end_value = "11:30"
+end_day_offset = 0
+exchange_constraint = "clip"
+
+[[calendars.phases]]
+name = "NEW_YORK"
+timezone = "America/New_York"
+start_kind = "local_time"
+start_value = "09:30"
+start_day_offset = 0
+end_kind = "local_time"
+end_value = "16:00"
+end_day_offset = 0
+exchange_constraint = "clip"

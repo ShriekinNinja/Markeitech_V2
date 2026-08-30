@@ -19,6 +19,60 @@ from markeitech.system.discord import (
 )
 
 
+def _canonical_calendar_payload(calendar) -> dict[str, object]:  # noqa: ANN001
+    return {
+        "calendar_id": calendar.calendar_id,
+        "schedule_version": calendar.schedule_version,
+        "calendar_engine": calendar.calendar_engine,
+        "calendar_engine_version": calendar.calendar_engine_version,
+        "provider_calendar": calendar.provider_calendar,
+        "provider_calendar_class": calendar.provider_calendar_class,
+        "exchange_timezone": calendar.exchange_timezone,
+        "schedule_columns": list(calendar.schedule_columns),
+        "definition_version": calendar.definition_version,
+        "effective_from_ns": calendar.effective_from_ns,
+        "definition_digest": calendar.definition_digest,
+        "phases": [
+            {
+                "name": phase.name,
+                "timezone": phase.timezone,
+                "start_kind": phase.start_kind,
+                "start_value": phase.start_value,
+                "start_day_offset": phase.start_day_offset,
+                "end_kind": phase.end_kind,
+                "end_value": phase.end_value,
+                "end_day_offset": phase.end_day_offset,
+                "exchange_constraint": phase.exchange_constraint,
+            }
+            for phase in calendar.phases
+        ],
+        "corrections": [
+            {
+                "correction_id": correction.correction_id,
+                "kind": correction.kind,
+                "source_id": correction.source_id,
+                "product_roots": list(correction.product_roots),
+                "effective_from_trade_date": correction.effective_from_trade_date,
+                "timezone": correction.timezone,
+                "expected_start": correction.expected_start,
+                "expected_end": correction.expected_end,
+            }
+            for correction in calendar.corrections
+        ],
+        "sources": [
+            {
+                "source_id": source.source_id,
+                "title": source.title,
+                "url": source.url,
+                "retrieved_at_ns": source.retrieved_at_ns,
+                "content_sha256": source.content_sha256,
+                "retrieval_status": source.retrieval_status,
+            }
+            for source in calendar.sources
+        ],
+    }
+
+
 def _watchlist_feeds(config: SystemConfig) -> list[dict[str, str]]:
     feeds: list[dict[str, str]] = []
     for member in config.watchlist.members:
@@ -278,32 +332,13 @@ def build_actor_plan(
                 config={
                     "actor_id": "SESSION-STATE",
                     "evaluation_interval_ms": config.sessions.evaluation_interval_ms,
+                    "source_epoch": str(prerequisites.run_id),
+                    "maximum_projection_days": config.sessions.maximum_projection_days,
+                    "maximum_calendars_per_request": (
+                        config.sessions.maximum_calendars_per_request
+                    ),
                     "calendars": [
-                        {
-                            "calendar_id": calendar.calendar_id,
-                            "provider_calendar": calendar.provider_calendar,
-                            "timezone": calendar.timezone,
-                            "schedule_version": calendar.schedule_version,
-                            "phases": [
-                                {
-                                    "name": phase.name,
-                                    "start": phase.start,
-                                    "end": phase.end,
-                                    "start_day_offset": phase.start_day_offset,
-                                }
-                                for phase in calendar.phases
-                            ],
-                            "overrides": [
-                                {
-                                    "trade_date": override.trade_date,
-                                    "phase": override.phase,
-                                    "start": override.start,
-                                    "end": override.end,
-                                    "start_day_offset": override.start_day_offset,
-                                }
-                                for override in calendar.overrides
-                            ],
-                        }
+                        _canonical_calendar_payload(calendar)
                         for calendar in config.sessions.calendars
                     ],
                 },
@@ -327,6 +362,8 @@ def build_actor_plan(
                         config.evidence_health.profile_checkpoint_samples
                     ),
                     "recency_profiles": list(prerequisites.evidence_recency_profiles),
+                    "projection_lookback_days": config.sessions.projection_lookback_days,
+                    "projection_lookahead_days": config.sessions.projection_lookahead_days,
                     "policies": [
                         {
                             "feed_kind": policy.feed_kind,
@@ -472,34 +509,18 @@ def build_actor_plan(
                             for member in config.watchlist.members
                             if member.instrument_id in selected_instruments
                         },
-                        "calendars": [
-                            {
-                                "calendar_id": calendar.calendar_id,
-                                "provider_calendar": calendar.provider_calendar,
-                                "timezone": calendar.timezone,
-                                "schedule_version": calendar.schedule_version,
-                                "phases": [
-                                    {
-                                        "name": phase.name,
-                                        "start": phase.start,
-                                        "end": phase.end,
-                                        "start_day_offset": phase.start_day_offset,
-                                    }
-                                    for phase in calendar.phases
-                                ],
-                                "overrides": [
-                                    {
-                                        "trade_date": override.trade_date,
-                                        "phase": override.phase,
-                                        "start": override.start,
-                                        "end": override.end,
-                                        "start_day_offset": override.start_day_offset,
-                                    }
-                                    for override in calendar.overrides
-                                ],
-                            }
+                        "expected_calendar_digests": {
+                            calendar.calendar_id: calendar.definition_digest
                             for calendar in config.sessions.calendars
-                        ],
+                            if calendar.calendar_id
+                            in {
+                                member.calendar_id
+                                for member in config.watchlist.members
+                                if member.instrument_id in selected_instruments
+                            }
+                        },
+                        "projection_lookback_days": config.sessions.projection_lookback_days,
+                        "projection_lookahead_days": config.sessions.projection_lookahead_days,
                         "profiles": [
                             {
                                 "profile_id": profile.profile_id,
@@ -982,6 +1003,43 @@ def build_actor_plan(
     registrations.extend(
         [
             ActorRegistration(
+                key="historical_evidence_planner",
+                actor_id="HISTORICAL-EVIDENCE-PLANNER",
+                config=ImportableActorConfig(
+                    actor_path=(
+                        "markeitech.system.historical_planner:HistoricalEvidencePlannerActor"
+                    ),
+                    config_path=(
+                        "markeitech.system.historical_planner:"
+                        "HistoricalEvidencePlannerActorConfig"
+                    ),
+                    config={
+                        "actor_id": "HISTORICAL-EVIDENCE-PLANNER",
+                        "instrument_ids": instrument_ids,
+                        "instrument_calendars": {
+                            member.instrument_id: member.calendar_id
+                            for member in config.watchlist.members
+                        },
+                        "expected_calendar_digests": {
+                            calendar.calendar_id: calendar.definition_digest
+                            for calendar in config.sessions.calendars
+                        },
+                        "projection_lookback_days": config.sessions.projection_lookback_days,
+                        "projection_lookahead_days": config.sessions.projection_lookahead_days,
+                        "historical": {
+                            "maximum_plan_requests": config.historical.maximum_plan_requests,
+                            "maximum_observations_per_request": (
+                                config.historical.maximum_observations_per_request
+                            ),
+                            "maximum_total_observations": (
+                                config.historical.maximum_total_observations
+                            ),
+                            "poll_interval_ms": config.historical.poll_interval_ms,
+                        },
+                    },
+                ),
+            ),
+            ActorRegistration(
                 key="watchlist",
                 actor_id="WATCHLIST",
                 config=ImportableActorConfig(
@@ -1011,38 +1069,6 @@ def build_actor_plan(
                     config={
                         "actor_id": "DATA-ACQUISITION",
                         "instrument_ids": instrument_ids,
-                        "instrument_calendars": {
-                            member.instrument_id: member.calendar_id
-                            for member in config.watchlist.members
-                        },
-                        "calendars": [
-                            {
-                                "calendar_id": calendar.calendar_id,
-                                "provider_calendar": calendar.provider_calendar,
-                                "timezone": calendar.timezone,
-                                "schedule_version": calendar.schedule_version,
-                                "phases": [
-                                    {
-                                        "name": phase.name,
-                                        "start": phase.start,
-                                        "end": phase.end,
-                                        "start_day_offset": phase.start_day_offset,
-                                    }
-                                    for phase in calendar.phases
-                                ],
-                                "overrides": [
-                                    {
-                                        "trade_date": override.trade_date,
-                                        "phase": override.phase,
-                                        "start": override.start,
-                                        "end": override.end,
-                                        "start_day_offset": override.start_day_offset,
-                                    }
-                                    for override in calendar.overrides
-                                ],
-                            }
-                            for calendar in config.sessions.calendars
-                        ],
                         "historical": {
                             "maximum_plan_requests": config.historical.maximum_plan_requests,
                             "maximum_observations_per_request": (

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from queue import Empty, Full, Queue
 from threading import Lock, Thread
 from time import monotonic, sleep, time_ns
@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 
 import psycopg
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
-from nautilus_trader.model import ActorId
+from nautilus_trader.model import ActorId, CustomData, DataType
 from psycopg.types.json import Jsonb
 
 from markeitech.acquisition import (
@@ -24,13 +24,15 @@ from markeitech.acquisition import (
     HistoricalExecutionEventMessage,
     HistoricalReadinessEvent,
 )
+from markeitech.intelligence.calendar_messages import (
+    CALENDAR_TRANSITION_TYPE_NAME,
+    CalendarTransition,
+)
 from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
     EVIDENCE_RECENCY_PROFILE_SIGNAL,
-    SESSION_STATE_SIGNAL,
     EvidenceHealthEvent,
     EvidenceRecencyProfileEvent,
-    SessionStateEvent,
 )
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
@@ -762,6 +764,7 @@ class OperationalPersistenceActor(DataActor):
         self._subscribed_signals: set[str] = set()
         self._failure_published = False
         self._reported_failures: set[tuple[str, str]] = set()
+        self._calendar_transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
 
     def on_start(self) -> None:
         try:
@@ -793,7 +796,6 @@ class OperationalPersistenceActor(DataActor):
             ANALYTICAL_DEMAND_SIGNAL,
             WATCHLIST_MEMBERSHIP_SIGNAL,
             WATCHLIST_LIFECYCLE_SIGNAL,
-            SESSION_STATE_SIGNAL,
             EVIDENCE_HEALTH_SIGNAL,
             EVIDENCE_RECENCY_PROFILE_SIGNAL,
             PERSISTENCE_READY_REQUEST_SIGNAL,
@@ -805,6 +807,7 @@ class OperationalPersistenceActor(DataActor):
         ):
             self.subscribe_signal(signal_name)
             self._subscribed_signals.add(signal_name)
+        self.subscribe_data(self._calendar_transition_type)
         self.clock.set_timer_ns(
             _RESULT_TIMER,
             self._result_poll_interval_ns,
@@ -834,6 +837,21 @@ class OperationalPersistenceActor(DataActor):
         except ValueError as exc:
             self._report_failure("invalid_operational_event", type(exc).__name__)
             return
+        self._submit_record(record)
+
+    def on_data(self, data) -> None:  # noqa: ANN001
+        payload = data.data if isinstance(data, CustomData) else data
+        if not isinstance(payload, CalendarTransition):
+            return
+        if self._worker is None:
+            self._report_failure("persistence_worker_unavailable", "not_started")
+            return
+        self._sequence += 1
+        record = _record_from_calendar_transition(self._run_id, self._sequence, payload)
+        self._submit_record(record)
+
+    def _submit_record(self, record: PersistedRecord) -> None:
+        assert self._worker is not None
         if not self._worker.submit(record, critical=_is_critical_record(record)):
             stats = self._worker.snapshot()
             self._report_failure(
@@ -861,6 +879,7 @@ class OperationalPersistenceActor(DataActor):
         self.log.info(f"OPERATIONAL_PERSISTENCE_READY | run_id={self._run_id}")
 
     def on_stop(self) -> None:
+        self.unsubscribe_data(self._calendar_transition_type)
         for signal_name in tuple(self._subscribed_signals):
             self.unsubscribe_signal(signal_name)
             self._subscribed_signals.remove(signal_name)
@@ -1139,22 +1158,6 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             schema_version=event.schema_version,
             correlation_id=event.demand_id,
         )
-    if signal.name == SESSION_STATE_SIGNAL:
-        event = SessionStateEvent.from_signal_value(signal.value)
-        return OperationalEventRecord(
-            event_id=event.event_id,
-            run_id=run_id,
-            sequence=sequence,
-            signal_name=signal.name,
-            event_type="session.state",
-            source=event.source,
-            correlation_id=f"session:{event.calendar_id}:{event.trade_date or 'unknown'}",
-            causation_id=None,
-            payload=json.loads(signal.value),
-            ts_event_ns=signal.ts_event,
-            ts_init_ns=signal.ts_init,
-            schema_version=event.schema_version,
-        )
     if signal.name == EVIDENCE_HEALTH_SIGNAL:
         event = EvidenceHealthEvent.from_signal_value(signal.value)
         return OperationalEventRecord(
@@ -1191,6 +1194,30 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             schema_version=event.schema_version,
         )
     raise ValueError(f"unsupported operational signal: {signal.name}")
+
+
+def _record_from_calendar_transition(
+    run_id: UUID,
+    sequence: int,
+    event: CalendarTransition,
+) -> OperationalEventRecord:
+    return OperationalEventRecord(
+        event_id=event.event_id,
+        run_id=run_id,
+        sequence=sequence,
+        signal_name=CALENDAR_TRANSITION_TYPE_NAME,
+        event_type="calendar.transition",
+        source=event.source,
+        correlation_id=(
+            f"calendar:{event.source_epoch}:{event.calendar_id}:"
+            f"{event.trade_date or 'unknown'}"
+        ),
+        causation_id=None,
+        payload=asdict(event),
+        ts_event_ns=event.ts_event,
+        ts_init_ns=event.ts_init,
+        schema_version=event.schema_version,
+    )
 
 
 def _generic_signal_record(

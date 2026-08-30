@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import replace
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
@@ -20,6 +20,14 @@ from markeitech.acquisition import (
     HistoricalWindow,
     NautilusSubscriptionPort,
 )
+from markeitech.intelligence.calendar_messages import (
+    CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
+    CALENDAR_PROJECTION_RESPONSE_TYPE_NAME,
+    CALENDAR_TRANSITION_TYPE_NAME,
+    CalendarProjectionRequest,
+    CalendarProjectionResponse,
+    CalendarTransition,
+)
 from markeitech.intelligence.completed_bars import (
     COMPLETED_BAR_INPUT_TYPE_NAME,
     BarAdmissionStatus,
@@ -33,11 +41,9 @@ from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
     EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL,
     EVIDENCE_HEALTH_SNAPSHOT_SIGNAL,
-    SESSION_STATE_SIGNAL,
     EvidenceHealthEvent,
     EvidenceHealthSnapshot,
     EvidenceHealthSnapshotRequest,
-    SessionStateEvent,
 )
 from markeitech.intelligence.metrics import (
     METRIC_VALUE_TYPE_NAME,
@@ -55,7 +61,7 @@ from markeitech.intelligence.rolling_measurements import (
     rolling_metric_definitions,
     rolling_metric_values,
 )
-from markeitech.intelligence.session import SessionCalendar, definition_from_config
+from markeitech.intelligence.session import CalendarProjectionView
 from markeitech.intelligence.session_measurements import (
     CompletedBarCatalogPolicy,
     calculate_completed_bar_metrics,
@@ -92,10 +98,11 @@ _HISTORICAL_DEMAND_DELAY_NS = 1_000_000
 _HISTORICAL_DEMAND_ALERT = "session-metrics-historical-demand"
 _ACTIVE_REFERENCE_RETRY_ALERT = "session-metrics-active-reference-retry"
 _ACTIVE_REFERENCE_RETRY_DELAY_NS = 1_000_000
+_CALENDAR_PROJECTION_RETRY_TIMER = "session-metrics-calendar-projection-retry"
 
 
 def _active_reference_attempt_ns(
-    calendar: SessionCalendar,
+    calendar: CalendarProjectionView,
     phase: str,
     timestamp_ns: int,
     selector_interval_ns: int,
@@ -103,7 +110,7 @@ def _active_reference_attempt_ns(
     if selector_interval_ns <= 0:
         raise ValueError("selector interval must be positive")
     snapshot = calendar.evaluate(timestamp_ns)
-    if snapshot.phase != phase or snapshot.phase_open_ns is None:
+    if phase not in snapshot.phase_memberships or snapshot.phase_open_ns is None:
         return None
     completed_boundary_ns = timestamp_ns - (timestamp_ns % selector_interval_ns)
     if snapshot.phase_open_ns < completed_boundary_ns:
@@ -151,7 +158,9 @@ class SessionMetricsActorConfig(DataActorConfig):
         cls,
         instrument_ids: list[str],
         instrument_calendars: dict[str, str],
-        calendars: list[dict[str, object]],
+        expected_calendar_digests: dict[str, str],
+        projection_lookback_days: int,
+        projection_lookahead_days: int,
         profiles: list[dict[str, object]],
         profile_bindings: dict[str, str],
         parameter_version: int,
@@ -171,7 +180,9 @@ class SessionMetricsActorConfig(DataActorConfig):
         obj = super().__new__(cls, actor_id=resolved)
         obj.instrument_ids = tuple(instrument_ids)
         obj.instrument_calendars = dict(instrument_calendars)
-        obj.calendars = tuple(calendars)
+        obj.expected_calendar_digests = dict(expected_calendar_digests)
+        obj.projection_lookback_days = projection_lookback_days
+        obj.projection_lookahead_days = projection_lookahead_days
         obj.profiles = tuple(profiles)
         obj.profile_bindings = dict(profile_bindings)
         obj.parameter_version = parameter_version
@@ -200,10 +211,12 @@ class SessionMetricsActor(DataActor):
         self._instrument_ids = tuple(sorted(config.instrument_ids))
         self._instrument_set = frozenset(self._instrument_ids)
         self._instrument_calendars = dict(config.instrument_calendars)
-        self._calendars = {
-            value["calendar_id"]: SessionCalendar(definition_from_config(dict(value)))
-            for value in config.calendars
-        }
+        self._expected_calendar_digests = dict(config.expected_calendar_digests)
+        self._calendar_ids = tuple(sorted(set(self._instrument_calendars.values())))
+        self._calendars: dict[str, CalendarProjectionView] = {}
+        self._calendar_refresh_ids: set[str] = set()
+        self._projection_lookback_ns = config.projection_lookback_days * 86_400_000_000_000
+        self._projection_lookahead_ns = config.projection_lookahead_days * 86_400_000_000_000
         self._profiles = {value["profile_id"]: dict(value) for value in config.profiles}
         self._profile_bindings = dict(config.profile_bindings)
         self._parameter_version = config.parameter_version
@@ -349,6 +362,9 @@ class SessionMetricsActor(DataActor):
         self._metric_type = DataType(METRIC_VALUE_TYPE_NAME)
         self._completed_bar_type = DataType(COMPLETED_BAR_INPUT_TYPE_NAME)
         self._batch_type = DataType(HISTORICAL_BATCH_TYPE_NAME)
+        self._calendar_request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
+        self._calendar_response_type = DataType(CALENDAR_PROJECTION_RESPONSE_TYPE_NAME)
+        self._calendar_transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
         self._demand_retry_interval_ns = config.demand_retry_interval_ms * 1_000_000
         self._evidence_retry_interval_ns = config.evidence_snapshot_retry_interval_ms * 1_000_000
         if config.conflict_policy != BarConflictPolicy.REJECT_CONFLICT.value:
@@ -361,7 +377,7 @@ class SessionMetricsActor(DataActor):
             for instrument_id in self._instrument_ids
         }
         self._source_buckets: dict[tuple[str, int], dict[int, CompletedBarInput]] = {}
-        self._session_states: dict[str, SessionStateEvent] = {}
+        self._session_states: dict[str, CalendarTransition] = {}
         self._evidence: dict[str, EvidenceHealthEvent] = {}
         self._attached: set[str] = set()
         self._acknowledged_demands: set[str] = set()
@@ -426,12 +442,19 @@ class SessionMetricsActor(DataActor):
         for signal_name in (
             ACQUISITION_STREAM_SIGNAL,
             HISTORICAL_READINESS_SIGNAL,
-            SESSION_STATE_SIGNAL,
             EVIDENCE_HEALTH_SIGNAL,
             EVIDENCE_HEALTH_SNAPSHOT_SIGNAL,
         ):
             self.subscribe_signal(signal_name)
         self.subscribe_data(self._batch_type)
+        self.subscribe_data(self._calendar_response_type)
+        self.subscribe_data(self._calendar_transition_type)
+        self._request_calendar_projection(None)
+        self.clock.set_timer_ns(
+            _CALENDAR_PROJECTION_RETRY_TIMER,
+            self._demand_retry_interval_ns,
+            callback=self._request_calendar_projection,
+        )
         self._attach_consumers()
         self._publish_live_demands(None)
         self._request_evidence_snapshot(None)
@@ -456,8 +479,6 @@ class SessionMetricsActor(DataActor):
             self._observe_acquisition(signal.value)
         elif signal.name == HISTORICAL_READINESS_SIGNAL:
             self._observe_historical_readiness(signal.value)
-        elif signal.name == SESSION_STATE_SIGNAL:
-            self._observe_session_state(signal.value)
         elif signal.name == EVIDENCE_HEALTH_SIGNAL:
             self._observe_evidence(signal.value)
         elif signal.name == EVIDENCE_HEALTH_SNAPSHOT_SIGNAL:
@@ -465,6 +486,12 @@ class SessionMetricsActor(DataActor):
 
     def on_data(self, data) -> None:  # noqa: ANN001
         payload = data.data if isinstance(data, CustomData) else data
+        if isinstance(payload, CalendarTransition):
+            self._observe_session_state(payload)
+            return
+        if isinstance(payload, CalendarProjectionResponse):
+            self._observe_calendar_projection(payload)
+            return
         if not isinstance(payload, HistoricalBatch):
             return
         dependencies = {dependency.consumer_id for dependency in payload.request.dependencies}
@@ -523,6 +550,7 @@ class SessionMetricsActor(DataActor):
             _EVIDENCE_RETRY_TIMER,
             _HISTORICAL_DEMAND_ALERT,
             _ACTIVE_REFERENCE_RETRY_ALERT,
+            _CALENDAR_PROJECTION_RETRY_TIMER,
         ):
             if timer_name in self.clock.timer_names():
                 self.clock.cancel_timer(timer_name)
@@ -538,12 +566,13 @@ class SessionMetricsActor(DataActor):
         for signal_name in (
             ACQUISITION_STREAM_SIGNAL,
             HISTORICAL_READINESS_SIGNAL,
-            SESSION_STATE_SIGNAL,
             EVIDENCE_HEALTH_SIGNAL,
             EVIDENCE_HEALTH_SNAPSHOT_SIGNAL,
         ):
             self.unsubscribe_signal(signal_name)
         self.unsubscribe_data(self._batch_type)
+        self.unsubscribe_data(self._calendar_response_type)
+        self.unsubscribe_data(self._calendar_transition_type)
         self.log.info(
             "SESSION_METRICS_STOPPED"
             f" | instruments={len(self._instrument_ids)}"
@@ -626,6 +655,12 @@ class SessionMetricsActor(DataActor):
             raise ValueError("calendar did not assign a trade date")
         profile_id = self._profile_bindings[instrument_id]
         profile = self._profiles[profile_id]
+        primary_phase = str(profile["primary_phase"])
+        session_phase = (
+            primary_phase
+            if primary_phase in snapshot.phase_memberships
+            else snapshot.phase
+        )
         evidence = self._evidence.get(instrument_id)
         health, fidelity = _source_quality(source, evidence)
         volume_supported = bool(profile["volume_supported"])
@@ -639,7 +674,7 @@ class SessionMetricsActor(DataActor):
             analytical_profile_id=profile_id,
             analytical_profile_version=int(profile["version"]),
             trade_date=snapshot.trade_date,
-            session_id=f"{calendar_id}:{snapshot.trade_date.isoformat()}:{snapshot.phase}",
+            session_id=f"{calendar_id}:{snapshot.trade_date.isoformat()}:{session_phase}",
             window_id="primary",
             interval_start_ns=interval_start_ns,
             interval_end_ns=interval_end_ns,
@@ -666,14 +701,9 @@ class SessionMetricsActor(DataActor):
         *,
         use_current: bool,
     ):  # noqa: ANN202
-        current = self._session_states.get(calendar_id) if use_current else None
-        if current is not None and current.trade_date is not None:
-            if current.phase == "CLOSED" or (
-                current.phase_open_ns is not None
-                and current.phase_close_ns is not None
-                and current.phase_open_ns <= timestamp_ns < current.phase_close_ns
-            ):
-                return _snapshot_from_event(current)
+        del use_current
+        if calendar_id not in self._calendars:
+            raise ValueError(f"calendar projection is unavailable: {calendar_id}")
         return self._calendars[calendar_id].evaluate(timestamp_ns)
 
     def _accumulate(self, bar: CompletedBarInput) -> CompletedBarInput | None:
@@ -879,7 +909,63 @@ class SessionMetricsActor(DataActor):
         ):
             self.clock.cancel_timer(_DEMAND_RETRY_TIMER)
 
+    def _request_calendar_projection(self, _event) -> None:  # noqa: ANN001
+        requested = tuple(
+            calendar_id
+            for calendar_id in self._calendar_ids
+            if calendar_id not in self._calendars or calendar_id in self._calendar_refresh_ids
+        )
+        if not requested:
+            if _CALENDAR_PROJECTION_RETRY_TIMER in self.clock.timer_names():
+                self.clock.cancel_timer(_CALENDAR_PROJECTION_RETRY_TIMER)
+            return
+        now_ns = self.clock.timestamp_ns()
+        request = CalendarProjectionRequest(
+            request_id=f"calendar-projection:{self.actor_id}:{now_ns}",
+            requester=str(self.actor_id),
+            calendar_ids=requested,
+            start_ns=max(0, now_ns - self._projection_lookback_ns),
+            end_ns=now_ns + self._projection_lookahead_ns,
+            requested_ts_ns=now_ns,
+        )
+        self.publish_data(
+            self._calendar_request_type,
+            CustomData(self._calendar_request_type, request),
+        )
+
+    def _observe_calendar_projection(self, response: CalendarProjectionResponse) -> None:
+        accepted_status = response.status in {"READY", "INCOMPLETE"}
+        if response.requester != str(self.actor_id) or not accepted_status:
+            return
+        for projection in response.projections:
+            expected = self._expected_calendar_digests.get(projection.calendar_id)
+            if expected is None:
+                continue
+            if projection.definition_digest != expected:
+                self._counts["failures"] += 1
+                self.log.error(
+                    "SESSION_METRIC_CALENDAR_PROJECTION_CONFLICT"
+                    f" | calendar_id={projection.calendar_id}",
+                )
+                continue
+            self._calendars[projection.calendar_id] = CalendarProjectionView(projection)
+            self._calendar_refresh_ids.discard(projection.calendar_id)
+        if not set(self._calendar_ids) - set(self._calendars) and not self._calendar_refresh_ids:
+            if _CALENDAR_PROJECTION_RETRY_TIMER in self.clock.timer_names():
+                self.clock.cancel_timer(_CALENDAR_PROJECTION_RETRY_TIMER)
+            self._publish_historical_demands(None)
+
+    def _ensure_calendar_projection_retry_timer(self) -> None:
+        if _CALENDAR_PROJECTION_RETRY_TIMER not in self.clock.timer_names():
+            self.clock.set_timer_ns(
+                _CALENDAR_PROJECTION_RETRY_TIMER,
+                self._demand_retry_interval_ns,
+                callback=self._request_calendar_projection,
+            )
+
     def _publish_historical_demands(self, _event) -> None:  # noqa: ANN001
+        if set(self._calendar_ids) - set(self._calendars):
+            return
         now_ns = self.clock.timestamp_ns()
         active_retry_ns: int | None = None
         for instrument_id in self._instrument_ids:
@@ -1276,11 +1362,18 @@ class SessionMetricsActor(DataActor):
         for (profile_id, _), policy in self._window_policies.items():
             if profile_id != bar.analytical_profile_id:
                 continue
-            if bar.session_id.rsplit(":", 1)[-1] != policy.anchor_phase:
-                continue
             try:
                 spec = self._window_spec(policy, bar)
-                self._window_books[(bar.instrument_id, policy.window_id)].ingest_live(spec, bar)
+                if (
+                    bar.interval_end_ns <= spec.start_ns
+                    or bar.interval_start_ns >= spec.end_ns
+                ):
+                    continue
+                aligned_bar = replace(bar, session_id=spec.session_id)
+                self._window_books[(bar.instrument_id, policy.window_id)].ingest_live(
+                    spec,
+                    aligned_bar,
+                )
             except ValueError as exc:
                 self._counts["failures"] += 1
                 self.log.error(
@@ -1300,7 +1393,8 @@ class SessionMetricsActor(DataActor):
         session = next((item for item in windows if item.phase == policy.anchor_phase), None)
         if session is None:
             raise ValueError("calendar did not provide the configured anchor phase")
-        return resolve_analytical_window(policy, session, session_id=bar.session_id)
+        session_id = f"{bar.calendar_id}:{bar.trade_date.isoformat()}:{policy.anchor_phase}"
+        return resolve_analytical_window(policy, session, session_id=session_id)
 
     def _window_demand(
         self,
@@ -1462,15 +1556,24 @@ class SessionMetricsActor(DataActor):
                 ):
                     self._publish_window_metrics(event.instrument_id, policy)
 
-    def _observe_session_state(self, value: str) -> None:
-        try:
-            event = SessionStateEvent.from_signal_value(value)
-        except ValueError:
-            return
-        if event.calendar_id in self._calendars:
+    def _observe_session_state(self, event: CalendarTransition) -> None:
+        if event.calendar_id in self._expected_calendar_digests:
+            if event.definition_digest != self._expected_calendar_digests[event.calendar_id]:
+                self._counts["failures"] += 1
+                self.log.error(
+                    "SESSION_METRIC_CALENDAR_DEFINITION_CONFLICT"
+                    f" | calendar_id={event.calendar_id}",
+                )
+                return
+            self._calendar_refresh_ids.add(event.calendar_id)
+            self._ensure_calendar_projection_retry_timer()
+            self._request_calendar_projection(None)
             previous = self._session_states.get(event.calendar_id)
             self._session_states[event.calendar_id] = event
-            if previous is None or previous.phase == event.phase:
+            if (
+                previous is None
+                or previous.phase_memberships == event.phase_memberships
+            ):
                 return
             self._request_open_session_references(event)
 
@@ -1478,15 +1581,18 @@ class SessionMetricsActor(DataActor):
         profile = self._profiles[self._profile_bindings[instrument_id]]
         calendar_id = str(profile["calendar_id"])
         current = self._session_states.get(calendar_id)
-        phase = (
-            current.phase
-            if current is not None
-            else self._calendars[calendar_id].evaluate(timestamp_ns).phase
-        )
-        return phase == str(profile["primary_phase"])
+        if current is not None:
+            phase_memberships = current.phase_memberships
+        elif calendar_id in self._calendars:
+            phase_memberships = self._calendars[calendar_id].evaluate(
+                timestamp_ns,
+            ).phase_memberships
+        else:
+            return False
+        return str(profile["primary_phase"]) in phase_memberships
 
-    def _request_open_session_references(self, event: SessionStateEvent) -> None:
-        if not self._references_enabled or event.phase == "CLOSED":
+    def _request_open_session_references(self, event: CalendarTransition) -> None:
+        if not self._references_enabled or not event.is_open:
             return
         now_ns = self.clock.timestamp_ns()
         active_retry_ns: int | None = None
@@ -1494,7 +1600,7 @@ class SessionMetricsActor(DataActor):
             profile = self._profiles[self._profile_bindings[instrument_id]]
             if (
                 str(profile["calendar_id"]) != event.calendar_id
-                or str(profile["primary_phase"]) != event.phase
+                or str(profile["primary_phase"]) not in event.phase_memberships
             ):
                 continue
             retry_ns = self._request_active_reference(instrument_id, now_ns)
@@ -1674,15 +1780,3 @@ def _recalculation_contexts(
         raise ValueError("admitted completed bar is absent from ledger")
     targets = (index, index + 1) if index + 1 < len(bars) else (index,)
     return tuple((bars[target], bars[target - 1] if target > 0 else None) for target in targets)
-
-
-class _EventSnapshot:
-    def __init__(self, trade_date: date, phase: str) -> None:
-        self.trade_date = trade_date
-        self.phase = phase
-
-
-def _snapshot_from_event(event: SessionStateEvent) -> _EventSnapshot:
-    if event.trade_date is None:
-        raise ValueError("session event does not carry a trade date")
-    return _EventSnapshot(date.fromisoformat(event.trade_date), event.phase)

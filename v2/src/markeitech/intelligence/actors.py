@@ -1,25 +1,38 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
-from nautilus_trader.model import ActorId
+from nautilus_trader.model import ActorId, CustomData, DataType
 
 from markeitech.acquisition import FeedKind, FeedRequirement, NautilusSubscriptionPort
+from markeitech.intelligence.calendar_messages import (
+    CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
+    CALENDAR_PROJECTION_RESPONSE_TYPE_NAME,
+    CALENDAR_TRANSITION_TYPE_NAME,
+    CalendarProjectionRequest,
+    CalendarProjectionResponse,
+    CalendarTransition,
+)
 from markeitech.intelligence.evidence import EvidencePolicy, RecencyProfile, assess_evidence
 from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
     EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL,
     EVIDENCE_HEALTH_SNAPSHOT_SIGNAL,
     EVIDENCE_RECENCY_PROFILE_SIGNAL,
-    SESSION_STATE_SIGNAL,
     EvidenceHealthEvent,
     EvidenceHealthSnapshot,
     EvidenceHealthSnapshotRequest,
     EvidenceRecencyProfileEvent,
-    SessionStateEvent,
 )
-from markeitech.intelligence.session import SessionCalendar, definition_from_config
+from markeitech.intelligence.session import (
+    CalendarProjectionView,
+    CanonicalCalendar,
+    CanonicalSessionSnapshot,
+    canonical_definition_from_config,
+)
 from markeitech.system.messages import (
     ACQUISITION_STREAM_SIGNAL,
     PERSISTENCE_READY_REQUEST_SIGNAL,
@@ -30,8 +43,18 @@ from markeitech.system.messages import (
 )
 
 _SESSION_TIMER = "session-state-evaluation"
+_SESSION_BOUNDARY_ALERT = "session-state-next-boundary"
 _EVIDENCE_TIMER = "evidence-health-evaluation"
 _EVIDENCE_CONSUMER_RETRY_TIMER = "evidence-health-consumer-registration-retry"
+_EVIDENCE_CALENDAR_RETRY_TIMER = "evidence-health-calendar-projection-retry"
+
+
+@dataclass(frozen=True, slots=True)
+class _SessionContext:
+    calendar_id: str
+    trade_date: str | None
+    phase: str
+    is_open: bool
 
 
 class SessionStateActorConfig(DataActorConfig):
@@ -39,32 +62,58 @@ class SessionStateActorConfig(DataActorConfig):
         cls,
         calendars: list[dict[str, object]],
         evaluation_interval_ms: int,
+        source_epoch: str,
+        maximum_projection_days: int,
+        maximum_calendars_per_request: int,
         actor_id: str | ActorId = "SESSION-STATE",
     ) -> SessionStateActorConfig:
         resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
         obj = super().__new__(cls, actor_id=resolved)
         obj.calendars = tuple(calendars)
         obj.evaluation_interval_ms = evaluation_interval_ms
+        obj.source_epoch = source_epoch
+        obj.maximum_projection_days = maximum_projection_days
+        obj.maximum_calendars_per_request = maximum_calendars_per_request
         return obj
 
 
 class SessionStateActor(DataActor):
     def __init__(self, config: SessionStateActorConfig) -> None:
         super().__init__(config)
-        self._calendars = tuple(
-            SessionCalendar(definition_from_config(dict(value))) for value in config.calendars
-        )
+        self._calendars = {
+            definition.calendar_id: CanonicalCalendar(definition)
+            for definition in (
+                canonical_definition_from_config(dict(value)) for value in config.calendars
+            )
+        }
+        self._definitions = {
+            calendar_id: calendar.definition for calendar_id, calendar in self._calendars.items()
+        }
         self._interval_ns = config.evaluation_interval_ms * 1_000_000
-        self._snapshots = {}
+        self._source_epoch = config.source_epoch
+        self._maximum_projection_days = config.maximum_projection_days
+        self._maximum_calendars_per_request = config.maximum_calendars_per_request
+        self._request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
+        self._response_type = DataType(CALENDAR_PROJECTION_RESPONSE_TYPE_NAME)
+        self._transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
+        self._snapshots: dict[str, CanonicalSessionSnapshot] = {}
         self._revisions: defaultdict[str, int] = defaultdict(int)
+        self._projection_requests = 0
+        self._projection_rejections = 0
         self._started = False
 
     def on_start(self) -> None:
+        self.subscribe_data(self._request_type)
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.publish_signal(
             PERSISTENCE_READY_REQUEST_SIGNAL,
             PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
         )
+
+    def on_data(self, data) -> None:  # noqa: ANN001
+        payload = data.data if isinstance(data, CustomData) else data
+        if isinstance(payload, CalendarProjectionRequest):
+            self._publish_projection(payload)
 
     def on_signal(self, signal: Signal) -> None:
         if signal.name != PERSISTENCE_READY_SIGNAL:
@@ -81,51 +130,156 @@ class SessionStateActor(DataActor):
         self.clock.set_timer_ns(_SESSION_TIMER, self._interval_ns, callback=self._evaluate)
 
     def on_stop(self) -> None:
+        self.unsubscribe_data(self._request_type)
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
-        if _SESSION_TIMER in self.clock.timer_names():
-            self.clock.cancel_timer(_SESSION_TIMER)
+        for timer_name in (_SESSION_TIMER, _SESSION_BOUNDARY_ALERT):
+            if timer_name in self.clock.timer_names():
+                self.clock.cancel_timer(timer_name)
         self.log.info(
             f"SESSION_STATE_STOPPED | calendars={len(self._calendars)}"
-            f" | transitions={sum(self._revisions.values())}",
+            f" | transitions={sum(self._revisions.values())}"
+            f" | projection_requests={self._projection_requests}"
+            f" | projection_rejections={self._projection_rejections}",
         )
 
     def _evaluate(self, _event) -> None:  # noqa: ANN001
         now_ns = self.clock.timestamp_ns()
-        for calendar in self._calendars:
+        next_boundary_ns: int | None = None
+        for calendar_id, calendar in self._calendars.items():
             snapshot = calendar.evaluate(now_ns)
-            previous = self._snapshots.get(snapshot.calendar_id)
-            identity = (snapshot.trade_date, snapshot.phase)
-            previous_identity = None if previous is None else (previous.trade_date, previous.phase)
+            previous = self._snapshots.get(calendar_id)
+            identity = (
+                snapshot.trade_date,
+                snapshot.phase_memberships,
+                snapshot.market_state,
+                snapshot.segment_open_ns,
+                snapshot.segment_close_ns,
+                snapshot.next_transition_ns,
+                snapshot.definition_digest,
+            )
+            previous_identity = None if previous is None else (
+                previous.trade_date,
+                previous.phase_memberships,
+                previous.market_state,
+                previous.segment_open_ns,
+                previous.segment_close_ns,
+                previous.next_transition_ns,
+                previous.definition_digest,
+            )
             if identity == previous_identity:
-                self._snapshots[snapshot.calendar_id] = snapshot
-                continue
-            self._revisions[snapshot.calendar_id] += 1
-            revision = self._revisions[snapshot.calendar_id]
-            event = SessionStateEvent(
-                event_id=f"session:{snapshot.calendar_id}:{revision}",
-                calendar_id=snapshot.calendar_id,
-                schedule_version=snapshot.schedule_version,
-                timezone=snapshot.timezone,
-                trade_date=snapshot.trade_date.isoformat() if snapshot.trade_date else None,
-                phase=snapshot.phase,
-                previous_phase=previous.phase if previous is not None else None,
-                is_open=snapshot.is_open,
-                phase_open_ns=snapshot.phase_open_ns,
-                phase_close_ns=snapshot.phase_close_ns,
-                next_transition_ns=snapshot.next_transition_ns,
-                source=str(self.actor_id),
-                reason=(
-                    "initial session evaluation" if previous is None else "session phase changed"
-                ),
-                revision=revision,
+                self._snapshots[calendar_id] = snapshot
+            else:
+                self._revisions[calendar_id] += 1
+                revision = self._revisions[calendar_id]
+                definition = self._definitions[calendar_id]
+                event = CalendarTransition(
+                    event_id=f"calendar:{self._source_epoch}:{calendar_id}:{revision}",
+                    calendar_id=calendar_id,
+                    schedule_version=snapshot.schedule_version,
+                    definition_version=snapshot.definition_version,
+                    definition_digest=snapshot.definition_digest,
+                    effective_from_ns=definition.effective_from_ns,
+                    trade_date=snapshot.trade_date.isoformat() if snapshot.trade_date else None,
+                    previous_trade_date=(
+                        previous.trade_date.isoformat()
+                        if previous is not None and previous.trade_date is not None
+                        else None
+                    ),
+                    phase_memberships=snapshot.phase_memberships,
+                    previous_phase_memberships=(
+                        previous.phase_memberships if previous is not None else ()
+                    ),
+                    market_state=snapshot.market_state,
+                    previous_market_state=(
+                        previous.market_state if previous is not None else None
+                    ),
+                    segment_open_ns=snapshot.segment_open_ns,
+                    segment_close_ns=snapshot.segment_close_ns,
+                    next_transition_ns=snapshot.next_transition_ns,
+                    source=str(self.actor_id),
+                    source_epoch=self._source_epoch,
+                    effective_ts_ns=now_ns,
+                    evaluated_ts_ns=now_ns,
+                    published_ts_ns=self.clock.timestamp_ns(),
+                    reason=(
+                        "definition activated" if previous is None else "calendar state changed"
+                    ),
+                    revision=revision,
+                    previous_revision=revision - 1 if revision > 1 else None,
+                )
+                self.publish_data(
+                    self._transition_type,
+                    CustomData(self._transition_type, event),
+                )
+                self.log.info(
+                    f"CALENDAR_TRANSITION | calendar={event.calendar_id}"
+                    f" | trade_date={event.trade_date} | phase={event.phase}"
+                    f" | market_state={event.previous_market_state or 'UNINITIALIZED'}"
+                    f"->{event.market_state} | next_transition_ns={event.next_transition_ns}",
+                )
+                self._snapshots[calendar_id] = snapshot
+            if snapshot.next_transition_ns is not None and snapshot.next_transition_ns > now_ns:
+                next_boundary_ns = (
+                    snapshot.next_transition_ns
+                    if next_boundary_ns is None
+                    else min(next_boundary_ns, snapshot.next_transition_ns)
+                )
+        self._schedule_boundary(next_boundary_ns)
+
+    def _schedule_boundary(self, next_boundary_ns: int | None) -> None:
+        if _SESSION_BOUNDARY_ALERT in self.clock.timer_names():
+            self.clock.cancel_timer(_SESSION_BOUNDARY_ALERT)
+        if next_boundary_ns is not None:
+            self.clock.set_time_alert_ns(
+                _SESSION_BOUNDARY_ALERT,
+                next_boundary_ns,
+                callback=self._evaluate,
             )
-            self.publish_signal(SESSION_STATE_SIGNAL, event.to_signal_value())
-            self.log.info(
-                f"SESSION_STATE | calendar={event.calendar_id} | trade_date={event.trade_date}"
-                f" | phase={event.previous_phase or 'UNINITIALIZED'}->{event.phase}"
-                f" | next_transition_ns={event.next_transition_ns}",
+
+    def _publish_projection(self, request: CalendarProjectionRequest) -> None:
+        self._projection_requests += 1
+        requested_days = (request.end_ns - request.start_ns) // 86_400_000_000_000 + 1
+        requested = tuple(request.calendar_ids)
+        unavailable = tuple(item for item in requested if item not in self._calendars)
+        status = "READY"
+        projections = ()
+        retry_at_ns = None
+        if not self._started:
+            status = "NOT_READY"
+            unavailable = requested
+            retry_at_ns = self.clock.timestamp_ns() + self._interval_ns
+        elif (
+            len(requested) > self._maximum_calendars_per_request
+            or requested_days > self._maximum_projection_days
+        ):
+            status = "REJECTED"
+            unavailable = requested
+            self._projection_rejections += 1
+        else:
+            start = datetime.fromtimestamp(request.start_ns / 1_000_000_000, UTC).date()
+            end = datetime.fromtimestamp((request.end_ns - 1) / 1_000_000_000, UTC).date()
+            projections = tuple(
+                self._calendars[calendar_id].projection(
+                    start - timedelta(days=2),
+                    end + timedelta(days=2),
+                )
+                for calendar_id in requested
+                if calendar_id in self._calendars
             )
-            self._snapshots[snapshot.calendar_id] = snapshot
+            if unavailable:
+                status = "INCOMPLETE"
+        response = CalendarProjectionResponse(
+            request_id=request.request_id,
+            requester=request.requester,
+            source=str(self.actor_id),
+            source_epoch=self._source_epoch,
+            status=status,
+            projections=projections,
+            unavailable_calendar_ids=unavailable,
+            generated_ts_ns=self.clock.timestamp_ns(),
+            retry_at_ns=retry_at_ns,
+        )
+        self.publish_data(self._response_type, CustomData(self._response_type, response))
 
 
 class EvidenceHealthActorConfig(DataActorConfig):
@@ -138,6 +292,8 @@ class EvidenceHealthActorConfig(DataActorConfig):
         provider_id: str,
         profile_checkpoint_samples: int,
         recency_profiles: list[dict[str, object]],
+        projection_lookback_days: int,
+        projection_lookahead_days: int,
         actor_id: str | ActorId = "EVIDENCE-HEALTH",
     ) -> EvidenceHealthActorConfig:
         resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
@@ -149,6 +305,8 @@ class EvidenceHealthActorConfig(DataActorConfig):
         obj.provider_id = provider_id
         obj.profile_checkpoint_samples = profile_checkpoint_samples
         obj.recency_profiles = tuple(recency_profiles)
+        obj.projection_lookback_days = projection_lookback_days
+        obj.projection_lookahead_days = projection_lookahead_days
         return obj
 
 
@@ -191,6 +349,8 @@ class EvidenceHealthActor(DataActor):
         }
         self._interval_ns = config.evaluation_interval_ms * 1_000_000
         self._consumer_retry_interval_ns = config.consumer_retry_interval_ms * 1_000_000
+        self._projection_lookback_ns = config.projection_lookback_days * 86_400_000_000_000
+        self._projection_lookahead_ns = config.projection_lookahead_days * 86_400_000_000_000
         self._provider_id = config.provider_id
         self._profile_checkpoint_samples = config.profile_checkpoint_samples
         self._port = NautilusSubscriptionPort(self)
@@ -199,7 +359,11 @@ class EvidenceHealthActor(DataActor):
         self._subscription_states: dict[tuple[str, str, str], str] = {
             item.stream_key: "REQUESTED" for item in self._requirements
         }
-        self._session_by_calendar: dict[str, SessionStateEvent] = {}
+        self._session_by_calendar: dict[str, _SessionContext | CalendarTransition] = {}
+        self._calendar_ids = tuple(sorted(set(self._calendar_by_instrument.values())))
+        self._calendar_request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
+        self._calendar_response_type = DataType(CALENDAR_PROJECTION_RESPONSE_TYPE_NAME)
+        self._calendar_transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
         self._states: dict[tuple[str, str, str], str] = {}
         self._latest_events: dict[tuple[str, str, str], EvidenceHealthEvent] = {}
         self._profiles: dict[tuple[str, str, str, str, str, str], RecencyProfile] = {}
@@ -228,11 +392,18 @@ class EvidenceHealthActor(DataActor):
         for signal_name in (
             PERSISTENCE_READY_SIGNAL,
             ACQUISITION_STREAM_SIGNAL,
-            SESSION_STATE_SIGNAL,
             EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL,
         ):
             self.subscribe_signal(signal_name)
+        self.subscribe_data(self._calendar_response_type)
+        self.subscribe_data(self._calendar_transition_type)
         self._reconcile_consumer_attachments(None)
+        self._request_calendar_projection(None)
+        self.clock.set_timer_ns(
+            _EVIDENCE_CALENDAR_RETRY_TIMER,
+            self._consumer_retry_interval_ns,
+            callback=self._request_calendar_projection,
+        )
         self.publish_signal(
             PERSISTENCE_READY_REQUEST_SIGNAL,
             PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
@@ -250,20 +421,6 @@ class EvidenceHealthActor(DataActor):
                 return
             self._release_startup()
             return
-        if signal.name == SESSION_STATE_SIGNAL:
-            try:
-                event = SessionStateEvent.from_signal_value(signal.value)
-            except ValueError as exc:
-                self.log.error(f"EVIDENCE_SESSION_REJECTED | error={type(exc).__name__}")
-                return
-            self._session_by_calendar[event.calendar_id] = event
-            if self._started:
-                now_ns = self.clock.timestamp_ns()
-                for key in self._subscription_states:
-                    instrument_id = key[0]
-                    if self._calendar_by_instrument[instrument_id] == event.calendar_id:
-                        self._evaluate_key(key, now_ns)
-            return
         if signal.name == ACQUISITION_STREAM_SIGNAL:
             try:
                 event = AcquisitionStreamEvent.from_signal_value(signal.value)
@@ -275,6 +432,29 @@ class EvidenceHealthActor(DataActor):
                 self._subscription_states[key] = event.state
                 if self._started:
                     self._evaluate_key(key, self.clock.timestamp_ns())
+
+    def on_data(self, data) -> None:  # noqa: ANN001
+        payload = data.data if isinstance(data, CustomData) else data
+        if isinstance(payload, CalendarTransition):
+            self._retain_calendar_context(payload)
+            return
+        if not isinstance(payload, CalendarProjectionResponse):
+            return
+        if payload.requester != str(self.actor_id) or payload.status != "READY":
+            return
+        now_ns = self.clock.timestamp_ns()
+        for projection in payload.projections:
+            snapshot = CalendarProjectionView(projection).evaluate(now_ns)
+            self._retain_calendar_context(
+                _SessionContext(
+                    calendar_id=projection.calendar_id,
+                    trade_date=(
+                        snapshot.trade_date.isoformat() if snapshot.trade_date is not None else None
+                    ),
+                    phase=snapshot.phase,
+                    is_open=snapshot.is_open,
+                ),
+            )
 
     def on_quote(self, quote) -> None:  # noqa: ANN001
         self._observe((str(quote.instrument_id), "quotes", "default"), quote.ts_event)
@@ -293,14 +473,17 @@ class EvidenceHealthActor(DataActor):
         for signal_name in (
             PERSISTENCE_READY_SIGNAL,
             ACQUISITION_STREAM_SIGNAL,
-            SESSION_STATE_SIGNAL,
             EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL,
         ):
             self.unsubscribe_signal(signal_name)
+        self.unsubscribe_data(self._calendar_response_type)
+        self.unsubscribe_data(self._calendar_transition_type)
         if _EVIDENCE_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_EVIDENCE_TIMER)
         if _EVIDENCE_CONSUMER_RETRY_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_EVIDENCE_CONSUMER_RETRY_TIMER)
+        if _EVIDENCE_CALENDAR_RETRY_TIMER in self.clock.timer_names():
+            self.clock.cancel_timer(_EVIDENCE_CALENDAR_RETRY_TIMER)
         self.log.info(
             f"EVIDENCE_HEALTH_STOPPED | streams={len(self._requirements)}"
             f" | transitions={sum(self._revisions.values())}",
@@ -346,6 +529,44 @@ class EvidenceHealthActor(DataActor):
                 self._consumer_retry_interval_ns,
                 callback=self._reconcile_consumer_attachments,
             )
+
+    def _request_calendar_projection(self, _event) -> None:  # noqa: ANN001
+        missing = tuple(
+            calendar_id
+            for calendar_id in self._calendar_ids
+            if calendar_id not in self._session_by_calendar
+        )
+        if not missing:
+            if _EVIDENCE_CALENDAR_RETRY_TIMER in self.clock.timer_names():
+                self.clock.cancel_timer(_EVIDENCE_CALENDAR_RETRY_TIMER)
+            return
+        now_ns = self.clock.timestamp_ns()
+        request = CalendarProjectionRequest(
+            request_id=f"calendar-projection:{self.actor_id}:{now_ns}",
+            requester=str(self.actor_id),
+            calendar_ids=missing,
+            start_ns=max(0, now_ns - self._projection_lookback_ns),
+            end_ns=now_ns + self._projection_lookahead_ns,
+            requested_ts_ns=now_ns,
+        )
+        self.publish_data(
+            self._calendar_request_type,
+            CustomData(self._calendar_request_type, request),
+        )
+
+    def _retain_calendar_context(
+        self,
+        event: _SessionContext | CalendarTransition,
+    ) -> None:
+        if event.calendar_id not in self._calendar_ids:
+            return
+        self._session_by_calendar[event.calendar_id] = event
+        if self._started:
+            now_ns = self.clock.timestamp_ns()
+            for key in self._subscription_states:
+                instrument_id = key[0]
+                if self._calendar_by_instrument[instrument_id] == event.calendar_id:
+                    self._evaluate_key(key, now_ns)
 
     def _observe(self, key: tuple[str, str, str], event_ts_ns: int) -> None:
         if key not in self._subscription_states:
@@ -474,7 +695,7 @@ class EvidenceHealthActor(DataActor):
     def _profile_key(
         self,
         key: tuple[str, str, str],
-        session: SessionStateEvent | None,
+        session: _SessionContext | CalendarTransition | None,
     ) -> tuple[str, str, str, str, str, str] | None:
         if session is None:
             return None

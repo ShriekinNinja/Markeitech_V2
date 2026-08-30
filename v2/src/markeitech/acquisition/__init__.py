@@ -44,9 +44,11 @@ from markeitech.acquisition.historical_messages import (
     HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
     HISTORICAL_EXECUTION_SIGNAL,
     HISTORICAL_READINESS_SIGNAL,
+    HISTORICAL_REQUEST_PLAN_TYPE_NAME,
     HistoricalDependencyDemandEvent,
     HistoricalExecutionEventMessage,
     HistoricalReadinessEvent,
+    HistoricalRequestPlan,
 )
 from markeitech.acquisition.historical_native import (
     NativeHistoricalActor,
@@ -77,6 +79,7 @@ __all__ = [
     "HISTORICAL_DEPENDENCY_DEMAND_SIGNAL",
     "HISTORICAL_EXECUTION_SIGNAL",
     "HISTORICAL_READINESS_SIGNAL",
+    "HISTORICAL_REQUEST_PLAN_TYPE_NAME",
     "HistoricalDependencyCompiler",
     "HistoricalDependencyDemandEvent",
     "HistoricalDependencyRef",
@@ -94,6 +97,7 @@ __all__ = [
     "HistoricalResourcePolicy",
     "HistoricalReadinessState",
     "HistoricalReadinessEvent",
+    "HistoricalRequestPlan",
     "HistoricalWindow",
     "HistoricalWindowBounds",
     "NativeSubscriptionActor",
