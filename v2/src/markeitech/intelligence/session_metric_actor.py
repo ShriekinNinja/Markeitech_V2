@@ -20,6 +20,19 @@ from markeitech.acquisition import (
     HistoricalWindow,
     NautilusSubscriptionPort,
 )
+from markeitech.intelligence.calendar_delivery import (
+    ProjectionRequestPhase,
+    ProjectionRequestState,
+    ProjectionRetryPolicy,
+    begin_projection_retry,
+    classify_projection_response,
+    ready_projection_state,
+    retain_pending_calendars,
+    schedule_projection_retry,
+    start_projection_cycle,
+    stop_projection_state,
+    terminal_projection_state,
+)
 from markeitech.intelligence.calendar_messages import (
     CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
     CALENDAR_PROJECTION_RESPONSE_TYPE_NAME,
@@ -98,7 +111,7 @@ _HISTORICAL_DEMAND_DELAY_NS = 1_000_000
 _HISTORICAL_DEMAND_ALERT = "session-metrics-historical-demand"
 _ACTIVE_REFERENCE_RETRY_ALERT = "session-metrics-active-reference-retry"
 _ACTIVE_REFERENCE_RETRY_DELAY_NS = 1_000_000
-_CALENDAR_PROJECTION_RETRY_TIMER = "session-metrics-calendar-projection-retry"
+_CALENDAR_PROJECTION_RETRY_ALERT = "session-metrics-calendar-projection-retry"
 
 
 def _active_reference_attempt_ns(
@@ -161,6 +174,9 @@ class SessionMetricsActorConfig(DataActorConfig):
         expected_calendar_digests: dict[str, str],
         projection_lookback_days: int,
         projection_lookahead_days: int,
+        calendar_source: str,
+        calendar_source_epoch: str,
+        projection_retry: dict[str, int],
         profiles: list[dict[str, object]],
         profile_bindings: dict[str, str],
         parameter_version: int,
@@ -183,6 +199,9 @@ class SessionMetricsActorConfig(DataActorConfig):
         obj.expected_calendar_digests = dict(expected_calendar_digests)
         obj.projection_lookback_days = projection_lookback_days
         obj.projection_lookahead_days = projection_lookahead_days
+        obj.calendar_source = calendar_source
+        obj.calendar_source_epoch = calendar_source_epoch
+        obj.projection_retry = dict(projection_retry)
         obj.profiles = tuple(profiles)
         obj.profile_bindings = dict(profile_bindings)
         obj.parameter_version = parameter_version
@@ -217,6 +236,12 @@ class SessionMetricsActor(DataActor):
         self._calendar_refresh_ids: set[str] = set()
         self._projection_lookback_ns = config.projection_lookback_days * 86_400_000_000_000
         self._projection_lookahead_ns = config.projection_lookahead_days * 86_400_000_000_000
+        self._projection_policy = ProjectionRetryPolicy.from_config(config.projection_retry)
+        self._projection_state = ProjectionRequestState.idle(
+            requester=str(self.actor_id),
+            expected_source=config.calendar_source,
+            expected_source_epoch=config.calendar_source_epoch,
+        )
         self._profiles = {value["profile_id"]: dict(value) for value in config.profiles}
         self._profile_bindings = dict(config.profile_bindings)
         self._parameter_version = config.parameter_version
@@ -449,12 +474,7 @@ class SessionMetricsActor(DataActor):
         self.subscribe_data(self._batch_type)
         self.subscribe_data(self._calendar_response_type)
         self.subscribe_data(self._calendar_transition_type)
-        self._request_calendar_projection(None)
-        self.clock.set_timer_ns(
-            _CALENDAR_PROJECTION_RETRY_TIMER,
-            self._demand_retry_interval_ns,
-            callback=self._request_calendar_projection,
-        )
+        self._begin_calendar_projection_cycle()
         self._attach_consumers()
         self._publish_live_demands(None)
         self._request_evidence_snapshot(None)
@@ -545,12 +565,13 @@ class SessionMetricsActor(DataActor):
         )
 
     def on_stop(self) -> None:
+        self._projection_state = stop_projection_state(self._projection_state)
         for timer_name in (
             _DEMAND_RETRY_TIMER,
             _EVIDENCE_RETRY_TIMER,
             _HISTORICAL_DEMAND_ALERT,
             _ACTIVE_REFERENCE_RETRY_ALERT,
-            _CALENDAR_PROJECTION_RETRY_TIMER,
+            _CALENDAR_PROJECTION_RETRY_ALERT,
         ):
             if timer_name in self.clock.timer_names():
                 self.clock.cancel_timer(timer_name)
@@ -596,7 +617,11 @@ class SessionMetricsActor(DataActor):
             f" | historical_completed_bars={self._counts['historical_completed_bars']}"
             f" | live_aggregate_completed_bars="
             f"{self._counts['live_aggregate_completed_bars']}"
-            f" | foundation_history_demands={self._counts['foundation_history_demands']}",
+            f" | foundation_history_demands={self._counts['foundation_history_demands']}"
+            f" | projection_state={self._projection_state.phase.value}"
+            f" | projection_requests={self._counts['projection_requests']}"
+            f" | projection_timeouts={self._counts['projection_timeouts']}"
+            f" | projection_terminal={self._counts['projection_terminal']}",
         )
 
     def _process_provider_bar(
@@ -909,59 +934,170 @@ class SessionMetricsActor(DataActor):
         ):
             self.clock.cancel_timer(_DEMAND_RETRY_TIMER)
 
-    def _request_calendar_projection(self, _event) -> None:  # noqa: ANN001
+    def _begin_calendar_projection_cycle(self) -> None:
         requested = tuple(
             calendar_id
             for calendar_id in self._calendar_ids
             if calendar_id not in self._calendars or calendar_id in self._calendar_refresh_ids
         )
         if not requested:
-            if _CALENDAR_PROJECTION_RETRY_TIMER in self.clock.timer_names():
-                self.clock.cancel_timer(_CALENDAR_PROJECTION_RETRY_TIMER)
             return
         now_ns = self.clock.timestamp_ns()
-        request = CalendarProjectionRequest(
-            request_id=f"calendar-projection:{self.actor_id}:{now_ns}",
-            requester=str(self.actor_id),
+        self._projection_state = start_projection_cycle(
+            self._projection_state,
             calendar_ids=requested,
             start_ns=max(0, now_ns - self._projection_lookback_ns),
             end_ns=now_ns + self._projection_lookahead_ns,
-            requested_ts_ns=now_ns,
+            now_ns=now_ns,
+            policy=self._projection_policy,
         )
+        if self._projection_state.phase is ProjectionRequestPhase.WAITING:
+            self._publish_calendar_projection_request()
+
+    def _publish_calendar_projection_request(self) -> None:
+        state = self._projection_state
+        if (
+            state.phase is not ProjectionRequestPhase.WAITING
+            or state.request_id is None
+            or state.start_ns is None
+            or state.end_ns is None
+        ):
+            return
+        self._set_calendar_projection_alert()
+        request = CalendarProjectionRequest(
+            request_id=state.request_id,
+            requester=state.requester,
+            calendar_ids=state.pending_calendar_ids,
+            start_ns=state.start_ns,
+            end_ns=state.end_ns,
+            requested_ts_ns=self.clock.timestamp_ns(),
+        )
+        self._counts["projection_requests"] += 1
         self.publish_data(
             self._calendar_request_type,
             CustomData(self._calendar_request_type, request),
         )
 
     def _observe_calendar_projection(self, response: CalendarProjectionResponse) -> None:
-        accepted_status = response.status in {"READY", "INCOMPLETE"}
-        if response.requester != str(self.actor_id) or not accepted_status:
+        disposition = classify_projection_response(self._projection_state, response)
+        if disposition != "ACCEPT":
+            self._counts[f"projection_{disposition.lower()}"] += 1
             return
+        self._cancel_calendar_projection_alert()
+        state = self._projection_state
+        accepted_ids: set[str] = set()
         for projection in response.projections:
             expected = self._expected_calendar_digests.get(projection.calendar_id)
-            if expected is None:
-                continue
-            if projection.definition_digest != expected:
+            if (
+                expected is None
+                or projection.definition_digest != expected
+                or state.start_ns is None
+                or state.end_ns is None
+                or projection.coverage_start_ns > state.start_ns
+                or projection.coverage_end_ns < state.end_ns
+            ):
                 self._counts["failures"] += 1
+                self._counts["projection_conflicts"] += 1
+                self._projection_state = terminal_projection_state(
+                    state,
+                    "projection_identity_conflict",
+                )
+                self._counts["projection_terminal"] += 1
                 self.log.error(
                     "SESSION_METRIC_CALENDAR_PROJECTION_CONFLICT"
                     f" | calendar_id={projection.calendar_id}",
                 )
-                continue
+                return
             self._calendars[projection.calendar_id] = CalendarProjectionView(projection)
             self._calendar_refresh_ids.discard(projection.calendar_id)
-        if not set(self._calendar_ids) - set(self._calendars) and not self._calendar_refresh_ids:
-            if _CALENDAR_PROJECTION_RETRY_TIMER in self.clock.timer_names():
-                self.clock.cancel_timer(_CALENDAR_PROJECTION_RETRY_TIMER)
+            accepted_ids.add(projection.calendar_id)
+        remaining = tuple(
+            item for item in state.pending_calendar_ids if item not in accepted_ids
+        )
+        if not remaining:
+            self._projection_state = ready_projection_state(state)
             self._publish_historical_demands(None)
-
-    def _ensure_calendar_projection_retry_timer(self) -> None:
-        if _CALENDAR_PROJECTION_RETRY_TIMER not in self.clock.timer_names():
-            self.clock.set_timer_ns(
-                _CALENDAR_PROJECTION_RETRY_TIMER,
-                self._demand_retry_interval_ns,
-                callback=self._request_calendar_projection,
+            self._begin_calendar_projection_cycle()
+            return
+        failures = {item.calendar_id: item for item in response.failures}
+        retryable = bool(remaining) and all(
+            calendar_id in failures and failures[calendar_id].retryable
+            for calendar_id in remaining
+        )
+        if response.status == "NOT_READY" or retryable:
+            self._projection_state = retain_pending_calendars(state, remaining)
+            self._projection_state = schedule_projection_retry(
+                self._projection_state,
+                now_ns=self.clock.timestamp_ns(),
+                policy=self._projection_policy,
+                retry_at_ns=response.retry_at_ns,
             )
+            self._finish_calendar_projection_transition()
+            return
+        self._projection_state = terminal_projection_state(
+            state,
+            "projection_rejected" if response.status == "REJECTED" else "projection_unavailable",
+            rejected=response.status == "REJECTED",
+        )
+        self._counts["projection_terminal"] += 1
+        self.log.error(
+            f"SESSION_METRIC_CALENDAR_PROJECTION_TERMINAL | status={response.status}"
+            f" | pending={','.join(remaining)}",
+        )
+
+    def _on_calendar_projection_alert(self, _event) -> None:  # noqa: ANN001
+        state = self._projection_state
+        if state.phase is ProjectionRequestPhase.STOPPED:
+            return
+        now_ns = self.clock.timestamp_ns()
+        if state.alert_at_ns is None or now_ns < state.alert_at_ns:
+            return
+        if state.phase is ProjectionRequestPhase.WAITING:
+            self._counts["projection_timeouts"] += 1
+            self._projection_state = schedule_projection_retry(
+                state,
+                now_ns=now_ns,
+                policy=self._projection_policy,
+                retry_at_ns=None,
+            )
+            self._finish_calendar_projection_transition()
+            return
+        if state.phase is ProjectionRequestPhase.BACKOFF:
+            self._projection_state = begin_projection_retry(
+                state,
+                now_ns=now_ns,
+                policy=self._projection_policy,
+            )
+            self._publish_calendar_projection_request()
+
+    def _finish_calendar_projection_transition(self) -> None:
+        if self._projection_state.phase is ProjectionRequestPhase.BACKOFF:
+            self._counts["projection_retries"] += 1
+            self._set_calendar_projection_alert()
+            return
+        if self._projection_state.phase in {
+            ProjectionRequestPhase.FAILED,
+            ProjectionRequestPhase.REJECTED,
+        }:
+            self._counts["projection_terminal"] += 1
+            self.log.error(
+                "SESSION_METRIC_CALENDAR_PROJECTION_EXHAUSTED"
+                f" | code={self._projection_state.terminal_code}",
+            )
+
+    def _set_calendar_projection_alert(self) -> None:
+        self._cancel_calendar_projection_alert()
+        alert_at_ns = self._projection_state.alert_at_ns
+        if alert_at_ns is not None:
+            self.clock.set_time_alert_ns(
+                _CALENDAR_PROJECTION_RETRY_ALERT,
+                alert_at_ns,
+                callback=self._on_calendar_projection_alert,
+            )
+
+    def _cancel_calendar_projection_alert(self) -> None:
+        if _CALENDAR_PROJECTION_RETRY_ALERT in self.clock.timer_names():
+            self.clock.cancel_timer(_CALENDAR_PROJECTION_RETRY_ALERT)
 
     def _publish_historical_demands(self, _event) -> None:  # noqa: ANN001
         if set(self._calendar_ids) - set(self._calendars):
@@ -1558,7 +1694,11 @@ class SessionMetricsActor(DataActor):
 
     def _observe_session_state(self, event: CalendarTransition) -> None:
         if event.calendar_id in self._expected_calendar_digests:
-            if event.definition_digest != self._expected_calendar_digests[event.calendar_id]:
+            if (
+                event.definition_digest != self._expected_calendar_digests[event.calendar_id]
+                or event.source != self._projection_state.expected_source
+                or event.source_epoch != self._projection_state.expected_source_epoch
+            ):
                 self._counts["failures"] += 1
                 self.log.error(
                     "SESSION_METRIC_CALENDAR_DEFINITION_CONFLICT"
@@ -1566,8 +1706,7 @@ class SessionMetricsActor(DataActor):
                 )
                 return
             self._calendar_refresh_ids.add(event.calendar_id)
-            self._ensure_calendar_projection_retry_timer()
-            self._request_calendar_projection(None)
+            self._begin_calendar_projection_cycle()
             previous = self._session_states.get(event.calendar_id)
             self._session_states[event.calendar_id] = event
             if (

@@ -309,6 +309,12 @@ def build_actor_plan(
         raise ValueError("operational persistence must pass preflight before actor composition")
 
     instrument_ids = list(config.instrument_ids)
+    projection_retry = {
+        "response_timeout_ms": config.sessions.projection_retry.response_timeout_ms,
+        "maximum_attempts": config.sessions.projection_retry.maximum_attempts,
+        "retry_backoff_ms": config.sessions.projection_retry.retry_backoff_ms,
+        "maximum_elapsed_ms": config.sessions.projection_retry.maximum_elapsed_ms,
+    }
     registrations = [
         ActorRegistration(
             key="system_control",
@@ -364,6 +370,13 @@ def build_actor_plan(
                     "recency_profiles": list(prerequisites.evidence_recency_profiles),
                     "projection_lookback_days": config.sessions.projection_lookback_days,
                     "projection_lookahead_days": config.sessions.projection_lookahead_days,
+                    "expected_calendar_digests": {
+                        calendar.calendar_id: calendar.definition_digest
+                        for calendar in config.sessions.calendars
+                    },
+                    "calendar_source": "SESSION-STATE",
+                    "calendar_source_epoch": str(prerequisites.run_id),
+                    "projection_retry": projection_retry,
                     "policies": [
                         {
                             "feed_kind": policy.feed_kind,
@@ -521,6 +534,9 @@ def build_actor_plan(
                         },
                         "projection_lookback_days": config.sessions.projection_lookback_days,
                         "projection_lookahead_days": config.sessions.projection_lookahead_days,
+                        "calendar_source": "SESSION-STATE",
+                        "calendar_source_epoch": str(prerequisites.run_id),
+                        "projection_retry": projection_retry,
                         "profiles": [
                             {
                                 "profile_id": profile.profile_id,
@@ -1026,6 +1042,9 @@ def build_actor_plan(
                         },
                         "projection_lookback_days": config.sessions.projection_lookback_days,
                         "projection_lookahead_days": config.sessions.projection_lookahead_days,
+                        "calendar_source": "SESSION-STATE",
+                        "calendar_source_epoch": str(prerequisites.run_id),
+                        "projection_retry": projection_retry,
                         "historical": {
                             "maximum_plan_requests": config.historical.maximum_plan_requests,
                             "maximum_observations_per_request": (
@@ -1034,7 +1053,6 @@ def build_actor_plan(
                             "maximum_total_observations": (
                                 config.historical.maximum_total_observations
                             ),
-                            "poll_interval_ms": config.historical.poll_interval_ms,
                         },
                     },
                 ),

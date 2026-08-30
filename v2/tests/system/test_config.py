@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 20
+schema_version = 21
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -124,6 +124,12 @@ maximum_projection_days = 400
 maximum_calendars_per_request = 8
 calendar_catalog = "market-calendars.toml"
 calendar_ids = ["cme_equity"]
+
+[sessions.projection_retry]
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
 
 [evidence_health]
 evaluation_interval_ms = 1000
@@ -495,7 +501,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         config.metrics.session_measurements.profiles[0].windows[1].maximum_historical_observations
         == 4
     )
-    assert config.schema_version == 20
+    assert config.schema_version == 21
     assert config.metrics.entity_analysis.enabled is False
     assert config.metrics.entity_analysis.catalog_version == 2
     assert config.metrics.entity_analysis.completed_session_retention == 2
@@ -720,11 +726,37 @@ def test_rejects_retired_visual_review_sections(tmp_path: Path, section: str) ->
         load_system_config(path)
 
 
-def test_rejects_pre_retirement_schema(tmp_path: Path) -> None:
+def test_rejects_pre_projection_retry_schema(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("schema_version = 20", "schema_version = 19", 1))
+    path.write_text(VALID_CONFIG.replace("schema_version = 21", "schema_version = 20", 1))
 
-    with pytest.raises(ValueError, match="unsupported schema_version: 19"):
+    with pytest.raises(ValueError, match="unsupported schema_version: 20"):
+        load_system_config(path)
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement", "message"),
+    [
+        ("response_timeout_ms = 5000", "response_timeout_ms = 99", "response_timeout_ms"),
+        (
+            "response_timeout_ms = 5000\nmaximum_attempts = 3\nretry_backoff_ms",
+            "response_timeout_ms = 5000\nmaximum_attempts = 11\nretry_backoff_ms",
+            "maximum_attempts",
+        ),
+        ("retry_backoff_ms = 1000", "retry_backoff_ms = 60001", "retry_backoff_ms"),
+        ("maximum_elapsed_ms = 60000", "maximum_elapsed_ms = 999", "maximum_elapsed_ms"),
+    ],
+)
+def test_rejects_projection_retry_values_outside_safety_envelopes(
+    tmp_path: Path,
+    original: str,
+    replacement: str,
+    message: str,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace(original, replacement, 1))
+
+    with pytest.raises(ValueError, match=message):
         load_system_config(path)
 
 
@@ -881,12 +913,12 @@ def test_calendar_definition_digest_is_stable_and_content_derived(tmp_path: Path
             'calendar_engine = "pandas_market_calendars"\n'
             'provider_calendar = "CME_Equity"\n'
             'schedule_columns = ["market_open", "break_start", "break_end", "market_close"]\n'
-            "definition_version = 3",
+            "definition_version = 4",
             'calendar_id = "cme_equity"\n'
             'calendar_engine = "pandas_market_calendars"\n'
             'provider_calendar = "CME_Equity"\n'
             'schedule_columns = ["market_open", "break_start", "break_end", "market_close"]\n'
-            "definition_version = 4",
+            "definition_version = 5",
             1,
         ),
     )
@@ -895,7 +927,7 @@ def test_calendar_definition_digest_is_stable_and_content_derived(tmp_path: Path
         item for item in changed.sessions.calendars if item.calendar_id == "cme_equity"
     )
 
-    assert revised.definition_version == 4
+    assert revised.definition_version == 5
     assert revised.definition_digest != original.definition_digest
     assert changed.sessions.catalog_digest != first.sessions.catalog_digest
 
@@ -931,7 +963,7 @@ def test_equal_definition_versions_with_unequal_content_have_unequal_digests(
         if item.calendar_id == "cme_equity"
     )
 
-    assert original.definition_version == changed.definition_version == 3
+    assert original.definition_version == changed.definition_version == 4
     assert original.definition_digest != changed.definition_digest
 
 

@@ -94,13 +94,16 @@ test -e v2/config/system.local.toml || \
 
 Both destination files are ignored by Git.
 
-Existing local configurations created before schema 20 require a manual migration. Set
-`schema_version = 20`, remove the retired `[visual_acceptance]` and `[live_evidence_review]`
+Existing local configurations created before schema 21 require a manual migration. Set
+`schema_version = 21`, remove the retired `[visual_acceptance]` and `[live_evidence_review]`
 sections, and replace inline `[[sessions.calendars]]` definitions with the schema-3
 `calendar_catalog = "market-calendars.toml"` reference under `[sessions]`. Also add the bounded
 projection settings shown in `system.example.toml`: `projection_lookback_days`,
 `projection_lookahead_days`, `maximum_projection_days`, and
-`maximum_calendars_per_request`. The referenced catalog path is resolved relative to the system
+`maximum_calendars_per_request`. Add `[sessions.projection_retry]` with the tracked bounded
+`response_timeout_ms`, `maximum_attempts`, `retry_backoff_ms`, and `maximum_elapsed_ms` values;
+these local actor-delivery controls are independent of IB historical polling and metric-demand
+retries. The referenced catalog path is resolved relative to the system
 TOML and must exist; the tracked catalog is `v2/config/market-calendars.toml`. Set `calendar_ids`
 to the exact catalog definitions this profile needs; unused entries are validated but are not
 instantiated. Analytical profiles and windows must use the configured product-phase names, such

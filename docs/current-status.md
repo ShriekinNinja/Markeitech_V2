@@ -76,7 +76,7 @@ system. The preserved V1 status is available in
   failures remain isolated to the affected projection and are counted rather than escaping the
   Nautilus callback. The rejected `VisualAcceptanceActor` and `LiveEvidenceReviewActor` were
   subsequently retired from runtime composition, typed configuration, source, and tests. Their
-  exclusive Kaleido and Pillow dependencies were also removed. Configuration schema 20 no longer
+  exclusive Kaleido and Pillow dependencies were also removed. Configuration schema 21 no longer
   accepts either dead section. The progressive `VisualDebugCaptureActor` remains a separate,
   passive observer and was not changed by that removal. Historical ignored artifacts and local
   configurations remain outside Git as recovery evidence; they are not runnable current profiles.
@@ -84,15 +84,21 @@ system. The preserved V1 status is available in
   `SessionStateActor` is the sole mcal-backed evaluator owner, publishes typed transitions
   and bounded immutable projections, and has no shadow/legacy counterpart. A separate historical
   planner turns symbolic evidence needs into exact UTC plans; acquisition executes those plans and
-  retains provider limits without interpreting sessions. System schema 20 and calendar-catalog
-  schema 3 configure five reusable calendar identities without concrete instrument contracts.
+  retains provider limits without interpreting sessions. System schema 21 and calendar-catalog
+  schema 3/catalog version 4 configure five reusable calendar identities without concrete
+  instrument contracts.
   The runtime watchlist alone binds admitted instruments to calendars. CME/CBOT definitions carry
   overlapping `GLOBEX`, `ASIA`, `LONDON`, and `NEW_YORK` product phases, deterministic lineage,
   and one source-cited CME equity-hours correction. The full disconnected suite passes. The first
   connected acceptance run on 2026-08-30 was rejected before historical planning because pinned
   mcal represents several CME early closes with `break_start == break_end == market_close`; the
   projector attempted zero-duration exchange segments and consumers retried without a bounded
-  failure response. The broader metric-actor split remains deferred.
+  failure response. The current uncommitted repair normalizes only that exact terminal provider
+  representation after source-cited corrections, records an immutable normalization outcome,
+  emits per-calendar response-v2 failures for ordinary projection exceptions, and gives each of
+  the three consumers one correlated, bounded, one-shot retry lifecycle. CME/CBOT definition
+  versions are now 4. Offline verification passes; connected acceptance of the repair is still
+  pending and the broader metric-actor split remains deferred.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -408,7 +414,8 @@ Stage 9A is complete and accepted at commit `ce9076e`:
   strict wire contracts, actor composition, and persistence conversion.
 
 The approved V3 canonical-calendar cutover is present as a review batch. System
-schema 20 loads `v2/config/market-calendars.toml` schema 3 as one dedicated startup catalog;
+schema 21 loads `v2/config/market-calendars.toml` schema 3/catalog version 4 as one dedicated
+startup catalog;
 inline definitions, old overrides, and older schemas are rejected. Each system profile selects
 its active `calendar_ids`; available but unused definitions are validated without being
 instantiated. The loader pins installed `pandas-market-calendars` 5.4.0, provider implementation,

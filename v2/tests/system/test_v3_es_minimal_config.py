@@ -22,6 +22,7 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     acquisition = next(item for item in plan if item.key == "data_acquisition")
     session_metrics = next(item for item in plan if item.key == "session_metrics")
     planner = next(item for item in plan if item.key == "historical_evidence_planner")
+    evidence_health = next(item for item in plan if item.key == "evidence_health")
     assert len(session_state.config.config["calendars"]) == 1
     assert all(
         "definition_digest" in calendar
@@ -31,6 +32,17 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     assert "calendars" not in session_metrics.config.config
     assert session_metrics.config.config["expected_calendar_digests"]
     assert planner.config.config["expected_calendar_digests"]
+    for registration in (evidence_health, session_metrics, planner):
+        assert registration.config.config["calendar_source"] == "SESSION-STATE"
+        assert registration.config.config["calendar_source_epoch"] == (
+            "00000000-0000-0000-0000-000000000001"
+        )
+        assert registration.config.config["projection_retry"] == {
+            "response_timeout_ms": 5000,
+            "maximum_attempts": 3,
+            "retry_backoff_ms": 1000,
+            "maximum_elapsed_ms": 60000,
+        }
 
     actor = SessionStateActor(SessionStateActorConfig(**session_state.config.config))
     assert len(actor._calendars) == len(config.sessions.calendars)
@@ -47,7 +59,9 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     assert len(config.sessions.calendars) == 1
     assert len(config.sessions.available_calendars) == 5
     assert config.sessions.catalog_id == "markeitech-market-calendars"
-    assert config.sessions.catalog_version == 3
+    assert config.sessions.catalog_version == 4
+    assert config.sessions.projection_retry.response_timeout_ms == 5000
+    assert config.sessions.projection_retry.maximum_attempts == 3
     cme_equity = next(
         calendar
         for calendar in config.sessions.calendars
@@ -55,7 +69,7 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     )
     assert cme_equity.provider_calendar == "CME_Equity"
     assert cme_equity.exchange_timezone == "America/Chicago"
-    assert cme_equity.schedule_version.startswith("pmc-5.4.0:cme_equity:v3:")
+    assert cme_equity.schedule_version.startswith("pmc-5.4.0:cme_equity:v4:")
     assert cme_equity.schedule_columns == (
         "market_open",
         "break_start",

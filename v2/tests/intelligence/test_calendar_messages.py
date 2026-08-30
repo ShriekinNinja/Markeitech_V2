@@ -6,6 +6,7 @@ from datetime import date
 import pytest
 
 from markeitech.intelligence.calendar_messages import (
+    CalendarProjectionFailure,
     CalendarProjectionRequest,
     CalendarProjectionResponse,
     CalendarTransition,
@@ -32,8 +33,10 @@ def test_calendar_projection_request_and_response_are_typed_and_immutable() -> N
         source="SESSION-STATE",
         source_epoch="run:test",
         status="READY",
+        requested_calendar_ids=("cme_equity",),
         projections=(projection,),
         unavailable_calendar_ids=(),
+        failures=(),
         generated_ts_ns=4,
     )
 
@@ -52,17 +55,39 @@ def test_calendar_projection_contract_rejects_ambiguous_or_invalid_payloads() ->
 
     with pytest.raises(ValueError, match="non-empty and unique"):
         CalendarProjectionRequest("id", "consumer", (), 1, 2, 1)
-    with pytest.raises(ValueError, match="both projected and unavailable"):
+    with pytest.raises(ValueError, match="exactly one projection response outcome"):
         CalendarProjectionResponse(
             request_id="id",
             requester="consumer",
             source="SESSION-STATE",
             source_epoch="run:test",
             status="INCOMPLETE",
+            requested_calendar_ids=("cme_equity",),
             projections=(projection,),
             unavailable_calendar_ids=("cme_equity",),
+            failures=(),
             generated_ts_ns=4,
         )
+
+    failure = CalendarProjectionFailure(
+        calendar_id="cme_equity",
+        code="projection_construction_failed",
+        reason="canonical calendar projection construction failed",
+        retryable=False,
+    )
+    failed = CalendarProjectionResponse(
+        request_id="id",
+        requester="consumer",
+        source="SESSION-STATE",
+        source_epoch="run:test",
+        status="FAILED",
+        requested_calendar_ids=("cme_equity",),
+        projections=(),
+        unavailable_calendar_ids=(),
+        failures=(failure,),
+        generated_ts_ns=4,
+    )
+    assert failed.schema_version == 2
 
 
 def test_calendar_transition_exposes_explicit_state_and_lineage() -> None:

@@ -171,12 +171,21 @@ class SessionCalendarConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class ProjectionRetryConfig:
+    response_timeout_ms: int
+    maximum_attempts: int
+    retry_backoff_ms: int
+    maximum_elapsed_ms: int
+
+
+@dataclass(frozen=True, slots=True)
 class SessionsConfig:
     evaluation_interval_ms: int
     projection_lookback_days: int
     projection_lookahead_days: int
     maximum_projection_days: int
     maximum_calendars_per_request: int
+    projection_retry: ProjectionRetryConfig
     catalog_id: str
     catalog_version: int
     catalog_path: Path
@@ -685,7 +694,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         root_keys,
         "root",
     )
-    if raw["schema_version"] != 20:
+    if raw["schema_version"] != 21:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -1410,6 +1419,7 @@ def _load_sessions(raw: Any, config_directory: Path) -> SessionsConfig:
             "projection_lookahead_days",
             "maximum_projection_days",
             "maximum_calendars_per_request",
+            "projection_retry",
             "calendar_catalog",
             "calendar_ids",
         },
@@ -1687,6 +1697,47 @@ def _load_sessions(raw: Any, config_directory: Path) -> SessionsConfig:
         raise ValueError(
             "sessions.calendar_ids exceed maximum_calendars_per_request",
         )
+    retry_values = _mapping(values["projection_retry"], "sessions.projection_retry")
+    _require_keys(
+        retry_values,
+        {
+            "response_timeout_ms",
+            "maximum_attempts",
+            "retry_backoff_ms",
+            "maximum_elapsed_ms",
+        },
+        "sessions.projection_retry",
+    )
+    response_timeout_ms = _positive_int(
+        retry_values["response_timeout_ms"],
+        "sessions.projection_retry.response_timeout_ms",
+    )
+    maximum_attempts = _positive_int(
+        retry_values["maximum_attempts"],
+        "sessions.projection_retry.maximum_attempts",
+    )
+    retry_backoff_ms = _positive_int(
+        retry_values["retry_backoff_ms"],
+        "sessions.projection_retry.retry_backoff_ms",
+    )
+    maximum_elapsed_ms = _positive_int(
+        retry_values["maximum_elapsed_ms"],
+        "sessions.projection_retry.maximum_elapsed_ms",
+    )
+    for value, minimum, maximum, label in (
+        (response_timeout_ms, 100, 60_000, "response_timeout_ms"),
+        (maximum_attempts, 1, 10, "maximum_attempts"),
+        (retry_backoff_ms, 100, 60_000, "retry_backoff_ms"),
+        (maximum_elapsed_ms, 1_000, 600_000, "maximum_elapsed_ms"),
+    ):
+        if not minimum <= value <= maximum:
+            raise ValueError(
+                f"sessions.projection_retry.{label} must be between {minimum} and {maximum}",
+            )
+    if maximum_elapsed_ms < response_timeout_ms:
+        raise ValueError(
+            "sessions.projection_retry.maximum_elapsed_ms must cover response_timeout_ms",
+        )
     return SessionsConfig(
         evaluation_interval_ms=_positive_int(
             values["evaluation_interval_ms"],
@@ -1696,6 +1747,12 @@ def _load_sessions(raw: Any, config_directory: Path) -> SessionsConfig:
         projection_lookahead_days=projection_lookahead_days,
         maximum_projection_days=maximum_projection_days,
         maximum_calendars_per_request=maximum_calendars_per_request,
+        projection_retry=ProjectionRetryConfig(
+            response_timeout_ms=response_timeout_ms,
+            maximum_attempts=maximum_attempts,
+            retry_backoff_ms=retry_backoff_ms,
+            maximum_elapsed_ms=maximum_elapsed_ms,
+        ),
         catalog_id=catalog_id,
         catalog_version=catalog_version,
         catalog_path=catalog_path.resolve(),

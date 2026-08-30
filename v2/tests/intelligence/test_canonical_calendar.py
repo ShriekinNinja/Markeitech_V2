@@ -5,6 +5,7 @@ from datetime import UTC, date, datetime, time
 from pathlib import Path
 
 import pytest
+from pandas import DataFrame, Timestamp
 
 from markeitech.intelligence.session import (
     CalendarProjectionView,
@@ -48,6 +49,93 @@ def test_cme_correction_is_effective_dated_and_source_identified() -> None:
     assert [item.market_state for item in modern.exchange_segments] == ["OPEN"]
     assert modern.correction_outcomes[0].status == "APPLIED"
     assert modern.correction_outcomes[0].source_id == "cme-equity-index-hours-2021-06-21"
+
+
+@pytest.mark.parametrize("calendar_id", ["cme_equity", "cbot_equity"])
+@pytest.mark.parametrize(
+    "trade_date",
+    [date(2026, 5, 25), date(2026, 6, 19), date(2026, 7, 3), date(2026, 9, 7)],
+)
+def test_terminal_zero_length_break_is_explicitly_normalized(
+    calendar_id: str,
+    trade_date: date,
+) -> None:
+    projection = canonical_calendar(calendar_id).projection(trade_date, trade_date)
+
+    assert [item.market_state for item in projection.exchange_segments] == ["OPEN"]
+    assert all(item.end_ns > item.start_ns for item in projection.exchange_segments)
+    assert projection.correction_outcomes[0].status == "NOT_APPLICABLE"
+    assert len(projection.normalization_outcomes) == 1
+    outcome = projection.normalization_outcomes[0]
+    assert outcome.trade_date == trade_date
+    assert outcome.normalization_id == "terminal_zero_length_break_at_market_close.v1"
+    assert outcome.status == "APPLIED"
+    assert (
+        outcome.original_break_start_ns
+        == outcome.original_break_end_ns
+        == outcome.market_close_ns
+        == projection.exchange_segments[0].end_ns
+    )
+
+
+def test_default_connected_projection_span_contains_only_positive_segments() -> None:
+    projection = canonical_calendar("cme_equity").projection(
+        date(2026, 5, 2),
+        date(2026, 9, 13),
+    )
+
+    assert len(projection.normalization_outcomes) == 4
+    assert all(item.end_ns > item.start_ns for item in projection.exchange_segments)
+
+
+class _ScheduleProvider:
+    def __init__(self, row: dict[str, object]) -> None:
+        self._row = row
+
+    def schedule(self, **_kwargs) -> DataFrame:  # noqa: ANN003
+        return DataFrame(
+            [self._row],
+            index=[Timestamp("2026-08-24", tz="UTC")],
+        )
+
+
+@pytest.mark.parametrize(
+    ("break_start", "break_end"),
+    [
+        (None, Timestamp("2026-08-24T20:30:00Z")),
+        (Timestamp("2026-08-24T20:30:00Z"), Timestamp("2026-08-24T20:15:00Z")),
+        (Timestamp("2026-08-24T20:00:00Z"), Timestamp("2026-08-24T20:00:00Z")),
+        (Timestamp("2026-08-23T21:00:00Z"), Timestamp("2026-08-24T20:00:00Z")),
+    ],
+)
+def test_other_malformed_break_shapes_fail_closed(
+    break_start: Timestamp | None,
+    break_end: Timestamp | None,
+) -> None:
+    base = canonical_calendar("cme_equity")
+    calendar = CanonicalCalendar(
+        replace(
+            base.definition,
+            definition_digest="d" * 64,
+            schedule_version="malformed-break-test-v1",
+            corrections=(),
+        ),
+    )
+    object.__setattr__(
+        calendar,
+        "_provider",
+        _ScheduleProvider(
+            {
+                "market_open": Timestamp("2026-08-23T22:00:00Z"),
+                "break_start": break_start,
+                "break_end": break_end,
+                "market_close": Timestamp("2026-08-24T21:00:00Z"),
+            },
+        ),
+    )
+
+    with pytest.raises(ValueError, match="calendar break"):
+        calendar.projection(date(2026, 8, 24), date(2026, 8, 24))
 
 
 def test_cme_correction_fails_closed_when_provider_break_changes() -> None:

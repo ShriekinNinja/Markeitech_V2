@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored v2/.env.
 
-schema_version = 20
+schema_version = 21
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -119,6 +119,12 @@ maximum_projection_days = 400
 maximum_calendars_per_request = 8
 calendar_catalog = "market-calendars.toml"
 calendar_ids = ["cboe_spxw", "us_equities", "cme_equity", "cbot_equity", "cme_energy"]
+
+[sessions.projection_retry]
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
 
 [evidence_health]
 evaluation_interval_ms = 1000

@@ -8,10 +8,24 @@ from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, CustomData, DataType
 
 from markeitech.acquisition import FeedKind, FeedRequirement, NautilusSubscriptionPort
+from markeitech.intelligence.calendar_delivery import (
+    ProjectionRequestPhase,
+    ProjectionRequestState,
+    ProjectionRetryPolicy,
+    begin_projection_retry,
+    classify_projection_response,
+    ready_projection_state,
+    retain_pending_calendars,
+    schedule_projection_retry,
+    start_projection_cycle,
+    stop_projection_state,
+    terminal_projection_state,
+)
 from markeitech.intelligence.calendar_messages import (
     CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
     CALENDAR_PROJECTION_RESPONSE_TYPE_NAME,
     CALENDAR_TRANSITION_TYPE_NAME,
+    CalendarProjectionFailure,
     CalendarProjectionRequest,
     CalendarProjectionResponse,
     CalendarTransition,
@@ -46,7 +60,7 @@ _SESSION_TIMER = "session-state-evaluation"
 _SESSION_BOUNDARY_ALERT = "session-state-next-boundary"
 _EVIDENCE_TIMER = "evidence-health-evaluation"
 _EVIDENCE_CONSUMER_RETRY_TIMER = "evidence-health-consumer-registration-retry"
-_EVIDENCE_CALENDAR_RETRY_TIMER = "evidence-health-calendar-projection-retry"
+_EVIDENCE_CALENDAR_RETRY_ALERT = "evidence-health-calendar-projection-retry"
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +114,7 @@ class SessionStateActor(DataActor):
         self._revisions: defaultdict[str, int] = defaultdict(int)
         self._projection_requests = 0
         self._projection_rejections = 0
+        self._projection_failures = 0
         self._started = False
 
     def on_start(self) -> None:
@@ -139,7 +154,8 @@ class SessionStateActor(DataActor):
             f"SESSION_STATE_STOPPED | calendars={len(self._calendars)}"
             f" | transitions={sum(self._revisions.values())}"
             f" | projection_requests={self._projection_requests}"
-            f" | projection_rejections={self._projection_rejections}",
+            f" | projection_rejections={self._projection_rejections}"
+            f" | projection_failures={self._projection_failures}",
         )
 
     def _evaluate(self, _event) -> None:  # noqa: ANN001
@@ -242,7 +258,8 @@ class SessionStateActor(DataActor):
         requested = tuple(request.calendar_ids)
         unavailable = tuple(item for item in requested if item not in self._calendars)
         status = "READY"
-        projections = ()
+        projections = []
+        failures = []
         retry_at_ns = None
         if not self._started:
             status = "NOT_READY"
@@ -258,15 +275,40 @@ class SessionStateActor(DataActor):
         else:
             start = datetime.fromtimestamp(request.start_ns / 1_000_000_000, UTC).date()
             end = datetime.fromtimestamp((request.end_ns - 1) / 1_000_000_000, UTC).date()
-            projections = tuple(
-                self._calendars[calendar_id].projection(
-                    start - timedelta(days=2),
-                    end + timedelta(days=2),
-                )
-                for calendar_id in requested
-                if calendar_id in self._calendars
-            )
-            if unavailable:
+            for calendar_id in requested:
+                calendar = self._calendars.get(calendar_id)
+                if calendar is None:
+                    continue
+                try:
+                    projections.append(
+                        calendar.projection(
+                            start - timedelta(days=2),
+                            end + timedelta(days=2),
+                        ),
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    self._projection_failures += 1
+                    failures.append(
+                        CalendarProjectionFailure(
+                            calendar_id=calendar_id,
+                            code="projection_construction_failed",
+                            reason="canonical calendar projection construction failed",
+                            retryable=False,
+                        ),
+                    )
+                    self.log.error(
+                        "CALENDAR_PROJECTION_FAILED"
+                        f" | request_id={request.request_id}"
+                        f" | calendar_id={calendar_id}"
+                        f" | definition_digest={calendar.definition.definition_digest}"
+                        f" | source_epoch={self._source_epoch}"
+                        f" | error={type(exc).__name__}",
+                    )
+            if len(projections) == len(requested):
+                status = "READY"
+            elif len(failures) == len(requested):
+                status = "FAILED"
+            else:
                 status = "INCOMPLETE"
         response = CalendarProjectionResponse(
             request_id=request.request_id,
@@ -274,8 +316,10 @@ class SessionStateActor(DataActor):
             source=str(self.actor_id),
             source_epoch=self._source_epoch,
             status=status,
-            projections=projections,
+            requested_calendar_ids=requested,
+            projections=tuple(projections),
             unavailable_calendar_ids=unavailable,
+            failures=tuple(failures),
             generated_ts_ns=self.clock.timestamp_ns(),
             retry_at_ns=retry_at_ns,
         )
@@ -294,6 +338,10 @@ class EvidenceHealthActorConfig(DataActorConfig):
         recency_profiles: list[dict[str, object]],
         projection_lookback_days: int,
         projection_lookahead_days: int,
+        expected_calendar_digests: dict[str, str],
+        calendar_source: str,
+        calendar_source_epoch: str,
+        projection_retry: dict[str, int],
         actor_id: str | ActorId = "EVIDENCE-HEALTH",
     ) -> EvidenceHealthActorConfig:
         resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
@@ -307,6 +355,10 @@ class EvidenceHealthActorConfig(DataActorConfig):
         obj.recency_profiles = tuple(recency_profiles)
         obj.projection_lookback_days = projection_lookback_days
         obj.projection_lookahead_days = projection_lookahead_days
+        obj.expected_calendar_digests = dict(expected_calendar_digests)
+        obj.calendar_source = calendar_source
+        obj.calendar_source_epoch = calendar_source_epoch
+        obj.projection_retry = dict(projection_retry)
         return obj
 
 
@@ -351,6 +403,14 @@ class EvidenceHealthActor(DataActor):
         self._consumer_retry_interval_ns = config.consumer_retry_interval_ms * 1_000_000
         self._projection_lookback_ns = config.projection_lookback_days * 86_400_000_000_000
         self._projection_lookahead_ns = config.projection_lookahead_days * 86_400_000_000_000
+        self._expected_calendar_digests = dict(config.expected_calendar_digests)
+        self._projection_policy = ProjectionRetryPolicy.from_config(config.projection_retry)
+        self._projection_state = ProjectionRequestState.idle(
+            requester=str(self.actor_id),
+            expected_source=config.calendar_source,
+            expected_source_epoch=config.calendar_source_epoch,
+        )
+        self._projection_counts: defaultdict[str, int] = defaultdict(int)
         self._provider_id = config.provider_id
         self._profile_checkpoint_samples = config.profile_checkpoint_samples
         self._port = NautilusSubscriptionPort(self)
@@ -398,12 +458,7 @@ class EvidenceHealthActor(DataActor):
         self.subscribe_data(self._calendar_response_type)
         self.subscribe_data(self._calendar_transition_type)
         self._reconcile_consumer_attachments(None)
-        self._request_calendar_projection(None)
-        self.clock.set_timer_ns(
-            _EVIDENCE_CALENDAR_RETRY_TIMER,
-            self._consumer_retry_interval_ns,
-            callback=self._request_calendar_projection,
-        )
+        self._begin_calendar_projection_cycle()
         self.publish_signal(
             PERSISTENCE_READY_REQUEST_SIGNAL,
             PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
@@ -436,25 +491,23 @@ class EvidenceHealthActor(DataActor):
     def on_data(self, data) -> None:  # noqa: ANN001
         payload = data.data if isinstance(data, CustomData) else data
         if isinstance(payload, CalendarTransition):
+            expected_digest = self._expected_calendar_digests.get(payload.calendar_id)
+            if (
+                expected_digest != payload.definition_digest
+                or payload.source != self._projection_state.expected_source
+                or payload.source_epoch != self._projection_state.expected_source_epoch
+            ):
+                self._projection_counts["conflict"] += 1
+                self.log.error(
+                    "EVIDENCE_CALENDAR_TRANSITION_CONFLICT"
+                    f" | calendar_id={payload.calendar_id}",
+                )
+                return
             self._retain_calendar_context(payload)
             return
         if not isinstance(payload, CalendarProjectionResponse):
             return
-        if payload.requester != str(self.actor_id) or payload.status != "READY":
-            return
-        now_ns = self.clock.timestamp_ns()
-        for projection in payload.projections:
-            snapshot = CalendarProjectionView(projection).evaluate(now_ns)
-            self._retain_calendar_context(
-                _SessionContext(
-                    calendar_id=projection.calendar_id,
-                    trade_date=(
-                        snapshot.trade_date.isoformat() if snapshot.trade_date is not None else None
-                    ),
-                    phase=snapshot.phase,
-                    is_open=snapshot.is_open,
-                ),
-            )
+        self._observe_calendar_projection(payload)
 
     def on_quote(self, quote) -> None:  # noqa: ANN001
         self._observe((str(quote.instrument_id), "quotes", "default"), quote.ts_event)
@@ -468,6 +521,7 @@ class EvidenceHealthActor(DataActor):
             self._observe(key, bar.ts_event)
 
     def on_stop(self) -> None:
+        self._projection_state = stop_projection_state(self._projection_state)
         for profile_key in sorted(self._dirty_profiles):
             self._publish_profile(profile_key)
         for signal_name in (
@@ -482,11 +536,16 @@ class EvidenceHealthActor(DataActor):
             self.clock.cancel_timer(_EVIDENCE_TIMER)
         if _EVIDENCE_CONSUMER_RETRY_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_EVIDENCE_CONSUMER_RETRY_TIMER)
-        if _EVIDENCE_CALENDAR_RETRY_TIMER in self.clock.timer_names():
-            self.clock.cancel_timer(_EVIDENCE_CALENDAR_RETRY_TIMER)
+        if _EVIDENCE_CALENDAR_RETRY_ALERT in self.clock.timer_names():
+            self.clock.cancel_timer(_EVIDENCE_CALENDAR_RETRY_ALERT)
         self.log.info(
             f"EVIDENCE_HEALTH_STOPPED | streams={len(self._requirements)}"
-            f" | transitions={sum(self._revisions.values())}",
+            f" | transitions={sum(self._revisions.values())}"
+            f" | projection_state={self._projection_state.phase.value}"
+            f" | projection_requests={self._projection_counts['requests']}"
+            f" | projection_timeouts={self._projection_counts['timeouts']}"
+            f" | projection_stale={self._projection_counts['stale']}"
+            f" | projection_terminal={self._projection_counts['terminal']}",
         )
 
     def _release_startup(self) -> None:
@@ -530,29 +589,177 @@ class EvidenceHealthActor(DataActor):
                 callback=self._reconcile_consumer_attachments,
             )
 
-    def _request_calendar_projection(self, _event) -> None:  # noqa: ANN001
+    def _begin_calendar_projection_cycle(self) -> None:
         missing = tuple(
             calendar_id
             for calendar_id in self._calendar_ids
             if calendar_id not in self._session_by_calendar
         )
         if not missing:
-            if _EVIDENCE_CALENDAR_RETRY_TIMER in self.clock.timer_names():
-                self.clock.cancel_timer(_EVIDENCE_CALENDAR_RETRY_TIMER)
             return
         now_ns = self.clock.timestamp_ns()
-        request = CalendarProjectionRequest(
-            request_id=f"calendar-projection:{self.actor_id}:{now_ns}",
-            requester=str(self.actor_id),
+        self._projection_state = start_projection_cycle(
+            self._projection_state,
             calendar_ids=missing,
             start_ns=max(0, now_ns - self._projection_lookback_ns),
             end_ns=now_ns + self._projection_lookahead_ns,
-            requested_ts_ns=now_ns,
+            now_ns=now_ns,
+            policy=self._projection_policy,
         )
+        if self._projection_state.phase is ProjectionRequestPhase.WAITING:
+            self._publish_calendar_projection_request()
+
+    def _publish_calendar_projection_request(self) -> None:
+        state = self._projection_state
+        if (
+            state.phase is not ProjectionRequestPhase.WAITING
+            or state.request_id is None
+            or state.start_ns is None
+            or state.end_ns is None
+        ):
+            return
+        self._set_calendar_projection_alert()
+        request = CalendarProjectionRequest(
+            request_id=state.request_id,
+            requester=state.requester,
+            calendar_ids=state.pending_calendar_ids,
+            start_ns=state.start_ns,
+            end_ns=state.end_ns,
+            requested_ts_ns=self.clock.timestamp_ns(),
+        )
+        self._projection_counts["requests"] += 1
         self.publish_data(
             self._calendar_request_type,
             CustomData(self._calendar_request_type, request),
         )
+
+    def _observe_calendar_projection(self, response: CalendarProjectionResponse) -> None:
+        disposition = classify_projection_response(self._projection_state, response)
+        if disposition != "ACCEPT":
+            self._projection_counts[disposition.lower()] += 1
+            return
+        self._cancel_calendar_projection_alert()
+        state = self._projection_state
+        accepted_ids: set[str] = set()
+        now_ns = self.clock.timestamp_ns()
+        for projection in response.projections:
+            expected_digest = self._expected_calendar_digests.get(projection.calendar_id)
+            if (
+                expected_digest != projection.definition_digest
+                or state.start_ns is None
+                or state.end_ns is None
+                or projection.coverage_start_ns > state.start_ns
+                or projection.coverage_end_ns < state.end_ns
+            ):
+                self._projection_counts["conflict"] += 1
+                self._projection_state = terminal_projection_state(
+                    state,
+                    "projection_identity_conflict",
+                )
+                self._projection_counts["terminal"] += 1
+                self.log.error(
+                    "EVIDENCE_CALENDAR_PROJECTION_CONFLICT"
+                    f" | calendar_id={projection.calendar_id}",
+                )
+                return
+            snapshot = CalendarProjectionView(projection).evaluate(now_ns)
+            accepted_ids.add(projection.calendar_id)
+            self._retain_calendar_context(
+                _SessionContext(
+                    calendar_id=projection.calendar_id,
+                    trade_date=(
+                        snapshot.trade_date.isoformat() if snapshot.trade_date is not None else None
+                    ),
+                    phase=snapshot.phase,
+                    is_open=snapshot.is_open,
+                ),
+            )
+        remaining = tuple(
+            item for item in state.pending_calendar_ids if item not in accepted_ids
+        )
+        if not remaining:
+            self._projection_state = ready_projection_state(state)
+            self._projection_counts["accepted"] += 1
+            return
+        failures = {item.calendar_id: item for item in response.failures}
+        retryable = bool(remaining) and all(
+            calendar_id in failures and failures[calendar_id].retryable
+            for calendar_id in remaining
+        )
+        if response.status == "NOT_READY" or retryable:
+            self._projection_state = retain_pending_calendars(state, remaining)
+            self._projection_state = schedule_projection_retry(
+                self._projection_state,
+                now_ns=now_ns,
+                policy=self._projection_policy,
+                retry_at_ns=response.retry_at_ns,
+            )
+            self._finish_calendar_projection_transition()
+            return
+        self._projection_state = terminal_projection_state(
+            state,
+            "projection_rejected" if response.status == "REJECTED" else "projection_unavailable",
+            rejected=response.status == "REJECTED",
+        )
+        self._projection_counts["terminal"] += 1
+        self.log.error(
+            f"EVIDENCE_CALENDAR_PROJECTION_TERMINAL | status={response.status}"
+            f" | pending={','.join(remaining)}",
+        )
+
+    def _on_calendar_projection_alert(self, _event) -> None:  # noqa: ANN001
+        state = self._projection_state
+        if state.phase is ProjectionRequestPhase.STOPPED:
+            return
+        now_ns = self.clock.timestamp_ns()
+        if state.alert_at_ns is None or now_ns < state.alert_at_ns:
+            return
+        if state.phase is ProjectionRequestPhase.WAITING:
+            self._projection_counts["timeouts"] += 1
+            self._projection_state = schedule_projection_retry(
+                state,
+                now_ns=now_ns,
+                policy=self._projection_policy,
+                retry_at_ns=None,
+            )
+            self._finish_calendar_projection_transition()
+            return
+        if state.phase is ProjectionRequestPhase.BACKOFF:
+            self._projection_state = begin_projection_retry(
+                state,
+                now_ns=now_ns,
+                policy=self._projection_policy,
+            )
+            self._publish_calendar_projection_request()
+
+    def _finish_calendar_projection_transition(self) -> None:
+        if self._projection_state.phase is ProjectionRequestPhase.BACKOFF:
+            self._projection_counts["retries"] += 1
+            self._set_calendar_projection_alert()
+            return
+        if self._projection_state.phase in {
+            ProjectionRequestPhase.FAILED,
+            ProjectionRequestPhase.REJECTED,
+        }:
+            self._projection_counts["terminal"] += 1
+            self.log.error(
+                "EVIDENCE_CALENDAR_PROJECTION_EXHAUSTED"
+                f" | code={self._projection_state.terminal_code}",
+            )
+
+    def _set_calendar_projection_alert(self) -> None:
+        self._cancel_calendar_projection_alert()
+        alert_at_ns = self._projection_state.alert_at_ns
+        if alert_at_ns is not None:
+            self.clock.set_time_alert_ns(
+                _EVIDENCE_CALENDAR_RETRY_ALERT,
+                alert_at_ns,
+                callback=self._on_calendar_projection_alert,
+            )
+
+    def _cancel_calendar_projection_alert(self) -> None:
+        if _EVIDENCE_CALENDAR_RETRY_ALERT in self.clock.timer_names():
+            self.clock.cancel_timer(_EVIDENCE_CALENDAR_RETRY_ALERT)
 
     def _retain_calendar_context(
         self,
@@ -561,6 +768,13 @@ class EvidenceHealthActor(DataActor):
         if event.calendar_id not in self._calendar_ids:
             return
         self._session_by_calendar[event.calendar_id] = event
+        if not set(self._calendar_ids) - set(self._session_by_calendar):
+            if self._projection_state.phase in {
+                ProjectionRequestPhase.WAITING,
+                ProjectionRequestPhase.BACKOFF,
+            }:
+                self._cancel_calendar_projection_alert()
+                self._projection_state = ready_projection_state(self._projection_state)
         if self._started:
             now_ns = self.clock.timestamp_ns()
             for key in self._subscription_states:

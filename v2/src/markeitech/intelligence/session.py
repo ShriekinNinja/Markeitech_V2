@@ -12,6 +12,10 @@ MARKET_STATES = frozenset({"OPEN", "BREAK", "CLOSED"})
 CORRECTION_STATUSES = frozenset(
     {"APPLIED", "NOT_APPLICABLE", "BASE_ALREADY_CONFORMS", "CONFLICT"},
 )
+NORMALIZATION_STATUSES = frozenset({"APPLIED"})
+TERMINAL_ZERO_LENGTH_BREAK_NORMALIZATION_ID = (
+    "terminal_zero_length_break_at_market_close.v1"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +84,28 @@ class CalendarCorrectionOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class CalendarNormalizationOutcome:
+    trade_date: date
+    normalization_id: str
+    status: str
+    original_break_start_ns: int
+    original_break_end_ns: int
+    market_close_ns: int
+
+    def __post_init__(self) -> None:
+        if self.normalization_id != TERMINAL_ZERO_LENGTH_BREAK_NORMALIZATION_ID:
+            raise ValueError("unsupported calendar normalization")
+        if self.status not in NORMALIZATION_STATUSES:
+            raise ValueError(f"unsupported calendar normalization status: {self.status}")
+        if not (
+            self.original_break_start_ns
+            == self.original_break_end_ns
+            == self.market_close_ns
+        ):
+            raise ValueError("terminal break normalization endpoints must equal market close")
+
+
+@dataclass(frozen=True, slots=True)
 class ExchangeSessionSegment:
     trade_date: date
     market_state: str
@@ -144,6 +170,8 @@ class CanonicalSessionSnapshot:
 @dataclass(frozen=True, slots=True)
 class CalendarProjection:
     calendar_id: str
+    calendar_engine: str
+    provider_calendar: str
     schedule_version: str
     definition_version: int
     definition_digest: str
@@ -154,6 +182,7 @@ class CalendarProjection:
     exchange_segments: tuple[ExchangeSessionSegment, ...]
     phase_windows: tuple[SessionWindow, ...]
     correction_outcomes: tuple[CalendarCorrectionOutcome, ...]
+    normalization_outcomes: tuple[CalendarNormalizationOutcome, ...]
 
     def __post_init__(self) -> None:
         if self.coverage_end_ns <= self.coverage_start_ns:
@@ -300,6 +329,7 @@ class CanonicalCalendar:
         exchange_segments: list[ExchangeSessionSegment] = []
         phase_windows: list[SessionWindow] = []
         outcomes: list[CalendarCorrectionOutcome] = []
+        normalization_outcomes: list[CalendarNormalizationOutcome] = []
         for index, row in schedule.iterrows():
             trade_date = index.date()
             market_open = _row_datetime(row["market_open"])
@@ -313,6 +343,15 @@ class CanonicalCalendar:
                 break_end,
             )
             outcomes.extend(row_outcomes)
+            break_start, break_end, normalization_outcome = _normalize_break(
+                trade_date,
+                market_open,
+                market_close,
+                break_start,
+                break_end,
+            )
+            if normalization_outcome is not None:
+                normalization_outcomes.append(normalization_outcome)
             if break_start is not None and break_end is not None:
                 exchange_segments.extend(
                     (
@@ -360,6 +399,8 @@ class CanonicalCalendar:
         definition = self.definition
         return CalendarProjection(
             calendar_id=definition.calendar_id,
+            calendar_engine=definition.calendar_engine,
+            provider_calendar=definition.provider_calendar,
             schedule_version=definition.schedule_version,
             definition_version=definition.definition_version,
             definition_digest=definition.definition_digest,
@@ -378,6 +419,12 @@ class CanonicalCalendar:
             ),
             correction_outcomes=tuple(
                 sorted(outcomes, key=lambda item: (item.trade_date, item.correction_id)),
+            ),
+            normalization_outcomes=tuple(
+                sorted(
+                    normalization_outcomes,
+                    key=lambda item: (item.trade_date, item.normalization_id),
+                ),
             ),
         )
 
@@ -566,13 +613,58 @@ def _active_phase_trade_date(
 def _row_break(row: Any) -> tuple[datetime | None, datetime | None]:
     start = row.get("break_start")
     end = row.get("break_end")
-    if start is None or end is None or isna(start) or isna(end):
+    start_missing = start is None or isna(start)
+    end_missing = end is None or isna(end)
+    if start_missing and end_missing:
         return None, None
+    if start_missing != end_missing:
+        raise ValueError("calendar break boundaries must both be present or absent")
     return _row_datetime(start), _row_datetime(end)
 
 
 def _row_datetime(value: Any) -> datetime:
-    return value.to_pydatetime().astimezone(UTC)
+    resolved = value.to_pydatetime() if hasattr(value, "to_pydatetime") else value
+    if not isinstance(resolved, datetime):
+        raise ValueError("calendar schedule boundary must be a datetime")
+    if resolved.tzinfo is None or resolved.utcoffset() is None:
+        raise ValueError("calendar schedule boundary must be timezone-aware")
+    return resolved.astimezone(UTC)
+
+
+def _normalize_break(
+    trade_date: date,
+    market_open: datetime,
+    market_close: datetime,
+    break_start: datetime | None,
+    break_end: datetime | None,
+) -> tuple[
+    datetime | None,
+    datetime | None,
+    CalendarNormalizationOutcome | None,
+]:
+    if market_close <= market_open:
+        raise ValueError("calendar market close must be after market open")
+    if break_start is None and break_end is None:
+        return None, None, None
+    if break_start is None or break_end is None:
+        raise ValueError("calendar break boundaries must both be present or absent")
+    if break_start == break_end == market_close:
+        market_close_ns = _to_ns(market_close)
+        return (
+            None,
+            None,
+            CalendarNormalizationOutcome(
+                trade_date=trade_date,
+                normalization_id=TERMINAL_ZERO_LENGTH_BREAK_NORMALIZATION_ID,
+                status="APPLIED",
+                original_break_start_ns=market_close_ns,
+                original_break_end_ns=market_close_ns,
+                market_close_ns=market_close_ns,
+            ),
+        )
+    if not market_open < break_start < break_end < market_close:
+        raise ValueError("calendar break must be positive and strictly inside the market session")
+    return break_start, break_end, None
 
 
 def _to_ns(value: datetime) -> int:

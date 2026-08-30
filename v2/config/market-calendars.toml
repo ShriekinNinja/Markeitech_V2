@@ -6,7 +6,7 @@
 
 schema_version = 3
 catalog_id = "markeitech-market-calendars"
-catalog_version = 3
+catalog_version = 4
 calendar_engine_version = "5.4.0"
 
 [[sources]]
@@ -98,7 +98,7 @@ calendar_id = "cme_equity"
 calendar_engine = "pandas_market_calendars"
 provider_calendar = "CME_Equity"
 schedule_columns = ["market_open", "break_start", "break_end", "market_close"]
-definition_version = 3
+definition_version = 4
 effective_from = "2026-08-30T00:00:00Z"
 correction_ids = ["cme-equity-remove-1515-pause"]
 
@@ -155,7 +155,7 @@ calendar_id = "cbot_equity"
 calendar_engine = "pandas_market_calendars"
 provider_calendar = "CBOT_Equity"
 schedule_columns = ["market_open", "break_start", "break_end", "market_close"]
-definition_version = 3
+definition_version = 4
 effective_from = "2026-08-30T00:00:00Z"
 correction_ids = ["cme-equity-remove-1515-pause"]
 

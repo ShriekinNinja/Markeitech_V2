@@ -1,7 +1,8 @@
 # V3 Canonical Calendar Authority Review
 
-**Status:** Architecture and atomic breaking cutover approved 2026-08-30; implementation review
-batch complete; disconnected verification passed; first connected acceptance rejected
+**Status:** Architecture and atomic breaking cutover approved 2026-08-30; first connected
+acceptance rejected; terminal-break and projection-delivery repair implemented and disconnected
+verification passed; connected re-acceptance pending
 
 **Review order:** 1 of 4
 
@@ -430,7 +431,8 @@ divergence, not normalized away to make parity appear green.
 
 The review batch now implements one breaking cutover with no shadow or legacy calendar authority:
 
-- system schema 20 loads the dedicated schema-3 `v2/config/market-calendars.toml` catalog and
+- system schema 21 loads the dedicated schema-3/catalog-version-4
+  `v2/config/market-calendars.toml` catalog and
   rejects inline definitions, old dated overrides, and older system/catalog schemas;
 - the loader pins mcal 5.4.0, provider class, provider timezone, admitted columns, product phases,
   source/correction identity, deterministic digests, and bounded default projection requests
@@ -481,6 +483,30 @@ pinned mcal as `break_start == break_end == market_close`, and the projector att
 zero-duration exchange segments. Projection consumers then retried without receiving a bounded
 failure response. No connected IB run has accepted this cutover.
 
+The follow-up repair preserves the segment invariant and admits only the measured terminal mcal
+representation where `break_start == break_end == market_close`. It applies after the existing
+source-cited correction, leaves that correction outcome `NOT_APPLICABLE`, emits one positive
+`OPEN` segment, and records the original endpoints in a distinct immutable normalization outcome.
+All other partial, inverted, out-of-bounds, or zero-length break shapes still fail closed. The
+affected CME/CBOT definition versions and catalog content version advance to 4; calendar-catalog
+schema remains 3.
+
+Projection requests and transitions remain v1. Projection responses are now v2 and account for
+every requested calendar exactly once as projected, unavailable, or failed. Ordinary per-calendar
+construction exceptions are contained by `SessionStateActor`, logged with bounded identity, and
+returned as sanitized typed failures without hiding native publication faults. Evidence health,
+session metrics, and the historical planner each keep one exact outstanding request, validate the
+request ID, source, source epoch, definition digest, and coverage, and use one one-shot Nautilus
+alert for either the response deadline or retry wake. Dedicated schema-21 configuration bounds
+response timeout, fixed backoff, attempts, and total elapsed time. Provider polling, consumer
+registration retry, and metric-demand retry settings no longer govern calendar delivery.
+
+Global `SYSTEM_HEALTH READY` retains its accepted narrow control-plane meaning in this repair.
+Advisors disagreed on adding a positive startup calendar-projection prerequisite; the architecture
+boundary owner classified that as a separate system-health semantic requiring its own handshake,
+recovery, persistence, and projection-consumer review. Therefore the repair reports capability-
+local terminal projection outcomes but does not silently redefine global readiness.
+
 ## Remaining Gates
 
 The sole-owner cutover, bounded projections, historical planning boundary, and current consumer
@@ -493,13 +519,13 @@ migration are implemented. The following remain separate work:
 3. Split the combined metric actor without multiplying calendar authorities.
 4. Repeat the bounded connected acceptance owned by Markeitect after correcting the rejected first
    run; do not claim provider-session or live transition acceptance before it passes.
-5. Correct zero-duration provider breaks before claiming bounded or arbitrary-range projection
-   acceptance. The 2026-08-30 connected run proved the configured default projection is affected:
-   its 120-day lookback crossed CME early-close rows whose admitted
-   `break_start == break_end == market_close`. The projector attempted zero-length `BREAK` and
-   trailing `OPEN` segments and failed closed.
-6. Replace the resulting unbounded projection retry loop with an explicit failure response,
-   bounded retry policy, and honest system-readiness dependency.
+5. Repeat the configured 120-day/14-day connected projection after the exact terminal-break
+   normalization; offline evidence now covers the four known 2026 CME/CBOT early-close rows and
+   the configured span, but it is not connected acceptance.
+6. Decide separately whether global readiness needs a positive calendar-foundation handshake.
+   The accepted global `READY` contract remains persistence plus configured instrument-definition
+   availability; calendar-dependent consumers now terminate locally and visibly when their
+   bounded projection cycle cannot complete.
 
 Before increasing historical concurrency or retries, the separate Nautilus/IB callback-correlation
 defect must be resolved. Before changing shutdown behavior, cancellation must be fenced so it
