@@ -107,12 +107,30 @@ test -e v2/config/system.local.toml || \
 
 Both destination files are ignored by Git.
 
-Existing local configurations created before schema 18 require a manual migration: set
-`schema_version = 18` and remove the retired `[visual_acceptance]` and
-`[live_evidence_review]` sections. The loader rejects schema 17 and either dead section so an old
-profile cannot appear to enable components which no longer exist. Do not overwrite the rest of an
-existing machine-local profile; compare it with `system.example.toml` and preserve its reviewed IB,
-instrument, calendar, persistence, and metric settings.
+Existing local configurations created before schema 21 require a manual migration. Set
+`schema_version = 21`, remove the retired `[visual_acceptance]` and `[live_evidence_review]`
+sections, and replace inline `[[sessions.calendars]]` definitions with the schema-3
+`calendar_catalog = "market-calendars.toml"` reference under `[sessions]`. Also add the bounded
+projection settings shown in `system.example.toml`: `projection_lookback_days`,
+`projection_lookahead_days`, `maximum_projection_days`, and
+`maximum_calendars_per_request`. Add `[sessions.projection_retry]` with the tracked bounded
+`response_timeout_ms`, `maximum_attempts`, `retry_backoff_ms`, and `maximum_elapsed_ms` values;
+these local actor-delivery controls are independent of IB historical polling and metric-demand
+retries. The referenced catalog path is resolved relative to the system
+TOML and must exist; the tracked catalog is `v2/config/market-calendars.toml`. Set `calendar_ids`
+to the exact catalog definitions this profile needs; unused entries are validated but are not
+instantiated. Analytical profiles and windows must use the configured product-phase names, such
+as `GLOBEX` for the CME/CBOT equity definitions. Concrete instrument-to-calendar bindings belong
+only to `[[watchlist.members]]`; rolling a futures contract does not require editing the calendar
+catalog. The CME/CBOT definitions also expose overlapping `ASIA`, `LONDON`, and `NEW_YORK` phases.
+Those phase clocks describe market regions and do not create analytical windows by themselves.
+
+The loader rejects older schemas, dead visual sections, inline definitions or overrides,
+unavailable provider columns, invalid phase timezones, incomplete source/correction identity,
+obsolete catalog-owned instrument mappings, and projection requests which exceed configured
+bounds. Do not overwrite
+the rest of an existing machine-local profile; compare it with `system.example.toml` and preserve
+its reviewed IB, instrument, analytical-profile, persistence, and metric settings.
 
 ### Environment file
 
@@ -132,7 +150,8 @@ Review `v2/config/system.local.toml` before connecting:
 1. `[ib].host`, `[ib].port`, and `[ib].client_id`
 2. current explicit futures contracts in historical probes, profile bindings, and watchlist members
 3. instruments covered by the current user's IB market-data entitlements
-4. calendar/profile assignments
+4. active `calendar_ids`, calendar/profile assignments, and the dedicated
+   `market-calendars.toml` catalog identity
 5. Discord, resource-health, persistence, historical, and metric policy
 
 The tracked example contains reviewed defaults, not universally valid contracts or entitlements.

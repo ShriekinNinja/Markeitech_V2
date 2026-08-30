@@ -14,11 +14,10 @@ from markeitech.acquisition import (
     HistoricalExecutionEventMessage,
     HistoricalReadinessEvent,
 )
+from markeitech.intelligence.calendar_messages import CalendarTransition
 from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
-    SESSION_STATE_SIGNAL,
     EvidenceHealthEvent,
-    SessionStateEvent,
 )
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
@@ -39,6 +38,7 @@ from markeitech.system.persistence import (
     OperationalEventRecord,
     PersistenceWorker,
     _is_critical_record,
+    _record_from_calendar_transition,
     _record_from_signal,
 )
 from markeitech.system.resource_contracts import (
@@ -411,21 +411,30 @@ def test_historical_lifecycle_is_audited_without_raw_bars() -> None:
 
 def test_session_and_evidence_transitions_convert_to_audit_records() -> None:
     run_id = uuid4()
-    session = SessionStateEvent(
-        event_id="session:cboe_spxw:1",
+    session = CalendarTransition(
+        event_id="calendar:run-1:cboe_spxw:1",
         calendar_id="cboe_spxw",
         schedule_version="cboe-spxw-v1",
-        timezone="America/New_York",
+        definition_version=1,
+        definition_digest="d" * 64,
+        effective_from_ns=1,
         trade_date="2026-08-17",
-        phase="GTH",
-        previous_phase="CLOSED",
-        is_open=True,
-        phase_open_ns=10,
-        phase_close_ns=20,
+        previous_trade_date=None,
+        phase_memberships=("GTH",),
+        previous_phase_memberships=(),
+        market_state="OPEN",
+        previous_market_state="CLOSED",
+        segment_open_ns=10,
+        segment_close_ns=20,
         next_transition_ns=20,
         source="SESSION-STATE",
-        reason="session phase changed",
+        source_epoch="run-1",
+        effective_ts_ns=10,
+        evaluated_ts_ns=10,
+        published_ts_ns=11,
+        reason="calendar state changed",
         revision=1,
+        previous_revision=None,
     )
     evidence = EvidenceHealthEvent(
         event_id="evidence:SPX.CBOE/quotes/default:1",
@@ -450,16 +459,7 @@ def test_session_and_evidence_transitions_convert_to_audit_records() -> None:
         revision=1,
     )
 
-    session_record = _record_from_signal(
-        run_id,
-        1,
-        Signal(
-            name=SESSION_STATE_SIGNAL,
-            value=session.to_signal_value(),
-            ts_event=40,
-            ts_init=41,
-        ),
-    )
+    session_record = _record_from_calendar_transition(run_id, 1, session)
     evidence_record = _record_from_signal(
         run_id,
         2,
@@ -471,8 +471,8 @@ def test_session_and_evidence_transitions_convert_to_audit_records() -> None:
         ),
     )
 
-    assert session_record.event_type == "session.state"
-    assert session_record.correlation_id == "session:cboe_spxw:2026-08-17"
+    assert session_record.event_type == "calendar.transition"
+    assert session_record.correlation_id == "calendar:run-1:cboe_spxw:2026-08-17"
     assert evidence_record.event_type == "evidence.health"
     assert evidence_record.correlation_id == "evidence:SPX.CBOE:quotes:default"
     assert evidence_record.payload["state"] == "HEALTHY"

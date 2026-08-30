@@ -26,7 +26,7 @@ from markeitech.intelligence.metrics import (
     MetricWarmupPolicy,
     ParameterMutability,
 )
-from markeitech.intelligence.session import SessionCalendar, SessionWindow
+from markeitech.intelligence.session import CalendarProjectionView, SessionWindow
 
 _SECOND_NS = 1_000_000_000
 
@@ -412,7 +412,7 @@ def resolve_analytical_window(
 
 def resolve_historical_analytical_window(
     policy: AnalyticalWindowPolicy,
-    calendar: SessionCalendar,
+    calendar: CalendarProjectionView,
     *,
     calendar_id: str,
     request_start_ns: int,

@@ -15,7 +15,7 @@
 # analytical defaults and must be reviewed before their owning engine is enabled.
 # Never place secrets in this file; local secrets belong in the ignored v2/.env.
 
-schema_version = 18
+schema_version = 21
 
 [runtime]
 name = "MARKEITECH-V3-ES-PROGRESSIVE-001"
@@ -242,28 +242,24 @@ minimum_observations = 5
 maximum_observations = 5
 priority = 10
 
-# SessionStateActor is mandatory infrastructure in the current topology. This calendar enables
-# time identity and does not enable optional session measurements or analytical windows. All
-# resulting boundaries are absolute UTC nanoseconds; timezone below is civil-rule/trade-date
-# provenance, not an alternate internal timestamp format.
-# V3 REVIEW DEBT — NOT ACCEPTED AS FINAL ANALYTICAL SESSION POLICY:
-# - schedule_version is published metadata but startup does not verify it against the installed
-#   pandas-market-calendars package or calendar definition.
-# - Empty phases intentionally yield one broad provider OPEN envelope. The implementation ignores
-#   provider break_start/break_end, so CME's 15:15-15:30 America/Chicago break remains OPEN and can
-#   produce a false evidence-health deterioration if a run crosses it.
-# - Explicit analytical phases must later declare whether their wall-clock authority is native CME
-#   America/Chicago or an intentionally separate clock such as the New York cash-session open.
+# SessionStateActor is the sole runtime owner of the selected canonical calendar. The dedicated
+# catalog is loaded and validated atomically; consumers receive typed current transitions or
+# immutable bounded projections and never instantiate mcal themselves. The separate historical
+# planner resolves symbolic demand into exact UTC plans before acquisition executes it.
 [sessions]
 evaluation_interval_ms = 1000
+projection_lookback_days = 120
+projection_lookahead_days = 14
+maximum_projection_days = 400
+maximum_calendars_per_request = 8
+calendar_catalog = "market-calendars.toml"
+calendar_ids = ["cme_equity"]
 
-[[sessions.calendars]]
-calendar_id = "cme_equity"
-provider_calendar = "CME_Equity"
-timezone = "America/Chicago"
-schedule_version = "pmc-5.4"
-phases = []
-overrides = []
+[sessions.projection_retry]
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
 
 [evidence_health]
 evaluation_interval_ms = 1000
@@ -417,9 +413,9 @@ maximum_output_age_ms = 120000
 profile_id = "cme_equity_primary"
 version = 1
 calendar_id = "cme_equity"
-primary_phase = "OPEN"
+primary_phase = "GLOBEX"
 overnight_enabled = false
-overnight_phase = "OPEN"
+overnight_phase = "GLOBEX"
 volume_supported = true
 windows = []
 

@@ -76,10 +76,30 @@ system. The preserved V1 status is available in
   failures remain isolated to the affected projection and are counted rather than escaping the
   Nautilus callback. The rejected `VisualAcceptanceActor` and `LiveEvidenceReviewActor` were
   subsequently retired from runtime composition, typed configuration, source, and tests. Their
-  exclusive Kaleido and Pillow dependencies were also removed. Configuration schema 18 no longer
+  exclusive Kaleido and Pillow dependencies were also removed. Configuration schema 21 no longer
   accepts either dead section. The progressive `VisualDebugCaptureActor` remains a separate,
   passive observer and was not changed by that removal. Historical ignored artifacts and local
   configurations remain outside Git as recovery evidence; they are not runnable current profiles.
+- The approved V3 canonical-calendar cutover is implemented as the current review batch.
+  `SessionStateActor` is the sole mcal-backed evaluator owner, publishes typed transitions
+  and bounded immutable projections, and has no shadow/legacy counterpart. A separate historical
+  planner turns symbolic evidence needs into exact UTC plans; acquisition executes those plans and
+  retains provider limits without interpreting sessions. System schema 21 and calendar-catalog
+  schema 3/catalog version 4 configure five reusable calendar identities without concrete
+  instrument contracts.
+  The runtime watchlist alone binds admitted instruments to calendars. CME/CBOT definitions carry
+  overlapping `GLOBEX`, `ASIA`, `LONDON`, and `NEW_YORK` product phases, deterministic lineage,
+  and one source-cited CME equity-hours correction. The full disconnected suite passes. The first
+  connected acceptance run on 2026-08-30 was rejected before historical planning because pinned
+  mcal represents several CME early closes with `break_start == break_end == market_close`; the
+  projector attempted zero-duration exchange segments and consumers retried without a bounded
+  failure response. The committed repair normalizes only that exact terminal provider
+  representation after source-cited corrections, records an immutable normalization outcome,
+  emits per-calendar response-v2 failures for ordinary projection exceptions, and gives each of
+  the three consumers one correlated, bounded, one-shot retry lifecycle. CME/CBOT definition
+  versions are now 4. Offline verification passes and Markeitect reports that the repaired
+  connected runtime starts and runs. Detailed connected log reconciliation and broader acceptance
+  remain pending; the broader metric-actor split also remains deferred.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -380,8 +400,9 @@ Stage 9A is complete and accepted at commit `ce9076e`:
 
 - `pandas-market-calendars` supplies local exchange schedules, holiday rules, DST handling, and
   early-close dates.
-- Typed startup configuration maps every watchlist member to one of four versioned calendars and
-  defines SPXW GTH/RTH/Curb phases plus explicit exceptional-session overrides.
+- Typed startup configuration maps every watchlist member to one of five versioned calendars and
+  defines provisional SPXW GTH/RTH/Curb product phases. mcal remains the sole source for CBOE
+  holidays and early closes; the catalog carries no duplicated dated holiday overrides.
 - `SessionStateActor` owns session/trade-date truth and publishes only initial or changed state.
 - `EvidenceHealthActor` consumes acquisition lifecycle facts and independently observes the same
   native Nautilus quote and five-second-bar streams.
@@ -397,6 +418,50 @@ Stage 9A is complete and accepted at commit `ce9076e`:
   market observations remain memory-only.
 - Offline tests cover calendar boundaries, DST, holidays, early closes, freshness transitions,
   strict wire contracts, actor composition, and persistence conversion.
+
+The approved V3 canonical-calendar cutover is present as a review batch. System
+schema 21 loads `v2/config/market-calendars.toml` schema 3/catalog version 4 as one dedicated
+startup catalog;
+inline definitions, old overrides, and older schemas are rejected. Each system profile selects
+its active `calendar_ids`; available but unused definitions are validated without being
+instantiated. The loader pins installed `pandas-market-calendars` 5.4.0, provider implementation,
+provider-derived exchange timezone, admitted columns, product phases, definition/effective
+identity, source-cited structural corrections, and deterministic definition/catalog digests. It
+also proves that the configured default projection span and selected calendar count fit their
+runtime bounds. The catalog defines CBOE SPXW, NYSE, CME equity, CBOT equity, and product-specific
+CL identities, but contains no concrete instrument contracts. The watchlist is the single startup
+binding authority: its current bindings include `ES/NQ -> cme_equity`, `YM -> cbot_equity`, and
+`CL -> cme_energy`. Futures rollover therefore changes runtime instrument configuration without
+changing the reusable calendar catalog.
+
+The inherited 2026 CBOE GTH holiday overrides were removed after direct inspection of pinned mcal
+5.4.0 confirmed that it already supplies those holiday closures and the following-day early-close
+schedule. Markeitech no longer maintains a duplicated annual holiday list. The
+`CBOE_Index_Options` provider does not supply the overnight GTH phase itself; that custom phase
+clock remains provisional and explicitly identified as Markeitech-defined.
+
+`SessionStateActor` is the sole runtime owner of exactly one immutable `CanonicalCalendar` per
+active calendar ID. It publishes definition-identified typed `CalendarTransition` custom data and
+bounded immutable calendar projections. It schedules both periodic reconciliation and the next
+known temporal boundary. Consumers never receive or instantiate mcal evaluators: evidence health
+uses typed current transitions; session measurements classify bars and resolve analytical windows
+from immutable projections; and a separate `HistoricalEvidencePlannerActor` resolves symbolic
+historical demand into exact UTC plans. `DataAcquisitionActor` receives only exact plans and retains
+provider-facing admission limits, queueing, pacing, retries, cancellation, execution, and lifecycle
+ownership. The old `SessionCalendar`, legacy `SessionStateEvent`, shadow comparison, and local
+calendar fallbacks are removed. Calendar transitions continue through the existing bounded
+operational-event persistence path; projections and raw schedules are not persisted.
+
+The installed mcal CME equity calendars still expose an obsolete regular 15:15-15:30
+America/Chicago pause. One source-identified, effective-dated structural correction removes that
+pause for ES, NQ, and YM from trade date 2021-06-28. Pre-effective rows remain unchanged; exact
+provider matches are recorded as `APPLIED`, already-correct base rows as
+`BASE_ALREADY_CONFORMS`, and unequal provider changes fail as `CONFLICT`. Product `GLOBEX` phase
+membership remains distinct from exchange `OPEN/BREAK/CLOSED` state. The CME/CBOT definitions also
+declare overlapping, DST-aware `ASIA`, `LONDON`, and `NEW_YORK` phases. These are descriptive
+product phases, not analytical windows; analytical capabilities still choose their own windows and
+candle sizes independently. No connected IB acceptance has occurred for this cutover, and the
+wider `SessionMetricsActor` responsibility split remains deferred.
 
 The detailed ownership and semantics are recorded in
 [`architecture/v2-session-evidence-health.md`](architecture/v2-session-evidence-health.md).

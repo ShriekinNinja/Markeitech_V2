@@ -6,20 +6,20 @@ description = "Offline reviewed representation of current, conditional, external
 scope = "Repository architecture documentation only; never runtime configuration or live state."
 authority = "architecture_representation_only"
 not_runtime_configuration = true
-checkout_commit = "c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce"
+checkout_commit = "5b00af3e4e61b8b1f32aa5680b267f9f7904814d"
 owner = "Markeitect"
 review_status = "proposed"
 architecture_effective_at = "2026-08-30"
 generator_contract_version = 1
 default_profile = "profile.v3-es-minimal"
-limitations = ["Static source and configuration checks cannot prove connected runtime behavior.", "Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.", "Generated artifacts are documentation projections and must never be edited or treated as authority.", "Markeitech is read-only and advisory; no current order submission or execution exists."]
+limitations = ["Static source and configuration checks cannot prove connected runtime behavior.", "Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.", "Generated artifacts are documentation projections and must never be edited or treated as authority.", "The generated artifact directory was intentionally not regenerated or visually reviewed for the 2026-08-30 calendar merge and therefore remains a stale projection of the prior manifest until the recorded exception is removed.", "Markeitech is read-only and advisory; no current order submission or execution exists."]
 
 [[evidence]]
 id = "evidence.current-status"
 evidence_class = "tracked_authority"
 source_path = "docs/current-status.md"
 observed_at = "2026-08-30"
-proves = ["implemented/current boundaries", "removed visual-review actors"]
+proves = ["implemented/current boundaries", "canonical calendar cutover", "removed visual-review actors"]
 limitations = ["Status prose may lag code; conflicts are recorded explicitly."]
 
 [[evidence]]
@@ -71,6 +71,32 @@ source_path = "v2/src/markeitech/acquisition/historical_messages.py"
 observed_at = "2026-08-30"
 proves = ["historical request and response identities"]
 limitations = ["Installed adapter request-ID and cancellation mapping remain unknown."]
+
+[[evidence]]
+id = "evidence.calendar-contracts"
+evidence_class = "source"
+source_path = "v2/src/markeitech/intelligence/calendar_messages.py"
+observed_at = "2026-08-30"
+proves = ["calendar transition identity", "calendar projection request and response identities", "typed per-calendar projection failure"]
+limitations = ["Static contracts do not prove runtime delivery or connected-provider behavior."]
+
+[[evidence]]
+id = "evidence.canonical-calendar"
+evidence_class = "source"
+source_path = "v2/src/markeitech/intelligence/session.py"
+source_symbol = "CanonicalCalendar"
+observed_at = "2026-08-30"
+proves = ["pure mcal-backed calendar evaluator", "calendar definition identity", "source-recorded terminal-break normalization"]
+limitations = ["Calendar projections are transient and bounded; they are not persisted market observations."]
+
+[[evidence]]
+id = "evidence.historical-planner"
+evidence_class = "source"
+source_path = "v2/src/markeitech/system/historical_planner.py"
+source_symbol = "HistoricalEvidencePlannerActor"
+observed_at = "2026-08-30"
+proves = ["semantic historical demand planning", "calendar projection consumption", "exact UTC historical request-plan publication"]
+limitations = ["The planner does not call providers or own provider pacing."]
 
 [[evidence]]
 id = "evidence.intelligence-contracts"
@@ -150,8 +176,8 @@ limitations = ["Roadmap content is not current implementation."]
 [[profiles]]
 id = "profile.v3-es-minimal"
 config_path = "v2/config/system.v3-es-minimal.toml"
-config_schema_version = 18
-content_sha256 = "59b68e54d9e1002185d70c74d544d7374b1db0ed86670f74de4ef8e4a392a9a2"
+config_schema_version = 21
+content_sha256 = "08fa5fad2af4e77eeb7670a2212b48095effda7da41764d92f8685c62085257f"
 status = "tracked_active_review_profile"
 limitations = ["Represents the named tracked profile, not all available capabilities or a connected runtime observation."]
 evidence = ["evidence.profile"]
@@ -289,7 +315,7 @@ implementation_ref = "v2/src/markeitech/intelligence/actors.py:SessionStateActor
 composition_key = "session_state"
 composition_order = 2
 actor_id = "SESSION-STATE"
-responsibilities = ["Session State responsibilities and lifecycle"]
+responsibilities = ["Sole runtime owner of active CanonicalCalendar instances.", "Publish definition-identified calendar transitions and bounded immutable projections.", "Contain ordinary per-calendar projection construction failures without redefining provider data."]
 semantic_owner = "actor.session-state"
 mutation_owner = "none_current"
 transport_owner = "none_current"
@@ -306,8 +332,35 @@ failure_isolation = "Nautilus actor callback boundary; failure is surfaced accor
 cardinality = "one when composed"
 style = "style.component.current"
 profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }]
-evidence = ["evidence.composition"]
-limitations = []
+evidence = ["evidence.composition", "evidence.calendar-contracts", "evidence.canonical-calendar"]
+limitations = ["Global system READY does not currently assert calendar-projection readiness."]
+
+[[components]]
+id = "component.canonical-calendar"
+label = "Canonical Calendar"
+kind = "engine"
+logical_area = "data processing and state"
+boundary = "boundary.intelligence"
+implementation_ref = "v2/src/markeitech/intelligence/session.py:CanonicalCalendar"
+responsibilities = ["Evaluate one immutable versioned calendar definition from admitted mcal schedule facts and configured product phases.", "Produce UTC exchange segments, phase windows, trade-date assignments, and bounded projections.", "Record source-cited corrections and the exact admitted terminal-break normalization outcome."]
+semantic_owner = "actor.session-state"
+mutation_owner = "none_current"
+transport_owner = "none_current"
+persistence_owner = "none_current"
+recovery_owner = "none_current"
+projection_owner = "actor.session-state"
+policy_owner = "operator.markeitect"
+implementation_state = "implemented"
+composition_policy = "not_composed"
+temporal_status = "current"
+acceptance_state = "bounded_evidence"
+evidence_certainty = "verified_source"
+failure_isolation = "Pure evaluator owned inside SessionStateActor; ordinary per-calendar projection failures are converted to typed response failures."
+cardinality = "one per active configured calendar ID, owned by SessionStateActor"
+style = "style.component.current"
+profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }]
+evidence = ["evidence.canonical-calendar"]
+limitations = ["mcal authors admitted exchange-schedule facts; Markeitech-defined product phases remain separate configured semantics."]
 
 [[components]]
 id = "actor.evidence-health"
@@ -319,7 +372,7 @@ implementation_ref = "v2/src/markeitech/intelligence/actors.py:EvidenceHealthAct
 composition_key = "evidence_health"
 composition_order = 3
 actor_id = "EVIDENCE-HEALTH"
-responsibilities = ["Evidence Health responsibilities and lifecycle"]
+responsibilities = ["Evaluate observation freshness and availability.", "Consume definition-identified calendar context without owning mcal.", "Use a bounded correlated one-shot projection request lifecycle for startup context."]
 semantic_owner = "actor.evidence-health"
 mutation_owner = "none_current"
 transport_owner = "none_current"
@@ -336,8 +389,8 @@ failure_isolation = "Nautilus actor callback boundary; failure is surfaced accor
 cardinality = "one when composed"
 style = "style.component.current"
 profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }]
-evidence = ["evidence.composition"]
-limitations = []
+evidence = ["evidence.composition", "evidence.calendar-contracts"]
+limitations = ["Calendar projection delivery is local and transient; no replay guarantee is claimed."]
 
 [[components]]
 id = "actor.discord-health"
@@ -442,7 +495,7 @@ implementation_ref = "v2/src/markeitech/intelligence/session_metric_actor.py:Ses
 composition_key = "session_metrics"
 composition_order = 7
 actor_id = "SESSION-METRICS"
-responsibilities = ["Session Metrics responsibilities and lifecycle"]
+responsibilities = ["Converge bounded historical and live bars into completed-bar, session, window, and rolling measurements.", "Consume immutable calendar projections and transitions without instantiating mcal.", "Publish live and historical evidence demands for configured metric capabilities."]
 semantic_owner = "actor.session-metrics"
 mutation_owner = "none_current"
 transport_owner = "none_current"
@@ -460,8 +513,8 @@ failure_isolation = "Nautilus actor callback boundary; failure is surfaced accor
 cardinality = "one when composed"
 style = "style.component.current"
 profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }]
-evidence = ["evidence.composition"]
-limitations = []
+evidence = ["evidence.composition", "evidence.calendar-contracts"]
+limitations = ["The actor retains multiple analytical responsibilities and its approved split remains deferred."]
 
 [[components]]
 id = "actor.session-reference-entities"
@@ -557,6 +610,36 @@ evidence = ["evidence.composition"]
 limitations = []
 
 [[components]]
+id = "actor.historical-planner"
+label = "Historical Evidence Planner"
+kind = "markeitech_actor"
+logical_area = "data processing and state"
+boundary = "boundary.intelligence"
+implementation_ref = "v2/src/markeitech/system/historical_planner.py:HistoricalEvidencePlannerActor"
+composition_key = "historical_evidence_planner"
+composition_order = 11
+actor_id = "HISTORICAL-EVIDENCE-PLANNER"
+responsibilities = ["Resolve semantic historical evidence demands into exact UTC request plans.", "Use immutable canonical-calendar projections for calendar-relative windows.", "Publish exact plans without calling providers or owning provider pacing."]
+semantic_owner = "actor.historical-planner"
+mutation_owner = "none_current"
+transport_owner = "none_current"
+persistence_owner = "none_current"
+recovery_owner = "actor.historical-planner"
+projection_owner = "none_current"
+policy_owner = "operator.markeitect"
+implementation_state = "implemented"
+composition_policy = "always"
+temporal_status = "current"
+acceptance_state = "bounded_evidence"
+evidence_certainty = "verified_source"
+failure_isolation = "Demand rejection, calendar-window deferral, and bounded projection-delivery failure remain local to the planner actor."
+cardinality = "one when composed"
+style = "style.component.current"
+profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }]
+evidence = ["evidence.composition", "evidence.historical-planner", "evidence.calendar-contracts"]
+limitations = ["Recent-completed count windows use completed interval boundaries; they do not guarantee a requested number of traded observations across closures or provider gaps."]
+
+[[components]]
 id = "actor.watchlist"
 label = "Watchlist"
 kind = "markeitech_actor"
@@ -564,7 +647,7 @@ logical_area = "data acquisition"
 boundary = "boundary.acquisition"
 implementation_ref = "v2/src/markeitech/system/watchlist.py:WatchlistActor"
 composition_key = "watchlist"
-composition_order = 11
+composition_order = 12
 actor_id = "WATCHLIST"
 responsibilities = ["Watchlist responsibilities and lifecycle"]
 semantic_owner = "actor.watchlist"
@@ -594,9 +677,9 @@ logical_area = "data acquisition"
 boundary = "boundary.acquisition"
 implementation_ref = "v2/src/markeitech/system/acquisition.py:DataAcquisitionActor"
 composition_key = "data_acquisition"
-composition_order = 12
+composition_order = 13
 actor_id = "DATA-ACQUISITION"
-responsibilities = ["Data Acquisition responsibilities and lifecycle"]
+responsibilities = ["Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.", "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.", "Publish acquisition lifecycle, historical batches, and consumer readiness."]
 semantic_owner = "actor.data-acquisition"
 mutation_owner = "none_current"
 transport_owner = "none_current"
@@ -613,8 +696,8 @@ failure_isolation = "Nautilus actor callback boundary; failure is surfaced accor
 cardinality = "one when composed"
 style = "style.component.current"
 profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }]
-evidence = ["evidence.composition"]
-limitations = []
+evidence = ["evidence.composition", "evidence.historical-contracts"]
+limitations = ["The verified local historical port has one active lane and no provider cancellation mapping."]
 
 [[components]]
 id = "actor.historical-probe"
@@ -624,7 +707,7 @@ logical_area = "data acquisition"
 boundary = "boundary.acquisition"
 implementation_ref = "v2/src/markeitech/system/historical_probe.py:HistoricalDependencyProbeActor"
 composition_key = "historical_dependency_probe:*"
-composition_order = 13
+composition_order = 14
 actor_id = "HISTORICAL-DEPENDENCY-PROBE-*"
 responsibilities = ["Historical Dependency Probe responsibilities and lifecycle"]
 semantic_owner = "actor.historical-probe"
@@ -655,7 +738,7 @@ logical_area = "system and infrastructure"
 boundary = "boundary.system"
 implementation_ref = "v2/src/markeitech/system/native_consumer_probe.py:NativeConsumerProbeActor"
 composition_key = "native_consumer_probe"
-composition_order = 14
+composition_order = 15
 actor_id = "NATIVE-CONSUMER-PROBE"
 responsibilities = ["Native Consumer Probe responsibilities and lifecycle"]
 semantic_owner = "actor.native-consumer-probe"
@@ -686,7 +769,7 @@ logical_area = "system and infrastructure"
 boundary = "boundary.system"
 implementation_ref = "v2/src/markeitech/system/resource_actor.py:RuntimeResourceActor"
 composition_key = "runtime_resources"
-composition_order = 15
+composition_order = 16
 actor_id = "RUNTIME-RESOURCES"
 responsibilities = ["Runtime Resources responsibilities and lifecycle"]
 semantic_owner = "actor.runtime-resources"
@@ -717,7 +800,7 @@ logical_area = "system and infrastructure"
 boundary = "boundary.system"
 implementation_ref = "v2/src/markeitech/system/resource_health_actor.py:RuntimeResourceHealthActor"
 composition_key = "runtime_resource_health"
-composition_order = 16
+composition_order = 17
 actor_id = "RUNTIME-RESOURCE-HEALTH"
 responsibilities = ["Runtime Resource Health responsibilities and lifecycle"]
 semantic_owner = "actor.runtime-resource-health"
@@ -748,7 +831,7 @@ logical_area = "system and infrastructure"
 boundary = "boundary.system"
 implementation_ref = "v2/src/markeitech/system/persistence.py:OperationalPersistenceActor"
 composition_key = "operational_persistence"
-composition_order = 17
+composition_order = 18
 actor_id = "OPERATIONAL-PERSISTENCE"
 responsibilities = ["Operational Persistence responsibilities and lifecycle"]
 semantic_owner = "actor.operational-persistence"
@@ -1512,7 +1595,7 @@ type_name = "markeitech.watchlist.membership"
 schema_version_kind = "explicit contract identity or framework-native type"
 canonical_owner = "actor.watchlist"
 producers = ["actor.watchlist"]
-consumers = ["actor.session-state", "actor.evidence-health"]
+consumers = ["actor.operational-persistence", "actor.discord-health"]
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
 join_key = []
@@ -1534,7 +1617,7 @@ type_name = "markeitech.watchlist.lifecycle"
 schema_version_kind = "explicit contract identity or framework-native type"
 canonical_owner = "actor.watchlist"
 producers = ["actor.watchlist"]
-consumers = ["actor.session-state", "actor.evidence-health"]
+consumers = ["actor.operational-persistence", "actor.discord-health"]
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
 join_key = []
@@ -1554,9 +1637,9 @@ label = "Historical dependency demand"
 transport_kind = "nautilus_signal"
 type_name = "markeitech.historical.dependency_demand"
 schema_version_kind = "explicit contract identity or framework-native type"
-canonical_owner = "actor.session-metrics"
+canonical_owner = "actor.historical-planner"
 producers = ["actor.session-metrics", "actor.historical-probe"]
-consumers = ["actor.data-acquisition"]
+consumers = ["actor.historical-planner"]
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
 join_key = []
@@ -1569,6 +1652,29 @@ reconciliation_policy = "contract owner preserves duplicates, conflicts, revisio
 retention = "transient unless explicitly persisted as an operational fact"
 evidence = ["evidence.historical-contracts"]
 limitations = []
+
+[[contracts]]
+id = "contract.historical-request-plan"
+label = "Exact historical request plan"
+transport_kind = "nautilus_custom_data"
+type_name = "markeitech.historical.request_plan.v1"
+python_symbol = "HistoricalRequestPlan"
+schema_version_kind = "versioned transport identity"
+canonical_owner = "actor.historical-planner"
+producers = ["actor.historical-planner"]
+consumers = ["actor.data-acquisition"]
+parent_contracts = ["contract.historical-demand"]
+identity_fields = ["demand_id", "calendar_id", "calendar_definition_digest", "request.request_id"]
+join_key = ["demand_id", "request.request_id"]
+expected_cardinality = "one exact plan per accepted demand in the current compiler boundary"
+event_clock = "request end and planner timestamp in UTC nanoseconds"
+availability_clock = "planned_at_ns"
+clock_unit = "UTC nanoseconds"
+source_classes = ["verified_source"]
+reconciliation_policy = "DataAcquisitionActor validates scope and resource limits, then queues the exact request without reinterpreting its calendar bounds."
+retention = "transient custom data; operational lifecycle facts may be persisted separately"
+evidence = ["evidence.historical-contracts", "evidence.historical-planner"]
+limitations = ["Plan publication does not prove provider acceptance, delivery, completeness, or connected runtime success."]
 
 [[contracts]]
 id = "contract.historical-execution"
@@ -1637,26 +1743,73 @@ evidence = ["evidence.historical-contracts"]
 limitations = ["One local active historical lane; callback request identity and provider cancellation are not preserved by the verified local port."]
 
 [[contracts]]
-id = "contract.session-state"
-label = "Session state"
-transport_kind = "nautilus_signal"
-type_name = "markeitech.session.state"
-schema_version_kind = "explicit contract identity or framework-native type"
+id = "contract.calendar-transition"
+label = "Canonical calendar transition"
+transport_kind = "nautilus_custom_data"
+type_name = "markeitech.calendar.transition.v1"
+python_symbol = "CalendarTransition"
+schema_version_kind = "versioned transport identity"
 canonical_owner = "actor.session-state"
 producers = ["actor.session-state"]
-consumers = ["actor.evidence-health", "actor.session-metrics"]
+consumers = ["actor.evidence-health", "actor.session-metrics", "actor.historical-planner", "actor.operational-persistence"]
 parent_contracts = []
-identity_fields = ["contract identity", "source identity", "instrument where applicable"]
-join_key = []
-expected_cardinality = "contract-specific and configuration-bounded"
-event_clock = "source-defined or not applicable"
-availability_clock = "local receipt or publication time where represented"
-clock_unit = "UTC nanoseconds where the contract carries instants"
+identity_fields = ["event_id", "calendar_id", "definition_digest", "source", "source_epoch", "revision"]
+join_key = ["calendar_id", "definition_digest", "source_epoch", "revision"]
+expected_cardinality = "initial state and changed state per active calendar, configuration-bounded"
+event_clock = "effective_ts_ns and evaluated_ts_ns"
+availability_clock = "published_ts_ns"
+clock_unit = "UTC nanoseconds"
 source_classes = ["verified_source"]
-reconciliation_policy = "contract owner preserves duplicates, conflicts, revisions, and unknowns according to source contract"
-retention = "transient unless explicitly persisted as an operational fact"
-evidence = ["evidence.intelligence-contracts"]
-limitations = []
+reconciliation_policy = "Consumers accept only the configured calendar definition and current SESSION-STATE source epoch; conflicts remain explicit."
+retention = "transient custom data; accepted transition facts enter bounded operational persistence"
+evidence = ["evidence.calendar-contracts", "evidence.canonical-calendar"]
+limitations = ["A transition is current calendar context, not a historical market observation or analytical conclusion."]
+
+[[contracts]]
+id = "contract.calendar-projection-request"
+label = "Canonical calendar projection request"
+transport_kind = "nautilus_custom_data"
+type_name = "markeitech.calendar.projection.request.v1"
+python_symbol = "CalendarProjectionRequest"
+schema_version_kind = "versioned transport identity"
+canonical_owner = "actor.session-state"
+producers = ["actor.evidence-health", "actor.session-metrics", "actor.historical-planner"]
+consumers = ["actor.session-state"]
+parent_contracts = []
+identity_fields = ["request_id", "requester", "calendar_ids", "start_ns", "end_ns"]
+join_key = ["request_id", "requester"]
+expected_cardinality = "one outstanding request per requester; retries receive new request IDs and remain configuration-bounded"
+event_clock = "requested projection UTC bounds"
+availability_clock = "requested_ts_ns"
+clock_unit = "UTC nanoseconds"
+source_classes = ["verified_source"]
+reconciliation_policy = "SessionStateActor validates request bounds and calendar count before constructing each requested projection."
+retention = "transient custom data"
+evidence = ["evidence.calendar-contracts"]
+limitations = ["Request publication has no replay guarantee and is not readiness acceptance."]
+
+[[contracts]]
+id = "contract.calendar-projection-response"
+label = "Canonical calendar projection response"
+transport_kind = "nautilus_custom_data"
+type_name = "markeitech.calendar.projection.response.v2"
+python_symbol = "CalendarProjectionResponse"
+schema_version_kind = "versioned transport identity with typed per-calendar failure accounting"
+canonical_owner = "actor.session-state"
+producers = ["actor.session-state"]
+consumers = ["actor.evidence-health", "actor.session-metrics", "actor.historical-planner"]
+parent_contracts = ["contract.calendar-projection-request"]
+identity_fields = ["request_id", "requester", "source", "source_epoch", "requested_calendar_ids"]
+join_key = ["request_id", "requester"]
+expected_cardinality = "one response accounts for every requested calendar exactly once as projection, unavailable, or failure"
+event_clock = "projection coverage and generated_ts_ns"
+availability_clock = "generated_ts_ns"
+clock_unit = "UTC nanoseconds"
+source_classes = ["verified_source"]
+reconciliation_policy = "Consumers correlate exact request/source/epoch, verify definition digest and coverage, retain successful calendars, and retry only explicitly retryable unresolved outcomes within configured attempt and elapsed bounds."
+retention = "transient custom data"
+evidence = ["evidence.calendar-contracts", "evidence.canonical-calendar"]
+limitations = ["No startup replay guarantee; ordinary construction failures are typed, but publication or BaseException failures are not converted into successful delivery."]
 
 [[contracts]]
 id = "contract.evidence-health"
@@ -2379,68 +2532,164 @@ evidence = ["evidence.composition"]
 limitations = []
 
 [[edges]]
-id = "edge.watchlist-membership-session"
-source = "actor.watchlist"
+id = "edge.calendar-request-health"
+source = "actor.evidence-health"
 target = "actor.session-state"
-category = "publication"
-contract = "contract.watchlist-membership"
-transport = "nautilus_signal"
-correlation = "contract identity plus explicit source/instrument/request identity where verified"
+category = "query"
+contract = "contract.calendar-projection-request"
+transport = "nautilus_custom_data"
+correlation = "request_id plus requester plus current source epoch"
 sync_semantics = "verified_async"
-delivery_claim = "delivery.signal-local"
-authority_direction = "source publishes or commands; canonical ownership remains declared on the contract"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Evidence Health requests context; Session State retains calendar authority."
 required = true
 style = "style.edge.data"
-evidence = ["evidence.composition"]
-limitations = []
+evidence = ["evidence.calendar-contracts"]
+limitations = ["Bounded local retry has no replay guarantee."]
 
 [[edges]]
-id = "edge.watchlist-lifecycle-health"
-source = "actor.watchlist"
+id = "edge.calendar-response-health"
+source = "actor.session-state"
 target = "actor.evidence-health"
-category = "publication"
-contract = "contract.watchlist-lifecycle"
-transport = "nautilus_signal"
-correlation = "contract identity plus explicit source/instrument/request identity where verified"
+category = "response"
+contract = "contract.calendar-projection-response"
+transport = "nautilus_custom_data"
+correlation = "request_id plus requester plus source plus source_epoch"
 sync_semantics = "verified_async"
-delivery_claim = "delivery.signal-local"
-authority_direction = "source publishes or commands; canonical ownership remains declared on the contract"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Session State supplies definition-identified context; Evidence Health does not redefine it."
 required = true
 style = "style.edge.data"
-evidence = ["evidence.composition"]
+evidence = ["evidence.calendar-contracts"]
 limitations = []
 
 [[edges]]
-id = "edge.session-state-health"
+id = "edge.calendar-request-metrics"
+source = "actor.session-metrics"
+target = "actor.session-state"
+category = "query"
+contract = "contract.calendar-projection-request"
+transport = "nautilus_custom_data"
+correlation = "request_id plus requester plus current source epoch"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Session Metrics requests context; Session State retains calendar authority."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.calendar-contracts"]
+limitations = ["Bounded local retry has no replay guarantee."]
+
+[[edges]]
+id = "edge.calendar-response-metrics"
+source = "actor.session-state"
+target = "actor.session-metrics"
+category = "response"
+contract = "contract.calendar-projection-response"
+transport = "nautilus_custom_data"
+correlation = "request_id plus requester plus source plus source_epoch"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Session State supplies definition-identified projections; Session Metrics consumes immutable views."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.calendar-contracts"]
+limitations = []
+
+[[edges]]
+id = "edge.calendar-request-planner"
+source = "actor.historical-planner"
+target = "actor.session-state"
+category = "query"
+contract = "contract.calendar-projection-request"
+transport = "nautilus_custom_data"
+correlation = "request_id plus requester plus current source epoch"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Historical Planner requests context; Session State retains calendar authority."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.calendar-contracts", "evidence.historical-planner"]
+limitations = ["Bounded local retry has no replay guarantee."]
+
+[[edges]]
+id = "edge.calendar-response-planner"
+source = "actor.session-state"
+target = "actor.historical-planner"
+category = "response"
+contract = "contract.calendar-projection-response"
+transport = "nautilus_custom_data"
+correlation = "request_id plus requester plus source plus source_epoch"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Session State supplies definition-identified projections; Historical Planner resolves exact request bounds."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.calendar-contracts", "evidence.historical-planner"]
+limitations = []
+
+[[edges]]
+id = "edge.calendar-transition-health"
 source = "actor.session-state"
 target = "actor.evidence-health"
 category = "publication"
-contract = "contract.session-state"
-transport = "nautilus_signal"
-correlation = "contract identity plus explicit source/instrument/request identity where verified"
+contract = "contract.calendar-transition"
+transport = "nautilus_custom_data"
+correlation = "calendar_id plus definition_digest plus source_epoch plus revision"
 sync_semantics = "verified_async"
-delivery_claim = "delivery.signal-local"
-authority_direction = "source publishes or commands; canonical ownership remains declared on the contract"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Session State publishes canonical temporal context."
 required = true
 style = "style.edge.data"
-evidence = ["evidence.composition"]
+evidence = ["evidence.calendar-contracts"]
 limitations = []
 
 [[edges]]
-id = "edge.session-state-metrics"
+id = "edge.calendar-transition-metrics"
 source = "actor.session-state"
 target = "actor.session-metrics"
 category = "publication"
-contract = "contract.session-state"
-transport = "nautilus_signal"
-correlation = "contract identity plus explicit source/instrument/request identity where verified"
+contract = "contract.calendar-transition"
+transport = "nautilus_custom_data"
+correlation = "calendar_id plus definition_digest plus source_epoch plus revision"
 sync_semantics = "verified_async"
-delivery_claim = "delivery.signal-local"
-authority_direction = "source publishes or commands; canonical ownership remains declared on the contract"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Session State publishes canonical temporal context."
 required = true
 style = "style.edge.data"
-evidence = ["evidence.composition"]
+evidence = ["evidence.calendar-contracts"]
 limitations = []
+
+[[edges]]
+id = "edge.calendar-transition-planner"
+source = "actor.session-state"
+target = "actor.historical-planner"
+category = "publication"
+contract = "contract.calendar-transition"
+transport = "nautilus_custom_data"
+correlation = "calendar_id plus definition_digest plus source_epoch plus revision"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Session State publishes canonical temporal context."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.calendar-contracts", "evidence.historical-planner"]
+limitations = []
+
+[[edges]]
+id = "edge.calendar-transition-persistence"
+source = "actor.session-state"
+target = "actor.operational-persistence"
+category = "persistence"
+contract = "contract.calendar-transition"
+transport = "nautilus_custom_data"
+correlation = "event_id plus source_epoch plus revision"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Operational persistence records the transition fact without becoming calendar authority."
+required = true
+style = "style.edge.persistence"
+evidence = ["evidence.calendar-contracts", "evidence.persistence"]
+limitations = ["Projection payloads and raw schedules are not persisted."]
 
 [[edges]]
 id = "edge.analytical-demand"
@@ -2459,9 +2708,9 @@ evidence = ["evidence.composition"]
 limitations = []
 
 [[edges]]
-id = "edge.historical-demand"
+id = "edge.historical-demand-planner"
 source = "actor.session-metrics"
-target = "actor.data-acquisition"
+target = "actor.historical-planner"
 category = "query"
 contract = "contract.historical-demand"
 transport = "nautilus_signal"
@@ -2471,8 +2720,24 @@ delivery_claim = "delivery.signal-local"
 authority_direction = "source publishes or commands; canonical ownership remains declared on the contract"
 required = true
 style = "style.edge.data"
-evidence = ["evidence.composition"]
+evidence = ["evidence.historical-planner"]
 limitations = []
+
+[[edges]]
+id = "edge.historical-plan-acquisition"
+source = "actor.historical-planner"
+target = "actor.data-acquisition"
+category = "publication"
+contract = "contract.historical-request-plan"
+transport = "nautilus_custom_data"
+correlation = "demand_id plus request.request_id plus calendar_definition_digest"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Historical Planner owns calendar-bound resolution; Data Acquisition owns provider execution."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.historical-planner", "evidence.historical-contracts"]
+limitations = ["Plan delivery does not prove provider acceptance or complete observations."]
 
 [[edges]]
 id = "edge.native-historical-request"
@@ -2531,23 +2796,6 @@ source = "actor.data-acquisition"
 target = "actor.session-metrics"
 category = "readiness"
 contract = "contract.historical-readiness"
-transport = "nautilus_signal"
-correlation = "contract identity plus explicit source/instrument/request identity where verified"
-sync_semantics = "verified_async"
-delivery_claim = "delivery.signal-local"
-enablement_condition = "metrics.session_measurements.enabled"
-authority_direction = "source publishes or commands; canonical ownership remains declared on the contract"
-required = true
-style = "style.edge.data"
-evidence = ["evidence.historical-contracts"]
-limitations = []
-
-[[edges]]
-id = "edge.historical-release"
-source = "actor.session-metrics"
-target = "actor.data-acquisition"
-category = "release"
-contract = "contract.historical-execution"
 transport = "nautilus_signal"
 correlation = "contract identity plus explicit source/instrument/request identity where verified"
 sync_semantics = "verified_async"
@@ -3132,8 +3380,8 @@ explicit_tombstones = []
 include_temporal_status = ["current"]
 include_implementation_state = ["implemented", "external"]
 include_profile_enablement = ["enabled", "not_applicable"]
-explicit_components = ["component.live-node", "component.data-engine", "component.cache", "provider.interactive-brokers", "actor.system-control", "actor.session-state", "actor.evidence-health", "actor.visual-debug", "actor.session-metrics", "actor.watchlist", "actor.data-acquisition", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "projection.visual-files", "operator.markeitect"]
-explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.data-engine-metric-bars", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-status-system", "edge.acquisition-stream-health", "edge.watchlist-membership-session", "edge.watchlist-lifecycle-health", "edge.session-state-health", "edge.session-state-metrics", "edge.analytical-demand", "edge.historical-demand", "edge.native-historical-request", "edge.historical-provider-response", "edge.historical-batch", "edge.historical-readiness", "edge.historical-release", "edge.completed-bars-visual", "edge.metrics-visual", "edge.visual-files", "edge.visual-review", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure"]
+explicit_components = ["component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "actor.system-control", "actor.session-state", "actor.evidence-health", "actor.visual-debug", "actor.session-metrics", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "projection.visual-files", "operator.markeitect"]
+explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.data-engine-metric-bars", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-status-system", "edge.acquisition-stream-health", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-metrics", "edge.calendar-response-metrics", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-metrics", "edge.calendar-transition-planner", "edge.calendar-transition-persistence", "edge.analytical-demand", "edge.historical-demand-planner", "edge.historical-plan-acquisition", "edge.native-historical-request", "edge.historical-provider-response", "edge.historical-batch", "edge.historical-readiness", "edge.completed-bars-visual", "edge.metrics-visual", "edge.visual-files", "edge.visual-review", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure"]
 direction = "left_to_right"
 layout_engine = "dot"
 routing = "spline"
@@ -3143,7 +3391,7 @@ theme = "style.theme"
 accessibility_companion_required = true
 no_execution_banner = true
 max_nodes = 20
-max_edges = 36
+max_edges = 44
 max_cluster_depth = 2
 target_width_px = 4600
 target_height_px = 3200
@@ -3157,11 +3405,11 @@ label = "Complete Component and Capability Inventory"
 kind = "complete_inventory"
 purpose = "Show implemented, conditional, disabled, external, and future components without implying runtime flow."
 profile = "profile.v3-es-minimal"
-explicit_tombstones = ["tombstone.visual-acceptance-actor", "tombstone.live-evidence-review-actor"]
+explicit_tombstones = ["tombstone.visual-acceptance-actor", "tombstone.live-evidence-review-actor", "tombstone.legacy-session-state-contract", "tombstone.direct-historical-demand-edge", "tombstone.historical-release-edge"]
 include_temporal_status = ["current", "historical", "future"]
 include_implementation_state = ["implemented", "external", "removed", "rejected", "future"]
 include_profile_enablement = ["enabled", "disabled", "not_applicable", "unknown"]
-explicit_components = ["actor.system-control", "actor.session-state", "actor.evidence-health", "actor.discord-health", "actor.visual-debug", "actor.quote-quality", "actor.session-metrics", "actor.session-reference-entities", "actor.market-state-entities", "actor.market-structure-entities", "actor.watchlist", "actor.data-acquisition", "actor.historical-probe", "actor.native-consumer-probe", "actor.runtime-resources", "actor.runtime-resource-health", "actor.operational-persistence", "component.live-node", "component.data-engine", "component.cache", "provider.interactive-brokers", "queue.persistence", "worker.persistence", "store.postgres", "queue.discord", "worker.discord", "projection.discord", "projection.visual-files", "operator.markeitect", "future.semantic-events", "future.opportunities", "future.sir-loke", "future.controlled-execution"]
+explicit_components = ["actor.system-control", "actor.session-state", "actor.evidence-health", "actor.discord-health", "actor.visual-debug", "actor.quote-quality", "actor.session-metrics", "actor.session-reference-entities", "actor.market-state-entities", "actor.market-structure-entities", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.historical-probe", "actor.native-consumer-probe", "actor.runtime-resources", "actor.runtime-resource-health", "actor.operational-persistence", "component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "queue.persistence", "worker.persistence", "store.postgres", "queue.discord", "worker.discord", "projection.discord", "projection.visual-files", "operator.markeitect", "future.semantic-events", "future.opportunities", "future.sir-loke", "future.controlled-execution"]
 explicit_edges = []
 direction = "top_to_bottom"
 layout_engine = "dot"
@@ -3191,8 +3439,8 @@ explicit_tombstones = []
 include_temporal_status = ["current"]
 include_implementation_state = ["implemented", "external"]
 include_profile_enablement = ["enabled", "not_applicable"]
-explicit_components = ["provider.interactive-brokers", "component.data-engine", "component.cache", "actor.watchlist", "actor.data-acquisition", "actor.session-metrics", "actor.session-state", "actor.evidence-health"]
-explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.data-engine-metric-bars", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-stream-health", "edge.historical-demand", "edge.native-historical-request", "edge.historical-provider-response", "edge.historical-batch", "edge.historical-readiness", "edge.historical-release", "edge.session-state-health", "edge.session-state-metrics"]
+explicit_components = ["provider.interactive-brokers", "component.data-engine", "component.cache", "component.canonical-calendar", "actor.watchlist", "actor.data-acquisition", "actor.historical-planner", "actor.session-metrics", "actor.session-state", "actor.evidence-health"]
+explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.data-engine-metric-bars", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-stream-health", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-metrics", "edge.calendar-response-metrics", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-metrics", "edge.calendar-transition-planner", "edge.historical-demand-planner", "edge.historical-plan-acquisition", "edge.native-historical-request", "edge.historical-provider-response", "edge.historical-batch", "edge.historical-readiness"]
 direction = "left_to_right"
 layout_engine = "dot"
 routing = "spline"
@@ -3202,7 +3450,7 @@ theme = "style.theme"
 accessibility_companion_required = true
 no_execution_banner = true
 max_nodes = 12
-max_edges = 20
+max_edges = 28
 max_cluster_depth = 2
 target_width_px = 2000
 target_height_px = 1900
@@ -3220,8 +3468,8 @@ explicit_tombstones = []
 include_temporal_status = ["current"]
 include_implementation_state = ["implemented"]
 include_profile_enablement = ["enabled", "disabled"]
-explicit_components = ["component.data-engine", "actor.watchlist", "actor.session-state", "actor.evidence-health", "actor.quote-quality", "actor.session-metrics", "actor.session-reference-entities", "actor.market-state-entities", "actor.market-structure-entities", "actor.visual-debug"]
-explicit_edges = ["edge.data-engine-metric-bars", "edge.watchlist-membership-session", "edge.watchlist-lifecycle-health", "edge.session-state-health", "edge.session-state-metrics", "edge.completed-bars-visual", "edge.metrics-visual", "edge.completed-bars-session-entities", "edge.metrics-market-state", "edge.metrics-market-structure", "edge.recency-profile", "edge.health-snapshot-request", "edge.health-snapshot"]
+explicit_components = ["component.data-engine", "component.canonical-calendar", "actor.watchlist", "actor.session-state", "actor.evidence-health", "actor.quote-quality", "actor.session-metrics", "actor.historical-planner", "actor.session-reference-entities", "actor.market-state-entities", "actor.market-structure-entities", "actor.visual-debug"]
+explicit_edges = ["edge.data-engine-metric-bars", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-metrics", "edge.calendar-response-metrics", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-metrics", "edge.calendar-transition-planner", "edge.completed-bars-visual", "edge.metrics-visual", "edge.completed-bars-session-entities", "edge.metrics-market-state", "edge.metrics-market-structure", "edge.recency-profile", "edge.health-snapshot-request", "edge.health-snapshot"]
 direction = "left_to_right"
 layout_engine = "dot"
 routing = "spline"
@@ -3231,7 +3479,7 @@ theme = "style.theme"
 accessibility_companion_required = true
 no_execution_banner = true
 max_nodes = 14
-max_edges = 18
+max_edges = 24
 max_cluster_depth = 2
 target_width_px = 3350
 target_height_px = 1500
@@ -3249,8 +3497,8 @@ explicit_tombstones = []
 include_temporal_status = ["current"]
 include_implementation_state = ["implemented", "external"]
 include_profile_enablement = ["enabled", "disabled", "not_applicable"]
-explicit_components = ["actor.system-control", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "actor.discord-health", "queue.discord", "worker.discord", "projection.discord", "actor.visual-debug", "projection.visual-files", "operator.markeitect"]
-explicit_edges = ["edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure", "edge.system-health-discord", "edge.discord-queue", "edge.discord-worker", "edge.discord-external", "edge.visual-files", "edge.visual-review"]
+explicit_components = ["actor.system-control", "actor.session-state", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "actor.discord-health", "queue.discord", "worker.discord", "projection.discord", "actor.visual-debug", "projection.visual-files", "operator.markeitect"]
+explicit_edges = ["edge.calendar-transition-persistence", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure", "edge.system-health-discord", "edge.discord-queue", "edge.discord-worker", "edge.discord-external", "edge.visual-files", "edge.visual-review"]
 direction = "left_to_right"
 layout_engine = "dot"
 routing = "spline"
@@ -3317,6 +3565,38 @@ removed_at_commit = "c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce"
 evidence = ["evidence.current-status"]
 limitations = ["Historical only; never current runtime behavior."]
 
+[[tombstones]]
+id = "tombstone.legacy-session-state-contract"
+label = "Legacy SessionStateEvent signal"
+former_kind = "contract"
+former_boundary = "boundary.intelligence"
+disposition = "removed"
+removed_at_commit = "b09e7ddf75b730f23aefa4c263d64b5dc3961979"
+replacement = "contract.calendar-transition"
+evidence = ["evidence.current-status", "evidence.calendar-contracts"]
+limitations = ["Historical identity only; current consumers use definition-identified calendar custom data."]
+
+[[tombstones]]
+id = "tombstone.direct-historical-demand-edge"
+label = "Direct Session Metrics to Data Acquisition historical demand"
+former_kind = "edge"
+former_boundary = "boundary.acquisition"
+disposition = "removed"
+removed_at_commit = "b09e7ddf75b730f23aefa4c263d64b5dc3961979"
+replacement = "edge.historical-demand-planner"
+evidence = ["evidence.current-status", "evidence.historical-planner"]
+limitations = ["Historical topology only; Data Acquisition now receives exact plans rather than semantic calendar-relative demand."]
+
+[[tombstones]]
+id = "tombstone.historical-release-edge"
+label = "Session Metrics historical execution release"
+former_kind = "edge"
+former_boundary = "boundary.acquisition"
+disposition = "removed"
+removed_at_commit = "b09e7ddf75b730f23aefa4c263d64b5dc3961979"
+evidence = ["evidence.historical-contracts", "evidence.historical-planner"]
+limitations = ["No current SessionMetricsActor publication implements this former represented edge."]
+
 [[authority_conflicts]]
 id = "conflict.persistence-readiness-docs"
 label = "Persistence-readiness implementation and documentation mismatch"
@@ -3325,3 +3605,14 @@ evidence = ["evidence.current-status", "evidence.persistence"]
 required_decision = "Represent the implemented application-level request/response handshake and retain this visible limitation until current-status wording is reconciled."
 status = "accepted_diagram_treatment_pending_document_reconciliation"
 limitations = ["Does not establish PostgreSQL internal readiness, durability, restore acceptance, or connected-run success."]
+
+[[drift_exceptions]]
+id = "exception.calendar-merge-generated-artifacts"
+rule = "Defer required post-merge diagram validation, complete artifact regeneration, diagram tests, and visual review."
+affected_paths = ["docs/architecture/generated/system-dataflow"]
+affected_ids = ["view.current-runtime", "view.complete-inventory", "view.provider-canonical-data", "view.metrics-entities-intelligence", "view.persistence-audit-projections", "view.future-governed-boundaries"]
+reason = "Markeitect explicitly instructed this merge not to regenerate the derived directory, not to run the diagram validation or tests, and not to review regenerated views."
+owner = "Markeitect"
+approval_reference = "Markeitect instruction in the 2026-08-30 calendar merge task"
+removal_condition = "Run the documented validation, complete-set generation, diagram tests, and visual review against this canonical manifest in a separately approved batch, then remove this exception."
+evidence = ["evidence.current-status", "evidence.composition", "evidence.calendar-contracts", "evidence.historical-planner"]

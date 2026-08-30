@@ -17,7 +17,7 @@ from markeitech.intelligence import (
     resolve_analytical_window,
     resolve_historical_analytical_window,
 )
-from markeitech.intelligence.session import SessionSnapshot, SessionWindow
+from markeitech.intelligence.session import CanonicalSessionSnapshot, SessionWindow
 
 MINUTE_NS = 60 * 1_000_000_000
 
@@ -85,15 +85,19 @@ def test_historical_window_uses_request_session_identity() -> None:
     session = SessionWindow(date(2026, 8, 20), "OPEN", 0, 1_380 * MINUTE_NS)
 
     class Calendar:
-        def evaluate(self, _timestamp_ns: int) -> SessionSnapshot:
-            return SessionSnapshot(
+        def evaluate(self, _timestamp_ns: int) -> CanonicalSessionSnapshot:
+            return CanonicalSessionSnapshot(
                 calendar_id="cme_equity",
                 schedule_version="test",
-                timezone="UTC",
+                definition_version=1,
+                definition_digest="digest",
+                calendar_engine_version="test",
+                exchange_timezone="UTC",
                 trade_date=session.trade_date,
-                phase=session.phase,
-                phase_open_ns=session.start_ns,
-                phase_close_ns=session.end_ns,
+                phase_memberships=(session.phase,),
+                market_state="OPEN",
+                segment_open_ns=session.start_ns,
+                segment_close_ns=session.end_ns,
                 next_transition_ns=session.end_ns,
             )
 

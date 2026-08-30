@@ -23,6 +23,15 @@ from markeitech.intelligence import (
     MetricHealth,
     MetricValue,
 )
+from markeitech.intelligence.actors import SessionStateActor
+from markeitech.intelligence.calendar_messages import (
+    CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
+    CALENDAR_PROJECTION_RESPONSE_TYPE_NAME,
+    CALENDAR_TRANSITION_TYPE_NAME,
+    CalendarProjectionRequest,
+    CalendarProjectionResponse,
+    CalendarTransition,
+)
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STATUS_SIGNAL,
@@ -45,6 +54,11 @@ market_state_received = Event()
 received_entity_revisions: list[EntityRevision] = []
 snapshot_received = Event()
 received_entity_snapshots: list[EntitySnapshotResponse] = []
+calendar_received = Event()
+received_calendar_transitions: list[CalendarTransition] = []
+received_calendar_projections: list[CalendarProjectionResponse] = []
+projection_requests_complete = Event()
+received_projection_requests: list[CalendarProjectionRequest] = []
 
 
 class PersistenceReadyFixtureConfig(DataActorConfig):
@@ -71,6 +85,48 @@ class PersistenceReadyFixture(DataActor):
             run_id="36a468b3-df4b-49fa-809e-c60e8d19d9a0",
         )
         self.publish_signal(PERSISTENCE_READY_SIGNAL, event.to_signal_value())
+
+
+class CalendarProjectionRequestCaptureConfig(DataActorConfig):
+    def __new__(
+        cls,
+        expected_requesters: list[str],
+        target_per_requester: int,
+        actor_id: str | ActorId = "CALENDAR-PROJECTION-REQUEST-CAPTURE",
+    ) -> CalendarProjectionRequestCaptureConfig:
+        resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
+        obj = super().__new__(cls, actor_id=resolved)
+        obj.expected_requesters = tuple(expected_requesters)
+        obj.target_per_requester = target_per_requester
+        return obj
+
+
+class CalendarProjectionRequestCapture(DataActor):
+    def __init__(self, config: CalendarProjectionRequestCaptureConfig) -> None:
+        super().__init__(config)
+        self._expected_requesters = config.expected_requesters
+        self._target_per_requester = config.target_per_requester
+        self._request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
+
+    def on_start(self) -> None:
+        self.subscribe_data(self._request_type)
+
+    def on_data(self, data) -> None:  # noqa: ANN001
+        payload = data.data if isinstance(data, CustomData) else data
+        if not isinstance(payload, CalendarProjectionRequest):
+            return
+        received_projection_requests.append(payload)
+        counts = {
+            requester: sum(
+                item.requester == requester for item in received_projection_requests
+            )
+            for requester in self._expected_requesters
+        }
+        if all(value >= self._target_per_requester for value in counts.values()):
+            projection_requests_complete.set()
+
+    def on_stop(self) -> None:
+        self.unsubscribe_data(self._request_type)
 
 
 class HealthSubscriberConfig(DataActorConfig):
@@ -142,6 +198,146 @@ class AcquisitionReadyFixture(DataActor):
             available_instrument_ids=self._instrument_ids,
         )
         self.publish_signal(ACQUISITION_STATUS_SIGNAL, event.to_signal_value())
+
+
+class CalendarProjectionProbeConfig(DataActorConfig):
+    def __new__(
+        cls,
+        calendar_id: str,
+        projection_days: int = 1,
+        actor_id: str | ActorId = "CALENDAR-PROJECTION-PROBE",
+    ) -> CalendarProjectionProbeConfig:
+        resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
+        obj = super().__new__(cls, actor_id=resolved)
+        obj.calendar_id = calendar_id
+        obj.projection_days = projection_days
+        return obj
+
+
+class CalendarProjectionProbe(DataActor):
+    def __init__(self, config: CalendarProjectionProbeConfig) -> None:
+        super().__init__(config)
+        self._calendar_id = config.calendar_id
+        self._projection_days = config.projection_days
+        self._request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
+        self._response_type = DataType(CALENDAR_PROJECTION_RESPONSE_TYPE_NAME)
+        self._transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
+        self._requested = False
+
+    def on_start(self) -> None:
+        self.subscribe_data(self._response_type)
+        self.subscribe_data(self._transition_type)
+
+    def on_data(self, data) -> None:  # noqa: ANN001
+        payload = data.data if isinstance(data, CustomData) else data
+        if isinstance(payload, CalendarTransition):
+            received_calendar_transitions.append(payload)
+            if self._requested or payload.calendar_id != self._calendar_id:
+                return
+            self._requested = True
+            now_ns = self.clock.timestamp_ns()
+            request = CalendarProjectionRequest(
+                request_id="calendar-projection-message-fixture",
+                requester=str(self.actor_id),
+                calendar_ids=(self._calendar_id,),
+                start_ns=max(0, now_ns - self._projection_days * 86_400_000_000_000),
+                end_ns=now_ns + self._projection_days * 86_400_000_000_000,
+                requested_ts_ns=now_ns,
+            )
+            self.publish_data(
+                self._request_type,
+                CustomData(self._request_type, request),
+            )
+        elif isinstance(payload, CalendarProjectionResponse):
+            if payload.requester != str(self.actor_id):
+                return
+            received_calendar_projections.append(payload)
+            calendar_received.set()
+
+    def on_stop(self) -> None:
+        self.unsubscribe_data(self._response_type)
+        self.unsubscribe_data(self._transition_type)
+
+
+class MultiCalendarProjectionProbeConfig(DataActorConfig):
+    def __new__(
+        cls,
+        calendar_ids: list[str],
+        projection_days: int,
+        actor_id: str | ActorId = "CALENDAR-PROJECTION-PROBE",
+    ) -> MultiCalendarProjectionProbeConfig:
+        resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
+        obj = super().__new__(cls, actor_id=resolved)
+        obj.calendar_ids = tuple(calendar_ids)
+        obj.projection_days = projection_days
+        return obj
+
+
+class MultiCalendarProjectionProbe(DataActor):
+    def __init__(self, config: MultiCalendarProjectionProbeConfig) -> None:
+        super().__init__(config)
+        self._calendar_ids = config.calendar_ids
+        self._projection_days = config.projection_days
+        self._request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
+        self._response_type = DataType(CALENDAR_PROJECTION_RESPONSE_TYPE_NAME)
+        self._transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
+        self._requested = False
+
+    def on_start(self) -> None:
+        self.subscribe_data(self._response_type)
+        self.subscribe_data(self._transition_type)
+
+    def on_data(self, data) -> None:  # noqa: ANN001
+        payload = data.data if isinstance(data, CustomData) else data
+        if isinstance(payload, CalendarTransition):
+            if self._requested or payload.calendar_id not in self._calendar_ids:
+                return
+            self._requested = True
+            now_ns = self.clock.timestamp_ns()
+            request = CalendarProjectionRequest(
+                request_id="multi-calendar-projection-message-fixture",
+                requester=str(self.actor_id),
+                calendar_ids=self._calendar_ids,
+                start_ns=max(0, now_ns - self._projection_days * 86_400_000_000_000),
+                end_ns=now_ns + self._projection_days * 86_400_000_000_000,
+                requested_ts_ns=now_ns,
+            )
+            self.publish_data(
+                self._request_type,
+                CustomData(self._request_type, request),
+            )
+        elif isinstance(payload, CalendarProjectionResponse):
+            if payload.requester != str(self.actor_id):
+                return
+            received_calendar_projections.append(payload)
+            calendar_received.set()
+
+    def on_stop(self) -> None:
+        self.unsubscribe_data(self._response_type)
+        self.unsubscribe_data(self._transition_type)
+
+
+class _LongRangeFailingProvider:
+    def __init__(self, delegate) -> None:  # noqa: ANN001
+        self._delegate = delegate
+
+    def schedule(self, **kwargs):  # noqa: ANN003, ANN201
+        start = date.fromisoformat(str(kwargs["start_date"]))
+        end = date.fromisoformat(str(kwargs["end_date"]))
+        if (end - start).days > 10:
+            raise ValueError("injected projection construction failure")
+        return self._delegate.schedule(**kwargs)
+
+
+class FailingProjectionSessionStateActor(SessionStateActor):
+    def __init__(self, config) -> None:  # noqa: ANN001
+        super().__init__(config)
+        calendar = self._calendars["cme_equity"]
+        object.__setattr__(
+            calendar,
+            "_provider",
+            _LongRangeFailingProvider(calendar._provider),
+        )
 
 
 class EntityMetricPublisherConfig(DataActorConfig):

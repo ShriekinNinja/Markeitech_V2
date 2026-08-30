@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored v2/.env.
 
-schema_version = 18
+schema_version = 21
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -113,103 +113,18 @@ priority = 10
 
 [sessions]
 evaluation_interval_ms = 1000
+projection_lookback_days = 120
+projection_lookahead_days = 14
+maximum_projection_days = 400
+maximum_calendars_per_request = 8
+calendar_catalog = "market-calendars.toml"
+calendar_ids = ["cboe_spxw", "us_equities", "cme_equity", "cbot_equity", "cme_energy"]
 
-[[sessions.calendars]]
-calendar_id = "cboe_spxw"
-provider_calendar = "CBOE_Index_Options"
-timezone = "America/New_York"
-schedule_version = "cboe-2026.1"
-
-[[sessions.calendars.phases]]
-name = "GTH"
-start = "20:15"
-end = "09:25"
-start_day_offset = -1
-
-[[sessions.calendars.phases]]
-name = "RTH"
-start = "09:30"
-end = "16:15"
-start_day_offset = 0
-
-[[sessions.calendars.phases]]
-name = "CURB"
-start = "16:15"
-end = "17:00"
-start_day_offset = 0
-
-[[sessions.calendars.overrides]]
-trade_date = "2026-01-19"
-phase = "GTH"
-start = "20:15"
-end = "11:30"
-start_day_offset = -1
-
-[[sessions.calendars.overrides]]
-trade_date = "2026-02-16"
-phase = "GTH"
-start = "20:15"
-end = "11:30"
-start_day_offset = -1
-
-[[sessions.calendars.overrides]]
-trade_date = "2026-05-25"
-phase = "GTH"
-start = "20:15"
-end = "11:30"
-start_day_offset = -1
-
-[[sessions.calendars.overrides]]
-trade_date = "2026-06-19"
-phase = "GTH"
-start = "20:15"
-end = "11:30"
-start_day_offset = -1
-
-[[sessions.calendars.overrides]]
-trade_date = "2026-07-03"
-phase = "GTH"
-start = "20:15"
-end = "11:30"
-start_day_offset = -1
-
-[[sessions.calendars.overrides]]
-trade_date = "2026-09-07"
-phase = "GTH"
-start = "20:15"
-end = "11:30"
-start_day_offset = -1
-
-[[sessions.calendars.overrides]]
-trade_date = "2026-11-26"
-phase = "GTH"
-start = "20:15"
-end = "11:30"
-start_day_offset = -1
-
-[[sessions.calendars]]
-calendar_id = "us_equities"
-provider_calendar = "NYSE"
-timezone = "America/New_York"
-schedule_version = "pmc-5.4"
-phases = []
-overrides = []
-
-[[sessions.calendars]]
-calendar_id = "cme_equity"
-provider_calendar = "CME_Equity"
-timezone = "America/New_York"
-schedule_version = "pmc-5.4"
-phases = []
-overrides = []
-
-[[sessions.calendars]]
-calendar_id = "cme_energy"
-provider_calendar = "CMEGlobex_EnergyAndMetals"
-timezone = "America/New_York"
-schedule_version = "pmc-5.4"
-phases = []
-overrides = []
+[sessions.projection_retry]
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
 
 [evidence_health]
 evaluation_interval_ms = 1000
@@ -618,15 +533,15 @@ maximum_output_age_ms = 120000
 profile_id = "cme_equity_primary"
 version = 1
 calendar_id = "cme_equity"
-primary_phase = "OPEN"
+primary_phase = "GLOBEX"
 overnight_enabled = false
-overnight_phase = "OPEN"
+overnight_phase = "GLOBEX"
 volume_supported = true
 
 [[metrics.session_measurements.profiles.windows]]
 window_id = "opening_range_fast"
 purpose = "opening_range"
-anchor_phase = "OPEN"
+anchor_phase = "GLOBEX"
 anchor_boundary = "start"
 offset_seconds = 0
 duration_seconds = 300
@@ -641,7 +556,7 @@ maximum_historical_observations = 5
 [[metrics.session_measurements.profiles.windows]]
 window_id = "opening_range_slow"
 purpose = "opening_range"
-anchor_phase = "OPEN"
+anchor_phase = "GLOBEX"
 anchor_boundary = "start"
 offset_seconds = 0
 duration_seconds = 900
@@ -656,7 +571,7 @@ maximum_historical_observations = 15
 [[metrics.session_measurements.profiles.windows]]
 window_id = "power_hour"
 purpose = "power_hour"
-anchor_phase = "OPEN"
+anchor_phase = "GLOBEX"
 anchor_boundary = "end"
 offset_seconds = -3600
 duration_seconds = 3600
@@ -672,9 +587,19 @@ maximum_historical_observations = 4
 profile_id = "cme_energy_primary"
 version = 1
 calendar_id = "cme_energy"
-primary_phase = "OPEN"
+primary_phase = "GLOBEX"
 overnight_enabled = false
-overnight_phase = "OPEN"
+overnight_phase = "GLOBEX"
+volume_supported = true
+windows = []
+
+[[metrics.session_measurements.profiles]]
+profile_id = "cbot_equity_primary"
+version = 1
+calendar_id = "cbot_equity"
+primary_phase = "GLOBEX"
+overnight_enabled = false
+overnight_phase = "GLOBEX"
 volume_supported = true
 windows = []
 
@@ -682,9 +607,9 @@ windows = []
 profile_id = "us_equity_primary"
 version = 1
 calendar_id = "us_equities"
-primary_phase = "OPEN"
+primary_phase = "EXCHANGE_SESSION"
 overnight_enabled = false
-overnight_phase = "OPEN"
+overnight_phase = "EXCHANGE_SESSION"
 volume_supported = true
 windows = []
 
@@ -692,15 +617,19 @@ windows = []
 profile_id = "us_index_primary"
 version = 1
 calendar_id = "us_equities"
-primary_phase = "OPEN"
+primary_phase = "EXCHANGE_SESSION"
 overnight_enabled = false
-overnight_phase = "OPEN"
+overnight_phase = "EXCHANGE_SESSION"
 volume_supported = false
 windows = []
 
 [[metrics.session_measurements.profile_bindings]]
 profile_id = "cme_equity_primary"
-instrument_ids = ["ESU6.CME", "NQU6.CME", "YMU6.CBOT"]
+instrument_ids = ["ESU6.CME", "NQU6.CME"]
+
+[[metrics.session_measurements.profile_bindings]]
+profile_id = "cbot_equity_primary"
+instrument_ids = ["YMU6.CBOT"]
 
 [[metrics.session_measurements.profile_bindings]]
 profile_id = "cme_energy_primary"
@@ -762,7 +691,7 @@ capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
 instrument_id = "YMU6.CBOT"
-calendar_id = "cme_equity"
+calendar_id = "cbot_equity"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 

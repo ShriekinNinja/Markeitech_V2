@@ -22,6 +22,12 @@ from markeitech.system.discord import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _write_calendar_catalog(tmp_path: Path) -> None:
+    source = Path(__file__).parents[2] / "config/market-calendars.toml"
+    (tmp_path / "market-calendars.toml").write_text(source.read_text())
+
+
 def _config():  # noqa: ANN202
     root = Path(__file__).parents[2]
     return load_system_config(root / "config/system.example.toml")
@@ -44,6 +50,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "discord_health",
         "quote_quality_metrics",
         "session_metrics",
+        "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
         "runtime_resources",
@@ -65,11 +72,15 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "retry_backoff_ms": 500,
         "poll_interval_ms": 100,
     }
-    assert acquisition.config.config["instrument_calendars"]["ESU6.CME"] == "cme_equity"
-    assert {value["calendar_id"] for value in acquisition.config.config["calendars"]} == {
+    assert "instrument_calendars" not in acquisition.config.config
+    assert "calendars" not in acquisition.config.config
+    planner = next(item for item in plan if item.key == "historical_evidence_planner")
+    assert planner.config.config["instrument_calendars"]["ESU6.CME"] == "cme_equity"
+    assert set(planner.config.config["expected_calendar_digests"]) == {
         "cboe_spxw",
         "us_equities",
         "cme_equity",
+        "cbot_equity",
         "cme_energy",
     }
     watchlist = next(item for item in plan if item.key == "watchlist")
@@ -79,7 +90,9 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
             "instrument_id": instrument_id,
             "calendar_id": (
                 "cme_equity"
-                if instrument_id in {"ESU6.CME", "NQU6.CME", "YMU6.CBOT"}
+                if instrument_id in {"ESU6.CME", "NQU6.CME"}
+                else "cbot_equity"
+                if instrument_id == "YMU6.CBOT"
                 else "cme_energy"
                 if instrument_id == "CLV6.NYMEX"
                 else "us_equities"
@@ -152,6 +165,7 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "evidence_health",
         "quote_quality_metrics",
         "session_metrics",
+        "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
         "runtime_resources",
@@ -342,7 +356,7 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
         {
             "window_id": "opening_range_fast",
             "purpose": "opening_range",
-            "anchor_phase": "OPEN",
+            "anchor_phase": "GLOBEX",
             "anchor_boundary": "start",
             "offset_seconds": 0,
             "duration_seconds": 300,
@@ -357,7 +371,7 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
         {
             "window_id": "opening_range_slow",
             "purpose": "opening_range",
-            "anchor_phase": "OPEN",
+            "anchor_phase": "GLOBEX",
             "anchor_boundary": "start",
             "offset_seconds": 0,
             "duration_seconds": 900,
@@ -372,7 +386,7 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
         {
             "window_id": "power_hour",
             "purpose": "power_hour",
-            "anchor_phase": "OPEN",
+            "anchor_phase": "GLOBEX",
             "anchor_boundary": "end",
             "offset_seconds": -3600,
             "duration_seconds": 3600,
