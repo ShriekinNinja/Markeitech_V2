@@ -1,7 +1,7 @@
 # V3-02 SessionStateActor Current-State Delivery Implementation Plan
 
-**Status:** Decisions accepted; Slice 1 implemented and uncommitted for Markeitect review; Slices
-2 through 5 remain unapproved
+**Status:** Decisions accepted; Slice 1 committed as `d71551a`; Slice 2 implemented and uncommitted
+for Markeitect review; Slices 3 through 5 remain unapproved
 
 **Planning branch:** `v3-02-session-state-snapshot-plan`
 
@@ -267,12 +267,14 @@ Each successful `CalendarCurrentState` contains:
 - last transition event ID;
 - source and runtime run UUID;
 - exact `state_effective_from_ns`;
+- the last state revision's own `state_revision_evaluated_as_of_ns` and publication time;
 - common snapshot `evaluated_as_of_ns`; and
-- state publication time.
+- response publication time in the response envelope.
 
 All successful items in one response share the same `evaluated_as_of_ns`. The state-effective
-boundary is not used as snapshot freshness, and evaluation time is never used as a candle or
-historical-request boundary.
+boundary is not used as snapshot freshness. Revision evaluation lineage remains distinct from the
+later snapshot owner-clock cut, and neither evaluation time is used as a candle or historical-
+request boundary.
 
 ### Failure and response
 
@@ -493,7 +495,7 @@ authority change outside this plan.
 
 ### Slice 1: Deactivate the faulty surface
 
-**Implementation status:** Complete for local review on the planning branch; uncommitted
+**Implementation status:** Committed as `d71551a`
 
 Files:
 
@@ -514,6 +516,8 @@ Deliver:
 - no actor deletion, provider action, or local-profile edit.
 
 ### Slice 2: Contracts and pure synchronization
+
+**Implementation status:** Complete for local review on the planning branch; uncommitted
 
 Files:
 
@@ -703,10 +707,10 @@ manufacture evidence for this stage.
 - [x] Markeitect resolved Decisions 1 through 6.
 - [x] V3-01 is closed and the planning branch is based on its accepted commit.
 - [x] Session Metrics, Visual Debug, and dependent Entity Analysis are disabled in tracked profiles.
-- [ ] Transition v2 and snapshot v1 contracts are strict and immutable.
-- [ ] No producer-incarnation or requester-incarnation identity is added.
+- [x] Transition v2 and snapshot v1 contracts are strict and immutable.
+- [x] No producer-incarnation or requester-incarnation identity is added.
 - [ ] Producer uses one owner-clock cut and retains exact state-effective plus evaluated-as-of time.
-- [ ] Pure synchronization state is bounded and framework-independent.
+- [x] Pure synchronization state is bounded and framework-independent.
 - [ ] Evidence Health and Historical Planner adopt it.
 - [ ] The test-only current-state historical-demand probe passes without production composition.
 - [ ] Historical schedule projection and request-plan semantics remain unchanged.
