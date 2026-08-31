@@ -11,6 +11,8 @@ from markeitech.acquisition.historical import (
 
 
 class HistoricalExecutionState(StrEnum):
+    """Provider-request lifecycle states emitted by historical execution."""
+
     QUEUED = "QUEUED"
     SHARED = "SHARED"
     SUBMITTED = "SUBMITTED"
@@ -22,6 +24,8 @@ class HistoricalExecutionState(StrEnum):
 
 
 class HistoricalReadinessState(StrEnum):
+    """Consumer readiness outcomes derived from a terminal historical request."""
+
     READY = "READY"
     DEGRADED = "DEGRADED"
     FAILED = "FAILED"
@@ -30,6 +34,8 @@ class HistoricalReadinessState(StrEnum):
 
 
 class HistoricalExecutionPort(Protocol):
+    """Provider commands required by the historical execution coordinator."""
+
     def submit(self, request: HistoricalRequest) -> None: ...
 
     def cancel(self, request: HistoricalRequest) -> None: ...
@@ -37,6 +43,11 @@ class HistoricalExecutionPort(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class HistoricalExecutionPolicy:
+    """Bound historical queueing, concurrency, timeouts, attempts, and backoff.
+
+    Durations are expressed as nanoseconds.
+    """
+
     maximum_queued_requests: int
     maximum_in_flight_requests: int
     timeout_ns: int
@@ -53,6 +64,8 @@ class HistoricalExecutionPolicy:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalExecutionEvent:
+    """Record one request lifecycle transition at a UTC Unix nanosecond timestamp."""
+
     request_id: str
     state: HistoricalExecutionState
     attempt: int
@@ -62,6 +75,12 @@ class HistoricalExecutionEvent:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalBatch:
+    """Carry one provider response with its request identity and receive time.
+
+    ``received_at_ns`` is a UTC Unix nanosecond timestamp. Observations remain
+    native provider objects and are not made durable by this contract.
+    """
+
     request: HistoricalRequest
     observations: tuple[object, ...]
     received_at_ns: int
@@ -81,6 +100,8 @@ class HistoricalBatch:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalDependencyResult:
+    """State whether one consumer dependency received sufficient observations."""
+
     request_id: str
     dependency: HistoricalDependencyRef
     state: HistoricalReadinessState
@@ -91,6 +112,8 @@ class HistoricalDependencyResult:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalExecutionUpdate:
+    """Collect immutable lifecycle events, batches, and dependency outcomes."""
+
     events: tuple[HistoricalExecutionEvent, ...] = ()
     batches: tuple[HistoricalBatch, ...] = ()
     results: tuple[HistoricalDependencyResult, ...] = ()
@@ -118,7 +141,7 @@ class _ActiveRequest:
 
 
 class HistoricalExecutionError(ValueError):
-    pass
+    """Report invalid or conflicting historical execution state."""
 
 
 class HistoricalExecutionCoordinator:

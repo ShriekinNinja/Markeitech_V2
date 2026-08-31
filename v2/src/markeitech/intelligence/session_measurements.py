@@ -26,12 +26,19 @@ from markeitech.intelligence.metrics import (
 )
 
 COMPLETED_BAR_OPEN_METRIC_ID = "completed_bar.open"
+"""Metric identity for a completed interval's opening price."""
 COMPLETED_BAR_HIGH_METRIC_ID = "completed_bar.high"
+"""Metric identity for a completed interval's highest price."""
 COMPLETED_BAR_LOW_METRIC_ID = "completed_bar.low"
+"""Metric identity for a completed interval's lowest price."""
 COMPLETED_BAR_CLOSE_METRIC_ID = "completed_bar.close"
+"""Metric identity for a completed interval's closing price."""
 COMPLETED_BAR_VOLUME_METRIC_ID = "completed_bar.volume"
+"""Metric identity for a completed interval's supported volume."""
 COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID = "completed_bar.simple_return"
+"""Metric identity for close return from the prior compatible interval."""
 COMPLETED_BAR_TRUE_RANGE_METRIC_ID = "completed_bar.true_range"
+"""Metric identity for true range using a compatible prior close."""
 
 COMPLETED_BAR_METRIC_IDS = (
     COMPLETED_BAR_OPEN_METRIC_ID,
@@ -42,10 +49,13 @@ COMPLETED_BAR_METRIC_IDS = (
     COMPLETED_BAR_SIMPLE_RETURN_METRIC_ID,
     COMPLETED_BAR_TRUE_RANGE_METRIC_ID,
 )
+"""Ordered identities of the completed-bar foundation metric family."""
 
 
 @dataclass(frozen=True, slots=True)
 class CompletedBarCatalogPolicy:
+    """Configure completed-bar inputs, interval envelope, and resource bounds."""
+
     live_selector: str
     historical_selector: str
     historical_window: HistoricalWindow
@@ -116,6 +126,8 @@ class CompletedBarCatalogPolicy:
 def completed_bar_metric_definitions(
     policy: CompletedBarCatalogPolicy,
 ) -> tuple[MetricDefinition, ...]:
+    """Build versioned definitions for the completed-bar foundation metrics."""
+
     if not isinstance(policy, CompletedBarCatalogPolicy):
         raise ValueError("policy must be a CompletedBarCatalogPolicy")
     live_input = CapabilityFeedRequirement(

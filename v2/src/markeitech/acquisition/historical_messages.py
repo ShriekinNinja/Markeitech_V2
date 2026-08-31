@@ -11,11 +11,16 @@ from markeitech.acquisition.demand import HistoricalWindow, RequirementParameter
 from markeitech.acquisition.historical import HistoricalRequest
 
 HISTORICAL_DEPENDENCY_DEMAND_SIGNAL = "markeitech.historical.dependency_demand"
+"""Message-bus signal name for historical dependency demand."""
 HISTORICAL_EXECUTION_SIGNAL = "markeitech.historical.execution"
+"""Message-bus signal name for historical execution lifecycle events."""
 HISTORICAL_READINESS_SIGNAL = "markeitech.historical.readiness"
+"""Message-bus signal name for consumer historical-readiness outcomes."""
 HISTORICAL_SCHEMA_VERSION = 1
 HISTORICAL_BATCH_TYPE_NAME = "MarkeitechHistoricalBatch"
+"""Nautilus custom-data type name for historical observation batches."""
 HISTORICAL_REQUEST_PLAN_TYPE_NAME = "markeitech.historical.request_plan.v1"
+"""Nautilus custom-data type name for calendar-resolved historical plans."""
 
 _EXECUTION_STATES = {
     "QUEUED",
@@ -32,6 +37,11 @@ _READINESS_STATES = {"READY", "DEGRADED", "FAILED", "CANCELED", "EXPIRED"}
 
 @dataclass(frozen=True, slots=True)
 class HistoricalRequestPlan:
+    """Bind one calendar-resolved request to its demand and definition lineage.
+
+    ``planned_at_ns`` and the request time bounds are UTC Unix nanoseconds.
+    """
+
     demand_id: str
     calendar_id: str
     calendar_definition_digest: str
@@ -58,6 +68,8 @@ class HistoricalRequestPlan:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalDependencyDemandEvent:
+    """Serialize one consumer's symbolic historical dependency onto the signal bus."""
+
     demand_id: str
     consumer_id: str
     capability_id: str
@@ -118,6 +130,8 @@ class HistoricalDependencyDemandEvent:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalExecutionEventMessage:
+    """Serialize one historical request lifecycle transition onto the signal bus."""
+
     event_id: str
     request_id: str
     state: str
@@ -167,6 +181,8 @@ class HistoricalExecutionEventMessage:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalReadinessEvent:
+    """Serialize one consumer-specific historical readiness outcome."""
+
     event_id: str
     request_id: str
     consumer_id: str

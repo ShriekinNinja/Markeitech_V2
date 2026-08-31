@@ -126,8 +126,8 @@ system. The preserved V1 status is available in
   surface and produces an untracked MkDocs site at `docs/api` plus sanitized metadata and artifact
   indexes. Its
   versioned denominator currently selects 257 package exports plus one explicit operator entry
-  point, 258 objects in total; 16 selected objects have source docstrings and 242 are reported as
-  missing rather than inferred. Static analysis and rendering deny target imports, dynamic
+  point, 258 objects in total; all 258 selected objects have source docstrings and none are
+  reported as missing. Static analysis and rendering deny target imports, dynamic
   inspection, external inventories, network access, and child processes; the wrapper first uses
   bounded read-only Git queries for source identity. It verifies source stability and publishes
   complete artifact sets atomically. Attribute-registry version 2 approves five bounded

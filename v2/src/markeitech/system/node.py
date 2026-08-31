@@ -60,6 +60,24 @@ def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataC
 
 
 def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites) -> LiveNode:
+    """Construct the configured Nautilus live node without starting it.
+
+    The function creates the configured log directory, registers the IB data
+    client, and composes validated actors. It does not connect to IB or run the
+    node lifecycle.
+
+    Args:
+        config: Validated V2 system configuration.
+        prerequisites: Startup evidence required by actor composition.
+
+    Returns:
+        A fully built but not started Nautilus ``LiveNode``.
+
+    Raises:
+        ValueError: If identifiers, provider settings, or actor prerequisites are invalid.
+        OSError: If the configured logging directory cannot be created.
+    """
+
     config.logging.directory.mkdir(parents=True, exist_ok=True)
     data_config = build_ib_data_client_config(config)
 

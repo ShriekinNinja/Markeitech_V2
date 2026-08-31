@@ -36,8 +36,11 @@ from markeitech.intelligence.market_states import (
 from markeitech.intelligence.metrics import MetricFidelity, MetricHealth, MetricValue
 
 VOLATILITY_STATE_GROUP = "volatility_compression_expansion"
+"""Catalog group for volatility and compression-expansion state."""
 DIRECTION_STATE_GROUP = "direction_trend_rotation_reference"
+"""Catalog group for direction, trend-rotation, and reference state."""
 MARKET_STATE_GROUPS = frozenset({VOLATILITY_STATE_GROUP, DIRECTION_STATE_GROUP})
+"""Supported catalog groups for metric-driven market-state entities."""
 
 _TRADE_DATE_PATTERN = re.compile(r"(?:^|:)(\d{4}-\d{2}-\d{2})(?::|$)")
 _SUPPORTED_ENTITY_TYPES = {
@@ -65,6 +68,8 @@ _FIDELITY_ORDER = {
 
 @dataclass(frozen=True, slots=True)
 class MarketStateApplication:
+    """Scope one market-state definition to profiles, instruments, phases, and horizon."""
+
     application_id: str
     analytical_profile_ids: tuple[str, ...]
     instrument_ids: tuple[str, ...]
@@ -93,6 +98,8 @@ class MarketStateApplication:
 
 @dataclass(frozen=True, slots=True)
 class MarketStatePolicyBinding:
+    """Bind one classification axis to measure and coverage metric roles."""
+
     axis: str
     measure_role: str
     coverage_role: str
@@ -107,6 +114,8 @@ class MarketStatePolicyBinding:
 
 @dataclass(frozen=True, slots=True)
 class MarketStateDefinition:
+    """Bind a generic entity definition to metric roles and state policies."""
+
     definition_id: str
     group: str
     definition: EntityDefinition
@@ -218,6 +227,8 @@ class MarketStateDefinition:
 
 @dataclass(frozen=True, slots=True)
 class MarketStateOwnerCounts:
+    """Snapshot bounded market-state admission and publication counters."""
+
     metrics_accepted: int
     metrics_duplicate: int
     metrics_stale: int
@@ -602,6 +613,12 @@ class MarketStateProjectionOwner:
 
 
 def payload_type_for_market_state(entity_type: str) -> type[EntityPayload]:
+    """Return the payload contract for a supported market-state entity type.
+
+    Raises:
+        ValueError: If the entity type is not supported by this projection family.
+    """
+
     normalized = _required_text(entity_type, "entity_type")
     if normalized.startswith("reference_state."):
         return ReferenceStatePayload

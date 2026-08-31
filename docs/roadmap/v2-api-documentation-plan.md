@@ -84,8 +84,8 @@ side effects, failure/abstention behavior, and `Raises`; they should not repeat 
 
 - Public denominator: the literal `__all__` of `system`, `acquisition`, and `intelligence`, plus
   `markeitech.system.cli.main`; 258 selected objects in registry version 1.
-- Current coverage: 16 selected objects have source docstrings and 242 are reported missing. The
-  generator does not invent descriptions.
+- Current coverage: all 258 selected objects have source docstrings and none are reported missing.
+  The generator does not invent descriptions.
 - Custom metadata: the parser and registry support bounded scalar/list fields, cardinality,
   validation patterns, and public/status-only exposure. Registry version 2 approves only the five
   bounded `architecture.component.*` fields used by the class-component page.

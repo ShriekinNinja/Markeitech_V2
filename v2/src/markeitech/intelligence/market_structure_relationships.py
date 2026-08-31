@@ -35,7 +35,9 @@ from markeitech.intelligence.market_structure_entities import (
 from markeitech.intelligence.metrics import MetricFidelity, MetricHealth
 
 SWING_LEG_ENTITY_TYPE = "swing_leg"
+"""Canonical entity type for relationships between alternating confirmed pivots."""
 PIVOT_STRUCTURE_ENTITY_TYPE = "pivot_structure_state"
+"""Canonical entity type for revisable confirmed-pivot structure state."""
 
 _SWING_LEG_DIMENSIONS = (
     "bar_specification",
@@ -58,35 +60,47 @@ _PIVOT_STRUCTURE_DIMENSIONS = (
 
 
 class SameKindPivotPolicy(StrEnum):
+    """Policies for resolving successive confirmed pivots of the same kind."""
+
     MORE_EXTREME_TERMINAL = "MORE_EXTREME_TERMINAL"
     LATEST_TERMINAL = "LATEST_TERMINAL"
     UNRESOLVED_UNTIL_OPPOSITE = "UNRESOLVED_UNTIL_OPPOSITE"
 
 
 class ResolvedRunSelection(StrEnum):
+    """Policies for selecting one alternating run from resolved pivots."""
+
     MORE_EXTREME = "MORE_EXTREME"
     EARLIEST = "EARLIEST"
     LATEST = "LATEST"
 
 
 class ResolvedRunTieBreak(StrEnum):
+    """Deterministic tie-breaks for equal candidate pivot runs."""
+
     EARLIEST = "EARLIEST"
     LATEST = "LATEST"
 
 
 class PivotRelationship(StrEnum):
+    """Price relationships between two confirmed pivots of the same kind."""
+
     HIGHER = "HIGHER"
     LOWER = "LOWER"
     EQUAL = "EQUAL"
 
 
 class LegScaleRelationship(StrEnum):
+    """Magnitude relationships between two consecutive swing legs."""
+
     EXPANDING = "EXPANDING"
     CONTRACTING = "CONTRACTING"
     EQUAL = "EQUAL"
 
 
 class PivotGeometryState(StrEnum):
+    """Bounded geometric state inferred from same-kind pivot comparisons."""
+
     UPWARD = "UPWARD"
     DOWNWARD = "DOWNWARD"
     ROTATIONAL = "ROTATIONAL"
@@ -96,6 +110,8 @@ class PivotGeometryState(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class PivotRevisionReference:
+    """Cite the exact confirmed-swing revision used as a pivot."""
+
     entity_id: str
     revision: int
     kind: SwingKind
@@ -115,6 +131,8 @@ class PivotRevisionReference:
 
 @dataclass(frozen=True, slots=True)
 class SwingLegReference:
+    """Cite the exact swing-leg revision used by pivot-structure state."""
+
     entity_id: str
     revision: int
     absolute_price_change: Decimal
@@ -127,6 +145,8 @@ class SwingLegReference:
 
 @dataclass(frozen=True, slots=True)
 class PivotComparisonEvidence:
+    """Describe one same-kind pivot price comparison and tolerance outcome."""
+
     previous: PivotRevisionReference
     current: PivotRevisionReference
     relationship: PivotRelationship
@@ -154,6 +174,8 @@ class PivotComparisonEvidence:
 
 @dataclass(frozen=True, slots=True)
 class LegScaleComparison:
+    """Describe one adjacent-leg magnitude ratio and bounded relationship."""
+
     previous_leg: SwingLegReference
     current_leg: SwingLegReference
     ratio: Decimal
@@ -171,6 +193,8 @@ class LegScaleComparison:
 
 @dataclass(frozen=True, slots=True)
 class SwingLegPayload(EntityPayload):
+    """Preserve one alternating-pivot leg's geometry and optional path evidence."""
+
     definition_id: str
     chain_policy_id: str
     chain_policy_version: int
@@ -254,6 +278,8 @@ class SwingLegPayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class PivotStructurePayload(EntityPayload):
+    """Preserve selected pivots, legs, comparisons, conflicts, and structure bounds."""
+
     definition_id: str
     chain_policy_id: str
     chain_policy_version: int
@@ -352,6 +378,8 @@ class PivotStructurePayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class PivotChainPolicy:
+    """Configure pivot resolution, geometric tolerances, and retained evidence bounds."""
+
     policy_id: str
     version: int
     source_interval_ns: int
@@ -431,6 +459,8 @@ class PivotChainPolicy:
 
 @dataclass(frozen=True, slots=True)
 class PivotStructureApplication:
+    """Scope pivot relationships to exact swing definitions, detectors, and horizons."""
+
     application_id: str
     analytical_profile_ids: tuple[str, ...]
     instrument_ids: tuple[str, ...]
@@ -499,6 +529,8 @@ class PivotStructureApplication:
 
 @dataclass(frozen=True, slots=True)
 class SwingNormalizationEvidence:
+    """Carry optional versioned volatility evidence for one swing-leg subject."""
+
     metric_id: str
     metric_version: int
     revision: int
@@ -535,6 +567,8 @@ class SwingNormalizationEvidence:
 
 @dataclass(frozen=True, slots=True)
 class MarketStructureRelationshipDefinition:
+    """Bind confirmed swings to validated swing-leg and pivot-structure definitions."""
+
     definition_id: str
     confirmed_swing_definition: EntityDefinition
     swing_leg_definition: EntityDefinition
@@ -616,6 +650,8 @@ class MarketStructureRelationshipDefinition:
 
 @dataclass(frozen=True, slots=True)
 class MarketStructureRelationshipCounts:
+    """Snapshot bounded relationship-owner admissions, publications, and evictions."""
+
     swings_accepted: int
     swings_duplicate: int
     swings_conflict: int

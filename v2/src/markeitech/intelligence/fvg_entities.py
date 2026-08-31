@@ -39,6 +39,7 @@ from markeitech.intelligence.entity_measurements import (
 from markeitech.intelligence.metrics import MetricFidelity, MetricHealth
 
 FVG_ENTITY_TYPE = "fair_value_gap"
+"""Canonical entity type for fair-value-gap lifecycle revisions."""
 
 _FVG_METRIC_IDS = frozenset(
     {
@@ -60,12 +61,16 @@ _FVG_DIMENSIONS = (
 
 
 class FvgTerminalOutcome(StrEnum):
+    """Configured terminal lifecycle outcome for a filled or aged FVG."""
+
     COMPLETE = "COMPLETE"
     INVALIDATED = "INVALIDATED"
 
 
 @dataclass(frozen=True, slots=True)
 class FvgPayload(EntityPayload):
+    """Preserve FVG formation geometry, fill state, timing, and bar lineage."""
+
     definition_id: str
     lifecycle_policy_id: str
     lifecycle_policy_version: int
@@ -168,6 +173,8 @@ class FvgPayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class FvgNormalizationEvidence:
+    """Carry optional, versioned width-normalization evidence for one FVG subject."""
+
     metric_id: str
     metric_version: int
     revision: int
@@ -204,6 +211,8 @@ class FvgNormalizationEvidence:
 
 @dataclass(frozen=True, slots=True)
 class FvgLifecyclePolicy:
+    """Configure FVG geometry, aging outcome, and bounded retained evidence."""
+
     policy_id: str
     version: int
     source_interval_ns: int
@@ -246,6 +255,8 @@ class FvgLifecyclePolicy:
 
 @dataclass(frozen=True, slots=True)
 class FvgApplication:
+    """Scope one FVG lifecycle policy to profiles, instruments, bars, and horizon."""
+
     application_id: str
     analytical_profile_ids: tuple[str, ...]
     instrument_ids: tuple[str, ...]
@@ -302,6 +313,8 @@ class FvgApplication:
 
 @dataclass(frozen=True, slots=True)
 class FvgEntityDefinition:
+    """Bind a generic entity definition to validated FVG applications."""
+
     definition_id: str
     definition: EntityDefinition
     applications: tuple[FvgApplication, ...]
@@ -346,6 +359,8 @@ class FvgEntityDefinition:
 
 @dataclass(frozen=True, slots=True)
 class FvgEntityCounts:
+    """Snapshot bounded FVG owner admission, publication, and eviction counters."""
+
     bar_applications_accepted: int
     bar_applications_duplicate: int
     bar_applications_conflict: int

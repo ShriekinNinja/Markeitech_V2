@@ -27,18 +27,31 @@ from markeitech.intelligence.session_measurements import (
 )
 
 SIGNED_DISPLACEMENT_METRIC_ID = "entity_input.direction.signed_displacement"
+"""Metric identity for signed close-to-close price displacement."""
 SIGNED_SIMPLE_RETURN_METRIC_ID = "entity_input.direction.signed_simple_return"
+"""Metric identity for signed simple return over an exact bar horizon."""
 SIGNED_PATH_EFFICIENCY_METRIC_ID = "entity_input.direction.signed_path_efficiency"
+"""Metric identity for signed displacement divided by absolute path length."""
 EMA_REFERENCE_VALUE_METRIC_ID = "entity_input.reference.ema.value"
+"""Metric identity for the configured close-price EMA reference."""
 EMA_REFERENCE_SLOPE_METRIC_ID = "entity_input.reference.ema.slope"
+"""Metric identity for configured EMA price change per completed bar."""
 EMA_REFERENCE_SEPARATION_METRIC_ID = "entity_input.reference.ema.separation"
+"""Metric identity for close-price separation from the configured EMA."""
 SWING_PIVOT_PRICE_METRIC_ID = "entity_input.swing.pivot_price"
+"""Metric identity for a confirmed strict pivot's price."""
 SWING_PROMINENCE_METRIC_ID = "entity_input.swing.prominence"
+"""Metric identity for a confirmed pivot's neighboring-wick prominence."""
 FVG_LOWER_BOUND_METRIC_ID = "entity_input.fvg.lower_bound"
+"""Metric identity for a three-bar wick gap's lower price bound."""
 FVG_UPPER_BOUND_METRIC_ID = "entity_input.fvg.upper_bound"
+"""Metric identity for a three-bar wick gap's upper price bound."""
 FVG_WIDTH_METRIC_ID = "entity_input.fvg.width"
+"""Metric identity for a three-bar wick gap's price width."""
 FVG_FILL_RATIO_METRIC_ID = "entity_input.fvg.fill_ratio"
+"""Metric identity for later wick penetration as a fraction of gap width."""
 BAR_VOLUME_ALLOCATED_VOLUME_METRIC_ID = "entity_input.bar_volume.allocated_volume"
+"""Metric identity for candle-derived volume allocated to one price bin."""
 
 ENTITY_PREREQUISITE_METRIC_IDS = (
     SIGNED_DISPLACEMENT_METRIC_ID,
@@ -55,20 +68,27 @@ ENTITY_PREREQUISITE_METRIC_IDS = (
     FVG_FILL_RATIO_METRIC_ID,
     BAR_VOLUME_ALLOCATED_VOLUME_METRIC_ID,
 )
+"""Ordered identities of the deterministic entity-prerequisite metric family."""
 
 
 class SwingKind(StrEnum):
+    """Strict confirmed pivot kinds."""
+
     HIGH = "HIGH"
     LOW = "LOW"
 
 
 class FvgDirection(StrEnum):
+    """Directions of three-bar fair-value-gap geometry."""
+
     BULLISH = "BULLISH"
     BEARISH = "BEARISH"
 
 
 @dataclass(frozen=True, slots=True)
 class EntityPrerequisiteCatalogPolicy:
+    """Configure shared definition metadata and resource bounds for prerequisites."""
+
     parameter_source: str
     priority: int
     maximum_retained_observations: int
@@ -86,6 +106,8 @@ class EntityPrerequisiteCatalogPolicy:
 
 @dataclass(frozen=True, slots=True)
 class EmaReferencePolicy:
+    """Configure close-price EMA period and slope lookback envelopes."""
+
     period: int
     minimum_period: int
     maximum_period: int
@@ -123,6 +145,8 @@ class EmaReferencePolicy:
 
 @dataclass(frozen=True, slots=True)
 class SwingGeometryPolicy:
+    """Configure strict pivot spans, minimum prominence, and tie handling."""
+
     left_span_bars: int
     minimum_left_span_bars: int
     maximum_left_span_bars: int
@@ -175,6 +199,8 @@ class SwingGeometryPolicy:
 
 @dataclass(frozen=True, slots=True)
 class FvgGeometryPolicy:
+    """Configure three-bar wick-gap width and fill geometry."""
+
     pattern_length: int
     minimum_width: Decimal
     minimum_width_floor: Decimal
@@ -204,6 +230,8 @@ class FvgGeometryPolicy:
 
 @dataclass(frozen=True, slots=True)
 class BarVolumeAllocationPolicy:
+    """Configure inferred uniform-intersection candle-volume allocation."""
+
     bin_width: Decimal
     minimum_bin_width: Decimal
     maximum_bin_width: Decimal
@@ -243,6 +271,8 @@ class BarVolumeAllocationPolicy:
 
 @dataclass(frozen=True, slots=True)
 class DirectionalPrerequisiteResult:
+    """Return directional price geometry or explicit warmup abstention."""
+
     signed_displacement: Decimal | None
     signed_simple_return: Decimal | None
     signed_path_efficiency: Decimal | None
@@ -254,6 +284,8 @@ class DirectionalPrerequisiteResult:
 
 @dataclass(frozen=True, slots=True)
 class ReferencePrerequisiteResult:
+    """Return EMA value, per-bar slope, separation, and evidence quality."""
+
     value: Decimal | None
     slope_per_bar: Decimal | None
     price_separation: Decimal | None
@@ -265,6 +297,11 @@ class ReferencePrerequisiteResult:
 
 @dataclass(frozen=True, slots=True)
 class ConfirmedSwingGeometry:
+    """Describe one strict pivot after its configured right-span confirmation.
+
+    Pivot and confirmation timestamps are UTC Unix nanoseconds.
+    """
+
     kind: SwingKind
     pivot_price: Decimal
     prominence: Decimal
@@ -282,6 +319,11 @@ class ConfirmedSwingGeometry:
 
 @dataclass(frozen=True, slots=True)
 class FvgGeometry:
+    """Describe one three-bar wick gap and its observed fill ratio.
+
+    Formation and confirmation timestamps are UTC Unix nanoseconds.
+    """
+
     direction: FvgDirection
     lower_bound: Decimal
     upper_bound: Decimal
@@ -296,6 +338,8 @@ class FvgGeometry:
 
 @dataclass(frozen=True, slots=True)
 class BarVolumeBinEstimate:
+    """Estimate candle-derived volume within one half-open price bin."""
+
     lower_bound: Decimal
     upper_bound: Decimal
     estimated_volume: Decimal
@@ -303,6 +347,8 @@ class BarVolumeBinEstimate:
 
 @dataclass(frozen=True, slots=True)
 class BarVolumeAllocationResult:
+    """Report bounded inferred bin allocations and their coverage."""
+
     bins: tuple[BarVolumeBinEstimate, ...]
     input_volume: Decimal
     allocated_volume: Decimal
@@ -321,6 +367,11 @@ def entity_prerequisite_metric_definitions(
     fvg: FvgGeometryPolicy,
     bar_volume: BarVolumeAllocationPolicy,
 ) -> tuple[MetricDefinition, ...]:
+    """Build the deterministic metric definitions needed by entity projection.
+
+    Returns definitions only; no completed bars are evaluated.
+    """
+
     if not isinstance(catalog, EntityPrerequisiteCatalogPolicy):
         raise ValueError("catalog must be an EntityPrerequisiteCatalogPolicy")
     groups = (
@@ -486,6 +537,12 @@ def entity_prerequisite_metric_definitions(
 def calculate_directional_prerequisites(
     bars: tuple[CompletedBarInput, ...],
 ) -> DirectionalPrerequisiteResult:
+    """Calculate signed displacement, simple return, and path efficiency.
+
+    Returns an explicit warming result when fewer than two completed bars are
+    available and abstains from path efficiency when total path length is zero.
+    """
+
     ordered = _ordered_bars(bars)
     evidence_refs = _evidence_refs(ordered)
     if len(ordered) < 2:
@@ -522,6 +579,12 @@ def calculate_ema_reference(
     bars: tuple[CompletedBarInput, ...],
     policy: EmaReferencePolicy,
 ) -> ReferencePrerequisiteResult:
+    """Calculate the configured close-price EMA, per-bar slope, and separation.
+
+    Returns explicit warming or partial results when the period or slope
+    lookback does not yet have sufficient completed bars.
+    """
+
     ordered = _ordered_bars(bars)
     if not isinstance(policy, EmaReferencePolicy):
         raise ValueError("policy must be an EmaReferencePolicy")
@@ -562,6 +625,12 @@ def detect_confirmed_swings(
     bars: tuple[CompletedBarInput, ...],
     policy: SwingGeometryPolicy,
 ) -> tuple[ConfirmedSwingGeometry, ...]:
+    """Detect fully confirmed strict pivot geometry in completed bars.
+
+    Ties and candidates lacking the configured right-span confirmation are not
+    emitted.
+    """
+
     ordered = _ordered_bars(bars)
     if not isinstance(policy, SwingGeometryPolicy):
         raise ValueError("policy must be a SwingGeometryPolicy")
@@ -594,6 +663,8 @@ def detect_fvg_geometries(
     bars: tuple[CompletedBarInput, ...],
     policy: FvgGeometryPolicy,
 ) -> tuple[FvgGeometry, ...]:
+    """Detect configured three-bar wick gaps and calculate later fill ratios."""
+
     ordered = _ordered_bars(bars)
     if not isinstance(policy, FvgGeometryPolicy):
         raise ValueError("policy must be an FvgGeometryPolicy")
@@ -627,6 +698,11 @@ def allocate_bar_volume_to_bins(
     bars: tuple[CompletedBarInput, ...],
     policy: BarVolumeAllocationPolicy,
 ) -> BarVolumeAllocationResult:
+    """Infer candle volume in intersected price bins using the configured policy.
+
+    This is candle-derived inferred evidence, not observed trade-at-price volume.
+    """
+
     ordered = _ordered_bars(bars)
     if not isinstance(policy, BarVolumeAllocationPolicy):
         raise ValueError("policy must be a BarVolumeAllocationPolicy")
