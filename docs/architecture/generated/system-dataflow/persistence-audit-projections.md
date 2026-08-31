@@ -60,7 +60,6 @@ Separate bounded operational persistence from optional notifications and diagnos
 - Static source and configuration checks cannot prove connected runtime behavior.
 - Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.
 - Generated artifacts are documentation projections and must never be edited or treated as authority.
-- The generated artifact directory was intentionally not regenerated or visually reviewed for the 2026-08-30 calendar merge and therefore remains a stale projection of the prior manifest until the recorded exception is removed.
 - Markeitech is read-only and advisory; no current order submission or execution exists.
 - PostgreSQL stores approved operational facts, not raw provider observations by default.
 - Queue admission is not storage and storage does not acknowledge the original event producer.

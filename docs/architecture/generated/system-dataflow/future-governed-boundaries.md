@@ -39,7 +39,6 @@ Isolate future semantic events, plural opportunities, Sir Loke advisory intent, 
 - Static source and configuration checks cannot prove connected runtime behavior.
 - Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.
 - Generated artifacts are documentation projections and must never be edited or treated as authority.
-- The generated artifact directory was intentionally not regenerated or visually reviewed for the 2026-08-30 calendar merge and therefore remains a stale projection of the prior manifest until the recorded exception is removed.
 - Markeitech is read-only and advisory; no current order submission or execution exists.
 - Every purple/dashed boundary is proposed or future and not current runtime behavior.
 - Sir Loke is unrelated to the development-time Kite advisor council.

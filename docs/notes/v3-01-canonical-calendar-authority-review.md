@@ -1,9 +1,8 @@
 # V3 Canonical Calendar Authority Review
 
-**Status:** Architecture and atomic breaking cutover approved 2026-08-30; first connected
-acceptance rejected; terminal-break and projection-delivery repair committed and disconnected
-verification passed; Markeitect reports the repaired connected runtime starts and runs, while
-detailed log reconciliation and broader connected re-acceptance remain pending
+**Status:** Closed and connected-accepted 2026-08-31 for the exact tracked V3 ES profile after the
+rejected first run, committed terminal-break/projection-delivery repair, disconnected verification,
+and accepted bounded connected re-run
 
 **Review order:** 1 of 4
 
@@ -473,7 +472,7 @@ recorded as `BASE_ALREADY_CONFORMS`; any unequal provider schedule fails as `CON
 URL and retrieval status are part of the definition digest. Stable response bytes were unavailable
 in this environment, so the catalog records `HASH_UNAVAILABLE` instead of inventing a digest.
 
-Disconnected verification currently consists of the full non-PostgreSQL test suite plus Ruff. It
+Disconnected verification consists of the full non-PostgreSQL test suite plus Ruff. It
 covers ordinary/closed periods, source-effective CME correction, exchange-state/product-phase
 separation, CME/CBOT identity, CL's exact provider calendar, watchlist-owned bindings, regional
 phase overlap, weekend, DST, CBOE holiday and early-close behavior, immutable projections, strict
@@ -482,7 +481,7 @@ both tracked system profiles. The first connected IB run on 2026-08-30 rejected 
 historical planning: the default 120-day lookback crossed CME early-close rows represented by
 pinned mcal as `break_start == break_end == market_close`, and the projector attempted invalid
 zero-duration exchange segments. Projection consumers then retried without receiving a bounded
-failure response. No connected IB run has accepted this cutover.
+failure response. That first run did not accept the cutover.
 
 The follow-up repair preserves the segment invariant and admits only the measured terminal mcal
 representation where `break_start == break_end == market_close`. It applies after the existing
@@ -508,21 +507,58 @@ boundary owner classified that as a separate system-health semantic requiring it
 recovery, persistence, and projection-consumer review. Therefore the repair reports capability-
 local terminal projection outcomes but does not silently redefine global readiness.
 
-## Remaining Gates
+## Connected Acceptance Closure
 
-The sole-owner cutover, bounded projections, historical planning boundary, and current consumer
-migration are implemented. The following remain separate work:
+On 2026-08-31, Markeitect accepted operational run
+`c35f7d8b-97fe-4a2e-bddc-aaf0f6e9a6d7` as the bounded V3-01 repair acceptance. The run used the
+tracked `v2/config/system.v3-es-minimal.toml` schema-21 profile and
+`v2/config/market-calendars.toml` schema-3/catalog-version-4 definitions from repair commit
+`5b00af3e4e61b8b1f32aa5680b267f9f7904814d`. At closure, the system-config SHA-256 was
+`08fa5fad2af4e77eeb7670a2212b48095effda7da41764d92f8685c62085257f`, the catalog-file
+SHA-256 was `a753b96d959fc2609308cc5414d0a555cde938d3c84dd084fe97e79e4873ea5e`, and the accepted
+append-only runtime log SHA-256 was
+`20101ce16a1201aae73b37bdc282ff74ddd0227042b57f230bd007be47c099bd`.
+
+The exact accepted run demonstrated:
+
+- one active `cme_equity` calendar under the configured 120-day lookback and 14-day lookahead;
+- five projection requests served by `SessionStateActor`, with zero projection rejection or
+  construction failure;
+- one Evidence Health request and two requests each from Session Metrics and Historical Planning,
+  with zero timeout or terminal outcome for every consumer;
+- one exact historical plan, with zero deferral or rejection;
+- one provider request and attempt returning 60/60 five-minute ES bars and `READY` consumer state;
+- 60 accepted historical completed bars, zero duplicates or conflicts, and zero calculation
+  failures;
+- 36/36 accepted operational records stored with zero retry, failure, rejection, or pending work;
+  and
+- controlled SIGINT shutdown, adapter disconnection, and event-loop stop with zero late historical
+  callback.
+
+This acceptance proves the corrected construction and delivery path for that exact selected
+profile. It does not prove a scheduled phase-boundary transition, late-consumer snapshot or
+reconciliation, restart recovery beyond a fresh source epoch, connected projection failure or
+retry, multi-calendar live behavior, concurrent historical callback correlation, provider
+cancellation, or shutdown with historical work in flight. The INFO log does not emit the
+Markeitech commit or configuration and definition digests; the acceptance record therefore relies
+on Markeitect's operator provenance binding above. Future connected runs should emit those startup
+identities directly.
+
+## Closed Gate Disposition And Deferred Work
+
+The sole-owner cutover, bounded projections, historical planning boundary, current consumer
+migration, and bounded connected acceptance are closed. The former remaining gates resolve as
+follows:
 
 1. Add the full late-consumer current-state snapshot/buffer/reconcile protocol proposed in the
    SessionState role review; the present transition plus projection contracts do not claim it.
 2. Carry canonical calendar definition identity through completed-bar and metric subject identity
    wherever downstream conflict detection requires it.
 3. Split the combined metric actor without multiplying calendar authorities.
-4. Repeat the bounded connected acceptance owned by Markeitect after correcting the rejected first
-   run; do not claim provider-session or live transition acceptance before it passes.
-5. Repeat the configured 120-day/14-day connected projection after the exact terminal-break
-   normalization; offline evidence now covers the four known 2026 CME/CBOT early-close rows and
-   the configured span, but it is not connected acceptance.
+4. **Satisfied for V3-01:** Markeitect accepted the bounded repaired connected run recorded above.
+5. **Satisfied for V3-01:** the same accepted run exercised the configured 120-day/14-day
+   projection after terminal-break normalization, while offline fixtures cover all four known
+   2026 CME/CBOT terminal-break rows.
 6. Decide separately whether global readiness needs a positive calendar-foundation handshake.
    The accepted global `READY` contract remains persistence plus configured instrument-definition
    availability; calendar-dependent consumers now terminate locally and visibly when their

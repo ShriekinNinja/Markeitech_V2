@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-30
+Last reviewed: 2026-08-31
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -80,7 +80,8 @@ system. The preserved V1 status is available in
   accepts either dead section. The progressive `VisualDebugCaptureActor` remains a separate,
   passive observer and was not changed by that removal. Historical ignored artifacts and local
   configurations remain outside Git as recovery evidence; they are not runnable current profiles.
-- The approved V3 canonical-calendar cutover is implemented as the current review batch.
+- The approved V3 canonical-calendar cutover is implemented and connected-accepted for the exact
+  tracked V3 ES profile.
   `SessionStateActor` is the sole mcal-backed evaluator owner, publishes typed transitions
   and bounded immutable projections, and has no shadow/legacy counterpart. A separate historical
   planner turns symbolic evidence needs into exact UTC plans; acquisition executes those plans and
@@ -97,9 +98,17 @@ system. The preserved V1 status is available in
   representation after source-cited corrections, records an immutable normalization outcome,
   emits per-calendar response-v2 failures for ordinary projection exceptions, and gives each of
   the three consumers one correlated, bounded, one-shot retry lifecycle. CME/CBOT definition
-  versions are now 4. Offline verification passes and Markeitect reports that the repaired
-  connected runtime starts and runs. Detailed connected log reconciliation and broader acceptance
-  remain pending; the broader metric-actor split also remains deferred.
+  versions are now 4. Offline verification passes. Markeitect accepted the repaired 2026-08-31
+  connected run using the tracked schema-21 V3 ES profile and catalog version 4: the canonical
+  owner served five projection requests with zero rejection or construction failure; all three
+  consumers completed with zero projection timeout or terminal outcome; the planner produced one
+  exact plan with no deferral or rejection; IB returned 60/60 requested bars; persistence
+  reconciled 36/36 accepted records; and shutdown was clean. This acceptance is bounded to
+  `cme_equity`, the configured 120-day lookback/14-day lookahead, one historical request and
+  attempt, and the observed current session. It does not accept multi-calendar live behavior,
+  phase-boundary delivery, late-consumer recovery, connected retry/failure paths, concurrent
+  historical callbacks, or cancellation with provider work in flight. The broader metric-actor
+  split remains deferred.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -438,7 +447,8 @@ Stage 9A is complete and accepted at commit `ce9076e`:
 - Offline tests cover calendar boundaries, DST, holidays, early closes, freshness transitions,
   strict wire contracts, actor composition, and persistence conversion.
 
-The approved V3 canonical-calendar cutover is present as a review batch. System
+The approved V3 canonical-calendar cutover is implemented and connected-accepted for the exact
+tracked V3 ES profile. System
 schema 21 loads `v2/config/market-calendars.toml` schema 3/catalog version 4 as one dedicated
 startup catalog;
 inline definitions, old overrides, and older schemas are rejected. Each system profile selects
@@ -479,8 +489,19 @@ provider matches are recorded as `APPLIED`, already-correct base rows as
 membership remains distinct from exchange `OPEN/BREAK/CLOSED` state. The CME/CBOT definitions also
 declare overlapping, DST-aware `ASIA`, `LONDON`, and `NEW_YORK` phases. These are descriptive
 product phases, not analytical windows; analytical capabilities still choose their own windows and
-candle sizes independently. No connected IB acceptance has occurred for this cutover, and the
-wider `SessionMetricsActor` responsibility split remains deferred.
+candle sizes independently. The first connected run on 2026-08-30 rejected the cutover when the
+configured projection crossed mcal's terminal zero-length early-close break representation. The
+committed repair normalizes only that exact provider shape and bounds projection delivery with
+typed per-calendar outcomes and correlated consumer retries. Markeitect accepted the repaired
+2026-08-31 run: `SessionStateActor` served five projection requests with zero rejection or
+construction failure; Evidence Health, Session Metrics, and Historical Planning reported zero
+projection timeout or terminal outcome; the planner produced one exact plan with no deferral or
+rejection; IB returned 60/60 requested bars; operational persistence reconciled 36/36 records; and
+shutdown was clean. The run used the tracked 120-day lookback/14-day lookahead `cme_equity`
+profile. This bounded acceptance does not generalize to all five calendars, a scheduled phase
+boundary, late-consumer recovery, connected failure/retry paths, concurrent historical requests,
+or shutdown with provider work in flight. The wider `SessionMetricsActor` responsibility split
+remains deferred.
 
 The detailed ownership and semantics are recorded in
 [`architecture/v2-session-evidence-health.md`](architecture/v2-session-evidence-health.md).

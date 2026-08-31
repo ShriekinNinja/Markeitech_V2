@@ -94,7 +94,6 @@ Profile-specific implemented and enabled topology for the tracked V3 ES review p
 - Static source and configuration checks cannot prove connected runtime behavior.
 - Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.
 - Generated artifacts are documentation projections and must never be edited or treated as authority.
-- The generated artifact directory was intentionally not regenerated or visually reviewed for the 2026-08-30 calendar merge and therefore remains a stale projection of the prior manifest until the recorded exception is removed.
 - Markeitech is read-only and advisory; no current order submission or execution exists.
 - Excludes profile-disabled actors and future/removed behavior.
 - A visually connected provider boundary does not prove a current live connection or entitlement.

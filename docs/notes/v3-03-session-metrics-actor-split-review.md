@@ -1,7 +1,7 @@
 # V3 SessionMetricsActor Split Review
 
 **Status:** Split remains a proposal; canonical calendar consumption and the separate historical
-planning prerequisite are implemented in the uncommitted calendar cutover
+planning prerequisite are committed and connected-accepted with V3-01
 
 **Review order:** 3 of 4
 

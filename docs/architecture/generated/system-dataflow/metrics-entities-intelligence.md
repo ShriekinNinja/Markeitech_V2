@@ -65,7 +65,6 @@ Show implemented metrics/state and profile-disabled entity capabilities with the
 - Static source and configuration checks cannot prove connected runtime behavior.
 - Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.
 - Generated artifacts are documentation projections and must never be edited or treated as authority.
-- The generated artifact directory was intentionally not regenerated or visually reviewed for the 2026-08-30 calendar merge and therefore remains a stale projection of the prior manifest until the recorded exception is removed.
 - Markeitech is read-only and advisory; no current order submission or execution exists.
 - Entity actors and quote-quality metrics are implemented but disabled in the named profile.
 - Dependencies do not imply causality, confidence, ranking, advice, or trading intent.

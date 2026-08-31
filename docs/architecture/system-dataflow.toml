@@ -12,14 +12,14 @@ review_status = "proposed"
 architecture_effective_at = "2026-08-30"
 generator_contract_version = 1
 default_profile = "profile.v3-es-minimal"
-limitations = ["Static source and configuration checks cannot prove connected runtime behavior.", "Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.", "Generated artifacts are documentation projections and must never be edited or treated as authority.", "The generated artifact directory was intentionally not regenerated or visually reviewed for the 2026-08-30 calendar merge and therefore remains a stale projection of the prior manifest until the recorded exception is removed.", "Markeitech is read-only and advisory; no current order submission or execution exists."]
+limitations = ["Static source and configuration checks cannot prove connected runtime behavior.", "Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.", "Generated artifacts are documentation projections and must never be edited or treated as authority.", "Markeitech is read-only and advisory; no current order submission or execution exists."]
 
 [[evidence]]
 id = "evidence.current-status"
 evidence_class = "tracked_authority"
 source_path = "docs/current-status.md"
-observed_at = "2026-08-30"
-proves = ["implemented/current boundaries", "canonical calendar cutover", "removed visual-review actors"]
+observed_at = "2026-08-31"
+proves = ["implemented/current boundaries", "canonical calendar cutover", "bounded canonical-calendar connected acceptance", "removed visual-review actors"]
 limitations = ["Status prose may lag code; conflicts are recorded explicitly."]
 
 [[evidence]]
@@ -3608,14 +3608,3 @@ evidence = ["evidence.current-status", "evidence.persistence"]
 required_decision = "Represent the implemented application-level request/response handshake and retain this visible limitation until current-status wording is reconciled."
 status = "accepted_diagram_treatment_pending_document_reconciliation"
 limitations = ["Does not establish PostgreSQL internal readiness, durability, restore acceptance, or connected-run success."]
-
-[[drift_exceptions]]
-id = "exception.calendar-merge-generated-artifacts"
-rule = "Defer required post-merge diagram validation, complete artifact regeneration, diagram tests, and visual review."
-affected_paths = ["docs/architecture/generated/system-dataflow"]
-affected_ids = ["view.current-runtime", "view.complete-inventory", "view.provider-canonical-data", "view.metrics-entities-intelligence", "view.persistence-audit-projections", "view.future-governed-boundaries"]
-reason = "Markeitect explicitly instructed this merge not to regenerate the derived directory, not to run the diagram validation or tests, and not to review regenerated views."
-owner = "Markeitect"
-approval_reference = "Markeitect instruction in the 2026-08-30 calendar merge task"
-removal_condition = "Run the documented validation, complete-set generation, diagram tests, and visual review against this canonical manifest in a separately approved batch, then remove this exception."
-evidence = ["evidence.current-status", "evidence.composition", "evidence.calendar-contracts", "evidence.historical-planner"]

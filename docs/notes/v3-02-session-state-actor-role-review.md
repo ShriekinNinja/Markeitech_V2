@@ -1,14 +1,13 @@
 # V3 SessionStateActor Role Review
 
-**Status:** Calendar-owner, typed-transition, bounded-projection, and boundary-timer subset approved
-and implemented in the uncommitted canonical-calendar cutover; full late-consumer snapshot protocol
-remains proposed
+**Status:** Calendar-owner, typed-transition, bounded-projection, and boundary-timer subset approved,
+committed, and connected-accepted with V3-01; full late-consumer snapshot protocol remains proposed
 
 **Review order:** 2 of 4
 
 **Dependency:** The canonical calendar authority in
 [`v3-01-canonical-calendar-authority-review.md`](v3-01-canonical-calendar-authority-review.md) is
-implemented in the same uncommitted cutover batch.
+implemented, committed, and connected-accepted.
 
 ## Purpose
 

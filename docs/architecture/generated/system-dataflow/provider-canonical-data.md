@@ -69,7 +69,6 @@ Show provider capability, native Nautilus boundary, acquisition ownership, histo
 - Static source and configuration checks cannot prove connected runtime behavior.
 - Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.
 - Generated artifacts are documentation projections and must never be edited or treated as authority.
-- The generated artifact directory was intentionally not regenerated or visually reviewed for the 2026-08-30 calendar merge and therefore remains a stale projection of the prior manifest until the recorded exception is removed.
 - Markeitech is read-only and advisory; no current order submission or execution exists.
 - Exact IB request methods, callbacks, qualification, entitlement, delivery mode, request IDs, and cancellation are unknown.
 - Native subscription command issuance is not provider acknowledgement.
