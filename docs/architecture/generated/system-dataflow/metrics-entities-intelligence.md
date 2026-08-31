@@ -7,7 +7,7 @@ Show implemented metrics/state and profile-disabled entity capabilities with the
 - View ID: `view.metrics-entities-intelligence`
 - Profile: `profile.v3-es-minimal`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `5b00af3e4e61b8b1f32aa5680b267f9f7904814d`
+- Checkout evidence: `4a414d0c5ce9b3eead005b674e6ce1997fe966b1`
 - Review status: `proposed`
 
 ## Components
@@ -31,11 +31,11 @@ Show implemented metrics/state and profile-disabled entity capabilities with the
 
 | ID | Owning component | Capability | Implementation | Composition | Active profile | Configuration |
 |---|---|---|---|---|---|---|
-| `capability.session-metrics.completed-bars` | `actor.session-metrics` | Completed-bar foundation | implemented | conditional | enabled | metrics.session_measurements.enabled |
+| `capability.session-metrics.completed-bars` | `actor.session-metrics` | Completed-bar foundation | implemented | conditional | disabled | metrics.session_measurements.enabled |
 | `capability.session-metrics.rolling` | `actor.session-metrics` | Rolling measurements | implemented | conditional | disabled | metrics.session_measurements.rolling_measurements.enabled |
 | `capability.session-metrics.session-references` | `actor.session-metrics` | Session reference measurements | implemented | conditional | disabled | metrics.session_measurements.session_references.enabled |
 | `capability.session-metrics.session-windows` | `actor.session-metrics` | Calendar-relative session windows | implemented | conditional | disabled | metrics.session_measurements.session_windows.enabled |
-| `capability.visual-debug.capture` | `actor.visual-debug` | Passive visual debug capture | implemented | conditional | enabled | visual_debug_capture.enabled |
+| `capability.visual-debug.capture` | `actor.visual-debug` | Passive visual debug capture | implemented | conditional | disabled | visual_debug_capture.enabled |
 
 ## Flows
 

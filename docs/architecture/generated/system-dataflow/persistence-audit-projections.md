@@ -7,7 +7,7 @@ Separate bounded operational persistence from optional notifications and diagnos
 - View ID: `view.persistence-audit-projections`
 - Profile: `profile.v3-es-minimal`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `5b00af3e4e61b8b1f32aa5680b267f9f7904814d`
+- Checkout evidence: `4a414d0c5ce9b3eead005b674e6ce1997fe966b1`
 - Review status: `proposed`
 
 ## Components
@@ -33,7 +33,7 @@ Separate bounded operational persistence from optional notifications and diagnos
 | ID | Owning component | Capability | Implementation | Composition | Active profile | Configuration |
 |---|---|---|---|---|---|---|
 | `capability.discord.notifications` | `actor.discord-health` | Queued Discord health notifications | implemented | conditional | disabled | discord.enabled |
-| `capability.visual-debug.capture` | `actor.visual-debug` | Passive visual debug capture | implemented | conditional | enabled | visual_debug_capture.enabled |
+| `capability.visual-debug.capture` | `actor.visual-debug` | Passive visual debug capture | implemented | conditional | disabled | visual_debug_capture.enabled |
 
 ## Flows
 

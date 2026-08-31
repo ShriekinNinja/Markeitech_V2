@@ -2,8 +2,15 @@
 
 ## Status And Scope
 
-This is the current working contract for Markeitech's progressive visual-debug review process at
-baseline commit `623f0b7` on branch `v3-es-progressive-capability-review`.
+**Runtime status at V3-02 closure:** disabled. `VisualDebugCaptureActor` is absent from both tracked
+active actor plans because its required `SessionMetricsActor` producer is deliberately disabled
+pending the V3-03 replacement. Session-Metrics-dependent Entity Analysis is disabled for the same
+reason. Historical artifacts remain review evidence only.
+
+This document is retained as the future working contract for a separately authorized progressive
+visual-debug review process. It does not reactivate the capture actor, authorize a producer,
+request data, or make visual acceptance a V3-02 dependency. Baseline commit `623f0b7` on branch
+`v3-es-progressive-capability-review` remains historical recovery context.
 
 It preserves the still-valid debug-process rules previously scattered across:
 
@@ -78,13 +85,13 @@ The capture must never:
 The capture may select only canonical series and records independently configured and produced by
 normal runtime components. A capture mode controls projection selection, not runtime operation.
 
-### Baseline correction status
+### Historical baseline correction status
 
-Commit `623f0b7` remains the almost-acceptable recovery point. The current uncommitted correction
-removes its `visual_snapshot_enabled` path, producer snapshot handshake, capture-aligned history,
-and capture-derived producer retention. Offline equivalence proves that capture on/off actor plans
-differ only by the passive observer registration. Connected equivalence and visual acceptance
-remain open.
+Commit `623f0b7` remains the almost-acceptable recovery point. At that historical review point, an
+uncommitted correction removed its `visual_snapshot_enabled` path, producer snapshot handshake,
+capture-aligned history, and capture-derived producer retention. Offline equivalence showed that
+capture on/off actor plans differed only by passive observer registration. Connected equivalence
+and visual acceptance were not completed before the V3-02 disablement.
 
 No replacement may move the same coupling into Watchlist, acquisition, another capture flag, or a
 hidden configuration derivation.
@@ -116,9 +123,10 @@ The inventory seed currently includes these families:
   lifecycle, Sir Loke runtime behavior, ML evaluation, replay, backtesting, and execution.
 
 This seed is a routing aid, not a frozen claim that every item remains implemented, active, or
-applicable. The current V3 ES baseline activates only the completed-bar foundation review; quote
-quality, session references, analytical windows, rolling measurements, and entity analysis are
-disabled in `system.v3-es-minimal.toml`.
+applicable. At V3-02 closure the tracked V3 ES profile activates no visual-debug review mission:
+Session Metrics, Visual Debug, quote quality, session references, analytical windows, rolling
+measurements, and Entity Analysis are disabled. The temporary current-state historical probe is a
+delivery acceptance harness, not a visual or analytical producer.
 
 For each candidate, the inventory must also record whether Nautilus supplies:
 

@@ -12,7 +12,7 @@
 <text xml:space="preserve" text-anchor="start" x="10" y="-1868.56" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="20.00" fill="#f2f6fa">Complete Component and Capability Inventory</text>
 <text xml:space="preserve" text-anchor="start" x="10" y="-1852.11" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#ffc1bb">OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION</text>
 <text xml:space="preserve" text-anchor="start" x="10" y="-1837.31" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#c7d2dd">PROFILE: profile.v3&#45;es&#45;minimal · REVIEW: PROPOSED · MANIFEST SCHEMA: 1 · COMPONENTS: 36 · CAPABILITIES: 10 · FLOWS: 0</text>
-<text xml:space="preserve" text-anchor="start" x="10" y="-1822.81" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: 5b00af3e4e61b8b1f32aa5680b267f9f7904814d</text>
+<text xml:space="preserve" text-anchor="start" x="10" y="-1822.81" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: 4a414d0c5ce9b3eead005b674e6ce1997fe966b1</text>
 <polygon fill="#164c3e" stroke="none" points="18,-1790.81 18,-1808.56 95.88,-1808.56 95.88,-1790.81 18,-1790.81"/>
 <polygon fill="none" stroke="#78a9f5" points="18,-1790.81 18,-1808.56 95.88,-1808.56 95.88,-1790.81 18,-1790.81"/>
 <text xml:space="preserve" text-anchor="start" x="34.81" y="-1797.01" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#eef5ff">ENABLED</text>
@@ -248,16 +248,16 @@
 <g id="actor.current&#45;state&#45;historical&#45;probe" class="node">
 <title>actor.current&#45;state&#45;historical&#45;probe</title>
 <g id="a_actor.current&#45;state&#45;historical&#45;probe"><a xlink:title="actor.current&#45;state&#45;historical&#45;probe">
-<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="1595.76,-1688.81 1288.24,-1688.81 1288.24,-1604.85 1595.76,-1604.85 1595.76,-1688.81"/>
-<polygon fill="#e2b75c" stroke="#e2b75c" points="1296.88,-1658.58 1296.88,-1658.58 1525.75,-1658.58 1525.75,-1658.58 1296.88,-1658.58"/>
-<polygon fill="#e2b75c" stroke="#e2b75c" points="1525.75,-1658.58 1525.75,-1658.58 1587.12,-1658.58 1587.12,-1658.58 1525.75,-1658.58"/>
-<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1666.43" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Current&#45;State Historical Demand Probe</text>
-<polygon fill="#5b4316" stroke="none" points="1528.75,-1661.58 1528.75,-1679.33 1584.12,-1679.33 1584.12,-1661.58 1528.75,-1661.58"/>
-<polygon fill="none" stroke="#e2b75c" points="1528.75,-1661.58 1528.75,-1679.33 1584.12,-1679.33 1584.12,-1661.58 1528.75,-1661.58"/>
-<text xml:space="preserve" text-anchor="start" x="1533.19" y="-1667.78" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M1583.76,-1688.81C1583.76,-1688.81 1300.24,-1688.81 1300.24,-1688.81 1294.24,-1688.81 1288.24,-1682.81 1288.24,-1676.81 1288.24,-1676.81 1288.24,-1616.85 1288.24,-1616.85 1288.24,-1610.85 1294.24,-1604.85 1300.24,-1604.85 1300.24,-1604.85 1583.76,-1604.85 1583.76,-1604.85 1589.76,-1604.85 1595.76,-1610.85 1595.76,-1616.85 1595.76,-1616.85 1595.76,-1676.81 1595.76,-1676.81 1595.76,-1682.81 1589.76,-1688.81 1583.76,-1688.81"/>
+<polygon fill="#43d9ae" stroke="#43d9ae" points="1296.88,-1658.58 1296.88,-1658.58 1526.88,-1658.58 1526.88,-1658.58 1296.88,-1658.58"/>
+<polygon fill="#43d9ae" stroke="#43d9ae" points="1526.88,-1658.58 1526.88,-1658.58 1587.12,-1658.58 1587.12,-1658.58 1526.88,-1658.58"/>
+<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1666.43" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Current&#45;State Historical Demand Probe</text>
+<polygon fill="#164c3e" stroke="none" points="1529.88,-1661.58 1529.88,-1679.33 1584.12,-1679.33 1584.12,-1661.58 1529.88,-1661.58"/>
+<polygon fill="none" stroke="#43d9ae" points="1529.88,-1661.58 1529.88,-1679.33 1584.12,-1679.33 1584.12,-1661.58 1529.88,-1661.58"/>
+<text xml:space="preserve" text-anchor="start" x="1534.88" y="-1667.78" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
 <text xml:space="preserve" text-anchor="start" x="1299.88" y="-1648.08" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.current&#45;state&#45;historical&#45;probe</text>
-<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1632.33" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1616.58" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER 14</text>
+<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1632.33" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1616.58" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 14</text>
 </a>
 </g>
 </g>
@@ -282,16 +282,16 @@
 <g id="actor.historical&#45;probe" class="node">
 <title>actor.historical&#45;probe</title>
 <g id="a_actor.historical&#45;probe"><a xlink:title="actor.historical&#45;probe">
-<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="1595.76,-1448.89 1288.24,-1448.89 1288.24,-1364.93 1595.76,-1364.93 1595.76,-1448.89"/>
-<polygon fill="#e2b75c" stroke="#e2b75c" points="1296.88,-1418.66 1296.88,-1418.66 1498.38,-1418.66 1498.38,-1418.66 1296.88,-1418.66"/>
-<polygon fill="#e2b75c" stroke="#e2b75c" points="1498.38,-1418.66 1498.38,-1418.66 1587.12,-1418.66 1587.12,-1418.66 1498.38,-1418.66"/>
-<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1426.51" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Historical Dependency Probe</text>
-<polygon fill="#5b4316" stroke="none" points="1501.38,-1421.66 1501.38,-1439.41 1584.12,-1439.41 1584.12,-1421.66 1501.38,-1421.66"/>
-<polygon fill="none" stroke="#e2b75c" points="1501.38,-1421.66 1501.38,-1439.41 1584.12,-1439.41 1584.12,-1421.66 1501.38,-1421.66"/>
-<text xml:space="preserve" text-anchor="start" x="1519.5" y="-1427.86" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M1583.76,-1448.89C1583.76,-1448.89 1300.24,-1448.89 1300.24,-1448.89 1294.24,-1448.89 1288.24,-1442.89 1288.24,-1436.89 1288.24,-1436.89 1288.24,-1376.93 1288.24,-1376.93 1288.24,-1370.93 1294.24,-1364.93 1300.24,-1364.93 1300.24,-1364.93 1583.76,-1364.93 1583.76,-1364.93 1589.76,-1364.93 1595.76,-1370.93 1595.76,-1376.93 1595.76,-1376.93 1595.76,-1436.89 1595.76,-1436.89 1595.76,-1442.89 1589.76,-1448.89 1583.76,-1448.89"/>
+<polygon fill="#43d9ae" stroke="#43d9ae" points="1296.88,-1418.66 1296.88,-1418.66 1482.62,-1418.66 1482.62,-1418.66 1296.88,-1418.66"/>
+<polygon fill="#43d9ae" stroke="#43d9ae" points="1482.62,-1418.66 1482.62,-1418.66 1587.12,-1418.66 1587.12,-1418.66 1482.62,-1418.66"/>
+<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1426.51" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Historical Dependency Probe</text>
+<polygon fill="#3d444b" stroke="none" points="1485.62,-1421.66 1485.62,-1439.41 1584.12,-1439.41 1584.12,-1421.66 1485.62,-1421.66"/>
+<polygon fill="none" stroke="#43d9ae" points="1485.62,-1421.66 1485.62,-1439.41 1584.12,-1439.41 1584.12,-1421.66 1485.62,-1421.66"/>
+<text xml:space="preserve" text-anchor="start" x="1495.88" y="-1427.86" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">NOT APPLICABLE</text>
 <text xml:space="preserve" text-anchor="start" x="1299.88" y="-1408.16" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.historical&#45;probe</text>
-<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1392.41" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1376.66" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER 15</text>
+<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1392.41" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="start" x="1299.88" y="-1376.66" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: NOT_APPLICABLE · ORDER 15</text>
 </a>
 </g>
 </g>

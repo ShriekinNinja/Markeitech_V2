@@ -7,7 +7,7 @@ Show provider capability, native Nautilus boundary, acquisition ownership, histo
 - View ID: `view.provider-canonical-data`
 - Profile: `profile.v3-es-minimal`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `5b00af3e4e61b8b1f32aa5680b267f9f7904814d`
+- Checkout evidence: `4a414d0c5ce9b3eead005b674e6ce1997fe966b1`
 - Review status: `proposed`
 
 ## Components
@@ -31,7 +31,7 @@ Show provider capability, native Nautilus boundary, acquisition ownership, histo
 |---|---|---|---|---|---|---|
 | `capability.acquisition.historical-bars` | `actor.data-acquisition` | Bounded analytical historical bar requests | implemented | conditional | enabled | historical plus consumer AnalyticalDemand |
 | `capability.acquisition.watchlist-last` | `actor.data-acquisition` | Watchlist last-price bar acquisition | implemented | conditional | enabled | watchlist.members[].capabilities contains watchlist_last |
-| `capability.session-metrics.completed-bars` | `actor.session-metrics` | Completed-bar foundation | implemented | conditional | enabled | metrics.session_measurements.enabled |
+| `capability.session-metrics.completed-bars` | `actor.session-metrics` | Completed-bar foundation | implemented | conditional | disabled | metrics.session_measurements.enabled |
 | `capability.session-metrics.rolling` | `actor.session-metrics` | Rolling measurements | implemented | conditional | disabled | metrics.session_measurements.rolling_measurements.enabled |
 | `capability.session-metrics.session-references` | `actor.session-metrics` | Session reference measurements | implemented | conditional | disabled | metrics.session_measurements.session_references.enabled |
 | `capability.session-metrics.session-windows` | `actor.session-metrics` | Calendar-relative session windows | implemented | conditional | disabled | metrics.session_measurements.session_windows.enabled |

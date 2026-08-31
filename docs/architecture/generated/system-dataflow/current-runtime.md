@@ -7,13 +7,14 @@ Profile-specific implemented and enabled topology for the tracked V3 ES review p
 - View ID: `view.current-runtime`
 - Profile: `profile.v3-es-minimal`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `5b00af3e4e61b8b1f32aa5680b267f9f7904814d`
+- Checkout evidence: `4a414d0c5ce9b3eead005b674e6ce1997fe966b1`
 - Review status: `proposed`
 
 ## Components
 
 | ID | Component | Kind | Implementation | Composition | Order | Active profile | Semantic owner | Boundary |
 |---|---|---|---|---|---:|---|---|---|
+| `actor.current-state-historical-probe` | Current-State Historical Demand Probe | markeitech_actor | implemented | conditional | 14 | enabled | `none_current` | `boundary.acquisition` |
 | `actor.data-acquisition` | Data Acquisition | markeitech_actor | implemented | always | 13 | enabled | `actor.data-acquisition` | `boundary.acquisition` |
 | `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | always | 3 | enabled | `actor.evidence-health` | `boundary.intelligence` |
 | `actor.historical-planner` | Historical Evidence Planner | markeitech_actor | implemented | always | 11 | enabled | `actor.historical-planner` | `boundary.intelligence` |
@@ -51,13 +52,20 @@ Profile-specific implemented and enabled topology for the tracked V3 ES review p
 | `edge.calendar-response-health` | `actor.session-state` | `actor.evidence-health` | response | `contract.calendar-state-snapshot-response` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-response-planner` | `actor.session-state` | `actor.historical-planner` | response | `contract.calendar-projection-response` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-state-request-planner` | `actor.historical-planner` | `actor.session-state` | query | `contract.calendar-state-snapshot-request` | nautilus_custom_data | yes | always | unknown |
+| `edge.calendar-state-request-probe` | `actor.current-state-historical-probe` | `actor.session-state` | query | `contract.calendar-state-snapshot-request` | nautilus_custom_data | yes | historical.probe.enabled | unknown |
 | `edge.calendar-state-response-planner` | `actor.session-state` | `actor.historical-planner` | response | `contract.calendar-state-snapshot-response` | nautilus_custom_data | yes | always | unknown |
+| `edge.calendar-state-response-probe` | `actor.session-state` | `actor.current-state-historical-probe` | response | `contract.calendar-state-snapshot-response` | nautilus_custom_data | yes | historical.probe.enabled | unknown |
 | `edge.calendar-transition-health` | `actor.session-state` | `actor.evidence-health` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-transition-persistence` | `actor.session-state` | `actor.operational-persistence` | persistence | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-transition-planner` | `actor.session-state` | `actor.historical-planner` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
+| `edge.calendar-transition-probe` | `actor.session-state` | `actor.current-state-historical-probe` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | historical.probe.enabled | unknown |
+| `edge.current-state-probe-historical-demand` | `actor.current-state-historical-probe` | `actor.historical-planner` | query | `contract.historical-demand` | nautilus_signal | yes | historical.probe.enabled | unknown |
 | `edge.data-engine-live-callback` | `component.data-engine` | `actor.data-acquisition` | callback | `contract.native-bar` | nautilus_callback | yes | always | unknown |
+| `edge.historical-batch-current-state-probe` | `actor.data-acquisition` | `actor.current-state-historical-probe` | response | `contract.historical-batch` | nautilus_custom_data | yes | historical.probe.enabled | unknown |
 | `edge.historical-plan-acquisition` | `actor.historical-planner` | `actor.data-acquisition` | publication | `contract.historical-request-plan` | nautilus_custom_data | yes | always | unknown |
+| `edge.historical-plan-current-state-probe` | `actor.historical-planner` | `actor.current-state-historical-probe` | response | `contract.historical-request-plan` | nautilus_custom_data | yes | historical.probe.enabled | unknown |
 | `edge.historical-provider-response` | `provider.interactive-brokers` | `component.data-engine` | response | `contract.native-bar` | nautilus_native_data | yes | historical.enabled | unknown |
+| `edge.historical-readiness-current-state-probe` | `actor.data-acquisition` | `actor.current-state-historical-probe` | readiness | `contract.historical-readiness` | nautilus_signal | yes | historical.probe.enabled | unknown |
 | `edge.ib-native-bars` | `provider.interactive-brokers` | `component.data-engine` | native_observation | `contract.native-bar` | nautilus_native_data | yes | always | unknown |
 | `edge.native-historical-request` | `actor.data-acquisition` | `component.data-engine` | query | `contract.native-historical-request` | method_call | yes | historical.enabled | at_most_once_attempt |
 | `edge.persistence-failure` | `actor.operational-persistence` | `actor.system-control` | failure | `contract.component-failure` | nautilus_signal | yes | always | unknown |

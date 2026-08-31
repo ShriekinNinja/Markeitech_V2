@@ -6,10 +6,10 @@ description = "Offline reviewed representation of current, conditional, external
 scope = "Repository architecture documentation only; never runtime configuration or live state."
 authority = "architecture_representation_only"
 not_runtime_configuration = true
-checkout_commit = "5b00af3e4e61b8b1f32aa5680b267f9f7904814d"
+checkout_commit = "4a414d0c5ce9b3eead005b674e6ce1997fe966b1"
 owner = "Markeitect"
 review_status = "proposed"
-architecture_effective_at = "2026-08-30"
+architecture_effective_at = "2026-08-31"
 generator_contract_version = 1
 default_profile = "profile.v3-es-minimal"
 limitations = ["Static source and configuration checks cannot prove connected runtime behavior.", "Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.", "Generated artifacts are documentation projections and must never be edited or treated as authority.", "Markeitech is read-only and advisory; no current order submission or execution exists."]
@@ -177,7 +177,7 @@ limitations = ["Roadmap content is not current implementation."]
 id = "profile.v3-es-minimal"
 config_path = "v2/config/system.v3-es-minimal.toml"
 config_schema_version = 23
-content_sha256 = "bb268e7ecdf15096784314c726021019586cbb052c69c5ed019a0a09cffda648"
+content_sha256 = "e5cef60003c0cc26afac50cd0b14a922ca3f47d96c2e4f6e5fb593c8659997b4"
 status = "tracked_active_review_profile"
 limitations = ["Represents the named tracked profile, not all available capabilities or a connected runtime observation."]
 evidence = ["evidence.profile"]
@@ -506,7 +506,7 @@ policy_owner = "operator.markeitect"
 implementation_state = "implemented"
 composition_policy = "conditional"
 temporal_status = "current"
-acceptance_state = "accepted"
+acceptance_state = "unaccepted"
 evidence_certainty = "verified_source"
 configuration_path = "metrics.session_measurements.enabled"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
@@ -514,7 +514,7 @@ cardinality = "one when composed"
 style = "style.component.disabled"
 profile_states = [{ profile = "profile.v3-es-minimal", enablement = "disabled" }]
 evidence = ["evidence.composition", "evidence.calendar-contracts"]
-limitations = ["The actor retains multiple analytical responsibilities and its approved split remains deferred."]
+limitations = ["The actor retains faulty combined responsibilities, is disabled in tracked profiles, and awaits the separately reviewed V3-03 replacement."]
 
 [[components]]
 id = "actor.session-reference-entities"
@@ -726,9 +726,9 @@ configuration_path = "historical.probe.enabled"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "zero to many, configuration-bounded"
 style = "style.component.disabled"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "disabled" }]
+profile_states = []
 evidence = ["evidence.composition"]
-limitations = []
+limitations = ["Direct-mode composition depends on both historical.probe.enabled and historical.probe.mode=direct; the mechanical profile census supports one Boolean path only. The tracked current_state_gated profile does not compose this legacy direct probe."]
 
 [[components]]
 id = "actor.current-state-historical-probe"
@@ -757,9 +757,9 @@ failure_isolation = "Nautilus actor callback boundary; terminal stop and bounded
 cardinality = "zero or one when explicitly composed"
 style = "style.component.current"
 configuration_path = "historical.probe.enabled"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "disabled" }]
+profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }]
 evidence = ["evidence.composition", "evidence.historical-contracts"]
-limitations = ["Composition additionally requires historical.probe.mode=current_state_gated.", "Disabled in tracked profiles; no connected provider acceptance is claimed."]
+limitations = ["Composition additionally requires historical.probe.mode=current_state_gated.", "Temporarily enabled by Markeitect for bounded checks; one connected 5/5 READY result does not create production analytical or provider authority."]
 
 [[components]]
 id = "actor.native-consumer-probe"
@@ -1332,7 +1332,7 @@ implementation_state = "implemented"
 composition_policy = "conditional"
 configuration_path = "metrics.session_measurements.enabled"
 profile = "profile.v3-es-minimal"
-enablement = "enabled"
+enablement = "disabled"
 evidence = ["evidence.profile"]
 limitations = []
 
@@ -1380,7 +1380,7 @@ implementation_state = "implemented"
 composition_policy = "conditional"
 configuration_path = "visual_debug_capture.enabled"
 profile = "profile.v3-es-minimal"
-enablement = "enabled"
+enablement = "disabled"
 evidence = ["evidence.visual-debug"]
 limitations = ["Diagnostic projection is not architecture or analytical authority."]
 
@@ -3592,8 +3592,8 @@ explicit_tombstones = []
 include_temporal_status = ["current"]
 include_implementation_state = ["implemented", "external"]
 include_profile_enablement = ["enabled", "not_applicable"]
-explicit_components = ["component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "actor.system-control", "actor.session-state", "actor.evidence-health", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "operator.markeitect"]
-explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-status-system", "edge.acquisition-stream-health", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-state-request-planner", "edge.calendar-state-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-planner", "edge.calendar-transition-persistence", "edge.historical-plan-acquisition", "edge.native-historical-request", "edge.historical-provider-response", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure"]
+explicit_components = ["component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "actor.system-control", "actor.session-state", "actor.evidence-health", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.current-state-historical-probe", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "operator.markeitect"]
+explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-status-system", "edge.acquisition-stream-health", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-state-request-planner", "edge.calendar-state-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-planner", "edge.calendar-state-request-probe", "edge.calendar-state-response-probe", "edge.calendar-transition-probe", "edge.current-state-probe-historical-demand", "edge.historical-plan-current-state-probe", "edge.calendar-transition-persistence", "edge.historical-plan-acquisition", "edge.native-historical-request", "edge.historical-provider-response", "edge.historical-batch-current-state-probe", "edge.historical-readiness-current-state-probe", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure"]
 direction = "left_to_right"
 layout_engine = "dot"
 routing = "spline"

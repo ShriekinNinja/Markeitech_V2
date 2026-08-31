@@ -7,19 +7,19 @@ Show implemented, conditional, disabled, external, and future components without
 - View ID: `view.complete-inventory`
 - Profile: `profile.v3-es-minimal`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `5b00af3e4e61b8b1f32aa5680b267f9f7904814d`
+- Checkout evidence: `4a414d0c5ce9b3eead005b674e6ce1997fe966b1`
 - Review status: `proposed`
 
 ## Components
 
 | ID | Component | Kind | Implementation | Composition | Order | Active profile | Semantic owner | Boundary |
 |---|---|---|---|---|---:|---|---|---|
-| `actor.current-state-historical-probe` | Current-State Historical Demand Probe | markeitech_actor | implemented | conditional | 14 | disabled | `none_current` | `boundary.acquisition` |
+| `actor.current-state-historical-probe` | Current-State Historical Demand Probe | markeitech_actor | implemented | conditional | 14 | enabled | `none_current` | `boundary.acquisition` |
 | `actor.data-acquisition` | Data Acquisition | markeitech_actor | implemented | always | 13 | enabled | `actor.data-acquisition` | `boundary.acquisition` |
 | `actor.discord-health` | Discord Health Projection | markeitech_actor | implemented | conditional | 4 | disabled | `actor.discord-health` | `boundary.system` |
 | `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | always | 3 | enabled | `actor.evidence-health` | `boundary.intelligence` |
 | `actor.historical-planner` | Historical Evidence Planner | markeitech_actor | implemented | always | 11 | enabled | `actor.historical-planner` | `boundary.intelligence` |
-| `actor.historical-probe` | Historical Dependency Probe | markeitech_actor | implemented | conditional | 15 | disabled | `actor.historical-probe` | `boundary.acquisition` |
+| `actor.historical-probe` | Historical Dependency Probe | markeitech_actor | implemented | conditional | 15 | not_applicable | `actor.historical-probe` | `boundary.acquisition` |
 | `actor.market-state-entities` | Market State Entities | markeitech_actor | implemented | conditional | 9 | disabled | `actor.market-state-entities` | `boundary.intelligence` |
 | `actor.market-structure-entities` | Market Structure Entities | markeitech_actor | implemented | conditional | 10 | disabled | `actor.market-structure-entities` | `boundary.intelligence` |
 | `actor.native-consumer-probe` | Native Consumer Probe | markeitech_actor | implemented | conditional | 16 | disabled | `actor.native-consumer-probe` | `boundary.system` |
@@ -60,11 +60,11 @@ Show implemented, conditional, disabled, external, and future components without
 | `capability.discord.notifications` | `actor.discord-health` | Queued Discord health notifications | implemented | conditional | disabled | discord.enabled |
 | `capability.runtime-resources.health` | `actor.runtime-resource-health` | Runtime resource health classification | implemented | conditional | disabled | runtime_resources.enabled and runtime_resources.health.enabled |
 | `capability.runtime-resources.telemetry` | `actor.runtime-resources` | Runtime resource telemetry | implemented | conditional | disabled | runtime_resources.enabled |
-| `capability.session-metrics.completed-bars` | `actor.session-metrics` | Completed-bar foundation | implemented | conditional | enabled | metrics.session_measurements.enabled |
+| `capability.session-metrics.completed-bars` | `actor.session-metrics` | Completed-bar foundation | implemented | conditional | disabled | metrics.session_measurements.enabled |
 | `capability.session-metrics.rolling` | `actor.session-metrics` | Rolling measurements | implemented | conditional | disabled | metrics.session_measurements.rolling_measurements.enabled |
 | `capability.session-metrics.session-references` | `actor.session-metrics` | Session reference measurements | implemented | conditional | disabled | metrics.session_measurements.session_references.enabled |
 | `capability.session-metrics.session-windows` | `actor.session-metrics` | Calendar-relative session windows | implemented | conditional | disabled | metrics.session_measurements.session_windows.enabled |
-| `capability.visual-debug.capture` | `actor.visual-debug` | Passive visual debug capture | implemented | conditional | enabled | visual_debug_capture.enabled |
+| `capability.visual-debug.capture` | `actor.visual-debug` | Passive visual debug capture | implemented | conditional | disabled | visual_debug_capture.enabled |
 
 ## Historical removed or rejected identities
 

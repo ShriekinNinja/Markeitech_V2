@@ -1,7 +1,7 @@
 # V3 SessionStateActor Role Review
 
-**Status:** Calendar-owner, typed-transition, bounded-projection, and boundary-timer subset approved,
-committed, and connected-accepted with V3-01; full late-consumer snapshot protocol remains proposed
+**Status:** V3-02 late-consumer current-state delivery implemented, committed, and bounded
+connected-accepted; `SessionMetricsActor` and its dependent visual/entity surfaces remain disabled
 
 **Review order:** 2 of 4
 
@@ -22,24 +22,31 @@ The actor should answer one current-state question:
 It should publish current truth and meaningful transitions. It should not become the universal
 owner of every period an analytical capability may use.
 
-## Implemented Subset
+## Implemented Responsibility
 
-`SessionStateActor` now solely owns one `CanonicalCalendar` per active definition. It publishes
-typed, source-epoch-scoped `CalendarTransition` custom data whenever a consumed current-state field
-changes and answers bounded typed projection requests with immutable, definition-identified
-schedule coverage. It uses both a configurable periodic reconciliation timer and the next known
-boundary alert. Other actors no longer instantiate mcal or a copied evaluator.
+`SessionStateActor` solely owns one `CanonicalCalendar` per active definition. It publishes typed,
+source-epoch-scoped transition-v2 custom data whenever a consumed current-state field changes,
+answers bounded typed projection requests with immutable definition-identified schedule coverage,
+and answers strict current-state snapshot-v1 requests with complete per-calendar outcomes. It uses
+both a configurable periodic reconciliation timer and the next known boundary alert. Other actors
+do not instantiate mcal or a copied evaluator.
 
-The transition contract includes current and previous trade date, phase memberships and exchange
-state, segment bounds, next transition, definition/effective identity, source epoch, revision, and
-effective/evaluated/published timestamps. The existing operational ledger stores those transitions.
+The transition and snapshot contracts include trade date, phase memberships and exchange state,
+segment bounds, next transition, exact definition identity, source/run epoch, revision, and
+distinct state-effective, evaluated-as-of, and published timestamps. One admitted request is
+evaluated at one owner-clock cut. The existing operational ledger stores transition audit facts;
+snapshot responses, consumer watermarks, buffers, retries, and projections remain transient.
 
-The full late-consumer current-state snapshot request/response and subscribe-buffer-reconcile
-protocol described below is not implemented and must not be inferred from projection support.
+`EvidenceHealthActor` and `HistoricalEvidencePlannerActor` subscribe before requesting, bound and
+reconcile racing transitions through one shared pure helper, retry deterministically, and install
+state only after gap-free reconciliation. `SessionMetricsActor` was deliberately not migrated: it,
+Session-Metrics-dependent Entity Analysis, and Visual Debug are disabled in the tracked profiles
+pending the separately reviewed replacement. One temporary acceptance probe uses the same
+production synchronization path without owning provider access, persistence, or analytics.
 
 ## Pre-Cutover Verified State (Historical)
 
-`SessionStateActor` currently:
+`SessionStateActor` then:
 
 - constructs its own `SessionCalendar` objects from copied startup configuration;
 - waits for operational-persistence readiness;
@@ -49,7 +56,7 @@ protocol described below is not implemented and must not be inferred from projec
 - uses one in-memory revision counter per calendar; and
 - publishes operational transition facts through the existing persistence boundary.
 
-The actor currently does not:
+The actor did not:
 
 - publish an immutable current-state snapshot in response to a late consumer;
 - provide a bounded point-in-time schedule projection for historical timestamps;
@@ -59,13 +66,13 @@ The actor currently does not:
 - expose explicit unavailable or conflicting calendar state; or
 - prevent acquisition and analytical actors from independently evaluating copied calendars.
 
-The current transition event is useful but insufficient as the sole session-state interface. A
-consumer which starts after the initial event may wait indefinitely for the next transition, and a
-current transition cannot classify historical bars.
+That transition event was useful but insufficient as the sole session-state interface. A consumer
+which started after the initial event could wait indefinitely for the next transition, and a
+current transition could not classify historical bars.
 
-## Proposed Responsibility
+## Implemented Ownership Boundary
 
-`SessionStateActor` should be the sole runtime publisher of current exchange-session and product-
+`SessionStateActor` is the sole runtime publisher of current exchange-session and product-
 phase state under one active canonical calendar-definition epoch.
 
 ### It owns
@@ -106,7 +113,13 @@ rules.
 - semantic market events; or
 - agent interpretation or trading behavior.
 
-## Proposed Contracts
+## Contract Direction And Final Authority
+
+The lists below preserve the role review which led to V3-02. The exact accepted fields, identity,
+ordering, admission, and retry invariants are governed by
+[`v3-02-session-state-actor-implementation-plan.md`](../roadmap/v3-02-session-state-actor-implementation-plan.md)
+and the committed typed contracts. Where this earlier direction is less exact, the implementation
+plan supersedes it.
 
 The actor needs distinct transition and snapshot contracts. Historical point-in-time schedule
 coverage remains a canonical-calendar contract rather than a current-state event.
@@ -177,7 +190,7 @@ bar is rejected as a hot-path design.
 
 ## Late-Consumer Startup Protocol
 
-The minimum safe protocol is:
+The implemented minimum safe protocol is:
 
 1. subscribe to session-state transition events;
 2. request a source-scoped current-state snapshot;
@@ -278,20 +291,26 @@ Runtime calendar mutation remains out of scope through all three stages.
 - independent consumer failure isolation; and
 - no new provider request or raw-data persistence.
 
-### Cutover evidence
+### Cutover and connected evidence
 
-Before removing copied calendar evaluation, parity must cover every current consumer:
+- `EvidenceHealthActor` and `HistoricalEvidencePlannerActor` are the only active production
+  consumers migrated in V3-02.
+- Alternate-order, late-consumer, duplicate, stale, gap, conflict, overflow, timeout, typed
+  rejection, retry, failure-isolation, and terminal-stop behavior passes deterministic tests.
+- The temporary acceptance probe deliberately omitted snapshot attempt 1 in the accepted
+  2026-08-31 connected run and recovered on attempt 2.
+- The recovered state was `GLOBEX+NEW_YORK`; the planner aligned five completed one-minute bars to
+  `13:51:00.000000000Z` through `13:55:59.999999999Z` rather than using a fractional request time.
+- The existing acquisition owner submitted one IB request, accepted `5/5` bars, delivered one
+  batch, and published `READY`, with zero historical degradation or late callback.
+- Session State rejected no snapshot request, persistence stored `31/31` accepted operational
+  facts, and shutdown was clean.
+- One non-terminal planner projection timeout occurred during startup before successful recovery;
+  it is not hidden or promoted into a broader reliability claim.
 
-- `EvidenceHealthActor` current session expectations;
-- historical window planning;
-- completed-bar trade-date and phase classification;
-- session-reference metrics;
-- analytical-window metrics;
-- phase-matched rolling baselines; and
-- entity consumers which retain session identity.
-
-A connected run may later confirm live transition timing and operational audit, but it is not
-needed to review the initial actor contract and offline snapshot behavior.
+This is one bounded connected acceptance for the exact configured ES run. It does not accept
+multi-calendar behavior, phase-boundary delivery, repeated provider reliability, performance,
+value parity, or general market-session correctness.
 
 ## Explicit Non-Goals
 
@@ -306,18 +325,18 @@ needed to review the initial actor contract and offline snapshot behavior.
 - no agent control; and
 - no execution authority.
 
-## Remaining Decisions
+## Closure And Deferred Boundaries
 
-Sole ownership, typed transitions, bounded projections, meaningful-boundary publication, startup-
-only definitions, and removal of copied consumer evaluators are decided and implemented. The
-remaining decision is the exact late-consumer snapshot and reconciliation protocol.
+The source-scoped request/response contract, complete accounting, bounded retry/timeout policy,
+subscribe-buffer-snapshot-reconcile protocol, and exact two-clock semantics are decided and
+implemented for one statically composed producer per runtime run UUID. Same-run producer
+replacement remains unsupported; no producer-incarnation identity was added.
 
-1. Define and approve the source-scoped current-state snapshot request/response contract, complete
-   calendar accounting, retry/timeout outcomes, and bounded request population.
-2. Define and prove the late-consumer subscribe, buffer, snapshot, reconcile, and epoch-change
-   protocol before claiming restart-safe current-state delivery.
-3. Run bounded connected acceptance before claiming live transition timing or operational-audit
-   acceptance for the new contract.
+The temporary acceptance probe remains enabled by Markeitect's explicit decision for additional
+bounded checks. Its removal or disablement is a later reviewed configuration change, not a V3-02
+correctness dependency. Splitting or repairing `SessionMetricsActor`, re-enabling Visual Debug or
+Entity Analysis, persisting synchronization state, or broadening the connected claim belongs to a
+separate stage.
 
 ## Advisory Basis
 
