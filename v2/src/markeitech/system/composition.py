@@ -315,6 +315,22 @@ def build_actor_plan(
         "retry_backoff_ms": config.sessions.projection_retry.retry_backoff_ms,
         "maximum_elapsed_ms": config.sessions.projection_retry.maximum_elapsed_ms,
     }
+    current_state_delivery = {
+        "policy_version": config.sessions.current_state_delivery.policy_version,
+        "response_timeout_ms": config.sessions.current_state_delivery.response_timeout_ms,
+        "maximum_attempts": config.sessions.current_state_delivery.maximum_attempts,
+        "retry_backoff_ms": config.sessions.current_state_delivery.retry_backoff_ms,
+        "maximum_elapsed_ms": config.sessions.current_state_delivery.maximum_elapsed_ms,
+        "maximum_buffered_transitions_per_calendar": (
+            config.sessions.current_state_delivery.maximum_buffered_transitions_per_calendar
+        ),
+        "maximum_total_buffered_transitions": (
+            config.sessions.current_state_delivery.maximum_total_buffered_transitions
+        ),
+        "boundary_delivery_grace_ms": (
+            config.sessions.current_state_delivery.boundary_delivery_grace_ms
+        ),
+    }
     registrations = [
         ActorRegistration(
             key="system_control",
@@ -343,6 +359,11 @@ def build_actor_plan(
                     "maximum_calendars_per_request": (
                         config.sessions.maximum_calendars_per_request
                     ),
+                    "current_state_delivery": current_state_delivery,
+                    "allowed_current_state_requesters": [
+                        "EVIDENCE-HEALTH",
+                        "HISTORICAL-EVIDENCE-PLANNER",
+                    ],
                     "calendars": [
                         _canonical_calendar_payload(calendar)
                         for calendar in config.sessions.calendars

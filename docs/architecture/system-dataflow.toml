@@ -176,8 +176,8 @@ limitations = ["Roadmap content is not current implementation."]
 [[profiles]]
 id = "profile.v3-es-minimal"
 config_path = "v2/config/system.v3-es-minimal.toml"
-config_schema_version = 21
-content_sha256 = "08fa5fad2af4e77eeb7670a2212b48095effda7da41764d92f8685c62085257f"
+config_schema_version = 22
+content_sha256 = "557807369bb0b2e0fc3f4269dfb10b76eee5bbfb3dabcd7d7a97040f3e3b1fc6"
 status = "tracked_active_review_profile"
 limitations = ["Represents the named tracked profile, not all available capabilities or a connected runtime observation."]
 evidence = ["evidence.profile"]
@@ -449,8 +449,8 @@ evidence_certainty = "verified_source"
 configuration_path = "visual_debug_capture.enabled"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
-style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }]
+style = "style.component.disabled"
+profile_states = [{ profile = "profile.v3-es-minimal", enablement = "disabled" }]
 evidence = ["evidence.visual-debug"]
 limitations = ["Passive diagnostic projection; not architecture or analytical authority."]
 
@@ -511,8 +511,8 @@ evidence_certainty = "verified_source"
 configuration_path = "metrics.session_measurements.enabled"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
-style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }]
+style = "style.component.disabled"
+profile_states = [{ profile = "profile.v3-es-minimal", enablement = "disabled" }]
 evidence = ["evidence.composition", "evidence.calendar-contracts"]
 limitations = ["The actor retains multiple analytical responsibilities and its approved split remains deferred."]
 
@@ -3380,8 +3380,8 @@ explicit_tombstones = []
 include_temporal_status = ["current"]
 include_implementation_state = ["implemented", "external"]
 include_profile_enablement = ["enabled", "not_applicable"]
-explicit_components = ["component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "actor.system-control", "actor.session-state", "actor.evidence-health", "actor.visual-debug", "actor.session-metrics", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "projection.visual-files", "operator.markeitect"]
-explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.data-engine-metric-bars", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-status-system", "edge.acquisition-stream-health", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-metrics", "edge.calendar-response-metrics", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-metrics", "edge.calendar-transition-planner", "edge.calendar-transition-persistence", "edge.analytical-demand", "edge.historical-demand-planner", "edge.historical-plan-acquisition", "edge.native-historical-request", "edge.historical-provider-response", "edge.historical-batch", "edge.historical-readiness", "edge.completed-bars-visual", "edge.metrics-visual", "edge.visual-files", "edge.visual-review", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure"]
+explicit_components = ["component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "actor.system-control", "actor.session-state", "actor.evidence-health", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "operator.markeitect"]
+explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-status-system", "edge.acquisition-stream-health", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-planner", "edge.calendar-transition-persistence", "edge.historical-plan-acquisition", "edge.native-historical-request", "edge.historical-provider-response", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure"]
 direction = "left_to_right"
 layout_engine = "dot"
 routing = "spline"

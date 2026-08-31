@@ -329,7 +329,7 @@ class CalendarTransitionV2:
     """Represent one immutable definition-identified calendar-state revision.
 
     This contract is defined in Slice 2 but is not the canonical published transition until the
-    producer performs the atomic v1-to-v2 cutover in Slice 3. It records three distinct UTC Unix
+    producer performs the atomic v1-to-v2 cutover in Slice 4. It records three distinct UTC Unix
     nanosecond clocks: definition authority, the exact canonical state boundary, and the owner
     evaluation cut. ``published_ts_ns`` records transport availability and never substitutes for
     either semantic time.
@@ -763,10 +763,12 @@ class CalendarStateSnapshotResponse:
             self.requested_as_of_ns
             <= self.requested_ts_ns
             < self.deadline_ts_ns
-            < self.request_received_ts_ns
+            and self.requested_ts_ns
+            <= self.request_received_ts_ns
             <= self.evaluated_as_of_ns
             <= self.generated_ts_ns
             <= self.published_ts_ns
+            and self.deadline_ts_ns < self.published_ts_ns
         )
         if not ordered_in_time and not (expired_rejection and expired_ordering):
             raise ValueError("snapshot response timestamps must follow canonical ordering")

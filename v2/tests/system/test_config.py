@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 21
+schema_version = 22
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -130,6 +130,16 @@ response_timeout_ms = 5000
 maximum_attempts = 3
 retry_backoff_ms = 1000
 maximum_elapsed_ms = 60000
+
+[sessions.current_state_delivery]
+policy_version = 1
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
+maximum_buffered_transitions_per_calendar = 8
+maximum_total_buffered_transitions = 32
+boundary_delivery_grace_ms = 2000
 
 [evidence_health]
 evaluation_interval_ms = 1000
@@ -426,6 +436,9 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         "HISTORICAL-PROBE-A",
         "HISTORICAL-PROBE-B",
     )
+    assert config.sessions.current_state_delivery.policy_version == 1
+    assert config.sessions.current_state_delivery.maximum_attempts == 3
+    assert config.sessions.current_state_delivery.maximum_total_buffered_transitions == 32
     cme_equity = next(
         calendar
         for calendar in config.sessions.calendars
@@ -501,7 +514,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         config.metrics.session_measurements.profiles[0].windows[1].maximum_historical_observations
         == 4
     )
-    assert config.schema_version == 21
+    assert config.schema_version == 22
     assert config.metrics.entity_analysis.enabled is False
     assert config.metrics.entity_analysis.catalog_version == 2
     assert config.metrics.entity_analysis.completed_session_retention == 2
@@ -736,11 +749,11 @@ def test_rejects_retired_visual_review_sections(tmp_path: Path, section: str) ->
         load_system_config(path)
 
 
-def test_rejects_pre_projection_retry_schema(tmp_path: Path) -> None:
+def test_rejects_pre_current_state_delivery_schema(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("schema_version = 21", "schema_version = 20", 1))
+    path.write_text(VALID_CONFIG.replace("schema_version = 22", "schema_version = 21", 1))
 
-    with pytest.raises(ValueError, match="unsupported schema_version: 20"):
+    with pytest.raises(ValueError, match="unsupported schema_version: 21"):
         load_system_config(path)
 
 
@@ -767,6 +780,72 @@ def test_rejects_projection_retry_values_outside_safety_envelopes(
     path.write_text(VALID_CONFIG.replace(original, replacement, 1))
 
     with pytest.raises(ValueError, match=message):
+        load_system_config(path)
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement", "message"),
+    [
+        ("policy_version = 1", "policy_version = 2", "policy_version must be 1"),
+        (
+            "[sessions.current_state_delivery]\npolicy_version = 1\n"
+            "response_timeout_ms = 5000\nmaximum_attempts = 3",
+            "[sessions.current_state_delivery]\npolicy_version = 1\n"
+            "response_timeout_ms = 5000\nmaximum_attempts = 11",
+            "maximum_attempts",
+        ),
+        (
+            "maximum_buffered_transitions_per_calendar = 8\n"
+            "maximum_total_buffered_transitions = 32",
+            "maximum_buffered_transitions_per_calendar = 33\n"
+            "maximum_total_buffered_transitions = 32",
+            "maximum_total_buffered_transitions",
+        ),
+    ],
+)
+def test_rejects_invalid_current_state_delivery_policy(
+    tmp_path: Path,
+    original: str,
+    replacement: str,
+    message: str,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace(original, replacement, 1))
+
+    with pytest.raises(ValueError, match=message):
+        load_system_config(path)
+
+
+def test_rejects_missing_or_unknown_current_state_delivery_configuration(
+    tmp_path: Path,
+) -> None:
+    block = """\
+[sessions.current_state_delivery]
+policy_version = 1
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
+maximum_buffered_transitions_per_calendar = 8
+maximum_total_buffered_transitions = 32
+boundary_delivery_grace_ms = 2000
+"""
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace(block, ""))
+    with pytest.raises(ValueError, match="sessions missing keys: current_state_delivery"):
+        load_system_config(path)
+
+    path.write_text(
+        VALID_CONFIG.replace(
+            "boundary_delivery_grace_ms = 2000",
+            "boundary_delivery_grace_ms = 2000\nmaximum_cached_responses = 99",
+            1,
+        ),
+    )
+    with pytest.raises(
+        ValueError,
+        match="current_state_delivery has unknown keys: maximum_cached_responses",
+    ):
         load_system_config(path)
 
 

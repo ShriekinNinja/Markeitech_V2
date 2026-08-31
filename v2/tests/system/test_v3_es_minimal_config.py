@@ -27,6 +27,11 @@ def test_v3_es_minimal_config_disables_faulty_session_metrics_surface() -> None:
         "definition_digest" in calendar
         for calendar in session_state.config.config["calendars"]
     )
+    assert session_state.config.config["allowed_current_state_requesters"] == [
+        "EVIDENCE-HEALTH",
+        "HISTORICAL-EVIDENCE-PLANNER",
+    ]
+    assert session_state.config.config["current_state_delivery"]["policy_version"] == 1
     assert "calendars" not in acquisition.config.config
     assert planner.config.config["expected_calendar_digests"]
     for registration in (evidence_health, planner):

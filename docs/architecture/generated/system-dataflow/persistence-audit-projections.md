@@ -18,7 +18,7 @@ Separate bounded operational persistence from optional notifications and diagnos
 | `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 18 | enabled | `actor.operational-persistence` | `boundary.system` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
 | `actor.system-control` | System Control | markeitech_actor | implemented | always | 1 | enabled | `actor.system-control` | `boundary.system` |
-| `actor.visual-debug` | Visual Debug Capture | markeitech_actor | implemented | conditional | 5 | enabled | `actor.visual-debug` | `boundary.intelligence` |
+| `actor.visual-debug` | Visual Debug Capture | markeitech_actor | implemented | conditional | 5 | disabled | `actor.visual-debug` | `boundary.intelligence` |
 | `operator.markeitect` | Markeitect / Operator | operator | external | external | not applicable | not_applicable | `operator.markeitect` | `boundary.projections` |
 | `projection.discord` | Discord | projection | external | external | not applicable | not_applicable | `projection.discord` | `boundary.projections` |
 | `projection.visual-files` | Visual Debug Files | projection | external | external | not applicable | not_applicable | `projection.visual-files` | `boundary.projections` |

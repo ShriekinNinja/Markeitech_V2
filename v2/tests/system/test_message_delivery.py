@@ -20,13 +20,17 @@ from markeitech.system.composition import (
 from markeitech.system.config import load_system_config
 from tests.system.message_actor_fixtures import (
     calendar_received,
+    current_state_received,
     entity_received,
+    inspectable_session_state_actors,
     market_state_received,
     projection_requests_complete,
     ready_received,
     received,
     received_calendar_projections,
     received_calendar_transitions,
+    received_calendar_transitions_v2,
+    received_current_state_snapshots,
     received_entity_revisions,
     received_entity_snapshots,
     received_events,
@@ -146,6 +150,173 @@ def test_session_state_delivers_typed_transition_and_projection() -> None:
     assert received_calendar_projections[0].projections[0].definition_digest == (
         received_calendar_transitions[0].definition_digest
     )
+
+
+def test_session_state_delivers_one_cut_snapshot_and_replays_exact_duplicate() -> None:
+    current_state_received.clear()
+    received_calendar_transitions.clear()
+    received_calendar_transitions_v2.clear()
+    received_current_state_snapshots.clear()
+    inspectable_session_state_actors.clear()
+    root = Path(__file__).parents[2]
+    config = load_system_config(root / "config/system.example.toml")
+    source_epoch = "00000000-0000-0000-0000-000000000001"
+    session_state = next(
+        item
+        for item in build_actor_plan(
+            config,
+            StartupPrerequisites(
+                run_id=UUID(source_epoch),
+                operational_persistence_ready=True,
+            ),
+        )
+        if item.key == "session_state"
+    )
+    producer_config = dict(session_state.config.config)
+    producer_config["allowed_current_state_requesters"] = [
+        *producer_config["allowed_current_state_requesters"],
+        "CURRENT-STATE-PROBE",
+    ]
+    calendar = config.sessions.calendars[0]
+    node = LiveNode.builder(
+        "MARKEITECH-V2-CURRENT-STATE-MESSAGE-TEST",
+        TraderId.from_str("MARKEITECH-TEST-001"),
+        Environment.SANDBOX,
+    ).with_delay_post_stop_secs(0).build()
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:InspectableSessionStateActor",
+            config_path=session_state.config.config_path,
+            config=producer_config,
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:CalendarCurrentStateProbe",
+            config_path=(
+                "tests.system.message_actor_fixtures:CalendarCurrentStateProbeConfig"
+            ),
+            config={
+                "actor_id": "CURRENT-STATE-PROBE",
+                "calendar_id": calendar.calendar_id,
+                "definition_version": calendar.definition_version,
+                "definition_digest": calendar.definition_digest,
+                "definition_effective_from_ns": calendar.effective_from_ns,
+                "source_epoch": source_epoch,
+                "additional_expectations": [
+                    {
+                        "calendar_id": item.calendar_id,
+                        "definition_version": item.definition_version,
+                        "definition_digest": item.definition_digest,
+                        "definition_effective_from_ns": item.effective_from_ns,
+                    }
+                    for item in config.sessions.calendars[1:]
+                ],
+            },
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:PersistenceReadyFixture",
+            config_path="tests.system.message_actor_fixtures:PersistenceReadyFixtureConfig",
+            config={"actor_id": "PERSISTENCE-READY-FIXTURE"},
+        ),
+    )
+    asyncio.run(_run_node_until(node, current_state_received))
+
+    assert len(received_current_state_snapshots) == 2
+    assert received_current_state_snapshots[0] == received_current_state_snapshots[1]
+    response = received_current_state_snapshots[0]
+    assert response.status == "READY"
+    assert len(response.states) == len(config.sessions.calendars)
+    assert {state.evaluated_as_of_ns for state in response.states} == {
+        response.evaluated_as_of_ns,
+    }
+    assert all(
+        state.state_effective_from_ns <= state.state_revision_evaluated_as_of_ns
+        for state in response.states
+    )
+    assert all(
+        state.state_revision_evaluated_as_of_ns <= state.evaluated_as_of_ns
+        for state in response.states
+    )
+    assert len(received_calendar_transitions) == len(config.sessions.calendars)
+    assert received_calendar_transitions_v2 == []
+    actor = inspectable_session_state_actors[-1]
+    revisions = dict(actor._revisions)
+    actor._evaluate(None)
+    assert dict(actor._revisions) == revisions
+    assert actor._active is False
+    assert actor._terminal is True
+    assert actor._snapshot_cycles == {}
+    assert "session-state-evaluation" not in actor.clock.timer_names()
+    assert "session-state-next-boundary" not in actor.clock.timer_names()
+    with pytest.raises(RuntimeError, match="cannot restart"):
+        actor.on_start()
+
+
+def test_session_state_returns_and_replays_complete_not_ready_snapshot() -> None:
+    current_state_received.clear()
+    received_calendar_transitions.clear()
+    received_calendar_transitions_v2.clear()
+    received_current_state_snapshots.clear()
+    root = Path(__file__).parents[2]
+    config = load_system_config(root / "config/system.v3-es-minimal.toml")
+    source_epoch = "00000000-0000-0000-0000-000000000001"
+    session_state = next(
+        item
+        for item in build_actor_plan(
+            config,
+            StartupPrerequisites(
+                run_id=UUID(source_epoch),
+                operational_persistence_ready=True,
+            ),
+        )
+        if item.key == "session_state"
+    )
+    producer_config = dict(session_state.config.config)
+    producer_config["allowed_current_state_requesters"] = ["CURRENT-STATE-PROBE"]
+    calendar = config.sessions.calendars[0]
+    node = LiveNode.builder(
+        "MARKEITECH-V2-CURRENT-STATE-NOT-READY-TEST",
+        TraderId.from_str("MARKEITECH-TEST-001"),
+        Environment.SANDBOX,
+    ).with_delay_post_stop_secs(0).build()
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path=session_state.config.actor_path,
+            config_path=session_state.config.config_path,
+            config=producer_config,
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:CalendarCurrentStateProbe",
+            config_path=(
+                "tests.system.message_actor_fixtures:CalendarCurrentStateProbeConfig"
+            ),
+            config={
+                "actor_id": "CURRENT-STATE-PROBE",
+                "calendar_id": calendar.calendar_id,
+                "definition_version": calendar.definition_version,
+                "definition_digest": calendar.definition_digest,
+                "definition_effective_from_ns": calendar.effective_from_ns,
+                "source_epoch": source_epoch,
+                "request_on_start": True,
+            },
+        ),
+    )
+    asyncio.run(_run_node_until(node, current_state_received))
+
+    assert len(received_current_state_snapshots) == 2
+    assert received_current_state_snapshots[0] == received_current_state_snapshots[1]
+    response = received_current_state_snapshots[0]
+    assert response.status == "NOT_READY"
+    assert response.states == ()
+    assert len(response.failures) == 1
+    assert response.failures[0].code == "source_not_ready"
+    assert response.failures[0].retryable is True
+    assert response.retry_at_ns == response.failures[0].retry_at_ns
 
 
 def test_session_state_contains_projection_failure_and_publishes_typed_response() -> None:

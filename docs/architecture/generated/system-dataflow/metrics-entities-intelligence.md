@@ -19,10 +19,10 @@ Show implemented metrics/state and profile-disabled entity capabilities with the
 | `actor.market-state-entities` | Market State Entities | markeitech_actor | implemented | conditional | 9 | disabled | `actor.market-state-entities` | `boundary.intelligence` |
 | `actor.market-structure-entities` | Market Structure Entities | markeitech_actor | implemented | conditional | 10 | disabled | `actor.market-structure-entities` | `boundary.intelligence` |
 | `actor.quote-quality` | Quote Quality Metrics | markeitech_actor | implemented | conditional | 6 | disabled | `actor.quote-quality` | `boundary.intelligence` |
-| `actor.session-metrics` | Session Metrics | markeitech_actor | implemented | conditional | 7 | enabled | `actor.session-metrics` | `boundary.intelligence` |
+| `actor.session-metrics` | Session Metrics | markeitech_actor | implemented | conditional | 7 | disabled | `actor.session-metrics` | `boundary.intelligence` |
 | `actor.session-reference-entities` | Session Reference Entities | markeitech_actor | implemented | conditional | 8 | disabled | `actor.session-reference-entities` | `boundary.intelligence` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
-| `actor.visual-debug` | Visual Debug Capture | markeitech_actor | implemented | conditional | 5 | enabled | `actor.visual-debug` | `boundary.intelligence` |
+| `actor.visual-debug` | Visual Debug Capture | markeitech_actor | implemented | conditional | 5 | disabled | `actor.visual-debug` | `boundary.intelligence` |
 | `actor.watchlist` | Watchlist | markeitech_actor | implemented | always | 12 | enabled | `actor.watchlist` | `boundary.acquisition` |
 | `component.canonical-calendar` | Canonical Calendar | engine | implemented | not_composed | not applicable | enabled | `actor.session-state` | `boundary.intelligence` |
 | `component.data-engine` | Nautilus Data Engine | engine | implemented | always | not applicable | enabled | `component.data-engine` | `boundary.nautilus` |

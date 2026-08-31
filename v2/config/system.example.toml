@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored v2/.env.
 
-schema_version = 21
+schema_version = 22
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -125,6 +125,16 @@ response_timeout_ms = 5000
 maximum_attempts = 3
 retry_backoff_ms = 1000
 maximum_elapsed_ms = 60000
+
+[sessions.current_state_delivery]
+policy_version = 1
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
+maximum_buffered_transitions_per_calendar = 8
+maximum_total_buffered_transitions = 32
+boundary_delivery_grace_ms = 2000
 
 [evidence_health]
 evaluation_interval_ms = 1000

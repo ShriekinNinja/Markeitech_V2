@@ -17,7 +17,7 @@ Show provider capability, native Nautilus boundary, acquisition ownership, histo
 | `actor.data-acquisition` | Data Acquisition | markeitech_actor | implemented | always | 13 | enabled | `actor.data-acquisition` | `boundary.acquisition` |
 | `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | always | 3 | enabled | `actor.evidence-health` | `boundary.intelligence` |
 | `actor.historical-planner` | Historical Evidence Planner | markeitech_actor | implemented | always | 11 | enabled | `actor.historical-planner` | `boundary.intelligence` |
-| `actor.session-metrics` | Session Metrics | markeitech_actor | implemented | conditional | 7 | enabled | `actor.session-metrics` | `boundary.intelligence` |
+| `actor.session-metrics` | Session Metrics | markeitech_actor | implemented | conditional | 7 | disabled | `actor.session-metrics` | `boundary.intelligence` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
 | `actor.watchlist` | Watchlist | markeitech_actor | implemented | always | 12 | enabled | `actor.watchlist` | `boundary.acquisition` |
 | `component.cache` | Nautilus Cache | engine | implemented | always | not applicable | enabled | `component.cache` | `boundary.nautilus` |

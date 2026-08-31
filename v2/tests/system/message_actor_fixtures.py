@@ -27,10 +27,17 @@ from markeitech.intelligence.actors import SessionStateActor
 from markeitech.intelligence.calendar_messages import (
     CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
     CALENDAR_PROJECTION_RESPONSE_TYPE_NAME,
+    CALENDAR_STATE_SNAPSHOT_REQUEST_TYPE_NAME,
+    CALENDAR_STATE_SNAPSHOT_RESPONSE_TYPE_NAME,
     CALENDAR_TRANSITION_TYPE_NAME,
+    CALENDAR_TRANSITION_V2_TYPE_NAME,
+    CalendarDefinitionExpectation,
     CalendarProjectionRequest,
     CalendarProjectionResponse,
+    CalendarStateSnapshotRequest,
+    CalendarStateSnapshotResponse,
     CalendarTransition,
+    CalendarTransitionV2,
 )
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
@@ -57,6 +64,10 @@ received_entity_snapshots: list[EntitySnapshotResponse] = []
 calendar_received = Event()
 received_calendar_transitions: list[CalendarTransition] = []
 received_calendar_projections: list[CalendarProjectionResponse] = []
+current_state_received = Event()
+received_current_state_snapshots: list[CalendarStateSnapshotResponse] = []
+received_calendar_transitions_v2: list[CalendarTransitionV2] = []
+inspectable_session_state_actors: list[SessionStateActor] = []
 projection_requests_complete = Event()
 received_projection_requests: list[CalendarProjectionRequest] = []
 
@@ -259,6 +270,129 @@ class CalendarProjectionProbe(DataActor):
         self.unsubscribe_data(self._transition_type)
 
 
+class CalendarCurrentStateProbeConfig(DataActorConfig):
+    def __new__(
+        cls,
+        calendar_id: str,
+        definition_version: int,
+        definition_digest: str,
+        definition_effective_from_ns: int,
+        source_epoch: str,
+        additional_expectations: list[dict[str, object]] | None = None,
+        request_on_start: bool = False,
+        actor_id: str | ActorId = "CURRENT-STATE-PROBE",
+    ) -> CalendarCurrentStateProbeConfig:
+        resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
+        obj = super().__new__(cls, actor_id=resolved)
+        obj.calendar_id = calendar_id
+        obj.definition_version = definition_version
+        obj.definition_digest = definition_digest
+        obj.definition_effective_from_ns = definition_effective_from_ns
+        obj.source_epoch = source_epoch
+        obj.additional_expectations = tuple(additional_expectations or ())
+        obj.request_on_start = request_on_start
+        return obj
+
+
+class CalendarCurrentStateProbe(DataActor):
+    def __init__(self, config: CalendarCurrentStateProbeConfig) -> None:
+        super().__init__(config)
+        self._expectations = (
+            CalendarDefinitionExpectation(
+                calendar_id=config.calendar_id,
+                definition_version=config.definition_version,
+                definition_digest=config.definition_digest,
+                definition_effective_from_ns=config.definition_effective_from_ns,
+            ),
+            *(
+                CalendarDefinitionExpectation(
+                    calendar_id=str(item["calendar_id"]),
+                    definition_version=int(item["definition_version"]),
+                    definition_digest=str(item["definition_digest"]),
+                    definition_effective_from_ns=int(item["definition_effective_from_ns"]),
+                )
+                for item in config.additional_expectations
+            ),
+        )
+        self._source_epoch = config.source_epoch
+        self._request_on_start = config.request_on_start
+        self._request_type = DataType(CALENDAR_STATE_SNAPSHOT_REQUEST_TYPE_NAME)
+        self._response_type = DataType(CALENDAR_STATE_SNAPSHOT_RESPONSE_TYPE_NAME)
+        self._transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
+        self._transition_v2_type = DataType(CALENDAR_TRANSITION_V2_TYPE_NAME)
+        self._request: CalendarStateSnapshotRequest | None = None
+
+    def on_start(self) -> None:
+        self.subscribe_data(self._response_type)
+        self.subscribe_data(self._transition_type)
+        self.subscribe_data(self._transition_v2_type)
+        if self._request_on_start:
+            self.clock.set_time_alert_ns(
+                "current-state-probe-request",
+                self.clock.timestamp_ns() + 1_000_000,
+                callback=self._request_timer,
+            )
+
+    def on_data(self, data) -> None:  # noqa: ANN001
+        payload = data.data if isinstance(data, CustomData) else data
+        if isinstance(payload, CalendarTransitionV2):
+            received_calendar_transitions_v2.append(payload)
+            return
+        if isinstance(payload, CalendarTransition):
+            received_calendar_transitions.append(payload)
+            if self._request is not None or payload.calendar_id not in {
+                item.calendar_id for item in self._expectations
+            }:
+                return
+            self._create_and_publish_request()
+            return
+        if not isinstance(payload, CalendarStateSnapshotResponse):
+            return
+        if payload.requester != str(self.actor_id):
+            return
+        received_current_state_snapshots.append(payload)
+        if len(received_current_state_snapshots) == 1:
+            self._publish_request()
+        else:
+            current_state_received.set()
+
+    def on_stop(self) -> None:
+        if "current-state-probe-request" in self.clock.timer_names():
+            self.clock.cancel_timer("current-state-probe-request")
+        self.unsubscribe_data(self._response_type)
+        self.unsubscribe_data(self._transition_type)
+        self.unsubscribe_data(self._transition_v2_type)
+
+    def _publish_request(self) -> None:
+        if self._request is None:
+            return
+        self.publish_data(
+            self._request_type,
+            CustomData(self._request_type, self._request),
+        )
+
+    def _create_and_publish_request(self) -> None:
+        now_ns = self.clock.timestamp_ns()
+        self._request = CalendarStateSnapshotRequest(
+            cycle_id="current-state-probe-cycle",
+            request_id="current-state-probe-attempt-1",
+            attempt=1,
+            requester=str(self.actor_id),
+            expected_source="SESSION-STATE",
+            expected_source_epoch=self._source_epoch,
+            calendar_expectations=self._expectations,
+            requested_as_of_ns=now_ns,
+            requested_ts_ns=now_ns,
+            deadline_ts_ns=now_ns + 5_000_000_000,
+            delivery_policy_version=1,
+        )
+        self._publish_request()
+
+    def _request_timer(self, _event) -> None:  # noqa: ANN001
+        if self._request is None:
+            self._create_and_publish_request()
+
+
 class MultiCalendarProjectionProbeConfig(DataActorConfig):
     def __new__(
         cls,
@@ -338,6 +472,12 @@ class FailingProjectionSessionStateActor(SessionStateActor):
             "_provider",
             _LongRangeFailingProvider(calendar._provider),
         )
+
+
+class InspectableSessionStateActor(SessionStateActor):
+    def __init__(self, config) -> None:  # noqa: ANN001
+        super().__init__(config)
+        inspectable_session_state_actors.append(self)
 
 
 class EntityMetricPublisherConfig(DataActorConfig):

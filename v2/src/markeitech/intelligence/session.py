@@ -135,6 +135,27 @@ class SessionWindow:
 
 @dataclass(frozen=True, slots=True)
 class CanonicalSessionSnapshot:
+    """Canonical session state evaluated at a caller-owned observation cut.
+
+    ``state_effective_from_ns`` is the exact admitted calendar boundary at which the
+    returned state became authoritative. It is not the observation time.
+
+    Attributes:
+        calendar_id: Canonical calendar identity.
+        schedule_version: Descriptive schedule version derived from the definition.
+        definition_version: Positive canonical definition revision.
+        definition_digest: Normalized canonical-definition SHA-256 digest.
+        calendar_engine_version: Exact calendar-engine version used for evaluation.
+        exchange_timezone: IANA timezone of the exchange calendar.
+        trade_date: Exchange trade date associated with the state, when known.
+        phase_memberships: Ordered active product-phase memberships.
+        market_state: Canonical ``OPEN``, ``BREAK``, or ``CLOSED`` exchange state.
+        segment_open_ns: Active semantic segment start as UTC Unix nanoseconds, when present.
+        segment_close_ns: Active semantic segment end as UTC Unix nanoseconds, when present.
+        next_transition_ns: Next admitted boundary as UTC Unix nanoseconds, when known.
+        state_effective_from_ns: Exact admitted boundary which made this state authoritative.
+    """
+
     calendar_id: str
     schedule_version: str
     definition_version: int
@@ -147,6 +168,7 @@ class CanonicalSessionSnapshot:
     segment_open_ns: int | None
     segment_close_ns: int | None
     next_transition_ns: int | None
+    state_effective_from_ns: int
 
     @property
     def is_open(self) -> bool:
@@ -169,12 +191,36 @@ class CanonicalSessionSnapshot:
 
 @dataclass(frozen=True, slots=True)
 class CalendarProjection:
+    """Bounded immutable calendar authority projected from one definition.
+
+    Attributes:
+        calendar_id: Canonical calendar identity.
+        calendar_engine: Exact engine family used to build the projection.
+        provider_calendar: Provider calendar selected inside the engine.
+        schedule_version: Descriptive schedule version derived from the definition.
+        definition_version: Positive canonical definition revision.
+        definition_digest: Normalized canonical-definition SHA-256 digest.
+        definition_effective_from_ns: UTC Unix nanosecond definition-activation boundary.
+        calendar_engine_version: Exact calendar-engine version used for projection.
+        exchange_timezone: IANA timezone of the exchange calendar.
+        coverage_start_ns: Inclusive UTC Unix nanosecond coverage bound.
+        coverage_end_ns: Exclusive UTC Unix nanosecond coverage bound.
+        exchange_segments: Ordered admitted exchange-state segments.
+        phase_windows: Ordered configured product-phase windows.
+        correction_outcomes: Source-identified structural-correction outcomes.
+        normalization_outcomes: Explicit admitted normalization outcomes.
+
+    Raises:
+        ValueError: If projection coverage is empty or negative.
+    """
+
     calendar_id: str
     calendar_engine: str
     provider_calendar: str
     schedule_version: str
     definition_version: int
     definition_digest: str
+    definition_effective_from_ns: int
     calendar_engine_version: str
     exchange_timezone: str
     coverage_start_ns: int
@@ -190,7 +236,11 @@ class CalendarProjection:
 
 
 class CalendarProjectionUnavailable(ValueError):
-    pass
+    """Raised when a requested instant is outside projection coverage."""
+
+
+class CalendarStateBoundaryUnavailable(ValueError):
+    """Raised when a bounded projection cannot prove the state's effective boundary."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -237,6 +287,18 @@ class CalendarProjectionView:
             (item for item in self.projection.phase_windows if item.start_ns > timestamp_ns),
             None,
         )
+        admitted_boundaries = {
+            boundary
+            for item in (*self.projection.exchange_segments, *self.projection.phase_windows)
+            for boundary in (item.start_ns, item.end_ns)
+            if boundary <= timestamp_ns
+        }
+        if self.projection.definition_effective_from_ns <= timestamp_ns:
+            admitted_boundaries.add(self.projection.definition_effective_from_ns)
+        if not admitted_boundaries:
+            raise CalendarStateBoundaryUnavailable(
+                "calendar projection does not contain the state's effective boundary",
+            )
         return CanonicalSessionSnapshot(
             calendar_id=self.projection.calendar_id,
             schedule_version=self.projection.schedule_version,
@@ -267,6 +329,7 @@ class CalendarProjectionView:
                 else None
             ),
             next_transition_ns=boundaries[0] if boundaries else None,
+            state_effective_from_ns=max(admitted_boundaries),
         )
 
     def windows(self, start: date, end: date) -> tuple[SessionWindow, ...]:
@@ -418,6 +481,7 @@ class CanonicalCalendar:
             schedule_version=definition.schedule_version,
             definition_version=definition.definition_version,
             definition_digest=definition.definition_digest,
+            definition_effective_from_ns=definition.effective_from_ns,
             calendar_engine_version=definition.calendar_engine_version,
             exchange_timezone=definition.exchange_timezone,
             coverage_start_ns=_to_ns(coverage_start),

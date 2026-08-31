@@ -5,7 +5,7 @@
   "generator_sha256": "537f7b58eb756a3a978bb8271c3d5ee7875055daace2df0d14191ca06682b73c",
   "generator_version": "0.1.0",
   "manifest": "markeitech-v3-system-dataflow",
-  "manifest_sha256": "279ec4847549c85a19a2ff216f0118bedab09196ca0bedbe37e2976600417b36",
+  "manifest_sha256": "b17d8a6163d3122bf8532728db587168308003cff23f3b9e840090721455a624",
   "theme": {
     "id": "style.theme",
     "label": "Markeitech polished dark theme v2"
@@ -36,8 +36,8 @@
       "nodes": 40
     },
     {
-      "capabilities": 7,
-      "edges": 38,
+      "capabilities": 2,
+      "edges": 26,
       "files": [
         "current-runtime.dot",
         "current-runtime.md",
@@ -45,7 +45,7 @@
         "current-runtime.svg"
       ],
       "id": "view.current-runtime",
-      "nodes": 19
+      "nodes": 16
     },
     {
       "capabilities": 0,

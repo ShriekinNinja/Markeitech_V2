@@ -26,11 +26,11 @@ Show implemented, conditional, disabled, external, and future components without
 | `actor.quote-quality` | Quote Quality Metrics | markeitech_actor | implemented | conditional | 6 | disabled | `actor.quote-quality` | `boundary.intelligence` |
 | `actor.runtime-resource-health` | Runtime Resource Health | markeitech_actor | implemented | conditional | 17 | disabled | `actor.runtime-resource-health` | `boundary.system` |
 | `actor.runtime-resources` | Runtime Resources | markeitech_actor | implemented | conditional | 16 | disabled | `actor.runtime-resources` | `boundary.system` |
-| `actor.session-metrics` | Session Metrics | markeitech_actor | implemented | conditional | 7 | enabled | `actor.session-metrics` | `boundary.intelligence` |
+| `actor.session-metrics` | Session Metrics | markeitech_actor | implemented | conditional | 7 | disabled | `actor.session-metrics` | `boundary.intelligence` |
 | `actor.session-reference-entities` | Session Reference Entities | markeitech_actor | implemented | conditional | 8 | disabled | `actor.session-reference-entities` | `boundary.intelligence` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
 | `actor.system-control` | System Control | markeitech_actor | implemented | always | 1 | enabled | `actor.system-control` | `boundary.system` |
-| `actor.visual-debug` | Visual Debug Capture | markeitech_actor | implemented | conditional | 5 | enabled | `actor.visual-debug` | `boundary.intelligence` |
+| `actor.visual-debug` | Visual Debug Capture | markeitech_actor | implemented | conditional | 5 | disabled | `actor.visual-debug` | `boundary.intelligence` |
 | `actor.watchlist` | Watchlist | markeitech_actor | implemented | always | 12 | enabled | `actor.watchlist` | `boundary.acquisition` |
 | `component.cache` | Nautilus Cache | engine | implemented | always | not applicable | enabled | `component.cache` | `boundary.nautilus` |
 | `component.canonical-calendar` | Canonical Calendar | engine | implemented | not_composed | not applicable | enabled | `actor.session-state` | `boundary.intelligence` |

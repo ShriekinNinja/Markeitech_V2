@@ -79,6 +79,21 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "operational_persistence",
     ]
     assert len({registration.actor_id for registration in plan}) == len(plan)
+    session_state = next(item for item in plan if item.key == "session_state")
+    assert session_state.config.config["allowed_current_state_requesters"] == [
+        "EVIDENCE-HEALTH",
+        "HISTORICAL-EVIDENCE-PLANNER",
+    ]
+    assert session_state.config.config["current_state_delivery"] == {
+        "policy_version": 1,
+        "response_timeout_ms": 5000,
+        "maximum_attempts": 3,
+        "retry_backoff_ms": 1000,
+        "maximum_elapsed_ms": 60000,
+        "maximum_buffered_transitions_per_calendar": 8,
+        "maximum_total_buffered_transitions": 32,
+        "boundary_delivery_grace_ms": 2000,
+    }
     acquisition = next(item for item in plan if item.key == "data_acquisition")
     assert acquisition.config.config["actor_id"] == "DATA-ACQUISITION"
     assert acquisition.config.config["instrument_ids"] == list(_config().instrument_ids)

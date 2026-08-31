@@ -99,6 +99,7 @@ def test_historical_window_uses_request_session_identity() -> None:
                 segment_open_ns=session.start_ns,
                 segment_close_ns=session.end_ns,
                 next_transition_ns=session.end_ns,
+                state_effective_from_ns=session.start_ns,
             )
 
         def windows(self, _start: date, _end: date) -> tuple[SessionWindow, ...]:

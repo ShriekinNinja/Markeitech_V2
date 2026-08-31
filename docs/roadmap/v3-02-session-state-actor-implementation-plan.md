@@ -1,7 +1,7 @@
 # V3-02 SessionStateActor Current-State Delivery Implementation Plan
 
-**Status:** Decisions accepted; Slice 1 committed as `d71551a`; Slice 2 implemented and uncommitted
-for Markeitect review; Slices 3 through 5 remain unapproved
+**Status:** Decisions accepted; Slice 1 committed as `d71551a`; Slice 2 committed as `2cb5761`;
+Slice 3 implemented and uncommitted for Markeitect review; Slices 4 and 5 remain unapproved
 
 **Planning branch:** `v3-02-session-state-snapshot-plan`
 
@@ -24,6 +24,12 @@ for Markeitect review; Slices 3 through 5 remain unapproved
 
 These decisions supersede the earlier draft's three-consumer migration, producer-incarnation ID,
 requester-incarnation ID, and large eleven-setting delivery block.
+
+The approved Slice 3 sequencing adjustment keeps transition v1 as the sole published transition
+while the producer gains exact-boundary evaluation, snapshot delivery, lifecycle fencing, and
+configuration. Transition-v2 publication, both active consumer cutovers, and the persistence
+mapping move together in Slice 4. This avoids both dual publication and a runtime in which the
+producer has removed the only transition type still consumed by active actors.
 
 ## Authority And Current Baseline
 
@@ -215,9 +221,13 @@ Required ordering is:
 definition_effective_from_ns <= state_effective_from_ns <= evaluated_as_of_ns <= published_ts_ns
 ```
 
-`state_effective_from_ns` must come from admitted canonical exchange/phase boundaries. The actor
-must not round `evaluated_as_of_ns`, copy it into the boundary field, or invent a boundary. If the
-current evaluator cannot supply an exact boundary for every successful state, implementation
+`state_effective_from_ns` must come from an admitted canonical exchange/phase boundary, except
+that a newer exact calendar-definition activation boundary becomes the authority boundary for the
+same derived state. This exception preserves
+`definition_effective_from_ns <= state_effective_from_ns` when a definition activates between
+state changes; it never substitutes the later observation time. The actor must not round
+`evaluated_as_of_ns`, copy it into the boundary field, or invent a boundary. If the current
+evaluator cannot supply an exact admitted boundary for every successful state, implementation
 stops for a bounded contract review rather than weakening this rule.
 
 Equal revision identity plus equal canonical content is a duplicate. Equal revision identity plus
@@ -295,6 +305,11 @@ The response contains cycle/request/attempt/requester identity, source and run U
 calendar population, successful states, failures, request/evaluation/publication timestamps,
 policy version, derived status, and an optional retry time.
 
+`request_deadline_expired` covers both an attempt received after its deadline and an attempt whose
+deadline expires during bounded evaluation before response publication. The response preserves
+the real receipt/evaluation/publication ordering in either case; it does not backdate publication
+to make the attempt appear timely.
+
 Complete accounting requires:
 
 ```text
@@ -313,7 +328,8 @@ For one admitted request, `SessionStateActor`:
 1. reads `cut_ns` once;
 2. evaluates every requested calendar at that same instant;
 3. derives the exact state-effective boundary from canonical schedule facts;
-4. publishes a transition v2 through the normal owner path only if meaningful state changed;
+4. authors the revision once as transition-v2 state and, until the atomic Slice 4 cutover,
+   publishes only its mechanical transition-v1 projection when meaningful state changed;
 5. freezes each resulting state and revision;
 6. returns one success or failure for every requested calendar; and
 7. publishes the response only if still active.
@@ -517,7 +533,7 @@ Deliver:
 
 ### Slice 2: Contracts and pure synchronization
 
-**Implementation status:** Complete for local review on the planning branch; uncommitted
+**Implementation status:** Committed as `2cb5761`
 
 Files:
 
@@ -541,14 +557,19 @@ public-surface change is required.
 
 ### Slice 3: Producer, lifecycle, and lean configuration
 
+**Implementation status:** Complete for local review on the planning branch; uncommitted
+
 Files:
 
+- `v2/src/markeitech/intelligence/session.py`;
 - `v2/src/markeitech/intelligence/actors.py`;
 - `v2/src/markeitech/system/config.py`;
 - `v2/src/markeitech/system/composition.py`;
-- `v2/src/markeitech/system/persistence.py` only for transition-v2 mapping;
+- `docs/architecture/system-dataflow.toml` and its generated artifacts only for the mechanical
+  tracked-profile schema-version synchronization and the already-approved Slice 1 Session
+  Metrics/Visual Debug disablement;
 - both tracked system TOMLs; and
-- focused config, composition, actor, persistence, and node tests.
+- focused evaluator, config, composition, actor, and node tests.
 
 Deliver:
 
@@ -558,7 +579,9 @@ Deliver:
 - allowed-requester admission and bounded duplicate cache;
 - active/inactive lifecycle fence and terminal stop;
 - the lean configuration block and one schema advance; and
-- no same-run replacement identity or behavior.
+- no same-run replacement identity or behavior;
+- transition v1 remains the sole published transition during this slice; and
+- no active-consumer or persistence cutover.
 
 ### Slice 4: Active consumers and end-to-end fixture
 
@@ -566,6 +589,7 @@ Files:
 
 - `v2/src/markeitech/intelligence/actors.py` for Evidence Health;
 - `v2/src/markeitech/system/historical_planner.py`;
+- `v2/src/markeitech/system/persistence.py` for the mechanical transition-v2 mapping;
 - `v2/tests/system/message_actor_fixtures.py`;
 - `v2/tests/system/test_message_delivery.py`;
 - existing evidence-health and historical-planner regression tests; and
@@ -573,6 +597,8 @@ Files:
 
 Deliver:
 
+- one atomic transition-v1-to-v2 publication, consumer, and persistence cutover with no dual
+  publication;
 - both active production consumers on one synchronization protocol;
 - test-only current-state-to-historical-plan coverage;
 - the `13:36:00.650` to five completed one-minute bars alignment assertion;
@@ -709,20 +735,20 @@ manufacture evidence for this stage.
 - [x] Session Metrics, Visual Debug, and dependent Entity Analysis are disabled in tracked profiles.
 - [x] Transition v2 and snapshot v1 contracts are strict and immutable.
 - [x] No producer-incarnation or requester-incarnation identity is added.
-- [ ] Producer uses one owner-clock cut and retains exact state-effective plus evaluated-as-of time.
+- [x] Producer uses one owner-clock cut and retains exact state-effective plus evaluated-as-of time.
 - [x] Pure synchronization state is bounded and framework-independent.
 - [ ] Evidence Health and Historical Planner adopt it.
 - [ ] The test-only current-state historical-demand probe passes without production composition.
 - [ ] Historical schedule projection and request-plan semantics remain unchanged.
 - [ ] Operational Persistence remains transition-only; no snapshot durability is added.
-- [ ] Configuration schema and both tracked profiles migrate atomically.
+- [x] Configuration schema and both tracked profiles migrate atomically.
 - [ ] Alternate-order, late-consumer, gap, conflict, overflow, timeout, failure-isolation, and stop
       evidence passes.
-- [ ] Full disconnected suite, lint, diagram drift, and `git diff --check` pass.
+- [x] Full disconnected suite, lint, diagram drift, and `git diff --check` pass for Slice 3.
 - [ ] Final diff contains no unrelated files, secrets, data, logs, local configuration, dependency,
       lockfile, provider, database, or external-service churn.
 - [ ] Current status, V3-02 review, V3-03 split review, and visual-debug status agree.
-- [ ] Implementation batch remains uncommitted for Markeitect review.
+- [x] Slice 3 implementation batch remains uncommitted for Markeitect review.
 - [ ] Connected acceptance runs only after separate explicit authorization.
 
 ## Kite Advisory Basis

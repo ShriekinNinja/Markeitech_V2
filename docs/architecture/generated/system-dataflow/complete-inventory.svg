@@ -415,16 +415,16 @@
 <g id="actor.session&#45;metrics" class="node">
 <title>actor.session&#45;metrics</title>
 <g id="a_actor.session&#45;metrics"><a xlink:title="actor.session&#45;metrics">
-<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M2010.76,-1089.01C2010.76,-1089.01 1727.23,-1089.01 1727.23,-1089.01 1721.23,-1089.01 1715.23,-1083.01 1715.23,-1077.01 1715.23,-1077.01 1715.23,-1017.05 1715.23,-1017.05 1715.23,-1011.05 1721.23,-1005.05 1727.23,-1005.05 1727.23,-1005.05 2010.76,-1005.05 2010.76,-1005.05 2016.76,-1005.05 2022.76,-1011.05 2022.76,-1017.05 2022.76,-1017.05 2022.76,-1077.01 2022.76,-1077.01 2022.76,-1083.01 2016.76,-1089.01 2010.76,-1089.01"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="1723.87,-1058.78 1723.87,-1058.78 1888.25,-1058.78 1888.25,-1058.78 1723.87,-1058.78"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="1888.25,-1058.78 1888.25,-1058.78 2014.12,-1058.78 2014.12,-1058.78 1888.25,-1058.78"/>
-<text xml:space="preserve" text-anchor="start" x="1726.87" y="-1066.63" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Session Metrics</text>
-<polygon fill="#164c3e" stroke="none" points="1891.25,-1061.78 1891.25,-1079.53 2011.12,-1079.53 2011.12,-1061.78 1891.25,-1061.78"/>
-<polygon fill="none" stroke="#43d9ae" points="1891.25,-1061.78 1891.25,-1079.53 2011.12,-1079.53 2011.12,-1061.78 1891.25,-1061.78"/>
-<text xml:space="preserve" text-anchor="start" x="1929.06" y="-1067.98" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
+<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="2022.76,-1089.01 1715.23,-1089.01 1715.23,-1005.05 2022.76,-1005.05 2022.76,-1089.01"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="1723.87,-1058.78 1723.87,-1058.78 1887.12,-1058.78 1887.12,-1058.78 1723.87,-1058.78"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="1887.12,-1058.78 1887.12,-1058.78 2014.12,-1058.78 2014.12,-1058.78 1887.12,-1058.78"/>
+<text xml:space="preserve" text-anchor="start" x="1726.87" y="-1066.63" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Session Metrics</text>
+<polygon fill="#5b4316" stroke="none" points="1890.12,-1061.78 1890.12,-1079.53 2011.12,-1079.53 2011.12,-1061.78 1890.12,-1061.78"/>
+<polygon fill="none" stroke="#e2b75c" points="1890.12,-1061.78 1890.12,-1079.53 2011.12,-1079.53 2011.12,-1061.78 1890.12,-1061.78"/>
+<text xml:space="preserve" text-anchor="start" x="1927.37" y="-1067.98" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
 <text xml:space="preserve" text-anchor="start" x="1726.87" y="-1048.28" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.session&#45;metrics</text>
-<text xml:space="preserve" text-anchor="start" x="1726.87" y="-1032.53" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="start" x="1726.87" y="-1016.78" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 7</text>
+<text xml:space="preserve" text-anchor="start" x="1726.87" y="-1032.53" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="start" x="1726.87" y="-1016.78" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER 7</text>
 </a>
 </g>
 </g>
@@ -466,16 +466,16 @@
 <g id="actor.visual&#45;debug" class="node">
 <title>actor.visual&#45;debug</title>
 <g id="a_actor.visual&#45;debug"><a xlink:title="actor.visual&#45;debug">
-<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M2010.76,-729.13C2010.76,-729.13 1727.23,-729.13 1727.23,-729.13 1721.23,-729.13 1715.23,-723.13 1715.23,-717.13 1715.23,-717.13 1715.23,-657.17 1715.23,-657.17 1715.23,-651.17 1721.23,-645.17 1727.23,-645.17 1727.23,-645.17 2010.76,-645.17 2010.76,-645.17 2016.76,-645.17 2022.76,-651.17 2022.76,-657.17 2022.76,-657.17 2022.76,-717.13 2022.76,-717.13 2022.76,-723.13 2016.76,-729.13 2010.76,-729.13"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="1723.87,-698.9 1723.87,-698.9 1905.5,-698.9 1905.5,-698.9 1723.87,-698.9"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="1905.5,-698.9 1905.5,-698.9 2014.12,-698.9 2014.12,-698.9 1905.5,-698.9"/>
-<text xml:space="preserve" text-anchor="start" x="1726.87" y="-706.75" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Visual Debug Capture</text>
-<polygon fill="#164c3e" stroke="none" points="1908.5,-701.9 1908.5,-719.65 2011.12,-719.65 2011.12,-701.9 1908.5,-701.9"/>
-<polygon fill="none" stroke="#43d9ae" points="1908.5,-701.9 1908.5,-719.65 2011.12,-719.65 2011.12,-701.9 1908.5,-701.9"/>
-<text xml:space="preserve" text-anchor="start" x="1937.69" y="-708.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
+<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="2022.76,-729.13 1715.23,-729.13 1715.23,-645.17 2022.76,-645.17 2022.76,-729.13"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="1723.87,-698.9 1723.87,-698.9 1904.37,-698.9 1904.37,-698.9 1723.87,-698.9"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="1904.37,-698.9 1904.37,-698.9 2014.12,-698.9 2014.12,-698.9 1904.37,-698.9"/>
+<text xml:space="preserve" text-anchor="start" x="1726.87" y="-706.75" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Visual Debug Capture</text>
+<polygon fill="#5b4316" stroke="none" points="1907.37,-701.9 1907.37,-719.65 2011.12,-719.65 2011.12,-701.9 1907.37,-701.9"/>
+<polygon fill="none" stroke="#e2b75c" points="1907.37,-701.9 1907.37,-719.65 2011.12,-719.65 2011.12,-701.9 1907.37,-701.9"/>
+<text xml:space="preserve" text-anchor="start" x="1936" y="-708.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
 <text xml:space="preserve" text-anchor="start" x="1726.87" y="-688.4" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.visual&#45;debug</text>
-<text xml:space="preserve" text-anchor="start" x="1726.87" y="-672.65" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="start" x="1726.87" y="-656.9" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 5</text>
+<text xml:space="preserve" text-anchor="start" x="1726.87" y="-672.65" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="start" x="1726.87" y="-656.9" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER 5</text>
 </a>
 </g>
 </g>

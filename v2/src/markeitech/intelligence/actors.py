@@ -24,11 +24,18 @@ from markeitech.intelligence.calendar_delivery import (
 from markeitech.intelligence.calendar_messages import (
     CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
     CALENDAR_PROJECTION_RESPONSE_TYPE_NAME,
+    CALENDAR_STATE_SNAPSHOT_REQUEST_TYPE_NAME,
+    CALENDAR_STATE_SNAPSHOT_RESPONSE_TYPE_NAME,
     CALENDAR_TRANSITION_TYPE_NAME,
+    CalendarCurrentState,
     CalendarProjectionFailure,
     CalendarProjectionRequest,
     CalendarProjectionResponse,
+    CalendarStateSnapshotFailure,
+    CalendarStateSnapshotRequest,
+    CalendarStateSnapshotResponse,
     CalendarTransition,
+    CalendarTransitionV2,
 )
 from markeitech.intelligence.evidence import EvidencePolicy, RecencyProfile, assess_evidence
 from markeitech.intelligence.messages import (
@@ -43,6 +50,7 @@ from markeitech.intelligence.messages import (
 )
 from markeitech.intelligence.session import (
     CalendarProjectionView,
+    CalendarStateBoundaryUnavailable,
     CanonicalCalendar,
     CanonicalSessionSnapshot,
     canonical_definition_from_config,
@@ -71,7 +79,35 @@ class _SessionContext:
     is_open: bool
 
 
+@dataclass(frozen=True, slots=True)
+class _CachedSnapshotAttempt:
+    request: CalendarStateSnapshotRequest
+    response: CalendarStateSnapshotResponse
+
+
+@dataclass(slots=True)
+class _SnapshotCycle:
+    cycle_id: str
+    started_at_ns: int
+    expires_at_ns: int
+    attempts: list[_CachedSnapshotAttempt]
+    terminal: bool = False
+
+
 class SessionStateActorConfig(DataActorConfig):
+    """Configure canonical session evaluation and bounded current-state delivery.
+
+    Args:
+        calendars: Normalized canonical calendar-definition payloads.
+        evaluation_interval_ms: Periodic owner evaluation interval in milliseconds.
+        source_epoch: Runtime run UUID used to scope revision identity.
+        maximum_projection_days: Maximum admitted historical projection span.
+        maximum_calendars_per_request: Maximum calendars in projection or snapshot requests.
+        current_state_delivery: Strict snapshot delivery policy and transient buffer bounds.
+        allowed_current_state_requesters: Exact actor IDs admitted to request snapshots.
+        actor_id: Nautilus actor identity for the sole calendar-state owner.
+    """
+
     def __new__(
         cls,
         calendars: list[dict[str, object]],
@@ -79,6 +115,8 @@ class SessionStateActorConfig(DataActorConfig):
         source_epoch: str,
         maximum_projection_days: int,
         maximum_calendars_per_request: int,
+        current_state_delivery: dict[str, int],
+        allowed_current_state_requesters: list[str],
         actor_id: str | ActorId = "SESSION-STATE",
     ) -> SessionStateActorConfig:
         resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
@@ -88,11 +126,13 @@ class SessionStateActorConfig(DataActorConfig):
         obj.source_epoch = source_epoch
         obj.maximum_projection_days = maximum_projection_days
         obj.maximum_calendars_per_request = maximum_calendars_per_request
+        obj.current_state_delivery = dict(current_state_delivery)
+        obj.allowed_current_state_requesters = tuple(allowed_current_state_requesters)
         return obj
 
 
 class SessionStateActor(DataActor):
-    """Own active canonical-calendar evaluation for the composed runtime.
+    """Own active canonical-calendar evaluation and bounded snapshot delivery.
 
     Markeitech Metadata:
         architecture.component.id: actor.session-state
@@ -121,18 +161,33 @@ class SessionStateActor(DataActor):
         self._source_epoch = config.source_epoch
         self._maximum_projection_days = config.maximum_projection_days
         self._maximum_calendars_per_request = config.maximum_calendars_per_request
+        self._delivery_policy = dict(config.current_state_delivery)
+        self._allowed_snapshot_requesters = frozenset(config.allowed_current_state_requesters)
         self._request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
         self._response_type = DataType(CALENDAR_PROJECTION_RESPONSE_TYPE_NAME)
+        self._snapshot_request_type = DataType(CALENDAR_STATE_SNAPSHOT_REQUEST_TYPE_NAME)
+        self._snapshot_response_type = DataType(CALENDAR_STATE_SNAPSHOT_RESPONSE_TYPE_NAME)
         self._transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
         self._snapshots: dict[str, CanonicalSessionSnapshot] = {}
+        self._current_transitions: dict[str, CalendarTransitionV2] = {}
         self._revisions: defaultdict[str, int] = defaultdict(int)
+        self._snapshot_cycles: dict[str, _SnapshotCycle] = {}
         self._projection_requests = 0
         self._projection_rejections = 0
         self._projection_failures = 0
-        self._started = False
+        self._snapshot_requests = 0
+        self._snapshot_replays = 0
+        self._snapshot_rejections = 0
+        self._active = False
+        self._ready = False
+        self._terminal = False
 
     def on_start(self) -> None:
+        if self._terminal:
+            raise RuntimeError("SessionStateActor cannot restart after terminal stop")
+        self._active = True
         self.subscribe_data(self._request_type)
+        self.subscribe_data(self._snapshot_request_type)
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.publish_signal(
             PERSISTENCE_READY_REQUEST_SIGNAL,
@@ -140,114 +195,68 @@ class SessionStateActor(DataActor):
         )
 
     def on_data(self, data) -> None:  # noqa: ANN001
+        if not self._active:
+            return
         payload = data.data if isinstance(data, CustomData) else data
         if isinstance(payload, CalendarProjectionRequest):
             self._publish_projection(payload)
+        elif isinstance(payload, CalendarStateSnapshotRequest):
+            self._publish_current_state(payload)
 
     def on_signal(self, signal: Signal) -> None:
-        if signal.name != PERSISTENCE_READY_SIGNAL:
+        if not self._active or signal.name != PERSISTENCE_READY_SIGNAL:
             return
         try:
             PersistenceReadyEvent.from_signal_value(signal.value)
         except ValueError as exc:
             self.log.error(f"SESSION_PERSISTENCE_READY_REJECTED | error={type(exc).__name__}")
             return
-        if self._started:
+        if self._ready:
             return
-        self._started = True
+        self._ready = True
         self._evaluate(None)
-        self.clock.set_timer_ns(_SESSION_TIMER, self._interval_ns, callback=self._evaluate)
+        if self._active:
+            self.clock.set_timer_ns(_SESSION_TIMER, self._interval_ns, callback=self._evaluate)
 
     def on_stop(self) -> None:
+        self._active = False
+        self._ready = False
+        self._terminal = True
         self.unsubscribe_data(self._request_type)
+        self.unsubscribe_data(self._snapshot_request_type)
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
         for timer_name in (_SESSION_TIMER, _SESSION_BOUNDARY_ALERT):
             if timer_name in self.clock.timer_names():
                 self.clock.cancel_timer(timer_name)
+        self._snapshot_cycles.clear()
         self.log.info(
             f"SESSION_STATE_STOPPED | calendars={len(self._calendars)}"
             f" | transitions={sum(self._revisions.values())}"
             f" | projection_requests={self._projection_requests}"
             f" | projection_rejections={self._projection_rejections}"
-            f" | projection_failures={self._projection_failures}",
+            f" | projection_failures={self._projection_failures}"
+            f" | snapshot_requests={self._snapshot_requests}"
+            f" | snapshot_replays={self._snapshot_replays}"
+            f" | snapshot_rejections={self._snapshot_rejections}",
         )
 
     def _evaluate(self, _event) -> None:  # noqa: ANN001
+        if not self._active or not self._ready:
+            return
         now_ns = self.clock.timestamp_ns()
         next_boundary_ns: int | None = None
-        for calendar_id, calendar in self._calendars.items():
-            snapshot = calendar.evaluate(now_ns)
-            previous = self._snapshots.get(calendar_id)
-            identity = (
-                snapshot.trade_date,
-                snapshot.phase_memberships,
-                snapshot.market_state,
-                snapshot.segment_open_ns,
-                snapshot.segment_close_ns,
-                snapshot.next_transition_ns,
-                snapshot.definition_digest,
-            )
-            previous_identity = None if previous is None else (
-                previous.trade_date,
-                previous.phase_memberships,
-                previous.market_state,
-                previous.segment_open_ns,
-                previous.segment_close_ns,
-                previous.next_transition_ns,
-                previous.definition_digest,
-            )
-            if identity == previous_identity:
-                self._snapshots[calendar_id] = snapshot
-            else:
-                self._revisions[calendar_id] += 1
-                revision = self._revisions[calendar_id]
-                definition = self._definitions[calendar_id]
-                event = CalendarTransition(
-                    event_id=f"calendar:{self._source_epoch}:{calendar_id}:{revision}",
-                    calendar_id=calendar_id,
-                    schedule_version=snapshot.schedule_version,
-                    definition_version=snapshot.definition_version,
-                    definition_digest=snapshot.definition_digest,
-                    effective_from_ns=definition.effective_from_ns,
-                    trade_date=snapshot.trade_date.isoformat() if snapshot.trade_date else None,
-                    previous_trade_date=(
-                        previous.trade_date.isoformat()
-                        if previous is not None and previous.trade_date is not None
-                        else None
-                    ),
-                    phase_memberships=snapshot.phase_memberships,
-                    previous_phase_memberships=(
-                        previous.phase_memberships if previous is not None else ()
-                    ),
-                    market_state=snapshot.market_state,
-                    previous_market_state=(
-                        previous.market_state if previous is not None else None
-                    ),
-                    segment_open_ns=snapshot.segment_open_ns,
-                    segment_close_ns=snapshot.segment_close_ns,
-                    next_transition_ns=snapshot.next_transition_ns,
-                    source=str(self.actor_id),
-                    source_epoch=self._source_epoch,
-                    effective_ts_ns=now_ns,
-                    evaluated_ts_ns=now_ns,
-                    published_ts_ns=self.clock.timestamp_ns(),
-                    reason=(
-                        "definition activated" if previous is None else "calendar state changed"
-                    ),
-                    revision=revision,
-                    previous_revision=revision - 1 if revision > 1 else None,
+        for calendar_id in self._calendars:
+            if not self._active:
+                return
+            try:
+                self._update_calendar_state(calendar_id, now_ns)
+            except Exception as exc:  # noqa: BLE001
+                self.log.error(
+                    "CALENDAR_STATE_EVALUATION_FAILED"
+                    f" | calendar_id={calendar_id} | error={type(exc).__name__}",
                 )
-                self.publish_data(
-                    self._transition_type,
-                    CustomData(self._transition_type, event),
-                )
-                self.log.info(
-                    f"CALENDAR_TRANSITION | calendar={event.calendar_id}"
-                    f" | trade_date={event.trade_date} | phase={event.phase}"
-                    f" | market_state={event.previous_market_state or 'UNINITIALIZED'}"
-                    f"->{event.market_state} | next_transition_ns={event.next_transition_ns}",
-                )
-                self._snapshots[calendar_id] = snapshot
+                continue
+            snapshot = self._snapshots[calendar_id]
             if snapshot.next_transition_ns is not None and snapshot.next_transition_ns > now_ns:
                 next_boundary_ns = (
                     snapshot.next_transition_ns
@@ -256,7 +265,75 @@ class SessionStateActor(DataActor):
                 )
         self._schedule_boundary(next_boundary_ns)
 
+    def _update_calendar_state(
+        self,
+        calendar_id: str,
+        evaluated_as_of_ns: int,
+    ) -> CalendarTransitionV2:
+        if not self._active:
+            raise RuntimeError("session-state producer is inactive")
+        snapshot = self._calendars[calendar_id].evaluate(evaluated_as_of_ns)
+        previous = self._snapshots.get(calendar_id)
+        identity = _session_snapshot_identity(snapshot)
+        previous_identity = None if previous is None else _session_snapshot_identity(previous)
+        if identity == previous_identity:
+            self._snapshots[calendar_id] = snapshot
+            return self._current_transitions[calendar_id]
+        if not self._active:
+            raise RuntimeError("session-state producer became inactive during evaluation")
+        revision = self._revisions[calendar_id] + 1
+        definition = self._definitions[calendar_id]
+        published_ts_ns = self.clock.timestamp_ns()
+        event = CalendarTransitionV2(
+            event_id=f"calendar:{self._source_epoch}:{calendar_id}:{revision}",
+            calendar_id=calendar_id,
+            schedule_version=snapshot.schedule_version,
+            definition_version=snapshot.definition_version,
+            definition_digest=snapshot.definition_digest,
+            definition_effective_from_ns=definition.effective_from_ns,
+            trade_date=snapshot.trade_date.isoformat() if snapshot.trade_date else None,
+            previous_trade_date=(
+                previous.trade_date.isoformat()
+                if previous is not None and previous.trade_date is not None
+                else None
+            ),
+            phase_memberships=snapshot.phase_memberships,
+            previous_phase_memberships=(previous.phase_memberships if previous is not None else ()),
+            market_state=snapshot.market_state,
+            previous_market_state=previous.market_state if previous is not None else None,
+            segment_open_ns=snapshot.segment_open_ns,
+            segment_close_ns=snapshot.segment_close_ns,
+            next_transition_ns=snapshot.next_transition_ns,
+            source=str(self.actor_id),
+            source_epoch=self._source_epoch,
+            state_effective_from_ns=snapshot.state_effective_from_ns,
+            evaluated_as_of_ns=evaluated_as_of_ns,
+            published_ts_ns=published_ts_ns,
+            reason="definition activated" if previous is None else "calendar state changed",
+            revision=revision,
+            previous_revision=revision - 1 if revision > 1 else None,
+        )
+        self._revisions[calendar_id] = revision
+        self._snapshots[calendar_id] = snapshot
+        self._current_transitions[calendar_id] = event
+        legacy_event = _legacy_calendar_transition(event)
+        if not self._active:
+            return event
+        self.publish_data(
+            self._transition_type,
+            CustomData(self._transition_type, legacy_event),
+        )
+        self.log.info(
+            f"CALENDAR_TRANSITION | calendar={event.calendar_id}"
+            f" | trade_date={event.trade_date} | phase={event.phase}"
+            f" | market_state={event.previous_market_state or 'UNINITIALIZED'}"
+            f"->{event.market_state} | next_transition_ns={event.next_transition_ns}",
+        )
+        return event
+
     def _schedule_boundary(self, next_boundary_ns: int | None) -> None:
+        if not self._active:
+            return
         if _SESSION_BOUNDARY_ALERT in self.clock.timer_names():
             self.clock.cancel_timer(_SESSION_BOUNDARY_ALERT)
         if next_boundary_ns is not None:
@@ -267,6 +344,8 @@ class SessionStateActor(DataActor):
             )
 
     def _publish_projection(self, request: CalendarProjectionRequest) -> None:
+        if not self._active:
+            return
         self._projection_requests += 1
         requested_days = (request.end_ns - request.start_ns) // 86_400_000_000_000 + 1
         requested = tuple(request.calendar_ids)
@@ -275,7 +354,7 @@ class SessionStateActor(DataActor):
         projections = []
         failures = []
         retry_at_ns = None
-        if not self._started:
+        if not self._ready:
             status = "NOT_READY"
             unavailable = requested
             retry_at_ns = self.clock.timestamp_ns() + self._interval_ns
@@ -337,7 +416,431 @@ class SessionStateActor(DataActor):
             generated_ts_ns=self.clock.timestamp_ns(),
             retry_at_ns=retry_at_ns,
         )
-        self.publish_data(self._response_type, CustomData(self._response_type, response))
+        if self._active:
+            self.publish_data(self._response_type, CustomData(self._response_type, response))
+
+    def _publish_current_state(self, request: CalendarStateSnapshotRequest) -> None:
+        if not self._active:
+            return
+        self._snapshot_requests += 1
+        received_ns = self.clock.timestamp_ns()
+        action, cached = self._admit_snapshot_request(request, received_ns)
+        if action == "replay" and cached is not None:
+            self._snapshot_replays += 1
+            if self._active:
+                self.publish_data(
+                    self._snapshot_response_type,
+                    CustomData(self._snapshot_response_type, cached),
+                )
+            return
+        if action != "process":
+            self._snapshot_rejections += 1
+            response = self._snapshot_rejection(request, received_ns, action)
+            cycle = self._snapshot_cycles.get(request.requester)
+            if (
+                cycle is not None
+                and cycle.cycle_id == request.cycle_id
+                and not cycle.attempts
+            ):
+                self._cache_snapshot_response(request, response)
+            if self._active:
+                self.publish_data(
+                    self._snapshot_response_type,
+                    CustomData(self._snapshot_response_type, response),
+                )
+            return
+
+        cut_ns = self.clock.timestamp_ns()
+        if received_ns > request.deadline_ts_ns:
+            response = self._snapshot_rejection(
+                request,
+                received_ns,
+                "request_deadline_expired",
+                evaluated_as_of_ns=cut_ns,
+            )
+        elif not self._ready:
+            response = self._not_ready_snapshot(request, received_ns, cut_ns)
+        else:
+            response = self._evaluate_snapshot_request(request, received_ns, cut_ns)
+        self._cache_snapshot_response(request, response)
+        if self._active:
+            self.publish_data(
+                self._snapshot_response_type,
+                CustomData(self._snapshot_response_type, response),
+            )
+
+    def _admit_snapshot_request(
+        self,
+        request: CalendarStateSnapshotRequest,
+        received_ns: int,
+    ) -> tuple[str, CalendarStateSnapshotResponse | None]:
+        if request.requester not in self._allowed_snapshot_requesters:
+            return "requester_not_allowed", None
+        cycle = self._snapshot_cycles.get(request.requester)
+        if cycle is not None and received_ns > cycle.expires_at_ns:
+            del self._snapshot_cycles[request.requester]
+            cycle = None
+        if cycle is not None:
+            for attempt in cycle.attempts:
+                if attempt.request.request_id != request.request_id:
+                    continue
+                if attempt.request == request:
+                    return "replay", attempt.response
+                return "request_identity_conflict", None
+        if request.attempt > self._delivery_policy["maximum_attempts"]:
+            return "request_identity_conflict", None
+        if (
+            request.deadline_ts_ns - request.requested_ts_ns
+            > self._delivery_policy["response_timeout_ms"] * 1_000_000
+        ):
+            return "request_identity_conflict", None
+        if cycle is not None and cycle.cycle_id != request.cycle_id:
+            if not cycle.terminal and received_ns <= cycle.expires_at_ns:
+                return "request_identity_conflict", None
+            del self._snapshot_cycles[request.requester]
+            cycle = None
+        if cycle is None:
+            if request.attempt != 1:
+                return "request_identity_conflict", None
+            self._snapshot_cycles[request.requester] = _SnapshotCycle(
+                cycle_id=request.cycle_id,
+                started_at_ns=request.requested_ts_ns,
+                expires_at_ns=min(
+                    request.deadline_ts_ns,
+                    request.requested_ts_ns
+                    + self._delivery_policy["maximum_elapsed_ms"] * 1_000_000,
+                ),
+                attempts=[],
+            )
+        else:
+            if cycle.terminal or request.attempt != len(cycle.attempts) + 1:
+                return "request_identity_conflict", None
+            maximum_cycle_deadline_ns = (
+                cycle.started_at_ns
+                + self._delivery_policy["maximum_elapsed_ms"] * 1_000_000
+            )
+            if request.deadline_ts_ns > maximum_cycle_deadline_ns:
+                return "request_identity_conflict", None
+            cycle.expires_at_ns = max(cycle.expires_at_ns, request.deadline_ts_ns)
+        if request.expected_source != str(self.actor_id):
+            return "request_identity_conflict", None
+        if request.expected_source_epoch != self._source_epoch:
+            return "request_identity_conflict", None
+        if request.delivery_policy_version != self._delivery_policy["policy_version"]:
+            return "request_identity_conflict", None
+        if len(request.calendar_expectations) > self._maximum_calendars_per_request:
+            return "request_population_exceeded", None
+        return "process", None
+
+    def _not_ready_snapshot(
+        self,
+        request: CalendarStateSnapshotRequest,
+        received_ns: int,
+        cut_ns: int,
+    ) -> CalendarStateSnapshotResponse:
+        generated_floor_ns = self.clock.timestamp_ns()
+        retry_at_ns = generated_floor_ns + self._delivery_policy["retry_backoff_ms"] * 1_000_000
+        if retry_at_ns > request.deadline_ts_ns:
+            return self._snapshot_rejection(
+                request,
+                received_ns,
+                "request_deadline_expired",
+                evaluated_as_of_ns=cut_ns,
+            )
+        failures = tuple(
+            CalendarStateSnapshotFailure(
+                calendar_id=calendar_id,
+                outcome="NOT_READY",
+                code="source_not_ready",
+                reason="canonical session state is not ready",
+                retryable=True,
+                retry_at_ns=retry_at_ns,
+            )
+            for calendar_id in request.calendar_ids
+        )
+        return self._snapshot_response(
+            request,
+            received_ns,
+            cut_ns,
+            states=(),
+            failures=failures,
+            generated_floor_ns=generated_floor_ns,
+        )
+
+    def _evaluate_snapshot_request(
+        self,
+        request: CalendarStateSnapshotRequest,
+        received_ns: int,
+        cut_ns: int,
+    ) -> CalendarStateSnapshotResponse:
+        states: list[CalendarCurrentState] = []
+        failures: list[CalendarStateSnapshotFailure] = []
+        for expectation in request.calendar_expectations:
+            calendar = self._calendars.get(expectation.calendar_id)
+            if calendar is None:
+                failures.append(
+                    CalendarStateSnapshotFailure(
+                        calendar_id=expectation.calendar_id,
+                        outcome="REJECTED",
+                        code="unknown_calendar_id",
+                        reason="requested calendar is not configured",
+                        retryable=False,
+                    ),
+                )
+                continue
+            definition = calendar.definition
+            if (
+                expectation.definition_version != definition.definition_version
+                or expectation.definition_digest != definition.definition_digest
+                or expectation.definition_effective_from_ns != definition.effective_from_ns
+            ):
+                failures.append(
+                    CalendarStateSnapshotFailure(
+                        calendar_id=expectation.calendar_id,
+                        outcome="CONFLICT",
+                        code="definition_identity_conflict",
+                        reason="requested calendar definition does not match the producer",
+                        retryable=False,
+                        actual_definition_version=definition.definition_version,
+                        actual_definition_digest=definition.definition_digest,
+                        actual_definition_effective_from_ns=definition.effective_from_ns,
+                    ),
+                )
+                continue
+            try:
+                transition = self._update_calendar_state(expectation.calendar_id, cut_ns)
+            except CalendarStateBoundaryUnavailable:
+                failures.append(
+                    CalendarStateSnapshotFailure(
+                        calendar_id=expectation.calendar_id,
+                        outcome="EVALUATION_FAILED",
+                        code="state_effective_boundary_unavailable",
+                        reason="canonical state boundary is unavailable",
+                        retryable=False,
+                        actual_definition_version=definition.definition_version,
+                        actual_definition_digest=definition.definition_digest,
+                        actual_definition_effective_from_ns=definition.effective_from_ns,
+                    ),
+                )
+                continue
+            except Exception as exc:  # noqa: BLE001
+                failures.append(
+                    CalendarStateSnapshotFailure(
+                        calendar_id=expectation.calendar_id,
+                        outcome="EVALUATION_FAILED",
+                        code="current_state_evaluation_failed",
+                        reason="canonical current-state evaluation failed",
+                        retryable=False,
+                        actual_definition_version=definition.definition_version,
+                        actual_definition_digest=definition.definition_digest,
+                        actual_definition_effective_from_ns=definition.effective_from_ns,
+                    ),
+                )
+                self.log.error(
+                    "CALENDAR_CURRENT_STATE_FAILED"
+                    f" | request_id={request.request_id}"
+                    f" | calendar_id={expectation.calendar_id}"
+                    f" | error={type(exc).__name__}",
+                )
+                continue
+            states.append(_calendar_current_state(transition, cut_ns))
+        return self._snapshot_response(
+            request,
+            received_ns,
+            cut_ns,
+            states=tuple(states),
+            failures=tuple(failures),
+        )
+
+    def _snapshot_rejection(
+        self,
+        request: CalendarStateSnapshotRequest,
+        received_ns: int,
+        code: str,
+        *,
+        evaluated_as_of_ns: int | None = None,
+    ) -> CalendarStateSnapshotResponse:
+        reasons = {
+            "requester_not_allowed": "requester is not allowed to synchronize current state",
+            "request_population_exceeded": "requested calendar population exceeds the bound",
+            "request_deadline_expired": "snapshot request deadline expired",
+            "request_identity_conflict": "snapshot request identity or policy conflicts",
+        }
+        failures = tuple(
+            CalendarStateSnapshotFailure(
+                calendar_id=calendar_id,
+                outcome="REJECTED",
+                code=code,
+                reason=reasons[code],
+                retryable=False,
+            )
+            for calendar_id in request.calendar_ids
+        )
+        cut_ns = self.clock.timestamp_ns() if evaluated_as_of_ns is None else evaluated_as_of_ns
+        return self._snapshot_response(
+            request,
+            received_ns,
+            cut_ns,
+            states=(),
+            failures=failures,
+        )
+
+    def _snapshot_response(
+        self,
+        request: CalendarStateSnapshotRequest,
+        received_ns: int,
+        evaluated_as_of_ns: int,
+        *,
+        states: tuple[CalendarCurrentState, ...],
+        failures: tuple[CalendarStateSnapshotFailure, ...],
+        generated_floor_ns: int | None = None,
+    ) -> CalendarStateSnapshotResponse:
+        generated_ts_ns = max(
+            evaluated_as_of_ns,
+            generated_floor_ns or 0,
+            self.clock.timestamp_ns(),
+        )
+        published_ts_ns = max(generated_ts_ns, self.clock.timestamp_ns())
+        if published_ts_ns > request.deadline_ts_ns and (
+            states
+            or not failures
+            or any(item.code != "request_deadline_expired" for item in failures)
+        ):
+            failures = tuple(
+                CalendarStateSnapshotFailure(
+                    calendar_id=calendar_id,
+                    outcome="REJECTED",
+                    code="request_deadline_expired",
+                    reason="snapshot request deadline expired",
+                    retryable=False,
+                )
+                for calendar_id in request.calendar_ids
+            )
+            states = ()
+        retry_times = tuple(
+            item.retry_at_ns
+            for item in failures
+            if item.retryable and item.retry_at_ns is not None
+        )
+        return CalendarStateSnapshotResponse(
+            cycle_id=request.cycle_id,
+            request_id=request.request_id,
+            attempt=request.attempt,
+            requester=request.requester,
+            source=str(self.actor_id),
+            source_epoch=self._source_epoch,
+            status=_snapshot_response_status(states, failures),
+            requested_calendar_ids=request.calendar_ids,
+            states=states,
+            failures=failures,
+            requested_as_of_ns=request.requested_as_of_ns,
+            requested_ts_ns=request.requested_ts_ns,
+            deadline_ts_ns=request.deadline_ts_ns,
+            request_received_ts_ns=received_ns,
+            evaluated_as_of_ns=evaluated_as_of_ns,
+            generated_ts_ns=generated_ts_ns,
+            published_ts_ns=published_ts_ns,
+            delivery_policy_version=self._delivery_policy["policy_version"],
+            retry_at_ns=min(retry_times) if retry_times else None,
+        )
+
+    def _cache_snapshot_response(
+        self,
+        request: CalendarStateSnapshotRequest,
+        response: CalendarStateSnapshotResponse,
+    ) -> None:
+        cycle = self._snapshot_cycles.get(request.requester)
+        if cycle is None or cycle.cycle_id != request.cycle_id:
+            return
+        if len(cycle.attempts) >= self._delivery_policy["maximum_attempts"]:
+            cycle.terminal = True
+            return
+        cycle.attempts.append(_CachedSnapshotAttempt(request=request, response=response))
+        cycle.terminal = response.retry_at_ns is None
+
+
+def _session_snapshot_identity(snapshot: CanonicalSessionSnapshot) -> tuple[object, ...]:
+    return (
+        snapshot.trade_date,
+        snapshot.phase_memberships,
+        snapshot.market_state,
+        snapshot.segment_open_ns,
+        snapshot.segment_close_ns,
+        snapshot.next_transition_ns,
+        snapshot.definition_digest,
+        snapshot.state_effective_from_ns,
+    )
+
+
+def _legacy_calendar_transition(event: CalendarTransitionV2) -> CalendarTransition:
+    return CalendarTransition(
+        event_id=event.event_id,
+        source=event.source,
+        source_epoch=event.source_epoch,
+        calendar_id=event.calendar_id,
+        schedule_version=event.schedule_version,
+        definition_version=event.definition_version,
+        definition_digest=event.definition_digest,
+        effective_from_ns=event.definition_effective_from_ns,
+        trade_date=event.trade_date,
+        previous_trade_date=event.previous_trade_date,
+        phase_memberships=event.phase_memberships,
+        previous_phase_memberships=event.previous_phase_memberships,
+        market_state=event.market_state,
+        previous_market_state=event.previous_market_state,
+        segment_open_ns=event.segment_open_ns,
+        segment_close_ns=event.segment_close_ns,
+        next_transition_ns=event.next_transition_ns,
+        effective_ts_ns=event.state_effective_from_ns,
+        evaluated_ts_ns=event.evaluated_as_of_ns,
+        published_ts_ns=event.published_ts_ns,
+        revision=event.revision,
+        previous_revision=event.previous_revision,
+        reason=event.reason,
+    )
+
+
+def _calendar_current_state(
+    event: CalendarTransitionV2,
+    evaluated_as_of_ns: int,
+) -> CalendarCurrentState:
+    return CalendarCurrentState(
+        calendar_id=event.calendar_id,
+        schedule_version=event.schedule_version,
+        definition_version=event.definition_version,
+        definition_digest=event.definition_digest,
+        definition_effective_from_ns=event.definition_effective_from_ns,
+        trade_date=event.trade_date,
+        phase_memberships=event.phase_memberships,
+        market_state=event.market_state,
+        segment_open_ns=event.segment_open_ns,
+        segment_close_ns=event.segment_close_ns,
+        next_transition_ns=event.next_transition_ns,
+        revision=event.revision,
+        previous_revision=event.previous_revision,
+        last_transition_event_id=event.event_id,
+        source=event.source,
+        source_epoch=event.source_epoch,
+        state_effective_from_ns=event.state_effective_from_ns,
+        state_revision_evaluated_as_of_ns=event.evaluated_as_of_ns,
+        evaluated_as_of_ns=evaluated_as_of_ns,
+        state_revision_published_ts_ns=event.published_ts_ns,
+    )
+
+
+def _snapshot_response_status(
+    states: tuple[CalendarCurrentState, ...],
+    failures: tuple[CalendarStateSnapshotFailure, ...],
+) -> str:
+    if states and not failures:
+        return "READY"
+    if states:
+        return "INCOMPLETE"
+    if failures and all(item.outcome == "NOT_READY" and item.retryable for item in failures):
+        return "NOT_READY"
+    if failures and all(item.outcome == "REJECTED" for item in failures):
+        return "REJECTED"
+    return "FAILED"
 
 
 class EvidenceHealthActorConfig(DataActorConfig):

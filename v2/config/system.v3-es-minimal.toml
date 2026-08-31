@@ -15,7 +15,7 @@
 # analytical defaults and must be reviewed before their owning engine is enabled.
 # Never place secrets in this file; local secrets belong in the ignored v2/.env.
 
-schema_version = 21
+schema_version = 22
 
 [runtime]
 name = "MARKEITECH-V3-ES-PROGRESSIVE-001"
@@ -257,6 +257,16 @@ response_timeout_ms = 5000
 maximum_attempts = 3
 retry_backoff_ms = 1000
 maximum_elapsed_ms = 60000
+
+[sessions.current_state_delivery]
+policy_version = 1
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
+maximum_buffered_transitions_per_calendar = 8
+maximum_total_buffered_transitions = 32
+boundary_delivery_grace_ms = 2000
 
 [evidence_health]
 evaluation_interval_ms = 1000
