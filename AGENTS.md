@@ -196,9 +196,16 @@ The V2 API documentation utility is an isolated, static source-analysis tool und
   version bump, and parser/render/leak tests.
 - Unknown, invalid, hidden, or conflicting custom values must remain quarantined. Do not copy raw
   values into HTML, JSON, logs, errors, hashes intended for display, or other generated artifacts.
-- Caller/callee, ownership, flow, or dependency attributes are not currently approved. If later
-  approved, treat them as author-declared discovery evidence only. They cannot create accepted
-  architecture, mutate the canonical system/data-flow manifest, or prove runtime behavior.
+- Caller/callee, ownership, flow, contract, or dependency attributes are not currently approved.
+  Do not encode relationships in scalar strings or declare both incoming and outgoing views.
+- The approved `architecture.component.*` attributes own only implementation-backed component
+  identity, label, kind, boundary, and substantive responsibilities. The API-doc generator must
+  discover these classes separately from the public API denominator and must not read the current
+  architecture TOML.
+- The existing system-diagram tool continues to consume `docs/architecture/system-dataflow.toml`
+  during the migration interval. A future, separately reviewed exporter may make validated source
+  documentation upstream of generated TOML and diagrams; until it exists, do not declare the TOML
+  generated or remove its maintenance procedure.
 - Generated `tools/api-docs/site` and `.build` content is untracked and must not be hand-edited.
   Commit source/configuration/registries/tests/lockfiles, then regenerate locally or in approved CI.
 

@@ -103,6 +103,27 @@ Markeitech Metadata:
             any(item.diagnostic_code == "METADATA_ENTRY_INVALID" for item in result.occurrences)
         )
 
+    def test_wrapped_list_item_is_normalized_without_changing_meaning(self) -> None:
+        result = parse_metadata_docstring(
+            """Summary.
+
+Markeitech Metadata:
+    docs.items:
+        - one long declaration which is wrapped
+          onto a second source line.
+""",
+            registry=registry(
+                AttributeField("docs.items", "list", "one", "public", 3)
+            ),
+            object_path="markeitech.fixture.Component",
+            source="v2/src/markeitech/fixture.py",
+            base_line=1,
+        )
+        self.assertEqual(
+            result.occurrences[0].typed_value,
+            ["one long declaration which is wrapped onto a second source line."],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -41,7 +41,14 @@ class HistoricalDependencyProbeActorConfig(DataActorConfig):
 
 
 class HistoricalDependencyProbeActor(DataActor):
-    """Config-disabled acceptance consumer for the Stage 9B historical path."""
+    """Config-disabled acceptance consumer for the Stage 9B historical path.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.historical-probe
+        architecture.component.label: Historical Dependency Probe
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.acquisition
+    """
 
     def __init__(self, config: HistoricalDependencyProbeActorConfig) -> None:
         super().__init__(config)

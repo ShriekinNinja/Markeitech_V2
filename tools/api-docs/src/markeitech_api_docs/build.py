@@ -17,6 +17,7 @@ from mkdocs.commands.build import build as mkdocs_build
 from mkdocs.config import load_config
 
 from markeitech_api_docs import __version__
+from markeitech_api_docs.component_docs import build_component_docs_projection
 from markeitech_api_docs.models import ApiDocsError, ApiIndex, SourceSnapshot
 from markeitech_api_docs.registry import (
     load_attribute_registry,
@@ -43,6 +44,21 @@ SECRET_PATTERNS = (
     re.compile(r"https://(?:canary\.)?discord(?:app)?\.com/api/webhooks/", re.IGNORECASE),
     re.compile(r"\b(?:sk|pk)-[A-Za-z0-9_-]{20,}\b"),
     re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+)
+REMOTE_ASSET_PATTERN = re.compile(
+    r"<(?:script|link|img|source|iframe|object|audio|video)\b[^>]*"
+    r"(?:src|srcset|href|data)=[\"'](?:https?:)?//",
+    re.IGNORECASE,
+)
+UNSAFE_CSS_PATTERN = re.compile(
+    r"@import\b|@font-face\b|url\s*\(|expression\s*\(|"
+    r"(?:^|[;{])\s*(?:behavior|-moz-binding)\s*:",
+    re.IGNORECASE | re.MULTILINE,
+)
+HIDING_CSS_PATTERN = re.compile(
+    r"(?:display\s*:\s*none|visibility\s*:\s*hidden|opacity\s*:\s*0(?:\D|$)|"
+    r"clip-path\s*:|position\s*:\s*(?:absolute|fixed)\s*;[^}]*left\s*:\s*-)",
+    re.IGNORECASE,
 )
 
 
@@ -89,12 +105,21 @@ def _validate_fixed_paths(paths: FixedPaths) -> None:
         paths.config,
         paths.public_surface_registry,
         paths.attribute_registry,
+        paths.tool_root / "docs" / "stylesheets" / "markeitech.css",
         paths.tool_root / "pyproject.toml",
         paths.tool_root / "uv.lock",
     )
     for path in required:
         if not path.exists() or path.is_symlink():
             raise ApiDocsError("PATH_INVALID: required input is missing or symlinked")
+
+
+def _validate_stylesheet(path: Path) -> None:
+    value = path.read_text(encoding="utf-8")
+    if UNSAFE_CSS_PATTERN.search(value):
+        raise ApiDocsError("CONFIG_INVALID: stylesheet contains an unsafe asset reference")
+    if HIDING_CSS_PATTERN.search(value):
+        raise ApiDocsError("CONFIG_INVALID: stylesheet contains a content-hiding rule")
 
 
 def _normalized_distribution_name(value: str) -> str:
@@ -151,19 +176,36 @@ def _validate_mkdocs_policy(path: Path) -> None:
         "nav",
         "plugins",
         "markdown_extensions",
+        "extra_css",
     }
     if set(raw) != allowed_top_level or raw.get("docs_dir") != "docs":
         raise ApiDocsError("CONFIG_INVALID: MkDocs top-level policy changed")
     theme = raw.get("theme")
-    if theme != {"name": "readthedocs"}:
+    if theme != {"name": "readthedocs", "highlightjs": False}:
         raise ApiDocsError("CONFIG_INVALID: only the built-in ReadTheDocs theme is approved")
+    if raw.get("extra_css") != ["stylesheets/markeitech.css"]:
+        raise ApiDocsError("CONFIG_INVALID: custom stylesheet allowlist changed")
     markdown_extensions = raw.get("markdown_extensions")
     if markdown_extensions != [
         "fenced_code",
         "tables",
-        {"toc": {"permalink": True}},
+        {"toc": {"permalink": True, "toc_depth": 2}},
     ]:
         raise ApiDocsError("CONFIG_INVALID: Markdown extension allowlist changed")
+    expected_nav = [
+        {"Overview": "index.md"},
+        {"Architecture components": "architecture-components.md"},
+        {
+            "API": [
+                {"System": "api/system.md"},
+                {"Acquisition": "api/acquisition.md"},
+                {"Intelligence": "api/intelligence.md"},
+                {"CLI": "api/cli.md"},
+            ]
+        },
+    ]
+    if raw.get("nav") != expected_nav:
+        raise ApiDocsError("CONFIG_INVALID: navigation allowlist changed")
     plugins = raw.get("plugins")
     if not isinstance(plugins, list) or len(plugins) != 2 or plugins[0] != "search":
         raise ApiDocsError("CONFIG_INVALID: plugin allowlist changed")
@@ -277,6 +319,13 @@ def _scan_output(root: Path, protected_literals: tuple[str, ...], repository_roo
             raise ApiDocsError("OUTPUT_LEAK_DETECTED: custom metadata value escaped")
         if any(pattern.search(value) for pattern in SECRET_PATTERNS):
             raise ApiDocsError("OUTPUT_LEAK_DETECTED: secret-like content detected")
+        if REMOTE_ASSET_PATTERN.search(value):
+            raise ApiDocsError("OUTPUT_INVALID: remote auto-fetching asset detected")
+        if (
+            path.relative_to(root).as_posix() == "stylesheets/markeitech.css"
+            and UNSAFE_CSS_PATTERN.search(value)
+        ):
+            raise ApiDocsError("OUTPUT_INVALID: unsafe stylesheet asset reference detected")
 
 
 def _hash_entries(root: Path, *, exclude: set[str] | None = None) -> list[dict[str, object]]:
@@ -353,8 +402,34 @@ def _publish_complete_set(staged: Path, paths: FixedPaths) -> None:
     _safe_remove(previous, paths)
 
 
+def _prepare_docs_tree(
+    stage_parent: Path,
+    paths: FixedPaths,
+    generated_markdown: dict[str, str],
+) -> Path:
+    source = paths.tool_root / "docs"
+    for item in source.rglob("*"):
+        if item.is_symlink():
+            raise ApiDocsError("PATH_INVALID: documentation source cannot contain symlinks")
+    destination = stage_parent / "docs"
+    shutil.copytree(source, destination)
+    for relative, value in generated_markdown.items():
+        relative_path = Path(relative)
+        if (
+            relative_path.is_absolute()
+            or ".." in relative_path.parts
+            or relative_path.suffix != ".md"
+        ):
+            raise ApiDocsError("OUTPUT_PATH_DENIED: generated Markdown path is unsafe")
+        target = destination / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(value, encoding="utf-8")
+    return destination
+
+
 def prepare_index(paths: FixedPaths) -> tuple[ApiIndex, SourceSnapshot, dict[str, str]]:
     _validate_fixed_paths(paths)
+    _validate_stylesheet(paths.tool_root / "docs" / "stylesheets" / "markeitech.css")
     validate_interpreter(paths.tool_root)
     versions = _validate_installed_versions(paths.tool_root / "uv.lock")
     _validate_mkdocs_policy(paths.config)
@@ -368,6 +443,17 @@ def prepare_index(paths: FixedPaths) -> tuple[ApiIndex, SourceSnapshot, dict[str
             snapshot=snapshot,
             surface=public_surface,
             attributes=attributes,
+        )
+        components = build_component_docs_projection(
+            repository_root=paths.repository_root,
+            source_root=paths.source_root,
+            registry=attributes,
+            snapshot=snapshot,
+        )
+        index = ApiIndex(
+            payload={**index.payload, "architecture_components": components.payload},
+            protected_literals=index.protected_literals,
+            generated_markdown={"architecture-components.md": components.markdown},
         )
     _verify_snapshot_unchanged(snapshot, paths.repository_root, paths.tool_root)
     return index, snapshot, versions
@@ -384,6 +470,12 @@ def validate() -> dict[str, object]:
         "documented": surface["documented"],
         "missing_docstring": surface["missing_docstring"],
         "metadata_occurrences": index.payload["metadata"]["occurrence_count"],
+        "architecture_components": index.payload["architecture_components"]["counts"][
+            "components"
+        ],
+        "architecture_responsibilities": index.payload["architecture_components"]["counts"][
+            "with_responsibilities"
+        ],
         "versions": versions,
     }
 
@@ -396,20 +488,30 @@ def generate() -> dict[str, object]:
         raise ApiDocsError("OUTPUT_PATH_DENIED: build root cannot be a symlink")
     stage_parent = Path(tempfile.mkdtemp(prefix="stage-", dir=paths.build_root))
     staged_output = stage_parent / "complete"
-    staged_output.mkdir()
 
     try:
+        staged_output.mkdir()
+        staged_docs = _prepare_docs_tree(stage_parent, paths, index.generated_markdown)
         with constrained_generation_environment():
             config = load_config(
                 config_file=str(paths.config),
+                docs_dir=str(staged_docs),
                 site_dir=str(staged_output),
             )
             effective_output = Path(config.site_dir).resolve()
-            if config.strict is not True or effective_output != staged_output.resolve():
+            effective_docs = Path(config.docs_dir).resolve()
+            if (
+                config.strict is not True
+                or effective_output != staged_output.resolve()
+                or effective_docs != staged_docs.resolve()
+            ):
                 raise ApiDocsError("CONFIG_INVALID: effective MkDocs safety settings changed")
             mkdocs_build(config, dirty=False)
         _verify_snapshot_unchanged(snapshot, paths.repository_root, paths.tool_root)
         (staged_output / "metadata-index.json").write_bytes(_canonical_json(index.payload))
+        (staged_output / "architecture-components-index.json").write_bytes(
+            _canonical_json(index.payload["architecture_components"])
+        )
         _scan_output(staged_output, index.protected_literals, paths.repository_root)
         _write_artifact_manifests(
             staged_output,
@@ -432,6 +534,12 @@ def generate() -> dict[str, object]:
         "documented": index.payload["public_surface"]["documented"],
         "missing_docstring": index.payload["public_surface"]["missing_docstring"],
         "metadata_occurrences": index.payload["metadata"]["occurrence_count"],
+        "architecture_components": index.payload["architecture_components"]["counts"][
+            "components"
+        ],
+        "architecture_responsibilities": index.payload["architecture_components"]["counts"][
+            "with_responsibilities"
+        ],
         "artifact_count": len(_collect_files(paths.output)),
         "artifact_set_sha256": sha256_bytes((paths.output / "SHA256SUMS").read_bytes()),
     }

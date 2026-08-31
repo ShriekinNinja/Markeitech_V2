@@ -279,7 +279,21 @@ class CalendarProjectionView:
 
 @dataclass(frozen=True, slots=True)
 class CanonicalCalendar:
-    """Pure source-composed evaluator. SessionStateActor is its only runtime owner."""
+    """Pure source-composed evaluator. SessionStateActor is its only runtime owner.
+
+    Markeitech Metadata:
+        architecture.component.id: component.canonical-calendar
+        architecture.component.label: Canonical Calendar
+        architecture.component.kind: engine
+        architecture.component.boundary: boundary.intelligence
+        architecture.component.responsibilities:
+            - Evaluate one immutable versioned calendar definition from admitted mcal schedule
+              facts and configured product phases.
+            - Produce UTC exchange segments, phase windows, trade-date assignments, and bounded
+              projections.
+            - Record source-cited corrections and the exact admitted terminal-break normalization
+              outcome.
+    """
 
     definition: CanonicalCalendarDefinition
     _provider: Any = field(init=False, repr=False, compare=False)

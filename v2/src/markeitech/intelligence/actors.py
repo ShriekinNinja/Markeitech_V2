@@ -92,6 +92,20 @@ class SessionStateActorConfig(DataActorConfig):
 
 
 class SessionStateActor(DataActor):
+    """Own active canonical-calendar evaluation for the composed runtime.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.session-state
+        architecture.component.label: Session State
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+        architecture.component.responsibilities:
+            - Sole runtime owner of active CanonicalCalendar instances.
+            - Publish definition-identified calendar transitions and bounded immutable projections.
+            - Contain ordinary per-calendar projection construction failures without redefining
+              provider data.
+    """
+
     def __init__(self, config: SessionStateActorConfig) -> None:
         super().__init__(config)
         self._calendars = {
@@ -363,6 +377,19 @@ class EvidenceHealthActorConfig(DataActorConfig):
 
 
 class EvidenceHealthActor(DataActor):
+    """Evaluate bounded observation freshness and availability.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.evidence-health
+        architecture.component.label: Evidence Health
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+        architecture.component.responsibilities:
+            - Evaluate observation freshness and availability.
+            - Consume definition-identified calendar context without owning mcal.
+            - Use a bounded correlated one-shot projection request lifecycle for startup context.
+    """
+
     def __init__(self, config: EvidenceHealthActorConfig) -> None:
         super().__init__(config)
         self._feeds = tuple(dict(item) for item in config.feeds)

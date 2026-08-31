@@ -176,7 +176,18 @@ class HistoricalEvidencePlannerActorConfig(DataActorConfig):
 
 
 class HistoricalEvidencePlannerActor(DataActor):
-    """Resolves semantic evidence demand; it never calls a provider or owns pacing."""
+    """Resolves semantic evidence demand; it never calls a provider or owns pacing.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.historical-planner
+        architecture.component.label: Historical Evidence Planner
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+        architecture.component.responsibilities:
+            - Resolve semantic historical evidence demands into exact UTC request plans.
+            - Use immutable canonical-calendar projections for calendar-relative windows.
+            - Publish exact plans without calling providers or owning provider pacing.
+    """
 
     def __init__(self, config: HistoricalEvidencePlannerActorConfig) -> None:
         super().__init__(config)

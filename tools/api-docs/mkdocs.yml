@@ -5,14 +5,19 @@ strict: true
 
 theme:
   name: readthedocs
+  highlightjs: false
 
 nav:
   - Overview: index.md
+  - Architecture components: architecture-components.md
   - API:
       - System: api/system.md
       - Acquisition: api/acquisition.md
       - Intelligence: api/intelligence.md
       - CLI: api/cli.md
+
+extra_css:
+  - stylesheets/markeitech.css
 
 plugins:
   - search
@@ -43,3 +48,4 @@ markdown_extensions:
   - tables
   - toc:
       permalink: true
+      toc_depth: 2

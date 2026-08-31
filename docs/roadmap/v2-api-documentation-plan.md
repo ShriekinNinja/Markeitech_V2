@@ -55,9 +55,9 @@ side effects, failure/abstention behavior, and `Raises`; they should not repeat 
 - Allow a future component to gather relationship hints. For example, attributes conceptually
   resembling “who calls this” or “what this calls” may later contribute architecture-flow evidence,
   but these examples do **not** establish field names, semantics, ownership, or a design demand.
-- Treat docstring metadata as author-declared discovery evidence. It must be reconciled with source,
-  tests, runtime evidence, and the canonical system/data-flow manifest before any authoritative
-  architecture claim.
+- Treat relationship-like docstring metadata as unapproved until a structured, one-directional
+  relationship schema is separately reviewed. The approved component fields remain bounded to
+  identity, label, kind, boundary, and substantive local responsibilities.
 
 ## Suggested Implementation
 
@@ -87,13 +87,17 @@ side effects, failure/abstention behavior, and `Raises`; they should not repeat 
 - Current coverage: 16 selected objects have source docstrings and 242 are reported missing. The
   generator does not invent descriptions.
 - Custom metadata: the parser and registry support bounded scalar/list fields, cardinality,
-  validation patterns, and public/status-only exposure. Registry version 1 intentionally approves
-  no production field semantics.
+  validation patterns, and public/status-only exposure. Registry version 2 approves only the five
+  bounded `architecture.component.*` fields used by the class-component page.
 - Outputs: a static site, sanitized metadata index, artifact index, and SHA-256 manifest. Generated
   output is ignored and non-authoritative.
+- Architecture context: implementation-referenced component facts are migrated once from the
+  current system/data-flow TOML into versioned V2 docstring declarations. The documentation build
+  reads source declarations only. During the migration interval the existing system-diagram tool
+  still consumes and maintains the TOML. A later, separately reviewed exporter may generate TOML
+  and diagrams from validated source declarations; reverse ingestion is prohibited.
 - Architecture boundary: no caller/callee, ownership, or flow field is currently approved. Future
-  relationship fields remain discovery evidence and cannot mutate or replace the canonical
-  system/data-flow manifest.
+  relationship fields remain author declarations and cannot prove runtime delivery.
 
 ## References
 

@@ -58,7 +58,14 @@ class QuoteQualityMetricsActorConfig(DataActorConfig):
 
 
 class QuoteQualityMetricsActor(DataActor):
-    """Publishes bounded quote-quality metrics without retaining raw market data."""
+    """Publishes bounded quote-quality metrics without retaining raw market data.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.quote-quality
+        architecture.component.label: Quote Quality Metrics
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+    """
 
     def __init__(self, config: QuoteQualityMetricsActorConfig) -> None:
         super().__init__(config)

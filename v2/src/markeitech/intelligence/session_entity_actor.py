@@ -66,7 +66,14 @@ class SessionReferenceEntityActorConfig(DataActorConfig):
 
 
 class SessionReferenceEntityActor(DataActor):
-    """Publishes objective Group 1 entities from typed metric evidence only."""
+    """Publishes objective Group 1 entities from typed metric evidence only.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.session-reference-entities
+        architecture.component.label: Session Reference Entities
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+    """
 
     def __init__(self, config: SessionReferenceEntityActorConfig) -> None:
         super().__init__(config)

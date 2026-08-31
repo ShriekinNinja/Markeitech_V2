@@ -303,6 +303,15 @@ class OperationalReadinessProjection:
 
 
 class DiscordHealthActor(DataActor):
+    """Project optional system-health notifications to Discord.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.discord-health
+        architecture.component.label: Discord Health Projection
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.system
+    """
+
     def __init__(self, config: DiscordHealthActorConfig) -> None:
         super().__init__(config)
         self._timeout_seconds = config.request_timeout_seconds

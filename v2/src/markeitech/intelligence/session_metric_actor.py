@@ -219,7 +219,19 @@ class SessionMetricsActorConfig(DataActorConfig):
 
 
 class SessionMetricsActor(DataActor):
-    """Converges bounded historical and live bars into foundation metrics."""
+    """Converges bounded historical and live bars into foundation metrics.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.session-metrics
+        architecture.component.label: Session Metrics
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+        architecture.component.responsibilities:
+            - Converge bounded historical and live bars into completed-bar, session, window, and
+              rolling measurements.
+            - Consume immutable calendar projections and transitions without instantiating mcal.
+            - Publish live and historical evidence demands for configured metric capabilities.
+    """
 
     def __init__(self, config: SessionMetricsActorConfig) -> None:
         super().__init__(config)

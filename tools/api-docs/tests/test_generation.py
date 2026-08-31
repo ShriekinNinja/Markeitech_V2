@@ -19,9 +19,35 @@ class GenerationTest(unittest.TestCase):
         self.assertTrue(index["not_runtime_configuration"])
         self.assertEqual(index["public_surface"]["selected"], 258)
         self.assertEqual(index["metadata"]["occurrence_count"], 0)
+        self.assertEqual(index["architecture_components"]["counts"]["components"], 19)
+        self.assertEqual(
+            index["architecture_components"]["counts"]["with_responsibilities"],
+            6,
+        )
+        architecture = json.loads(
+            (output / "architecture-components-index.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(architecture, index["architecture_components"])
+        architecture_html = (
+            output / "architecture-components" / "index.html"
+        ).read_text(
+            encoding="utf-8",
+        )
+        self.assertIn("Architecture Components", architecture_html)
+        self.assertIn("actor.session-state", architecture_html)
+        self.assertIn("not a Python call graph", architecture_html)
+        self.assertIn("stylesheets/markeitech.css", architecture_html)
+        self.assertNotIn("architecture.component.id:", architecture_html)
+        public_paths = {
+            entry["canonical"] for entry in index["public_surface"]["entries"]
+        }
+        self.assertNotIn(
+            "markeitech.intelligence.actors.SessionStateActor",
+            public_paths,
+        )
 
         for path in output.rglob("*"):
-            if path.is_file() and path.suffix in {".html", ".json", ".txt", ".xml"}:
+            if path.is_file() and path.suffix in {".css", ".html", ".json", ".txt", ".xml"}:
                 value = path.read_text(encoding="utf-8")
                 self.assertNotIn("Markeitech Metadata:", value)
                 self.assertNotIn(str(FixedPaths.discover().repository_root), value)

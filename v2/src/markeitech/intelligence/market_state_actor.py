@@ -76,7 +76,14 @@ class MarketStateEntityActorConfig(DataActorConfig):
 
 
 class MarketStateEntityActor(DataActor):
-    """Publishes configured metric-driven market state without deriving source metrics."""
+    """Publishes configured metric-driven market state without deriving source metrics.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.market-state-entities
+        architecture.component.label: Market State Entities
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+    """
 
     def __init__(self, config: MarketStateEntityActorConfig) -> None:
         super().__init__(config)

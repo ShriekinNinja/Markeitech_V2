@@ -183,9 +183,17 @@ def parse_metadata_docstring(
                     list_match = re.fullmatch(r" {8}- (.+)", lines[cursor])
                     if list_match is None:
                         break
-                    values.append(list_match.group(1))
+                    item = list_match.group(1)
                     raw_parts.append(lines[cursor])
                     cursor += 1
+                    while cursor < block_end:
+                        continuation = re.fullmatch(r" {10}(\S.*)", lines[cursor])
+                        if continuation is None:
+                            break
+                        item = f"{item} {continuation.group(1)}"
+                        raw_parts.append(lines[cursor])
+                        cursor += 1
+                    values.append(item)
 
             raw_text = "\n".join(raw_parts)
             raw_length = len(raw_text.encode())

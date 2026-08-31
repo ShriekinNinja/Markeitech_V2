@@ -1,14 +1,21 @@
 # System And Data-Flow Manifest Maintenance
 
-The canonical architecture-diagram source is
-[`system-dataflow.toml`](system-dataflow.toml). It is an offline documentation manifest, not
-runtime configuration. Generated SVG, PNG, DOT, Markdown, index, and hash files under
+During the source-documentation migration interval, the existing system-diagram tool continues to
+consume [`system-dataflow.toml`](system-dataflow.toml). It is an offline documentation manifest,
+not runtime configuration. The API-documentation tool does not read it: the manifest was used once
+to seed the approved class-owned component fields into exact implementation-referenced docstrings.
+A future source-to-TOML exporter requires separate review and acceptance before this maintenance
+path can be superseded. Generated SVG, PNG, DOT, Markdown, index, and hash files under
 [`generated/system-dataflow/`](generated/system-dataflow/) are derived review artifacts. Never
 edit a generated file manually or use it as evidence that runtime behavior exists.
 
 ## Mandatory Same-Batch Rule
 
-A development batch must update the canonical TOML in the same reviewed diff whenever it adds,
+A development batch must update the source docstring first when it changes an
+implementation-backed component's approved identity, label, kind, boundary, or substantive local
+responsibilities. Until the future exporter is accepted, mirror that reviewed change into the TOML
+in the same batch so the existing renderer stays aligned. For all other manifest fields and record
+families, a development batch must update the TOML in the same reviewed diff whenever it adds,
 changes, renames, enables, disables, replaces, or removes any of the following:
 
 - a component, responsibility, canonical authority, composition rule, lifecycle, cardinality, or
@@ -78,7 +85,7 @@ runtime, contact IB, Discord, PostgreSQL, Docker, or the network, or inspect ope
 The reviewed diff must contain, as applicable:
 
 1. implementation/configuration changes;
-2. the canonical TOML update, including evidence and limitations;
+2. the migration-interval TOML projection update, including evidence and limitations;
 3. regenerated SVG, PNG, DOT, Markdown, `artifact-index.json`, and `SHA256SUMS`;
 4. validator/generator tests when the schema, census, or presentation contract changes;
 5. the smallest current-status, architecture, operation, or roadmap update needed to keep a fresh

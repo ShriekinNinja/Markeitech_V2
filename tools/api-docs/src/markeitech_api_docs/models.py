@@ -147,3 +147,4 @@ class MetadataParseResult:
 class ApiIndex:
     payload: dict[str, Any]
     protected_literals: tuple[str, ...] = field(repr=False)
+    generated_markdown: dict[str, str] = field(default_factory=dict, repr=False)

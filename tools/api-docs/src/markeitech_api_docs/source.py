@@ -214,6 +214,7 @@ def documentation_input_paths(repository_root: Path, tool_root: Path) -> tuple[P
     paths = list((repository_root / "v2" / "src" / "markeitech").rglob("*.py"))
     paths.extend((tool_root / "src").rglob("*.py"))
     paths.extend((tool_root / "docs").rglob("*.md"))
+    paths.extend((tool_root / "docs").rglob("*.css"))
     paths.extend((tool_root / "schema").rglob("*.toml"))
     paths.extend(
         [
@@ -325,8 +326,8 @@ def build_api_index(
         "limitations": [
             "Static author declarations are not runtime observations.",
             "API visibility is not architecture membership or completeness.",
-            "Metadata cannot create accepted architecture relationships.",
-            "The index cannot mutate the canonical system/data-flow manifest.",
+            "Relationship metadata is not approved in this registry version.",
+            "Generated architecture manifests and diagrams are not implemented by this tool.",
         ],
         "source_snapshot": snapshot.to_dict(),
         "source_snapshot_sha256": source_snapshot_signature(snapshot),

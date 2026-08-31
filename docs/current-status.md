@@ -120,9 +120,17 @@ system. The preserved V1 status is available in
   missing rather than inferred. Static analysis and rendering deny target imports, dynamic
   inspection, external inventories, network access, and child processes; the wrapper first uses
   bounded read-only Git queries for source identity. It verifies source stability and publishes
-  complete artifact sets atomically. The version-1 custom-attribute registry approves no production
-  fields yet. Caller/callee and architecture-flow examples remain unapproved future discovery
-  concepts, not implemented semantics or architecture authority.
+  complete artifact sets atomically. Attribute-registry version 2 approves five bounded
+  `architecture.component.*` fields for implementation-backed class documentation.
+  Caller/callee and architecture-flow examples remain unapproved future discovery
+  concepts rather than inferred runtime semantics. The first architecture-component docstrings are
+  seeded for all 19 exact implementation-referenced records in the current system/data-flow TOML.
+  Six substantive responsibility sets are preserved exactly; 13 generic placeholders remain
+  explicit documentation debt rather than being promoted as meaningful responsibilities. The
+  API-doc build then reads source declarations only. The existing system-diagram tool still
+  consumes the TOML during this migration interval; the future source-to-TOML/diagram exporter is
+  not implemented or accepted yet. The generated local site uses a full-width dark presentation
+  with contained horizontal scrolling for wide tables and signatures.
 - The repository-owned Kite plugin defines a 20-role advisor council for development-time
   engineering consultation, not V2 runtime implementation or Sir Loke behavior. Kite
   `0.1.0+codex.20260829091645` is installed and enabled from the local `markeitech` marketplace;

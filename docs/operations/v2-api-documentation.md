@@ -11,11 +11,13 @@ architecture.
   selects the literal `__all__` exports from `markeitech.system`, `markeitech.acquisition`, and
   `markeitech.intelligence`, plus the explicit operator entry point.
 - `tools/api-docs/schema/attribute-registry.toml` is the only authority for typed custom docstring
-  attributes. Its first production version intentionally declares no fields.
+  attributes. Version 2 admits only the approved `architecture.component.*` identity, label,
+  kind, boundary, and substantive responsibility fields.
 - `metadata-index.json` is non-authoritative discovery output. API visibility and author-declared
   metadata do not prove runtime calls, ownership, completeness, or architecture membership.
-- `docs/architecture/system-dataflow.toml` remains the canonical system/data-flow manifest. This
-  tool cannot update it.
+- `docs/architecture/system-dataflow.toml` is not a generator input. Its currently reviewed,
+  implementation-referenced component facts were used once to seed V2 class docstrings. Source
+  documentation is the upstream declaration surface for future generated TOML and diagrams.
 - V1, tests, private helpers, and third-party Nautilus APIs are outside the selected surface.
 
 ## Locked Toolchain
@@ -59,6 +61,19 @@ input state. Those identity queries are the only intended child processes.
 Generated output is written to `tools/api-docs/site`. Both `site` and `.build` are ignored and must
 not be committed or edited manually.
 
+Architecture-component declarations are rendered separately from the curated public API
+denominator. The generator discovers them through the closed custom-attribute registry and
+validates their approved identity fields. Relationship, contract, ownership, status, evidence, and
+limitation attributes are deferred. Static declarations do not prove runtime calls or delivery.
+The current class-component census contains 19 declarations. Six carry substantive
+responsibilities; the other 13 are displayed as incomplete rather than inheriting generic TOML
+placeholders.
+
+The site uses one tracked local stylesheet for an always-dark, full-width layout. Wide tables and
+signatures must wrap or scroll within their own containers without widening or clipping the page.
+Custom JavaScript, template overrides, remote assets, CSS imports, and CSS-loaded assets are not
+approved.
+
 Run the focused offline test suite with:
 
 ```shell
@@ -86,9 +101,10 @@ Markeitech Metadata:
         - second bounded value
 ```
 
-The names above demonstrate grammar only; they are not approved production fields. A field is valid
-only after it is registered with an exact name, value type, cardinality, maximum items, optional
-value pattern, and exposure policy. The parser strips the entire custom section before rendering.
+The names above demonstrate grammar only. The exact production fields are those present in the
+versioned registry. A field is valid only after it is registered with an exact name, value type,
+cardinality, maximum items, optional value pattern, and exposure policy. The parser strips the
+entire custom section before rendering.
 
 Unknown, invalid, hidden, and conflicting values are quarantined. Generated artifacts may describe
 their sanitized status and identity, but must not contain their raw values. Public fields may emit a
@@ -105,9 +121,9 @@ Before adding a production field:
 5. state whether the field is merely author-declared discovery evidence or is reconciled against a
    separately accepted authority.
 
-Do not infer a caller/callee or architecture-flow schema from earlier examples. If such fields are
-later approved, their values remain claims to reconcile against source, tests, runtime evidence,
-and the canonical manifest. They cannot create or mutate architecture by themselves.
+Do not infer a caller/callee or architecture-flow schema from earlier examples. Relationship
+attributes remain deferred until a structured, single-direction declaration and reference
+reconciliation contract is separately accepted.
 
 ## Public-Surface Changes
 

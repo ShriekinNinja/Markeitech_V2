@@ -1,5 +1,10 @@
 # TOML-Driven Markeitech System and Data-Flow Diagram Plan
 
+> Migration note (2026-08-31): this plan still governs the currently implemented diagram tool.
+> The API-documentation tool no longer reads the TOML after a one-time component-docstring seed.
+> Source documentation is the intended upstream for a future, separately reviewed exporter; this
+> TOML-driven plan is not superseded until that exporter exists and is accepted.
+
 **Phase:** Approved staged implementation; Stage 1 authorized
 **Report date:** 2026-08-30
 **Checkout:** `v3-toml-system-dataflow-diagram` at `c6fe2ad89ae2da077d08c55998cc9ff639c5f0ce`

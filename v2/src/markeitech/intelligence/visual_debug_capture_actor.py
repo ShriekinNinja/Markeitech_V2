@@ -195,6 +195,15 @@ class VisualDebugCaptureActorConfig(DataActorConfig):
 
 
 class VisualDebugCaptureActor(DataActor):
+    """Capture passive visual-debug projections.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.visual-debug
+        architecture.component.label: Visual Debug Capture
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+    """
+
     def __init__(self, config: VisualDebugCaptureActorConfig) -> None:
         super().__init__(config)
         self._run_id = config.run_id

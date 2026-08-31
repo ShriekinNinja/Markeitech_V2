@@ -121,6 +121,21 @@ class DataAcquisitionActorConfig(DataActorConfig):
 
 
 class DataAcquisitionActor(DataActor):
+    """Own provider-facing acquisition demand and historical execution.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.data-acquisition
+        architecture.component.label: Data Acquisition
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.acquisition
+        architecture.component.responsibilities:
+            - Own provider-facing live demand reconciliation, subscription lifetime, historical
+              queueing, pacing, retries, and execution.
+            - Execute exact HistoricalRequestPlan values without deciding sessions or
+              calendar-relative request bounds.
+            - Publish acquisition lifecycle, historical batches, and consumer readiness.
+    """
+
     def __init__(self, config: DataAcquisitionActorConfig) -> None:
         super().__init__(config)
         self._tracker = InstrumentDefinitionTracker(config.instrument_ids)

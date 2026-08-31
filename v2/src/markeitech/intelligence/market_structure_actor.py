@@ -67,7 +67,14 @@ class MarketStructureEntityActorConfig(DataActorConfig):
 
 
 class MarketStructureEntityActor(DataActor):
-    """Coordinates reviewed market-structure owners without deriving new semantics."""
+    """Coordinates reviewed market-structure owners without deriving new semantics.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.market-structure-entities
+        architecture.component.label: Market Structure Entities
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+    """
 
     def __init__(self, config: MarketStructureEntityActorConfig) -> None:
         super().__init__(config)

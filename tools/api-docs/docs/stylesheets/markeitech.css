@@ -1,0 +1,211 @@
+:root {
+  color-scheme: dark;
+  --mt-bg: #0b1118;
+  --mt-surface: #111a24;
+  --mt-surface-raised: #172331;
+  --mt-content-panel: #18181b;
+  --mt-menu-hover: #18181b;
+  --mt-menu-selected: #27272a;
+  --mt-border: #2a3a4d;
+  --mt-text: #e6edf5;
+  --mt-muted: #aab8c7;
+  --mt-link: #68c7ff;
+  --mt-accent: #24b7c7;
+  --mt-code: #ff8178;
+}
+
+html,
+body,
+.wy-body-for-nav,
+.wy-nav-content-wrap {
+  background: var(--mt-bg);
+  color: var(--mt-text);
+}
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+.wy-nav-side {
+  background: #0c141e;
+  border-right: 1px solid var(--mt-border);
+}
+
+.wy-side-nav-search {
+  background: #102b3b;
+}
+
+.wy-side-nav-search input[type="text"] {
+  background: var(--mt-surface);
+  border: 1px solid var(--mt-border);
+  color: var(--mt-text);
+}
+
+.wy-menu-vertical a,
+.wy-menu-vertical li.current > a,
+.wy-menu-vertical li.on a {
+  color: var(--mt-muted);
+}
+
+.wy-menu-vertical a:hover,
+.wy-menu-vertical li.current > a:hover {
+  background: var(--mt-surface-raised);
+  color: var(--mt-text);
+}
+
+.wy-menu-vertical li.current,
+.wy-menu-vertical li.current > a,
+.wy-menu-vertical li.current a {
+  background: var(--mt-surface);
+  border-color: var(--mt-border);
+}
+
+.wy-menu-vertical li.current ul li a,
+.wy-menu-vertical li.current ul li.current a {
+  color: var(--mt-muted) !important;
+}
+
+.wy-menu-vertical li.current ul li a:hover {
+  background: var(--mt-menu-hover) !important;
+  color: var(--mt-text) !important;
+}
+
+.wy-menu-vertical li.current ul li.current > a,
+.wy-menu-vertical li.current ul li.current > a:hover {
+  background: var(--mt-menu-selected) !important;
+  color: var(--mt-text) !important;
+}
+
+.wy-nav-content {
+  box-sizing: border-box;
+  max-width: none;
+  min-height: 100vh;
+  padding: 2.5rem clamp(1.5rem, 4vw, 5rem);
+  width: 100%;
+  background: var(--mt-bg);
+}
+
+.rst-content {
+  max-width: none;
+  color: var(--mt-text);
+}
+
+.rst-content h1,
+.rst-content h2,
+.rst-content h3,
+.rst-content h4,
+.rst-content h5,
+.rst-content h6,
+.rst-content p,
+.rst-content li,
+.rst-content .section {
+  color: var(--mt-text);
+}
+
+.rst-content a {
+  color: var(--mt-link);
+}
+
+.rst-content a:visited {
+  color: #a89cff;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
+
+.rst-content code,
+.rst-content tt {
+  background: var(--mt-surface-raised);
+  border: 1px solid var(--mt-border);
+  color: var(--mt-code);
+  overflow-wrap: anywhere;
+}
+
+.rst-content .doc-heading,
+.rst-content .doc-object-name,
+.rst-content .doc-signature {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+  word-break: break-word;
+}
+
+.rst-content pre,
+.rst-content div[class^="highlight"] {
+  background: #081019;
+  border: 1px solid var(--mt-border);
+  color: var(--mt-text);
+  overflow-x: auto;
+}
+
+.rst-content pre.highlight,
+.rst-content pre.highlight code.doc-signature {
+  background: var(--mt-content-panel) !important;
+  color: var(--mt-text) !important;
+}
+
+.rst-content .wy-table-responsive {
+  margin-bottom: 1.5rem;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.rst-content .wy-table-responsive table,
+.rst-content table.docutils {
+  background: var(--mt-surface);
+  border-collapse: collapse;
+  min-width: max(100%, 60rem);
+  width: max-content;
+}
+
+.rst-content table.docutils thead,
+.rst-content table.docutils th {
+  background: var(--mt-surface-raised);
+  color: var(--mt-text);
+}
+
+.rst-content table.docutils td,
+.rst-content table.docutils th {
+  border: 1px solid var(--mt-border);
+  color: var(--mt-text);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.rst-content table.docutils tbody tr:nth-child(odd) td {
+  background: var(--mt-surface) !important;
+}
+
+.rst-content table.docutils tr:nth-child(2n) td {
+  background: #0e1822 !important;
+}
+
+.rst-content blockquote,
+.rst-content .admonition {
+  background: var(--mt-surface);
+  border-color: var(--mt-accent);
+  color: var(--mt-text);
+}
+
+.rst-footer-buttons,
+footer {
+  color: var(--mt-muted);
+}
+
+.wy-body-for-nav .wy-alert,
+.wy-body-for-nav .search li,
+.wy-body-for-nav .search li a {
+  background: var(--mt-surface);
+  color: var(--mt-text);
+}
+
+@media screen and (max-width: 768px) {
+  .wy-nav-content {
+    padding: 1.5rem 1rem;
+  }
+}

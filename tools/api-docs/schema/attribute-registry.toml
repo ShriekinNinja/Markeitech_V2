@@ -1,12 +1,52 @@
 schema_version = 1
 registry_id = "markeitech-docstring-attributes"
-registry_version = 1
+registry_version = 2
 section_name = "Markeitech Metadata"
 maximum_section_bytes = 8192
 maximum_occurrences_per_object = 32
 maximum_key_bytes = 128
 maximum_value_bytes = 2048
 
-# No production attribute meaning is approved in version 1. The parser and typed projection are
-# exercised with test-only registries. Future fields require Markeitect approval and one [[fields]]
-# entry defining their exact type, cardinality, validation, and exposure policy.
+# Version 2 admits only class-owned component identity and substantive responsibility declarations.
+# Relationships, contracts, ownership, runtime status, evidence status, and limitations remain
+# deliberately unapproved.
+
+[[fields]]
+name = "architecture.component.id"
+value_type = "scalar"
+cardinality = "one"
+exposure = "public"
+maximum_items = 1
+value_pattern = "(?:actor|component)\\.[a-z0-9]+(?:-[a-z0-9]+)*"
+
+[[fields]]
+name = "architecture.component.label"
+value_type = "scalar"
+cardinality = "one"
+exposure = "public"
+maximum_items = 1
+value_pattern = ".{1,96}"
+
+[[fields]]
+name = "architecture.component.kind"
+value_type = "scalar"
+cardinality = "one"
+exposure = "public"
+maximum_items = 1
+value_pattern = "(?:markeitech_actor|engine)"
+
+[[fields]]
+name = "architecture.component.boundary"
+value_type = "scalar"
+cardinality = "one"
+exposure = "public"
+maximum_items = 1
+value_pattern = "(?:boundary\\.system|boundary\\.acquisition|boundary\\.intelligence)"
+
+[[fields]]
+name = "architecture.component.responsibilities"
+value_type = "list"
+cardinality = "one"
+exposure = "public"
+maximum_items = 8
+value_pattern = ".{1,512}"

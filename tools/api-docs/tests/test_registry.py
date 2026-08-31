@@ -23,7 +23,65 @@ class RegistryTest(unittest.TestCase):
             self.tool_root / "schema" / "public-surface.toml"
         )
         self.assertEqual(attributes.schema_version, 1)
-        self.assertEqual(attributes.fields, {})
+        self.assertEqual(attributes.registry_version, 2)
+        self.assertEqual(
+            set(attributes.fields),
+            {
+                "architecture.component.id",
+                "architecture.component.label",
+                "architecture.component.kind",
+                "architecture.component.boundary",
+                "architecture.component.responsibilities",
+            },
+        )
+        expected = {
+            "architecture.component.id": (
+                "scalar",
+                "one",
+                "public",
+                1,
+                r"(?:actor|component)\.[a-z0-9]+(?:-[a-z0-9]+)*",
+            ),
+            "architecture.component.label": (
+                "scalar",
+                "one",
+                "public",
+                1,
+                r".{1,96}",
+            ),
+            "architecture.component.kind": (
+                "scalar",
+                "one",
+                "public",
+                1,
+                r"(?:markeitech_actor|engine)",
+            ),
+            "architecture.component.boundary": (
+                "scalar",
+                "one",
+                "public",
+                1,
+                r"(?:boundary\.system|boundary\.acquisition|boundary\.intelligence)",
+            ),
+            "architecture.component.responsibilities": (
+                "list",
+                "one",
+                "public",
+                8,
+                r".{1,512}",
+            ),
+        }
+        actual = {
+            name: (
+                field.value_type,
+                field.cardinality,
+                field.exposure,
+                field.maximum_items,
+                field.value_pattern,
+            )
+            for name, field in attributes.fields.items()
+        }
+        self.assertEqual(actual, expected)
         self.assertEqual(surface.schema_version, 1)
         self.assertEqual(sum(item.expected_export_count for item in surface.packages), 257)
 

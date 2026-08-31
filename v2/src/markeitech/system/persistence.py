@@ -747,6 +747,15 @@ class OperationalPersistenceActorConfig(DataActorConfig):
 
 
 class OperationalPersistenceActor(DataActor):
+    """Admit approved operational facts to bounded persistence delivery.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.operational-persistence
+        architecture.component.label: Operational Persistence
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.system
+    """
+
     def __init__(self, config: OperationalPersistenceActorConfig) -> None:
         super().__init__(config)
         self._run_id = UUID(config.run_id)
