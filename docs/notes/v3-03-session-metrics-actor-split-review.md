@@ -1,13 +1,14 @@
 # V3 SessionMetricsActor Split Review
 
-**Status:** Split remains a proposal; canonical calendar consumption and the separate historical
-planning prerequisite are committed and connected-accepted with V3-01
+**Status:** Split remains a proposal; `SessionMetricsActor`, Session-Metrics-dependent Entity
+Analysis, and Visual Debug are disabled and ignored in tracked runtime profiles pending this work
 
 **Review order:** 3 of 4
 
-**Dependencies:** The canonical calendar authority, narrowed `SessionStateActor` ownership, and
-historical planner/acquisition boundary are implemented. Canonical completed-bar and metric subject
-identity still require approval before multiple analytical producers become canonical.
+**Dependencies:** The V3-01 canonical calendar authority, V3-02 late-consumer current-state
+delivery, narrowed `SessionStateActor` ownership, and historical planner/acquisition boundary are
+implemented and bounded connected-accepted. Canonical completed-bar and metric subject identity
+still require approval before multiple analytical producers become canonical.
 
 ## Purpose
 
@@ -26,6 +27,11 @@ definition-identified projections from `SessionStateActor`, classifies each comp
 `interval_end_ns - 1`, and refreshes projections when a typed calendar transition arrives. There
 is no local fallback calendar.
 
+V3-02 adds the bounded current-state snapshot and subscribe-buffer-snapshot-reconcile protocol
+needed by independently starting consumers. `EvidenceHealthActor` and
+`HistoricalEvidencePlannerActor` use it now. It is an available delivery prerequisite for future
+split owners, not authorization to reactivate or migrate the faulty combined actor.
+
 Analytical actors still declare symbolic historical evidence needs. The new
 `HistoricalEvidencePlannerActor` alone resolves those needs through canonical projections and
 publishes exact UTC plans. `DataAcquisitionActor` no longer interprets sessions or windows; it
@@ -35,8 +41,13 @@ listed below.
 
 ## Current Verified State
 
-The current `SessionMetricsActor` combines all of these responsibilities in one actor and one
-configuration object:
+`SessionMetricsActor` is not part of either tracked active actor plan. Its dependent Entity
+Analysis and Visual Debug surfaces are also disabled. The existing class, pure calculations, and
+tests are retained as recovery and migration evidence; their presence does not make the actor a
+current producer or an accepted analytical authority.
+
+The dormant `SessionMetricsActor` implementation combines all of these responsibilities in one
+actor and one configuration object:
 
 - live analytical feed demand;
 - historical dependency demand;
@@ -86,6 +97,11 @@ The following must be settled first:
 
 Without those controls, two new actors could publish the same metric ID for different timeframes
 or classify the same bar under different session definitions without a detectable conflict.
+
+V3-01 and V3-02 close prerequisites 1, 5, and 6 for the accepted one-producer-per-run topology.
+Completed-bar series identity, complete metric subject identity, and canonical producer uniqueness
+across the proposed split remain unresolved gates. No owner below is approved for implementation
+merely because session-state delivery is now available.
 
 ## Proposed Logical Owners
 
@@ -377,8 +393,10 @@ warmup, formula semantics, and complete Markeitech evidence identity.
 
 ## Migration And Cutover
 
-The current `SessionMetricsActor` remains canonical until each replacement responsibility is
-independently proven.
+The dormant `SessionMetricsActor` retains the historical combined implementation identity but is
+not an active canonical producer in either tracked profile. No replacement responsibility may
+become canonical until it is independently proven and explicitly enabled through the reviewed
+cutover below.
 
 ### Phase 1: complete identities and manifests
 

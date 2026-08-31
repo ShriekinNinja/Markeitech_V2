@@ -21,6 +21,24 @@ DEFAULT_ENV_FILE = V2_ROOT / ".env"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Build the configured node or explicitly connect and run it.
+
+    Building without ``--connect`` performs no provider connection. Connected
+    mode validates the exact IB confirmation, initializes operational
+    persistence, may start the macOS keep-awake helper, and blocks in the native
+    node lifecycle until shutdown.
+
+    Args:
+        argv: Optional command-line arguments. ``None`` reads process arguments.
+
+    Returns:
+        Zero after a successful disconnected build or clean connected shutdown.
+
+    Raises:
+        SystemExit: If command-line parsing or the explicit IB confirmation fails.
+        BaseException: Propagates a connected node failure after cleanup.
+    """
+
     parser = argparse.ArgumentParser(description="Build or run the Markeitech v2 system.")
     parser.add_argument(
         "config",

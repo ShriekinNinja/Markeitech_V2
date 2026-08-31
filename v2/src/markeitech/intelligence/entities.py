@@ -17,14 +17,19 @@ from markeitech.intelligence.metrics import (
 )
 
 ENTITY_REVISION_TYPE_NAME = "markeitech.entity.revision"
+"""Nautilus custom-data type name for analytical entity revisions."""
 ENTITY_SNAPSHOT_REQUEST_TYPE_NAME = "markeitech.entity.snapshot.request"
+"""Nautilus custom-data type name for analytical entity snapshot requests."""
 ENTITY_SNAPSHOT_TYPE_NAME = "markeitech.entity.snapshot"
+"""Nautilus custom-data type name for analytical entity snapshots."""
 
 type EntityKey = tuple[str, int]
 type EntityParameterValue = str | int | float | Decimal | bool
 
 
 class EntityLifecycle(StrEnum):
+    """Lifecycle states that qualify an analytical entity revision."""
+
     WARMING = "WARMING"
     ACTIVE = "ACTIVE"
     COMPLETE = "COMPLETE"
@@ -35,18 +40,24 @@ class EntityLifecycle(StrEnum):
 
 
 class EntityDurability(StrEnum):
+    """Approved durability classes declared by analytical entity definitions."""
+
     TRANSIENT = "TRANSIENT"
     FINALIZED_SESSION = "FINALIZED_SESSION"
     CROSS_SESSION_CHECKPOINT = "CROSS_SESSION_CHECKPOINT"
 
 
 class EntityEvidenceKind(StrEnum):
+    """Canonical evidence-source categories referenced by an entity revision."""
+
     METRIC = "METRIC"
     ENTITY = "ENTITY"
     SESSION = "SESSION"
 
 
 class EntityAdmissionStatus(StrEnum):
+    """Deterministic outcomes from admitting an entity revision to state."""
+
     ADDED = "ADDED"
     UPDATED = "UPDATED"
     DUPLICATE = "DUPLICATE"
@@ -63,6 +74,8 @@ class EntityPayload:
 
 @dataclass(frozen=True, slots=True, order=True)
 class EntityIdentityDimension:
+    """Name one stable dimension participating in analytical entity identity."""
+
     name: str
     value: str
 
@@ -73,6 +86,8 @@ class EntityIdentityDimension:
 
 @dataclass(frozen=True, slots=True)
 class EntityIdentity:
+    """Define the stable, hash-derived identity of one analytical entity."""
+
     entity_type: str
     entity_version: int
     instrument_id: str
@@ -115,6 +130,8 @@ class EntityIdentity:
 
 @dataclass(frozen=True, slots=True)
 class EntityMetricDependency:
+    """Reference one exact metric definition required by an entity."""
+
     metric_id: str
     metric_version: int
     required: bool
@@ -135,6 +152,8 @@ class EntityMetricDependency:
 
 @dataclass(frozen=True, slots=True)
 class EntityDependency:
+    """Reference one exact upstream entity definition."""
+
     entity_type: str
     entity_version: int
     required: bool
@@ -155,6 +174,8 @@ class EntityDependency:
 
 @dataclass(frozen=True, slots=True)
 class EntityDefinition:
+    """Describe a versioned analytical entity and its evidence contract."""
+
     entity_type: str
     version: int
     decision_question: str
@@ -222,6 +243,11 @@ class EntityDefinition:
 
 @dataclass(frozen=True, slots=True)
 class EntityParameterSet:
+    """Bind exact parameter values and effective time to one entity version.
+
+    ``effective_from_ns`` is a UTC Unix nanosecond timestamp.
+    """
+
     entity_type: str
     entity_version: int
     parameter_version: int
@@ -249,6 +275,12 @@ class EntityParameterSet:
 
 @dataclass(frozen=True, slots=True)
 class EntityEvidenceReference:
+    """Cite an exact metric, entity, or session evidence revision.
+
+    ``effective_ts_ns`` is a UTC Unix nanosecond timestamp associated with the
+    referenced evidence.
+    """
+
     kind: EntityEvidenceKind
     definition_id: str
     reference_id: str
@@ -278,6 +310,13 @@ class EntityEvidenceReference:
 
 @dataclass(frozen=True, slots=True)
 class EntityRevision:
+    """Carry one immutable revision of a typed analytical entity.
+
+    UTC Unix nanosecond timestamps distinguish evidence effectiveness,
+    observation, calculation, and publication. Missing payloads preserve explicit
+    abstention reasons; revisions retain exact evidence and predecessor lineage.
+    """
+
     identity: EntityIdentity
     revision: int
     parameter_version: int
@@ -390,6 +429,8 @@ class EntityRevision:
 
 
 class EntityRegistry:
+    """Validate definitions, dependencies, parameters, and entity revisions."""
+
     def __init__(
         self,
         definitions: tuple[EntityDefinition, ...],
@@ -503,6 +544,8 @@ class EntityRegistry:
 
 @dataclass(frozen=True, slots=True)
 class EntityStateBookLimits:
+    """Bound global, per-instrument, and per-type retained entity state."""
+
     maximum_entities: int
     maximum_entities_per_instrument: int
     maximum_entities_per_type: int
@@ -522,6 +565,8 @@ class EntityStateBookLimits:
 
 @dataclass(frozen=True, slots=True)
 class EntityAdmission:
+    """Report the accepted state and any deterministic capacity evictions."""
+
     status: EntityAdmissionStatus
     current: EntityRevision | None
     evicted_entity_ids: tuple[str, ...] = ()
@@ -540,6 +585,8 @@ class EntityAdmission:
 
 @dataclass(frozen=True, slots=True)
 class EntitySnapshot:
+    """Carry an immutable point-in-time set of retained entity revisions."""
+
     generated_ts_ns: int
     revisions: tuple[EntityRevision, ...]
 
@@ -558,6 +605,8 @@ class EntitySnapshot:
 
 @dataclass(frozen=True, slots=True)
 class EntitySnapshotRequest:
+    """Request a filtered immutable entity snapshot at a UTC nanosecond time."""
+
     request_id: str
     requester: str
     requested_ts_ns: int
@@ -606,6 +655,8 @@ class EntitySnapshotRequest:
 
 @dataclass(frozen=True, slots=True)
 class EntitySnapshotResponse:
+    """Correlate one entity snapshot with its requester and request identity."""
+
     request_id: str
     requester: str
     snapshot: EntitySnapshot
@@ -633,6 +684,8 @@ _TERMINAL_LIFECYCLES = {
 
 
 class EntityStateBook:
+    """Own bounded latest-revision state with deterministic admission semantics."""
+
     def __init__(self, registry: EntityRegistry, limits: EntityStateBookLimits) -> None:
         if not isinstance(registry, EntityRegistry):
             raise ValueError("registry must be EntityRegistry")

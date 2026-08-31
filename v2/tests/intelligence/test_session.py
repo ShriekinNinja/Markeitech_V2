@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from datetime import UTC, date, datetime
 
 import pytest
 
+from markeitech.intelligence.session import (
+    CalendarProjectionView,
+    CalendarStateBoundaryUnavailable,
+)
 from tests.calendar_fixtures import canonical_calendar, projection_view
 
 
@@ -24,6 +28,46 @@ def test_spxw_rth_respects_dst() -> None:
 
     assert snapshot.phase == "RTH"
     assert snapshot.trade_date == date(2026, 3, 9)
+    assert snapshot.state_effective_from_ns == _ns("2026-03-09T09:30:00-04:00")
+
+
+def test_state_effective_boundary_precedes_observation_cut() -> None:
+    snapshot = projection_view("cboe_spxw").evaluate(_ns("2026-03-09T09:36:00.650-04:00"))
+
+    assert snapshot.phase == "RTH"
+    assert snapshot.state_effective_from_ns == _ns("2026-03-09T09:30:00-04:00")
+
+
+def test_newer_definition_activation_is_the_exact_state_authority_boundary() -> None:
+    view = projection_view("cboe_spxw")
+    definition_effective_from_ns = _ns("2026-03-09T09:35:00-04:00")
+    view = CalendarProjectionView(
+        replace(
+            view.projection,
+            definition_effective_from_ns=definition_effective_from_ns,
+        ),
+    )
+
+    snapshot = view.evaluate(_ns("2026-03-09T09:36:00.650-04:00"))
+
+    assert snapshot.phase == "RTH"
+    assert snapshot.state_effective_from_ns == definition_effective_from_ns
+
+
+def test_state_evaluation_fails_when_no_authority_boundary_is_admitted() -> None:
+    view = projection_view("cboe_spxw")
+    timestamp_ns = _ns("2026-03-09T09:36:00.650-04:00")
+    view = CalendarProjectionView(
+        replace(
+            view.projection,
+            definition_effective_from_ns=timestamp_ns + 1,
+            exchange_segments=(),
+            phase_windows=(),
+        ),
+    )
+
+    with pytest.raises(CalendarStateBoundaryUnavailable, match="effective boundary"):
+        view.evaluate(timestamp_ns)
 
 
 def test_spxw_early_close_omits_curb_phase() -> None:

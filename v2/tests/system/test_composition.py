@@ -33,6 +33,28 @@ def _config():  # noqa: ANN202
     return load_system_config(root / "config/system.example.toml")
 
 
+def _with_session_metrics_enabled(config):  # noqa: ANN001, ANN202
+    return replace(
+        config,
+        metrics=replace(
+            config.metrics,
+            session_measurements=replace(
+                config.metrics.session_measurements,
+                enabled=True,
+            ),
+        ),
+    )
+
+
+def _session_metrics_enabled_source() -> str:
+    root = Path(__file__).parents[2]
+    return (root / "config/system.example.toml").read_text().replace(
+        "[metrics.session_measurements]\nenabled = false",
+        "[metrics.session_measurements]\nenabled = true",
+        1,
+    )
+
+
 def _prerequisites(ready: bool = True) -> StartupPrerequisites:
     return StartupPrerequisites(
         run_id=uuid4(),
@@ -49,7 +71,6 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "evidence_health",
         "discord_health",
         "quote_quality_metrics",
-        "session_metrics",
         "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
@@ -58,6 +79,28 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "operational_persistence",
     ]
     assert len({registration.actor_id for registration in plan}) == len(plan)
+    session_state = next(item for item in plan if item.key == "session_state")
+    assert session_state.config.config["allowed_current_state_requesters"] == [
+        "EVIDENCE-HEALTH",
+        "HISTORICAL-EVIDENCE-PLANNER",
+    ]
+    assert session_state.config.config["current_state_delivery"] == {
+        "policy_version": 1,
+        "response_timeout_ms": 5000,
+        "maximum_attempts": 3,
+        "retry_backoff_ms": 1000,
+        "maximum_elapsed_ms": 60000,
+        "maximum_buffered_transitions_per_calendar": 8,
+        "maximum_total_buffered_transitions": 32,
+        "boundary_delivery_grace_ms": 2000,
+    }
+    evidence_health = next(item for item in plan if item.key == "evidence_health")
+    assert evidence_health.config.config["current_state_delivery"] == (
+        session_state.config.config["current_state_delivery"]
+    )
+    assert {
+        item["calendar_id"] for item in evidence_health.config.config["calendar_expectations"]
+    } == {calendar.calendar_id for calendar in _config().sessions.calendars}
     acquisition = next(item for item in plan if item.key == "data_acquisition")
     assert acquisition.config.config["actor_id"] == "DATA-ACQUISITION"
     assert acquisition.config.config["instrument_ids"] == list(_config().instrument_ids)
@@ -83,6 +126,12 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "cbot_equity",
         "cme_energy",
     }
+    assert planner.config.config["current_state_delivery"] == (
+        session_state.config.config["current_state_delivery"]
+    )
+    assert planner.config.config["calendar_expectations"] == (
+        evidence_health.config.config["calendar_expectations"]
+    )
     watchlist = next(item for item in plan if item.key == "watchlist")
     assert watchlist.config.config["consumer_retry_interval_ms"] == 1000
     assert watchlist.config.config["members"] == [
@@ -164,7 +213,6 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "session_state",
         "evidence_health",
         "quote_quality_metrics",
-        "session_metrics",
         "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
@@ -188,7 +236,7 @@ def test_actor_plan_omits_disabled_runtime_resource_telemetry() -> None:
 
 
 def test_actor_plan_adds_visual_debug_capture_before_session_metrics() -> None:
-    config = _config()
+    config = _with_session_metrics_enabled(_config())
     config = replace(
         config,
         watchlist=replace(config.watchlist, members=(config.watchlist.members[0],)),
@@ -238,6 +286,7 @@ def test_actor_plan_adds_enabled_historical_dependency_probe() -> None:
     plan = build_actor_plan(config, _prerequisites())
 
     probes = [item for item in plan if item.key.startswith("historical_dependency_probe:")]
+    session_state = next(item for item in plan if item.key == "session_state")
     assert [probe.actor_id for probe in probes] == [
         "HISTORICAL-PROBE-A",
         "HISTORICAL-PROBE-B",
@@ -251,6 +300,43 @@ def test_actor_plan_adds_enabled_historical_dependency_probe() -> None:
         "maximum_observations": 10,
         "priority": 10,
     }
+    assert session_state.config.config["allowed_current_state_requesters"] == [
+        "EVIDENCE-HEALTH",
+        "HISTORICAL-EVIDENCE-PLANNER",
+    ]
+
+
+def test_actor_plan_adds_one_enabled_current_state_historical_probe() -> None:
+    config = _config()
+    config = replace(
+        config,
+        historical=replace(
+            config.historical,
+            probe=replace(
+                config.historical.probe,
+                enabled=True,
+                mode="current_state_gated",
+                omit_initial_snapshot_request=True,
+                actor_ids=("CURRENT-STATE-HISTORICAL-PROBE",),
+            ),
+        ),
+    )
+
+    prerequisites = _prerequisites()
+    plan = build_actor_plan(config, prerequisites)
+
+    probe = next(item for item in plan if item.key == "current_state_historical_probe")
+    session_state = next(item for item in plan if item.key == "session_state")
+    assert probe.actor_id == "CURRENT-STATE-HISTORICAL-PROBE"
+    assert probe.config.config["source_epoch"] == str(prerequisites.run_id)
+    assert probe.config.config["omit_initial_snapshot_request"] is True
+    assert probe.config.config["calendar_expectations"]
+    assert session_state.config.config["allowed_current_state_requesters"] == [
+        "EVIDENCE-HEALTH",
+        "HISTORICAL-EVIDENCE-PLANNER",
+        "CURRENT-STATE-HISTORICAL-PROBE",
+    ]
+    assert not any(item.key.startswith("historical_dependency_probe:") for item in plan)
 
 
 def test_actor_plan_adds_enabled_native_consumer_probe() -> None:
@@ -274,17 +360,7 @@ def test_actor_plan_adds_enabled_native_consumer_probe() -> None:
 
 
 def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> None:
-    config = _config()
-    config = replace(
-        config,
-        metrics=replace(
-            config.metrics,
-            session_measurements=replace(
-                config.metrics.session_measurements,
-                enabled=True,
-            ),
-        ),
-    )
+    config = _with_session_metrics_enabled(_config())
 
     plan = build_actor_plan(config, _prerequisites())
 
@@ -402,8 +478,7 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
 
 
 def test_actor_plan_adds_enabled_session_reference_entity_owner(tmp_path: Path) -> None:
-    root = Path(__file__).parents[2]
-    source = (root / "config/system.example.toml").read_text()
+    source = _session_metrics_enabled_source()
     definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
     path = tmp_path / "system.toml"
     path.write_text(
@@ -433,8 +508,7 @@ def test_actor_plan_adds_enabled_session_reference_entity_owner(tmp_path: Path) 
 
 
 def test_actor_plan_adds_only_runtime_bound_market_state_definitions(tmp_path: Path) -> None:
-    root = Path(__file__).parents[2]
-    source = (root / "config/system.example.toml").read_text()
+    source = _session_metrics_enabled_source()
     definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
     path = tmp_path / "system.toml"
     path.write_text(
@@ -460,8 +534,7 @@ def test_actor_plan_adds_only_runtime_bound_market_state_definitions(tmp_path: P
 
 
 def test_actor_plan_rejects_market_state_metric_without_runtime_producer(tmp_path: Path) -> None:
-    root = Path(__file__).parents[2]
-    source = (root / "config/system.example.toml").read_text()
+    source = _session_metrics_enabled_source()
     definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
     definitions = definitions.replace(
         "rolling.fast.context_45m.range_percentile_recent",
@@ -481,8 +554,7 @@ def test_actor_plan_rejects_market_state_metric_without_runtime_producer(tmp_pat
 
 
 def test_actor_plan_rejects_entity_metric_without_configured_producer(tmp_path: Path) -> None:
-    root = Path(__file__).parents[2]
-    source = (root / "config/system.example.toml").read_text()
+    source = _session_metrics_enabled_source()
     definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
     definitions = definitions.replace(
         "opening_range.cme_equity_primary.opening_range_fast.high",

@@ -29,6 +29,7 @@ from markeitech.intelligence.metrics import MetricFidelity, MetricHealth
 from markeitech.intelligence.session_entities import ObjectiveLevelPayload
 
 DERIVED_ZONE_ENTITY_TYPE = "derived_zone"
+"""Canonical entity type for deterministic constituent-preserving zones."""
 
 _ZONE_DIMENSIONS = (
     "application_id",
@@ -41,20 +42,28 @@ _TERMINAL_LIFECYCLES = (EntityLifecycle.INVALIDATED, EntityLifecycle.EXPIRED)
 
 
 class ZoneHorizonPolicy(StrEnum):
+    """Policies governing whether a derived zone may mix source horizons."""
+
     SAME_HORIZON = "SAME_HORIZON"
     ALLOW_MIXED = "ALLOW_MIXED"
 
 
 class ZoneWeightingMethod(StrEnum):
+    """Approved methods for weighting zone constituents."""
+
     EQUAL = "EQUAL"
 
 
 class ZonePartitionMethod(StrEnum):
+    """Approved methods for partitioning ordered eligible constituents."""
+
     ORDERED_CONNECTED = "ORDERED_CONNECTED"
 
 
 @dataclass(frozen=True, slots=True)
 class ZoneConstituentReference:
+    """Cite one exact source entity revision contributing to a derived zone."""
+
     entity_type: str
     entity_version: int
     entity_id: str
@@ -87,6 +96,8 @@ class ZoneConstituentReference:
 
 @dataclass(frozen=True, slots=True)
 class DerivedZonePayload(EntityPayload):
+    """Preserve zone bounds, policy, timing, horizons, and exact constituents."""
+
     definition_id: str
     policy_id: str
     policy_version: int
@@ -149,6 +160,8 @@ class DerivedZonePayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class ZoneSourcePolicy:
+    """Define eligible source entity type, horizons, and lifecycle states."""
+
     entity_type: str
     entity_version: int
     horizons: tuple[str, ...]
@@ -176,6 +189,8 @@ class ZoneSourcePolicy:
 
 @dataclass(frozen=True, slots=True)
 class ZonePolicy:
+    """Configure zone sources, partitioning, geometry, age, and resource bounds."""
+
     policy_id: str
     version: int
     sources: tuple[ZoneSourcePolicy, ...]
@@ -278,6 +293,8 @@ class ZonePolicy:
 
 @dataclass(frozen=True, slots=True)
 class ZoneApplication:
+    """Scope one zone policy to analytical profiles and optional instruments."""
+
     application_id: str
     analytical_profile_ids: tuple[str, ...]
     instrument_ids: tuple[str, ...]
@@ -314,6 +331,8 @@ class ZoneApplication:
 
 @dataclass(frozen=True, slots=True)
 class DerivedZoneDefinition:
+    """Bind a generic derived-zone definition to exact source definitions."""
+
     definition_id: str
     definition: EntityDefinition
     source_definitions: tuple[EntityDefinition, ...]
@@ -365,6 +384,8 @@ class DerivedZoneDefinition:
 
 @dataclass(frozen=True, slots=True)
 class DerivedZoneCounts:
+    """Snapshot bounded zone-source admission, publication, and eviction counters."""
+
     sources_accepted: int
     sources_duplicate: int
     sources_stale: int

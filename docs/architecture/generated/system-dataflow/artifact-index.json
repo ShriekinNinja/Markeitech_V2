@@ -1,11 +1,11 @@
 {
   "authority": "generated documentation only; canonical content is the validated TOML manifest",
-  "checkout_commit": "5b00af3e4e61b8b1f32aa5680b267f9f7904814d",
+  "checkout_commit": "4a414d0c5ce9b3eead005b674e6ce1997fe966b1",
   "generator_contract_version": 1,
   "generator_sha256": "537f7b58eb756a3a978bb8271c3d5ee7875055daace2df0d14191ca06682b73c",
   "generator_version": "0.1.0",
   "manifest": "markeitech-v3-system-dataflow",
-  "manifest_sha256": "279ec4847549c85a19a2ff216f0118bedab09196ca0bedbe37e2976600417b36",
+  "manifest_sha256": "6d9786156127526328b15c83c3ddfa91874adda3ff23d01bb7fee3bafd7b7845",
   "theme": {
     "id": "style.theme",
     "label": "Markeitech polished dark theme v2"
@@ -33,11 +33,11 @@
         "complete-inventory.svg"
       ],
       "id": "view.complete-inventory",
-      "nodes": 40
+      "nodes": 41
     },
     {
-      "capabilities": 7,
-      "edges": 38,
+      "capabilities": 2,
+      "edges": 35,
       "files": [
         "current-runtime.dot",
         "current-runtime.md",
@@ -45,7 +45,7 @@
         "current-runtime.svg"
       ],
       "id": "view.current-runtime",
-      "nodes": 19
+      "nodes": 17
     },
     {
       "capabilities": 0,
@@ -61,7 +61,7 @@
     },
     {
       "capabilities": 5,
-      "edges": 18,
+      "edges": 17,
       "files": [
         "metrics-entities-intelligence.dot",
         "metrics-entities-intelligence.md",
@@ -85,7 +85,7 @@
     },
     {
       "capabilities": 6,
-      "edges": 23,
+      "edges": 24,
       "files": [
         "provider-canonical-data.dot",
         "provider-canonical-data.md",

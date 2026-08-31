@@ -85,9 +85,9 @@ system. The preserved V1 status is available in
   `SessionStateActor` is the sole mcal-backed evaluator owner, publishes typed transitions
   and bounded immutable projections, and has no shadow/legacy counterpart. A separate historical
   planner turns symbolic evidence needs into exact UTC plans; acquisition executes those plans and
-  retains provider limits without interpreting sessions. System schema 21 and calendar-catalog
-  schema 3/catalog version 4 configure five reusable calendar identities without concrete
-  instrument contracts.
+  retains provider limits without interpreting sessions. At V3-01 closure, system schema 21 and
+  calendar-catalog schema 3/catalog version 4 configured five reusable calendar identities without
+  concrete instrument contracts.
   The runtime watchlist alone binds admitted instruments to calendars. CME/CBOT definitions carry
   overlapping `GLOBEX`, `ASIA`, `LONDON`, and `NEW_YORK` product phases, deterministic lineage,
   and one source-cited CME equity-hours correction. The full disconnected suite passes. The first
@@ -109,6 +109,31 @@ system. The preserved V1 status is available in
   phase-boundary delivery, late-consumer recovery, connected retry/failure paths, concurrent
   historical callbacks, or cancellation with provider work in flight. The broader metric-actor
   split remains deferred.
+- V3-02 current-state delivery is implemented and committed on
+  `v3-02-session-state-snapshot-plan`. System schema 23 retains one statically composed
+  `SessionStateActor` per runtime run UUID and adds strict transition-v2 plus current-state
+  snapshot-v1 contracts. The producer evaluates every requested calendar at one owner-clock cut
+  while preserving the exact state-effective boundary separately from evaluated-as-of and
+  publication time. `EvidenceHealthActor` and `HistoricalEvidencePlannerActor` now use one bounded
+  subscribe-buffer-snapshot-reconcile protocol with explicit definition, source/run, revision,
+  duplicate, stale, gap, conflict, overflow, timeout, retry, failure-isolation, and terminal-stop
+  behavior. `OperationalPersistenceActor` remains a transition-only audit sink; snapshots,
+  watermarks, retry state, buffers, projections, and raw schedules remain transient.
+  `SessionMetricsActor`, Session-Metrics-dependent Entity Analysis, and Visual Debug remain present
+  as dormant code or review material but are disabled and ignored in both tracked runtime profiles
+  pending the separately reviewed Session Metrics replacement. Markeitect explicitly retained the
+  temporary `CURRENT-STATE-HISTORICAL-PROBE` in the tracked V3 ES profile for additional bounded
+  live checks. It owns no provider API, persistence, analytical output, or production capability.
+  In the accepted 2026-08-31 connected run, the probe deliberately omitted snapshot attempt 1,
+  recovered on attempt 2, observed `GLOBEX+NEW_YORK`, and caused the existing planner to resolve
+  five completed one-minute bars from `13:51:00Z` through `13:55:59.999999999Z`. Acquisition
+  submitted one IB request, accepted and delivered `5/5` bars, published `READY`, reported zero
+  historical degradation and late callbacks, and shut down cleanly. Session State rejected no
+  snapshot request; persistence stored `31/31` accepted operational facts. One non-terminal
+  planner projection timeout was observed during startup before successful recovery. This single
+  run accepts only the exact late-consumer recovery and historical-request chain; it does not
+  establish multi-calendar behavior, phase-boundary delivery, repeated provider reliability,
+  performance, value parity, or general market-session correctness.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -126,8 +151,8 @@ system. The preserved V1 status is available in
   surface and produces an untracked MkDocs site at `docs/api` plus sanitized metadata and artifact
   indexes. Its
   versioned denominator currently selects 257 package exports plus one explicit operator entry
-  point, 258 objects in total; 16 selected objects have source docstrings and 242 are reported as
-  missing rather than inferred. Static analysis and rendering deny target imports, dynamic
+  point, 258 objects in total; all 258 selected objects have source docstrings and none are
+  reported as missing. Static analysis and rendering deny target imports, dynamic
   inspection, external inventories, network access, and child processes; the wrapper first uses
   bounded read-only Git queries for source identity. It verifies source stability and publishes
   complete artifact sets atomically. Attribute-registry version 2 approves five bounded
@@ -567,7 +592,7 @@ calculation failure, duplicate, or conflict. Closed-session recent-history reque
 independently without stopping live processing; this confirmed the need for Slice 3's exact,
 purpose-specific session windows rather than a universal recent-history warmup.
 
-The current temporary V3 ES debug baseline selects a bounded historical-only review of 60 direct
+The former temporary V3 ES debug baseline selected a bounded historical-only review of 60 direct
 five-minute `ESU6.CME` completed bars. It fixes the producer interval at 300 seconds, keeps the
 normal five-second live input operating, uses close-timestamped native bars through
 `timestamp_policy = "interval_end"`, requires two observations for prior-close metrics, and rejects
@@ -582,12 +607,12 @@ acceptance, or derived-metric value acceptance. The bounded 2026-08-28 connected
 for its direct five-minute source/series gate: IB returned 60/60 requested bars, SessionMetrics
 accepted 60 historical completed bars with zero duplicates, conflicts, or calculation failures,
 and the passive artifact selected the same 60 historical bars and zero live bars with no declared
-gap. The current layout is a provisional debug baseline; repeated per-bar historical-source markers
-are recorded visual cleanup debt. Parameter effective time remains stored
+gap. That layout was a provisional debug baseline; repeated per-bar historical-source markers
+remain recorded visual cleanup debt. Parameter effective time remains stored
 but unenforced and unpublished; the 1,000-observation retention remains provisionally coupled to a
 disabled rolling placeholder; and maximum output age remains metadata rather than enforced expiry.
 
-The committed correction makes `visual_debug_capture` a strictly passive observer. It
+The committed correction made `visual_debug_capture` a strictly passive observer. It
 does not reuse either rejected visual component and it does not request a producer snapshot.
 Capture on/off composition differs only by the observer; SessionMetrics configuration, startup
 history, live demand, calculation, retention, persistence, and lifecycle remain identical. The
@@ -597,6 +622,11 @@ produce prominently partial diagnostic artifacts. Unequal same-identity records 
 integrity failures. A capacity-one worker writes one self-contained Plotly HTML plus manifest
 through atomic directory publication. The artifact is a bounded observer receive cut, not globally
 final truth, review acceptance, raw-data persistence, restart state, or provider completeness.
+
+V3-02 subsequently disabled Session Metrics and the dependent Visual Debug and Entity Analysis
+surfaces in both tracked profiles. The actor code, historical acceptance evidence, and review
+contract remain available for the separately reviewed replacement; they are not current runtime
+outputs.
 
 The first connected capture attempt did not publish an artifact and is rejected as visual
 acceptance, but it supplied useful runtime evidence. History returned exactly five bars ending at
@@ -629,11 +659,12 @@ treated as reliable evidence that the runtime is stalled or progressing. Browser
 formula-parity acceptance, accessibility acceptance, provider licensing decision, and final
 evidence-fitness decision remain incomplete for this component.
 
-The five-minute completed-bar source/series gate is accepted for that bounded run. The next V3
-walkthrough gate is the completed-bar configuration itself, followed by one-by-one OHLCV and
-derived-metric review. `SessionMetricsActor` currently groups completed-bar foundation, session
-reference, calendar-window, and rolling-measurement responsibilities in one configured actor
-instance. Its completed-bar foundation configuration is singular: one live selector, one
+The five-minute completed-bar source/series gate was accepted for that bounded run. At that review
+point, the intended next walkthrough was the completed-bar configuration followed by one-by-one
+OHLCV and derived-metric review. V3-02 stopped that sequence and disabled the faulty combined
+actor. The dormant `SessionMetricsActor` implementation groups completed-bar foundation, session
+reference, calendar-window, and rolling-measurement responsibilities in one configuration object.
+Its completed-bar foundation configuration is singular: one live selector, one
 historical selector, and one calculation interval. This does not impose a system-wide historical
 timeframe; other capabilities can declare independent selectors such as fifteen-minute bars.
 However, the temporary profile permits only one outstanding historical request, and a second

@@ -25,8 +25,8 @@ from markeitech.acquisition import (
     HistoricalReadinessEvent,
 )
 from markeitech.intelligence.calendar_messages import (
-    CALENDAR_TRANSITION_TYPE_NAME,
-    CalendarTransition,
+    CALENDAR_TRANSITION_V2_TYPE_NAME,
+    CalendarTransitionV2,
 )
 from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
@@ -773,7 +773,8 @@ class OperationalPersistenceActor(DataActor):
         self._subscribed_signals: set[str] = set()
         self._failure_published = False
         self._reported_failures: set[tuple[str, str]] = set()
-        self._calendar_transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
+        self._calendar_transition_type = DataType(CALENDAR_TRANSITION_V2_TYPE_NAME)
+        self._active = False
 
     def on_start(self) -> None:
         try:
@@ -795,6 +796,7 @@ class OperationalPersistenceActor(DataActor):
             self._write_retry_backoff_ms,
         )
         self._worker.start()
+        self._active = True
         for signal_name in (
             SYSTEM_HEALTH_SIGNAL,
             COMPONENT_FAILURE_SIGNAL,
@@ -849,8 +851,10 @@ class OperationalPersistenceActor(DataActor):
         self._submit_record(record)
 
     def on_data(self, data) -> None:  # noqa: ANN001
+        if not self._active:
+            return
         payload = data.data if isinstance(data, CustomData) else data
-        if not isinstance(payload, CalendarTransition):
+        if not isinstance(payload, CalendarTransitionV2):
             return
         if self._worker is None:
             self._report_failure("persistence_worker_unavailable", "not_started")
@@ -888,6 +892,7 @@ class OperationalPersistenceActor(DataActor):
         self.log.info(f"OPERATIONAL_PERSISTENCE_READY | run_id={self._run_id}")
 
     def on_stop(self) -> None:
+        self._active = False
         self.unsubscribe_data(self._calendar_transition_type)
         for signal_name in tuple(self._subscribed_signals):
             self.unsubscribe_signal(signal_name)
@@ -1208,13 +1213,13 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
 def _record_from_calendar_transition(
     run_id: UUID,
     sequence: int,
-    event: CalendarTransition,
+    event: CalendarTransitionV2,
 ) -> OperationalEventRecord:
     return OperationalEventRecord(
         event_id=event.event_id,
         run_id=run_id,
         sequence=sequence,
-        signal_name=CALENDAR_TRANSITION_TYPE_NAME,
+        signal_name=CALENDAR_TRANSITION_V2_TYPE_NAME,
         event_type="calendar.transition",
         source=event.source,
         correlation_id=(

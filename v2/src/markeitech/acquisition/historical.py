@@ -18,6 +18,8 @@ type HistoricalRequestKey = tuple[str, str, str, int, int, int, tuple[tuple[str,
 
 @dataclass(frozen=True, slots=True)
 class HistoricalWindowBounds:
+    """Resolve one symbolic historical window to an inclusive nanosecond range."""
+
     window: HistoricalWindow
     start_ns: int
     end_ns: int
@@ -33,6 +35,8 @@ class HistoricalWindowBounds:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalCapabilityBinding:
+    """Bind a capability's historical evidence needs to one consumer and instrument."""
+
     consumer_id: str
     instrument_id: str
     capability: CapabilityDeclaration
@@ -59,6 +63,8 @@ class HistoricalCapabilityBinding:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalDependencyRef:
+    """Retain the consumer lineage attached to a shared historical request."""
+
     consumer_id: str
     capability_id: str
     capability_version: int
@@ -69,6 +75,12 @@ class HistoricalDependencyRef:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalRequest:
+    """Describe one bounded, provider-facing historical bar request.
+
+    ``start_ns`` and ``end_ns`` are UTC Unix nanoseconds. Dependencies preserve
+    every consumer whose readiness depends on the shared request.
+    """
+
     request_id: str
     instrument_id: str
     kind: FeedKind
@@ -96,6 +108,8 @@ class HistoricalRequest:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalResourcePolicy:
+    """Bound compiled request count and observation budgets."""
+
     maximum_requests: int
     maximum_observations_per_request: int
     maximum_total_observations: int
@@ -110,7 +124,7 @@ class HistoricalResourcePolicy:
 
 
 class HistoricalPlanningError(ValueError):
-    pass
+    """Report an unresolved window or historical resource-policy violation."""
 
 
 class HistoricalDependencyCompiler:

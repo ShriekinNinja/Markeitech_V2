@@ -93,7 +93,26 @@ class AcquisitionConfig:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalProbeConfig:
+    """Configure a disabled-by-default historical acceptance harness.
+
+    Attributes:
+        enabled: Whether composition admits the acceptance probe.
+        mode: ``direct`` for the Stage 9B probe set or ``current_state_gated`` for
+            one V3-02 probe which synchronizes before publishing its demand.
+        omit_initial_snapshot_request: Whether the current-state mode deliberately
+            omits attempt one to exercise bounded consumer retry.
+        actor_ids: Exact actor identities; current-state mode requires one.
+        instrument_id: Watchlist instrument used by the demand.
+        selector: Historical data selector.
+        window: Symbolic historical window.
+        minimum_observations: Minimum acceptable observation count.
+        maximum_observations: Maximum requested observation count.
+        priority: Demand priority from zero through one hundred.
+    """
+
     enabled: bool
+    mode: str
+    omit_initial_snapshot_request: bool
     actor_ids: tuple[str, ...]
     instrument_id: str
     selector: str
@@ -179,6 +198,35 @@ class ProjectionRetryConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class CurrentStateDeliveryConfig:
+    """Bound current-session snapshot delivery and consumer reconciliation.
+
+    All durations are positive integer milliseconds. Buffer limits bound transient consumer
+    synchronization state; they do not authorize persistence of calendar snapshots.
+
+    Attributes:
+        policy_version: Exact supported delivery-policy version.
+        response_timeout_ms: Per-attempt response timeout in milliseconds.
+        maximum_attempts: Maximum attempts in one synchronization cycle.
+        retry_backoff_ms: Fixed retry delay in milliseconds.
+        maximum_elapsed_ms: Maximum total synchronization-cycle duration in milliseconds.
+        maximum_buffered_transitions_per_calendar: Per-calendar consumer transition bound.
+        maximum_total_buffered_transitions: Total consumer transition bound.
+        boundary_delivery_grace_ms: Grace period for transition/response reordering in
+            milliseconds.
+    """
+
+    policy_version: int
+    response_timeout_ms: int
+    maximum_attempts: int
+    retry_backoff_ms: int
+    maximum_elapsed_ms: int
+    maximum_buffered_transitions_per_calendar: int
+    maximum_total_buffered_transitions: int
+    boundary_delivery_grace_ms: int
+
+
+@dataclass(frozen=True, slots=True)
 class SessionsConfig:
     evaluation_interval_ms: int
     projection_lookback_days: int
@@ -186,6 +234,7 @@ class SessionsConfig:
     maximum_projection_days: int
     maximum_calendars_per_request: int
     projection_retry: ProjectionRetryConfig
+    current_state_delivery: CurrentStateDeliveryConfig
     catalog_id: str
     catalog_version: int
     catalog_path: Path
@@ -647,6 +696,8 @@ class PersistenceConfig:
 
 @dataclass(frozen=True, slots=True)
 class SystemConfig:
+    """Hold the fully validated, immutable V2 runtime configuration."""
+
     schema_version: int
     runtime: RuntimeConfig
     ib: InteractiveBrokersConfig
@@ -668,6 +719,23 @@ class SystemConfig:
 
 
 def load_system_config(path: str | Path) -> SystemConfig:
+    """Load and validate one schema-versioned V2 TOML configuration.
+
+    Relative filesystem paths are resolved against the configuration file's
+    directory. The loader performs no provider, database, or runtime connection.
+
+    Args:
+        path: Filesystem path to the V2 TOML configuration.
+
+    Returns:
+        The normalized immutable system configuration.
+
+    Raises:
+        OSError: If the configuration file cannot be opened.
+        tomllib.TOMLDecodeError: If the file is not valid TOML.
+        ValueError: If schema identity, fields, values, or cross-references are invalid.
+    """
+
     config_path = Path(path)
     with config_path.open("rb") as file:
         raw = tomllib.load(file)
@@ -694,7 +762,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         root_keys,
         "root",
     )
-    if raw["schema_version"] != 21:
+    if raw["schema_version"] != 23:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -1420,6 +1488,7 @@ def _load_sessions(raw: Any, config_directory: Path) -> SessionsConfig:
             "maximum_projection_days",
             "maximum_calendars_per_request",
             "projection_retry",
+            "current_state_delivery",
             "calendar_catalog",
             "calendar_ids",
         },
@@ -1738,6 +1807,83 @@ def _load_sessions(raw: Any, config_directory: Path) -> SessionsConfig:
         raise ValueError(
             "sessions.projection_retry.maximum_elapsed_ms must cover response_timeout_ms",
         )
+    delivery_values = _mapping(
+        values["current_state_delivery"],
+        "sessions.current_state_delivery",
+    )
+    delivery_keys = {
+        "policy_version",
+        "response_timeout_ms",
+        "maximum_attempts",
+        "retry_backoff_ms",
+        "maximum_elapsed_ms",
+        "maximum_buffered_transitions_per_calendar",
+        "maximum_total_buffered_transitions",
+        "boundary_delivery_grace_ms",
+    }
+    _require_keys(
+        delivery_values,
+        delivery_keys,
+        "sessions.current_state_delivery",
+    )
+    delivery_policy_version = _positive_int(
+        delivery_values["policy_version"],
+        "sessions.current_state_delivery.policy_version",
+    )
+    if delivery_policy_version != 1:
+        raise ValueError("sessions.current_state_delivery.policy_version must be 1")
+    delivery_response_timeout_ms = _positive_int(
+        delivery_values["response_timeout_ms"],
+        "sessions.current_state_delivery.response_timeout_ms",
+    )
+    delivery_maximum_attempts = _positive_int(
+        delivery_values["maximum_attempts"],
+        "sessions.current_state_delivery.maximum_attempts",
+    )
+    delivery_retry_backoff_ms = _positive_int(
+        delivery_values["retry_backoff_ms"],
+        "sessions.current_state_delivery.retry_backoff_ms",
+    )
+    delivery_maximum_elapsed_ms = _positive_int(
+        delivery_values["maximum_elapsed_ms"],
+        "sessions.current_state_delivery.maximum_elapsed_ms",
+    )
+    per_calendar_buffer = _positive_int(
+        delivery_values["maximum_buffered_transitions_per_calendar"],
+        "sessions.current_state_delivery.maximum_buffered_transitions_per_calendar",
+    )
+    total_buffer = _positive_int(
+        delivery_values["maximum_total_buffered_transitions"],
+        "sessions.current_state_delivery.maximum_total_buffered_transitions",
+    )
+    boundary_delivery_grace_ms = _positive_int(
+        delivery_values["boundary_delivery_grace_ms"],
+        "sessions.current_state_delivery.boundary_delivery_grace_ms",
+    )
+    for value, minimum, maximum, label in (
+        (delivery_response_timeout_ms, 100, 60_000, "response_timeout_ms"),
+        (delivery_maximum_attempts, 1, 10, "maximum_attempts"),
+        (delivery_retry_backoff_ms, 100, 60_000, "retry_backoff_ms"),
+        (delivery_maximum_elapsed_ms, 1_000, 600_000, "maximum_elapsed_ms"),
+        (per_calendar_buffer, 1, 256, "maximum_buffered_transitions_per_calendar"),
+        (total_buffer, 1, 1_024, "maximum_total_buffered_transitions"),
+        (boundary_delivery_grace_ms, 1, 60_000, "boundary_delivery_grace_ms"),
+    ):
+        if not minimum <= value <= maximum:
+            raise ValueError(
+                "sessions.current_state_delivery."
+                f"{label} must be between {minimum} and {maximum}",
+            )
+    if delivery_maximum_elapsed_ms < delivery_response_timeout_ms:
+        raise ValueError(
+            "sessions.current_state_delivery.maximum_elapsed_ms must cover "
+            "response_timeout_ms",
+        )
+    if total_buffer < per_calendar_buffer:
+        raise ValueError(
+            "sessions.current_state_delivery.maximum_total_buffered_transitions must not be "
+            "below maximum_buffered_transitions_per_calendar",
+        )
     return SessionsConfig(
         evaluation_interval_ms=_positive_int(
             values["evaluation_interval_ms"],
@@ -1752,6 +1898,16 @@ def _load_sessions(raw: Any, config_directory: Path) -> SessionsConfig:
             maximum_attempts=maximum_attempts,
             retry_backoff_ms=retry_backoff_ms,
             maximum_elapsed_ms=maximum_elapsed_ms,
+        ),
+        current_state_delivery=CurrentStateDeliveryConfig(
+            policy_version=delivery_policy_version,
+            response_timeout_ms=delivery_response_timeout_ms,
+            maximum_attempts=delivery_maximum_attempts,
+            retry_backoff_ms=delivery_retry_backoff_ms,
+            maximum_elapsed_ms=delivery_maximum_elapsed_ms,
+            maximum_buffered_transitions_per_calendar=per_calendar_buffer,
+            maximum_total_buffered_transitions=total_buffer,
+            boundary_delivery_grace_ms=boundary_delivery_grace_ms,
         ),
         catalog_id=catalog_id,
         catalog_version=catalog_version,
@@ -4035,6 +4191,8 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
         probe_values,
         {
             "enabled",
+            "mode",
+            "omit_initial_snapshot_request",
             "actor_ids",
             "instrument_id",
             "selector",
@@ -4077,6 +4235,26 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
     )
     if not actor_ids:
         raise ValueError("historical.probe.actor_ids must be non-empty")
+    mode = _enum_string(
+        probe_values["mode"],
+        {"current_state_gated", "direct"},
+        "historical.probe.mode",
+    )
+    omit_initial_snapshot_request = _bool(
+        probe_values["omit_initial_snapshot_request"],
+        "historical.probe.omit_initial_snapshot_request",
+    )
+    if mode == "current_state_gated" and actor_ids != (
+        "CURRENT-STATE-HISTORICAL-PROBE",
+    ):
+        raise ValueError(
+            "historical.probe.actor_ids must be exactly "
+            "CURRENT-STATE-HISTORICAL-PROBE in current_state_gated mode",
+        )
+    if mode == "direct" and omit_initial_snapshot_request:
+        raise ValueError(
+            "historical.probe.omit_initial_snapshot_request requires current_state_gated mode",
+        )
     return HistoricalConfig(
         maximum_plan_requests=maximum_plan_requests,
         maximum_observations_per_request=maximum_per_request,
@@ -4098,6 +4276,8 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
         ),
         probe=HistoricalProbeConfig(
             enabled=_bool(probe_values["enabled"], "historical.probe.enabled"),
+            mode=mode,
+            omit_initial_snapshot_request=omit_initial_snapshot_request,
             actor_ids=actor_ids,
             instrument_id=instrument_id,
             selector=_non_empty_string(probe_values["selector"], "historical.probe.selector"),

@@ -18,9 +18,12 @@ type MetricScalarValue = str | int | float | Decimal | bool
 type MetricKey = tuple[str, int]
 
 METRIC_VALUE_TYPE_NAME = "markeitech.metric.value"
+"""Nautilus custom-data type name for immutable metric values."""
 
 
 class MetricValueKind(StrEnum):
+    """Scalar value categories supported by metric and parameter contracts."""
+
     NUMBER = "number"
     INTEGER = "integer"
     BOOLEAN = "boolean"
@@ -28,6 +31,8 @@ class MetricValueKind(StrEnum):
 
 
 class MetricCadence(StrEnum):
+    """Event categories that may trigger deterministic metric evaluation."""
+
     OBSERVATION = "observation"
     COMPLETED_BAR = "completed_bar"
     TIMER = "timer"
@@ -36,6 +41,8 @@ class MetricCadence(StrEnum):
 
 
 class MetricRetainedState(StrEnum):
+    """Bounded state-retention shapes declared by a metric definition."""
+
     NONE = "none"
     LATEST = "latest"
     ROLLING_WINDOW = "rolling_window"
@@ -43,12 +50,16 @@ class MetricRetainedState(StrEnum):
 
 
 class MetricFailureBehavior(StrEnum):
+    """Output behavior a metric declares when its calculation cannot succeed."""
+
     EMIT_NULL = "emit_null"
     HOLD_LAST_STALE = "hold_last_stale"
     SUPPRESS_OUTPUT = "suppress_output"
 
 
 class MetricHealth(StrEnum):
+    """Availability and freshness states attached to metric evidence."""
+
     READY = "READY"
     WARMING = "WARMING"
     DEGRADED = "DEGRADED"
@@ -59,6 +70,8 @@ class MetricHealth(StrEnum):
 
 
 class MetricFidelity(StrEnum):
+    """Source-to-value derivation categories attached to metric evidence."""
+
     REPORTED = "REPORTED"
     DERIVED = "DERIVED"
     INFERRED = "INFERRED"
@@ -67,12 +80,16 @@ class MetricFidelity(StrEnum):
 
 
 class ParameterMutability(StrEnum):
+    """Reviewed boundaries at which a metric parameter may change."""
+
     STARTUP_ONLY = "startup_only"
     POLICY_CONTROLLED_RUNTIME = "policy_controlled_runtime"
 
 
 @dataclass(frozen=True, slots=True)
 class MetricParameterDefinition:
+    """Define one typed, bounded, version-ready metric parameter."""
+
     parameter_id: str
     meaning: str
     value_kind: MetricValueKind
@@ -118,6 +135,11 @@ class MetricParameterDefinition:
 
 @dataclass(frozen=True, slots=True)
 class MetricParameterSet:
+    """Bind exact parameter values and effective time to one metric version.
+
+    ``effective_from_ns`` is a UTC Unix nanosecond timestamp.
+    """
+
     metric_id: str
     metric_version: int
     parameter_version: int
@@ -141,6 +163,8 @@ class MetricParameterSet:
 
 @dataclass(frozen=True, slots=True)
 class MetricDependency:
+    """Reference one exact upstream metric definition."""
+
     metric_id: str
     version: int
 
@@ -155,6 +179,8 @@ class MetricDependency:
 
 @dataclass(frozen=True, slots=True)
 class MetricWarmupPolicy:
+    """Declare observation, elapsed-nanosecond, and dependency warmup gates."""
+
     minimum_observations: int
     minimum_elapsed_ns: int
     require_all_dependencies: bool
@@ -168,6 +194,8 @@ class MetricWarmupPolicy:
 
 @dataclass(frozen=True, slots=True)
 class MetricResourcePolicy:
+    """Bound retained observations, update cadence, and output age."""
+
     maximum_retained_observations: int
     minimum_update_interval_ms: int
     maximum_output_age_ms: int
@@ -180,6 +208,13 @@ class MetricResourcePolicy:
 
 @dataclass(frozen=True, slots=True)
 class MetricDefinition:
+    """Describe a versioned deterministic metric and its evidence contract.
+
+    The definition binds meaning, formula, normalization, cadence, lineage,
+    health behavior, resource limits, and tunable parameter envelopes without
+    calculating a value.
+    """
+
     metric_id: str
     version: int
     decision_question: str
@@ -293,6 +328,12 @@ class MetricDefinition:
 
 @dataclass(frozen=True, slots=True)
 class MetricValue:
+    """Carry one immutable metric result with exact version and evidence lineage.
+
+    All timestamp fields are UTC Unix nanoseconds. Null values are explicit
+    abstention or failure outcomes and therefore require missing reasons.
+    """
+
     metric_id: str
     metric_version: int
     parameter_version: int
@@ -372,6 +413,8 @@ class MetricValue:
 
 
 class MetricRegistry:
+    """Validate and resolve an immutable set of metric definitions."""
+
     def __init__(self, definitions: tuple[MetricDefinition, ...]) -> None:
         _typed_tuple(definitions, MetricDefinition, "definitions")
         by_key: dict[MetricKey, MetricDefinition] = {}

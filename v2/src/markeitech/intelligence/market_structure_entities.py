@@ -36,7 +36,9 @@ from markeitech.intelligence.entity_measurements import (
 )
 
 MARKET_STRUCTURE_ENTITY_GROUP = "swing_pivot_structure_fvg_zone"
+"""Catalog group for deterministic swing, pivot, FVG, and zone geometry."""
 CONFIRMED_SWING_ENTITY_TYPE = "confirmed_swing"
+"""Canonical entity type for fully confirmed strict swing pivots."""
 
 _CONFIRMED_SWING_DIMENSIONS = (
     "bar_specification",
@@ -57,6 +59,8 @@ _SWING_METRIC_IDS = frozenset(
 
 @dataclass(frozen=True, slots=True)
 class ConfirmedSwingPayload(EntityPayload):
+    """Preserve confirmed pivot geometry, timing, detector identity, and bar lineage."""
+
     definition_id: str
     detector_id: str
     detector_version: int
@@ -100,6 +104,8 @@ class ConfirmedSwingPayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class ConfirmedSwingApplication:
+    """Scope a confirmed-swing detector to profiles, instruments, bars, and horizon."""
+
     application_id: str
     detector_id: str
     detector_version: int
@@ -148,6 +154,8 @@ class ConfirmedSwingApplication:
 
 @dataclass(frozen=True, slots=True)
 class ConfirmedSwingDefinition:
+    """Bind a generic entity definition to validated confirmed-swing applications."""
+
     definition_id: str
     definition: EntityDefinition
     applications: tuple[ConfirmedSwingApplication, ...]
@@ -201,6 +209,8 @@ class ConfirmedSwingDefinition:
 
 @dataclass(frozen=True, slots=True)
 class ConfirmedSwingOwnerCounts:
+    """Snapshot bounded confirmed-swing admission and publication counters."""
+
     bars_accepted: int
     bars_duplicate: int
     bars_conflict: int

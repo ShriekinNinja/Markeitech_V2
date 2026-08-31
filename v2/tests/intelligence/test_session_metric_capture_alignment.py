@@ -35,7 +35,18 @@ def test_foundation_history_demand_has_no_visual_capture_parameters() -> None:
 
 
 def test_capture_on_off_changes_only_passive_observer_registration() -> None:
-    enabled = load_system_config("v2/config/system.v3-es-minimal.toml")
+    base = load_system_config("v2/config/system.v3-es-minimal.toml")
+    enabled = replace(
+        base,
+        metrics=replace(
+            base.metrics,
+            session_measurements=replace(
+                base.metrics.session_measurements,
+                enabled=True,
+            ),
+        ),
+        visual_debug_capture=replace(base.visual_debug_capture, enabled=True),
+    )
     disabled = replace(
         enabled,
         visual_debug_capture=replace(enabled.visual_debug_capture, enabled=False),

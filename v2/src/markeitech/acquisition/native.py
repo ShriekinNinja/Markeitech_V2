@@ -8,6 +8,8 @@ from markeitech.acquisition.demand import FeedKind, FeedRequirement
 
 
 class NativeSubscriptionActor(Protocol):
+    """Nautilus actor subscription operations used by the native port."""
+
     def subscribe_instrument(
         self,
         instrument_id: InstrumentId,
@@ -106,7 +108,7 @@ class NativeSubscriptionActor(Protocol):
 
 
 class UnsupportedNativeFeedError(ValueError):
-    pass
+    """Report a feed that requires a richer native subscription contract."""
 
 
 class NautilusSubscriptionPort:

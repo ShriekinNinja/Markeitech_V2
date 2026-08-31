@@ -86,6 +86,18 @@ def test_recent_completed_requires_and_uses_configured_duration() -> None:
     assert bounds.end_ns == _ns("2026-08-17T10:40:00-04:00") - 1
 
 
+def test_recent_completed_aligns_subsecond_as_of_to_five_complete_minutes() -> None:
+    bounds = _resolve(
+        HistoricalWindow.RECENT_COMPLETED,
+        "2026-08-17T13:36:00.650000+00:00",
+        HistoricalWindowParameters(observation_count=5),
+        interval_minutes=1,
+    )
+
+    assert bounds.start_ns == _ns("2026-08-17T13:31:00+00:00")
+    assert bounds.end_ns == _ns("2026-08-17T13:36:00+00:00") - 1
+
+
 def test_current_rth_clips_to_last_completed_five_minute_interval() -> None:
     bounds = _resolve(
         HistoricalWindow.CURRENT_RTH,
