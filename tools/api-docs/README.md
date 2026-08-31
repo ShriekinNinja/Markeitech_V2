@@ -16,5 +16,6 @@ Key inputs are:
 - `tests` — import, network, subprocess, metadata, drift, leakage, determinism, and publication
   safety evidence.
 
-`site` and `.build` are disposable, ignored projections. They are not source or architecture
-authority.
+`docs/api` and `tools/api-docs/.build` are disposable, ignored projections. They are not source or
+architecture authority. The generator stages a complete set under `.build` and publishes only the
+validated result to the repository-level `docs/api` directory.

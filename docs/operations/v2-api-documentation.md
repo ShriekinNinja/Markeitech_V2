@@ -58,8 +58,9 @@ Before entering that constrained analysis/rendering environment, the wrapper run
 read-only `git rev-parse` and scoped `git status` queries to bind the artifact to a commit and dirty
 input state. Those identity queries are the only intended child processes.
 
-Generated output is written to `tools/api-docs/site`. Both `site` and `.build` are ignored and must
-not be committed or edited manually.
+Generated output is written to `docs/api`. Both `docs/api` and `tools/api-docs/.build` are ignored
+and must not be committed or edited manually. The legacy `tools/api-docs/site` ignore rule remains
+temporarily so a stale local projection cannot enter a commit; the generator no longer writes it.
 
 Architecture-component declarations are rendered separately from the curated public API
 denominator. The generator discovers them through the closed custom-attribute registry and

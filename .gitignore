@@ -10,6 +10,7 @@ __pycache__/
 htmlcov/
 tools/api-docs/.build/
 tools/api-docs/site/
+/docs/api/
 *.dump
 data/catalog/
 data/runtime/

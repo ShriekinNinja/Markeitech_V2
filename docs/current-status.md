@@ -114,7 +114,8 @@ system. The preserved V1 status is available in
   composed by V2, reads no runtime state or secrets, and changes no runtime behavior. The shared
   PyCharm **Generate Sys Diagram** configuration runs only this locked documentation environment.
 - A separate locked API-documentation utility now statically analyzes the curated V2 Python public
-  surface and produces an untracked MkDocs site plus sanitized metadata and artifact indexes. Its
+  surface and produces an untracked MkDocs site at `docs/api` plus sanitized metadata and artifact
+  indexes. Its
   versioned denominator currently selects 257 package exports plus one explicit operator entry
   point, 258 objects in total; 16 selected objects have source docstrings and 242 are reported as
   missing rather than inferred. Static analysis and rendering deny target imports, dynamic

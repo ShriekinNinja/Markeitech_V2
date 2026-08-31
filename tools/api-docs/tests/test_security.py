@@ -6,13 +6,16 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
 from markeitech_api_docs.build import (
+    FixedPaths,
     _scan_output,
     _validate_installed_versions,
     _validate_mkdocs_policy,
+    _validate_output_path,
     _validate_stylesheet,
 )
 from markeitech_api_docs.models import ApiDocsError
@@ -88,6 +91,54 @@ class SecurityBoundaryTest(unittest.TestCase):
                 (root / "index.html").write_text(fragment, encoding="utf-8")
                 with self.assertRaisesRegex(ApiDocsError, "remote auto-fetching"):
                     _scan_output(root, (), root / "repository")
+
+    def test_output_is_fixed_to_repository_docs_api(self) -> None:
+        paths = FixedPaths.discover()
+        self.assertEqual(paths.output, paths.repository_root / "docs" / "api")
+        _validate_output_path(paths)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            repository_root = Path(temporary)
+            (repository_root / "docs").mkdir()
+            redirected = replace(
+                paths,
+                repository_root=repository_root,
+                output=repository_root / "site",
+            )
+            with self.assertRaisesRegex(ApiDocsError, "fixed repository API site"):
+                _validate_output_path(redirected)
+
+    def test_output_symlinks_are_denied(self) -> None:
+        paths = FixedPaths.discover()
+        with (
+            tempfile.TemporaryDirectory() as temporary,
+            tempfile.TemporaryDirectory() as external,
+        ):
+            repository_root = Path(temporary)
+            documentation_root = repository_root / "docs"
+            documentation_root.symlink_to(Path(external), target_is_directory=True)
+            unsafe_parent = replace(
+                paths,
+                repository_root=repository_root,
+                output=documentation_root / "api",
+            )
+            with self.assertRaisesRegex(ApiDocsError, "documentation root is unsafe"):
+                _validate_output_path(unsafe_parent)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            repository_root = Path(temporary)
+            documentation_root = repository_root / "docs"
+            documentation_root.mkdir()
+            target = repository_root / "elsewhere"
+            target.mkdir()
+            (documentation_root / "api").symlink_to(target, target_is_directory=True)
+            unsafe_output = replace(
+                paths,
+                repository_root=repository_root,
+                output=documentation_root / "api",
+            )
+            with self.assertRaisesRegex(ApiDocsError, "output cannot be a symlink"):
+                _validate_output_path(unsafe_output)
 
     def test_tracked_stylesheet_freezes_dark_full_width_overflow_contract(self) -> None:
         stylesheet = self.tool_root / "docs" / "stylesheets" / "markeitech.css"

@@ -84,7 +84,7 @@ class FixedPaths:
             config=tool_root / "mkdocs.yml",
             public_surface_registry=tool_root / "schema" / "public-surface.toml",
             attribute_registry=tool_root / "schema" / "attribute-registry.toml",
-            output=tool_root / "site",
+            output=repository_root / "docs" / "api",
             build_root=tool_root / ".build",
         )
 
@@ -93,11 +93,31 @@ def _is_within(path: Path, root: Path) -> bool:
     return path.resolve().is_relative_to(root.resolve())
 
 
+def _validate_output_path(paths: FixedPaths) -> None:
+    documentation_root = paths.repository_root / "docs"
+    expected_output = documentation_root / "api"
+    if paths.output != expected_output:
+        raise ApiDocsError("PATH_INVALID: output is not the fixed repository API site")
+    if (
+        not documentation_root.is_dir()
+        or documentation_root.is_symlink()
+        or not _is_within(documentation_root, paths.repository_root)
+    ):
+        raise ApiDocsError("PATH_INVALID: repository documentation root is unsafe")
+    if paths.output.is_symlink():
+        raise ApiDocsError("OUTPUT_PATH_DENIED: output cannot be a symlink")
+    if paths.output.exists() and not paths.output.is_dir():
+        raise ApiDocsError("OUTPUT_PATH_DENIED: output must be a directory")
+    if not _is_within(paths.output, paths.repository_root):
+        raise ApiDocsError("OUTPUT_PATH_DENIED: output is outside the repository")
+
+
 def _validate_fixed_paths(paths: FixedPaths) -> None:
     if paths.tool_root.name != "api-docs" or paths.tool_root.parent.name != "tools":
         raise ApiDocsError("PATH_INVALID: tool root identity is unexpected")
     if not _is_within(paths.tool_root, paths.repository_root):
         raise ApiDocsError("PATH_INVALID: tool root is outside the repository")
+    _validate_output_path(paths)
     if paths.source_root.resolve() != (paths.repository_root / "v2/src/markeitech").resolve():
         raise ApiDocsError("PATH_INVALID: source root is not the fixed V2 package")
     required = (

@@ -13,7 +13,9 @@ class GenerationTest(unittest.TestCase):
         self.assertEqual(first["artifact_set_sha256"], second["artifact_set_sha256"])
         self.assertEqual(first["selected"], 258)
 
-        output = FixedPaths.discover().output
+        paths = FixedPaths.discover()
+        self.assertEqual(paths.output, paths.repository_root / "docs" / "api")
+        output = paths.output
         index = json.loads((output / "metadata-index.json").read_text(encoding="utf-8"))
         self.assertEqual(index["authority"], "non_authoritative_discovery_only")
         self.assertTrue(index["not_runtime_configuration"])
@@ -50,7 +52,7 @@ class GenerationTest(unittest.TestCase):
             if path.is_file() and path.suffix in {".css", ".html", ".json", ".txt", ".xml"}:
                 value = path.read_text(encoding="utf-8")
                 self.assertNotIn("Markeitech Metadata:", value)
-                self.assertNotIn(str(FixedPaths.discover().repository_root), value)
+                self.assertNotIn(str(paths.repository_root), value)
 
 
 if __name__ == "__main__":
