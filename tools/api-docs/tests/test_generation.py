@@ -21,10 +21,10 @@ class GenerationTest(unittest.TestCase):
         self.assertTrue(index["not_runtime_configuration"])
         self.assertEqual(index["public_surface"]["selected"], 258)
         self.assertEqual(index["metadata"]["occurrence_count"], 0)
-        self.assertEqual(index["architecture_components"]["counts"]["components"], 19)
+        self.assertEqual(index["architecture_components"]["counts"]["components"], 20)
         self.assertEqual(
             index["architecture_components"]["counts"]["with_responsibilities"],
-            6,
+            7,
         )
         architecture = json.loads(
             (output / "architecture-components-index.json").read_text(encoding="utf-8")
