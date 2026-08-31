@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 from threading import Event
@@ -9,9 +10,10 @@ from uuid import UUID
 import pytest
 from nautilus_trader.common import Environment, ImportableActorConfig
 from nautilus_trader.live import LiveNode
-from nautilus_trader.model import TraderId
+from nautilus_trader.model import CustomData, DataType, TraderId
 
 from markeitech.intelligence import EntityLifecycle, VolatilityStatePayload
+from markeitech.intelligence.calendar_messages import CALENDAR_TRANSITION_V2_TYPE_NAME
 from markeitech.system.composition import (
     StartupPrerequisites,
     _entity_definition_payload,
@@ -20,8 +22,12 @@ from markeitech.system.composition import (
 from markeitech.system.config import load_system_config
 from tests.system.message_actor_fixtures import (
     calendar_received,
+    current_state_historical_plan_received,
     current_state_received,
     entity_received,
+    inspectable_current_state_historical_probes,
+    inspectable_evidence_health_actors,
+    inspectable_historical_planner_actors,
     inspectable_session_state_actors,
     market_state_received,
     projection_requests_complete,
@@ -30,6 +36,7 @@ from tests.system.message_actor_fixtures import (
     received_calendar_projections,
     received_calendar_transitions,
     received_calendar_transitions_v2,
+    received_current_state_historical_plans,
     received_current_state_snapshots,
     received_entity_revisions,
     received_entity_snapshots,
@@ -102,6 +109,7 @@ def test_health_signal_delivers_between_actors_in_one_live_node() -> None:
 def test_session_state_delivers_typed_transition_and_projection() -> None:
     calendar_received.clear()
     received_calendar_transitions.clear()
+    received_calendar_transitions_v2.clear()
     received_calendar_projections.clear()
     root = Path(__file__).parents[2]
     config = load_system_config(root / "config/system.v3-es-minimal.toml")
@@ -142,13 +150,14 @@ def test_session_state_delivers_typed_transition_and_projection() -> None:
 
     asyncio.run(_run_node_until(node, calendar_received))
 
-    assert received_calendar_transitions
-    assert received_calendar_transitions[0].source_epoch == (
+    assert received_calendar_transitions == []
+    assert received_calendar_transitions_v2
+    assert received_calendar_transitions_v2[0].source_epoch == (
         "00000000-0000-0000-0000-000000000001"
     )
     assert received_calendar_projections[0].status == "READY"
     assert received_calendar_projections[0].projections[0].definition_digest == (
-        received_calendar_transitions[0].definition_digest
+        received_calendar_transitions_v2[0].definition_digest
     )
 
 
@@ -240,8 +249,8 @@ def test_session_state_delivers_one_cut_snapshot_and_replays_exact_duplicate() -
         state.state_revision_evaluated_as_of_ns <= state.evaluated_as_of_ns
         for state in response.states
     )
-    assert len(received_calendar_transitions) == len(config.sessions.calendars)
-    assert received_calendar_transitions_v2 == []
+    assert received_calendar_transitions == []
+    assert len(received_calendar_transitions_v2) == len(config.sessions.calendars)
     actor = inspectable_session_state_actors[-1]
     revisions = dict(actor._revisions)
     actor._evaluate(None)
@@ -317,6 +326,141 @@ def test_session_state_returns_and_replays_complete_not_ready_snapshot() -> None
     assert response.failures[0].code == "source_not_ready"
     assert response.failures[0].retryable is True
     assert response.retry_at_ns == response.failures[0].retry_at_ns
+
+
+def test_current_state_recovery_drives_one_real_historical_plan() -> None:
+    current_state_historical_plan_received.clear()
+    received_current_state_historical_plans.clear()
+    received_calendar_transitions.clear()
+    received_calendar_transitions_v2.clear()
+    inspectable_evidence_health_actors.clear()
+    inspectable_historical_planner_actors.clear()
+    inspectable_current_state_historical_probes.clear()
+    root = Path(__file__).parents[2]
+    config = load_system_config(root / "config/system.v3-es-minimal.toml")
+    config = replace(
+        config,
+        historical=replace(
+            config.historical,
+            probe=replace(config.historical.probe, enabled=True),
+        ),
+    )
+    source_epoch = "00000000-0000-0000-0000-000000000001"
+    plan = build_actor_plan(
+        config,
+        StartupPrerequisites(
+            run_id=UUID(source_epoch),
+            operational_persistence_ready=True,
+        ),
+    )
+    registrations = {item.key: item for item in plan}
+    delivery = {
+        **registrations["session_state"].config.config["current_state_delivery"],
+        "response_timeout_ms": 100,
+        "retry_backoff_ms": 10,
+        "maximum_elapsed_ms": 1_000,
+    }
+    producer_config = dict(registrations["session_state"].config.config)
+    producer_config["current_state_delivery"] = delivery
+    evidence_config = dict(registrations["evidence_health"].config.config)
+    evidence_config["current_state_delivery"] = delivery
+    planner_config = dict(registrations["historical_evidence_planner"].config.config)
+    planner_config["current_state_delivery"] = delivery
+    planner_config["projection_retry"] = {
+        "response_timeout_ms": 100,
+        "maximum_attempts": 3,
+        "retry_backoff_ms": 10,
+        "maximum_elapsed_ms": 1_000,
+    }
+    probe_registration = registrations["current_state_historical_probe"]
+    probe_config = dict(probe_registration.config.config)
+    probe_config["current_state_delivery"] = delivery
+
+    node = LiveNode.builder(
+        "MARKEITECH-V2-CURRENT-STATE-HISTORICAL-PLAN-TEST",
+        TraderId.from_str("MARKEITECH-TEST-001"),
+        Environment.SANDBOX,
+    ).with_delay_post_stop_secs(0).build()
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path=(
+                "tests.system.message_actor_fixtures:InspectableEvidenceHealthActor"
+            ),
+            config_path=registrations["evidence_health"].config.config_path,
+            config=evidence_config,
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path=(
+                "tests.system.message_actor_fixtures:"
+                "InspectableHistoricalEvidencePlannerActor"
+            ),
+            config_path=registrations["historical_evidence_planner"].config.config_path,
+            config=planner_config,
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path=(
+                "tests.system.message_actor_fixtures:"
+                "InspectableCurrentStateHistoricalDemandProbeActor"
+            ),
+            config_path=probe_registration.config.config_path,
+            config=probe_config,
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path=(
+                "tests.system.message_actor_fixtures:"
+                "DropFirstSnapshotResponseSessionStateActor"
+            ),
+            config_path=registrations["session_state"].config.config_path,
+            config=producer_config,
+        ),
+    )
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path="tests.system.message_actor_fixtures:PersistenceReadyFixture",
+            config_path="tests.system.message_actor_fixtures:PersistenceReadyFixtureConfig",
+            config={"actor_id": "PERSISTENCE-READY-FIXTURE"},
+        ),
+    )
+
+    asyncio.run(_run_node_until(node, current_state_historical_plan_received))
+
+    assert len(received_current_state_historical_plans) == 1
+    assert received_current_state_historical_plans[0].demand_id == (
+        "current-state-probe:CURRENT-STATE-HISTORICAL-PROBE:"
+        "ESU6.CME:1-MINUTE-LAST-EXTERNAL"
+    )
+    request = received_current_state_historical_plans[0].request
+    minute_ns = 60 * 1_000_000_000
+    assert (request.end_ns + 1) % minute_ns == 0
+    assert request.end_ns + 1 - request.start_ns == 5 * minute_ns
+    assert received_calendar_transitions == []
+    assert received_calendar_transitions_v2
+    assert inspectable_current_state_historical_probes[-1]._last_request is not None
+    assert inspectable_current_state_historical_probes[-1]._last_request.attempt == 3
+    assert inspectable_evidence_health_actors[-1].reached_session_live is True
+    assert inspectable_historical_planner_actors[-1].reached_session_live is True
+    transition_type = DataType(CALENDAR_TRANSITION_V2_TYPE_NAME)
+    transition_data = CustomData(transition_type, received_calendar_transitions_v2[-1])
+    evidence_actor = inspectable_evidence_health_actors[-1]
+    planner_actor = inspectable_historical_planner_actors[-1]
+    evidence_context = dict(evidence_actor._session_by_calendar)
+    planner_refresh_ids = set(planner_actor._calendar_refresh_ids)
+    evidence_actor.on_data(transition_data)
+    evidence_actor._on_session_state_alert(None)
+    planner_actor.on_data(transition_data)
+    planner_actor._on_session_state_alert(None)
+    assert evidence_actor._session_state.phase.value == "STOPPED"
+    assert planner_actor._session_state.phase.value == "STOPPED"
+    assert evidence_actor._session_by_calendar == evidence_context
+    assert planner_actor._calendar_refresh_ids == planner_refresh_ids
+    assert "evidence-health-session-state-retry" not in evidence_actor.clock.timer_names()
+    assert "historical-planner-session-state-retry" not in planner_actor.clock.timer_names()
 
 
 def test_session_state_contains_projection_failure_and_publishes_typed_response() -> None:
@@ -450,7 +594,7 @@ def test_calendar_consumers_stop_after_bounded_correlated_timeouts() -> None:
             operational_persistence_ready=True,
         ),
     )
-    keys = {"evidence_health", "historical_evidence_planner"}
+    keys = {"historical_evidence_planner"}
     registrations = [item for item in plan if item.key in keys]
     requesters = [item.actor_id for item in registrations]
     node = LiveNode.builder(

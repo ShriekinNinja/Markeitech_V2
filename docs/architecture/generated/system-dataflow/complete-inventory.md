@@ -14,18 +14,19 @@ Show implemented, conditional, disabled, external, and future components without
 
 | ID | Component | Kind | Implementation | Composition | Order | Active profile | Semantic owner | Boundary |
 |---|---|---|---|---|---:|---|---|---|
+| `actor.current-state-historical-probe` | Current-State Historical Demand Probe | markeitech_actor | implemented | conditional | 14 | disabled | `none_current` | `boundary.acquisition` |
 | `actor.data-acquisition` | Data Acquisition | markeitech_actor | implemented | always | 13 | enabled | `actor.data-acquisition` | `boundary.acquisition` |
 | `actor.discord-health` | Discord Health Projection | markeitech_actor | implemented | conditional | 4 | disabled | `actor.discord-health` | `boundary.system` |
 | `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | always | 3 | enabled | `actor.evidence-health` | `boundary.intelligence` |
 | `actor.historical-planner` | Historical Evidence Planner | markeitech_actor | implemented | always | 11 | enabled | `actor.historical-planner` | `boundary.intelligence` |
-| `actor.historical-probe` | Historical Dependency Probe | markeitech_actor | implemented | conditional | 14 | disabled | `actor.historical-probe` | `boundary.acquisition` |
+| `actor.historical-probe` | Historical Dependency Probe | markeitech_actor | implemented | conditional | 15 | disabled | `actor.historical-probe` | `boundary.acquisition` |
 | `actor.market-state-entities` | Market State Entities | markeitech_actor | implemented | conditional | 9 | disabled | `actor.market-state-entities` | `boundary.intelligence` |
 | `actor.market-structure-entities` | Market Structure Entities | markeitech_actor | implemented | conditional | 10 | disabled | `actor.market-structure-entities` | `boundary.intelligence` |
-| `actor.native-consumer-probe` | Native Consumer Probe | markeitech_actor | implemented | conditional | 15 | disabled | `actor.native-consumer-probe` | `boundary.system` |
-| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 18 | enabled | `actor.operational-persistence` | `boundary.system` |
+| `actor.native-consumer-probe` | Native Consumer Probe | markeitech_actor | implemented | conditional | 16 | disabled | `actor.native-consumer-probe` | `boundary.system` |
+| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 19 | enabled | `actor.operational-persistence` | `boundary.system` |
 | `actor.quote-quality` | Quote Quality Metrics | markeitech_actor | implemented | conditional | 6 | disabled | `actor.quote-quality` | `boundary.intelligence` |
-| `actor.runtime-resource-health` | Runtime Resource Health | markeitech_actor | implemented | conditional | 17 | disabled | `actor.runtime-resource-health` | `boundary.system` |
-| `actor.runtime-resources` | Runtime Resources | markeitech_actor | implemented | conditional | 16 | disabled | `actor.runtime-resources` | `boundary.system` |
+| `actor.runtime-resource-health` | Runtime Resource Health | markeitech_actor | implemented | conditional | 18 | disabled | `actor.runtime-resource-health` | `boundary.system` |
+| `actor.runtime-resources` | Runtime Resources | markeitech_actor | implemented | conditional | 17 | disabled | `actor.runtime-resources` | `boundary.system` |
 | `actor.session-metrics` | Session Metrics | markeitech_actor | implemented | conditional | 7 | disabled | `actor.session-metrics` | `boundary.intelligence` |
 | `actor.session-reference-entities` | Session Reference Entities | markeitech_actor | implemented | conditional | 8 | disabled | `actor.session-reference-entities` | `boundary.intelligence` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |

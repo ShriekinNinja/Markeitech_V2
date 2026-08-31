@@ -42,15 +42,34 @@ from markeitech.intelligence.calendar_delivery import (
 from markeitech.intelligence.calendar_messages import (
     CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
     CALENDAR_PROJECTION_RESPONSE_TYPE_NAME,
-    CALENDAR_TRANSITION_TYPE_NAME,
+    CALENDAR_STATE_SNAPSHOT_REQUEST_TYPE_NAME,
+    CALENDAR_STATE_SNAPSHOT_RESPONSE_TYPE_NAME,
+    CALENDAR_TRANSITION_V2_TYPE_NAME,
+    CalendarDefinitionExpectation,
     CalendarProjectionRequest,
     CalendarProjectionResponse,
-    CalendarTransition,
+    CalendarStateSnapshotResponse,
+    CalendarTransitionV2,
 )
 from markeitech.intelligence.session import CalendarProjectionView
+from markeitech.intelligence.session_state_delivery import (
+    SessionStateDeliveryDisposition,
+    SessionStateDeliveryPhase,
+    SessionStateDeliveryPolicy,
+    SessionStateDeliveryState,
+    begin_session_state_retry,
+    current_snapshot_request,
+    observe_session_snapshot,
+    observe_session_transition,
+    resynchronize_session_state_cycle,
+    schedule_session_state_retry,
+    start_session_state_cycle,
+    stop_session_state_delivery,
+)
 
 _HISTORICAL_DEMAND_RETRY_ALERT = "historical-planner-window-retry"
 _CALENDAR_PROJECTION_RETRY_ALERT = "historical-planner-calendar-projection-retry"
+_SESSION_STATE_RETRY_ALERT = "historical-planner-session-state-retry"
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +167,23 @@ def synchronize_historical_demand_retry_timer(
 
 
 class HistoricalEvidencePlannerActorConfig(DataActorConfig):
+    """Configure historical planning and canonical current-state synchronization.
+
+    Args:
+        instrument_ids: Instruments admitted for historical planning.
+        instrument_calendars: Canonical calendar identity by instrument.
+        expected_calendar_digests: Definition digests required for schedule projections.
+        historical: Bounded historical request-plan resource policy.
+        projection_lookback_days: Historical schedule projection lookback.
+        projection_lookahead_days: Historical schedule projection lookahead.
+        calendar_source: Canonical session-state producer identity.
+        calendar_source_epoch: Runtime run UUID expected from the producer.
+        projection_retry: Bounded schedule-projection retry policy.
+        current_state_delivery: Bounded current-state synchronization policy.
+        calendar_expectations: Exact calendar definitions required for current-state use.
+        actor_id: Nautilus actor identity.
+    """
+
     def __new__(
         cls,
         instrument_ids: list[str],
@@ -159,6 +195,8 @@ class HistoricalEvidencePlannerActorConfig(DataActorConfig):
         calendar_source: str,
         calendar_source_epoch: str,
         projection_retry: dict[str, int],
+        current_state_delivery: dict[str, int],
+        calendar_expectations: list[dict[str, object]],
         actor_id: str | ActorId = "HISTORICAL-EVIDENCE-PLANNER",
     ) -> HistoricalEvidencePlannerActorConfig:
         resolved = actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
@@ -172,6 +210,8 @@ class HistoricalEvidencePlannerActorConfig(DataActorConfig):
         obj.calendar_source = calendar_source
         obj.calendar_source_epoch = calendar_source_epoch
         obj.projection_retry = dict(projection_retry)
+        obj.current_state_delivery = dict(current_state_delivery)
+        obj.calendar_expectations = tuple(calendar_expectations)
         return obj
 
 
@@ -215,9 +255,42 @@ class HistoricalEvidencePlannerActor(DataActor):
             expected_source=config.calendar_source,
             expected_source_epoch=config.calendar_source_epoch,
         )
+        delivery = config.current_state_delivery
+        self._session_state_policy = SessionStateDeliveryPolicy(
+            policy_version=delivery["policy_version"],
+            response_timeout_ns=delivery["response_timeout_ms"] * 1_000_000,
+            maximum_attempts=delivery["maximum_attempts"],
+            retry_backoff_ns=delivery["retry_backoff_ms"] * 1_000_000,
+            maximum_elapsed_ns=delivery["maximum_elapsed_ms"] * 1_000_000,
+            maximum_buffered_transitions_per_calendar=delivery[
+                "maximum_buffered_transitions_per_calendar"
+            ],
+            maximum_total_buffered_transitions=delivery[
+                "maximum_total_buffered_transitions"
+            ],
+            boundary_delivery_grace_ns=delivery["boundary_delivery_grace_ms"]
+            * 1_000_000,
+        )
+        self._calendar_expectations = tuple(
+            CalendarDefinitionExpectation(
+                calendar_id=str(item["calendar_id"]),
+                definition_version=int(item["definition_version"]),
+                definition_digest=str(item["definition_digest"]),
+                definition_effective_from_ns=int(item["definition_effective_from_ns"]),
+            )
+            for item in config.calendar_expectations
+        )
+        self._session_state = SessionStateDeliveryState.idle(
+            requester=str(self.actor_id),
+            expected_source=config.calendar_source,
+            expected_source_epoch=config.calendar_source_epoch,
+            delivery_policy_version=self._session_state_policy.policy_version,
+        )
         self._projection_request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
         self._projection_response_type = DataType(CALENDAR_PROJECTION_RESPONSE_TYPE_NAME)
-        self._transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
+        self._transition_type = DataType(CALENDAR_TRANSITION_V2_TYPE_NAME)
+        self._session_state_request_type = DataType(CALENDAR_STATE_SNAPSHOT_REQUEST_TYPE_NAME)
+        self._session_state_response_type = DataType(CALENDAR_STATE_SNAPSHOT_RESPONSE_TYPE_NAME)
         self._plan_type = DataType(HISTORICAL_REQUEST_PLAN_TYPE_NAME)
         self._pending: dict[str, HistoricalDependencyDemandEvent] = {}
         self._deferred = HistoricalDemandRetryBook()
@@ -234,14 +307,21 @@ class HistoricalEvidencePlannerActor(DataActor):
             "projection_conflicts": 0,
             "projection_terminal": 0,
         }
+        self._active = False
 
     def on_start(self) -> None:
+        self._active = True
+        self._prepare_session_state_cycle()
         self.subscribe_signal(HISTORICAL_DEPENDENCY_DEMAND_SIGNAL)
         self.subscribe_data(self._projection_response_type)
         self.subscribe_data(self._transition_type)
+        self.subscribe_data(self._session_state_response_type)
+        self._publish_session_state_request()
         self._begin_projection_cycle()
 
     def on_signal(self, signal: Signal) -> None:
+        if not self._active:
+            return
         if signal.name != HISTORICAL_DEPENDENCY_DEMAND_SIGNAL:
             return
         try:
@@ -259,39 +339,29 @@ class HistoricalEvidencePlannerActor(DataActor):
         self._plan_pending()
 
     def on_data(self, data) -> None:  # noqa: ANN001
+        if not self._active:
+            return
         payload = data.data if isinstance(data, CustomData) else data
         if isinstance(payload, CalendarProjectionResponse):
             self._retain_projections(payload)
-        elif isinstance(payload, CalendarTransition):
-            expected = self._expected_calendar_digests.get(payload.calendar_id)
-            if expected is None:
-                return
-            if (
-                payload.definition_digest != expected
-                or payload.source != self._projection_state.expected_source
-                or payload.source_epoch != self._projection_state.expected_source_epoch
-            ):
-                self._counts["rejected"] += 1
-                self.log.error(
-                    "HISTORICAL_PLAN_CALENDAR_DEFINITION_CONFLICT"
-                    f" | calendar_id={payload.calendar_id}",
-                )
-                return
-            self._calendar_refresh_ids.add(payload.calendar_id)
-            self._begin_projection_cycle()
-            for event in self._deferred.release_calendar(payload.calendar_id):
-                self._pending[event.demand_id] = replace(
-                    event,
-                    as_of_ns=self.clock.timestamp_ns(),
-                )
-            self._plan_pending()
+        elif isinstance(payload, CalendarTransitionV2):
+            self._observe_session_transition(payload)
+        elif isinstance(payload, CalendarStateSnapshotResponse):
+            self._observe_session_snapshot(payload)
 
     def on_stop(self) -> None:
+        self._active = False
+        self._session_state = stop_session_state_delivery(self._session_state)
         self._projection_state = stop_projection_state(self._projection_state)
         self.unsubscribe_signal(HISTORICAL_DEPENDENCY_DEMAND_SIGNAL)
         self.unsubscribe_data(self._projection_response_type)
         self.unsubscribe_data(self._transition_type)
-        for timer_name in (_CALENDAR_PROJECTION_RETRY_ALERT, _HISTORICAL_DEMAND_RETRY_ALERT):
+        self.unsubscribe_data(self._session_state_response_type)
+        for timer_name in (
+            _CALENDAR_PROJECTION_RETRY_ALERT,
+            _HISTORICAL_DEMAND_RETRY_ALERT,
+            _SESSION_STATE_RETRY_ALERT,
+        ):
             if timer_name in self.clock.timer_names():
                 self.clock.cancel_timer(timer_name)
         self._deferred.clear()
@@ -306,7 +376,171 @@ class HistoricalEvidencePlannerActor(DataActor):
             f" | projection_terminal={self._counts['projection_terminal']}",
         )
 
+    def _begin_session_state_cycle(self) -> None:
+        if not self._active:
+            return
+        self._prepare_session_state_cycle()
+        self._publish_session_state_request()
+
+    def _prepare_session_state_cycle(self) -> None:
+        self._session_state = start_session_state_cycle(
+            self._session_state,
+            calendar_expectations=self._calendar_expectations,
+            now_ns=self.clock.timestamp_ns(),
+            policy=self._session_state_policy,
+        )
+
+    def _publish_session_state_request(self) -> None:
+        if not self._active or self._session_state.phase is not SessionStateDeliveryPhase.WAITING:
+            return
+        self._set_session_state_alert()
+        request = current_snapshot_request(self._session_state)
+        self.publish_data(
+            self._session_state_request_type,
+            CustomData(self._session_state_request_type, request),
+        )
+
+    def _observe_session_transition(self, event: CalendarTransitionV2) -> None:
+        previous_phase = self._session_state.phase
+        update = observe_session_transition(
+            self._session_state,
+            event,
+            policy=self._session_state_policy,
+        )
+        self._session_state = update.state
+        self._apply_installed_session_revisions(update.installed_calendar_ids)
+        if self._session_state.phase is SessionStateDeliveryPhase.CONFLICT:
+            self._cancel_session_state_alert()
+            if previous_phase is not SessionStateDeliveryPhase.CONFLICT:
+                self.log.error(
+                    "HISTORICAL_PLAN_SESSION_STATE_CONFLICT"
+                    f" | code={self._session_state.terminal_code}",
+                )
+            return
+        if update.disposition is SessionStateDeliveryDisposition.APPLIED:
+            self._set_session_state_boundary_alert()
+        if update.disposition in {
+            SessionStateDeliveryDisposition.GAP,
+            SessionStateDeliveryDisposition.OVERFLOW,
+        }:
+            self._session_state = resynchronize_session_state_cycle(
+                self._session_state,
+                now_ns=self.clock.timestamp_ns(),
+                policy=self._session_state_policy,
+            )
+            self._publish_session_state_request()
+
+    def _observe_session_snapshot(self, response: CalendarStateSnapshotResponse) -> None:
+        previous_phase = self._session_state.phase
+        update = observe_session_snapshot(
+            self._session_state,
+            response,
+            now_ns=self.clock.timestamp_ns(),
+        )
+        self._session_state = update.state
+        self._apply_installed_session_revisions(update.installed_calendar_ids)
+        if self._session_state.phase is SessionStateDeliveryPhase.CONFLICT:
+            self._cancel_session_state_alert()
+            if previous_phase is not SessionStateDeliveryPhase.CONFLICT:
+                self.log.error(
+                    "HISTORICAL_PLAN_SESSION_STATE_CONFLICT"
+                    f" | code={self._session_state.terminal_code}",
+                )
+            return
+        if self._session_state.phase is SessionStateDeliveryPhase.LIVE:
+            self._set_session_state_boundary_alert()
+            return
+        if self._session_state.phase is SessionStateDeliveryPhase.DEGRADED:
+            self._schedule_session_state_retry(
+                self._session_state.terminal_code or "snapshot_degraded",
+            )
+
+    def _apply_installed_session_revisions(self, calendar_ids: tuple[str, ...]) -> None:
+        if not self._active or not calendar_ids:
+            return
+        now_ns = self.clock.timestamp_ns()
+        for calendar_id in calendar_ids:
+            self._calendar_refresh_ids.add(calendar_id)
+            for event in self._deferred.release_calendar(calendar_id):
+                self._pending[event.demand_id] = replace(event, as_of_ns=now_ns)
+        self._begin_projection_cycle()
+        self._plan_pending()
+
+    def _schedule_session_state_retry(self, code: str) -> None:
+        if not self._active:
+            return
+        update = schedule_session_state_retry(
+            self._session_state,
+            now_ns=self.clock.timestamp_ns(),
+            policy=self._session_state_policy,
+            code=code,
+        )
+        self._session_state = update.state
+        self._set_session_state_alert()
+
+    def _on_session_state_alert(self, _event) -> None:  # noqa: ANN001
+        if not self._active:
+            return
+        now_ns = self.clock.timestamp_ns()
+        if self._session_state.phase is SessionStateDeliveryPhase.LIVE:
+            self._begin_session_state_cycle()
+            return
+        if self._session_state.phase is SessionStateDeliveryPhase.WAITING:
+            self._schedule_session_state_retry("response_timeout")
+            return
+        update = begin_session_state_retry(
+            self._session_state,
+            now_ns=now_ns,
+            policy=self._session_state_policy,
+        )
+        self._session_state = update.state
+        if update.disposition is SessionStateDeliveryDisposition.RETRY_STARTED:
+            self._publish_session_state_request()
+
+    def _set_session_state_alert(self) -> None:
+        if not self._active:
+            return
+        self._cancel_session_state_alert()
+        alert_at_ns = self._session_state.alert_at_ns
+        if alert_at_ns is not None:
+            self.clock.set_time_alert_ns(
+                _SESSION_STATE_RETRY_ALERT,
+                alert_at_ns,
+                callback=self._on_session_state_alert,
+            )
+
+    def _set_session_state_boundary_alert(self) -> None:
+        if not self._active:
+            return
+        next_boundaries = tuple(
+            item.next_transition_ns
+            for item in self._session_state.watermarks
+            if item.next_transition_ns is not None
+        )
+        self._cancel_session_state_alert()
+        if next_boundaries:
+            prior_attempt_expired_ns = (
+                self._session_state.accepted_response.deadline_ts_ns + 1
+                if self._session_state.accepted_response is not None
+                else 0
+            )
+            self.clock.set_time_alert_ns(
+                _SESSION_STATE_RETRY_ALERT,
+                max(
+                    min(next_boundaries)
+                    + self._session_state_policy.boundary_delivery_grace_ns,
+                    prior_attempt_expired_ns,
+                ),
+                callback=self._on_session_state_alert,
+            )
+
+    def _cancel_session_state_alert(self) -> None:
+        if _SESSION_STATE_RETRY_ALERT in self.clock.timer_names():
+            self.clock.cancel_timer(_SESSION_STATE_RETRY_ALERT)
+
     def _begin_projection_cycle(self) -> None:
+        if not self._active:
+            return
         requested = tuple(
             calendar_id
             for calendar_id in self._calendar_ids
@@ -327,6 +561,8 @@ class HistoricalEvidencePlannerActor(DataActor):
             self._publish_projection_request()
 
     def _publish_projection_request(self) -> None:
+        if not self._active:
+            return
         state = self._projection_state
         if (
             state.phase is not ProjectionRequestPhase.WAITING
@@ -421,6 +657,8 @@ class HistoricalEvidencePlannerActor(DataActor):
         )
 
     def _on_projection_alert(self, _event) -> None:  # noqa: ANN001
+        if not self._active:
+            return
         state = self._projection_state
         if state.phase is ProjectionRequestPhase.STOPPED:
             return
@@ -475,6 +713,8 @@ class HistoricalEvidencePlannerActor(DataActor):
             self.clock.cancel_timer(_CALENDAR_PROJECTION_RETRY_ALERT)
 
     def _plan_pending(self) -> None:
+        if not self._active:
+            return
         for demand_id in sorted(tuple(self._pending)):
             event = self._pending[demand_id]
             calendar_id = self._instrument_calendars[event.instrument_id]
@@ -523,6 +763,8 @@ class HistoricalEvidencePlannerActor(DataActor):
         )
 
     def _retry_deferred(self, _event) -> None:  # noqa: ANN001
+        if not self._active:
+            return
         now_ns = self.clock.timestamp_ns()
         self._retry_at_ns = None
         for event in self._deferred.release_due(now_ns):

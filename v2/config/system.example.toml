@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored v2/.env.
 
-schema_version = 22
+schema_version = 23
 
 [runtime]
 name = "MARKEITECH-V2-PAPER-001"
@@ -103,6 +103,8 @@ poll_interval_ms = 100
 
 [historical.probe]
 enabled = false
+mode = "direct"
+omit_initial_snapshot_request = false
 actor_ids = ["HISTORICAL-PROBE-A", "HISTORICAL-PROBE-B"]
 instrument_id = "ESU6.CME"
 selector = "1-MINUTE-LAST-EXTERNAL"

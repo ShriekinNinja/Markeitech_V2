@@ -11,7 +11,7 @@
 <polygon fill="#0b1118" stroke="none" points="-25.2,25.2 -25.2,-1527.95 1491.07,-1527.95 1491.07,25.2 -25.2,25.2"/>
 <text xml:space="preserve" text-anchor="start" x="10" y="-1478.75" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="20.00" fill="#f2f6fa">Current V3 ES Runtime Topology</text>
 <text xml:space="preserve" text-anchor="start" x="10" y="-1462.3" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#ffc1bb">OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION</text>
-<text xml:space="preserve" text-anchor="start" x="10" y="-1447.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#c7d2dd">PROFILE: profile.v3&#45;es&#45;minimal · REVIEW: PROPOSED · MANIFEST SCHEMA: 1 · COMPONENTS: 16 · CAPABILITIES: 2 · FLOWS: 26</text>
+<text xml:space="preserve" text-anchor="start" x="10" y="-1447.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#c7d2dd">PROFILE: profile.v3&#45;es&#45;minimal · REVIEW: PROPOSED · MANIFEST SCHEMA: 1 · COMPONENTS: 16 · CAPABILITIES: 2 · FLOWS: 28</text>
 <text xml:space="preserve" text-anchor="start" x="10" y="-1433" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: 5b00af3e4e61b8b1f32aa5680b267f9f7904814d</text>
 <polygon fill="#164c3e" stroke="none" points="18,-1401 18,-1418.75 73,-1418.75 73,-1401 18,-1401"/>
 <polygon fill="none" stroke="#78a9f5" points="18,-1401 18,-1418.75 73,-1418.75 73,-1401 18,-1401"/>
@@ -171,6 +171,15 @@
 </a>
 </g>
 </g>
+<!-- actor.historical&#45;planner&#45;&gt;actor.session&#45;state -->
+<g id="edge.calendar&#45;state&#45;request&#45;planner" class="edge">
+<title>actor.historical&#45;planner&#45;&gt;actor.session&#45;state</title>
+<g id="a_edge.calendar&#45;state&#45;request&#45;planner"><a xlink:title="edge.calendar&#45;state&#45;request&#45;planner">
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M803.34,-607C779.4,-607 754.45,-607 730.27,-607"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="722.4,-607 730.4,-603.4 724.33,-606.65 730.4,-606.65 730.4,-607 730.4,-607.35 724.33,-607.35 730.4,-610.6 722.4,-607"/>
+</a>
+</g>
+</g>
 <!-- actor.session&#45;state&#45;&gt;actor.evidence&#45;health -->
 <g id="edge.calendar&#45;response&#45;health" class="edge">
 <title>actor.session&#45;state&#45;&gt;actor.evidence&#45;health</title>
@@ -193,6 +202,15 @@
 <g id="edge.calendar&#45;response&#45;planner" class="edge">
 <title>actor.session&#45;state&#45;&gt;actor.historical&#45;planner</title>
 <g id="a_edge.calendar&#45;response&#45;planner"><a xlink:title="edge.calendar&#45;response&#45;planner">
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M720.33,-607C744.26,-607 769.21,-607 793.39,-607"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="801.27,-607 793.27,-610.6 799.34,-607.35 793.27,-607.35 793.27,-607 793.27,-606.65 799.34,-606.65 793.27,-603.4 801.27,-607"/>
+</a>
+</g>
+</g>
+<!-- actor.session&#45;state&#45;&gt;actor.historical&#45;planner -->
+<g id="edge.calendar&#45;state&#45;response&#45;planner" class="edge">
+<title>actor.session&#45;state&#45;&gt;actor.historical&#45;planner</title>
+<g id="a_edge.calendar&#45;state&#45;response&#45;planner"><a xlink:title="edge.calendar&#45;state&#45;response&#45;planner">
 <path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M720.33,-607C744.26,-607 769.21,-607 793.39,-607"/>
 <polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="801.27,-607 793.27,-610.6 799.34,-607.35 793.27,-607.35 793.27,-607 793.27,-606.65 799.34,-606.65 793.27,-603.4 801.27,-607"/>
 </a>
@@ -501,7 +519,7 @@
 <text xml:space="preserve" text-anchor="start" x="1010.07" y="-406.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
 <text xml:space="preserve" text-anchor="start" x="815.57" y="-387.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.operational&#45;persistence</text>
 <text xml:space="preserve" text-anchor="start" x="815.57" y="-371.5" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: ALWAYS</text>
-<text xml:space="preserve" text-anchor="start" x="815.57" y="-355.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 18</text>
+<text xml:space="preserve" text-anchor="start" x="815.57" y="-355.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 19</text>
 </a>
 </g>
 </g>

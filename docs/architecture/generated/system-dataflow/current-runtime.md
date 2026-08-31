@@ -17,7 +17,7 @@ Profile-specific implemented and enabled topology for the tracked V3 ES review p
 | `actor.data-acquisition` | Data Acquisition | markeitech_actor | implemented | always | 13 | enabled | `actor.data-acquisition` | `boundary.acquisition` |
 | `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | always | 3 | enabled | `actor.evidence-health` | `boundary.intelligence` |
 | `actor.historical-planner` | Historical Evidence Planner | markeitech_actor | implemented | always | 11 | enabled | `actor.historical-planner` | `boundary.intelligence` |
-| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 18 | enabled | `actor.operational-persistence` | `boundary.system` |
+| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 19 | enabled | `actor.operational-persistence` | `boundary.system` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
 | `actor.system-control` | System Control | markeitech_actor | implemented | always | 1 | enabled | `actor.system-control` | `boundary.system` |
 | `actor.watchlist` | Watchlist | markeitech_actor | implemented | always | 12 | enabled | `actor.watchlist` | `boundary.acquisition` |
@@ -46,10 +46,12 @@ Profile-specific implemented and enabled topology for the tracked V3 ES review p
 | `edge.acquisition-status-watchlist` | `actor.data-acquisition` | `actor.watchlist` | response | `contract.acquisition-status` | nautilus_signal | yes | always | unknown |
 | `edge.acquisition-stream-health` | `actor.data-acquisition` | `actor.evidence-health` | publication | `contract.acquisition-stream` | nautilus_signal | yes | always | unknown |
 | `edge.acquisition-subscribe` | `actor.data-acquisition` | `component.data-engine` | subscription_command | `contract.native-subscription-command` | method_call | yes | watchlist.capabilities.watchlist_last | at_most_once_attempt |
-| `edge.calendar-request-health` | `actor.evidence-health` | `actor.session-state` | query | `contract.calendar-projection-request` | nautilus_custom_data | yes | always | unknown |
+| `edge.calendar-request-health` | `actor.evidence-health` | `actor.session-state` | query | `contract.calendar-state-snapshot-request` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-request-planner` | `actor.historical-planner` | `actor.session-state` | query | `contract.calendar-projection-request` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-response-health` | `actor.session-state` | `actor.evidence-health` | response | `contract.calendar-projection-response` | nautilus_custom_data | yes | always | unknown |
+| `edge.calendar-response-health` | `actor.session-state` | `actor.evidence-health` | response | `contract.calendar-state-snapshot-response` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-response-planner` | `actor.session-state` | `actor.historical-planner` | response | `contract.calendar-projection-response` | nautilus_custom_data | yes | always | unknown |
+| `edge.calendar-state-request-planner` | `actor.historical-planner` | `actor.session-state` | query | `contract.calendar-state-snapshot-request` | nautilus_custom_data | yes | always | unknown |
+| `edge.calendar-state-response-planner` | `actor.session-state` | `actor.historical-planner` | response | `contract.calendar-state-snapshot-response` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-transition-health` | `actor.session-state` | `actor.evidence-health` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-transition-persistence` | `actor.session-state` | `actor.operational-persistence` | persistence | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-transition-planner` | `actor.session-state` | `actor.historical-planner` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |

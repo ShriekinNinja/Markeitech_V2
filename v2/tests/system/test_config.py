@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 22
+schema_version = 23
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -108,6 +108,8 @@ poll_interval_ms = 100
 
 [historical.probe]
 enabled = false
+mode = "direct"
+omit_initial_snapshot_request = false
 actor_ids = ["HISTORICAL-PROBE-A", "HISTORICAL-PROBE-B"]
 instrument_id = "ESU6.CME"
 selector = "1-MINUTE-LAST-EXTERNAL"
@@ -432,6 +434,8 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.historical.maximum_in_flight_requests == 1
     assert config.historical.probe.instrument_id == "ESU6.CME"
     assert config.historical.probe.enabled is False
+    assert config.historical.probe.mode == "direct"
+    assert config.historical.probe.omit_initial_snapshot_request is False
     assert config.historical.probe.actor_ids == (
         "HISTORICAL-PROBE-A",
         "HISTORICAL-PROBE-B",
@@ -514,7 +518,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         config.metrics.session_measurements.profiles[0].windows[1].maximum_historical_observations
         == 4
     )
-    assert config.schema_version == 22
+    assert config.schema_version == 23
     assert config.metrics.entity_analysis.enabled is False
     assert config.metrics.entity_analysis.catalog_version == 2
     assert config.metrics.entity_analysis.completed_session_retention == 2
@@ -749,11 +753,29 @@ def test_rejects_retired_visual_review_sections(tmp_path: Path, section: str) ->
         load_system_config(path)
 
 
+def test_rejects_invalid_historical_probe_mode(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace('mode = "direct"', 'mode = "unknown"', 1))
+
+    with pytest.raises(ValueError, match="historical.probe.mode must be one of"):
+        load_system_config(path)
+
+
+def test_current_state_historical_probe_requires_one_actor(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace('mode = "direct"', 'mode = "current_state_gated"', 1),
+    )
+
+    with pytest.raises(ValueError, match="must be exactly CURRENT-STATE-HISTORICAL-PROBE"):
+        load_system_config(path)
+
+
 def test_rejects_pre_current_state_delivery_schema(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("schema_version = 22", "schema_version = 21", 1))
+    path.write_text(VALID_CONFIG.replace("schema_version = 23", "schema_version = 22", 1))
 
-    with pytest.raises(ValueError, match="unsupported schema_version: 21"):
+    with pytest.raises(ValueError, match="unsupported schema_version: 22"):
         load_system_config(path)
 
 

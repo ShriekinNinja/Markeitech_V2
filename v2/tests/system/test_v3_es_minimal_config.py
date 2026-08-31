@@ -30,6 +30,7 @@ def test_v3_es_minimal_config_disables_faulty_session_metrics_surface() -> None:
     assert session_state.config.config["allowed_current_state_requesters"] == [
         "EVIDENCE-HEALTH",
         "HISTORICAL-EVIDENCE-PLANNER",
+        "CURRENT-STATE-HISTORICAL-PROBE",
     ]
     assert session_state.config.config["current_state_delivery"]["policy_version"] == 1
     assert "calendars" not in acquisition.config.config
@@ -39,12 +40,15 @@ def test_v3_es_minimal_config_disables_faulty_session_metrics_surface() -> None:
         assert registration.config.config["calendar_source_epoch"] == (
             "00000000-0000-0000-0000-000000000001"
         )
-        assert registration.config.config["projection_retry"] == {
-            "response_timeout_ms": 5000,
-            "maximum_attempts": 3,
-            "retry_backoff_ms": 1000,
-            "maximum_elapsed_ms": 60000,
-        }
+        assert registration.config.config["current_state_delivery"]["policy_version"] == 1
+        assert registration.config.config["calendar_expectations"]
+    assert planner.config.config["projection_retry"] == {
+        "response_timeout_ms": 5000,
+        "maximum_attempts": 3,
+        "retry_backoff_ms": 1000,
+        "maximum_elapsed_ms": 60000,
+    }
+    assert "projection_retry" not in evidence_health.config.config
 
     actor = SessionStateActor(SessionStateActorConfig(**session_state.config.config))
     assert len(actor._calendars) == len(config.sessions.calendars)
@@ -95,8 +99,10 @@ def test_v3_es_minimal_config_disables_faulty_session_metrics_surface() -> None:
     assert config.historical.maximum_outstanding_requests == 1
     assert config.historical.maximum_in_flight_requests == 1
     assert config.historical.maximum_attempts == 1
-    assert config.historical.probe.enabled is False
-    assert config.historical.probe.actor_ids == ("HISTORICAL-PROBE-A",)
+    assert config.historical.probe.enabled is True
+    assert config.historical.probe.mode == "current_state_gated"
+    assert config.historical.probe.omit_initial_snapshot_request is True
+    assert config.historical.probe.actor_ids == ("CURRENT-STATE-HISTORICAL-PROBE",)
     assert config.historical.probe.instrument_id == "ESU6.CME"
     assert config.historical.probe.selector == "1-MINUTE-LAST-EXTERNAL"
     assert config.historical.probe.window == "recent_completed"
@@ -149,11 +155,12 @@ def test_v3_es_minimal_config_disables_faulty_session_metrics_surface() -> None:
         "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
+        "current_state_historical_probe",
         "operational_persistence",
     ]
 
 
-def test_v3_es_minimal_composes_only_active_calendar_and_operational_path() -> None:
+def test_v3_es_minimal_composes_active_calendar_operational_and_probe_path() -> None:
     config = load_system_config("v2/config/system.v3-es-minimal.toml")
 
     plan = build_actor_plan(
@@ -172,6 +179,7 @@ def test_v3_es_minimal_composes_only_active_calendar_and_operational_path() -> N
         "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
+        "current_state_historical_probe",
         "operational_persistence",
     ]
     assert "entity_analysis" not in keys

@@ -126,7 +126,7 @@ class GenerationTests(unittest.TestCase):
         manifest = load_manifest(CANONICAL, repository_root=REPOSITORY_ROOT)
         report = validate_source_census(manifest, repository_root=REPOSITORY_ROOT)
 
-        self.assertEqual(len(report.actor_registrations), 18)
+        self.assertEqual(len(report.actor_registrations), 19)
         self.assertEqual(report.checked_profiles, ("profile.v3-es-minimal",))
         self.assertGreaterEqual(len(report.contract_constants), 20)
 
@@ -134,7 +134,7 @@ class GenerationTests(unittest.TestCase):
         manifest = load_manifest(CANONICAL, repository_root=REPOSITORY_ROOT)
         selected = select_view(manifest, "view.complete-inventory")
 
-        self.assertEqual(len(selected.components), 35)
+        self.assertEqual(len(selected.components), 36)
         self.assertEqual(len(selected.tombstones), 5)
         self.assertEqual(selected.edges, ())
 

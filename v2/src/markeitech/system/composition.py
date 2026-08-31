@@ -331,6 +331,18 @@ def build_actor_plan(
             config.sessions.current_state_delivery.boundary_delivery_grace_ms
         ),
     }
+    current_state_probe_actor_id = (
+        "CURRENT-STATE-HISTORICAL-PROBE"
+        if config.historical.probe.enabled
+        and config.historical.probe.mode == "current_state_gated"
+        else None
+    )
+    allowed_current_state_requesters = [
+        "EVIDENCE-HEALTH",
+        "HISTORICAL-EVIDENCE-PLANNER",
+    ]
+    if current_state_probe_actor_id is not None:
+        allowed_current_state_requesters.append(current_state_probe_actor_id)
     registrations = [
         ActorRegistration(
             key="system_control",
@@ -360,10 +372,7 @@ def build_actor_plan(
                         config.sessions.maximum_calendars_per_request
                     ),
                     "current_state_delivery": current_state_delivery,
-                    "allowed_current_state_requesters": [
-                        "EVIDENCE-HEALTH",
-                        "HISTORICAL-EVIDENCE-PLANNER",
-                    ],
+                    "allowed_current_state_requesters": allowed_current_state_requesters,
                     "calendars": [
                         _canonical_calendar_payload(calendar)
                         for calendar in config.sessions.calendars
@@ -389,15 +398,18 @@ def build_actor_plan(
                         config.evidence_health.profile_checkpoint_samples
                     ),
                     "recency_profiles": list(prerequisites.evidence_recency_profiles),
-                    "projection_lookback_days": config.sessions.projection_lookback_days,
-                    "projection_lookahead_days": config.sessions.projection_lookahead_days,
-                    "expected_calendar_digests": {
-                        calendar.calendar_id: calendar.definition_digest
-                        for calendar in config.sessions.calendars
-                    },
                     "calendar_source": "SESSION-STATE",
                     "calendar_source_epoch": str(prerequisites.run_id),
-                    "projection_retry": projection_retry,
+                    "current_state_delivery": current_state_delivery,
+                    "calendar_expectations": [
+                        {
+                            "calendar_id": calendar.calendar_id,
+                            "definition_version": calendar.definition_version,
+                            "definition_digest": calendar.definition_digest,
+                            "definition_effective_from_ns": calendar.effective_from_ns,
+                        }
+                        for calendar in config.sessions.calendars
+                    ],
                     "policies": [
                         {
                             "feed_kind": policy.feed_kind,
@@ -1066,6 +1078,16 @@ def build_actor_plan(
                         "calendar_source": "SESSION-STATE",
                         "calendar_source_epoch": str(prerequisites.run_id),
                         "projection_retry": projection_retry,
+                        "current_state_delivery": current_state_delivery,
+                        "calendar_expectations": [
+                            {
+                                "calendar_id": calendar.calendar_id,
+                                "definition_version": calendar.definition_version,
+                                "definition_digest": calendar.definition_digest,
+                                "definition_effective_from_ns": calendar.effective_from_ns,
+                            }
+                            for calendar in config.sessions.calendars
+                        ],
                         "historical": {
                             "maximum_plan_requests": config.historical.maximum_plan_requests,
                             "maximum_observations_per_request": (
@@ -1134,30 +1156,72 @@ def build_actor_plan(
     )
     if config.historical.probe.enabled:
         probe = config.historical.probe
-        registrations.extend(
-            ActorRegistration(
-                key=f"historical_dependency_probe:{index}",
-                actor_id=actor_id,
-                config=ImportableActorConfig(
-                    actor_path=(
-                        "markeitech.system.historical_probe:HistoricalDependencyProbeActor"
+        if probe.mode == "current_state_gated":
+            registrations.append(
+                ActorRegistration(
+                    key="current_state_historical_probe",
+                    actor_id="CURRENT-STATE-HISTORICAL-PROBE",
+                    config=ImportableActorConfig(
+                        actor_path=(
+                            "markeitech.system.historical_probe:"
+                            "CurrentStateHistoricalDemandProbeActor"
+                        ),
+                        config_path=(
+                            "markeitech.system.historical_probe:"
+                            "CurrentStateHistoricalDemandProbeActorConfig"
+                        ),
+                        config={
+                            "actor_id": "CURRENT-STATE-HISTORICAL-PROBE",
+                            "calendar_expectations": [
+                                {
+                                    "calendar_id": calendar.calendar_id,
+                                    "definition_version": calendar.definition_version,
+                                    "definition_digest": calendar.definition_digest,
+                                    "definition_effective_from_ns": calendar.effective_from_ns,
+                                }
+                                for calendar in config.sessions.calendars
+                            ],
+                            "source_epoch": str(prerequisites.run_id),
+                            "current_state_delivery": current_state_delivery,
+                            "instrument_id": probe.instrument_id,
+                            "selector": probe.selector,
+                            "window": probe.window,
+                            "minimum_observations": probe.minimum_observations,
+                            "maximum_observations": probe.maximum_observations,
+                            "priority": probe.priority,
+                            "omit_initial_snapshot_request": (
+                                probe.omit_initial_snapshot_request
+                            ),
+                        },
                     ),
-                    config_path=(
-                        "markeitech.system.historical_probe:HistoricalDependencyProbeActorConfig"
-                    ),
-                    config={
-                        "actor_id": actor_id,
-                        "instrument_id": probe.instrument_id,
-                        "selector": probe.selector,
-                        "window": probe.window,
-                        "minimum_observations": probe.minimum_observations,
-                        "maximum_observations": probe.maximum_observations,
-                        "priority": probe.priority,
-                    },
                 ),
             )
-            for index, actor_id in enumerate(probe.actor_ids, start=1)
-        )
+        else:
+            registrations.extend(
+                ActorRegistration(
+                    key=f"historical_dependency_probe:{index}",
+                    actor_id=actor_id,
+                    config=ImportableActorConfig(
+                        actor_path=(
+                            "markeitech.system.historical_probe:HistoricalDependencyProbeActor"
+                        ),
+                        config_path=(
+                            "markeitech.system.historical_probe:"
+                            "HistoricalDependencyProbeActorConfig"
+                        ),
+                        config={
+                            "actor_id": actor_id,
+                            "instrument_id": probe.instrument_id,
+                            "selector": probe.selector,
+                            "window": probe.window,
+                            "minimum_observations": probe.minimum_observations,
+                            "maximum_observations": probe.maximum_observations,
+                            "priority": probe.priority,
+                        },
+                    ),
+                )
+                for index, actor_id in enumerate(probe.actor_ids, start=1)
+            )
     if config.acquisition.native_consumer_probe_enabled:
         registrations.append(
             ActorRegistration(

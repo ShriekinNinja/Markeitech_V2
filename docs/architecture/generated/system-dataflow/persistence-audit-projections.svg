@@ -309,7 +309,7 @@
 <text xml:space="preserve" text-anchor="start" x="755.67" y="-429.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
 <text xml:space="preserve" text-anchor="start" x="561.17" y="-410.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.operational&#45;persistence</text>
 <text xml:space="preserve" text-anchor="start" x="561.17" y="-394.5" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: ALWAYS</text>
-<text xml:space="preserve" text-anchor="start" x="561.17" y="-378.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 18</text>
+<text xml:space="preserve" text-anchor="start" x="561.17" y="-378.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 19</text>
 </a>
 </g>
 </g>

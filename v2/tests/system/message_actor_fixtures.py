@@ -7,6 +7,7 @@ from threading import Event
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, CustomData, DataType
 
+from markeitech.acquisition import HistoricalRequestPlan
 from markeitech.intelligence import (
     COMPLETED_BAR_INPUT_TYPE_NAME,
     ENTITY_REVISION_TYPE_NAME,
@@ -23,7 +24,7 @@ from markeitech.intelligence import (
     MetricHealth,
     MetricValue,
 )
-from markeitech.intelligence.actors import SessionStateActor
+from markeitech.intelligence.actors import EvidenceHealthActor, SessionStateActor
 from markeitech.intelligence.calendar_messages import (
     CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
     CALENDAR_PROJECTION_RESPONSE_TYPE_NAME,
@@ -39,6 +40,11 @@ from markeitech.intelligence.calendar_messages import (
     CalendarTransition,
     CalendarTransitionV2,
 )
+from markeitech.intelligence.session_state_delivery import (
+    SessionStateDeliveryPhase,
+)
+from markeitech.system.historical_planner import HistoricalEvidencePlannerActor
+from markeitech.system.historical_probe import CurrentStateHistoricalDemandProbeActor
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STATUS_SIGNAL,
@@ -70,6 +76,11 @@ received_calendar_transitions_v2: list[CalendarTransitionV2] = []
 inspectable_session_state_actors: list[SessionStateActor] = []
 projection_requests_complete = Event()
 received_projection_requests: list[CalendarProjectionRequest] = []
+current_state_historical_plan_received = Event()
+received_current_state_historical_plans: list[HistoricalRequestPlan] = []
+inspectable_evidence_health_actors: list[EvidenceHealthActor] = []
+inspectable_historical_planner_actors: list[HistoricalEvidencePlannerActor] = []
+inspectable_current_state_historical_probes: list[CurrentStateHistoricalDemandProbeActor] = []
 
 
 class PersistenceReadyFixtureConfig(DataActorConfig):
@@ -232,7 +243,7 @@ class CalendarProjectionProbe(DataActor):
         self._projection_days = config.projection_days
         self._request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
         self._response_type = DataType(CALENDAR_PROJECTION_RESPONSE_TYPE_NAME)
-        self._transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
+        self._transition_type = DataType(CALENDAR_TRANSITION_V2_TYPE_NAME)
         self._requested = False
 
     def on_start(self) -> None:
@@ -241,8 +252,8 @@ class CalendarProjectionProbe(DataActor):
 
     def on_data(self, data) -> None:  # noqa: ANN001
         payload = data.data if isinstance(data, CustomData) else data
-        if isinstance(payload, CalendarTransition):
-            received_calendar_transitions.append(payload)
+        if isinstance(payload, CalendarTransitionV2):
+            received_calendar_transitions_v2.append(payload)
             if self._requested or payload.calendar_id != self._calendar_id:
                 return
             self._requested = True
@@ -337,14 +348,14 @@ class CalendarCurrentStateProbe(DataActor):
         payload = data.data if isinstance(data, CustomData) else data
         if isinstance(payload, CalendarTransitionV2):
             received_calendar_transitions_v2.append(payload)
-            return
-        if isinstance(payload, CalendarTransition):
-            received_calendar_transitions.append(payload)
             if self._request is not None or payload.calendar_id not in {
                 item.calendar_id for item in self._expectations
             }:
                 return
             self._create_and_publish_request()
+            return
+        if isinstance(payload, CalendarTransition):
+            received_calendar_transitions.append(payload)
             return
         if not isinstance(payload, CalendarStateSnapshotResponse):
             return
@@ -393,6 +404,35 @@ class CalendarCurrentStateProbe(DataActor):
             self._create_and_publish_request()
 
 
+class InspectableCurrentStateHistoricalDemandProbeActor(
+    CurrentStateHistoricalDemandProbeActor,
+):
+    """Expose the runtime acceptance probe's correlated transition and plan evidence."""
+
+    def __init__(self, config) -> None:  # noqa: ANN001
+        super().__init__(config)
+        inspectable_current_state_historical_probes.append(self)
+
+    def on_start(self) -> None:
+        super().on_start()
+        self.subscribe_data(DataType(CALENDAR_TRANSITION_TYPE_NAME))
+
+    def on_data(self, data) -> None:  # noqa: ANN001
+        payload = data.data if isinstance(data, CustomData) else data
+        if isinstance(payload, CalendarTransitionV2):
+            received_calendar_transitions_v2.append(payload)
+        elif isinstance(payload, CalendarTransition):
+            received_calendar_transitions.append(payload)
+        elif isinstance(payload, HistoricalRequestPlan) and payload.demand_id == self._demand_id:
+            received_current_state_historical_plans.append(payload)
+            current_state_historical_plan_received.set()
+        super().on_data(data)
+
+    def on_stop(self) -> None:
+        self.unsubscribe_data(DataType(CALENDAR_TRANSITION_TYPE_NAME))
+        super().on_stop()
+
+
 class MultiCalendarProjectionProbeConfig(DataActorConfig):
     def __new__(
         cls,
@@ -414,7 +454,7 @@ class MultiCalendarProjectionProbe(DataActor):
         self._projection_days = config.projection_days
         self._request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
         self._response_type = DataType(CALENDAR_PROJECTION_RESPONSE_TYPE_NAME)
-        self._transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
+        self._transition_type = DataType(CALENDAR_TRANSITION_V2_TYPE_NAME)
         self._requested = False
 
     def on_start(self) -> None:
@@ -423,7 +463,7 @@ class MultiCalendarProjectionProbe(DataActor):
 
     def on_data(self, data) -> None:  # noqa: ANN001
         payload = data.data if isinstance(data, CustomData) else data
-        if isinstance(payload, CalendarTransition):
+        if isinstance(payload, CalendarTransitionV2):
             if self._requested or payload.calendar_id not in self._calendar_ids:
                 return
             self._requested = True
@@ -478,6 +518,52 @@ class InspectableSessionStateActor(SessionStateActor):
     def __init__(self, config) -> None:  # noqa: ANN001
         super().__init__(config)
         inspectable_session_state_actors.append(self)
+
+
+class DropFirstSnapshotResponseSessionStateActor(SessionStateActor):
+    """Drop each requester's first snapshot response to exercise bounded recovery."""
+
+    def __init__(self, config) -> None:  # noqa: ANN001
+        super().__init__(config)
+        self._dropped_snapshot_requesters: set[str] = set()
+
+    def publish_data(self, data_type, data) -> None:  # noqa: ANN001
+        payload = data.data if isinstance(data, CustomData) else data
+        if (
+            isinstance(payload, CalendarStateSnapshotResponse)
+            and payload.requester not in self._dropped_snapshot_requesters
+        ):
+            self._dropped_snapshot_requesters.add(payload.requester)
+            return
+        super().publish_data(data_type, data)
+
+
+class InspectableEvidenceHealthActor(EvidenceHealthActor):
+    """Expose whether the production Evidence Health adapter reached synchronized state."""
+
+    def __init__(self, config) -> None:  # noqa: ANN001
+        super().__init__(config)
+        self.reached_session_live = False
+        inspectable_evidence_health_actors.append(self)
+
+    def _observe_session_snapshot(self, response: CalendarStateSnapshotResponse) -> None:
+        super()._observe_session_snapshot(response)
+        if self._session_state.phase is SessionStateDeliveryPhase.LIVE:
+            self.reached_session_live = True
+
+
+class InspectableHistoricalEvidencePlannerActor(HistoricalEvidencePlannerActor):
+    """Expose whether the production Historical Planner adapter reached synchronized state."""
+
+    def __init__(self, config) -> None:  # noqa: ANN001
+        super().__init__(config)
+        self.reached_session_live = False
+        inspectable_historical_planner_actors.append(self)
+
+    def _observe_session_snapshot(self, response: CalendarStateSnapshotResponse) -> None:
+        super()._observe_session_snapshot(response)
+        if self._session_state.phase is SessionStateDeliveryPhase.LIVE:
+            self.reached_session_live = True
 
 
 class EntityMetricPublisherConfig(DataActorConfig):

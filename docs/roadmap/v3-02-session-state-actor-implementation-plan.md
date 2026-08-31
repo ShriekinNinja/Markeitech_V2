@@ -1,7 +1,8 @@
 # V3-02 SessionStateActor Current-State Delivery Implementation Plan
 
 **Status:** Decisions accepted; Slice 1 committed as `d71551a`; Slice 2 committed as `2cb5761`;
-Slice 3 implemented and uncommitted for Markeitect review; Slices 4 and 5 remain unapproved
+Slice 3 committed as `e98e386`; Slice 4 complete for local review and uncommitted; Slice 5 remains
+unapproved
 
 **Planning branch:** `v3-02-session-state-snapshot-plan`
 
@@ -15,7 +16,7 @@ Slice 3 implemented and uncommitted for Markeitect review; Slices 4 and 5 remain
 
 | Decision | Accepted disposition |
 |---|---|
-| 1. Consumer cutover | Migrate only the active production consumers: `EvidenceHealthActor` and `HistoricalEvidencePlannerActor`. Disable `SessionMetricsActor`, Visual Debug, and dependent Entity Analysis. Add one test-only current-state historical-demand probe. Keep `OperationalPersistenceActor` as a transition audit sink. |
+| 1. Consumer cutover | Migrate only the active production consumers: `EvidenceHealthActor` and `HistoricalEvidencePlannerActor`. Disable `SessionMetricsActor`, Visual Debug, and dependent Entity Analysis. Add one disabled-by-default current-state historical-demand acceptance probe. Keep `OperationalPersistenceActor` as a transition audit sink. |
 | 2. Snapshot evaluation | For each admitted request, `SessionStateActor` reads its clock once and evaluates every requested calendar at that one owner-clock cut. |
 | 3. Producer identity | Do not add a producer-incarnation ID. One `SessionStateActor` construction is permitted per runtime run UUID; same-run replacement is unsupported. |
 | 4. Delivery configuration | Add one lean `[sessions.current_state_delivery]` block, separate from schedule-projection retry configuration. |
@@ -82,8 +83,8 @@ V3-02 may be marked implemented only when:
 - `SessionStateActor` answers bounded current-state requests with complete per-calendar outcomes;
 - `EvidenceHealthActor` and `HistoricalEvidencePlannerActor` subscribe before requesting, buffer
   within explicit limits, and install only gap-free reconciled state;
-- a test-only actor proves the current-state-to-historical-plan path without becoming runtime
-  architecture;
+- a disabled-by-default acceptance actor proves the current-state-to-historical-plan path through
+  explicit runtime composition without becoming a production analytical capability;
 - duplicate, stale, gap, conflict, overflow, timeout, definition, and stop behavior is explicit;
 - state-effective time and evaluated-as-of time remain distinct;
 - the schedule-projection and historical-planning contracts remain semantically unchanged;
@@ -107,8 +108,8 @@ ordering, provider-session correctness, or downstream analytical fitness.
 - one pure bounded subscribe-buffer-snapshot-reconcile state machine;
 - bounded retry, deadline, transition buffering, duplicate absorption, gap detection, and stop;
 - production adoption by `EvidenceHealthActor` and `HistoricalEvidencePlannerActor` only;
-- one test-only actor which synchronizes current state, publishes a symbolic historical demand,
-  and observes the real planner's exact output;
+- one opt-in acceptance actor which synchronizes current state, publishes a symbolic historical
+  demand, and observes the real planner's exact output;
 - a lean, typed, versioned current-state-delivery configuration block;
 - unchanged transition auditing by `OperationalPersistenceActor`;
 - focused unit, actor, composition, lifecycle, and disconnected integration evidence; and
@@ -145,11 +146,13 @@ SessionStateActor
 HistoricalEvidencePlannerActor
     `-- exact HistoricalRequestPlan ------------------> DataAcquisitionActor
 
-Test only:
+Opt-in runtime acceptance only (`historical.probe.enabled = true` and
+`mode = "current_state_gated"`):
 CurrentStateHistoricalDemandProbeActor
     |-- uses the production current-state reconciler
     |-- publishes one symbolic HistoricalDependencyDemand
-    `-- observes the real HistoricalRequestPlan
+    |-- observes the real HistoricalRequestPlan/readiness/batch path
+    `-- owns no provider request, persistence, or analytical capability
 
 Disabled:
 SessionMetricsActor -> VisualDebugCaptureActor -> visual artifacts
@@ -456,11 +459,14 @@ bounds.
 - Do not edit the ignored machine-local profile. Record that an operator must disable both Session
   Metrics and Entity Analysis there before launching it.
 
-### Test-only current-state historical-demand probe
+### Opt-in current-state historical-demand acceptance probe
 
-Add `CurrentStateHistoricalDemandProbeActor` under
-`v2/tests/system/message_actor_fixtures.py`. It never appears in production source, composition,
-tracked runtime profiles, or the architecture manifest as a runtime component.
+Add `CurrentStateHistoricalDemandProbeActor` beside the existing acceptance harness in
+`v2/src/markeitech/system/historical_probe.py`. It appears in runtime composition only when
+`historical.probe.enabled = true` and `historical.probe.mode = "current_state_gated"`. Both
+tracked profiles remain disabled; the V3 ES profile selects this mode and explicitly enables the
+bounded initial-request omission for a future separately authorized connected acceptance run.
+The existing `direct` mode preserves the Stage 9B probe behavior.
 
 The probe:
 
@@ -468,9 +474,11 @@ The probe:
 2. establishes reconciled current state;
 3. publishes one stable symbolic `HistoricalDependencyDemandEvent`;
 4. observes the real planner's `HistoricalRequestPlan` for its consumer/demand identity; and
-5. exposes deterministic success/failure state to the test harness.
+5. reports the correlated plan, readiness, transient batch, and bounded summary through logs;
+6. exposes deterministic state only through test-local instrumentation; and
+7. owns no provider API, persistence path, analytical output, or default enablement.
 
-It proves producer-before-consumer, consumer-before-producer, transition-before-response,
+It can prove producer-before-consumer, consumer-before-producer, transition-before-response,
 transition-after-response, duplicate, stale, gap, conflict, timeout, overflow, recovery, plan
 deduplication, and terminal-stop cases. It does not substitute for production adoption by Evidence
 Health and Historical Planner.
@@ -557,7 +565,7 @@ public-surface change is required.
 
 ### Slice 3: Producer, lifecycle, and lean configuration
 
-**Implementation status:** Complete for local review on the planning branch; uncommitted
+**Implementation status:** Committed as `e98e386`
 
 Files:
 
@@ -585,11 +593,25 @@ Deliver:
 
 ### Slice 4: Active consumers and end-to-end fixture
 
+**Implementation status:** Complete for local review on the planning branch; uncommitted
+
 Files:
 
 - `v2/src/markeitech/intelligence/actors.py` for Evidence Health;
+- `v2/src/markeitech/intelligence/session_state_delivery.py` for the bounded live-gap
+  resynchronization entry point;
+- `v2/src/markeitech/system/composition.py` for the already-approved delivery policy and exact
+  definition wiring to both consumers;
 - `v2/src/markeitech/system/historical_planner.py`;
+- `v2/src/markeitech/system/historical_probe.py` for the disabled-by-default live acceptance
+  adapter;
+- `v2/src/markeitech/system/config.py` and both tracked TOMLs for the strict `direct` versus
+  `current_state_gated` probe mode, explicit retry fault-injection option, and system schema 23;
+- `docs/architecture/system-dataflow.toml`, its generated artifacts, and the generator's exact
+  roster/inventory count tests for the conditional runtime component and current snapshot/v2
+  transition flows;
 - `v2/src/markeitech/system/persistence.py` for the mechanical transition-v2 mapping;
+- focused reconciliation, composition, and persistence regression tests;
 - `v2/tests/system/message_actor_fixtures.py`;
 - `v2/tests/system/test_message_delivery.py`;
 - existing evidence-health and historical-planner regression tests; and
@@ -600,10 +622,19 @@ Deliver:
 - one atomic transition-v1-to-v2 publication, consumer, and persistence cutover with no dual
   publication;
 - both active production consumers on one synchronization protocol;
-- test-only current-state-to-historical-plan coverage;
+- opt-in runtime current-state-to-historical-plan acceptance coverage, disabled in tracked
+  profiles;
 - the `13:36:00.650` to five completed one-minute bars alignment assertion;
 - no duplicate plan effect after duplicate/recovery inputs; and
 - no `SessionMetricsActor` production edit.
+
+The local implementation also corrects one transient-delivery mismatch exposed by the bounded
+Nautilus review: a producer may first observe attempt 2 or 3 when earlier local publications were
+missed, and authoring a READY response is not proof that the consumer observed it. The producer
+therefore retains exact-request replay while admitting the next sequential attempt through the
+configured attempt and elapsed bounds. The end-to-end fixture starts consumers before the
+producer, deterministically omits the test probe's first request, drops each requester's first
+produced response, and requires the probe to converge on attempt 3.
 
 ### Slice 5: Architecture and closure
 
@@ -660,7 +691,8 @@ Deliver:
 - Historical Planner preserves projection and symbolic-demand semantics;
 - repeated synchronization does not duplicate a historical plan;
 - a subsecond `as_of_ns` is aligned by the planner/resolver, never used raw as a bar boundary;
-- the test probe reaches the real planner but never enters production composition; and
+- the acceptance probe enters runtime composition only under the explicit disabled-by-default
+  `current_state_gated` historical-probe mode;
 - Operational Persistence records only transition audit facts.
 
 ### Deactivation and scope
@@ -681,7 +713,7 @@ Run disconnected verification only:
 2. config and composition tests for both tracked profiles;
 3. `SessionStateActor` lifecycle and one-cut tests;
 4. Evidence Health and Historical Planner regression tests;
-5. test-only current-state-to-plan integration tests;
+5. opt-in runtime current-state-to-plan integration tests;
 6. historical-window subsecond-alignment regression;
 7. persistence mapping tests;
 8. full non-PostgreSQL V2 test suite;
@@ -737,18 +769,19 @@ manufacture evidence for this stage.
 - [x] No producer-incarnation or requester-incarnation identity is added.
 - [x] Producer uses one owner-clock cut and retains exact state-effective plus evaluated-as-of time.
 - [x] Pure synchronization state is bounded and framework-independent.
-- [ ] Evidence Health and Historical Planner adopt it.
-- [ ] The test-only current-state historical-demand probe passes without production composition.
-- [ ] Historical schedule projection and request-plan semantics remain unchanged.
-- [ ] Operational Persistence remains transition-only; no snapshot durability is added.
+- [x] Evidence Health and Historical Planner adopt it.
+- [x] The disabled-by-default current-state historical-demand probe passes through explicit
+      acceptance composition without gaining production analytical authority.
+- [x] Historical schedule projection and request-plan semantics remain unchanged.
+- [x] Operational Persistence remains transition-only; no snapshot durability is added.
 - [x] Configuration schema and both tracked profiles migrate atomically.
-- [ ] Alternate-order, late-consumer, gap, conflict, overflow, timeout, failure-isolation, and stop
+- [x] Alternate-order, late-consumer, gap, conflict, overflow, timeout, failure-isolation, and stop
       evidence passes.
-- [x] Full disconnected suite, lint, diagram drift, and `git diff --check` pass for Slice 3.
-- [ ] Final diff contains no unrelated files, secrets, data, logs, local configuration, dependency,
+- [x] Full disconnected suite, lint, diagram drift, and `git diff --check` pass for Slice 4.
+- [x] Final diff contains no unrelated files, secrets, data, logs, local configuration, dependency,
       lockfile, provider, database, or external-service churn.
 - [ ] Current status, V3-02 review, V3-03 split review, and visual-debug status agree.
-- [x] Slice 3 implementation batch remains uncommitted for Markeitect review.
+- [x] Slice 4 implementation batch remains uncommitted for Markeitect review.
 - [ ] Connected acceptance runs only after separate explicit authorization.
 
 ## Kite Advisory Basis
@@ -761,10 +794,15 @@ complete accounting, terminal stop, and claim limits.
 Markeitect's accepted decisions supersede two earlier advisor recommendations:
 
 - the former three-consumer migration is replaced by two active production consumers plus one
-  test-only historical-demand probe because `SessionMetricsActor` is deliberately disabled; and
+  opt-in historical-demand acceptance probe because `SessionMetricsActor` is deliberately
+  disabled; and
 - the speculative producer-incarnation identity is rejected because current composition permits
   one producer per runtime run UUID and no same-run replacement.
 
-No new advisor consultation was required for this document revision. Advisors remain read-only and
-do not approve implementation, architecture, configuration values, connected acceptance, commit,
-integration, release, or product/trading decisions. Markeitect retains final authority.
+The existing Nautilus advisor was reused for one narrow read-only check before promoting the
+acceptance probe into conditional runtime composition. Its result constrained the implementation
+to native actor lifecycle and `CustomData` mechanics, exact requester admission, one bounded
+consumer-owned timer, no direct provider access, no persistence, and disabled tracked defaults.
+No new advisor was initialized. Advisors remain read-only and do not approve implementation,
+architecture, configuration values, connected acceptance, commit, integration, release, or
+product/trading decisions. Markeitect retains final authority.

@@ -93,7 +93,26 @@ class AcquisitionConfig:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalProbeConfig:
+    """Configure a disabled-by-default historical acceptance harness.
+
+    Attributes:
+        enabled: Whether composition admits the acceptance probe.
+        mode: ``direct`` for the Stage 9B probe set or ``current_state_gated`` for
+            one V3-02 probe which synchronizes before publishing its demand.
+        omit_initial_snapshot_request: Whether the current-state mode deliberately
+            omits attempt one to exercise bounded consumer retry.
+        actor_ids: Exact actor identities; current-state mode requires one.
+        instrument_id: Watchlist instrument used by the demand.
+        selector: Historical data selector.
+        window: Symbolic historical window.
+        minimum_observations: Minimum acceptable observation count.
+        maximum_observations: Maximum requested observation count.
+        priority: Demand priority from zero through one hundred.
+    """
+
     enabled: bool
+    mode: str
+    omit_initial_snapshot_request: bool
     actor_ids: tuple[str, ...]
     instrument_id: str
     selector: str
@@ -724,7 +743,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         root_keys,
         "root",
     )
-    if raw["schema_version"] != 22:
+    if raw["schema_version"] != 23:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -4153,6 +4172,8 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
         probe_values,
         {
             "enabled",
+            "mode",
+            "omit_initial_snapshot_request",
             "actor_ids",
             "instrument_id",
             "selector",
@@ -4195,6 +4216,26 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
     )
     if not actor_ids:
         raise ValueError("historical.probe.actor_ids must be non-empty")
+    mode = _enum_string(
+        probe_values["mode"],
+        {"current_state_gated", "direct"},
+        "historical.probe.mode",
+    )
+    omit_initial_snapshot_request = _bool(
+        probe_values["omit_initial_snapshot_request"],
+        "historical.probe.omit_initial_snapshot_request",
+    )
+    if mode == "current_state_gated" and actor_ids != (
+        "CURRENT-STATE-HISTORICAL-PROBE",
+    ):
+        raise ValueError(
+            "historical.probe.actor_ids must be exactly "
+            "CURRENT-STATE-HISTORICAL-PROBE in current_state_gated mode",
+        )
+    if mode == "direct" and omit_initial_snapshot_request:
+        raise ValueError(
+            "historical.probe.omit_initial_snapshot_request requires current_state_gated mode",
+        )
     return HistoricalConfig(
         maximum_plan_requests=maximum_plan_requests,
         maximum_observations_per_request=maximum_per_request,
@@ -4216,6 +4257,8 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
         ),
         probe=HistoricalProbeConfig(
             enabled=_bool(probe_values["enabled"], "historical.probe.enabled"),
+            mode=mode,
+            omit_initial_snapshot_request=omit_initial_snapshot_request,
             actor_ids=actor_ids,
             instrument_id=instrument_id,
             selector=_non_empty_string(probe_values["selector"], "historical.probe.selector"),

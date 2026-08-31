@@ -5,7 +5,7 @@
   "generator_sha256": "537f7b58eb756a3a978bb8271c3d5ee7875055daace2df0d14191ca06682b73c",
   "generator_version": "0.1.0",
   "manifest": "markeitech-v3-system-dataflow",
-  "manifest_sha256": "b17d8a6163d3122bf8532728db587168308003cff23f3b9e840090721455a624",
+  "manifest_sha256": "4ed12583bc3d79c841c4b56adeda47c5fcecb01c02b960dd80854b8fb303238f",
   "theme": {
     "id": "style.theme",
     "label": "Markeitech polished dark theme v2"
@@ -33,11 +33,11 @@
         "complete-inventory.svg"
       ],
       "id": "view.complete-inventory",
-      "nodes": 40
+      "nodes": 41
     },
     {
       "capabilities": 2,
-      "edges": 26,
+      "edges": 28,
       "files": [
         "current-runtime.dot",
         "current-runtime.md",
@@ -61,7 +61,7 @@
     },
     {
       "capabilities": 5,
-      "edges": 18,
+      "edges": 17,
       "files": [
         "metrics-entities-intelligence.dot",
         "metrics-entities-intelligence.md",
@@ -85,7 +85,7 @@
     },
     {
       "capabilities": 6,
-      "edges": 23,
+      "edges": 24,
       "files": [
         "provider-canonical-data.dot",
         "provider-canonical-data.md",

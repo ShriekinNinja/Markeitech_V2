@@ -311,6 +311,46 @@ def current_snapshot_request(state: SessionStateDeliveryState) -> CalendarStateS
     )
 
 
+def resynchronize_session_state_cycle(
+    state: SessionStateDeliveryState,
+    *,
+    now_ns: int,
+    policy: SessionStateDeliveryPolicy,
+) -> SessionStateDeliveryState:
+    """Start a fresh bounded cycle after a live-stream gap or overflow.
+
+    This entry point is deliberately narrower than retry. It cannot restart a failed snapshot,
+    conflict, stopped state, or an arbitrary degraded state. A newly observed live-stream gap has
+    no useful relationship to the elapsed budget of the startup cycle which originally installed
+    the watermark, so it receives a new generation and bounded elapsed budget.
+
+    Args:
+        state: Degraded state produced by live transition reconciliation.
+        now_ns: Current UTC Unix nanoseconds from the consumer clock.
+        policy: Bounded policy whose version must match the state.
+
+    Returns:
+        A fresh ``WAITING`` cycle, or the unchanged state when resynchronization is not admissible.
+    """
+
+    if state.phase is not SessionStateDeliveryPhase.DEGRADED or state.terminal_code not in {
+        "revision_gap",
+        "buffer_overflow",
+    }:
+        return state
+    restartable = replace(
+        state,
+        phase=SessionStateDeliveryPhase.LIVE,
+        accepted_response=None,
+    )
+    return start_session_state_cycle(
+        restartable,
+        calendar_expectations=state.calendar_expectations,
+        now_ns=now_ns,
+        policy=policy,
+    )
+
+
 def observe_session_transition(
     state: SessionStateDeliveryState,
     transition: CalendarTransitionV2,

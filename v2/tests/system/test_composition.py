@@ -94,6 +94,13 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "maximum_total_buffered_transitions": 32,
         "boundary_delivery_grace_ms": 2000,
     }
+    evidence_health = next(item for item in plan if item.key == "evidence_health")
+    assert evidence_health.config.config["current_state_delivery"] == (
+        session_state.config.config["current_state_delivery"]
+    )
+    assert {
+        item["calendar_id"] for item in evidence_health.config.config["calendar_expectations"]
+    } == {calendar.calendar_id for calendar in _config().sessions.calendars}
     acquisition = next(item for item in plan if item.key == "data_acquisition")
     assert acquisition.config.config["actor_id"] == "DATA-ACQUISITION"
     assert acquisition.config.config["instrument_ids"] == list(_config().instrument_ids)
@@ -119,6 +126,12 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "cbot_equity",
         "cme_energy",
     }
+    assert planner.config.config["current_state_delivery"] == (
+        session_state.config.config["current_state_delivery"]
+    )
+    assert planner.config.config["calendar_expectations"] == (
+        evidence_health.config.config["calendar_expectations"]
+    )
     watchlist = next(item for item in plan if item.key == "watchlist")
     assert watchlist.config.config["consumer_retry_interval_ms"] == 1000
     assert watchlist.config.config["members"] == [
@@ -273,6 +286,7 @@ def test_actor_plan_adds_enabled_historical_dependency_probe() -> None:
     plan = build_actor_plan(config, _prerequisites())
 
     probes = [item for item in plan if item.key.startswith("historical_dependency_probe:")]
+    session_state = next(item for item in plan if item.key == "session_state")
     assert [probe.actor_id for probe in probes] == [
         "HISTORICAL-PROBE-A",
         "HISTORICAL-PROBE-B",
@@ -286,6 +300,43 @@ def test_actor_plan_adds_enabled_historical_dependency_probe() -> None:
         "maximum_observations": 10,
         "priority": 10,
     }
+    assert session_state.config.config["allowed_current_state_requesters"] == [
+        "EVIDENCE-HEALTH",
+        "HISTORICAL-EVIDENCE-PLANNER",
+    ]
+
+
+def test_actor_plan_adds_one_enabled_current_state_historical_probe() -> None:
+    config = _config()
+    config = replace(
+        config,
+        historical=replace(
+            config.historical,
+            probe=replace(
+                config.historical.probe,
+                enabled=True,
+                mode="current_state_gated",
+                omit_initial_snapshot_request=True,
+                actor_ids=("CURRENT-STATE-HISTORICAL-PROBE",),
+            ),
+        ),
+    )
+
+    prerequisites = _prerequisites()
+    plan = build_actor_plan(config, prerequisites)
+
+    probe = next(item for item in plan if item.key == "current_state_historical_probe")
+    session_state = next(item for item in plan if item.key == "session_state")
+    assert probe.actor_id == "CURRENT-STATE-HISTORICAL-PROBE"
+    assert probe.config.config["source_epoch"] == str(prerequisites.run_id)
+    assert probe.config.config["omit_initial_snapshot_request"] is True
+    assert probe.config.config["calendar_expectations"]
+    assert session_state.config.config["allowed_current_state_requesters"] == [
+        "EVIDENCE-HEALTH",
+        "HISTORICAL-EVIDENCE-PLANNER",
+        "CURRENT-STATE-HISTORICAL-PROBE",
+    ]
+    assert not any(item.key.startswith("historical_dependency_probe:") for item in plan)
 
 
 def test_actor_plan_adds_enabled_native_consumer_probe() -> None:

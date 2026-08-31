@@ -15,7 +15,7 @@
 # analytical defaults and must be reviewed before their owning engine is enabled.
 # Never place secrets in this file; local secrets belong in the ignored v2/.env.
 
-schema_version = 22
+schema_version = 23
 
 [runtime]
 name = "MARKEITECH-V3-ES-PROGRESSIVE-001"
@@ -222,16 +222,18 @@ maximum_attempts = 1
 retry_backoff_ms = 500
 poll_interval_ms = 100
 
-# V3 REMOVAL / TEST-TOOL RELOCATION CANDIDATE — NOT YET AUTHORIZED FOR DELETION:
-# This two-consumer one-minute-history probe is a completed Stage 9B acceptance harness, not an
-# analytical warmup definition. V3 used one probe consumer for exactly one five-bar historical
-# calibration and returned it to disabled after READY 5/5. The result does not accept the probe as a
-# production capability or close value-level historical/live parity. Future history must be
-# declared by the exact reviewed analytical capability; preserve deterministic tests and historical
-# evidence before removing the probe from the production configuration.
+# V3-02 TEMPORARY CONNECTED ACCEPTANCE HARNESS — CURRENTLY ENABLED:
+# This one-shot probe deliberately omits snapshot attempt 1, synchronizes through the
+# production SessionStateActor protocol, then publishes one five-bar symbolic historical demand
+# through the normal planner/acquisition owners. It owns no provider API, persistence, analytical
+# output, or production capability. Keep it available for bounded V3-02 live checks until a
+# separately reviewed change disables or removes it; one successful run does not establish general
+# parity.
 [historical.probe]
-enabled = false
-actor_ids = ["HISTORICAL-PROBE-A"]
+enabled = true
+mode = "current_state_gated"
+omit_initial_snapshot_request = true
+actor_ids = ["CURRENT-STATE-HISTORICAL-PROBE"]
 instrument_id = "ESU6.CME"
 selector = "1-MINUTE-LAST-EXTERNAL"
 window = "recent_completed"

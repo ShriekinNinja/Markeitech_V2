@@ -18,6 +18,7 @@ from markeitech.intelligence.session_state_delivery import (
     current_snapshot_request,
     observe_session_snapshot,
     observe_session_transition,
+    resynchronize_session_state_cycle,
     schedule_session_state_retry,
     start_session_state_cycle,
     stop_session_state_delivery,
@@ -244,6 +245,23 @@ def test_out_of_order_contiguous_transitions_converge_without_skipping_a_gap() -
     assert recovered.state.phase is SessionStateDeliveryPhase.LIVE
     assert recovered.state.watermarks[0].revision == 4
     assert recovered.state.buffered_transitions == ()
+
+
+def test_live_gap_starts_a_fresh_bounded_resynchronization_cycle() -> None:
+    live = _live()
+    gap = observe_session_transition(live, _transition(4), policy=_policy())
+
+    restarted = resynchronize_session_state_cycle(
+        gap.state,
+        now_ns=100,
+        policy=_policy(),
+    )
+
+    assert restarted.phase is SessionStateDeliveryPhase.WAITING
+    assert restarted.generation == live.generation + 1
+    assert restarted.attempt == 1
+    assert restarted.started_at_ns == 100
+    assert restarted.buffered_transitions == ()
 
 
 def test_definition_source_and_capacity_fail_closed_without_dropping_buffered_data() -> None:

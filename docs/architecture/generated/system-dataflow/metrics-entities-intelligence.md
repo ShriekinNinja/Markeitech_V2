@@ -41,14 +41,13 @@ Show implemented metrics/state and profile-disabled entity capabilities with the
 
 | ID | Source | Target | Category | Contract | Transport | Required | Condition | Delivery |
 |---|---|---|---|---|---|---|---|---|
-| `edge.calendar-request-health` | `actor.evidence-health` | `actor.session-state` | query | `contract.calendar-projection-request` | nautilus_custom_data | yes | always | unknown |
+| `edge.calendar-request-health` | `actor.evidence-health` | `actor.session-state` | query | `contract.calendar-state-snapshot-request` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-request-metrics` | `actor.session-metrics` | `actor.session-state` | query | `contract.calendar-projection-request` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-request-planner` | `actor.historical-planner` | `actor.session-state` | query | `contract.calendar-projection-request` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-response-health` | `actor.session-state` | `actor.evidence-health` | response | `contract.calendar-projection-response` | nautilus_custom_data | yes | always | unknown |
+| `edge.calendar-response-health` | `actor.session-state` | `actor.evidence-health` | response | `contract.calendar-state-snapshot-response` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-response-metrics` | `actor.session-state` | `actor.session-metrics` | response | `contract.calendar-projection-response` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-response-planner` | `actor.session-state` | `actor.historical-planner` | response | `contract.calendar-projection-response` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-transition-health` | `actor.session-state` | `actor.evidence-health` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-transition-metrics` | `actor.session-state` | `actor.session-metrics` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-transition-planner` | `actor.session-state` | `actor.historical-planner` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
 | `edge.completed-bars-session-entities` | `actor.session-metrics` | `actor.session-reference-entities` | publication | `contract.completed-bar` | nautilus_custom_data | no | metrics.entity_analysis.enabled | unknown |
 | `edge.completed-bars-visual` | `actor.session-metrics` | `actor.visual-debug` | projection | `contract.completed-bar` | nautilus_custom_data | yes | visual_debug_capture.enabled | unknown |
