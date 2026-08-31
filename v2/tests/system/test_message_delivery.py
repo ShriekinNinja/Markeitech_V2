@@ -279,7 +279,7 @@ def test_calendar_consumers_stop_after_bounded_correlated_timeouts() -> None:
             operational_persistence_ready=True,
         ),
     )
-    keys = {"evidence_health", "session_metrics", "historical_evidence_planner"}
+    keys = {"evidence_health", "historical_evidence_planner"}
     registrations = [item for item in plan if item.key in keys]
     requesters = [item.actor_id for item in registrations]
     node = LiveNode.builder(
@@ -530,6 +530,10 @@ def test_completed_bars_project_to_market_structure_revisions(tmp_path: Path) ->
     config_path = tmp_path / "market-structure-message-config.toml"
     config_path.write_text(
         source.replace(
+            "[metrics.session_measurements]\nenabled = false",
+            "[metrics.session_measurements]\nenabled = true",
+            1,
+        ).replace(
             "[metrics.entity_analysis]\nenabled = false",
             "[metrics.entity_analysis]\nenabled = true",
         ).replace("definitions = []", definitions),

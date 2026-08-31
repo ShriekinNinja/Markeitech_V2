@@ -8,7 +8,7 @@ from markeitech.system.composition import StartupPrerequisites, build_actor_plan
 from markeitech.system.config import load_system_config
 
 
-def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None:
+def test_v3_es_minimal_config_disables_faulty_session_metrics_surface() -> None:
     config = load_system_config("v2/config/system.v3-es-minimal.toml")
     plan = build_actor_plan(
         config,
@@ -20,7 +20,6 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
 
     session_state = next(item for item in plan if item.key == "session_state")
     acquisition = next(item for item in plan if item.key == "data_acquisition")
-    session_metrics = next(item for item in plan if item.key == "session_metrics")
     planner = next(item for item in plan if item.key == "historical_evidence_planner")
     evidence_health = next(item for item in plan if item.key == "evidence_health")
     assert len(session_state.config.config["calendars"]) == 1
@@ -29,10 +28,8 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
         for calendar in session_state.config.config["calendars"]
     )
     assert "calendars" not in acquisition.config.config
-    assert "calendars" not in session_metrics.config.config
-    assert session_metrics.config.config["expected_calendar_digests"]
     assert planner.config.config["expected_calendar_digests"]
-    for registration in (evidence_health, session_metrics, planner):
+    for registration in (evidence_health, planner):
         assert registration.config.config["calendar_source"] == "SESSION-STATE"
         assert registration.config.config["calendar_source_epoch"] == (
             "00000000-0000-0000-0000-000000000001"
@@ -101,7 +98,7 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     assert config.historical.probe.minimum_observations == 5
     assert config.historical.probe.maximum_observations == 5
     assert config.metrics.quote_quality.enabled is False
-    assert config.metrics.session_measurements.enabled is True
+    assert config.metrics.session_measurements.enabled is False
     completed_bars = config.metrics.session_measurements.completed_bars
     assert config.metrics.session_measurements.parameter_version == 2
     assert config.metrics.session_measurements.parameter_source == (
@@ -128,7 +125,7 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     assert completed_bars.maximum_retained_observations == 1000
     assert completed_bars.maximum_output_age_ms == 120000
     assert config.metrics.entity_analysis.enabled is False
-    assert config.visual_debug_capture.enabled is True
+    assert config.visual_debug_capture.enabled is False
     assert config.visual_debug_capture.configuration_identity == (
         "v3-es-5m-historical-60-review-v1-20260828T110307Z"
     )
@@ -144,8 +141,6 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
         "system_control",
         "session_state",
         "evidence_health",
-        "visual_debug_capture",
-        "session_metrics",
         "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
@@ -153,7 +148,7 @@ def test_v3_es_minimal_config_activates_only_completed_bar_visual_test() -> None
     ]
 
 
-def test_v3_completed_bar_review_composes_only_approved_foundation_and_projection() -> None:
+def test_v3_es_minimal_composes_only_active_calendar_and_operational_path() -> None:
     config = load_system_config("v2/config/system.v3-es-minimal.toml")
 
     plan = build_actor_plan(
@@ -169,14 +164,11 @@ def test_v3_completed_bar_review_composes_only_approved_foundation_and_projectio
         "system_control",
         "session_state",
         "evidence_health",
-        "visual_debug_capture",
-        "session_metrics",
         "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
         "operational_persistence",
     ]
     assert "entity_analysis" not in keys
-    session_metrics = next(item for item in plan if item.key == "session_metrics")
-    assert "visual_snapshot_enabled" not in session_metrics.config.config
-    assert "visual_snapshot_maximum_intervals" not in session_metrics.config.config
+    assert "session_metrics" not in keys
+    assert "visual_debug_capture" not in keys

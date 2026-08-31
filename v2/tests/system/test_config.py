@@ -515,6 +515,16 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.watchlist.members[0].capabilities == ("top_of_book", "watchlist_last")
 
 
+def test_tracked_example_disables_faulty_session_metrics_surface() -> None:
+    root = Path(__file__).parents[2]
+
+    config = load_system_config(root / "config/system.example.toml")
+
+    assert config.metrics.session_measurements.enabled is False
+    assert config.metrics.entity_analysis.enabled is False
+    assert config.visual_debug_capture.enabled is False
+
+
 def test_rejects_completed_bar_historical_selector_interval_mismatch(
     tmp_path: Path,
 ) -> None:

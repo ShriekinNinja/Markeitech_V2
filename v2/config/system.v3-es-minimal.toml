@@ -63,16 +63,13 @@ request_timeout_seconds = 5
 queue_capacity = 32
 ping_critical_resource_alerts = true
 
-# V3 PASSIVE CONNECTED VISUAL TEST — ACTIVE, NOT YET ACCEPTED:
-# This actor only observes canonical bars and metrics which normal SessionMetrics operation already
-# publishes. Enabling it does not alter the watchlist, provider demands, historical boundary, live
-# subscriptions, calculations, retention, persistence, or lifecycle. Because Nautilus pub/sub has
-# no startup replay guarantee, a late subscription or natural historical/live seam can yield a
-# prominently partial or gapped diagnostic artifact. The observer must show that fact; it must not
-# repair the runtime to manufacture a preferred chart. The UTC-stamped identity below is an
-# operator label, not a configuration-file digest.
+# V3 PASSIVE CONNECTED VISUAL TEST — DISABLED WITH SESSION METRICS:
+# The retained values describe the historical accepted debug profile only. The observer remains
+# disabled until a separately reviewed completed-bar and metric producer replaces the faulty
+# SessionMetricsActor. Existing artifacts remain historical evidence and are not current runtime
+# output. The UTC-stamped identity below is an operator label, not a configuration-file digest.
 [visual_debug_capture]
-enabled = true
+enabled = false
 configuration_identity = "v3-es-5m-historical-60-review-v1-20260828T110307Z"
 instrument_id = "ESU6.CME"
 analytical_profile_id = "cme_equity_primary"
@@ -299,7 +296,7 @@ evidence_snapshot_retry_interval_ms = 1000
 priority = 50
 
 [metrics.session_measurements]
-enabled = true
+enabled = false
 required_watchlist_capability = "watchlist_last"
 parameter_version = 2
 # Reviewed completed-bar foundation identity for the 60-bar five-minute historical-only test.

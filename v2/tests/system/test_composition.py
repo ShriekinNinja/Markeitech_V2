@@ -33,6 +33,28 @@ def _config():  # noqa: ANN202
     return load_system_config(root / "config/system.example.toml")
 
 
+def _with_session_metrics_enabled(config):  # noqa: ANN001, ANN202
+    return replace(
+        config,
+        metrics=replace(
+            config.metrics,
+            session_measurements=replace(
+                config.metrics.session_measurements,
+                enabled=True,
+            ),
+        ),
+    )
+
+
+def _session_metrics_enabled_source() -> str:
+    root = Path(__file__).parents[2]
+    return (root / "config/system.example.toml").read_text().replace(
+        "[metrics.session_measurements]\nenabled = false",
+        "[metrics.session_measurements]\nenabled = true",
+        1,
+    )
+
+
 def _prerequisites(ready: bool = True) -> StartupPrerequisites:
     return StartupPrerequisites(
         run_id=uuid4(),
@@ -49,7 +71,6 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "evidence_health",
         "discord_health",
         "quote_quality_metrics",
-        "session_metrics",
         "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
@@ -164,7 +185,6 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "session_state",
         "evidence_health",
         "quote_quality_metrics",
-        "session_metrics",
         "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
@@ -188,7 +208,7 @@ def test_actor_plan_omits_disabled_runtime_resource_telemetry() -> None:
 
 
 def test_actor_plan_adds_visual_debug_capture_before_session_metrics() -> None:
-    config = _config()
+    config = _with_session_metrics_enabled(_config())
     config = replace(
         config,
         watchlist=replace(config.watchlist, members=(config.watchlist.members[0],)),
@@ -274,17 +294,7 @@ def test_actor_plan_adds_enabled_native_consumer_probe() -> None:
 
 
 def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> None:
-    config = _config()
-    config = replace(
-        config,
-        metrics=replace(
-            config.metrics,
-            session_measurements=replace(
-                config.metrics.session_measurements,
-                enabled=True,
-            ),
-        ),
-    )
+    config = _with_session_metrics_enabled(_config())
 
     plan = build_actor_plan(config, _prerequisites())
 
@@ -402,8 +412,7 @@ def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> Non
 
 
 def test_actor_plan_adds_enabled_session_reference_entity_owner(tmp_path: Path) -> None:
-    root = Path(__file__).parents[2]
-    source = (root / "config/system.example.toml").read_text()
+    source = _session_metrics_enabled_source()
     definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
     path = tmp_path / "system.toml"
     path.write_text(
@@ -433,8 +442,7 @@ def test_actor_plan_adds_enabled_session_reference_entity_owner(tmp_path: Path) 
 
 
 def test_actor_plan_adds_only_runtime_bound_market_state_definitions(tmp_path: Path) -> None:
-    root = Path(__file__).parents[2]
-    source = (root / "config/system.example.toml").read_text()
+    source = _session_metrics_enabled_source()
     definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
     path = tmp_path / "system.toml"
     path.write_text(
@@ -460,8 +468,7 @@ def test_actor_plan_adds_only_runtime_bound_market_state_definitions(tmp_path: P
 
 
 def test_actor_plan_rejects_market_state_metric_without_runtime_producer(tmp_path: Path) -> None:
-    root = Path(__file__).parents[2]
-    source = (root / "config/system.example.toml").read_text()
+    source = _session_metrics_enabled_source()
     definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
     definitions = definitions.replace(
         "rolling.fast.context_45m.range_percentile_recent",
@@ -481,8 +488,7 @@ def test_actor_plan_rejects_market_state_metric_without_runtime_producer(tmp_pat
 
 
 def test_actor_plan_rejects_entity_metric_without_configured_producer(tmp_path: Path) -> None:
-    root = Path(__file__).parents[2]
-    source = (root / "config/system.example.toml").read_text()
+    source = _session_metrics_enabled_source()
     definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
     definitions = definitions.replace(
         "opening_range.cme_equity_primary.opening_range_fast.high",

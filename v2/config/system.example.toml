@@ -180,8 +180,10 @@ demand_retry_interval_ms = 1000
 evidence_snapshot_retry_interval_ms = 1000
 priority = 50
 
+# Retained as a complete dormant schema for focused tests and the separately planned replacement.
+# Normal runtime composition must not activate the faulty combined SessionMetricsActor.
 [metrics.session_measurements]
-enabled = true
+enabled = false
 required_watchlist_capability = "watchlist_last"
 parameter_version = 1
 parameter_source = "operator-reviewed-config"
