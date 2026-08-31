@@ -12,6 +12,8 @@ type StreamKey = tuple[str, str, str]
 
 
 class FeedKind(StrEnum):
+    """Provider-neutral native feed categories supported by acquisition demand."""
+
     INSTRUMENT = "instrument"
     TRADES = "trades"
     QUOTES = "quotes"
@@ -23,6 +25,8 @@ class FeedKind(StrEnum):
 
 
 class HistoricalWindow(StrEnum):
+    """Symbolic time-window identities accepted by historical planning."""
+
     PREVIOUS_RTH = "previous_rth"
     PREVIOUS_GTH_OVERNIGHT = "previous_gth_overnight"
     CURRENT_OVERNIGHT = "current_overnight"
@@ -42,6 +46,8 @@ class HistoricalWindow(StrEnum):
 
 
 class DemandOwnerKind(StrEnum):
+    """Kinds of components authorized to identify an observation-demand owner."""
+
     BOOTSTRAP = "bootstrap"
     WATCHLIST = "watchlist"
     OPERATOR = "operator"
@@ -50,6 +56,8 @@ class DemandOwnerKind(StrEnum):
 
 
 class AcquisitionLifecycleState(StrEnum):
+    """Observable states in a logical acquisition demand's lifecycle."""
+
     REQUESTED = "REQUESTED"
     ACCEPTED = "ACCEPTED"
     SUBSCRIBED = "SUBSCRIBED"
@@ -63,6 +71,8 @@ class AcquisitionLifecycleState(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class DemandOwner:
+    """Identify the component responsible for one observation demand."""
+
     kind: DemandOwnerKind
     owner_id: str
 
@@ -74,6 +84,8 @@ class DemandOwner:
 
 @dataclass(frozen=True, slots=True)
 class FeedRequirement:
+    """Bind one provider-neutral feed specification to an exact instrument."""
+
     instrument_id: str
     kind: FeedKind
     selector: str = "default"
@@ -98,6 +110,8 @@ class FeedRequirement:
 
 @dataclass(frozen=True, slots=True)
 class CapabilityFeedRequirement:
+    """Declare an instrument-independent live-feed need for a capability."""
+
     kind: FeedKind
     selector: str = "default"
     parameters: Mapping[str, RequirementParameter] | None = None
@@ -127,6 +141,12 @@ class CapabilityFeedRequirement:
 
 @dataclass(frozen=True, slots=True)
 class CapabilityHistoricalRequirement:
+    """Declare one bounded historical-bar need for a capability.
+
+    Observation bounds are counts. Window parameters retain the symbolic
+    planning inputs; feed parameters are passed to the provider boundary.
+    """
+
     kind: FeedKind
     selector: str
     window: HistoricalWindow
@@ -171,6 +191,8 @@ class CapabilityHistoricalRequirement:
 
 @dataclass(frozen=True, slots=True)
 class CapabilityDeclaration:
+    """Version the live and historical evidence needs of one capability."""
+
     capability_id: str
     version: int
     live_feeds: tuple[CapabilityFeedRequirement, ...] = ()
@@ -205,6 +227,12 @@ class CapabilityDeclaration:
 
 @dataclass(frozen=True, slots=True)
 class ObservationDemand:
+    """Represent one consumer's expiring request for a native observation stream.
+
+    ``expires_at`` and the ``now`` value supplied to :meth:`is_expired` are
+    normalized to UTC. Priority is bounded from zero through 100.
+    """
+
     demand_id: str
     owner: DemandOwner
     requirement: FeedRequirement
@@ -238,6 +266,8 @@ class ObservationDemand:
 
 @dataclass(frozen=True, slots=True)
 class ProviderDemand:
+    """Combine compatible consumer demands into one provider-facing requirement."""
+
     requirement: FeedRequirement
     consumer_ids: tuple[str, ...]
     priority: int
@@ -245,10 +275,12 @@ class ProviderDemand:
 
 
 class DemandConflictError(ValueError):
-    pass
+    """Report incompatible reuse of a demand or logical stream identity."""
 
 
 class DemandReconciler:
+    """Reconcile many logical consumers into deterministic provider demands."""
+
     def __init__(self) -> None:
         self._demands: dict[str, ObservationDemand] = {}
 

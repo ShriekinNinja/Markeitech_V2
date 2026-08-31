@@ -696,6 +696,8 @@ class PersistenceConfig:
 
 @dataclass(frozen=True, slots=True)
 class SystemConfig:
+    """Hold the fully validated, immutable V2 runtime configuration."""
+
     schema_version: int
     runtime: RuntimeConfig
     ib: InteractiveBrokersConfig
@@ -717,6 +719,23 @@ class SystemConfig:
 
 
 def load_system_config(path: str | Path) -> SystemConfig:
+    """Load and validate one schema-versioned V2 TOML configuration.
+
+    Relative filesystem paths are resolved against the configuration file's
+    directory. The loader performs no provider, database, or runtime connection.
+
+    Args:
+        path: Filesystem path to the V2 TOML configuration.
+
+    Returns:
+        The normalized immutable system configuration.
+
+    Raises:
+        OSError: If the configuration file cannot be opened.
+        tomllib.TOMLDecodeError: If the file is not valid TOML.
+        ValueError: If schema identity, fields, values, or cross-references are invalid.
+    """
+
     config_path = Path(path)
     with config_path.open("rb") as file:
         raw = tomllib.load(file)

@@ -46,6 +46,7 @@ OPENING_RANGE_FIELDS = (
     "distance_below_low_ratio",
     "coverage_ratio",
 )
+"""Ordered metric-field suffixes for configured opening-range windows."""
 POWER_HOUR_FIELDS = (
     "start_ns",
     "end_ns",
@@ -61,10 +62,13 @@ POWER_HOUR_FIELDS = (
     "directional_efficiency",
     "coverage_ratio",
 )
+"""Ordered metric-field suffixes for configured power-hour windows."""
 
 
 @dataclass(frozen=True, slots=True)
 class AnalyticalWindowPolicy:
+    """Configure a calendar-relative analytical window and its evidence bounds."""
+
     profile_id: str
     profile_version: int
     window_id: str
@@ -172,6 +176,8 @@ class AnalyticalWindowPolicy:
 
 @dataclass(frozen=True, slots=True)
 class AnalyticalWindowSpec:
+    """Resolve one analytical window to an exact session and UTC nanosecond range."""
+
     policy: AnalyticalWindowPolicy
     session_id: str
     start_ns: int
@@ -187,6 +193,8 @@ class AnalyticalWindowSpec:
 
 @dataclass(frozen=True, slots=True)
 class AnalyticalWindowSummary:
+    """Summarize one analytical window with coverage, fidelity, and bar lineage."""
+
     policy: AnalyticalWindowPolicy
     session_id: str
     start_ns: int
@@ -398,6 +406,12 @@ def resolve_analytical_window(
     *,
     session_id: str,
 ) -> AnalyticalWindowSpec:
+    """Resolve a configured window against its exact calendar session phase.
+
+    Raises:
+        ValueError: If the phase mismatches or the configured window lies outside it.
+    """
+
     if session.phase != policy.anchor_phase:
         raise ValueError("session phase does not match analytical window anchor")
     anchor_ns = session.start_ns if policy.anchor_boundary == "start" else session.end_ns
@@ -444,6 +458,8 @@ def resolve_historical_analytical_window(
 def analytical_window_metric_definitions(
     policies: tuple[AnalyticalWindowPolicy, ...],
 ) -> tuple[MetricDefinition, ...]:
+    """Build metric definitions for configured opening-range and power-hour windows."""
+
     definitions: list[MetricDefinition] = []
     for policy in policies:
         historical = CapabilityHistoricalRequirement(
@@ -578,6 +594,8 @@ def calculate_analytical_window_metrics(
     revision: int,
     missing_reason: str = "window_not_started",
 ) -> tuple[MetricValue, ...]:
+    """Calculate one analytical window's metrics or explicit unavailable values."""
+
     _text(instrument_id, "instrument_id")
     raw = _values(policy, summary, missing_reason)
     observed_ns = summary.observed_ts_ns if summary is not None else calculated_ts_ns
@@ -616,6 +634,8 @@ def calculate_analytical_window_metrics(
 
 
 def analytical_window_value_signature(value: MetricValue) -> tuple[object, ...]:
+    """Return fields that determine whether a window metric changed meaningfully."""
+
     return (
         value.metric_id,
         value.session_id,

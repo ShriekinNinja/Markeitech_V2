@@ -9,6 +9,8 @@ from markeitech.acquisition.historical import HistoricalRequest
 
 
 class NativeHistoricalActor(Protocol):
+    """Nautilus actor operation required to request native historical bars."""
+
     def request_bars(
         self,
         bar_type: BarType,
@@ -21,6 +23,12 @@ class NativeHistoricalActor(Protocol):
 
 
 class NautilusHistoricalPort:
+    """Translate resolved historical requests into Nautilus bar requests.
+
+    Cancellation is intentionally local because Nautilus exposes no cancellation
+    command for an in-flight historical bar request.
+    """
+
     def __init__(
         self,
         actor: NativeHistoricalActor,
