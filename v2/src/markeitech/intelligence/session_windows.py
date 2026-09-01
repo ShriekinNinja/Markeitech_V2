@@ -10,6 +10,7 @@ from markeitech.acquisition import (
     FeedKind,
     HistoricalWindow,
 )
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.completed_bars import CompletedBarInput
 from markeitech.intelligence.metrics import (
     MetricCadence,
@@ -21,10 +22,10 @@ from markeitech.intelligence.metrics import (
     MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
-    MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
     ParameterMutability,
+    _validate_legacy_metric_value,
 )
 from markeitech.intelligence.session import CalendarProjectionView, SessionWindow
 
@@ -126,9 +127,7 @@ class AnalyticalWindowPolicy:
         ):
             _positive_int(getattr(self, name), name)
         if not (
-            self.minimum_duration_seconds
-            <= self.duration_seconds
-            <= self.maximum_duration_seconds
+            self.minimum_duration_seconds <= self.duration_seconds <= self.maximum_duration_seconds
         ):
             raise ValueError("duration is outside its configured envelope")
         if (self.duration_seconds - self.minimum_duration_seconds) % self.duration_step_seconds:
@@ -440,8 +439,7 @@ def resolve_historical_analytical_window(
         (
             item
             for item in sessions
-            if item.phase == policy.anchor_phase
-            and item.start_ns <= request_start_ns < item.end_ns
+            if item.phase == policy.anchor_phase and item.start_ns <= request_start_ns < item.end_ns
         ),
         None,
     )
@@ -473,11 +471,7 @@ def analytical_window_metric_definitions(
                 "anchor_boundary": policy.anchor_boundary,
                 "offset_seconds": policy.offset_seconds,
                 "duration_seconds": policy.duration_seconds,
-                **(
-                    {"fallback_to_previous": True}
-                    if policy.purpose == "power_hour"
-                    else {}
-                ),
+                **({"fallback_to_previous": True} if policy.purpose == "power_hour" else {}),
             },
             parameters={"purpose": policy.purpose, "window_id": policy.window_id},
         )
@@ -629,7 +623,7 @@ def calculate_analytical_window_metrics(
         for metric_id, (value, health, fidelity, reasons) in raw.items()
     )
     for value in result:
-        registry.validate_value(value)
+        _validate_legacy_metric_value(registry, value)
     return result
 
 
@@ -693,9 +687,7 @@ def _values(
             },
         )
         if summary.volume is None:
-            reasons[f"{prefix}.volume"] = summary.volume_missing_reasons or (
-                "volume_unavailable",
-            )
+            reasons[f"{prefix}.volume"] = summary.volume_missing_reasons or ("volume_unavailable",)
     else:
         values.update(
             {

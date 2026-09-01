@@ -7,7 +7,7 @@ architecture.
 
 ## Authority And Scope
 
-- `tools/api-docs/schema/public-surface.toml` is the versioned documentation denominator. Version 1
+- `tools/api-docs/schema/public-surface.toml` is the versioned documentation denominator. Version 3
   selects the literal `__all__` exports from `markeitech.system`, `markeitech.acquisition`, and
   `markeitech.intelligence`, plus the explicit operator entry point.
 - `tools/api-docs/schema/attribute-registry.toml` is the only authority for typed custom docstring
@@ -66,7 +66,7 @@ Architecture-component declarations are rendered separately from the curated pub
 denominator. The generator discovers them through the closed custom-attribute registry and
 validates their approved identity fields. Relationship, contract, ownership, status, evidence, and
 limitation attributes are deferred. Static declarations do not prove runtime calls or delivery.
-The current class-component census contains 19 declarations. Six carry substantive
+The current class-component census contains 20 declarations. Seven carry substantive
 responsibilities; the other 13 are displayed as incomplete rather than inheriting generic TOML
 placeholders.
 

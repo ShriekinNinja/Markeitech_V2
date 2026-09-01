@@ -11,8 +11,8 @@ from typing import Any
 from nautilus_trader.model import BarType
 
 from markeitech.acquisition.historical_messages import HistoricalReadinessEvent
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.completed_bars import CompletedBarInput, CompletedBarSource
-from markeitech.intelligence.metrics import MetricValue
 from markeitech.intelligence.session_measurements import COMPLETED_BAR_METRIC_IDS
 
 ARTIFACT_KIND = "passive-completed-bar-debug-projection"

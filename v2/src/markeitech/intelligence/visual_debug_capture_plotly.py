@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 
-from markeitech.intelligence.metrics import MetricValue
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.session_measurements import COMPLETED_BAR_METRIC_IDS
 from markeitech.intelligence.visual_debug_capture import FrozenVisualDebugCapture, canonical_json
 

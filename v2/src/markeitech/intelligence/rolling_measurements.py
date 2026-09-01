@@ -6,6 +6,7 @@ from decimal import Decimal
 from math import isfinite, log, sqrt
 from statistics import median
 
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.completed_bars import CompletedBarInput, CompletedBarSource
 from markeitech.intelligence.metrics import (
     MetricCadence,
@@ -18,10 +19,10 @@ from markeitech.intelligence.metrics import (
     MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
-    MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
     ParameterMutability,
+    _validate_legacy_metric_value,
 )
 from markeitech.intelligence.session import SessionWindow
 from markeitech.intelligence.session_measurements import (
@@ -148,14 +149,10 @@ class RollingBaselinePolicy:
         if not self.eligible_reference_fidelities or any(
             not isinstance(item, MetricFidelity) for item in self.eligible_reference_fidelities
         ):
-            raise ValueError(
-                "eligible_reference_fidelities must contain MetricFidelity values"
-            )
+            raise ValueError("eligible_reference_fidelities must contain MetricFidelity values")
         if len(set(self.eligible_reference_health)) != len(self.eligible_reference_health):
             raise ValueError("eligible_reference_health values must be unique")
-        if len(set(self.eligible_reference_fidelities)) != len(
-            self.eligible_reference_fidelities
-        ):
+        if len(set(self.eligible_reference_fidelities)) != len(self.eligible_reference_fidelities):
             raise ValueError("eligible_reference_fidelities values must be unique")
         for field in (
             "recent_reference_count",
@@ -448,7 +445,7 @@ def rolling_metric_values(
             missing_reasons=tuple(dict.fromkeys(missing_reasons)),
             revision=revision,
         )
-        registry.validate_value(metric)
+        _validate_legacy_metric_value(registry, metric)
         values.append(metric)
     return tuple(values)
 

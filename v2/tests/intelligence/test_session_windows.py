@@ -13,11 +13,11 @@ from markeitech.intelligence import (
     MetricHealth,
     MetricRegistry,
     analytical_window_metric_definitions,
-    calculate_analytical_window_metrics,
     resolve_analytical_window,
     resolve_historical_analytical_window,
 )
 from markeitech.intelligence.session import CanonicalSessionSnapshot, SessionWindow
+from markeitech.intelligence.session_windows import calculate_analytical_window_metrics
 
 MINUTE_NS = 60 * 1_000_000_000
 
@@ -230,9 +230,7 @@ def test_opening_range_price_evidence_does_not_depend_on_volume() -> None:
     assert by_id[f"{policy.metric_prefix}.high"].health is MetricHealth.READY
     assert by_id[f"{policy.metric_prefix}.volume"].value is None
     assert by_id[f"{policy.metric_prefix}.volume"].health is MetricHealth.UNSUPPORTED
-    assert by_id[f"{policy.metric_prefix}.volume"].missing_reasons == (
-        "volume_unsupported",
-    )
+    assert by_id[f"{policy.metric_prefix}.volume"].missing_reasons == ("volume_unsupported",)
 
 
 def test_power_hour_reports_only_ohlcv_derived_evidence() -> None:

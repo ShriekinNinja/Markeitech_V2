@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from types import MappingProxyType
 
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.entities import (
     EntityAdmissionStatus,
     EntityDefinition,
@@ -22,7 +23,7 @@ from markeitech.intelligence.entities import (
     EntityStateBook,
     EntityStateBookLimits,
 )
-from markeitech.intelligence.metrics import MetricFidelity, MetricHealth, MetricValue
+from markeitech.intelligence.metrics import MetricFidelity, MetricHealth
 
 SESSION_ENTITY_GROUP = "objective_session_reference_level"
 """Catalog group for objective session, gap, and reference-level entities."""

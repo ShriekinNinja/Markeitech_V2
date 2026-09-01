@@ -10,8 +10,9 @@ from decimal import Decimal
 import pytest
 
 from markeitech.acquisition import HistoricalReadinessEvent
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.completed_bars import CompletedBarInput, CompletedBarSource
-from markeitech.intelligence.metrics import MetricFidelity, MetricHealth, MetricValue
+from markeitech.intelligence.metrics import MetricFidelity, MetricHealth
 from markeitech.intelligence.session_measurements import COMPLETED_BAR_METRIC_IDS
 from markeitech.intelligence.visual_debug_capture import (
     CAPTURE_SCOPE,

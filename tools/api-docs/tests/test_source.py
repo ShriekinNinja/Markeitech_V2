@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 
 from markeitech_api_docs.build import FixedPaths, prepare_index
@@ -21,10 +22,11 @@ class StaticSourceTest(unittest.TestCase):
     def test_current_index_is_complete_for_declared_denominator(self) -> None:
         index, snapshot, versions = prepare_index(self.paths)
         surface = index.payload["public_surface"]
-        self.assertEqual(surface["expected"], 258)
-        self.assertEqual(surface["selected"], 258)
+        self.assertEqual(surface["expected"], 260)
+        self.assertEqual(surface["selected"], 260)
         self.assertEqual(surface["parse_failed"], 0)
         self.assertEqual(surface["unresolved_alias"], 0)
+        self.assertNotIn("LegacyMetricValue", json.dumps(index.payload, sort_keys=True))
         self.assertEqual(len(snapshot.commit), 40)
         self.assertTrue(all(value in "0123456789abcdef" for value in snapshot.commit))
         self.assertEqual(versions["griffe"], "2.2.0")

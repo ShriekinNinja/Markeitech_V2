@@ -13,8 +13,9 @@ from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, CustomData, DataType
 
 from markeitech.acquisition import HISTORICAL_READINESS_SIGNAL, HistoricalReadinessEvent
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.completed_bars import COMPLETED_BAR_INPUT_TYPE_NAME, CompletedBarInput
-from markeitech.intelligence.metrics import METRIC_VALUE_TYPE_NAME, MetricValue
+from markeitech.intelligence.metrics import METRIC_VALUE_TYPE_NAME
 from markeitech.intelligence.session_measurements import COMPLETED_BAR_METRIC_IDS
 from markeitech.intelligence.visual_debug_capture import (
     FrozenVisualDebugCapture,

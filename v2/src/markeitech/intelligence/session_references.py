@@ -10,6 +10,7 @@ from markeitech.acquisition import (
     FeedKind,
     HistoricalWindow,
 )
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.completed_bars import CompletedBarInput
 from markeitech.intelligence.metrics import (
     MetricCadence,
@@ -22,10 +23,10 @@ from markeitech.intelligence.metrics import (
     MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
-    MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
     ParameterMutability,
+    _validate_legacy_metric_value,
 )
 
 ACTIVE_SESSION_METRIC_IDS = (
@@ -515,7 +516,7 @@ def calculate_session_reference_metrics(
             ),
         )
     for value in result:
-        registry.validate_value(value)
+        _validate_legacy_metric_value(registry, value)
     return tuple(result)
 
 

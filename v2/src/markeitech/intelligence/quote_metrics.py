@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from markeitech.acquisition import CapabilityFeedRequirement, FeedKind
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.metrics import (
     MetricCadence,
     MetricDefinition,
@@ -13,9 +14,9 @@ from markeitech.intelligence.metrics import (
     MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
-    MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
+    _validate_legacy_metric_value,
 )
 
 QUOTE_MIDPOINT_METRIC_ID = "quote.midpoint"
@@ -243,7 +244,7 @@ def calculate_quote_metrics(
             for definition, value in zip(definitions, calculated, strict=True)
         )
     for value in results:
-        registry.validate_value(value)
+        _validate_legacy_metric_value(registry, value)
     return results
 
 

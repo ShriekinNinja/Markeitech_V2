@@ -534,11 +534,21 @@ placeholder preserves the applicable health, fidelity, and reason instead of sub
 guess, or silence. This is mandatory recorded debt but does not add or enable that metric in
 V3-03.
 
-This is an atomic wire-contract migration, not a session-metrics-only optional field. Every
-current publisher and consumer of `MetricValue` must either adopt v2 in the same reviewed cut or
-remain disabled. Existing publishers populate only the subject dimensions applicable to their
-exact outputs. Visual Debug acquires no analytical semantics; it filters and renders complete v2
-subjects under its separate passive activation gate.
+This is an atomic active-wire migration, not a session-metrics-only optional field. Slice 1 may
+define, publicly export, document, serialize, and test the v2-schema `MetricValue` and its accepted
+supporting contracts, and may migrate pure calculators and registries behind compatibility
+fixtures. It does not activate `markeitech.metric.value.v2` on any runtime wire. Existing enabled
+publishers and consumers, including Quote Quality, may remain temporarily on one minimal private
+legacy-v1 compatibility path with unchanged wire identity and behavior during that preparatory
+slice.
+
+The atomic-migration rule applies when v2 is activated as a runtime wire type in the later cutover
+slice. At that cut every enabled current publisher and consumer of `MetricValue` must adopt v2 in
+the same reviewed batch or remain disabled. Dual publication remains forbidden. Existing
+publishers populate only the subject dimensions applicable to their exact outputs. Visual Debug
+acquires no analytical semantics; it filters and renders complete v2 subjects under its separate
+passive activation gate. This sequencing clarification was accepted by Markeitect on 2026-09-01
+and supersedes the earlier ambiguous wording without changing v2 payload semantics.
 
 ### Final canonical payload field and bound table
 
@@ -1020,13 +1030,21 @@ the current slice uncommitted for Markeitect's IDE review.
 - Add pure startup requirement/readiness validation without a bar snapshot protocol.
 - Adapt pure registries/calculators behind compatibility fixtures without publishing new runtime
   types.
+- Keep existing enabled `MetricValue` publishers and consumers, including Quote Quality, on one
+  minimal private legacy-v1 compatibility path with unchanged runtime wire identity and behavior;
+  do not activate, publish, or subscribe to `markeitech.metric.value.v2` in this slice.
+- Treat acquisition's current pre-`HistoricalBatch` duplicate/order rejection as later-slice
+  integration debt: prove the accepted duplicate-collapse behavior in the pure validator without
+  changing acquisition admission here.
 - Prove deterministic identity/digest construction, duplicate/conflict semantics, bounds,
   historical usage isolation, partition uniqueness, per-consumer/per-series readiness accounting,
   five-second timeout, quarantine/sealing behavior, `COMPLETE`/`PARTIAL`/`REJECTED` historical
   dispositions, exact immutable validator-envelope fields, no usable bars on `REJECTED`, partial
   reason preservation, and serialization.
 
-**Gate:** no actor or tracked profile publishes a new canonical type in this slice.
+**Gate:** no actor or tracked profile publishes or subscribes to a new canonical type in this
+slice. The temporary legacy-v1 compatibility path is removed or left disabled when the later
+atomic v2 runtime-wire cutover occurs; old and new types are never dual-published.
 
 ### Slice 2: Completed-bar foundation owner
 

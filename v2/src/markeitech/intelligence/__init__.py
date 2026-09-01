@@ -1,5 +1,12 @@
 """Deterministic market-intelligence foundations."""
 
+from markeitech.intelligence.completed_bar_messages import (
+    BarCompletionState,
+    CompletedBarLineageEntry,
+    CompletedBarSeriesIdentity,
+    CompletedBarV1,
+    VolumeState,
+)
 from markeitech.intelligence.completed_bars import (
     COMPLETED_BAR_INPUT_TYPE_NAME,
     BarAdmission,
@@ -151,9 +158,11 @@ from markeitech.intelligence.metrics import (
     MetricHealth,
     MetricParameterDefinition,
     MetricParameterSet,
+    MetricReasonCode,
     MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
+    MetricSubjectIdentity,
     MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
@@ -166,7 +175,6 @@ from markeitech.intelligence.quote_metrics import (
     QUOTE_RELATIVE_SPREAD_METRIC_ID,
     QuoteMetricCatalogPolicy,
     QuoteMetricInput,
-    calculate_quote_metrics,
     quote_metric_definitions,
 )
 from markeitech.intelligence.session_entities import (
@@ -192,7 +200,6 @@ from markeitech.intelligence.session_measurements import (
     COMPLETED_BAR_TRUE_RANGE_METRIC_ID,
     COMPLETED_BAR_VOLUME_METRIC_ID,
     CompletedBarCatalogPolicy,
-    calculate_completed_bar_metrics,
     completed_bar_metric_definitions,
 )
 from markeitech.intelligence.session_references import (
@@ -207,7 +214,6 @@ from markeitech.intelligence.session_references import (
     SessionReferenceSnapshot,
     SessionReferenceSummary,
     SessionWindowSpec,
-    calculate_session_reference_metrics,
     session_reference_metric_definitions,
 )
 from markeitech.intelligence.session_windows import (
@@ -218,8 +224,6 @@ from markeitech.intelligence.session_windows import (
     AnalyticalWindowSpec,
     AnalyticalWindowSummary,
     analytical_window_metric_definitions,
-    analytical_window_value_signature,
-    calculate_analytical_window_metrics,
     resolve_analytical_window,
     resolve_historical_analytical_window,
 )
@@ -241,6 +245,7 @@ from markeitech.intelligence.zone_entities import (
 __all__ = [
     "BarAdmission",
     "BarAdmissionStatus",
+    "BarCompletionState",
     "BarConflictPolicy",
     "BarVolumeAllocationPolicy",
     "BarVolumeAllocationResult",
@@ -261,9 +266,12 @@ __all__ = [
     "COMPLETED_BAR_VOLUME_METRIC_ID",
     "CompletedBarCatalogPolicy",
     "CompletedBarInput",
+    "CompletedBarLineageEntry",
     "COMPLETED_BAR_INPUT_TYPE_NAME",
     "CompletedBarLedger",
+    "CompletedBarSeriesIdentity",
     "CompletedBarSource",
+    "CompletedBarV1",
     "CompressionExpansionStatePayload",
     "ConfirmedSwingGeometry",
     "ConfirmedSwingApplication",
@@ -345,9 +353,11 @@ __all__ = [
     "MetricHealth",
     "MetricParameterDefinition",
     "MetricParameterSet",
+    "MetricReasonCode",
     "MetricRegistry",
     "MetricResourcePolicy",
     "MetricRetainedState",
+    "MetricSubjectIdentity",
     "MetricValue",
     "MetricValueKind",
     "MetricWarmupPolicy",
@@ -413,6 +423,7 @@ __all__ = [
     "TrendRotationStatePayload",
     "VolatilityStatePayload",
     "VOLATILITY_STATE_GROUP",
+    "VolumeState",
     "ZoneApplication",
     "ZoneConstituentReference",
     "ZoneHorizonPolicy",
@@ -423,13 +434,8 @@ __all__ = [
     "aggregate_completed_bars",
     "allocate_bar_volume_to_bins",
     "analytical_window_metric_definitions",
-    "analytical_window_value_signature",
-    "calculate_analytical_window_metrics",
-    "calculate_completed_bar_metrics",
     "calculate_directional_prerequisites",
     "calculate_ema_reference",
-    "calculate_quote_metrics",
-    "calculate_session_reference_metrics",
     "classify_state",
     "completed_bar_metric_definitions",
     "detect_confirmed_swings",

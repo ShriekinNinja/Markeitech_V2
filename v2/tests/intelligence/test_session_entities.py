@@ -12,13 +12,13 @@ from markeitech.intelligence import (
     EntityStateBookLimits,
     MetricFidelity,
     MetricHealth,
-    MetricValue,
     ObjectiveLevelPayload,
     SessionEntityApplication,
     SessionEntityDefinition,
     SessionEntityProjectionOwner,
     payload_type_for_entity,
 )
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 
 SESSION_ID = "cme_equity:2026-08-21:OPEN"
 

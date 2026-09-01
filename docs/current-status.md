@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-31
+Last reviewed: 2026-09-01
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -134,6 +134,18 @@ system. The preserved V1 status is available in
   run accepts only the exact late-consumer recovery and historical-request chain; it does not
   establish multi-calendar behavior, phase-boundary delivery, repeated provider reliability,
   performance, value parity, or general market-session correctness.
+- A V3-03 Slice 1 correction batch is present uncommitted and remains under review; it is not yet
+  accepted current implementation. The proposed batch is limited to public, immutable completed-bar
+  and MetricValue v2 contracts plus private pure validation, admission, manifest, readiness, and
+  legacy-compatibility helpers. Its contract checks include exact wire shapes and primitive types,
+  canonical decimal strings, complete subject dependencies, exact missing-slot geometry, bounded
+  historical requests and producer claims, and revision-chain duplicate/conflict/stale/gap
+  handling. No new actor is composed, no new type is published or subscribed, acquisition
+  admission is unchanged, and no tracked profile or Quote Quality setting changed. Existing
+  enabled MetricValue publishers and consumers remain together on one private legacy v1 wire until
+  a later atomic v2 cutover; there is no dual publication. The batch has only disconnected test
+  evidence and does not establish provider, session, persistence, performance, or connected-runtime
+  acceptance.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -150,8 +162,8 @@ system. The preserved V1 status is available in
 - A separate locked API-documentation utility now statically analyzes the curated V2 Python public
   surface and produces an untracked MkDocs site at `docs/api` plus sanitized metadata and artifact
   indexes. Its
-  versioned denominator currently selects 257 package exports plus one explicit operator entry
-  point, 258 objects in total; all 258 selected objects have source docstrings and none are
+  versioned denominator currently selects 259 package exports plus one explicit operator entry
+  point, 260 objects in total; all 260 selected objects have source docstrings and none are
   reported as missing. Static analysis and rendering deny target imports, dynamic
   inspection, external inventories, network access, and child processes; the wrapper first uses
   bounded read-only Git queries for source identity. It verifies source stability and publishes
@@ -159,8 +171,8 @@ system. The preserved V1 status is available in
   `architecture.component.*` fields for implementation-backed class documentation.
   Caller/callee and architecture-flow examples remain unapproved future discovery
   concepts rather than inferred runtime semantics. The first architecture-component docstrings are
-  seeded for all 19 exact implementation-referenced records in the current system/data-flow TOML.
-  Six substantive responsibility sets are preserved exactly; 13 generic placeholders remain
+  seeded for all 20 exact implementation-referenced records in the current system/data-flow TOML.
+  Seven substantive responsibility sets are preserved exactly; 13 generic placeholders remain
   explicit documentation debt rather than being promoted as meaningful responsibilities. The
   API-doc build then reads source declarations only. The existing system-diagram tool still
   consumes the TOML during this migration interval; the future source-to-TOML/diagram exporter is

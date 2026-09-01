@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, CustomData, DataType
 
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.entities import (
     ENTITY_REVISION_TYPE_NAME,
     ENTITY_SNAPSHOT_REQUEST_TYPE_NAME,
@@ -20,7 +21,6 @@ from markeitech.intelligence.metrics import (
     METRIC_VALUE_TYPE_NAME,
     MetricFidelity,
     MetricHealth,
-    MetricValue,
 )
 from markeitech.intelligence.session_entities import (
     SESSION_ENTITY_GROUP,

@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import pytest
 
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.entities import (
     EntityDefinition,
     EntityDurability,
@@ -29,7 +30,7 @@ from markeitech.intelligence.market_states import (
     StateClassificationPolicy,
     VolatilityStatePayload,
 )
-from markeitech.intelligence.metrics import MetricFidelity, MetricHealth, MetricValue
+from markeitech.intelligence.metrics import MetricFidelity, MetricHealth
 
 SESSION_ID = "cme_equity:2026-08-23:OPEN"
 HEALTH = (

@@ -22,8 +22,8 @@ from markeitech.intelligence import (
     EntitySnapshotResponse,
     MetricFidelity,
     MetricHealth,
-    MetricValue,
 )
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.actors import EvidenceHealthActor, SessionStateActor
 from markeitech.intelligence.calendar_messages import (
     CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
