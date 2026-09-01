@@ -8,12 +8,15 @@ from markeitech_api_docs.build import FixedPaths, generate
 
 class GenerationTest(unittest.TestCase):
     def test_generation_is_repeatable_and_sanitized(self) -> None:
+        paths = FixedPaths.discover()
+        source = paths.source_root / "intelligence" / "actors.py"
+        source_before = source.read_bytes()
         first = generate()
         second = generate()
         self.assertEqual(first["artifact_set_sha256"], second["artifact_set_sha256"])
         self.assertEqual(first["selected"], 258)
+        self.assertEqual(source.read_bytes(), source_before)
 
-        paths = FixedPaths.discover()
         self.assertEqual(paths.output, paths.repository_root / "docs" / "api")
         output = paths.output
         index = json.loads((output / "metadata-index.json").read_text(encoding="utf-8"))
@@ -38,6 +41,11 @@ class GenerationTest(unittest.TestCase):
         self.assertIn("Architecture Components", architecture_html)
         self.assertIn("actor.session-state", architecture_html)
         self.assertIn("not a Python call graph", architecture_html)
+        self.assertIn('class="markeitech-metadata"', architecture_html)
+        self.assertIn('class="markeitech-responsibilities"', architecture_html)
+        self.assertIn("<h4>Responsibilities</h4>", architecture_html)
+        self.assertIn("Markeitech Metadata", architecture_html)
+        self.assertIn("architecture.component.responsibilities", architecture_html)
         self.assertIn("stylesheets/markeitech.css", architecture_html)
         self.assertNotIn("architecture.component.id:", architecture_html)
         public_paths = {

@@ -5,7 +5,11 @@ from typing import Any
 
 import griffe
 
-from markeitech_api_docs.metadata import parse_metadata_docstring
+from markeitech_api_docs.metadata import (
+    parse_metadata_docstring,
+    render_public_metadata,
+    render_public_responsibilities,
+)
 from markeitech_api_docs.models import ApiDocsError, AttributeRegistry
 from markeitech_api_docs.registry import load_attribute_registry
 
@@ -19,7 +23,7 @@ def repository_root() -> Path:
 
 
 class MarkeitechMetadataExtension(griffe.Extension):
-    """Strip custom metadata before rendering and retain sanitized static evidence only."""
+    """Render validated public metadata and retain sanitized static evidence."""
 
     def __init__(self, registry: AttributeRegistry | None = None) -> None:
         super().__init__()
@@ -63,7 +67,17 @@ class MarkeitechMetadataExtension(griffe.Extension):
             source=source,
             base_line=obj.docstring.lineno or obj.lineno or 1,
         )
-        obj.docstring.value = result.sanitized_docstring
+        rendered_responsibilities = render_public_responsibilities(result.occurrences)
+        rendered_metadata = render_public_metadata(result.occurrences)
+        obj.docstring.value = "\n\n".join(
+            value
+            for value in (
+                result.sanitized_docstring,
+                rendered_responsibilities,
+                rendered_metadata,
+            )
+            if value
+        )
         namespace = obj.extra.setdefault("markeitech", {})
         namespace["metadata"] = [item.to_dict() for item in result.occurrences]
         namespace["authority"] = "non_authoritative_discovery_only"

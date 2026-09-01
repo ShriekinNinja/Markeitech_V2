@@ -192,6 +192,44 @@ input:focus-visible {
   color: var(--mt-text);
 }
 
+.rst-content .markeitech-metadata {
+  background: var(--mt-surface);
+  border: 1px solid var(--mt-border);
+  border-left: 0.25rem solid var(--mt-accent);
+  border-radius: 0.25rem;
+  margin: 1.25rem 0;
+  padding: 1rem 1.25rem;
+}
+
+.rst-content .markeitech-metadata h4 {
+  margin: 0 0 0.75rem;
+}
+
+.rst-content .markeitech-metadata dl {
+  display: grid;
+  gap: 0.5rem 1rem;
+  grid-template-columns: minmax(13rem, max-content) minmax(0, 1fr);
+  margin: 0;
+}
+
+.rst-content .markeitech-metadata dt,
+.rst-content .markeitech-metadata dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.rst-content .markeitech-metadata dd ul {
+  margin: 0;
+}
+
+.rst-content .markeitech-responsibilities {
+  margin: 1rem 0;
+}
+
+.rst-content .markeitech-responsibilities h4 {
+  margin-bottom: 0.5rem;
+}
+
 .rst-footer-buttons,
 footer {
   color: var(--mt-muted);
@@ -207,5 +245,9 @@ footer {
 @media screen and (max-width: 768px) {
   .wy-nav-content {
     padding: 1.5rem 1rem;
+  }
+
+  .rst-content .markeitech-metadata dl {
+    grid-template-columns: 1fr;
   }
 }

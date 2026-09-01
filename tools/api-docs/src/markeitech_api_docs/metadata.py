@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import re
 from dataclasses import replace
 
@@ -12,6 +13,7 @@ from markeitech_api_docs.models import (
 )
 
 _KEY_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$")
+_RESPONSIBILITIES_KEY = "architecture.component.responsibilities"
 
 
 def _sha256(domain: str, value: str) -> str:
@@ -79,6 +81,73 @@ def _validate_field(
         if any(pattern.fullmatch(value) is None for value in values):
             return "METADATA_VALUE_INVALID"
     return None
+
+
+def render_public_metadata(occurrences: tuple[MetadataOccurrence, ...]) -> str:
+    """Render validated public metadata as a compact HTML definition list."""
+
+    exposed = [
+        occurrence
+        for occurrence in occurrences
+        if occurrence.status == "typed_exposed"
+        and occurrence.key is not None
+        and occurrence.typed_value is not None
+    ]
+    if not exposed:
+        return ""
+
+    lines = [
+        '<section class="markeitech-metadata" aria-label="Markeitech Metadata">',
+        "<h4>Markeitech Metadata</h4>",
+        "<dl>",
+    ]
+    for occurrence in exposed:
+        key = html.escape(occurrence.key, quote=True)
+        lines.append(f"<dt><code>{key}</code></dt>")
+        values = (
+            occurrence.typed_value
+            if isinstance(occurrence.typed_value, list)
+            else [occurrence.typed_value]
+        )
+        if len(values) == 1:
+            lines.append(f"<dd>{html.escape(values[0], quote=True)}</dd>")
+            continue
+        lines.append("<dd><ul>")
+        lines.extend(f"<li>{html.escape(value, quote=True)}</li>" for value in values)
+        lines.append("</ul></dd>")
+    lines.extend(["</dl>", "</section>"])
+    return "\n".join(lines)
+
+
+def render_public_responsibilities(
+    occurrences: tuple[MetadataOccurrence, ...],
+) -> str:
+    """Copy validated public component responsibilities into generated descriptions."""
+
+    responsibilities = next(
+        (
+            occurrence.typed_value
+            for occurrence in occurrences
+            if occurrence.status == "typed_exposed"
+            and occurrence.key == _RESPONSIBILITIES_KEY
+            and isinstance(occurrence.typed_value, list)
+        ),
+        None,
+    )
+    if not responsibilities:
+        return ""
+
+    lines = [
+        '<section class="markeitech-responsibilities" aria-label="Responsibilities">',
+        "<h4>Responsibilities</h4>",
+        "<ul>",
+    ]
+    lines.extend(
+        f"<li>{html.escape(responsibility, quote=True)}</li>"
+        for responsibility in responsibilities
+    )
+    lines.extend(["</ul>", "</section>"])
+    return "\n".join(lines)
 
 
 def parse_metadata_docstring(
