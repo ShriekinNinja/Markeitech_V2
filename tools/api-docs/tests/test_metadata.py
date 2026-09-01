@@ -4,7 +4,11 @@ import json
 import unittest
 from pathlib import Path
 
-from markeitech_api_docs.metadata import parse_metadata_docstring
+from markeitech_api_docs.metadata import (
+    parse_metadata_docstring,
+    render_public_metadata,
+    render_public_responsibilities,
+)
 from markeitech_api_docs.models import AttributeField, AttributeRegistry
 
 
@@ -123,6 +127,107 @@ Markeitech Metadata:
             result.occurrences[0].typed_value,
             ["one long declaration which is wrapped onto a second source line."],
         )
+
+    def test_only_valid_public_metadata_is_rendered_and_escaped(self) -> None:
+        result = parse_metadata_docstring(
+            """Summary.
+
+Markeitech Metadata:
+    docs.scalar: visible <value>
+    docs.items:
+        - first item
+        - second & item
+    docs.hidden: PRIVATE_HIDDEN_SENTINEL
+    future.unknown: PRIVATE_UNKNOWN_SENTINEL
+""",
+            registry=registry(
+                AttributeField("docs.scalar", "scalar", "one", "public", 1),
+                AttributeField("docs.items", "list", "one", "public", 3),
+                AttributeField("docs.hidden", "scalar", "one", "status_only", 1),
+            ),
+            object_path="markeitech.fixture.Component",
+            source="v2/src/markeitech/fixture.py",
+            base_line=1,
+        )
+
+        rendered = render_public_metadata(result.occurrences)
+
+        self.assertIn("Markeitech Metadata", rendered)
+        self.assertIn("<code>docs.scalar</code>", rendered)
+        self.assertIn("visible &lt;value&gt;", rendered)
+        self.assertIn("<li>second &amp; item</li>", rendered)
+        self.assertNotIn("PRIVATE_HIDDEN_SENTINEL", rendered)
+        self.assertNotIn("PRIVATE_UNKNOWN_SENTINEL", rendered)
+
+    def test_no_panel_is_rendered_without_valid_public_metadata(self) -> None:
+        result = parse_metadata_docstring(
+            """Summary.
+
+Markeitech Metadata:
+    docs.hidden: PRIVATE_HIDDEN_SENTINEL
+""",
+            registry=registry(
+                AttributeField("docs.hidden", "scalar", "one", "status_only", 1)
+            ),
+            object_path="markeitech.fixture.Component",
+            source="v2/src/markeitech/fixture.py",
+            base_line=1,
+        )
+
+        self.assertEqual(render_public_metadata(result.occurrences), "")
+
+    def test_public_responsibilities_are_copied_into_generated_description(self) -> None:
+        result = parse_metadata_docstring(
+            """Summary.
+
+Markeitech Metadata:
+    architecture.component.responsibilities:
+        - Own <validated> state.
+        - Publish bounded & immutable projections.
+""",
+            registry=registry(
+                AttributeField(
+                    "architecture.component.responsibilities",
+                    "list",
+                    "one",
+                    "public",
+                    8,
+                )
+            ),
+            object_path="markeitech.fixture.Component",
+            source="v2/src/markeitech/fixture.py",
+            base_line=1,
+        )
+
+        rendered = render_public_responsibilities(result.occurrences)
+
+        self.assertIn("<h4>Responsibilities</h4>", rendered)
+        self.assertIn("<li>Own &lt;validated&gt; state.</li>", rendered)
+        self.assertIn("Publish bounded &amp; immutable projections.", rendered)
+
+    def test_non_public_responsibilities_are_not_copied(self) -> None:
+        result = parse_metadata_docstring(
+            """Summary.
+
+Markeitech Metadata:
+    architecture.component.responsibilities:
+        - PRIVATE_HIDDEN_SENTINEL
+""",
+            registry=registry(
+                AttributeField(
+                    "architecture.component.responsibilities",
+                    "list",
+                    "one",
+                    "status_only",
+                    8,
+                )
+            ),
+            object_path="markeitech.fixture.Component",
+            source="v2/src/markeitech/fixture.py",
+            base_line=1,
+        )
+
+        self.assertEqual(render_public_responsibilities(result.occurrences), "")
 
 
 if __name__ == "__main__":

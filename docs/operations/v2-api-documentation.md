@@ -104,8 +104,12 @@ Markeitech Metadata:
 
 The names above demonstrate grammar only. The exact production fields are those present in the
 versioned registry. A field is valid only after it is registered with an exact name, value type,
-cardinality, maximum items, optional value pattern, and exposure policy. The parser strips the
-entire custom section before rendering.
+cardinality, maximum items, optional value pattern, and exposure policy. The parser strips the raw
+custom section, then renders only validated fields whose registry exposure is `public` in a
+dedicated **Markeitech Metadata** panel. Scalar values render as text and list values as lists.
+When the approved `architecture.component.responsibilities` field is present, the generator also
+copies its validated public list into the generated class description. This is an in-memory
+documentation projection; the generator does not rewrite the source docstring.
 
 Unknown, invalid, hidden, and conflicting values are quarantined. Generated artifacts may describe
 their sanitized status and identity, but must not contain their raw values. Public fields may emit a
