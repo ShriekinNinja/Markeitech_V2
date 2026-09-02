@@ -1,0 +1,5 @@
+# Markeitect reviews every path, including this ownership file and workflow changes.
+# GitHub uses CODEOWNERS from the PR base branch. Required code-owner approval
+# must also be enabled in branch protection; this file alone does not block merge.
+# A PR authored by ShriekinNinja cannot receive an approving review from that account.
+* @ShriekinNinja

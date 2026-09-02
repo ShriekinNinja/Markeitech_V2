@@ -1,0 +1,25 @@
+name: Documentation improvement
+description: Identify missing, unclear, or outdated documentation.
+labels: [documentation]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Document or missing topic
+      description: Link the page or name the topic that needs documentation.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What needs to improve?
+      description: Describe the confusion or mismatch and the reader's intended task.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected result and supporting evidence
+      description: Describe what the reader should understand or do. Link current source, tests, or accepted authority where available.
+    validations:
+      required: true

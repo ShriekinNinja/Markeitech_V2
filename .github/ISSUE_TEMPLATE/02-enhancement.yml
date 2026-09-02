@@ -1,0 +1,35 @@
+name: Enhancement proposal
+description: Propose an improvement with a clear benefit and completion criteria.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        An issue records a proposal; it does not approve implementation or connected runs.
+        Link existing plans and related issues, and keep evidence free of secrets and licensed data.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and benefit
+      description: What is difficult today, who is affected, and what would improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change and boundaries
+      description: Describe the smallest useful change, alternatives considered, and what is outside this request.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Completion criteria
+      description: What observable results would show this is complete? Separate offline verification from any live acceptance.
+    validations:
+      required: true
+  - type: textarea
+    id: decisions
+    attributes:
+      label: Dependencies and decisions
+      description: Link prerequisite issues, PRs, or stage plans. Note architecture, provider, configuration, persistence, or product decisions needed.

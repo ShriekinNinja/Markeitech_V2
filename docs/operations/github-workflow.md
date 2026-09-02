@@ -81,6 +81,99 @@ Use `.github/pull_request_template.md`. Every PR must state:
 An agent does not approve its own work or fabricate a user approval. A review approval is tied to
 the exact head reviewed and does not by itself delegate merge execution to an agent.
 
+## Issues, Labels, And Planning
+
+Use an issue for a bug, improvement proposal, or documentation gap that benefits from tracking.
+The forms in `.github/ISSUE_TEMPLATE/` prompt for the problem, evidence, and expected result and
+apply the existing `bug`, `enhancement`, or `documentation` label. They become available in the
+normal issue chooser after merge into `master`; blank issues remain available for other work.
+Form labels must already exist in the repository. See GitHub's
+[issue-form documentation](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms).
+
+Start with the existing labels rather than maintaining a large taxonomy:
+
+| Label | Use on an issue or PR |
+| --- | --- |
+| `bug` | A correction to observed incorrect behavior |
+| `enhancement` | A new capability or improvement |
+| `documentation` | A documentation change; may accompany another label |
+| `question` | An unresolved question or a request for clarification |
+| `duplicate`, `wontfix` | A recorded disposition, with a reason and relevant links |
+
+Apply one primary kind and add `documentation` when useful. Existing other labels remain
+available. Issue forms set their default label automatically; the PR template only prompts the
+author to apply labels in the sidebar or with `gh pr edit --add-label`. Labels classify work;
+they do not indicate approval, runtime acceptance, or permission to implement. See
+[managing labels](https://docs.github.com/en/issues/using-labels-and-milestones-to-track-work/managing-labels).
+
+Optional additions for a later triage pass are `priority:high` for agreed urgent work,
+`status:blocked` for a named unresolved dependency, `needs:decision` for a Markeitect decision,
+and `needs:live-acceptance` for operator-owned verification. These are suggestions, not labels
+installed by this PR. Add them only when needed, remove temporary labels when resolved, and
+record the reason in the issue. Avoid a label for every actor, stage, or normal PR state.
+
+Use a [milestone](https://docs.github.com/en/issues/using-labels-and-milestones-to-track-work/about-milestones)
+to group issues and PRs for an accepted stage such as V3-03. Link its accepted roadmap instead of
+copying a second status ledger. A GitHub Projects board is optional if the issue list becomes hard
+to scan; no board or milestone is created by this batch. Git tags mark repository history and
+underpin [releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases);
+reserve new tags for explicitly approved release or recovery checkpoints.
+
+In a PR, use `Closes #123` only when merging completes that issue's acceptance criteria. Use
+`Refs #123` for partial work, investigation, or offline implementation with live acceptance still
+pending. An issue, label, milestone, or checklist never replaces tracked project authority or
+Markeitect's approval.
+
+## Required Reviewer And Approval Enforcement
+
+Markeitect's requested reviewer is **@ShriekinNinja for every PR**. The repository-wide
+`.github/CODEOWNERS` entry assigns every path, including the ownership file and CI workflows,
+to that account. GitHub reads ownership from the PR's base branch and automatically requests
+code-owner reviews on eligible non-draft PRs once the file is merged. Existing open PRs should
+be checked explicitly. Draft PRs receive automatic requests when marked ready. See
+[GitHub code owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
+
+There is an identity prerequisite: GitHub does not allow PR authors to approve their own PRs.
+On 2026-09-02, the CLI authenticated as `ShriekinNinja`, so PRs created with that authentication
+are authored by the required reviewer. A distinct GitHub account or GitHub App must open PRs
+for `ShriekinNinja` to review them. Changing Git commit author name/email does not change PR
+authorship. Agents must not submit an approval using Markeitect's credentials or treat an
+assignee, comment, label, or checklist as an approving review. See
+[GitHub's approval rules](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/approving-a-pull-request-with-required-reviews).
+
+**Activation is pending the separate author identity; this PR does not enable the server-side
+approval gate.** Before activating it, settle the author identity and handling of already-open
+self-authored PRs with Markeitect. Keep such PRs unmerged until he resolves that conflict. Do not
+silently weaken the review rule, add another approving owner, or create a bypass to avoid it.
+
+After that prerequisite, configure the existing `master` protection with:
+
+| Setting | Required value |
+| --- | --- |
+| Require a pull request before merging | Enabled |
+| Required approving reviews | 1 |
+| Require review from Code Owners | Enabled; `ShriekinNinja` is the sole owner of every path |
+| Dismiss stale approvals when new commits are pushed | Enabled |
+| Apply protection to administrators | Enabled; no review bypass allowances |
+| Required status checks | Preserve all three existing V2 checks and their GitHub Actions source |
+| Require branch to be up to date | Preserve enabled |
+| Require conversation resolution | Preserve enabled |
+| Allow force pushes / branch deletion | Preserve disabled |
+
+The 2026-09-02 read-only API inspection found zero required approvals, code-owner reviews disabled,
+and stale-review dismissal disabled. The other protection settings above were already present;
+there were no repository rulesets. This is an inspection snapshot, not proof of later enforcement.
+Re-read live protection before any update and preserve unrelated settings. GitHub's
+[branch-protection guide](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
+describes these controls.
+
+Verify activation using a PR authored by the separate identity: confirm the reviewer request and
+blocked merge state before approval, then the review requirement after Markeitect approves and
+after a subsequent change dismisses that approval. Inspect API/UI state without attempting an
+unapproved merge. GitHub's stale-review dismissal covers code-modifying pushes; the project rule
+still requires Markeitect to review the current head after every new commit. Record the tested
+scope and resulting settings before claiming this gate is enforced.
+
 ## Required CI
 
 Pull requests targeting `master` and manual workflow runs execute `.github/workflows/v2-ci.yml`.
