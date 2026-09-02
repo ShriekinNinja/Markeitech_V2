@@ -1,0 +1,50 @@
+name: Bug report
+description: Report an observed problem with enough evidence to investigate it.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. Include sanitized evidence only: no secrets, local
+        configuration files, raw market data, vendor exports, or full runtime logs.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and observed behavior
+      description: What should happen, what actually happened, and how does it affect your work?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction and evidence
+      description: Give steps or a minimal offline example. If reproduction is unknown, say so.
+      placeholder: |
+        Steps:
+        Sanitized evidence:
+        Frequency:
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Version and environment
+      description: Commit or PR, OS, Python, and Nautilus version if relevant; unknown is acceptable.
+    validations:
+      required: true
+  - type: dropdown
+    id: evidence_scope
+    attributes:
+      label: Where was this observed?
+      options:
+        - Offline test or static inspection
+        - Operator-authorized connected run
+        - Documentation or GitHub workflow
+        - Unknown or other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Related work and relevant context
+      description: Link issues, PRs, or accepted plans. For market evidence, identify instrument, session, timestamps, and timezone.
