@@ -1,8 +1,9 @@
 # V3-03 Session Metrics Ownership Split Implementation Plan
 
 **Status:** Planning decisions accepted on 2026-09-01. Slices 1 and 2 are reviewed and merged;
-Slice 3 is next and has not started. Each remaining implementation batch and connected run still
-requires its own explicit authorization.
+Slice 3 is the next V3-03 slice and has not started. A separate NautilusTrader rc4 upgrade PR
+precedes it, as requested on 2026-09-02. Each remaining implementation batch and connected run
+still requires its own explicit authorization.
 
 **Planning branch:** `v3-03-session-metrics-split-plan`
 
@@ -23,11 +24,16 @@ the two root-migration PRs. The original planning baseline above is historical c
 from which to resume. Current implementation evidence is recorded in
 [`current-status.md`](../current-status.md).
 
+**Next overall PR:** upgrade NautilusTrader from `2.0.0rc3` to `2.0.0rc4` on a separate branch
+after this handoff is merged. That upgrade has not started and is not included in this handoff.
+Complete its separate compatibility verification and Markeitect review/merge before resuming
+Slice 3; it does not expand or reorder the V3-03 slices below.
+
 | Slice | Current state |
 |---|---|
 | 1 — identities, contracts, manifest | Reviewed and merged; implementation `4631df5`. Public v2 contracts remain inactive in tracked runtime profiles. |
 | 2 — completed-bar foundation | Reviewed and merged; final implementation `eb3995b`, stage merge `e8f49e3`. Private actor and state pass disconnected fixtures; no production composition or activation. |
-| 3 — direct completed-bar metrics | **Next; not implemented.** Add only the disabled direct-metrics owner and its focused integration/parity fixtures. |
+| 3 — direct completed-bar metrics | **Next V3-03 slice, after the rc4 upgrade PR; not implemented.** Add only the disabled direct-metrics owner and its focused integration/parity fixtures. |
 | 4 — calendar-dependent numerical owners | Not started; session references and analytical windows. |
 | 5 — rolling measurements | Not started; includes the accepted predecessor-aware ATR and zero-median corrections. |
 | 6 — passive Visual Debug | Not started; remains mandatory within V3-03, not optional follow-up work. |
@@ -35,8 +41,9 @@ from which to resume. Current implementation evidence is recorded in
 | 8 — legacy retirement and authority closure | Not started; only after replacement responsibility coverage. |
 | 9 — bounded connected acceptance | Not started; each exact run needs separate authorization. |
 
-The next agent must read the repository entrypoint and required authorities, then implement
-[Slice 3](#slice-3-direct-completed-bar-metrics-owner) only after Markeitect authorizes it:
+The agent resuming V3-03 must read the repository entrypoint and required authorities, then
+implement [Slice 3](#slice-3-direct-completed-bar-metrics-owner) only after the rc4 upgrade PR is
+merged and Markeitect authorizes the slice:
 
 - Start from the approved current integration checkpoint on a new slice branch, not an old
   nested-layout worktree. Let Markeitect approve and merge the handoff PR before beginning a
@@ -69,8 +76,9 @@ The next agent must read the repository entrypoint and required authorities, the
 Version freshness: the installed and locked contract is NautilusTrader `2.0.0rc3`. On
 2026-09-02 the [nightly guides](https://nautilustrader.io/docs/nightly/) identified themselves as
 unreleased, and the [nightly Python API](https://nautechsystems.github.io/nautilus_docs/python-api-nightly/)
-displayed `v2.0.0rc4`. Recheck exact APIs against installed rc3 stubs/tests; this handoff authorizes
-no dependency upgrade or new native/custom ownership decision. Local `DataActor` typed
+displayed `v2.0.0rc4`. Recheck exact APIs against the version installed and locked on the new
+branch. This handoff changes no dependency; the requested rc4 upgrade belongs to its own PR
+and must establish its compatibility evidence before Slice 3. Local `DataActor` typed
 publish/subscribe/unsubscribe stubs and the existing rc3 routing fixtures were inspected; no
 provider, persistence, performance, or connected acceptance was repeated.
 

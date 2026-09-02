@@ -19,7 +19,11 @@ behavior.
 
 ## Current Snapshot
 
-- **Development resume point: V3-03 Slice 3, direct completed-bar metrics.** Slices 1 and 2 are
+- **Next PR: NautilusTrader `2.0.0rc4` upgrade, before V3-03 Slice 3.** Markeitect requested
+  this order on 2026-09-02. The current dependency remains pinned to `2.0.0rc3`; the separate
+  upgrade's implementation, compatibility verification, and acceptance have not started.
+  Merge this handoff before starting that new branch/PR; leave its approval and merge to Markeitect.
+- **Next V3-03 slice: Slice 3, direct completed-bar metrics, after the rc4 PR.** Slices 1 and 2 are
   reviewed and merged into `master` through PR 12 (`553ad13`). The subsequent V1 retirement and
   root promotion are merged through PRs 13 and 14; the verified code baseline is `d0aee01`.
   Slice 3 has not started. Follow the accepted
