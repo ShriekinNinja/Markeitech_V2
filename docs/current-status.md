@@ -8,7 +8,7 @@ behavior.
 
 ## Operating Posture
 
-- V2 is a clean runtime foundation on NautilusTrader `2.0.0rc3`.
+- V2 is a clean runtime foundation on NautilusTrader `2.0.0rc4`.
 - Interactive Brokers paper trading is the current provider connection.
 - The system provides observation and decision support only; automated execution is absent.
 - Components communicate through approved Nautilus actor facilities.
@@ -19,10 +19,20 @@ behavior.
 
 ## Current Snapshot
 
-- **Next PR: NautilusTrader `2.0.0rc4` upgrade, before V3-03 Slice 3.** Markeitect requested
-  this order on 2026-09-02. The current dependency remains pinned to `2.0.0rc3`; the separate
-  upgrade's implementation, compatibility verification, and acceptance have not started.
-  Merge this handoff before starting that new branch/PR; leave its approval and merge to Markeitect.
+- **NautilusTrader `2.0.0rc4` upgrade is implemented and offline-verified, awaiting review/merge.**
+  The exact pin and lockfile replace `2.0.0rc3` with the official rc4 wheel; no other package
+  version, Markeitech runtime logic, provider registration, configuration, or persistence schema
+  changes. Upstream native implementation changes remain part of the new wheel.
+  On 2026-09-02, Python `3.13.3` on macOS ARM64 imports rc4 successfully, all 126 Nautilus import
+  occurrences in runtime source resolve, Ruff passes, and all 616 non-PostgreSQL tests pass with
+  two PostgreSQL tests deselected. The same suite passed on rc3 before the upgrade. Tests include
+  disconnected node construction, embedded lifecycle and typed-message delivery, native test-clock
+  callbacks, canonical-bar metadata routing, and historical request-boundary translation.
+  `uv sync --locked --dev --dry-run --offline` would make no changes. Required GitHub CI and
+  Markeitect's approval/merge remain PR gates. No rc4 connected acceptance has run: historical
+  rc3 provider, timestamp, persistence, Discord, resource, and shutdown evidence does not establish
+  those behaviors on rc4. Keep the existing TWS instrument-timezone setting pending a separately
+  authorized bounded timestamp calibration. Slice 3 remains unimplemented and waits for this PR.
 - **Next V3-03 slice: Slice 3, direct completed-bar metrics, after the rc4 PR.** Slices 1 and 2 are
   reviewed and merged into `master` through PR 12 (`553ad13`). The subsequent V1 retirement and
   root promotion are merged through PRs 13 and 14; the verified code baseline is `d0aee01`.
@@ -33,7 +43,7 @@ behavior.
   acknowledgement, and seven direct OHLCV/return/true-range metrics with v2 identity and truthful
   partial-input health. No provider ownership, tracked activation, schema-24 cutover, rolling
   correction, Visual Debug migration, or legacy-actor retirement belongs in that slice.
-- Fresh handoff verification on 2026-09-02: the local code baseline matches GitHub `master`;
+- Pre-upgrade handoff verification on 2026-09-02: the local code baseline matched GitHub `master`;
   `uv sync --locked --dev --dry-run --offline` would make no changes; Python is `3.13.3`,
   NautilusTrader is `2.0.0rc3`, root imports resolve to `src/markeitech`, Ruff passes, and all
   616 non-PostgreSQL tests pass with two PostgreSQL tests deselected. This is disconnected

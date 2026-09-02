@@ -143,7 +143,7 @@ Additional specialists were intentionally not selected for this planning decisio
 
 ### Current runtime container and native boundary
 
-`src/markeitech/system/node.py` constructs one NautilusTrader `LiveNode` through `LiveNode.builder(...)`, configures one Interactive Brokers data client, builds the node, and registers the code-owned actor plan using `add_actor_from_config(...)`. The project is pinned to NautilusTrader `2.0.0rc3` by `pyproject.toml` and `uv.lock`.
+`src/markeitech/system/node.py` constructs one NautilusTrader `LiveNode` through `LiveNode.builder(...)`, configures one Interactive Brokers data client, builds the node, and registers the code-owned actor plan using `add_actor_from_config(...)`. The current NautilusTrader version is pinned by `pyproject.toml` and `uv.lock`; upgrade evidence is recorded in `docs/current-status.md`.
 
 The manifest may identify these current native boundaries:
 

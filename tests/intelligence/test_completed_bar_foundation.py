@@ -1763,7 +1763,7 @@ def test_actual_foundation_calendar_delivery_retries_are_bounded_and_stop_absorb
 
 
 class _ControllableNativeClock:
-    """Drive the pinned-rc3 test clock and expose its scheduled callbacks deterministically."""
+    """Drive the pinned Nautilus test clock and expose scheduled callbacks deterministically."""
 
     def __init__(self, now_ns: int) -> None:
         self._clock = Clock.new_test()
@@ -2135,7 +2135,7 @@ async def _run_routing_fixture(node: LiveNode) -> None:
         await run_task
 
 
-def test_disabled_foundation_uses_exact_pinned_rc3_metadata_routing() -> None:
+def test_disabled_foundation_uses_exact_pinned_nautilus_metadata_routing() -> None:
     _ROUTING_RECEIVED.clear()
     _ROUTING_COUNTS.clear()
     node = LiveNode.builder(
