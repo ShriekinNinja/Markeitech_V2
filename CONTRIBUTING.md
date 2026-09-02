@@ -25,6 +25,11 @@ Every repository change, including a documentation edit or small fix, follows th
 3. Implement the authorized scope, update its documentation, and run proportional verification.
 4. Commit the scoped files with a detailed message, push the change branch, and open a detailed
    PR into `master`. Use a draft if unfinished; an implementation-ready handoff includes a PR URL.
+   Contributors and their agents use the contributor's authorized GitHub identity. Markeitect's
+   agents use his locally configured Sir Kite app so `ShriekinNinja` can approve their PRs;
+   other contributors do not need Sir Kite or its credentials. Request `@ShriekinNinja` as reviewer
+   when the PR is ready and verify the request in GitHub. His approval is required for every PR,
+   regardless of author; a mention alone does not satisfy the review requirement.
 5. Address requested review fixes through ordinary commits on that same open PR and rerun the
    affected checks. Do not combine unrelated work or reuse the branch after merge.
 6. **Stop before merge.** Markeitect approves the current head and merges it after all three

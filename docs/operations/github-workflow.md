@@ -46,8 +46,10 @@ are unchanged.
 4. Run proportional local verification and inspect the full diff for unintended files, secrets,
    local configuration, data, or generated churn. Commit only task-owned paths, with a detailed
    message, and push the branch without force.
-5. Open a PR into `master` as Sir Kite using the publishing command below once the first coherent
-   batch is published. Use a draft for unfinished
+5. Open a PR into `master` through the contributor's authorized GitHub identity once the first
+   coherent batch is published. Markeitect's local agents use Sir Kite; other contributors and
+   their agents use their own accounts, as described below. Request `@ShriekinNinja` as reviewer
+   when ready and verify the request in GitHub. Use a draft for unfinished
    work and state its remaining gates. A review-ready delivery includes the PR URL, exact head,
    scope, validation, known debt, and current CI state; uncommitted files alone are not the default
    handoff. If credentials, connectivity, or an explicit task restriction block publication,
@@ -134,10 +136,18 @@ code-owner reviews on eligible non-draft PRs once the file is merged. Existing o
 be checked explicitly. Draft PRs receive automatic requests when marked ready. See
 [GitHub code owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
 
-GitHub does not allow PR authors to approve their own PRs. Sir Kite is the private GitHub App
-used to open PRs as `sir-kite[bot]`, leaving `ShriekinNinja` available as the human reviewer.
-The ordinary GitHub CLI login remains `ShriekinNinja`; use the dedicated publishing command
-below for new PRs. Changing Git commit author name/email does not change PR authorship.
+The approval requirement applies to every author. Verify that `ShriekinNinja` appears in the
+requested reviewers when a PR becomes ready, even when `CODEOWNERS` should request him
+automatically. If the publisher lacks permission to request reviewers, tag `@ShriekinNinja` in
+the PR body and report the missing review request for a maintainer to resolve. A mention does
+not satisfy a review request or the required approval, and the PR must remain unmerged.
+
+GitHub does not allow PR authors to approve their own PRs. Sir Kite is Markeitect's private,
+locally configured GitHub App, used by his agents to open PRs as `sir-kite[bot]` so
+`ShriekinNinja` can review and approve them. Other contributors and their agents open PRs through
+their own authorized GitHub identities; they do not need Sir Kite, its private key, or its
+local configuration. The absence of Sir Kite on another contributor's machine is not a
+publication blocker. Changing Git commit author name/email does not change PR authorship.
 Agents must not submit an approval using Markeitect's credentials or treat an
 assignee, comment, label, or checklist as an approving review. See
 [GitHub's approval rules](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/approving-a-pull-request-with-required-reviews).
@@ -170,22 +180,43 @@ before any later update. GitHub's
 [branch-protection guide](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
 describes these controls.
 
-The initial workflow PR introduces `CODEOWNERS`, so automatic routing and owner-specific
-enforcement depend on Markeitect merging that file into `master`. Before that merge, the
-one-approval requirement already applies, and the publishing command explicitly requests
-`ShriekinNinja`. Keep the self-authored predecessor unmerged and preserve its history when
-replacing it with the bot-authored PR. Do not weaken protection or create a bypass.
+PR #20 merged `CODEOWNERS` into `master` on 2026-09-02, enabling automatic routing and
+owner-specific enforcement for subsequent eligible PRs. The self-authored predecessor, PR #19,
+was closed unmerged with its history preserved. Do not weaken protection or create a bypass.
 
 Inspect API/UI state without attempting an unapproved merge. Approval and subsequent stale-review
 dismissal still require human acceptance evidence; no agent submits a review on Markeitect's
 behalf. GitHub's stale-review dismissal covers code-modifying pushes; the project rule requires
 Markeitect to review the current head after every new commit.
 
-## Publishing As Sir Kite
+## Publishing As Another Contributor
 
+Use the contributor's own authorized GitHub account to open or update a PR through GitHub's UI,
+CLI, or API. Confirm the active account before publishing. For a branch already pushed to the
+target repository, a ready PR can be opened with:
+
+```bash
+gh api user --jq .login
+gh pr create --repo ShriekinNinja/Markeitech_V2 --base master \
+  --head your-change-branch --title "Describe the change" \
+  --body-file /tmp/pr-description.md --reviewer ShriekinNinja
+```
+
+For a fork, select the fork branch in GitHub or use `--head YOUR-LOGIN:your-change-branch`.
+Replace the example values and apply the relevant existing labels. Use a draft for unfinished
+work, then verify the reviewer request when marking it ready. If the PR already exists, update
+it and use `gh pr edit PR-NUMBER --repo ShriekinNinja/Markeitech_V2 --add-reviewer ShriekinNinja`
+when a review request is missing and the account has permission. If the account is
+`ShriekinNinja`, use the local Sir Kite route below to avoid an approving self-review blocker.
+
+## Publishing Locally For Markeitect As Sir Kite
+
+This section applies to Markeitect's agents using his authorized local Sir Kite setup.
 Use `scripts/sir-kite-pr.py` after committing and pushing the scoped branch with the normal Git
-workflow. It requires Python 3, OpenSSL, and curl, all available in the supported development
-environment. It adds no Python package dependency and does not change the normal `gh` login.
+workflow. Markeitect's ordinary GitHub CLI login remains `ShriekinNinja`; the helper changes only
+the PR publishing identity. It requires Python 3, OpenSSL, and curl and adds no Python package
+dependency. If this local setup is unavailable, report the blocker rather than publish a PR that
+`ShriekinNinja` cannot approve. Other contributors use the preceding section.
 
 ```bash
 python3 scripts/sir-kite-pr.py --verify
@@ -220,8 +251,10 @@ The default machine configuration is `~/.config/markeitech/sir-kite/config.json`
 ```
 
 This is a configuration example, not a key. Keep the actual key in a private directory with
-mode `0700`, and key/config files with mode `0600`. New-machine key provisioning remains a
-separate authorized operation; do not copy credentials into a PR, chat, repository, or log.
+mode `0700`, and key/config files with mode `0600`. This private setup belongs to Markeitect;
+do not distribute it to other contributors or make it part of general developer onboarding.
+Provisioning it on another machine for Markeitect remains a separately authorized operation;
+do not copy credentials into a PR, chat, repository, or log.
 
 The helper signs a short-lived app JWT locally, validates the app and installation identity,
 requires the approved permission set, and requests a token narrowed to this repository ID.

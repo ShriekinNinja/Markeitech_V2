@@ -58,9 +58,12 @@ Live acceptance status: `not run` / `run and passed` / `run with findings` / `no
 - [ ] @ShriekinNinja has submitted an approving review covering the current head.
 - [ ] No direct integration-branch push, force-push, auto-merge, or check bypass was used.
 
-GitHub cannot request or accept an approving self-review. If the author is `ShriekinNinja`, report
-the identity blocker and arrange a separately authenticated PR author; do not mark approval above
-or substitute a label, assignee, comment, or agent-generated review. Templates and `CODEOWNERS`
+Contributors and their agents publish through their own authorized GitHub identities and request
+`@ShriekinNinja` as reviewer. Sir Kite is Markeitect's local publishing setup for his agents;
+other contributors do not need its credentials. GitHub cannot request or accept an approving
+self-review: Markeitect's agents use Sir Kite so `ShriekinNinja` can approve their PRs. If that
+local setup is unavailable, report the identity blocker. Do not mark approval above or substitute
+a label, assignee, mention, comment, or agent-generated review. Templates and `CODEOWNERS`
 do not enforce the merge gate by themselves; see
 [the GitHub workflow](https://github.com/ShriekinNinja/Markeitech_V2/blob/master/docs/operations/github-workflow.md).
 
