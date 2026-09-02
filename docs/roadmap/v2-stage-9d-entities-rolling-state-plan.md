@@ -96,7 +96,7 @@ This stage will:
 This stage will not:
 
 - store raw quotes, bars, trades, books, chains, or every metric update;
-- reactivate V1 levels, zones, profiles, signals, thresholds, or one-active-instrument behavior;
+- inherit retired levels, zones, profiles, signals, thresholds, or one-active-instrument behavior;
 - classify approach, test, acceptance, rejection, hold, breakout, failure, target interaction, or
   trapped participation;
 - label candle-distributed volume as observed trade-at-price volume or order flow;
@@ -975,7 +975,7 @@ PostgreSQL-marked tests deselected.
   scoring out of FVG and zone payloads.
 
 **Exit:** FVG and zone geometry remains useful and inspectable without turning every pattern into a
-market claim or repeating V1's noisy annotation behavior.
+market claim or producing noisy annotation behavior.
 
 **Implementation evidence:** a pure bounded FVG owner consumes only complete
 `CompletedBarInput` evidence. The first baseline applies the reviewed configurable three-bar wick

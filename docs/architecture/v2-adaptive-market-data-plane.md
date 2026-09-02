@@ -49,8 +49,8 @@ to IB, call provider APIs, invent indicators, or bypass resource and risk policy
 
 ## Four Independent Concepts
 
-The old V1 distinction between one active instrument and background instruments is too narrow for
-V2. Replace it with four independent concepts.
+The former binary distinction between one active instrument and background instruments is too
+narrow. Replace it with four independent concepts.
 
 ### Trade universe
 
@@ -306,7 +306,7 @@ health effects. Only then is adaptive acquisition complete enough for intelligen
 2. Resolved in Stage 8C: analysis consumers register for native callbacks while acquisition anchors
    provider lifetime. Do not relay raw ticks through semantic signals or introduce wrappers.
 3. Which minimal bootstrap feeds make the future agent operational. This must be decided with the
-   first actual intelligence consumer, not guessed from V1.
+   first actual intelligence consumer, not guessed from a retired implementation.
 4. The initial resource-budget dimensions: provider subscriptions, historical pacing, option-chain
    breadth, analyzer cost, and event-rate limits.
 5. The first minimal deterministic consumer used to prove the data plane. It must test plumbing

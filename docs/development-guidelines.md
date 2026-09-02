@@ -28,9 +28,9 @@ reopens them. Do not add storage or abstractions for that hypothetical path.
 
 ## Instrument Model
 
-Do not encode V1's one-active-instrument and background-1-minute-bar model as a
-V2 invariant. V2 distinguishes the trade universe, dynamic observation
-universe, active analytical capabilities, and temporary focus. Multiple
+The current instrument model distinguishes the trade universe, dynamic observation universe,
+active analytical capabilities, and temporary focus; it has no one-active-instrument or fixed
+background-timeframe invariant. Multiple
 instruments may receive granular continuous data when justified and supported.
 
 SPXW, SPY, and QQQ 0DTE options form the initial configurable trade-expression universe. No
@@ -79,9 +79,9 @@ Analytics must be deterministic and transport-neutral. Console, Discord, a
 future gateway, and a future UI consume projections; they do not calculate
 market truth.
 
-V2 analytics begin from a blank page. Do not reactivate V1's DLA model, signal lifecycle,
-indicators, or thresholds implicitly. New capabilities must declare their inputs, warmup,
-fidelity, configuration, outputs, and resource cost before implementation.
+Analytics are admitted only through current requirements and evidence. New capabilities must
+declare their inputs, warmup, fidelity, configuration, outputs, and resource cost before
+implementation; retired models, lifecycles, indicators, and thresholds confer no authority.
 
 Semantic events should represent meaningful changes rather than duplicate raw observations.
 Rolling state, ML outputs, and agent interpretations must retain evidence lineage. No event,

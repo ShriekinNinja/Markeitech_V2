@@ -18,7 +18,8 @@ architecture.
 - `docs/architecture/system-dataflow.toml` is not a generator input. Its currently reviewed,
   implementation-referenced component facts were used once to seed V2 class docstrings. Source
   documentation is the upstream declaration surface for future generated TOML and diagrams.
-- V1, tests, private helpers, and third-party Nautilus APIs are outside the selected surface.
+- Retired implementations, tests, private helpers, and third-party Nautilus APIs are outside the
+  selected surface.
 
 ## Locked Toolchain
 

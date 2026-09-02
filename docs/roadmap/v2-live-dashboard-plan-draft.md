@@ -1290,7 +1290,6 @@ This draft is grounded in the current working-tree versions of:
 - `docs/operations/v2-runtime-resource-telemetry.md`;
 - `docs/operations/developer-setup.md`;
 - `docs/operations/github-workflow.md`;
-- the preserved V1 `docs/operations/analytics-chart.md` only for bounded charting lessons; and
 - the isolated `v2-stage-observatory` documentation and implementation only for experimental
   isolation/performance evidence, not as current V2 authority.
 

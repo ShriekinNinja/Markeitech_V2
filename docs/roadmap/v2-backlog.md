@@ -79,7 +79,8 @@ before an unattended advisory agent can be trusted.
       without persisting raw market observations.
 - [ ] Define retention, backup, and restore acceptance for operational records before production
       deployment.
-- [ ] Archive remaining V1-only operational documentation clearly without deleting preserved work.
+- [x] Retire superseded operational documentation through the reviewed root-promotion migration;
+      recovery remains available through Git history rather than active-tree copies.
 
 ## Options-Flow Evidence Track
 

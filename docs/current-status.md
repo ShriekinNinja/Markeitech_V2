@@ -2,9 +2,9 @@
 
 Last reviewed: 2026-09-02
 
-This page is the source of truth for current implementation progress. Markeitech V2 is the active
-system. The preserved V1 status is available in
-[`archive/v1-current-status.md`](archive/v1-current-status.md) and does not define V2 behavior.
+This page is the source of truth for current implementation progress. Markeitech V2 is the sole
+active system. Retired source remains recoverable through Git history but does not define current
+behavior.
 
 ## Operating Posture
 
@@ -181,6 +181,12 @@ system. The preserved V1 status is available in
   six tracked SVG/PNG/DOT/Markdown views plus an artifact index and hashes. It is not imported or
   composed by V2, reads no runtime state or secrets, and changes no runtime behavior. The shared
   PyCharm **Generate Sys Diagram** configuration runs only this locked documentation environment.
+- The 2026-09-02 pre-retirement baseline has one system-diagram drift debt: the static source
+  census rejects `METRIC_VALUE_TYPE_NAME = LEGACY_METRIC_VALUE_TYPE_NAME` in
+  `v2/src/markeitech/intelligence/metrics.py` because canonical contract identities must be literal
+  strings. The migration branch does not change that runtime file or the canonical manifest.
+  Thirty of 31 tool tests pass; the canonical-census test fails for the same reason. Correct this
+  within V3-03 before claiming a clean architecture-drift gate or regenerating topology.
 - A separate locked API-documentation utility now statically analyzes the curated V2 Python public
   surface and produces an untracked MkDocs site at `docs/api` plus sanitized metadata and artifact
   indexes. Its
@@ -334,7 +340,7 @@ Stage 8A is implemented for review on branch `v2-stage-8-acquisition-ownership`:
 Stage 8A passes offline contract, ownership, deduplication, composition, state-transition, and
 Nautilus bus-delivery tests. Live review remains pending.
 
-Stage 8B's architecture direction is approved. It replaces V1's fixed active/background model
+Stage 8B's architecture direction is approved. It replaces the fixed active/background model
 with four independent concepts: trade universe, dynamic observation universe, active analytical
 capabilities, and temporary focus. The target is a broad continuous native market-data plane
 feeding deterministic analysis and semantic state, with a later advisory agent directing
@@ -444,7 +450,8 @@ manual procedure is documented in
   options intelligence, advisory models, and trading models remain unimplemented. Deterministic
   measurements and the approved Stage 9D entity/state foundation are implemented as described
   below.
-- V1 remains preserved for reference and reuse, but no V1 runtime behavior is implicitly active.
+- Retired implementations are not active and can enter V2 only through a new, explicitly reviewed
+  requirement and current contract.
 
 ## Next Accepted Sequence
 

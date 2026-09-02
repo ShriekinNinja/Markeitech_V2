@@ -1,6 +1,6 @@
 # V2 Interactive Brokers Setup
 
-This guide applies only to the active Markeitech V2 runtime. The archived V1 commands and
+This guide applies only to the active Markeitech V2 runtime. Retired commands and the former
 active/background instrument model are not part of this workflow.
 
 ## Authoritative References
@@ -10,8 +10,8 @@ before changing adapter configuration, instrument discovery, market-data subscri
 requests, factories, or gateway behavior.
 
 Cross-check documentation against Markeitech's pinned Nautilus release, installed public
-signatures, and connected acceptance. The V1 Python/`ibapi` adapter documentation is historical
-context and must not be treated as the V2 contract.
+signatures, and connected acceptance. Superseded Python/`ibapi` adapter documentation is not a
+contract for the current Rust-backed integration.
 
 ## Safety Boundary
 

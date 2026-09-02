@@ -1,33 +1,26 @@
 # Markeitech Documentation
 
-This index separates current authority, implemented architecture, future intent,
-operations, working notes, and historical material.
+This index separates current authority, implemented architecture, future intent, operations,
+research, working notes, and historical decision records.
 
 ## Authority Order
 
 When documents disagree, use this order:
 
-1. [`markeitech.md`](../markeitech.md) defines current product and engineering
-   invariants.
-2. [`current-status.md`](current-status.md) records implemented, current, and
-   next work plus validation debt.
-3. Accepted V2 architecture documents govern their implemented subject boundaries.
+1. [`markeitech.md`](../markeitech.md) defines current product and engineering invariants.
+2. [`current-status.md`](current-status.md) records implemented behavior, current work, and
+   validation debt.
+3. Accepted architecture documents govern their implemented subject boundaries.
 4. The canonical [Stage 9A-9K blueprint](roadmap/v2-market-events-live-agent-plan.md) and accepted
    stage plans govern future sequence within their approved scope.
-5. The [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md) preserves the completed
-   foundation gates; it is not the current progress ledger.
-6. The legacy [runtime architecture](architecture/runtime-architecture.md),
-   [data contracts](architecture/data-contracts.md),
-   [implementation roadmap](roadmap/implementation-roadmap.md), and
-   [decisions register](architecture/decisions-register.md) preserve V1 intent and history; they do
-   not override accepted V2 decisions.
-7. Future roadmaps express future intent and may change through review.
-8. Operations documents describe how to run and inspect the system.
-9. Notes and archive documents are informative, not normative.
+5. The [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md) preserves completed foundation
+   gates; it is not the current progress ledger.
+6. Future roadmaps express future intent and may change through review.
+7. Operations documents describe how to run and inspect the system.
+8. Research, notes, and historical decision records are informative, not normative.
 
-Implementation and tests remain the final evidence when a descriptive document
-has not yet been updated. Correct the document rather than preserving an
-accidental disagreement.
+Implementation and tests remain the final evidence when a descriptive document has not yet been
+updated. Correct the document rather than preserving an accidental disagreement.
 
 ## Current Guidance
 
@@ -38,82 +31,77 @@ accidental disagreement.
 
 ## Architecture
 
-- [Decisions register](architecture/decisions-register.md)
-- [V2 runtime messaging discovery (historical discovery record)](architecture/v2-runtime-messaging-discovery.md)
-- [V2 runtime control plane (initial Stage 2 decision record)](architecture/v2-runtime-control-plane.md)
+- [V2 runtime messaging discovery](architecture/v2-runtime-messaging-discovery.md)
+- [V2 runtime control plane](architecture/v2-runtime-control-plane.md)
 - [V2 Discord system health](architecture/v2-discord-health.md)
+- [V2 supervision and failure policy](architecture/v2-supervision-failure-policy.md)
 - [V2 persistence boundary discovery](architecture/v2-persistence-boundary-discovery.md)
-- [V2 actor composition discovery (historical composition decision)](architecture/v2-actor-composition-discovery.md)
-- [V2 provider and canonical data boundary (historical discovery record)](architecture/v2-provider-data-boundary-discovery.md)
+- [V2 actor composition discovery](architecture/v2-actor-composition-discovery.md)
+- [V2 provider and canonical data boundary](architecture/v2-provider-data-boundary-discovery.md)
 - [V2 adaptive market-data plane](architecture/v2-adaptive-market-data-plane.md)
 - [V2 historical dependency execution](architecture/v2-historical-dependency-execution.md)
+- [V2 session and evidence health](architecture/v2-session-evidence-health.md)
+- [V2 baseline metric contracts](architecture/v2-baseline-metric-contracts.md)
 - [Kite advisor council](architecture/markeitech-advisor-council.md)
-- [TOML-driven system/data-flow manifest maintenance](architecture/system-dataflow-maintenance.md)
-- [TOML-driven system/data-flow implementation plan](architecture/toml-driven-system-dataflow-plan.md)
+- [System/data-flow manifest maintenance](architecture/system-dataflow-maintenance.md)
+- [System/data-flow implementation plan](architecture/toml-driven-system-dataflow-plan.md)
+- [Generated system/data-flow inventory](architecture/generated/system-dataflow/complete-inventory.md)
 
-Preserved V1 architecture remains available in
-[runtime architecture](architecture/runtime-architecture.md),
-[data contracts](architecture/data-contracts.md), and the
-[legacy decisions register](architecture/decisions-register.md).
+## Roadmaps And Plans
 
-## Roadmap And History
-
-- [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md)
-- [V2 market events and live-agent requirements](roadmap/v2-market-events-live-agent-plan.md)
+- [V2 infrastructure foundation](roadmap/v2-infrastructure-plan.md)
+- [V2 market events and live-agent blueprint](roadmap/v2-market-events-live-agent-plan.md)
 - [First market-intelligence coding sequence](roadmap/v2-first-market-intelligence-coding-sequence.md)
-- [Legacy V1 implementation roadmap](roadmap/implementation-roadmap.md)
-- [Legacy V1 runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
-- [V2 Stage 9C session measurements plan](roadmap/v2-stage-9c-session-measurements-plan.md)
-- [V2 Stage 9D entities and rolling state plan](roadmap/v2-stage-9d-entities-rolling-state-plan.md)
-- [V2 API documentation plan](roadmap/v2-api-documentation-plan.md)
-- [Legacy V1 trading quality evidence plan](roadmap/trading-quality-evidence-plan.md)
-- [Detailed implementation history](roadmap/implementation-history.md)
-
-The roadmap is intentionally concise. The history retains completed slice detail
-for investigation and context, but it does not reopen old stage gates.
+- [Market-specialist requirements traceability](roadmap/v2-market-specialist-requirements-traceability.md)
+- [Stage 9C session measurements](roadmap/v2-stage-9c-session-measurements-plan.md)
+- [Stage 9D entities and rolling state](roadmap/v2-stage-9d-entities-rolling-state-plan.md)
+- [V3-02 session-state actor](roadmap/v3-02-session-state-actor-implementation-plan.md)
+- [V3-03 session-metrics actor split](roadmap/v3-03-session-metrics-actor-split-implementation-plan.md)
+- [V2 static watchlist handoff](roadmap/v2-static-watchlist-handoff.md)
+- [V2 dynamic watchlist](roadmap/v2-dynamic-watchlist-plan.md)
+- [V2 API documentation](roadmap/v2-api-documentation-plan.md)
+- [V2 live dashboard draft](roadmap/v2-live-dashboard-plan-draft.md)
+- [V2 backlog](roadmap/v2-backlog.md)
+- [V2 root promotion and V1 retirement](roadmap/v2-complete-codebase-migration-plan.md)
 
 ## Operations
 
-- [V2 developer setup and machine handoff](operations/developer-setup.md)
-- [V2 static API documentation](operations/v2-api-documentation.md)
+- [Developer setup and machine handoff](operations/developer-setup.md)
+- [Static API documentation](operations/v2-api-documentation.md)
 - [GitHub workflow](operations/github-workflow.md)
-- [V2 runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
-- [V2 operational PostgreSQL](operations/v2-postgresql.md)
-- [V2 futures rollover](operations/v2-futures-rollover.md)
-- [V2 static watchlist handoff](roadmap/v2-static-watchlist-handoff.md)
+- [Runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
+- [Operational PostgreSQL](operations/v2-postgresql.md)
+- [Futures rollover](operations/v2-futures-rollover.md)
 - [Interactive Brokers setup](operations/ib-setup.md)
-- [Operator context log guide](operations/operator-context-logs.md)
-- [Operator signal log guide](operations/operator-signal-logs.md)
-- [Persistence maintenance](operations/persistence-maintenance.md)
-- [Reference set enrichment](operations/reference-set-enrichment.md)
-- [Signal outcome audit](operations/signal-outcome-audit.md)
+- [Interactive Brokers market-data subscriptions](operations/ib-market-data-subscriptions.md)
 
 ## Research
 
 - [Market-analysis specialist brief](research/market-analysis-specialist-brief.md)
-- [Trading frameworks study](research/trading-frameworks-study.md)
 - [Semantic events, AI observer, and options intelligence baseline](research/semantic-events-ai-options-baseline.md)
 - [Gamma exposure and 0DTE GEX maps](research/gamma-exposure-and-0dte-gex-maps.md)
+- [Options-flow specialist report](research/v2-options-flow-specialist-report.md)
+- [Bokeh live-system visualization assessment](research/bokeh-live-system-visualization-shallow-assessment.md)
+- [TOML/code reconciliation assessment](research/toml-code-reconciliation-shallow-assessment.md)
 
-Research documents preserve sourced ideas, hypotheses, and unresolved questions.
-They are informative and do not define product behavior until an accepted
-decision or roadmap item promotes a tested result.
+Research documents preserve sourced ideas, hypotheses, and unresolved questions. They are
+informative and do not define product behavior until an accepted decision or roadmap item promotes
+a tested result.
 
-## Notes And Archive
+## Notes
 
 - [Desired runtime requirements](notes/desired-arch.md) — informative Markeitect requirements and
   council input; not accepted architecture or a roadmap.
 - [Desired-runtime council review handoff](notes/desired-arch-council-review-handoff.md) — completed
   historical process record; not an active instruction.
 - [Desired-runtime council review report](notes/desired-arch-council-review-report.md) — informative
-  council discovery record and proposal source; not a plan, authoritative debt ledger, or
-  implementation approval.
-- [Preserved V1 project boundary](../LEGACY.md)
-- [Markeitect notes](notes/markeitect-notes.md)
-- [Original greenfield brief](archive/initial-greenfield-brief.md)
-- [Stage 0 project context](archive/stage-0-project-context.md)
-- [Preserved V1 current status](archive/v1-current-status.md)
+  discovery record and proposal source.
+- [V3-01 canonical calendar authority review](notes/v3-01-canonical-calendar-authority-review.md)
+- [V3-02 session-state actor role review](notes/v3-02-session-state-actor-role-review.md)
+- [V3-03 session-metrics actor split review](notes/v3-03-session-metrics-actor-split-review.md)
+- [V3-04 watchlist/capability read-model review](notes/v3-04-watchlist-capability-read-model-review.md)
+- [V3 visual-debug review contract](notes/v3-visual-debug-review-contract.md)
+- [V3 ES visual-debug handoff](notes/v3-es-visual-debug-review-handoff.md)
 
-The archived greenfield brief is preserved as written. It explains the original
-direction and stage rationale, but its stage requirements and status statements
-do not override the current charter or status page.
+Historical tracked source removed from the active tree remains recoverable through Git history and
+the annotated migration tags. It is not current documentation authority.

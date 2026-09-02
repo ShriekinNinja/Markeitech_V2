@@ -6,10 +6,8 @@ turn reliable underlying-market data into deterministic, inspectable context
 and signals that can inform manual options trades. It is not an HFT system and
 does not currently execute orders.
 
-The original greenfield brief is preserved in
-[`docs/archive/initial-greenfield-brief.md`](docs/archive/initial-greenfield-brief.md).
-That document records the project's origin, but this charter governs current
-work.
+This charter governs current product and engineering work. Historical source is recoverable
+through Git history but does not define current behavior.
 
 ## Current Product Direction
 
@@ -110,7 +108,7 @@ Authoritative source data, derived evidence, and inferred evidence must remain
 distinguishable. Never represent inferred order flow as exchange-provided truth
 or fabricate historical delta from histogram data.
 
-V2 analytics begin from a blank page after the runtime foundation is accepted.
+Analytics are admitted only through current evidence and architecture review.
 The intended intelligence path is deterministic measurement, typed analytical
 entities, semantic observations and interpretations, multidimensional rolling
 state, options context, narrow ML scores, and an advisory AI observer.

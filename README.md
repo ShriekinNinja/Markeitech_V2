@@ -38,9 +38,9 @@ The accepted V2 runtime includes:
 - passive host/process/cache telemetry and sustained resource-health transitions; and
 - explicit supervision, bounded queues, deduplication, and failure isolation.
 
-Stage 9D, entities and rolling state, is active through approved Slice 9D.4C. Connected acceptance
-debt and the next review gate are tracked in [current status](docs/current-status.md). No V1
-analytics or trading model is implicitly active.
+V3-03 session metrics is active through merged Slice 2. Connected acceptance debt and the next
+review gate are tracked in [current status](docs/current-status.md). Only explicitly admitted V2
+analytics and trading semantics are active.
 
 ## Supported Development Environment
 
@@ -53,7 +53,7 @@ The supported local path is:
 - TWS or IB Gateway connected to the user's own paper account; and
 - the user's own market-data entitlements and Discord webhook.
 
-Node.js is needed only for the deferred legacy frontend and is not part of V2 runtime setup.
+Node.js is not part of the current runtime setup.
 
 ## Quick Start
 
@@ -112,15 +112,17 @@ files under `v2/data/`.
 
 ## Repository Map
 
-- `v2/` - active runtime, tests, configuration template, and Docker service
-- `docs/` - current authority, architecture, operations, roadmap, research, notes, and archive
+- `v2/` - active runtime, tests, configuration template, and Docker service during the
+  root-promotion transition
+- `docs/` - current authority, architecture, operations, roadmap, research, and notes
 - `AGENTS.md` - portable AI-agent entrypoint and mandatory working boundaries
 - `markeitech.md` - governing project and engineering charter
-- `backend/`, `config/`, `frontend/`, root `tests/`, and root `pyproject.toml` - preserved V1 code
 
-The root V1 project remains for historical reference. Do not use root `uv sync`, V1 console
-scripts, or archived launchers for V2 development. The root `scripts/check-env` command is the
-active V2 setup doctor. See [LEGACY.md](LEGACY.md).
+During the first root-promotion PR, the sole runtime remains under `v2/`, so use the explicit
+`--project v2` commands above. The accepted
+[root-promotion plan](docs/roadmap/v2-complete-codebase-migration-plan.md) moves that project to the
+repository root in the second PR. The root `scripts/check-env` command remains the active setup
+doctor throughout the transition.
 
 ## Documentation
 

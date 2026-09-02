@@ -62,8 +62,8 @@ side effects, failure/abstention behavior, and `Raises`; they should not repeat 
 ## Suggested Implementation
 
 1. Define scope: `v2/src/markeitech` only. Seed the public surface from package `__all__` exports,
-   then explicitly add operator entry points and stable subsystem contracts. Exclude V1, tests,
-   private members, and undocumented third-party Nautilus APIs.
+   then explicitly add operator entry points and stable subsystem contracts. Exclude retired
+   implementations, tests, private members, and undocumented third-party Nautilus APIs.
 2. Add the isolated docs tool, lockfile, first-party wrapper, MkDocs configuration, static custom-
    attribute extension, machine-readable metadata/artifact indexes, and curated pages for `system`,
    `acquisition`, `intelligence`, and the operator CLI.
