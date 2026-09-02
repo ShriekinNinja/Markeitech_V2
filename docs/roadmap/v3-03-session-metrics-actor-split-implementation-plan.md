@@ -1,7 +1,9 @@
 # V3-03 Session Metrics Ownership Split Implementation Plan
 
-**Status:** All V3-03 planning decisions accepted by Markeitect on 2026-09-01; ready for plan
-review; no runtime implementation is authorized by this plan
+**Status:** Planning decisions accepted on 2026-09-01. Slices 1 and 2 are reviewed and merged;
+Slice 3 is the next V3-03 slice and has not started. A separate NautilusTrader rc4 upgrade PR
+precedes it, as requested on 2026-09-02. Each remaining implementation batch and connected run
+still requires its own explicit authorization.
 
 **Planning branch:** `v3-03-session-metrics-split-plan`
 
@@ -14,6 +16,71 @@ their passive, non-gating review projection
 
 **Depends on:** Implemented V3-01 canonical-calendar authority and implemented V3-02
 current-state snapshot/reconciliation
+
+## Execution Progress And Resume Point
+
+Verified on 2026-09-02 at `master` code baseline `d0aee01`, after V3-03 integration PR 12 and
+the two root-migration PRs. The original planning baseline above is historical context, not the branch
+from which to resume. Current implementation evidence is recorded in
+[`current-status.md`](../current-status.md).
+
+**Next overall PR:** upgrade NautilusTrader from `2.0.0rc3` to `2.0.0rc4` on a separate branch
+after this handoff is merged. That upgrade has not started and is not included in this handoff.
+Complete its separate compatibility verification and Markeitect review/merge before resuming
+Slice 3; it does not expand or reorder the V3-03 slices below.
+
+| Slice | Current state |
+|---|---|
+| 1 — identities, contracts, manifest | Reviewed and merged; implementation `4631df5`. Public v2 contracts remain inactive in tracked runtime profiles. |
+| 2 — completed-bar foundation | Reviewed and merged; final implementation `eb3995b`, stage merge `e8f49e3`. Private actor and state pass disconnected fixtures; no production composition or activation. |
+| 3 — direct completed-bar metrics | **Next V3-03 slice, after the rc4 upgrade PR; not implemented.** Add only the disabled direct-metrics owner and its focused integration/parity fixtures. |
+| 4 — calendar-dependent numerical owners | Not started; session references and analytical windows. |
+| 5 — rolling measurements | Not started; includes the accepted predecessor-aware ATR and zero-median corrections. |
+| 6 — passive Visual Debug | Not started; remains mandatory within V3-03, not optional follow-up work. |
+| 7 — configuration/composition/cold cutover | Not started; owns schema 24 and the atomic active-wire migration. |
+| 8 — legacy retirement and authority closure | Not started; only after replacement responsibility coverage. |
+| 9 — bounded connected acceptance | Not started; each exact run needs separate authorization. |
+
+The agent resuming V3-03 must read the repository entrypoint and required authorities, then
+implement [Slice 3](#slice-3-direct-completed-bar-metrics-owner) only after the rc4 upgrade PR is
+merged and Markeitect authorizes the slice:
+
+- Start from the approved current integration checkpoint on a new slice branch, not an old
+  nested-layout worktree. Let Markeitect approve and merge the handoff PR before beginning a
+  dependent code batch. Use root `src/`, `tests/`, `config/`, `pyproject.toml`, and `uv.lock`;
+  do not recreate `v2/`.
+- The existing foundation actor, configuration, and state are in
+  `src/markeitech/intelligence/completed_bar_foundation.py`, not a separate
+  `completed_bar_foundation_actor.py`. Reuse its exact-series/readiness contracts from
+  `completed_bar_messages.py` and `metric_producer_manifest.py`, and v2 metric identity/admission
+  from `metric_messages.py` and `metric_value_admission.py`.
+- Reuse the seven definitions/calculations in `session_measurements.py`: `completed_bar.open`,
+  `.high`, `.low`, `.close`, `.volume`, `.simple_return`, and `.true_range`. That helper still
+  accepts legacy `CompletedBarInput` and returns the private legacy metric shape; it is formula
+  and compatibility evidence, not a ready-to-publish canonical v2 implementation.
+- Keep the new actor private and uncomposed in tracked profiles. Preserve existing enabled
+  legacy-v1 publishers until Slice 7; exercise new canonical v2 delivery only in disconnected
+  fixtures. Do not change provider demand, introduce another bar writer, bump system schema,
+  migrate Visual Debug, fix rolling families, or remove the old actor in Slice 3.
+- Extend the nearby `test_session_measurements.py`, `test_completed_bar_foundation.py`,
+  `test_metric_messages_v2.py`, `test_metric_producer_manifest.py`, and message-delivery fixtures
+  as applicable. Prove exact predecessor dependence, partial-input degradation and recovery,
+  unavailable/warmup outcomes, identity, revisions, series/family isolation, and fixture parity.
+- Run focused tests, `uv run --locked --offline ruff check src tests`,
+  `uv run --locked --offline pytest -q tests -m "not postgres"`, and `git diff --check`.
+  Apply the existing conditional API-doc and diagram gates when their owned surfaces change.
+  Commit and push the scoped implementation and open its PR under the
+  [GitHub workflow](../operations/github-workflow.md). Stop for Markeitect's approval and merge;
+  publishing a PR and passing CI grant no merge or connected-run authority.
+
+Version freshness: the installed and locked contract is NautilusTrader `2.0.0rc3`. On
+2026-09-02 the [nightly guides](https://nautilustrader.io/docs/nightly/) identified themselves as
+unreleased, and the [nightly Python API](https://nautechsystems.github.io/nautilus_docs/python-api-nightly/)
+displayed `v2.0.0rc4`. Recheck exact APIs against the version installed and locked on the new
+branch. This handoff changes no dependency; the requested rc4 upgrade belongs to its own PR
+and must establish its compatibility evidence before Slice 3. Local `DataActor` typed
+publish/subscribe/unsubscribe stubs and the existing rc3 routing fixtures were inspected; no
+provider, persistence, performance, or connected acceptance was repeated.
 
 ## Accepted Decision Record
 
@@ -1019,8 +1086,9 @@ Entity Analysis remains disabled through V3-03.
 
 ## Implementation Slices
 
-Each slice is a separate review batch. Commit an accepted slice before starting the next. Leave
-the current slice uncommitted for Markeitect's IDE review.
+Each slice is a separate change branch and PR under the current
+[GitHub workflow](../operations/github-workflow.md). Publish the verified slice for Markeitect's
+review, then stop before merge. Begin a dependent slice only after its prerequisite PR is merged.
 
 ### Slice 1: Identity, contracts, and producer manifest
 
@@ -1278,6 +1346,12 @@ Exact filenames may be adjusted during review, but ownership must remain explici
 
 ### Reuse or extend
 
+- `src/markeitech/intelligence/completed_bar_messages.py`
+- `src/markeitech/intelligence/completed_bar_foundation.py`
+- `src/markeitech/intelligence/historical_bar_validation.py`
+- `src/markeitech/intelligence/metric_producer_manifest.py`
+- `src/markeitech/intelligence/metric_messages.py`
+- `src/markeitech/intelligence/metric_value_admission.py`
 - `src/markeitech/intelligence/completed_bars.py`
 - `src/markeitech/intelligence/metrics.py`
 - `src/markeitech/intelligence/session_measurements.py`
@@ -1291,12 +1365,8 @@ Exact filenames may be adjusted during review, but ownership must remain explici
 - `src/markeitech/system/config.py`
 - `src/markeitech/system/composition.py`
 
-### Proposed new focused modules
+### Proposed remaining focused modules
 
-- `src/markeitech/intelligence/completed_bar_messages.py`
-- `src/markeitech/intelligence/historical_bar_validation.py`
-- `src/markeitech/intelligence/metric_producer_manifest.py`
-- `src/markeitech/intelligence/completed_bar_foundation_actor.py`
 - `src/markeitech/intelligence/completed_bar_metric_actor.py`
 - `src/markeitech/intelligence/session_reference_metric_actor.py`
 - `src/markeitech/intelligence/analytical_window_metric_actor.py`
@@ -1359,7 +1429,8 @@ For every slice:
 7. run `git diff --check`;
 8. inspect the final diff and `git status --short --branch` for unrelated files, secrets, local
    configuration, raw data, logs, or generated churn; and
-9. leave the slice uncommitted until Markeitect approves it.
+9. commit and push the scoped slice, open or update its PR, and leave it unmerged for Markeitect's
+   explicit approval and merge.
 
 PostgreSQL-marked tests, a connected provider run, or a database migration are not implied by this
 sequence. Request exact authorization if a later slice genuinely requires them.
@@ -1412,15 +1483,20 @@ Stop and return to Markeitect before implementation or continuation if:
 
 ## Completion Checklist
 
+Checked implementation items below describe reviewed Slice 1/2 disconnected evidence only;
+they do not close the later runtime-composition or connected-acceptance gates.
+
 - [x] Markeitect accepted the V3-03 planning decisions on 2026-09-01.
-- [ ] Complete bar/metric subject identity is implemented and reviewed.
+- [x] Complete bar/metric subject identity is implemented and reviewed in Slice 1, with the
+  canonical/input-identity separation corrected in Slice 2.
 - [ ] Global producer/partition uniqueness fails closed before runtime construction.
 - [x] One bounded multi-series foundation instance passes per-series isolation and aggregate-bound
   tests for the exact first ES scope.
 - [x] The first ES foundation series is exactly five-second live input to one-minute canonical
   output with the accepted 16-series instance and 64-series total ceilings.
-- [x] Its acceptance cohort contains exactly 15 historical plus five newly completed live
-  `COMPLETE` bars, producing 20 unique contiguous one-minute publications with no forming bar.
+- [x] Its disconnected acceptance fixture contains exactly 15 historical plus five newly
+  completed live `COMPLETE` bars, producing 20 unique contiguous one-minute publications with no
+  forming bar; this is not a connected-run result.
 - [x] Its 16-bar retention, one-bar overlap, two-completed-bar pending-live buffer,
   reject-revision, duplicate-drop, conflict-stop, and stale-reject policies pass.
 - [x] Canonical and input routes are parsed and bound to exact instrument, interval, native live
@@ -1457,7 +1533,9 @@ Stop and return to Markeitect before implementation or continuation if:
 - [x] Public API documentation gates pass for intentional surface changes.
 - [x] No connected or destructive action occurs without exact authorization.
 - [ ] Connected evidence, if authorized, is stated only to its observed scope.
-- [x] Final diff is clean, reviewable, and uncommitted for Markeitect.
+- [x] Slice 1/2 final diffs were reviewed, committed, and merged. Each later slice has its own
+  branch and PR, which remains unmerged until Markeitect approves and merges it or explicitly
+  delegates that exact merge.
 
 ## Kite Advisory Basis
 

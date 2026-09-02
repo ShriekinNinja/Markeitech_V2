@@ -19,13 +19,35 @@ behavior.
 
 ## Current Snapshot
 
+- **Next PR: NautilusTrader `2.0.0rc4` upgrade, before V3-03 Slice 3.** Markeitect requested
+  this order on 2026-09-02. The current dependency remains pinned to `2.0.0rc3`; the separate
+  upgrade's implementation, compatibility verification, and acceptance have not started.
+  Merge this handoff before starting that new branch/PR; leave its approval and merge to Markeitect.
+- **Next V3-03 slice: Slice 3, direct completed-bar metrics, after the rc4 PR.** Slices 1 and 2 are
+  reviewed and merged into `master` through PR 12 (`553ad13`). The subsequent V1 retirement and
+  root promotion are merged through PRs 13 and 14; the verified code baseline is `d0aee01`.
+  Slice 3 has not started. Follow the accepted
+  [V3-03 execution progress and resume point](roadmap/v3-03-session-metrics-actor-split-implementation-plan.md#execution-progress-and-resume-point)
+  and its Slice 3 gate; do not resume unfinished Stage 9D work or start V3-04 instead.
+  The next owner is private and disabled: exact-series canonical-bar subscription, startup
+  acknowledgement, and seven direct OHLCV/return/true-range metrics with v2 identity and truthful
+  partial-input health. No provider ownership, tracked activation, schema-24 cutover, rolling
+  correction, Visual Debug migration, or legacy-actor retirement belongs in that slice.
+- Fresh handoff verification on 2026-09-02: the local code baseline matches GitHub `master`;
+  `uv sync --locked --dev --dry-run --offline` would make no changes; Python is `3.13.3`,
+  NautilusTrader is `2.0.0rc3`, root imports resolve to `src/markeitech`, Ruff passes, and all
+  616 non-PostgreSQL tests pass with two PostgreSQL tests deselected. This is disconnected
+  development evidence, not connected acceptance of the V3-03 replacement owners.
 - The V1 retirement PR is merged, and the active V2 Python project has been promoted from the
   former nested `v2/` directory to the repository root. Source, tests, configuration templates,
   Compose, package metadata, the lockfile, CI, operations commands, and static documentation tools
   now share that root. The `markeitech-v2` distribution name and all product/runtime semantics are
-  unchanged. Ignored secrets, local configuration, data, IDE state, and pre-existing virtual
-  environments remain outside the tracked migration and require deliberate operator selection.
-- The active audit-and-alignment branch upgrades NautilusTrader from `2.0.0rc1` to `2.0.0rc3`.
+  unchanged. The separately approved local environment/PyCharm cutover is also complete on the
+  original machine; superseded local state and residual `backend/` caches are recoverable in the
+  ignored migration backup. Other machines still follow the
+  [developer setup](operations/developer-setup.md); Git does not transfer secrets, local
+  configuration, data, IDE state, or virtual environments.
+- The completed audit-and-alignment work upgraded NautilusTrader from `2.0.0rc1` to `2.0.0rc3`.
   RC3 removed the generic Python network helpers and embedded `LiveNode.start()` lifecycle used by
   Markeitech's Discord transport and integration-test harness. Discord now uses one isolated
   standard-library HTTPS boundary, while embedded node tests use the public caller-owned
@@ -35,7 +57,8 @@ behavior.
   reconciliation, and successful Discord lifecycle delivery through the replacement transport.
 - Stages 1 through 9C and the runtime-resource hardening gate are implemented and connected-
   accepted within the evidence recorded below.
-- Stage 9D is active. Slices 9D.1 through 9D.5C are approved and committed. The market-structure
+- Stage 9D remains partially implemented; its continuation is deferred behind the active V3
+  replacement sequence. Slices 9D.1 through 9D.5C are approved and committed. The market-structure
   runtime portion of Slice 9D.5D is implemented. Together they provide typed
   analytical entity contracts, a bounded state book, a configuration-owned entity catalog,
   deterministic numerical prerequisites, pure rolling market-state projection, an optional

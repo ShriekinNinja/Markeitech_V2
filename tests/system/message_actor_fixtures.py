@@ -77,6 +77,8 @@ inspectable_session_state_actors: list[SessionStateActor] = []
 projection_requests_complete = Event()
 received_projection_requests: list[CalendarProjectionRequest] = []
 current_state_historical_plan_received = Event()
+evidence_session_live_received = Event()
+planner_session_live_received = Event()
 received_current_state_historical_plans: list[HistoricalRequestPlan] = []
 inspectable_evidence_health_actors: list[EvidenceHealthActor] = []
 inspectable_historical_planner_actors: list[HistoricalEvidencePlannerActor] = []
@@ -550,6 +552,7 @@ class InspectableEvidenceHealthActor(EvidenceHealthActor):
         super()._observe_session_snapshot(response)
         if self._session_state.phase is SessionStateDeliveryPhase.LIVE:
             self.reached_session_live = True
+            evidence_session_live_received.set()
 
 
 class InspectableHistoricalEvidencePlannerActor(HistoricalEvidencePlannerActor):
@@ -564,6 +567,7 @@ class InspectableHistoricalEvidencePlannerActor(HistoricalEvidencePlannerActor):
         super()._observe_session_snapshot(response)
         if self._session_state.phase is SessionStateDeliveryPhase.LIVE:
             self.reached_session_live = True
+            planner_session_live_received.set()
 
 
 class EntityMetricPublisherConfig(DataActorConfig):

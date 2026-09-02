@@ -1,12 +1,12 @@
 # V2 Root Promotion And V1 Retirement Plan
 
-Status: **IMPLEMENTED — PR 2 merge is the final integration step**
+Status: **COMPLETE — both PRs merged; separately approved local cutover completed**
 
 Originally prepared: 2026-08-30
 
 Accepted and revised: 2026-09-02
 
-Execution baseline: `553ad135` (`Merge pull request #12 from MarkeiTech/v3-03-session-metrics-slice-2`)
+Execution baseline: `553ad135` (`Merge pull request #12 from ShriekinNinja/v3-03-session-metrics-split-plan`)
 
 PR 1 branch: `v2-root-promotion-v1-retirement`
 
@@ -15,6 +15,8 @@ PR 1: merged as GitHub pull request 13 at `1c430b5`
 PR 2 branch: `v2-root-promotion`
 
 PR 2 implementation commit: `b2c5bf4`
+
+PR 2: merged as GitHub pull request 14 at `d0aee01`
 
 Pre-migration recovery tag: `pre-v2-root-promotion-2026-09-02` at `553ad135`
 
@@ -320,10 +322,18 @@ moved.
       directory;
 - [x] all root commands, CI, scripts, tools, plugins, documentation, and generated artifacts agree;
 - [x] root locked setup, lint, offline tests, documentation validation, and drift checks pass;
-- [ ] local environment and PyCharm cutover is completed separately by the operator;
+- [x] local environment and PyCharm cutover completed under separate operator approval;
 - [x] the active tree contains one V2 runtime and no V1 project surface; and
 - [x] package rename, ref cleanup, and any future behavior work remain separate decisions.
 
-The unchecked operator item is intentionally outside Git and does not block the tracked migration.
-It protects ignored secrets, local configuration, data, IDE state, and existing virtual
-environments from automatic movement or deletion.
+The separately approved local cutover completed on 2026-09-02 on the original machine. The root
+`.venv` resolves Python 3.13.3 and locked NautilusTrader 2.0.0rc3; the root `.env`, current
+schema-23 local profile, runtime data, and PyCharm paths are selected. Superseded local state is
+recoverable under ignored `data/local-migration-backup/2026-09-02-root-cutover/`; the residual
+cache-only `backend/` was subsequently moved into its `backend-cache/` subdirectory. The old
+physical `v2/` and `backend/` roots are absent. `scripts/check-env` remains the active setup doctor.
+
+These are local completion facts, not files shipped through Git or authority to move another
+machine's local state. A fresh clone must still follow the
+[developer setup](../operations/developer-setup.md). No connected run was part of the cutover,
+and the migration does not close any V3-03 runtime-acceptance gate.

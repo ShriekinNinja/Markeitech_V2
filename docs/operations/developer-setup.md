@@ -108,10 +108,15 @@ test -e config/system.local.toml || \
 
 Both destination files are ignored by Git.
 
-Existing local configurations created before schema 21 require a manual migration. Set
-`schema_version = 21`, remove the retired `[visual_acceptance]` and `[live_evidence_review]`
-sections, and replace inline `[[sessions.calendars]]` definitions with the schema-3
-`calendar_catalog = "market-calendars.toml"` reference under `[sessions]`. Also add the bounded
+The current loader accepts only system schema **23**. Existing older local profiles require a
+deliberate comparison with `config/system.example.toml`; changing only the version number is not a
+migration. Preserve reviewed machine settings without overwriting an existing local file. Schema
+24 belongs to the later V3-03 configuration/composition slice and is not supported by the current
+loader.
+
+For pre-calendar-cutover profiles, remove the retired `[visual_acceptance]` and
+`[live_evidence_review]` sections and replace inline `[[sessions.calendars]]` definitions with the
+schema-3 `calendar_catalog = "market-calendars.toml"` reference under `[sessions]`. Add the bounded
 projection settings shown in `system.example.toml`: `projection_lookback_days`,
 `projection_lookahead_days`, `maximum_projection_days`, and
 `maximum_calendars_per_request`. Add `[sessions.projection_retry]` with the tracked bounded
@@ -125,6 +130,12 @@ as `GLOBEX` for the CME/CBOT equity definitions. Concrete instrument-to-calendar
 only to `[[watchlist.members]]`; rolling a futures contract does not require editing the calendar
 catalog. The CME/CBOT definitions also expose overlapping `ASIA`, `LONDON`, and `NEW_YORK` phases.
 Those phase clocks describe market regions and do not create analytical windows by themselves.
+
+Include the complete `[sessions.current_state_delivery]` section from the current example:
+versioned response timeout, attempts/backoff/elapsed bounds, per-calendar and total transition
+buffers, and boundary-delivery grace. Also compare the current historical-probe shape. Keep
+`[metrics.session_measurements]`, its dependent Entity Analysis, and `[visual_debug_capture]`
+disabled as in the tracked profiles; archived pre-V3 enablements are not current runtime authority.
 
 The loader rejects older schemas, dead visual sections, inline definitions or overrides,
 unavailable provider columns, invalid phase timezones, incomplete source/correction identity,
@@ -280,6 +291,12 @@ Keep the dump outside Git. `*.dump` is also ignored defensively. PyCharm databas
 workspace layout may be recreated or transferred separately; they do not affect runtime behavior.
 
 ## Continuing With An AI Agent
+
+Start with the development resume point at the top of
+[`current-status.md`](../current-status.md); it links to the accepted stage's execution progress,
+next slice, exact code/test entrypoints, verification commands, and explicit deferred work. Do not
+use an old implementation worktree or the historical planning baseline as the current starting
+point without reconciling it with `master` and preserving local changes.
 
 Open the repository root so the tracked `AGENTS.md` instructions apply. The agent must read the
 project charter, current status, development guidelines, and relevant stage plan before changing

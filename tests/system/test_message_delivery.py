@@ -25,11 +25,13 @@ from tests.system.message_actor_fixtures import (
     current_state_historical_plan_received,
     current_state_received,
     entity_received,
+    evidence_session_live_received,
     inspectable_current_state_historical_probes,
     inspectable_evidence_health_actors,
     inspectable_historical_planner_actors,
     inspectable_session_state_actors,
     market_state_received,
+    planner_session_live_received,
     projection_requests_complete,
     ready_received,
     received,
@@ -330,6 +332,8 @@ def test_session_state_returns_and_replays_complete_not_ready_snapshot() -> None
 
 def test_current_state_recovery_drives_one_real_historical_plan() -> None:
     current_state_historical_plan_received.clear()
+    evidence_session_live_received.clear()
+    planner_session_live_received.clear()
     received_current_state_historical_plans.clear()
     received_calendar_transitions.clear()
     received_calendar_transitions_v2.clear()
@@ -428,7 +432,13 @@ def test_current_state_recovery_drives_one_real_historical_plan() -> None:
         ),
     )
 
-    asyncio.run(_run_node_until(node, current_state_historical_plan_received))
+    # A plan does not imply that the independent consumers have both synchronized.
+    asyncio.run(_run_node_until(
+        node,
+        current_state_historical_plan_received,
+        evidence_session_live_received,
+        planner_session_live_received,
+    ))
 
     assert len(received_current_state_historical_plans) == 1
     assert received_current_state_historical_plans[0].demand_id == (
