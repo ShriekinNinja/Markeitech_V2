@@ -28,7 +28,14 @@ class NativeConsumerProbeActorConfig(DataActorConfig):
 
 
 class NativeConsumerProbeActor(DataActor):
-    """Temporary probe for native multi-actor market-data delivery."""
+    """Temporary probe for native multi-actor market-data delivery.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.native-consumer-probe
+        architecture.component.label: Native Consumer Probe
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.system
+    """
 
     def __init__(self, config: NativeConsumerProbeActorConfig) -> None:
         super().__init__(config)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import replace
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
@@ -20,7 +20,29 @@ from markeitech.acquisition import (
     HistoricalWindow,
     NautilusSubscriptionPort,
 )
+from markeitech.intelligence.calendar_delivery import (
+    ProjectionRequestPhase,
+    ProjectionRequestState,
+    ProjectionRetryPolicy,
+    begin_projection_retry,
+    classify_projection_response,
+    ready_projection_state,
+    retain_pending_calendars,
+    schedule_projection_retry,
+    start_projection_cycle,
+    stop_projection_state,
+    terminal_projection_state,
+)
+from markeitech.intelligence.calendar_messages import (
+    CALENDAR_PROJECTION_REQUEST_TYPE_NAME,
+    CALENDAR_PROJECTION_RESPONSE_TYPE_NAME,
+    CALENDAR_TRANSITION_TYPE_NAME,
+    CalendarProjectionRequest,
+    CalendarProjectionResponse,
+    CalendarTransition,
+)
 from markeitech.intelligence.completed_bars import (
+    COMPLETED_BAR_INPUT_TYPE_NAME,
     BarAdmissionStatus,
     BarConflictPolicy,
     CompletedBarInput,
@@ -32,11 +54,9 @@ from markeitech.intelligence.messages import (
     EVIDENCE_HEALTH_SIGNAL,
     EVIDENCE_HEALTH_SNAPSHOT_REQUEST_SIGNAL,
     EVIDENCE_HEALTH_SNAPSHOT_SIGNAL,
-    SESSION_STATE_SIGNAL,
     EvidenceHealthEvent,
     EvidenceHealthSnapshot,
     EvidenceHealthSnapshotRequest,
-    SessionStateEvent,
 )
 from markeitech.intelligence.metrics import (
     METRIC_VALUE_TYPE_NAME,
@@ -50,11 +70,11 @@ from markeitech.intelligence.rolling_measurements import (
     RollingCandidateResult,
     RollingFamilyPolicy,
     RollingMeasurementPolicy,
-    calculate_rolling_candidates,
+    calculate_rolling_projection,
     rolling_metric_definitions,
     rolling_metric_values,
 )
-from markeitech.intelligence.session import SessionCalendar, definition_from_config
+from markeitech.intelligence.session import CalendarProjectionView
 from markeitech.intelligence.session_measurements import (
     CompletedBarCatalogPolicy,
     calculate_completed_bar_metrics,
@@ -91,10 +111,11 @@ _HISTORICAL_DEMAND_DELAY_NS = 1_000_000
 _HISTORICAL_DEMAND_ALERT = "session-metrics-historical-demand"
 _ACTIVE_REFERENCE_RETRY_ALERT = "session-metrics-active-reference-retry"
 _ACTIVE_REFERENCE_RETRY_DELAY_NS = 1_000_000
+_CALENDAR_PROJECTION_RETRY_ALERT = "session-metrics-calendar-projection-retry"
 
 
 def _active_reference_attempt_ns(
-    calendar: SessionCalendar,
+    calendar: CalendarProjectionView,
     phase: str,
     timestamp_ns: int,
     selector_interval_ns: int,
@@ -102,7 +123,7 @@ def _active_reference_attempt_ns(
     if selector_interval_ns <= 0:
         raise ValueError("selector interval must be positive")
     snapshot = calendar.evaluate(timestamp_ns)
-    if snapshot.phase != phase or snapshot.phase_open_ns is None:
+    if phase not in snapshot.phase_memberships or snapshot.phase_open_ns is None:
         return None
     completed_boundary_ns = timestamp_ns - (timestamp_ns % selector_interval_ns)
     if snapshot.phase_open_ns < completed_boundary_ns:
@@ -110,12 +131,52 @@ def _active_reference_attempt_ns(
     return completed_boundary_ns + selector_interval_ns + _ACTIVE_REFERENCE_RETRY_DELAY_NS
 
 
+def _completed_bar_foundation_historical_demand(
+    *,
+    demand_id: str,
+    consumer_id: str,
+    instrument_id: str,
+    selector: str,
+    window: str,
+    minimum_observations: int,
+    maximum_observations: int,
+    priority: int,
+    as_of_ns: int,
+    calculation_interval_seconds: int,
+    parameter_version: int,
+) -> HistoricalDependencyDemandEvent:
+    parameters: dict[str, str | int | float | bool] = {
+        "calculation_interval_seconds": calculation_interval_seconds,
+        "parameter_version": parameter_version,
+    }
+    return HistoricalDependencyDemandEvent(
+        demand_id=demand_id,
+        consumer_id=consumer_id,
+        capability_id="metric:completed-bar-foundation",
+        capability_version=1,
+        instrument_id=instrument_id,
+        selector=selector,
+        window=window,
+        minimum_observations=minimum_observations,
+        maximum_observations=maximum_observations,
+        priority=priority,
+        purpose="warm completed-bar foundation metrics",
+        as_of_ns=as_of_ns,
+        parameters=parameters,
+    )
+
+
 class SessionMetricsActorConfig(DataActorConfig):
     def __new__(
         cls,
         instrument_ids: list[str],
         instrument_calendars: dict[str, str],
-        calendars: list[dict[str, object]],
+        expected_calendar_digests: dict[str, str],
+        projection_lookback_days: int,
+        projection_lookahead_days: int,
+        calendar_source: str,
+        calendar_source_epoch: str,
+        projection_retry: dict[str, int],
         profiles: list[dict[str, object]],
         profile_bindings: dict[str, str],
         parameter_version: int,
@@ -135,7 +196,12 @@ class SessionMetricsActorConfig(DataActorConfig):
         obj = super().__new__(cls, actor_id=resolved)
         obj.instrument_ids = tuple(instrument_ids)
         obj.instrument_calendars = dict(instrument_calendars)
-        obj.calendars = tuple(calendars)
+        obj.expected_calendar_digests = dict(expected_calendar_digests)
+        obj.projection_lookback_days = projection_lookback_days
+        obj.projection_lookahead_days = projection_lookahead_days
+        obj.calendar_source = calendar_source
+        obj.calendar_source_epoch = calendar_source_epoch
+        obj.projection_retry = dict(projection_retry)
         obj.profiles = tuple(profiles)
         obj.profile_bindings = dict(profile_bindings)
         obj.parameter_version = parameter_version
@@ -153,7 +219,19 @@ class SessionMetricsActorConfig(DataActorConfig):
 
 
 class SessionMetricsActor(DataActor):
-    """Converges bounded historical and live bars into foundation metrics."""
+    """Converges bounded historical and live bars into foundation metrics.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.session-metrics
+        architecture.component.label: Session Metrics
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+        architecture.component.responsibilities:
+            - Converge bounded historical and live bars into completed-bar, session, window, and
+              rolling measurements.
+            - Consume immutable calendar projections and transitions without instantiating mcal.
+            - Publish live and historical evidence demands for configured metric capabilities.
+    """
 
     def __init__(self, config: SessionMetricsActorConfig) -> None:
         super().__init__(config)
@@ -164,10 +242,18 @@ class SessionMetricsActor(DataActor):
         self._instrument_ids = tuple(sorted(config.instrument_ids))
         self._instrument_set = frozenset(self._instrument_ids)
         self._instrument_calendars = dict(config.instrument_calendars)
-        self._calendars = {
-            value["calendar_id"]: SessionCalendar(definition_from_config(dict(value)))
-            for value in config.calendars
-        }
+        self._expected_calendar_digests = dict(config.expected_calendar_digests)
+        self._calendar_ids = tuple(sorted(set(self._instrument_calendars.values())))
+        self._calendars: dict[str, CalendarProjectionView] = {}
+        self._calendar_refresh_ids: set[str] = set()
+        self._projection_lookback_ns = config.projection_lookback_days * 86_400_000_000_000
+        self._projection_lookahead_ns = config.projection_lookahead_days * 86_400_000_000_000
+        self._projection_policy = ProjectionRetryPolicy.from_config(config.projection_retry)
+        self._projection_state = ProjectionRequestState.idle(
+            requester=str(self.actor_id),
+            expected_source=config.calendar_source,
+            expected_source_epoch=config.calendar_source_epoch,
+        )
         self._profiles = {value["profile_id"]: dict(value) for value in config.profiles}
         self._profile_bindings = dict(config.profile_bindings)
         self._parameter_version = config.parameter_version
@@ -311,7 +397,11 @@ class SessionMetricsActor(DataActor):
         self._registry = MetricRegistry(definitions)
         self._port = NautilusSubscriptionPort(self)
         self._metric_type = DataType(METRIC_VALUE_TYPE_NAME)
+        self._completed_bar_type = DataType(COMPLETED_BAR_INPUT_TYPE_NAME)
         self._batch_type = DataType(HISTORICAL_BATCH_TYPE_NAME)
+        self._calendar_request_type = DataType(CALENDAR_PROJECTION_REQUEST_TYPE_NAME)
+        self._calendar_response_type = DataType(CALENDAR_PROJECTION_RESPONSE_TYPE_NAME)
+        self._calendar_transition_type = DataType(CALENDAR_TRANSITION_TYPE_NAME)
         self._demand_retry_interval_ns = config.demand_retry_interval_ms * 1_000_000
         self._evidence_retry_interval_ns = config.evidence_snapshot_retry_interval_ms * 1_000_000
         if config.conflict_policy != BarConflictPolicy.REJECT_CONFLICT.value:
@@ -324,11 +414,12 @@ class SessionMetricsActor(DataActor):
             for instrument_id in self._instrument_ids
         }
         self._source_buckets: dict[tuple[str, int], dict[int, CompletedBarInput]] = {}
-        self._session_states: dict[str, SessionStateEvent] = {}
+        self._session_states: dict[str, CalendarTransition] = {}
         self._evidence: dict[str, EvidenceHealthEvent] = {}
         self._attached: set[str] = set()
         self._acknowledged_demands: set[str] = set()
         self._historical_readiness: dict[str, str] = {}
+        self._foundation_history_requested: set[str] = set()
         self._revisions: defaultdict[str, int] = defaultdict(int)
         self._counts: defaultdict[str, int] = defaultdict(int)
         self._reference_books = {
@@ -361,6 +452,7 @@ class SessionMetricsActor(DataActor):
         }
         self._window_signatures: dict[tuple[str, str], tuple[object, ...]] = {}
         self._rolling_signatures: dict[tuple[str, str], tuple[object, ...]] = {}
+        self._rolling_bar_ledgers: dict[tuple[str, str], CompletedBarLedger] = {}
         self._live_demand_ids = {
             instrument_id: f"metric:session:{instrument_id}:bars:{self._live_selector}"
             for instrument_id in self._instrument_ids
@@ -387,12 +479,14 @@ class SessionMetricsActor(DataActor):
         for signal_name in (
             ACQUISITION_STREAM_SIGNAL,
             HISTORICAL_READINESS_SIGNAL,
-            SESSION_STATE_SIGNAL,
             EVIDENCE_HEALTH_SIGNAL,
             EVIDENCE_HEALTH_SNAPSHOT_SIGNAL,
         ):
             self.subscribe_signal(signal_name)
         self.subscribe_data(self._batch_type)
+        self.subscribe_data(self._calendar_response_type)
+        self.subscribe_data(self._calendar_transition_type)
+        self._begin_calendar_projection_cycle()
         self._attach_consumers()
         self._publish_live_demands(None)
         self._request_evidence_snapshot(None)
@@ -417,8 +511,6 @@ class SessionMetricsActor(DataActor):
             self._observe_acquisition(signal.value)
         elif signal.name == HISTORICAL_READINESS_SIGNAL:
             self._observe_historical_readiness(signal.value)
-        elif signal.name == SESSION_STATE_SIGNAL:
-            self._observe_session_state(signal.value)
         elif signal.name == EVIDENCE_HEALTH_SIGNAL:
             self._observe_evidence(signal.value)
         elif signal.name == EVIDENCE_HEALTH_SNAPSHOT_SIGNAL:
@@ -426,6 +518,12 @@ class SessionMetricsActor(DataActor):
 
     def on_data(self, data) -> None:  # noqa: ANN001
         payload = data.data if isinstance(data, CustomData) else data
+        if isinstance(payload, CalendarTransition):
+            self._observe_session_state(payload)
+            return
+        if isinstance(payload, CalendarProjectionResponse):
+            self._observe_calendar_projection(payload)
+            return
         if not isinstance(payload, HistoricalBatch):
             return
         dependencies = {dependency.consumer_id for dependency in payload.request.dependencies}
@@ -479,11 +577,13 @@ class SessionMetricsActor(DataActor):
         )
 
     def on_stop(self) -> None:
+        self._projection_state = stop_projection_state(self._projection_state)
         for timer_name in (
             _DEMAND_RETRY_TIMER,
             _EVIDENCE_RETRY_TIMER,
             _HISTORICAL_DEMAND_ALERT,
             _ACTIVE_REFERENCE_RETRY_ALERT,
+            _CALENDAR_PROJECTION_RETRY_ALERT,
         ):
             if timer_name in self.clock.timer_names():
                 self.clock.cancel_timer(timer_name)
@@ -499,12 +599,13 @@ class SessionMetricsActor(DataActor):
         for signal_name in (
             ACQUISITION_STREAM_SIGNAL,
             HISTORICAL_READINESS_SIGNAL,
-            SESSION_STATE_SIGNAL,
             EVIDENCE_HEALTH_SIGNAL,
             EVIDENCE_HEALTH_SNAPSHOT_SIGNAL,
         ):
             self.unsubscribe_signal(signal_name)
         self.unsubscribe_data(self._batch_type)
+        self.unsubscribe_data(self._calendar_response_type)
+        self.unsubscribe_data(self._calendar_transition_type)
         self.log.info(
             "SESSION_METRICS_STOPPED"
             f" | instruments={len(self._instrument_ids)}"
@@ -521,7 +622,18 @@ class SessionMetricsActor(DataActor):
             f" | window_values={self._counts['window_values']}"
             f" | rolling_batches={self._counts['rolling_batches']}"
             f" | rolling_values={self._counts['rolling_values']}"
-            f" | failures={self._counts['failures']}",
+            f" | derived_completed_bars={self._counts['derived_completed_bars']}"
+            f" | derived_bar_duplicates={self._counts['derived_bar_duplicates']}"
+            f" | derived_bar_conflicts={self._counts['derived_bar_conflicts']}"
+            f" | failures={self._counts['failures']}"
+            f" | historical_completed_bars={self._counts['historical_completed_bars']}"
+            f" | live_aggregate_completed_bars="
+            f"{self._counts['live_aggregate_completed_bars']}"
+            f" | foundation_history_demands={self._counts['foundation_history_demands']}"
+            f" | projection_state={self._projection_state.phase.value}"
+            f" | projection_requests={self._counts['projection_requests']}"
+            f" | projection_timeouts={self._counts['projection_timeouts']}"
+            f" | projection_terminal={self._counts['projection_terminal']}",
         )
 
     def _process_provider_bar(
@@ -580,6 +692,12 @@ class SessionMetricsActor(DataActor):
             raise ValueError("calendar did not assign a trade date")
         profile_id = self._profile_bindings[instrument_id]
         profile = self._profiles[profile_id]
+        primary_phase = str(profile["primary_phase"])
+        session_phase = (
+            primary_phase
+            if primary_phase in snapshot.phase_memberships
+            else snapshot.phase
+        )
         evidence = self._evidence.get(instrument_id)
         health, fidelity = _source_quality(source, evidence)
         volume_supported = bool(profile["volume_supported"])
@@ -593,7 +711,7 @@ class SessionMetricsActor(DataActor):
             analytical_profile_id=profile_id,
             analytical_profile_version=int(profile["version"]),
             trade_date=snapshot.trade_date,
-            session_id=f"{calendar_id}:{snapshot.trade_date.isoformat()}:{snapshot.phase}",
+            session_id=f"{calendar_id}:{snapshot.trade_date.isoformat()}:{session_phase}",
             window_id="primary",
             interval_start_ns=interval_start_ns,
             interval_end_ns=interval_end_ns,
@@ -620,14 +738,9 @@ class SessionMetricsActor(DataActor):
         *,
         use_current: bool,
     ):  # noqa: ANN202
-        current = self._session_states.get(calendar_id) if use_current else None
-        if current is not None and current.trade_date is not None:
-            if current.phase == "CLOSED" or (
-                current.phase_open_ns is not None
-                and current.phase_close_ns is not None
-                and current.phase_open_ns <= timestamp_ns < current.phase_close_ns
-            ):
-                return _snapshot_from_event(current)
+        del use_current
+        if calendar_id not in self._calendars:
+            raise ValueError(f"calendar projection is unavailable: {calendar_id}")
         return self._calendars[calendar_id].evaluate(timestamp_ns)
 
     def _accumulate(self, bar: CompletedBarInput) -> CompletedBarInput | None:
@@ -674,6 +787,14 @@ class SessionMetricsActor(DataActor):
             )
             return
         self._counts["accepted"] += 1
+        if bar.source is CompletedBarSource.HISTORICAL_PROVIDER:
+            self._counts["historical_completed_bars"] += 1
+        elif bar.source is CompletedBarSource.LIVE_AGGREGATE:
+            self._counts["live_aggregate_completed_bars"] += 1
+        self.publish_data(
+            self._completed_bar_type,
+            CustomData(self._completed_bar_type, admission.accepted),
+        )
         for target, prior in _recalculation_contexts(ledger.bars, admission.accepted.key):
             self._revisions[bar.instrument_id] += 1
             now_ns = max(self.clock.timestamp_ns(), target.normalized_ts_ns)
@@ -714,13 +835,14 @@ class SessionMetricsActor(DataActor):
             calendar = self._calendars[self._instrument_calendars[instrument_id]]
             latest_date = bars[-1].trade_date
             phase_windows = calendar.windows(latest_date - timedelta(days=45), latest_date)
-            results = calculate_rolling_candidates(
+            projection = calculate_rolling_projection(
                 bars,
                 phase_windows=phase_windows,
                 policy=self._rolling_policy,
             )
+            self._publish_derived_completed_bars(projection.completed_bars)
             pending: list[tuple[RollingCandidateResult, tuple[object, ...]]] = []
-            for result in results:
+            for result in projection.candidates:
                 signature = _rolling_result_signature(result)
                 key = (instrument_id, f"{result.family_id}:{result.candidate_id}")
                 if self._rolling_signatures.get(key) == signature:
@@ -754,6 +876,40 @@ class SessionMetricsActor(DataActor):
                 f" | instrument_id={instrument_id}"
                 f" | error={type(exc).__name__} | reason={exc}",
             )
+
+    def _publish_derived_completed_bars(
+        self,
+        bars: tuple[CompletedBarInput, ...],
+    ) -> None:
+        for bar in bars:
+            if bar.bar_specification == self._historical_selector:
+                continue
+            key = (bar.instrument_id, bar.bar_specification)
+            ledger = self._rolling_bar_ledgers.setdefault(
+                key,
+                CompletedBarLedger(
+                    maximum_observations=self._maximum_retained,
+                    conflict_policy=BarConflictPolicy.REJECT_CONFLICT,
+                ),
+            )
+            admission = ledger.admit(bar)
+            if admission.status is BarAdmissionStatus.DUPLICATE:
+                self._counts["derived_bar_duplicates"] += 1
+                continue
+            if admission.status is BarAdmissionStatus.CONFLICT:
+                self._counts["derived_bar_conflicts"] += 1
+                self.log.error(
+                    "ROLLING_COMPLETED_BAR_CONFLICT"
+                    f" | instrument_id={bar.instrument_id}"
+                    f" | bar_specification={bar.bar_specification}"
+                    f" | interval_end_ns={bar.interval_end_ns}",
+                )
+                continue
+            self.publish_data(
+                self._completed_bar_type,
+                CustomData(self._completed_bar_type, admission.accepted),
+            )
+            self._counts["derived_completed_bars"] += 1
 
     def _attach_consumers(self) -> None:
         for instrument_id in self._instrument_ids:
@@ -790,31 +946,180 @@ class SessionMetricsActor(DataActor):
         ):
             self.clock.cancel_timer(_DEMAND_RETRY_TIMER)
 
+    def _begin_calendar_projection_cycle(self) -> None:
+        requested = tuple(
+            calendar_id
+            for calendar_id in self._calendar_ids
+            if calendar_id not in self._calendars or calendar_id in self._calendar_refresh_ids
+        )
+        if not requested:
+            return
+        now_ns = self.clock.timestamp_ns()
+        self._projection_state = start_projection_cycle(
+            self._projection_state,
+            calendar_ids=requested,
+            start_ns=max(0, now_ns - self._projection_lookback_ns),
+            end_ns=now_ns + self._projection_lookahead_ns,
+            now_ns=now_ns,
+            policy=self._projection_policy,
+        )
+        if self._projection_state.phase is ProjectionRequestPhase.WAITING:
+            self._publish_calendar_projection_request()
+
+    def _publish_calendar_projection_request(self) -> None:
+        state = self._projection_state
+        if (
+            state.phase is not ProjectionRequestPhase.WAITING
+            or state.request_id is None
+            or state.start_ns is None
+            or state.end_ns is None
+        ):
+            return
+        self._set_calendar_projection_alert()
+        request = CalendarProjectionRequest(
+            request_id=state.request_id,
+            requester=state.requester,
+            calendar_ids=state.pending_calendar_ids,
+            start_ns=state.start_ns,
+            end_ns=state.end_ns,
+            requested_ts_ns=self.clock.timestamp_ns(),
+        )
+        self._counts["projection_requests"] += 1
+        self.publish_data(
+            self._calendar_request_type,
+            CustomData(self._calendar_request_type, request),
+        )
+
+    def _observe_calendar_projection(self, response: CalendarProjectionResponse) -> None:
+        disposition = classify_projection_response(self._projection_state, response)
+        if disposition != "ACCEPT":
+            self._counts[f"projection_{disposition.lower()}"] += 1
+            return
+        self._cancel_calendar_projection_alert()
+        state = self._projection_state
+        accepted_ids: set[str] = set()
+        for projection in response.projections:
+            expected = self._expected_calendar_digests.get(projection.calendar_id)
+            if (
+                expected is None
+                or projection.definition_digest != expected
+                or state.start_ns is None
+                or state.end_ns is None
+                or projection.coverage_start_ns > state.start_ns
+                or projection.coverage_end_ns < state.end_ns
+            ):
+                self._counts["failures"] += 1
+                self._counts["projection_conflicts"] += 1
+                self._projection_state = terminal_projection_state(
+                    state,
+                    "projection_identity_conflict",
+                )
+                self._counts["projection_terminal"] += 1
+                self.log.error(
+                    "SESSION_METRIC_CALENDAR_PROJECTION_CONFLICT"
+                    f" | calendar_id={projection.calendar_id}",
+                )
+                return
+            self._calendars[projection.calendar_id] = CalendarProjectionView(projection)
+            self._calendar_refresh_ids.discard(projection.calendar_id)
+            accepted_ids.add(projection.calendar_id)
+        remaining = tuple(
+            item for item in state.pending_calendar_ids if item not in accepted_ids
+        )
+        if not remaining:
+            self._projection_state = ready_projection_state(state)
+            self._publish_historical_demands(None)
+            self._begin_calendar_projection_cycle()
+            return
+        failures = {item.calendar_id: item for item in response.failures}
+        retryable = bool(remaining) and all(
+            calendar_id in failures and failures[calendar_id].retryable
+            for calendar_id in remaining
+        )
+        if response.status == "NOT_READY" or retryable:
+            self._projection_state = retain_pending_calendars(state, remaining)
+            self._projection_state = schedule_projection_retry(
+                self._projection_state,
+                now_ns=self.clock.timestamp_ns(),
+                policy=self._projection_policy,
+                retry_at_ns=response.retry_at_ns,
+            )
+            self._finish_calendar_projection_transition()
+            return
+        self._projection_state = terminal_projection_state(
+            state,
+            "projection_rejected" if response.status == "REJECTED" else "projection_unavailable",
+            rejected=response.status == "REJECTED",
+        )
+        self._counts["projection_terminal"] += 1
+        self.log.error(
+            f"SESSION_METRIC_CALENDAR_PROJECTION_TERMINAL | status={response.status}"
+            f" | pending={','.join(remaining)}",
+        )
+
+    def _on_calendar_projection_alert(self, _event) -> None:  # noqa: ANN001
+        state = self._projection_state
+        if state.phase is ProjectionRequestPhase.STOPPED:
+            return
+        now_ns = self.clock.timestamp_ns()
+        if state.alert_at_ns is None or now_ns < state.alert_at_ns:
+            return
+        if state.phase is ProjectionRequestPhase.WAITING:
+            self._counts["projection_timeouts"] += 1
+            self._projection_state = schedule_projection_retry(
+                state,
+                now_ns=now_ns,
+                policy=self._projection_policy,
+                retry_at_ns=None,
+            )
+            self._finish_calendar_projection_transition()
+            return
+        if state.phase is ProjectionRequestPhase.BACKOFF:
+            self._projection_state = begin_projection_retry(
+                state,
+                now_ns=now_ns,
+                policy=self._projection_policy,
+            )
+            self._publish_calendar_projection_request()
+
+    def _finish_calendar_projection_transition(self) -> None:
+        if self._projection_state.phase is ProjectionRequestPhase.BACKOFF:
+            self._counts["projection_retries"] += 1
+            self._set_calendar_projection_alert()
+            return
+        if self._projection_state.phase in {
+            ProjectionRequestPhase.FAILED,
+            ProjectionRequestPhase.REJECTED,
+        }:
+            self._counts["projection_terminal"] += 1
+            self.log.error(
+                "SESSION_METRIC_CALENDAR_PROJECTION_EXHAUSTED"
+                f" | code={self._projection_state.terminal_code}",
+            )
+
+    def _set_calendar_projection_alert(self) -> None:
+        self._cancel_calendar_projection_alert()
+        alert_at_ns = self._projection_state.alert_at_ns
+        if alert_at_ns is not None:
+            self.clock.set_time_alert_ns(
+                _CALENDAR_PROJECTION_RETRY_ALERT,
+                alert_at_ns,
+                callback=self._on_calendar_projection_alert,
+            )
+
+    def _cancel_calendar_projection_alert(self) -> None:
+        if _CALENDAR_PROJECTION_RETRY_ALERT in self.clock.timer_names():
+            self.clock.cancel_timer(_CALENDAR_PROJECTION_RETRY_ALERT)
+
     def _publish_historical_demands(self, _event) -> None:  # noqa: ANN001
+        if set(self._calendar_ids) - set(self._calendars):
+            return
         now_ns = self.clock.timestamp_ns()
         active_retry_ns: int | None = None
         for instrument_id in self._instrument_ids:
-            demand = HistoricalDependencyDemandEvent(
-                demand_id=self._historical_demand_ids[instrument_id],
-                consumer_id=str(self.actor_id),
-                capability_id="metric:completed-bar-foundation",
-                capability_version=1,
-                instrument_id=instrument_id,
-                selector=self._historical_selector,
-                window=self._historical_window,
-                minimum_observations=self._minimum_historical_observations,
-                maximum_observations=self._maximum_historical_observations,
-                priority=self._priority,
-                purpose="warm completed-bar foundation metrics",
+            self._publish_foundation_historical_demand(
+                instrument_id,
                 as_of_ns=now_ns,
-                parameters={
-                    "calculation_interval_seconds": self._target_interval_seconds,
-                    "parameter_version": self._parameter_version,
-                },
-            )
-            self.publish_signal(
-                HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
-                demand.to_signal_value(),
             )
             if self._references_enabled:
                 for role in SessionReferenceRole:
@@ -843,6 +1148,38 @@ class SessionMetricsActor(DataActor):
                     )
         if active_retry_ns is not None:
             self._schedule_active_reference_retry(active_retry_ns)
+
+    def _publish_foundation_historical_demand(
+        self,
+        instrument_id: str,
+        *,
+        as_of_ns: int,
+    ) -> None:
+        if instrument_id in self._foundation_history_requested:
+            return
+        self._foundation_history_requested.add(instrument_id)
+        demand = _completed_bar_foundation_historical_demand(
+            demand_id=self._historical_demand_ids[instrument_id],
+            consumer_id=str(self.actor_id),
+            instrument_id=instrument_id,
+            selector=self._historical_selector,
+            window=self._historical_window,
+            minimum_observations=self._minimum_historical_observations,
+            maximum_observations=self._maximum_historical_observations,
+            priority=self._priority,
+            as_of_ns=as_of_ns,
+            calculation_interval_seconds=self._target_interval_seconds,
+            parameter_version=self._parameter_version,
+        )
+        try:
+            self.publish_signal(
+                HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
+                demand.to_signal_value(),
+            )
+        except Exception:
+            self._foundation_history_requested.discard(instrument_id)
+            raise
+        self._counts["foundation_history_demands"] += 1
 
     def _request_active_reference(self, instrument_id: str, now_ns: int) -> int | None:
         capability_id = f"metric:session-reference:{SessionReferenceRole.ACTIVE.value}"
@@ -1173,11 +1510,18 @@ class SessionMetricsActor(DataActor):
         for (profile_id, _), policy in self._window_policies.items():
             if profile_id != bar.analytical_profile_id:
                 continue
-            if bar.session_id.rsplit(":", 1)[-1] != policy.anchor_phase:
-                continue
             try:
                 spec = self._window_spec(policy, bar)
-                self._window_books[(bar.instrument_id, policy.window_id)].ingest_live(spec, bar)
+                if (
+                    bar.interval_end_ns <= spec.start_ns
+                    or bar.interval_start_ns >= spec.end_ns
+                ):
+                    continue
+                aligned_bar = replace(bar, session_id=spec.session_id)
+                self._window_books[(bar.instrument_id, policy.window_id)].ingest_live(
+                    spec,
+                    aligned_bar,
+                )
             except ValueError as exc:
                 self._counts["failures"] += 1
                 self.log.error(
@@ -1197,7 +1541,8 @@ class SessionMetricsActor(DataActor):
         session = next((item for item in windows if item.phase == policy.anchor_phase), None)
         if session is None:
             raise ValueError("calendar did not provide the configured anchor phase")
-        return resolve_analytical_window(policy, session, session_id=bar.session_id)
+        session_id = f"{bar.calendar_id}:{bar.trade_date.isoformat()}:{policy.anchor_phase}"
+        return resolve_analytical_window(policy, session, session_id=session_id)
 
     def _window_demand(
         self,
@@ -1359,15 +1704,27 @@ class SessionMetricsActor(DataActor):
                 ):
                     self._publish_window_metrics(event.instrument_id, policy)
 
-    def _observe_session_state(self, value: str) -> None:
-        try:
-            event = SessionStateEvent.from_signal_value(value)
-        except ValueError:
-            return
-        if event.calendar_id in self._calendars:
+    def _observe_session_state(self, event: CalendarTransition) -> None:
+        if event.calendar_id in self._expected_calendar_digests:
+            if (
+                event.definition_digest != self._expected_calendar_digests[event.calendar_id]
+                or event.source != self._projection_state.expected_source
+                or event.source_epoch != self._projection_state.expected_source_epoch
+            ):
+                self._counts["failures"] += 1
+                self.log.error(
+                    "SESSION_METRIC_CALENDAR_DEFINITION_CONFLICT"
+                    f" | calendar_id={event.calendar_id}",
+                )
+                return
+            self._calendar_refresh_ids.add(event.calendar_id)
+            self._begin_calendar_projection_cycle()
             previous = self._session_states.get(event.calendar_id)
             self._session_states[event.calendar_id] = event
-            if previous is None or previous.phase == event.phase:
+            if (
+                previous is None
+                or previous.phase_memberships == event.phase_memberships
+            ):
                 return
             self._request_open_session_references(event)
 
@@ -1375,15 +1732,18 @@ class SessionMetricsActor(DataActor):
         profile = self._profiles[self._profile_bindings[instrument_id]]
         calendar_id = str(profile["calendar_id"])
         current = self._session_states.get(calendar_id)
-        phase = (
-            current.phase
-            if current is not None
-            else self._calendars[calendar_id].evaluate(timestamp_ns).phase
-        )
-        return phase == str(profile["primary_phase"])
+        if current is not None:
+            phase_memberships = current.phase_memberships
+        elif calendar_id in self._calendars:
+            phase_memberships = self._calendars[calendar_id].evaluate(
+                timestamp_ns,
+            ).phase_memberships
+        else:
+            return False
+        return str(profile["primary_phase"]) in phase_memberships
 
-    def _request_open_session_references(self, event: SessionStateEvent) -> None:
-        if not self._references_enabled or event.phase == "CLOSED":
+    def _request_open_session_references(self, event: CalendarTransition) -> None:
+        if not self._references_enabled or not event.is_open:
             return
         now_ns = self.clock.timestamp_ns()
         active_retry_ns: int | None = None
@@ -1391,7 +1751,7 @@ class SessionMetricsActor(DataActor):
             profile = self._profiles[self._profile_bindings[instrument_id]]
             if (
                 str(profile["calendar_id"]) != event.calendar_id
-                or str(profile["primary_phase"]) != event.phase
+                or str(profile["primary_phase"]) not in event.phase_memberships
             ):
                 continue
             retry_ns = self._request_active_reference(instrument_id, now_ns)
@@ -1571,15 +1931,3 @@ def _recalculation_contexts(
         raise ValueError("admitted completed bar is absent from ledger")
     targets = (index, index + 1) if index + 1 < len(bars) else (index,)
     return tuple((bars[target], bars[target - 1] if target > 0 else None) for target in targets)
-
-
-class _EventSnapshot:
-    def __init__(self, trade_date: date, phase: str) -> None:
-        self.trade_date = trade_date
-        self.phase = phase
-
-
-def _snapshot_from_event(event: SessionStateEvent) -> _EventSnapshot:
-    if event.trade_date is None:
-        raise ValueError("session event does not carry a trade date")
-    return _EventSnapshot(date.fromisoformat(event.trade_date), event.phase)

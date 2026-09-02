@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: false
+
+interface:
+  display_name: "Markeitech Statistical Learning Expert"
+  short_description: "Leakage-safe ML and bounded optimization review"
+  default_prompt: "Use $kite:markeitech-statistical-learning-optimization-expert to audit this Markeitech feature, label, evaluation, monitoring, or adaptive-policy proposal before any model or optimization work."

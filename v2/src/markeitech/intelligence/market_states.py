@@ -9,6 +9,8 @@ from markeitech.intelligence.metrics import MetricFidelity, MetricHealth
 
 @dataclass(frozen=True, slots=True)
 class StateCategoryBand:
+    """Define one contiguous, lower-inclusive scalar classification band."""
+
     category: str
     lower_bound: Decimal | None
     upper_bound: Decimal | None
@@ -29,6 +31,8 @@ class StateCategoryBand:
 
 @dataclass(frozen=True, slots=True)
 class StateClassificationPolicy:
+    """Configure bounded categories, hysteresis, confirmation, and evidence gates."""
+
     definition_id: str
     definition_version: int
     parameter_version: int
@@ -88,6 +92,8 @@ class StateClassificationPolicy:
 
 @dataclass(frozen=True, slots=True)
 class ScalarStateEvidence:
+    """Carry one scalar observation and its coverage, timing, and evidence quality."""
+
     value: Decimal | None
     coverage_ratio: Decimal
     effective_ts_ns: int
@@ -116,6 +122,8 @@ class ScalarStateEvidence:
 
 @dataclass(frozen=True, slots=True)
 class StateClassificationMemory:
+    """Retain immutable hysteresis and confirmation state between observations."""
+
     policy_identity: tuple[str, int, int] | None = None
     current_category: str | None = None
     candidate_category: str | None = None
@@ -162,6 +170,8 @@ class StateClassificationMemory:
 
 @dataclass(frozen=True, slots=True)
 class StateClassification:
+    """Explain one accepted, pending, unchanged, or unavailable classification."""
+
     definition_id: str
     definition_version: int
     parameter_version: int
@@ -188,6 +198,8 @@ class StateClassification:
 
 @dataclass(frozen=True, slots=True)
 class VolatilityStatePayload(EntityPayload):
+    """Carry volatility measures and their bounded categorical classification."""
+
     horizon: str
     average_true_range: Decimal | None
     realized_range: Decimal | None
@@ -200,6 +212,8 @@ class VolatilityStatePayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class CompressionExpansionStatePayload(EntityPayload):
+    """Carry recent and phase-matched expansion evidence and classification."""
+
     horizon: str
     expansion_ratio_recent: Decimal | None
     expansion_ratio_phase: Decimal | None
@@ -214,6 +228,8 @@ class CompressionExpansionStatePayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class DirectionalStatePayload(EntityPayload):
+    """Carry signed price geometry and its bounded directional classification."""
+
     horizon: str
     signed_displacement: Decimal | None
     signed_simple_return: Decimal | None
@@ -224,6 +240,8 @@ class DirectionalStatePayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class TrendRotationStatePayload(EntityPayload):
+    """Carry composed trend-rotation evidence, conflicts, and classification."""
+
     horizon: str
     signed_path_efficiency: Decimal | None
     directional_category: str
@@ -237,6 +255,8 @@ class TrendRotationStatePayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class ReferenceStatePayload(EntityPayload):
+    """Carry reference value, slope, separation, and their classifications."""
+
     horizon: str
     reference_id: str
     reference_kind: str
@@ -254,6 +274,12 @@ def classify_state(
     *,
     now_ns: int,
 ) -> tuple[StateClassification, StateClassificationMemory]:
+    """Classify scalar evidence with policy-owned quality, age, and hysteresis gates.
+
+    Non-monotonic evidence is ignored; invalid, stale, low-coverage, or otherwise
+    inadmissible evidence yields an explicit unavailable classification.
+    """
+
     if not isinstance(evidence, ScalarStateEvidence):
         raise ValueError("evidence must be ScalarStateEvidence")
     if not isinstance(policy, StateClassificationPolicy):
@@ -415,6 +441,8 @@ def project_volatility_state(
     prior: StateClassificationMemory | None,
     now_ns: int,
 ) -> tuple[VolatilityStatePayload, StateClassificationMemory]:
+    """Project volatility measures and scalar classification into a payload."""
+
     classification, memory = classify_state(evidence, policy, prior, now_ns=now_ns)
     return (
         VolatilityStatePayload(
@@ -446,6 +474,8 @@ def project_compression_expansion_state(
     prior: StateClassificationMemory | None,
     now_ns: int,
 ) -> tuple[CompressionExpansionStatePayload, StateClassificationMemory]:
+    """Project expansion evidence and scalar classification into a payload."""
+
     for field, value in (
         ("recent_reference_count", recent_reference_count),
         ("phase_reference_count", phase_reference_count),
@@ -481,6 +511,8 @@ def project_directional_state(
     prior: StateClassificationMemory | None,
     now_ns: int,
 ) -> tuple[DirectionalStatePayload, StateClassificationMemory]:
+    """Project signed directional evidence and classification into a payload."""
+
     classification, memory = classify_state(evidence, policy, prior, now_ns=now_ns)
     return (
         DirectionalStatePayload(
@@ -510,6 +542,8 @@ def project_trend_rotation_state(
     prior: StateClassificationMemory | None,
     now_ns: int,
 ) -> tuple[TrendRotationStatePayload, StateClassificationMemory]:
+    """Project composed directional, expansion, reference, and conflict evidence."""
+
     classification, memory = classify_state(evidence, policy, prior, now_ns=now_ns)
     return (
         TrendRotationStatePayload(
@@ -546,6 +580,8 @@ def project_reference_state(
     prior_separation: StateClassificationMemory | None,
     now_ns: int,
 ) -> tuple[ReferenceStatePayload, StateClassificationMemory, StateClassificationMemory]:
+    """Project reference value, slope, and separation classifications into a payload."""
+
     slope, slope_memory = classify_state(
         slope_evidence,
         slope_policy,

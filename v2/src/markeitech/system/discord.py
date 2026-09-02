@@ -11,18 +11,32 @@ from time import monotonic
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+import requests
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId
-from nautilus_trader.network import HttpResponse, http_post
 
+from markeitech.acquisition.historical_messages import (
+    HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
+    HISTORICAL_READINESS_SIGNAL,
+    HistoricalDependencyDemandEvent,
+    HistoricalReadinessEvent,
+)
 from markeitech.system.control import SystemHealthState
-from markeitech.system.messages import SYSTEM_HEALTH_SIGNAL, SystemHealthEvent
+from markeitech.system.messages import (
+    SYSTEM_HEALTH_SIGNAL,
+    WATCHLIST_LIFECYCLE_SIGNAL,
+    WATCHLIST_MEMBERSHIP_SIGNAL,
+    SystemHealthEvent,
+    WatchlistLifecycleEvent,
+    WatchlistMembershipEvent,
+)
 from markeitech.system.resource_contracts import (
     RUNTIME_RESOURCE_HEALTH_SIGNAL,
     RuntimeResourceHealthEvent,
 )
 
 SYSTEM_HEALTH_WEBHOOK_ENV = "MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK"
+OPERATIONAL_EVENTS_WEBHOOK_ENV = "MARKEITECH_DISCORD_OPERATIONAL_EVENTS_WEBHOOK"
 
 _RESULT_TIMER = "discord-health-delivery-results"
 _RESULT_POLL_INTERVAL_NS = 1_000_000_000
@@ -41,7 +55,8 @@ _RESOURCE_STATE_COLORS = {
     "CRITICAL": 0xE74C3C,
 }
 
-PostCallable = Callable[..., HttpResponse]
+
+PostCallable = Callable[..., requests.Response]
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,7 +92,7 @@ class DiscordDeliveryWorker:
         timeout_seconds: int,
         queue_capacity: int = 32,
         *,
-        post: PostCallable = http_post,
+        post: PostCallable = requests.post,
     ) -> None:
         self._webhook_url = _with_wait_confirmation(webhook_url)
         self._timeout_seconds = timeout_seconds
@@ -155,8 +170,8 @@ class DiscordDeliveryWorker:
             response = self._post(
                 self._webhook_url,
                 headers={"Content-Type": "application/json"},
-                body=delivery.body,
-                timeout_secs=self._timeout_seconds,
+                data=delivery.body,
+                timeout=self._timeout_seconds,
             )
         except Exception as exc:  # Discord must not affect the runtime.
             return DiscordDeliveryResult(
@@ -166,9 +181,9 @@ class DiscordDeliveryWorker:
             )
         return DiscordDeliveryResult(
             state=delivery.state,
-            delivered=200 <= response.status < 300,
-            status=response.status,
-            error_code=None if 200 <= response.status < 300 else "http_status",
+            delivered=200 <= response.status_code < 300,
+            status=response.status_code,
+            error_code=None if 200 <= response.status_code < 300 else "http_status",
         )
 
 
@@ -180,6 +195,7 @@ class DiscordHealthActorConfig(DataActorConfig):
         ping_critical_resource_alerts: bool,
         actor_id: str | ActorId = "DISCORD-HEALTH",
         webhook_env: str = SYSTEM_HEALTH_WEBHOOK_ENV,
+        operational_events_webhook_env: str = OPERATIONAL_EVENTS_WEBHOOK_ENV,
     ) -> DiscordHealthActorConfig:
         resolved_actor_id = (
             actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
@@ -189,17 +205,123 @@ class DiscordHealthActorConfig(DataActorConfig):
         obj.queue_capacity = queue_capacity
         obj.ping_critical_resource_alerts = ping_critical_resource_alerts
         obj.webhook_env = webhook_env
+        obj.operational_events_webhook_env = operational_events_webhook_env
         return obj
 
 
+type HistoricalDependencyKey = tuple[str, str, int, str, str, str]
+
+
+@dataclass(frozen=True, slots=True)
+class OperationalReadinessSnapshot:
+    system_state: str
+    observed_watchlist_count: int
+    expected_watchlist_count: int
+    historical_state_counts: dict[str, int]
+    completed_at_ns: int
+
+    @property
+    def historical_total(self) -> int:
+        return sum(self.historical_state_counts.values())
+
+    @property
+    def is_ready(self) -> bool:
+        return set(self.historical_state_counts) == {"READY"}
+
+
+class OperationalReadinessProjection:
+    def __init__(self) -> None:
+        self._system_state: str | None = None
+        self._membership_revision: int | None = None
+        self._expected_watchlist: set[str] = set()
+        self._observed_watchlist: set[str] = set()
+        self._demands: dict[HistoricalDependencyKey, HistoricalDependencyDemandEvent] = {}
+        self._readiness: dict[HistoricalDependencyKey, HistoricalReadinessEvent] = {}
+        self._emitted = False
+
+    def accept_system_health(self, event: SystemHealthEvent) -> OperationalReadinessSnapshot | None:
+        self._system_state = event.state
+        return self._snapshot_if_complete()
+
+    def accept_membership(
+        self,
+        event: WatchlistMembershipEvent,
+    ) -> OperationalReadinessSnapshot | None:
+        if event.membership_revision != self._membership_revision:
+            self._membership_revision = event.membership_revision
+            self._observed_watchlist.clear()
+        self._expected_watchlist = {member.instrument_id for member in event.members}
+        return self._snapshot_if_complete()
+
+    def accept_lifecycle(
+        self,
+        event: WatchlistLifecycleEvent,
+    ) -> OperationalReadinessSnapshot | None:
+        if (
+            event.membership_revision == self._membership_revision
+            and event.state == "INSTRUMENT_OBSERVED"
+            and event.instrument_id is not None
+        ):
+            self._observed_watchlist.add(event.instrument_id)
+        return self._snapshot_if_complete()
+
+    def accept_demand(
+        self,
+        event: HistoricalDependencyDemandEvent,
+    ) -> OperationalReadinessSnapshot | None:
+        self._demands[_historical_key(event)] = event
+        return self._snapshot_if_complete()
+
+    def accept_readiness(
+        self,
+        event: HistoricalReadinessEvent,
+    ) -> OperationalReadinessSnapshot | None:
+        self._readiness[_historical_key(event)] = event
+        return self._snapshot_if_complete()
+
+    def _snapshot_if_complete(self) -> OperationalReadinessSnapshot | None:
+        if self._emitted or self._system_state != SystemHealthState.READY.value:
+            return None
+        if not self._expected_watchlist or not self._expected_watchlist.issubset(
+            self._observed_watchlist,
+        ):
+            return None
+        if not self._demands or not set(self._demands).issubset(self._readiness):
+            return None
+        readiness = [self._readiness[key] for key in self._demands]
+        counts: dict[str, int] = {}
+        for event in readiness:
+            counts[event.state] = counts.get(event.state, 0) + 1
+        self._emitted = True
+        return OperationalReadinessSnapshot(
+            system_state=self._system_state,
+            observed_watchlist_count=len(self._expected_watchlist & self._observed_watchlist),
+            expected_watchlist_count=len(self._expected_watchlist),
+            historical_state_counts=dict(sorted(counts.items())),
+            completed_at_ns=max(event.completed_at_ns for event in readiness),
+        )
+
+
 class DiscordHealthActor(DataActor):
+    """Project optional system-health notifications to Discord.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.discord-health
+        architecture.component.label: Discord Health Projection
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.system
+    """
+
     def __init__(self, config: DiscordHealthActorConfig) -> None:
         super().__init__(config)
         self._timeout_seconds = config.request_timeout_seconds
         self._queue_capacity = config.queue_capacity
         self._ping_critical_resource_alerts = config.ping_critical_resource_alerts
         self._webhook_env = config.webhook_env
+        self._operational_events_webhook_env = config.operational_events_webhook_env
         self._worker: DiscordDeliveryWorker | None = None
+        self._operational_worker: DiscordDeliveryWorker | None = None
+        self._operational_readiness = OperationalReadinessProjection()
         self._subscribed = False
         self._summary_logged = False
 
@@ -218,8 +340,26 @@ class DiscordHealthActor(DataActor):
             self._queue_capacity,
         )
         self._worker.start()
+        operational_webhook_url = os.getenv(self._operational_events_webhook_env, "").strip()
+        if operational_webhook_url:
+            self._operational_worker = DiscordDeliveryWorker(
+                operational_webhook_url,
+                self._timeout_seconds,
+                self._queue_capacity,
+            )
+            self._operational_worker.start()
+        else:
+            self.log.warning(
+                "DISCORD_OPERATIONAL_DISABLED | reason=missing_environment"
+                f" | variable={self._operational_events_webhook_env}",
+            )
         self.subscribe_signal(SYSTEM_HEALTH_SIGNAL)
         self.subscribe_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL)
+        if self._operational_worker is not None:
+            self.subscribe_signal(WATCHLIST_MEMBERSHIP_SIGNAL)
+            self.subscribe_signal(WATCHLIST_LIFECYCLE_SIGNAL)
+            self.subscribe_signal(HISTORICAL_DEPENDENCY_DEMAND_SIGNAL)
+            self.subscribe_signal(HISTORICAL_READINESS_SIGNAL)
         self._subscribed = True
         self.clock.set_timer_ns(
             _RESULT_TIMER,
@@ -230,6 +370,14 @@ class DiscordHealthActor(DataActor):
 
     def on_signal(self, signal: Signal) -> None:
         if self._worker is None:
+            return
+        if signal.name in {
+            WATCHLIST_MEMBERSHIP_SIGNAL,
+            WATCHLIST_LIFECYCLE_SIGNAL,
+            HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
+            HISTORICAL_READINESS_SIGNAL,
+        }:
+            self._handle_operational_readiness(signal)
             return
         if signal.name == RUNTIME_RESOURCE_HEALTH_SIGNAL:
             self._handle_resource_health(signal)
@@ -245,6 +393,8 @@ class DiscordHealthActor(DataActor):
             self.log.warning(f"DISCORD_HEALTH_IGNORED | state={event.state}")
             return
 
+        self._submit_operational_snapshot(self._operational_readiness.accept_system_health(event))
+
         delivery = DiscordDelivery(
             state=event.state,
             body=render_system_health_message(event, signal.ts_event),
@@ -256,6 +406,11 @@ class DiscordHealthActor(DataActor):
         if self._subscribed:
             self.unsubscribe_signal(SYSTEM_HEALTH_SIGNAL)
             self.unsubscribe_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL)
+            if self._operational_worker is not None:
+                self.unsubscribe_signal(WATCHLIST_MEMBERSHIP_SIGNAL)
+                self.unsubscribe_signal(WATCHLIST_LIFECYCLE_SIGNAL)
+                self.unsubscribe_signal(HISTORICAL_DEPENDENCY_DEMAND_SIGNAL)
+                self.unsubscribe_signal(HISTORICAL_READINESS_SIGNAL)
             self._subscribed = False
         if _RESULT_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_RESULT_TIMER)
@@ -271,22 +426,30 @@ class DiscordHealthActor(DataActor):
             return
         if not self._worker.close():
             self.log.error("DISCORD_HEALTH_WORKER_TIMEOUT")
+        if self._operational_worker is not None and not self._operational_worker.close():
+            self.log.error("DISCORD_OPERATIONAL_WORKER_TIMEOUT")
 
     def _drain_results(self, _event) -> None:  # noqa: ANN001
-        if self._worker is None:
+        self._drain_worker_results(self._worker, "DISCORD_HEALTH")
+        self._drain_worker_results(self._operational_worker, "DISCORD_OPERATIONAL")
+
+    def _drain_worker_results(
+        self,
+        worker: DiscordDeliveryWorker | None,
+        label: str,
+    ) -> None:
+        if worker is None:
             return
         while True:
             try:
-                result = self._worker.results.get_nowait()
+                result = worker.results.get_nowait()
             except Empty:
                 return
             if result.delivered:
-                self.log.info(
-                    f"DISCORD_HEALTH_DELIVERED | state={result.state} | status={result.status}",
-                )
+                self.log.info(f"{label}_DELIVERED | state={result.state} | status={result.status}")
             else:
                 self.log.error(
-                    f"DISCORD_HEALTH_DELIVERY_FAILED | state={result.state}"
+                    f"{label}_DELIVERY_FAILED | state={result.state}"
                     f" | status={result.status} | error={result.error_code}",
                 )
 
@@ -307,6 +470,53 @@ class DiscordHealthActor(DataActor):
             f" | failed={stats.failed} | rejected={stats.rejected}"
             f" | pending={stats.pending}",
         )
+        if self._operational_worker is not None:
+            operational = self._operational_worker.snapshot()
+            self.log.info(
+                "DISCORD_OPERATIONAL_SUMMARY"
+                f" | accepted={operational.accepted} | delivered={operational.delivered}"
+                f" | failed={operational.failed} | rejected={operational.rejected}"
+                f" | pending={operational.pending}",
+            )
+
+    def _handle_operational_readiness(self, signal: Signal) -> None:
+        try:
+            if signal.name == WATCHLIST_MEMBERSHIP_SIGNAL:
+                snapshot = self._operational_readiness.accept_membership(
+                    WatchlistMembershipEvent.from_signal_value(signal.value),
+                )
+            elif signal.name == WATCHLIST_LIFECYCLE_SIGNAL:
+                snapshot = self._operational_readiness.accept_lifecycle(
+                    WatchlistLifecycleEvent.from_signal_value(signal.value),
+                )
+            elif signal.name == HISTORICAL_DEPENDENCY_DEMAND_SIGNAL:
+                snapshot = self._operational_readiness.accept_demand(
+                    HistoricalDependencyDemandEvent.from_signal_value(signal.value),
+                )
+            else:
+                snapshot = self._operational_readiness.accept_readiness(
+                    HistoricalReadinessEvent.from_signal_value(signal.value),
+                )
+        except ValueError as exc:
+            self.log.error(
+                f"DISCORD_OPERATIONAL_REJECTED | signal={signal.name} | error={type(exc).__name__}",
+            )
+            return
+        self._submit_operational_snapshot(snapshot)
+
+    def _submit_operational_snapshot(
+        self,
+        snapshot: OperationalReadinessSnapshot | None,
+    ) -> None:
+        if snapshot is None or self._operational_worker is None:
+            return
+        state = "READY" if snapshot.is_ready else "DEGRADED"
+        if not self._operational_worker.submit(
+            DiscordDelivery(state=state, body=render_operational_readiness_message(snapshot)),
+        ):
+            self.log.error(
+                f"DISCORD_OPERATIONAL_DROPPED | state={state} | reason=queue_full",
+            )
 
     def _handle_resource_health(self, signal: Signal) -> None:
         assert self._worker is not None
@@ -409,6 +619,70 @@ def render_runtime_resource_health_message(
     if ping_critical:
         payload["content"] = "@here"
     return json.dumps(payload, separators=(",", ":")).encode()
+
+
+def render_operational_readiness_message(snapshot: OperationalReadinessSnapshot) -> bytes:
+    state = "READY" if snapshot.is_ready else "DEGRADED"
+    title = (
+        "Markeitech V2 | Ready for Sir Loke"
+        if snapshot.is_ready
+        else "Markeitech V2 | Warmup Complete with Gaps"
+    )
+    historical_counts = " · ".join(
+        f"{name.title()}: {count}" for name, count in snapshot.historical_state_counts.items()
+    )
+    embed: dict[str, Any] = {
+        "title": title,
+        "description": (
+            "Initial historical warmup is complete and every configured watchlist instrument "
+            "has been observed."
+        ),
+        "color": _STATE_COLORS[state],
+        "fields": [
+            {"name": "State", "value": state, "inline": True},
+            {
+                "name": "Watchlist",
+                "value": (
+                    f"{snapshot.observed_watchlist_count}/"
+                    f"{snapshot.expected_watchlist_count} observed"
+                ),
+                "inline": True,
+            },
+            {
+                "name": "Historical warmup",
+                "value": (
+                    f"{snapshot.historical_state_counts.get('READY', 0)}/"
+                    f"{snapshot.historical_total} ready"
+                ),
+                "inline": True,
+            },
+            {"name": "Historical outcomes", "value": historical_counts},
+            {"name": "System control", "value": snapshot.system_state, "inline": True},
+        ],
+        "footer": {"text": "Operational readiness · Evidence, not execution"},
+    }
+    if snapshot.completed_at_ns > 0:
+        embed["timestamp"] = datetime.fromtimestamp(
+            snapshot.completed_at_ns / 1_000_000_000,
+            UTC,
+        ).isoformat()
+    return json.dumps(
+        {"allowed_mentions": {"parse": []}, "embeds": [embed]},
+        separators=(",", ":"),
+    ).encode()
+
+
+def _historical_key(
+    event: HistoricalDependencyDemandEvent | HistoricalReadinessEvent,
+) -> HistoricalDependencyKey:
+    return (
+        event.consumer_id,
+        event.capability_id,
+        event.capability_version,
+        event.instrument_id,
+        event.selector,
+        event.window,
+    )
 
 
 def _display_name(value: str) -> str:

@@ -22,11 +22,12 @@ from markeitech.intelligence import (
     MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
-    MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
     ParameterMutability,
 )
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
+from markeitech.intelligence.metrics import _validate_legacy_metric_value
 
 
 def _lookback_parameter(*, dynamic: bool = True) -> MetricParameterDefinition:
@@ -272,7 +273,7 @@ def test_metric_value_carries_temporal_health_and_lineage_truth() -> None:
     )
     registry = MetricRegistry((_definition(),))
 
-    registry.validate_value(value)
+    _validate_legacy_metric_value(registry, value)
     assert value.key == ("normalized_return", 1)
 
 
@@ -307,7 +308,7 @@ def test_definition_exposes_specialist_contract_and_rejects_undeclared_fidelity(
     )
 
     with pytest.raises(ValueError, match="fidelity is incompatible"):
-        MetricRegistry((definition,)).validate_value(value)
+        _validate_legacy_metric_value(MetricRegistry((definition,)), value)
 
 
 def test_null_value_requires_reason_and_definition_permission() -> None:

@@ -11,7 +11,10 @@ from markeitech.system.cli import (
     _start_caffeinate,
     main,
 )
-from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
+from markeitech.system.discord import (
+    OPERATIONAL_EVENTS_WEBHOOK_ENV,
+    SYSTEM_HEALTH_WEBHOOK_ENV,
+)
 
 POSTGRES_DSN_ENV = "MARKEITECH_POSTGRES_DSN"
 
@@ -129,4 +132,8 @@ def _set_synthetic_runtime_environment(monkeypatch) -> None:
     monkeypatch.setenv(
         SYSTEM_HEALTH_WEBHOOK_ENV,
         "https://discord.invalid/api/webhooks/ci-placeholder",
+    )
+    monkeypatch.setenv(
+        OPERATIONAL_EVENTS_WEBHOOK_ENV,
+        "https://discord.invalid/api/webhooks/ci-operational-placeholder",
     )

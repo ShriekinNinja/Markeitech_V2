@@ -14,7 +14,7 @@ invalidation_rule = "session identity or metric evidence conflict"
 expiry_rule = "configured completed-session retention"
 permitted_health = ["READY", "DEGRADED", "WARMING"]
 permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+applications = [{ parameter_set_id = "static-v1", application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
 metric_inputs = [
   { role = "start_ns", metric_id = "active_session.start_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
   { role = "end_ns", metric_id = "active_session.end_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
@@ -31,7 +31,7 @@ metric_inputs = [
 ]
 entity_inputs = []
 parameters = []
-parameter_sets = []
+parameter_sets = [{ parameter_set_id = "static-v1", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "static-reviewed-config", values = {} }]
 
 [[metrics.entity_analysis.definitions]]
 definition_id = "previous-session-reference-v1"
@@ -49,7 +49,7 @@ invalidation_rule = "source session identity or metric evidence conflict"
 expiry_rule = "configured completed-session retention"
 permitted_health = ["READY", "DEGRADED", "WARMING"]
 permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "previous_session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+applications = [{ parameter_set_id = "static-v1", application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "previous_session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
 metric_inputs = [
   { role = "start_ns", metric_id = "previous_session.start_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
   { role = "end_ns", metric_id = "previous_session.end_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
@@ -66,7 +66,7 @@ metric_inputs = [
 ]
 entity_inputs = []
 parameters = []
-parameter_sets = []
+parameter_sets = [{ parameter_set_id = "static-v1", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "static-reviewed-config", values = {} }]
 
 [[metrics.entity_analysis.definitions]]
 definition_id = "opening-range-v1"
@@ -84,7 +84,7 @@ invalidation_rule = "window identity or metric evidence conflict"
 expiry_rule = "configured completed-session retention"
 permitted_health = ["READY", "DEGRADED", "WARMING"]
 permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-opening-range", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "opening_range", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+applications = [{ parameter_set_id = "static-v1", application_id = "cme-opening-range", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "opening_range", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
 metric_inputs = [
   { role = "start_ns", metric_id = "opening_range.cme_equity_primary.opening_range_fast.start_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
   { role = "end_ns", metric_id = "opening_range.cme_equity_primary.opening_range_fast.end_ns", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
@@ -99,7 +99,7 @@ metric_inputs = [
 ]
 entity_inputs = []
 parameters = []
-parameter_sets = []
+parameter_sets = [{ parameter_set_id = "static-v1", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "static-reviewed-config", values = {} }]
 
 [[metrics.entity_analysis.definitions]]
 definition_id = "opening-gap-v1"
@@ -117,14 +117,14 @@ invalidation_rule = "session identity or metric evidence conflict"
 expiry_rule = "configured completed-session retention"
 permitted_health = ["READY", "DEGRADED", "WARMING"]
 permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session_open", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+applications = [{ parameter_set_id = "static-v1", application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session_open", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
 metric_inputs = [
   { role = "points", metric_id = "gap.opening.points", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
   { role = "ratio", metric_id = "gap.opening.ratio", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
 ]
 entity_inputs = []
 parameters = []
-parameter_sets = []
+parameter_sets = [{ parameter_set_id = "static-v1", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "static-reviewed-config", values = {} }]
 
 [[metrics.entity_analysis.definitions]]
 definition_id = "previous-session-high-v1"
@@ -142,11 +142,11 @@ invalidation_rule = "source metric identity conflict"
 expiry_rule = "configured completed-session retention"
 permitted_health = ["READY", "DEGRADED", "WARMING"]
 permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "previous_session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+applications = [{ parameter_set_id = "static-v1", application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "previous_session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
 metric_inputs = [{ role = "price", metric_id = "previous_session.high", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }, { role = "source_complete", metric_id = "previous_session.complete", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
 entity_inputs = []
 parameters = []
-parameter_sets = []
+parameter_sets = [{ parameter_set_id = "static-v1", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "static-reviewed-config", values = {} }]
 
 [[metrics.entity_analysis.definitions]]
 definition_id = "previous-session-low-v1"
@@ -164,11 +164,11 @@ invalidation_rule = "source metric identity conflict"
 expiry_rule = "configured completed-session retention"
 permitted_health = ["READY", "DEGRADED", "WARMING"]
 permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "previous_session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+applications = [{ parameter_set_id = "static-v1", application_id = "cme-open", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "previous_session", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
 metric_inputs = [{ role = "price", metric_id = "previous_session.low", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }, { role = "source_complete", metric_id = "previous_session.complete", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
 entity_inputs = []
 parameters = []
-parameter_sets = []
+parameter_sets = [{ parameter_set_id = "static-v1", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "static-reviewed-config", values = {} }]
 
 [[metrics.entity_analysis.definitions]]
 definition_id = "opening-range-high-v1"
@@ -186,11 +186,11 @@ invalidation_rule = "source metric identity conflict"
 expiry_rule = "configured completed-session retention"
 permitted_health = ["READY", "DEGRADED", "WARMING"]
 permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-opening-range", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "opening_range", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+applications = [{ parameter_set_id = "static-v1", application_id = "cme-opening-range", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "opening_range", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
 metric_inputs = [{ role = "price", metric_id = "opening_range.cme_equity_primary.opening_range_fast.high", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }, { role = "source_complete", metric_id = "opening_range.cme_equity_primary.opening_range_fast.complete", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
 entity_inputs = []
 parameters = []
-parameter_sets = []
+parameter_sets = [{ parameter_set_id = "static-v1", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "static-reviewed-config", values = {} }]
 
 [[metrics.entity_analysis.definitions]]
 definition_id = "opening-range-low-v1"
@@ -208,11 +208,11 @@ invalidation_rule = "source metric identity conflict"
 expiry_rule = "configured completed-session retention"
 permitted_health = ["READY", "DEGRADED", "WARMING"]
 permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-opening-range", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "opening_range", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+applications = [{ parameter_set_id = "static-v1", application_id = "cme-opening-range", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "opening_range", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
 metric_inputs = [{ role = "price", metric_id = "opening_range.cme_equity_primary.opening_range_fast.low", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }, { role = "source_complete", metric_id = "opening_range.cme_equity_primary.opening_range_fast.complete", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
 entity_inputs = []
 parameters = []
-parameter_sets = []
+parameter_sets = [{ parameter_set_id = "static-v1", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "static-reviewed-config", values = {} }]
 
 [[metrics.entity_analysis.definitions]]
 definition_id = "volatility-state-v1"
@@ -230,7 +230,7 @@ invalidation_rule = "dependency identity conflict"
 expiry_rule = "configured maximum input age"
 permitted_health = ["READY", "DEGRADED", "WARMING", "STALE", "UNAVAILABLE"]
 permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-fast", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "fast", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+applications = [{ parameter_set_id = "volatility-percentile-fixture", application_id = "cme-fast", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "fast", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
 metric_inputs = [
   { role = "normalized_volatility", metric_id = "rolling.fast.context_45m.range_percentile_recent", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
   { role = "coverage_ratio", metric_id = "rolling.fast.context_45m.coverage_ratio", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] },
@@ -266,7 +266,7 @@ invalidation_rule = "parameter or dependency identity conflict"
 expiry_rule = "configured maximum input age"
 permitted_health = ["READY", "DEGRADED", "WARMING"]
 permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-fast", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "fast", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+applications = [{ parameter_set_id = "ema-dynamic-10", application_id = "cme-fast", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "fast", source_selector = "1-MINUTE-LAST-EXTERNAL", requires_volume = false }]
 metric_inputs = [{ role = "reference_value", metric_id = "entity_input.reference.ema.value", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
 entity_inputs = []
 parameters = [{ parameter_id = "period", meaning = "EMA lookback in completed bars", value_kind = "integer", unit = "bars", default = 10, dynamic = true, mutability = "policy_controlled_runtime", source = "operator-reviewed-config", minimum = 5, maximum = 34, step = 1 }]
@@ -281,18 +281,177 @@ enabled = true
 decision_question = "Which pivot geometry is confirmed without look-ahead publication?"
 implementation_id = "markeitech.entity.confirmed_swing.v1"
 formula_version = 1
-identity_dimensions = ["horizon", "pivot_timestamp", "swing_kind"]
-durability = "CROSS_SESSION_CHECKPOINT"
-completion_rule = "configured right-span evidence is complete"
-invalidation_rule = "source observation conflict"
-expiry_rule = "configured age or retention bound"
-permitted_health = ["READY", "DEGRADED"]
-permitted_fidelities = ["DERIVED", "PARTIAL"]
-applications = [{ application_id = "cme-tactical", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "tactical", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = false }]
-metric_inputs = [{ role = "pivot_price", metric_id = "entity_input.swing.pivot_price", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED"], permitted_fidelities = ["DERIVED", "PARTIAL"] }]
+identity_dimensions = ["bar_specification", "definition_id", "detector_id", "detector_version", "horizon", "pivot_timestamp", "swing_kind"]
+durability = "TRANSIENT"
+completion_rule = "configured right-span evidence confirms the strict pivot"
+invalidation_rule = "accepted bar conflict or detector identity conflict"
+expiry_rule = "bounded confirmed-swing retention removes the oldest complete entity"
+permitted_health = ["READY", "DEGRADED", "STALE"]
+permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"]
+applications = [{ parameter_set_id = "swing-tactical-5m-v1", application_id = "cme-tactical-5m", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "intraday_5m", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [
+  { role = "pivot_price", metric_id = "entity_input.swing.pivot_price", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+  { role = "prominence", metric_id = "entity_input.swing.prominence", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+]
 entity_inputs = []
-parameters = []
-parameter_sets = []
+parameters = [
+  { parameter_id = "detector_id", meaning = "Stable detector identity", value_kind = "text", unit = "identity", default = "tactical-5m", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["tactical-5m"] },
+  { parameter_id = "left_span_bars", meaning = "Completed bars required to the left of a pivot", value_kind = "integer", unit = "bars", default = 1, dynamic = true, mutability = "policy_controlled_runtime", source = "operator-reviewed-config", minimum = 1, maximum = 5, step = 1 },
+  { parameter_id = "right_span_bars", meaning = "Completed bars required to confirm a pivot", value_kind = "integer", unit = "bars", default = 1, dynamic = true, mutability = "policy_controlled_runtime", source = "operator-reviewed-config", minimum = 1, maximum = 5, step = 1 },
+  { parameter_id = "minimum_prominence", meaning = "Minimum raw-price pivot prominence", value_kind = "number", unit = "price", default = 0.5, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.25, maximum = 10.0, step = 0.25 },
+  { parameter_id = "tie_policy", meaning = "Equal-extreme handling", value_kind = "text", unit = "policy", default = "reject_ties", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["reject_ties"] },
+  { parameter_id = "maximum_retained_bars", meaning = "Bounded detector bar retention", value_kind = "integer", unit = "bars", default = 100, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 3, maximum = 1000, step = 1 },
+]
+parameter_sets = [{ parameter_set_id = "swing-tactical-5m-v1", parameter_version = 1, effective_from = "2026-08-24T00:00:00Z", source = "offline-test-fixture", values = { detector_id = "tactical-5m", left_span_bars = 1, right_span_bars = 1, minimum_prominence = 0.5, tie_policy = "reject_ties", maximum_retained_bars = 100 } }]
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "swing-leg-v1"
+group = "swing_fvg_zone"
+entity_type = "swing_leg"
+entity_version = 1
+enabled = true
+decision_question = "How are compatible alternating confirmed pivots geometrically related?"
+implementation_id = "markeitech.entity.swing_leg.v1"
+formula_version = 1
+identity_dimensions = ["bar_specification", "chain_policy_id", "chain_policy_version", "definition_id", "destination_entity_id", "horizon", "origin_entity_id"]
+durability = "TRANSIENT"
+completion_rule = "two compatible alternating confirmed pivots define one immutable leg"
+invalidation_rule = "endpoint or chain identity conflict"
+expiry_rule = "bounded relationship retention removes the oldest leg"
+permitted_health = ["READY", "DEGRADED", "STALE"]
+permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"]
+applications = [{ parameter_set_id = "pivot-chain-5m-v1", application_id = "cme-pivot-chain-5m", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "intraday_5m", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [{ role = "atr_normalization", metric_id = "atr-normalization", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] }]
+entity_inputs = [{ role = "confirmed_swing", entity_type = "confirmed_swing", entity_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] }]
+parameters = [
+  { parameter_id = "policy_id", meaning = "Stable pivot-chain policy identity", value_kind = "text", unit = "identity", default = "alternating-more-extreme", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["alternating-more-extreme"] },
+  { parameter_id = "source_interval_ms", meaning = "Expected completed-bar interval", value_kind = "integer", unit = "milliseconds", default = 300000, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 300000, maximum = 300000, step = 1 },
+  { parameter_id = "same_kind_policy", meaning = "Policy for consecutive same-kind pivots", value_kind = "text", unit = "policy", default = "MORE_EXTREME_TERMINAL", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["MORE_EXTREME_TERMINAL", "LATEST_TERMINAL", "UNRESOLVED_UNTIL_OPPOSITE"] },
+  { parameter_id = "resolved_run_selection", meaning = "Representative pivot selection for a resolved same-kind run", value_kind = "text", unit = "policy", default = "MORE_EXTREME", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["MORE_EXTREME", "EARLIEST", "LATEST"] },
+  { parameter_id = "resolved_run_tie_break", meaning = "Equal-extreme representative tie break", value_kind = "text", unit = "policy", default = "LATEST", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["EARLIEST", "LATEST"] },
+  { parameter_id = "equality_tolerance", meaning = "Raw-price tolerance for equal pivot classification", value_kind = "number", unit = "price", default = 0.5, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.0, maximum = 10.0, step = 0.25 },
+  { parameter_id = "minimum_leg_displacement", meaning = "Minimum raw-price displacement retained as a leg", value_kind = "number", unit = "price", default = 0.0, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.0, maximum = 100.0, step = 0.25 },
+  { parameter_id = "leg_scale_ratio_tolerance", meaning = "Tolerance used when relating adjacent leg scales", value_kind = "number", unit = "ratio", default = 0.1, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.0, maximum = 1.0, step = 0.01 },
+  { parameter_id = "maximum_retained_pivots", meaning = "Bounded confirmed-pivot retention", value_kind = "integer", unit = "pivots", default = 100, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 3, maximum = 2000, step = 1 },
+  { parameter_id = "maximum_retained_bars", meaning = "Bounded path-bar retention", value_kind = "integer", unit = "bars", default = 200, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 3, maximum = 5000, step = 1 },
+  { parameter_id = "maximum_retained_normalizations", meaning = "Bounded normalization retention", value_kind = "integer", unit = "observations", default = 100, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 1, maximum = 2000, step = 1 },
+  { parameter_id = "maximum_selected_pivots", meaning = "Maximum pivots exposed in one structure state", value_kind = "integer", unit = "pivots", default = 20, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 2, maximum = 200, step = 1 },
+]
+parameter_sets = [{ parameter_set_id = "pivot-chain-5m-v1", parameter_version = 1, effective_from = "2026-08-24T00:00:00Z", source = "offline-test-fixture", values = { policy_id = "alternating-more-extreme", source_interval_ms = 300000, same_kind_policy = "MORE_EXTREME_TERMINAL", resolved_run_selection = "MORE_EXTREME", resolved_run_tie_break = "LATEST", equality_tolerance = 0.5, minimum_leg_displacement = 0.0, leg_scale_ratio_tolerance = 0.1, maximum_retained_pivots = 100, maximum_retained_bars = 200, maximum_retained_normalizations = 100, maximum_selected_pivots = 20 } }]
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "pivot-structure-v1"
+group = "swing_fvg_zone"
+entity_type = "pivot_structure_state"
+entity_version = 1
+enabled = true
+decision_question = "What geometric relationships do confirmed pivots describe on one horizon?"
+implementation_id = "markeitech.entity.pivot_structure_state.v1"
+formula_version = 1
+identity_dimensions = ["bar_specification", "chain_policy_id", "chain_policy_version", "definition_id", "detector_id", "detector_version", "horizon"]
+durability = "TRANSIENT"
+completion_rule = "current bounded pivot-chain projection remains revisable"
+invalidation_rule = "chain or detector identity conflict"
+expiry_rule = "application removal or bounded relationship retention"
+permitted_health = ["READY", "DEGRADED", "STALE"]
+permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"]
+applications = [{ parameter_set_id = "pivot-chain-5m-v1", application_id = "cme-pivot-structure-5m", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "intraday_5m", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = []
+entity_inputs = [
+  { role = "confirmed_swing", entity_type = "confirmed_swing", entity_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+  { role = "swing_leg", entity_type = "swing_leg", entity_version = 1, required = false, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+]
+parameters = [
+  { parameter_id = "policy_id", meaning = "Stable pivot-chain policy identity", value_kind = "text", unit = "identity", default = "alternating-more-extreme", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["alternating-more-extreme"] },
+  { parameter_id = "source_interval_ms", meaning = "Expected completed-bar interval", value_kind = "integer", unit = "milliseconds", default = 300000, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 300000, maximum = 300000, step = 1 },
+  { parameter_id = "same_kind_policy", meaning = "Policy for consecutive same-kind pivots", value_kind = "text", unit = "policy", default = "MORE_EXTREME_TERMINAL", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["MORE_EXTREME_TERMINAL", "LATEST_TERMINAL", "UNRESOLVED_UNTIL_OPPOSITE"] },
+  { parameter_id = "resolved_run_selection", meaning = "Representative pivot selection for a resolved same-kind run", value_kind = "text", unit = "policy", default = "MORE_EXTREME", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["MORE_EXTREME", "EARLIEST", "LATEST"] },
+  { parameter_id = "resolved_run_tie_break", meaning = "Equal-extreme representative tie break", value_kind = "text", unit = "policy", default = "LATEST", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["EARLIEST", "LATEST"] },
+  { parameter_id = "equality_tolerance", meaning = "Raw-price tolerance for equal pivot classification", value_kind = "number", unit = "price", default = 0.5, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.0, maximum = 10.0, step = 0.25 },
+  { parameter_id = "minimum_leg_displacement", meaning = "Minimum raw-price displacement retained as a leg", value_kind = "number", unit = "price", default = 0.0, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.0, maximum = 100.0, step = 0.25 },
+  { parameter_id = "leg_scale_ratio_tolerance", meaning = "Tolerance used when relating adjacent leg scales", value_kind = "number", unit = "ratio", default = 0.1, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.0, maximum = 1.0, step = 0.01 },
+  { parameter_id = "maximum_retained_pivots", meaning = "Bounded confirmed-pivot retention", value_kind = "integer", unit = "pivots", default = 100, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 3, maximum = 2000, step = 1 },
+  { parameter_id = "maximum_retained_bars", meaning = "Bounded path-bar retention", value_kind = "integer", unit = "bars", default = 200, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 3, maximum = 5000, step = 1 },
+  { parameter_id = "maximum_retained_normalizations", meaning = "Bounded normalization retention", value_kind = "integer", unit = "observations", default = 100, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 1, maximum = 2000, step = 1 },
+  { parameter_id = "maximum_selected_pivots", meaning = "Maximum pivots exposed in one structure state", value_kind = "integer", unit = "pivots", default = 20, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 2, maximum = 200, step = 1 },
+]
+parameter_sets = [{ parameter_set_id = "pivot-chain-5m-v1", parameter_version = 1, effective_from = "2026-08-24T00:00:00Z", source = "offline-test-fixture", values = { policy_id = "alternating-more-extreme", source_interval_ms = 300000, same_kind_policy = "MORE_EXTREME_TERMINAL", resolved_run_selection = "MORE_EXTREME", resolved_run_tie_break = "LATEST", equality_tolerance = 0.5, minimum_leg_displacement = 0.0, leg_scale_ratio_tolerance = 0.1, maximum_retained_pivots = 100, maximum_retained_bars = 200, maximum_retained_normalizations = 100, maximum_selected_pivots = 20 } }]
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "wick-gap-5m-v1"
+group = "swing_fvg_zone"
+entity_type = "fair_value_gap"
+entity_version = 1
+enabled = true
+decision_question = "Which configured three-bar wick gaps exist and what is their exact fill state?"
+implementation_id = "markeitech.entity.fair_value_gap.v1"
+formula_version = 1
+identity_dimensions = ["bar_specification", "definition_id", "direction", "formation_timestamp", "horizon", "lifecycle_policy_id", "lifecycle_policy_version"]
+durability = "TRANSIENT"
+completion_rule = "three contiguous completed bars confirm configured gap geometry"
+invalidation_rule = "configured full-fill terminal outcome or source conflict"
+expiry_rule = "configured completed-bar age boundary"
+permitted_health = ["READY", "DEGRADED", "STALE"]
+permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"]
+applications = [{ parameter_set_id = "wick-gap-5m-v1", application_id = "cme-wick-gap-5m", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "intraday_5m", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = [
+  { role = "lower_bound", metric_id = "entity_input.fvg.lower_bound", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+  { role = "upper_bound", metric_id = "entity_input.fvg.upper_bound", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+  { role = "width", metric_id = "entity_input.fvg.width", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+  { role = "fill_ratio", metric_id = "entity_input.fvg.fill_ratio", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+  { role = "atr_normalization", metric_id = "atr-normalization", metric_version = 1, parameter_version = 1, required = false, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+]
+entity_inputs = []
+parameters = [
+  { parameter_id = "policy_id", meaning = "Stable FVG lifecycle policy identity", value_kind = "text", unit = "identity", default = "wick-fill-v1", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["wick-fill-v1"] },
+  { parameter_id = "source_interval_ms", meaning = "Expected completed-bar interval", value_kind = "integer", unit = "milliseconds", default = 300000, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 300000, maximum = 300000, step = 1 },
+  { parameter_id = "pattern_length", meaning = "Required contiguous bar pattern length", value_kind = "integer", unit = "bars", default = 3, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 3, maximum = 3, step = 1 },
+  { parameter_id = "minimum_width", meaning = "Minimum raw-price gap width", value_kind = "number", unit = "price", default = 1.0, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.25, maximum = 20.0, step = 0.25 },
+  { parameter_id = "price_basis", meaning = "Price geometry used for gap formation", value_kind = "text", unit = "policy", default = "wick", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["wick"] },
+  { parameter_id = "fill_method", meaning = "Price geometry used for fill progress", value_kind = "text", unit = "policy", default = "wick_penetration", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["wick_penetration"] },
+  { parameter_id = "terminal_outcome", meaning = "Lifecycle outcome on full fill", value_kind = "text", unit = "policy", default = "COMPLETE", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["COMPLETE", "INVALIDATED"] },
+  { parameter_id = "maximum_age_bars", meaning = "Maximum completed-bar age before expiry", value_kind = "integer", unit = "bars", default = 12, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 1, maximum = 100, step = 1 },
+  { parameter_id = "maximum_retained_bars", meaning = "Bounded FVG bar retention", value_kind = "integer", unit = "bars", default = 200, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 3, maximum = 5000, step = 1 },
+  { parameter_id = "maximum_retained_normalizations", meaning = "Bounded normalization retention", value_kind = "integer", unit = "observations", default = 100, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 1, maximum = 2000, step = 1 },
+]
+parameter_sets = [{ parameter_set_id = "wick-gap-5m-v1", parameter_version = 1, effective_from = "2026-08-24T00:00:00Z", source = "offline-test-fixture", values = { policy_id = "wick-fill-v1", source_interval_ms = 300000, pattern_length = 3, minimum_width = 1.0, price_basis = "wick", fill_method = "wick_penetration", terminal_outcome = "COMPLETE", maximum_age_bars = 12, maximum_retained_bars = 200, maximum_retained_normalizations = 100 } }]
+
+[[metrics.entity_analysis.definitions]]
+definition_id = "market-geometry-zone-5m-v1"
+group = "swing_fvg_zone"
+entity_type = "derived_zone"
+entity_version = 1
+enabled = true
+decision_question = "Which compatible reviewed market-geometry entities form one bounded interval?"
+implementation_id = "markeitech.entity.derived_zone.v1"
+formula_version = 1
+identity_dimensions = ["application_id", "constituent_set_id", "definition_id", "policy_id", "policy_version"]
+durability = "TRANSIENT"
+completion_rule = "configured compatible constituents form a bounded interval"
+invalidation_rule = "constituent composition no longer satisfies policy"
+expiry_rule = "configured source age removes the final eligible composition"
+permitted_health = ["READY", "DEGRADED", "STALE"]
+permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"]
+applications = [{ parameter_set_id = "market-geometry-zone-5m-v1", application_id = "cme-market-geometry-zone-5m", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "intraday_5m", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = false }]
+metric_inputs = []
+entity_inputs = [
+  { role = "confirmed_swing", entity_type = "confirmed_swing", entity_version = 1, required = false, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+  { role = "fair_value_gap", entity_type = "fair_value_gap", entity_version = 1, required = false, permitted_health = ["READY", "DEGRADED", "STALE"], permitted_fidelities = ["REPORTED", "DERIVED", "PARTIAL"] },
+]
+parameters = [
+  { parameter_id = "policy_id", meaning = "Stable derived-zone policy identity", value_kind = "text", unit = "identity", default = "nearby-geometry-v1", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["nearby-geometry-v1"] },
+  { parameter_id = "horizon_policy", meaning = "Whether constituents may cross horizon boundaries", value_kind = "text", unit = "policy", default = "SAME_HORIZON", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["SAME_HORIZON", "ALLOW_MIXED"] },
+  { parameter_id = "partition_method", meaning = "Deterministic constituent partition method", value_kind = "text", unit = "policy", default = "ORDERED_CONNECTED", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["ORDERED_CONNECTED"] },
+  { parameter_id = "weighting_method", meaning = "Deterministic zone-center weighting method", value_kind = "text", unit = "policy", default = "EQUAL", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["EQUAL"] },
+  { parameter_id = "withdrawn_outcome", meaning = "Lifecycle outcome when a composition is withdrawn", value_kind = "text", unit = "policy", default = "INVALIDATED", dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", allowed_values = ["INVALIDATED", "EXPIRED"] },
+  { parameter_id = "merge_distance", meaning = "Maximum raw-price gap joining adjacent constituents", value_kind = "number", unit = "price", default = 4.0, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.0, maximum = 50.0, step = 0.25 },
+  { parameter_id = "padding", meaning = "Raw-price padding around each constituent", value_kind = "number", unit = "price", default = 1.0, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 0.0, maximum = 10.0, step = 0.25 },
+  { parameter_id = "maximum_width", meaning = "Maximum raw-price width for one zone", value_kind = "number", unit = "price", default = 20.0, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 1.0, maximum = 100.0, step = 0.25 },
+  { parameter_id = "minimum_constituents", meaning = "Minimum exact source entities required", value_kind = "integer", unit = "entities", default = 2, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 1, maximum = 10, step = 1 },
+  { parameter_id = "maximum_constituent_age_ms", meaning = "Maximum source age retained for zone composition", value_kind = "integer", unit = "milliseconds", default = 14400000, dynamic = true, mutability = "policy_controlled_runtime", source = "offline-test-fixture", minimum = 300000, maximum = 86400000, step = 300000 },
+  { parameter_id = "maximum_retained_sources", meaning = "Bounded source-entity retention", value_kind = "integer", unit = "entities", default = 200, dynamic = false, mutability = "startup_only", source = "operator-reviewed-config", minimum = 2, maximum = 5000, step = 1 },
+]
+parameter_sets = [{ parameter_set_id = "market-geometry-zone-5m-v1", parameter_version = 1, effective_from = "2026-08-24T00:00:00Z", source = "offline-test-fixture", values = { policy_id = "nearby-geometry-v1", horizon_policy = "SAME_HORIZON", partition_method = "ORDERED_CONNECTED", weighting_method = "EQUAL", withdrawn_outcome = "INVALIDATED", merge_distance = 4.0, padding = 1.0, maximum_width = 20.0, minimum_constituents = 2, maximum_constituent_age_ms = 14400000, maximum_retained_sources = 200 } }]
 
 [[metrics.entity_analysis.definitions]]
 definition_id = "inferred-bar-volume-v1"
@@ -310,8 +469,8 @@ invalidation_rule = "volume support or source observation conflict"
 expiry_rule = "configured session and maximum-age retention"
 permitted_health = ["READY", "DEGRADED", "WARMING"]
 permitted_fidelities = ["INFERRED", "PARTIAL"]
-applications = [{ application_id = "cme-session", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = true }]
+applications = [{ parameter_set_id = "static-v1", application_id = "cme-session", analytical_profile_ids = ["cme_equity_primary"], instrument_ids = [], instrument_classes = ["future"], session_phases = ["OPEN"], horizon = "session", source_selector = "5-MINUTE-LAST-EXTERNAL", requires_volume = true }]
 metric_inputs = [{ role = "allocated_bin_volume", metric_id = "entity_input.bar_volume.allocated_volume", metric_version = 1, parameter_version = 1, required = true, permitted_health = ["READY", "DEGRADED", "WARMING"], permitted_fidelities = ["INFERRED", "PARTIAL"] }]
 entity_inputs = []
 parameters = []
-parameter_sets = []
+parameter_sets = [{ parameter_set_id = "static-v1", parameter_version = 1, effective_from = "2026-08-23T00:00:00Z", source = "static-reviewed-config", values = {} }]

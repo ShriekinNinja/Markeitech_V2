@@ -1,23 +1,27 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
 from nautilus_trader.model import InstrumentId
 
 from markeitech.acquisition import (
+    FeedKind,
     HistoricalDependencyCompiler,
     HistoricalDependencyDemandEvent,
     HistoricalResourcePolicy,
 )
 from markeitech.acquisition.historical_windows import HistoricalWindowResolver
-from markeitech.intelligence.session import SessionCalendar, definition_from_config
 from markeitech.system.acquisition import (
-    HistoricalDemandRetryBook,
     InstrumentDefinitionTracker,
     _analytical_observation_demand,
-    _compile_historical_demand,
     _watchlist_observation_demand,
+    validate_historical_plan_limits,
+)
+from markeitech.system.historical_planner import (
+    HistoricalDemandRetryBook,
+    compile_historical_demand,
     synchronize_historical_demand_retry_timer,
 )
 from markeitech.system.messages import (
@@ -26,6 +30,7 @@ from markeitech.system.messages import (
     AnalyticalDemandEvent,
     WatchlistDemandEvent,
 )
+from tests.calendar_fixtures import projection_view
 
 
 def test_tracker_owns_definition_request_deduplication_and_readiness() -> None:
@@ -116,20 +121,20 @@ def test_recent_completed_historical_demand_excludes_forming_bar() -> None:
         HistoricalResourcePolicy(8, 100, 500),
     )
 
-    request = _compile_historical_demand(event, compiler)
+    request = compile_historical_demand(event, compiler)
 
     assert request.start_ns == 2 * 60_000_000_000
     assert request.end_ns == 12 * 60_000_000_000 - 1
     assert request.limit == 10
 
 
-def test_session_owned_historical_demand_compiles_authoritative_bounds() -> None:
+def test_planner_compiles_authoritative_projection_bounds() -> None:
     event = HistoricalDependencyDemandEvent(
         demand_id="probe:ES:rth",
         consumer_id="probe",
         capability_id="probe",
         capability_version=1,
-        instrument_id="ESU6.CME",
+        instrument_id="SPY.ARCA",
         selector="5-MINUTE-LAST-EXTERNAL",
         window="current_rth",
         minimum_observations=5,
@@ -137,30 +142,12 @@ def test_session_owned_historical_demand_compiles_authoritative_bounds() -> None
         priority=10,
         purpose="acceptance",
         as_of_ns=int(datetime(2026, 8, 17, 14, 43, 27, tzinfo=UTC).timestamp() * 1_000_000_000),
-        window_parameters={"phase": "RTH"},
+        window_parameters={"phase": "EXCHANGE_SESSION"},
     )
-    calendar = SessionCalendar(
-        definition_from_config(
-            {
-                "calendar_id": "cme_equity",
-                "provider_calendar": "CME_Equity",
-                "timezone": "America/New_York",
-                "schedule_version": "test-1",
-                "phases": [
-                    {
-                        "name": "RTH",
-                        "start": "09:30",
-                        "end": "16:00",
-                        "start_day_offset": 0,
-                    },
-                ],
-                "overrides": [],
-            },
-        ),
-    )
+    calendar = projection_view("us_equities")
     compiler = HistoricalDependencyCompiler(HistoricalResourcePolicy(8, 500, 1_000))
 
-    request = _compile_historical_demand(
+    request = compile_historical_demand(
         event,
         compiler,
         resolver=HistoricalWindowResolver(),
@@ -178,6 +165,55 @@ def test_session_owned_historical_demand_compiles_authoritative_bounds() -> None
         )
         - 1
     )
+
+
+def test_acquisition_enforces_concrete_plan_limits_without_calendar_authority() -> None:
+    event = HistoricalDependencyDemandEvent(
+        demand_id="probe:ES",
+        consumer_id="probe",
+        capability_id="probe",
+        capability_version=1,
+        instrument_id="ESU6.CME",
+        selector="1-MINUTE-LAST-EXTERNAL",
+        window="recent_completed",
+        minimum_observations=5,
+        maximum_observations=40,
+        priority=10,
+        purpose="acceptance",
+        as_of_ns=120 * 60_000_000_000,
+    )
+    request = compile_historical_demand(
+        event,
+        HistoricalDependencyCompiler(HistoricalResourcePolicy(8, 100, 500)),
+    )
+
+    validate_historical_plan_limits(
+        request,
+        outstanding_requests=(),
+        maximum_observations_per_request=40,
+        maximum_observations_outstanding=100,
+    )
+    with pytest.raises(ValueError, match="per-request"):
+        validate_historical_plan_limits(
+            request,
+            outstanding_requests=(),
+            maximum_observations_per_request=39,
+            maximum_observations_outstanding=100,
+        )
+    with pytest.raises(ValueError, match="outstanding observation"):
+        validate_historical_plan_limits(
+            request,
+            outstanding_requests=(replace(request, request_id="historical:other", limit=70),),
+            maximum_observations_per_request=100,
+            maximum_observations_outstanding=100,
+        )
+    with pytest.raises(ValueError, match="bar requests only"):
+        validate_historical_plan_limits(
+            replace(request, kind=FeedKind.TRADES),
+            outstanding_requests=(),
+            maximum_observations_per_request=100,
+            maximum_observations_outstanding=100,
+        )
 
 
 def test_deferred_historical_demands_dedupe_by_demand_id() -> None:
@@ -286,15 +322,15 @@ class _RetryClock:
         self._active = False
 
     def timer_names(self) -> list[str]:
-        return ["historical-window-demand-retry"] if self._active else []
+        return ["historical-planner-window-retry"] if self._active else []
 
     def cancel_timer(self, name: str) -> None:
-        assert name == "historical-window-demand-retry"
+        assert name == "historical-planner-window-retry"
         self.cancel_count += 1
         self._active = False
 
     def set_time_alert_ns(self, name: str, alert_time_ns: int, callback) -> None:  # noqa: ANN001
-        assert name == "historical-window-demand-retry"
+        assert name == "historical-planner-window-retry"
         assert callable(callback)
         self.scheduled.append(alert_time_ns)
         self._active = True

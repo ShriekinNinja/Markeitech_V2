@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from types import MappingProxyType
 
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.entities import (
     EntityAdmissionStatus,
     EntityDefinition,
@@ -22,14 +23,17 @@ from markeitech.intelligence.entities import (
     EntityStateBook,
     EntityStateBookLimits,
 )
-from markeitech.intelligence.metrics import MetricFidelity, MetricHealth, MetricValue
+from markeitech.intelligence.metrics import MetricFidelity, MetricHealth
 
 SESSION_ENTITY_GROUP = "objective_session_reference_level"
+"""Catalog group for objective session, gap, and reference-level entities."""
 _TRADE_DATE_PATTERN = re.compile(r"(?:^|:)(\d{4}-\d{2}-\d{2})(?::|$)")
 
 
 @dataclass(frozen=True, slots=True)
 class AnalyticalSessionPayload(EntityPayload):
+    """Carry objective active-session geometry, coverage, and supported volume."""
+
     session_id: str
     start_ns: int
     end_ns: int
@@ -48,6 +52,8 @@ class AnalyticalSessionPayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class PreviousSessionReferencePayload(EntityPayload):
+    """Carry finalized previous-session OHLC, return, coverage, and volume context."""
+
     session_id: str
     start_ns: int
     end_ns: int
@@ -65,6 +71,8 @@ class PreviousSessionReferencePayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class OpeningRangePayload(EntityPayload):
+    """Carry one calendar-relative opening-range window and completion state."""
+
     session_id: str
     window_id: str
     start_ns: int
@@ -81,6 +89,8 @@ class OpeningRangePayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class GapPayload(EntityPayload):
+    """Carry one objective price gap in points and optional ratio units."""
+
     session_id: str
     gap_kind: str
     points: Decimal
@@ -89,6 +99,8 @@ class GapPayload(EntityPayload):
 
 @dataclass(frozen=True, slots=True)
 class ObjectiveLevelPayload(EntityPayload):
+    """Carry an evidence-derived price interval without support or resistance meaning."""
+
     price: Decimal
     lower: Decimal
     upper: Decimal
@@ -110,6 +122,8 @@ _PAYLOAD_TYPES: Mapping[str, type[EntityPayload]] = MappingProxyType(
 
 @dataclass(frozen=True, slots=True)
 class SessionEntityApplication:
+    """Scope one session entity to profiles, instruments, phases, and horizon."""
+
     application_id: str
     analytical_profile_ids: tuple[str, ...]
     instrument_ids: tuple[str, ...]
@@ -119,6 +133,8 @@ class SessionEntityApplication:
 
 @dataclass(frozen=True, slots=True)
 class SessionEntityDefinition:
+    """Bind a generic entity definition to metric roles and session applications."""
+
     definition_id: str
     definition: EntityDefinition
     metric_roles: Mapping[tuple[str, int], str]
@@ -142,6 +158,8 @@ class SessionEntityDefinition:
 
 @dataclass(frozen=True, slots=True)
 class SessionEntityOwnerCounts:
+    """Snapshot bounded session-entity admission and publication counters."""
+
     metrics_accepted: int
     metrics_duplicate: int
     metrics_stale: int
@@ -658,6 +676,12 @@ def _worst_fidelity(values: tuple[MetricFidelity, ...]) -> MetricFidelity:
 
 
 def payload_type_for_entity(entity_type: str) -> type[EntityPayload]:
+    """Return the payload contract for a supported objective session entity.
+
+    Raises:
+        ValueError: If the entity type is unsupported by session projection.
+    """
+
     if entity_type.startswith("objective_level."):
         return ObjectiveLevelPayload
     try:

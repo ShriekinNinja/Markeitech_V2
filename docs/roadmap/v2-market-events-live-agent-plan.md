@@ -645,10 +645,11 @@ health, native updates, and independent validation.
 
 Approved identity/revision contracts and bounded projection for objective sessions/references/
 levels; volatility and compression/expansion; horizon-specific direction/trend/rotation;
-moving/anchored references; swings/FVGs/derived zones; and explicitly inferred bar-volume
-distribution/profile nodes. Include expiry/invalidation/roll, compact prior summaries, restart
-semantics, and typed/versioned configuration plus optimization metadata for every variable policy.
-Observed trade-at-price profiles remain separate later evidence.
+moving/anchored references; confirmed swings, deterministic swing legs, per-horizon pivot
+structure, FVGs, and derived zones; and explicitly inferred bar-volume distribution/profile nodes.
+Include expiry/invalidation/roll, compact prior summaries, restart semantics, and typed/versioned
+configuration plus optimization metadata for every variable policy. Observed trade-at-price
+profiles remain separate later evidence.
 
 **Exit:** stable analytical subjects are shared without duplicated meaning.
 
@@ -712,6 +713,10 @@ visible; and every surviving opportunity cites why it remains possible. An impro
 may survive when evidence supports it, but Sir Loke must abstain when elimination leaves ambiguity
 rather than a defensible case.
 
+Sir Loke does not invoke or inherit authority from the development-time Kite advisor council.
+Kite's council reviews engineering work; it is not a runtime tool, policy governor, evidence owner,
+or implementation of Sir Loke.
+
 **Exit:** an agent requests bounded work without controlling infrastructure.
 
 ### 9J: Concurrent Advisory Opportunities
@@ -766,7 +771,10 @@ These are not blanks for code defaults. They require stage review with Markeitec
 
 ## Immediate Next Batch
 
-Stage 9D is active through approved and committed Slice 9D.4C. The next review gate is to close or
-explicitly defer the recorded 9D.3 RTH and 9D.4C connected-acceptance debt before beginning 9D.5
-swing/FVG/zone projection. The exact implementation boundary remains in
+Stage 9D is active through connected-accepted Slice 9D.4C. The 2026-08-24 London/ETH run exercised
+the optional runtime projection with actual rolling inputs, valid revisions, periodic staleness
+reconciliation, bounded resources, reconciled operational persistence, and clean shutdown.
+Markeitect explicitly deferred the narrow 9D.3 opening-range developing-to-complete proof until a
+run crosses that configured boundary; it does not block 9D.5 confirmed-swing, per-horizon
+pivot-structure, FVG, and zone projection. The exact implementation boundary remains in
 [`v2-stage-9d-entities-rolling-state-plan.md`](v2-stage-9d-entities-rolling-state-plan.md).

@@ -44,6 +44,15 @@ class SystemControlActorConfig(DataActorConfig):
 
 
 class SystemControlActor(DataActor):
+    """Coordinate system startup and health state.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.system-control
+        architecture.component.label: System Control
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.system
+    """
+
     def __init__(self, config: SystemControlActorConfig) -> None:
         super().__init__(config)
         self._expected = {InstrumentId.from_str(value) for value in config.instrument_ids}

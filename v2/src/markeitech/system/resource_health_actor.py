@@ -179,6 +179,15 @@ class RuntimeResourceHealthActorConfig(DataActorConfig):
 
 
 class RuntimeResourceHealthActor(DataActor):
+    """Evaluate runtime resource health from bounded samples.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.runtime-resource-health
+        architecture.component.label: Runtime Resource Health
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.system
+    """
+
     def __init__(self, config: RuntimeResourceHealthActorConfig) -> None:
         super().__init__(config)
         policy = ResourceHealthPolicy(

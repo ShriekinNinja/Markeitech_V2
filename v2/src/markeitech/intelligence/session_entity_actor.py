@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, CustomData, DataType
 
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.entities import (
     ENTITY_REVISION_TYPE_NAME,
     ENTITY_SNAPSHOT_REQUEST_TYPE_NAME,
@@ -20,7 +21,6 @@ from markeitech.intelligence.metrics import (
     METRIC_VALUE_TYPE_NAME,
     MetricFidelity,
     MetricHealth,
-    MetricValue,
 )
 from markeitech.intelligence.session_entities import (
     SESSION_ENTITY_GROUP,
@@ -66,7 +66,14 @@ class SessionReferenceEntityActorConfig(DataActorConfig):
 
 
 class SessionReferenceEntityActor(DataActor):
-    """Publishes objective Group 1 entities from typed metric evidence only."""
+    """Publishes objective Group 1 entities from typed metric evidence only.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.session-reference-entities
+        architecture.component.label: Session Reference Entities
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+    """
 
     def __init__(self, config: SessionReferenceEntityActorConfig) -> None:
         super().__init__(config)

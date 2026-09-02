@@ -1,0 +1,29 @@
+schema_version = 1
+registry_id = "markeitech-v2-public-api"
+registry_version = 4
+selection_policy = "literal-package-all-plus-explicit"
+
+[[packages]]
+module = "markeitech.system"
+source = "v2/src/markeitech/system/__init__.py"
+expected_export_count = 3
+expected_exports_sha256 = "673a9c9d33f071ee491299e76add2913e98b61847947cf6df1abe79569c0a44e"
+
+[[packages]]
+module = "markeitech.acquisition"
+source = "v2/src/markeitech/acquisition/__init__.py"
+expected_export_count = 47
+expected_exports_sha256 = "68e84da572a58ce59ada54f731ce5f0613b7df26e1d6427422b51348de9301fd"
+
+[[packages]]
+module = "markeitech.intelligence"
+source = "v2/src/markeitech/intelligence/__init__.py"
+expected_export_count = 210
+expected_exports_sha256 = "d22add142a9a113acf034b49868d58b0f6dc77c16f9b4d4ec1272fc065dba658"
+
+[[explicit]]
+exposed = "markeitech.system.cli.main"
+canonical = "markeitech.system.cli.main"
+source = "v2/src/markeitech/system/cli.py"
+kind = "function"
+reason = "Installed operator command entry point."

@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-08-24
+Last reviewed: 2026-09-02
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -8,7 +8,7 @@ system. The preserved V1 status is available in
 
 ## Operating Posture
 
-- V2 is a clean runtime foundation on NautilusTrader `2.0.0rc1`.
+- V2 is a clean runtime foundation on NautilusTrader `2.0.0rc3`.
 - Interactive Brokers paper trading is the current provider connection.
 - The system provides observation and decision support only; automated execution is absent.
 - Components communicate through approved Nautilus actor facilities.
@@ -19,18 +19,155 @@ system. The preserved V1 status is available in
 
 ## Current Snapshot
 
+- The active audit-and-alignment branch upgrades NautilusTrader from `2.0.0rc1` to `2.0.0rc3`.
+  RC3 removed the generic Python network helpers and embedded `LiveNode.start()` lifecycle used by
+  Markeitech's Discord transport and integration-test harness. Discord now uses one isolated
+  standard-library HTTPS boundary, while embedded node tests use the public caller-owned
+  `run_async()` and `LiveNodeHandle` lifecycle. Production remains on hosted `LiveNode.run()`.
+  The migration passes all 409 offline tests. Markeitect's operator-owned connected run on
+  2026-08-25 confirmed RC3 startup and controlled shutdown, complete operational persistence
+  reconciliation, and successful Discord lifecycle delivery through the replacement transport.
 - Stages 1 through 9C and the runtime-resource hardening gate are implemented and connected-
   accepted within the evidence recorded below.
-- Stage 9D is active. Slices 9D.1 through 9D.4C are approved and committed. They provide typed
+- Stage 9D is active. Slices 9D.1 through 9D.5C are approved and committed. The market-structure
+  runtime portion of Slice 9D.5D is implemented. Together they provide typed
   analytical entity contracts, a bounded state book, a configuration-owned entity catalog,
-  deterministic numerical prerequisites, pure rolling market-state projection, and an optional
-  `MarketStateEntityActor` runtime boundary.
-- Stage 9D.3 still carries RTH/developing-to-complete acceptance debt. Stage 9D.4C is offline-
-  accepted, but connected acceptance remains pending; the latest reviewed ETH run did not exercise
-  that optional runtime projection and therefore does not close the gate.
-- The next proposed implementation slice is 9D.5, swing/FVG/zone projection. Before that slice
-  begins, Markeitect must explicitly close or defer the recorded 9D.3 and 9D.4C connected-
-  acceptance debt.
+  deterministic numerical prerequisites, pure rolling market-state projection, an optional
+  `MarketStateEntityActor` runtime boundary, pure confirmed-swing entity projection, and pure
+  per-horizon swing-leg and pivot-structure relationship projection.
+- Stage 9D.3 still carries narrow opening-range developing-to-complete acceptance debt. Markeitect
+  explicitly deferred that window-boundary proof until a run crosses the configured boundary; it
+  does not block 9D.5. Stage 9D.4C connected acceptance closed on 2026-08-24 against liquid
+  London/ETH futures data with its optional runtime projection enabled.
+- The accepted run projected 645 rolling metrics into 645 valid market-state revisions with zero
+  conflicts, rejections, deferrals, or projection failures. Its staleness timer completed 2,560
+  reconciliation cycles without observing evidence old enough to require a stale revision.
+  Session metrics produced 64,064 rolling values with zero calculation failures; resources stayed
+  bounded; PostgreSQL stored all 2,261 accepted operational events; Discord delivered 4/4 health
+  messages; and shutdown was clean. The acceptance configuration declares `STALE` and
+  `UNAVAILABLE` as valid volatility-entity health outcomes, correcting the earlier actor-
+  construction rejection without changing classification policy. Stage 9D.5A now projects only
+  fully confirmed strict pivots with detector/horizon identity, contiguous completed-bar lineage,
+  bounded evidence and entity retention, and no market interpretation. Stage 9D.5B now relates
+  compatible alternating pivots through exact endpoint revisions and owns explicit price,
+  percentage, time, bar-count, slope, optional path/volume, and optional volatility-normalized
+  evidence. Its revisable per-horizon structure preserves same-kind comparisons, bounds,
+  leg-scale relationships, superseded/unresolved pivots, and conflicts without rewriting confirmed
+  swings or producing a trend score. The three numerical relationship thresholds carry explicit
+  versioned floors, ceilings, steps, and dynamic eligibility. Stage 9D.5C now adds pure bounded
+  FVG lifecycle and constituent-preserving zone projection. FVGs retain independent formation
+  identity, exact completed-bar lineage, fill state, remaining interval, optional normalization,
+  and configurable complete/invalidate/expire outcomes. Zones preserve exact source revisions and
+  deterministic horizon, distance, padding, width, constituent-count, age, partition, weighting,
+  and retention policy without support/resistance or trading meaning. The new optional
+  `MarketStructureEntityActor` receives only accepted completed bars through typed Nautilus custom
+  data. Rolling calculation exposes its exact accepted one-, five-, and fifteen-minute completed
+  inputs, and `SessionMetricActor` publishes newly accepted derived bars without changing their
+  source lineage. The structure actor resolves every application against one explicit named set,
+  and coordinates the reviewed confirmed-swing, pivot-relationship, FVG, and derived-zone owners.
+  Changed revisions are published as typed entity data and logged with instrument, type, lifecycle,
+  revision, and entity identity. Consumers may request immutable snapshots filtered by instrument,
+  entity type, analytical profile, and lifecycle. Projection failures are isolated per owner and
+  reconciled through bounded runtime counters. The tracked acceptance catalog now declares five
+  explicit 5-minute market-structure contracts; its numerical values are offline fixtures, not
+  trading calibration. Offline actor evidence proves completed-bar transport, all five entity
+  revision types, local fan-out, exact parameter-set selection, rejection of unavailable sets and
+  incomplete or scope-incompatible companion definitions, and filtered snapshots. Owner invariant
+  failures remain isolated to the affected projection and are counted rather than escaping the
+  Nautilus callback. The rejected `VisualAcceptanceActor` and `LiveEvidenceReviewActor` were
+  subsequently retired from runtime composition, typed configuration, source, and tests. Their
+  exclusive Kaleido and Pillow dependencies were also removed. Configuration schema 21 no longer
+  accepts either dead section. The progressive `VisualDebugCaptureActor` remains a separate,
+  passive observer and was not changed by that removal. Historical ignored artifacts and local
+  configurations remain outside Git as recovery evidence; they are not runnable current profiles.
+- The approved V3 canonical-calendar cutover is implemented and connected-accepted for the exact
+  tracked V3 ES profile.
+  `SessionStateActor` is the sole mcal-backed evaluator owner, publishes typed transitions
+  and bounded immutable projections, and has no shadow/legacy counterpart. A separate historical
+  planner turns symbolic evidence needs into exact UTC plans; acquisition executes those plans and
+  retains provider limits without interpreting sessions. At V3-01 closure, system schema 21 and
+  calendar-catalog schema 3/catalog version 4 configured five reusable calendar identities without
+  concrete instrument contracts.
+  The runtime watchlist alone binds admitted instruments to calendars. CME/CBOT definitions carry
+  overlapping `GLOBEX`, `ASIA`, `LONDON`, and `NEW_YORK` product phases, deterministic lineage,
+  and one source-cited CME equity-hours correction. The full disconnected suite passes. The first
+  connected acceptance run on 2026-08-30 was rejected before historical planning because pinned
+  mcal represents several CME early closes with `break_start == break_end == market_close`; the
+  projector attempted zero-duration exchange segments and consumers retried without a bounded
+  failure response. The committed repair normalizes only that exact terminal provider
+  representation after source-cited corrections, records an immutable normalization outcome,
+  emits per-calendar response-v2 failures for ordinary projection exceptions, and gives each of
+  the three consumers one correlated, bounded, one-shot retry lifecycle. CME/CBOT definition
+  versions are now 4. Offline verification passes. Markeitect accepted the repaired 2026-08-31
+  connected run using the tracked schema-21 V3 ES profile and catalog version 4: the canonical
+  owner served five projection requests with zero rejection or construction failure; all three
+  consumers completed with zero projection timeout or terminal outcome; the planner produced one
+  exact plan with no deferral or rejection; IB returned 60/60 requested bars; persistence
+  reconciled 36/36 accepted records; and shutdown was clean. This acceptance is bounded to
+  `cme_equity`, the configured 120-day lookback/14-day lookahead, one historical request and
+  attempt, and the observed current session. It does not accept multi-calendar live behavior,
+  phase-boundary delivery, late-consumer recovery, connected retry/failure paths, concurrent
+  historical callbacks, or cancellation with provider work in flight. The broader metric-actor
+  split remains deferred.
+- V3-02 current-state delivery is implemented and committed on
+  `v3-02-session-state-snapshot-plan`. System schema 23 retains one statically composed
+  `SessionStateActor` per runtime run UUID and adds strict transition-v2 plus current-state
+  snapshot-v1 contracts. The producer evaluates every requested calendar at one owner-clock cut
+  while preserving the exact state-effective boundary separately from evaluated-as-of and
+  publication time. `EvidenceHealthActor` and `HistoricalEvidencePlannerActor` now use one bounded
+  subscribe-buffer-snapshot-reconcile protocol with explicit definition, source/run, revision,
+  duplicate, stale, gap, conflict, overflow, timeout, retry, failure-isolation, and terminal-stop
+  behavior. `OperationalPersistenceActor` remains a transition-only audit sink; snapshots,
+  watermarks, retry state, buffers, projections, and raw schedules remain transient.
+  `SessionMetricsActor`, Session-Metrics-dependent Entity Analysis, and Visual Debug remain present
+  as dormant code or review material but are disabled and ignored in both tracked runtime profiles
+  pending the separately reviewed Session Metrics replacement. Markeitect explicitly retained the
+  temporary `CURRENT-STATE-HISTORICAL-PROBE` in the tracked V3 ES profile for additional bounded
+  live checks. It owns no provider API, persistence, analytical output, or production capability.
+  In the accepted 2026-08-31 connected run, the probe deliberately omitted snapshot attempt 1,
+  recovered on attempt 2, observed `GLOBEX+NEW_YORK`, and caused the existing planner to resolve
+  five completed one-minute bars from `13:51:00Z` through `13:55:59.999999999Z`. Acquisition
+  submitted one IB request, accepted and delivered `5/5` bars, published `READY`, reported zero
+  historical degradation and late callbacks, and shut down cleanly. Session State rejected no
+  snapshot request; persistence stored `31/31` accepted operational facts. One non-terminal
+  planner projection timeout was observed during startup before successful recovery. This single
+  run accepts only the exact late-consumer recovery and historical-request chain; it does not
+  establish multi-calendar behavior, phase-boundary delivery, repeated provider reliability,
+  performance, value parity, or general market-session correctness.
+- V3-03 Slice 1 is merged at `4631df5`. It supplies the public immutable completed-bar and
+  MetricValue v2 contracts plus private pure validation, admission, producer-manifest, readiness,
+  and legacy-compatibility helpers. Its contract checks cover exact wire shapes and primitive
+  types, canonical decimal strings, complete subject dependencies, exact missing-slot geometry,
+  bounded historical requests and producer claims, and revision-chain
+  duplicate/conflict/stale/gap handling. Existing enabled MetricValue publishers and consumers
+  remain together on one private legacy v1 wire until a later atomic v2 cutover; there is no dual
+  publication.
+- V3-03 Slice 2 is approved and committed at `eb3995b`, then merged into the stage branch at
+  `e8f49e3`. It corrects canonical completed-bar
+  identity by keeping provider/adapter/source-path dimensions in the new public
+  `CompletedBarInputIdentity` carried by each lineage entry, not in
+  `CompletedBarSeriesIdentity`. It adds a private, disabled multi-series foundation actor and
+  configuration/state model for the exact ES five-second-live to one-minute-canonical path,
+  independently gated per-series readiness using the foundation receipt clock, the versioned
+  bounded close-grace policy, owned and correlated projection/current-state request cycles,
+  bounded calendar timeout/retry and transition-gap reconciliation, canonical-bootstrap
+  history/live convergence, exact five-second slot admission, atomic publication, final
+  complete/partial/empty outcomes, bounded admission, and exact metadata routing. Parsed native
+  `BarType` values and the live subscription client bind configured route identity. An immutable
+  authority snapshot taken from the actual historical execution port now fails provider, adapter,
+  stream, or schema contradictions before foundation actor construction or demand and remains the
+  source identity carried by each batch. A transition received while a projection request is
+  waiting no longer republishes that request; its refresh intent starts exactly one new correlated
+  generation after completion. The production lifecycle fixture now uses pinned-rc3
+  `Clock.new_test`, native `Bar` values through `on_bar`, and the actual deterministic cutoff
+  callback, including exact-cutoff admission checks on both sides of timer firing.
+  No actor is composed or enabled; no tracked profile, provider request/subscription behavior, or
+  demand implementation has changed; the existing historical execution port now exposes its
+  read-only source identity on each transient batch. No connected acceptance is claimed. Evidence
+  for this slice remains disconnected only: the 105-test focused correction set,
+  including 88 intelligence-contract tests, and all 616 non-PostgreSQL V2 tests pass. The full V2
+  Ruff gate is clean, all 31 API-documentation utility tests pass, and the locked API-documentation
+  validator selects and documents all 261 registered entries with no missing docstrings.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -39,6 +176,56 @@ system. The preserved V1 status is available in
 - Semantic interaction events, the bounded options proof, cross-instrument state, richer analytics,
   Sir Loke, opportunity lifecycle, ML evaluation, replay, backtesting, and execution remain future
   work.
+- A separate offline documentation utility now validates one versioned TOML architecture manifest,
+  reconciles its supported actor/contract/profile anchors against repository source, and generates
+  six tracked SVG/PNG/DOT/Markdown views plus an artifact index and hashes. It is not imported or
+  composed by V2, reads no runtime state or secrets, and changes no runtime behavior. The shared
+  PyCharm **Generate Sys Diagram** configuration runs only this locked documentation environment.
+- A separate locked API-documentation utility now statically analyzes the curated V2 Python public
+  surface and produces an untracked MkDocs site at `docs/api` plus sanitized metadata and artifact
+  indexes. Its
+  versioned denominator currently selects 260 package exports plus one explicit operator entry
+  point, 261 objects in total; all 261 selected objects have source docstrings and none are
+  reported as missing. Static analysis and rendering deny target imports, dynamic
+  inspection, external inventories, network access, and child processes; the wrapper first uses
+  bounded read-only Git queries for source identity. It verifies source stability and publishes
+  complete artifact sets atomically. Attribute-registry version 2 approves five bounded
+  `architecture.component.*` fields for implementation-backed class documentation.
+  Caller/callee and architecture-flow examples remain unapproved future discovery
+  concepts rather than inferred runtime semantics. The first architecture-component docstrings are
+  seeded for all 20 exact implementation-referenced records in the current system/data-flow TOML.
+  Seven substantive responsibility sets are preserved exactly; 13 generic placeholders remain
+  explicit documentation debt rather than being promoted as meaningful responsibilities. The
+  API-doc build then reads source declarations only. The existing system-diagram tool still
+  consumes the TOML during this migration interval; the future source-to-TOML/diagram exporter is
+  not implemented or accepted yet. The generated local site uses a full-width dark presentation
+  with contained horizontal scrolling for wide tables and signatures.
+- The repository-owned Kite plugin defines a 20-role advisor council for development-time
+  engineering consultation, not V2 runtime implementation or Sir Loke behavior. Kite
+  `0.1.0+codex.20260829091645` is installed and enabled from the local `markeitech` marketplace;
+  its installed cache matched the cache-busted repository source byte-for-byte. This build adds
+  one canonical council policy, bounded
+  selection with deterministic selected-role dependency execution, explicit-only Kite activation
+  and specialist skills, explicit advisor denial of the project PyCharm MCP, and a dependency-free
+  structural validator. A fresh or unrelated Codex task remains normal Codex; explicitly invoking
+  Kite activates its router for that task and direct follow-ups, after which Kite uses the smallest
+  sufficient advisor set by default. One ordinary governance selection was observed on older build
+  `...124814`, but its
+  delegated execution failed. Architecture, governance, and security roles returned consultations
+  during the 2026-08-26 Phase 1 review, but that was not a clean routing fixture; the security role
+  was presented a workspace-write parent permission surface despite its read-only default.
+  Therefore read-only is a mandatory consultation contract and custom-agent default, not an
+  accepted runtime isolation boundary. Fresh-task dormancy, explicit activation, task-scoped
+  continuity/reset, end-to-end order and stop behavior, isolation, redaction, failure, and
+  revocation acceptance remain pending. Policy version `2026-08-29-v3` fixes the eight advisors
+  selected for the desired-runtime gap review at `gpt-5.6-sol` with `xhigh` reasoning; the other
+  twelve role settings are unchanged. Source validation, 20 focused validator tests, generic
+  plugin validation, installation, and source-to-cache comparison pass. A fresh task exposed all
+  eight exact role settings and completed the approved read-only desired-runtime consultations.
+  Their [desired-runtime report](notes/desired-arch-council-review-report.md) is an informative
+  council discovery record and proposal source; it is not accepted architecture, a roadmap, an
+  authoritative debt ledger, or implementation approval. General council acceptance remains
+  pending as described above.
 
 The remainder of this page is the chronological implementation record supporting this snapshot.
 When an older section describes a former review state, the snapshot above governs current status;
@@ -55,7 +242,8 @@ the older wording is retained only as implementation history.
 - Configured ES and SPY instrument-definition resolution.
 - Versioned system-health signal contract.
 - `SystemControlActor` with honest `STARTING`, `READY`, `FAILED`, and `STOPPING` ownership.
-- Read-only Discord projection of system-health transitions.
+- Read-only Discord projection of system-health transitions and one-shot startup operational
+  readiness from existing watchlist and historical evidence.
 - Discord failure isolation and bounded worker shutdown.
 
 ## Stage 4: Operational Persistence
@@ -85,7 +273,8 @@ Implementation is approved and committed on branch `v2-stage-5-actor-composition
 - A pure actor plan owns the complete static runtime topology.
 - System control and operational persistence are mandatory core actors.
 - Discord is explicitly enabled or disabled in typed configuration.
-- Enabled Discord requires its webhook before IB startup; later delivery failure remains isolated.
+- Enabled Discord requires its system-health and operational-events webhooks before IB startup;
+  later delivery failure remains isolated.
 - Actor and config import paths are code-owned rather than supplied through TOML.
 - Immutable startup prerequisites replace the transient persistence-ready signal.
 - Runtime persistence failure remains a separate fact; only system control may transition the
@@ -261,8 +450,8 @@ manual procedure is documented in
 
 The static watchlist and live acquisition ownership foundation are complete. Dynamic watchlist
 membership remains intentionally deferred. Stages 9A through 9C are live-accepted. Stage 9D is
-active through approved and committed Slice 9D.4C, with the connected-acceptance debt stated in the
-current snapshot.
+active through connected-accepted Slice 9D.4C. The narrow deferred 9D.3 opening-range boundary
+proof remains stated in the current snapshot and does not block 9D.5.
 
 The canonical Stage 9 coding order is:
 
@@ -298,8 +487,9 @@ Stage 9A is complete and accepted at commit `ce9076e`:
 
 - `pandas-market-calendars` supplies local exchange schedules, holiday rules, DST handling, and
   early-close dates.
-- Typed startup configuration maps every watchlist member to one of four versioned calendars and
-  defines SPXW GTH/RTH/Curb phases plus explicit exceptional-session overrides.
+- Typed startup configuration maps every watchlist member to one of five versioned calendars and
+  defines provisional SPXW GTH/RTH/Curb product phases. mcal remains the sole source for CBOE
+  holidays and early closes; the catalog carries no duplicated dated holiday overrides.
 - `SessionStateActor` owns session/trade-date truth and publishes only initial or changed state.
 - `EvidenceHealthActor` consumes acquisition lifecycle facts and independently observes the same
   native Nautilus quote and five-second-bar streams.
@@ -315,6 +505,62 @@ Stage 9A is complete and accepted at commit `ce9076e`:
   market observations remain memory-only.
 - Offline tests cover calendar boundaries, DST, holidays, early closes, freshness transitions,
   strict wire contracts, actor composition, and persistence conversion.
+
+The approved V3 canonical-calendar cutover is implemented and connected-accepted for the exact
+tracked V3 ES profile. System
+schema 21 loads `v2/config/market-calendars.toml` schema 3/catalog version 4 as one dedicated
+startup catalog;
+inline definitions, old overrides, and older schemas are rejected. Each system profile selects
+its active `calendar_ids`; available but unused definitions are validated without being
+instantiated. The loader pins installed `pandas-market-calendars` 5.4.0, provider implementation,
+provider-derived exchange timezone, admitted columns, product phases, definition/effective
+identity, source-cited structural corrections, and deterministic definition/catalog digests. It
+also proves that the configured default projection span and selected calendar count fit their
+runtime bounds. The catalog defines CBOE SPXW, NYSE, CME equity, CBOT equity, and product-specific
+CL identities, but contains no concrete instrument contracts. The watchlist is the single startup
+binding authority: its current bindings include `ES/NQ -> cme_equity`, `YM -> cbot_equity`, and
+`CL -> cme_energy`. Futures rollover therefore changes runtime instrument configuration without
+changing the reusable calendar catalog.
+
+The inherited 2026 CBOE GTH holiday overrides were removed after direct inspection of pinned mcal
+5.4.0 confirmed that it already supplies those holiday closures and the following-day early-close
+schedule. Markeitech no longer maintains a duplicated annual holiday list. The
+`CBOE_Index_Options` provider does not supply the overnight GTH phase itself; that custom phase
+clock remains provisional and explicitly identified as Markeitech-defined.
+
+`SessionStateActor` is the sole runtime owner of exactly one immutable `CanonicalCalendar` per
+active calendar ID. It publishes definition-identified typed `CalendarTransition` custom data and
+bounded immutable calendar projections. It schedules both periodic reconciliation and the next
+known temporal boundary. Consumers never receive or instantiate mcal evaluators: evidence health
+uses typed current transitions; session measurements classify bars and resolve analytical windows
+from immutable projections; and a separate `HistoricalEvidencePlannerActor` resolves symbolic
+historical demand into exact UTC plans. `DataAcquisitionActor` receives only exact plans and retains
+provider-facing admission limits, queueing, pacing, retries, cancellation, execution, and lifecycle
+ownership. The old `SessionCalendar`, legacy `SessionStateEvent`, shadow comparison, and local
+calendar fallbacks are removed. Calendar transitions continue through the existing bounded
+operational-event persistence path; projections and raw schedules are not persisted.
+
+The installed mcal CME equity calendars still expose an obsolete regular 15:15-15:30
+America/Chicago pause. One source-identified, effective-dated structural correction removes that
+pause for ES, NQ, and YM from trade date 2021-06-28. Pre-effective rows remain unchanged; exact
+provider matches are recorded as `APPLIED`, already-correct base rows as
+`BASE_ALREADY_CONFORMS`, and unequal provider changes fail as `CONFLICT`. Product `GLOBEX` phase
+membership remains distinct from exchange `OPEN/BREAK/CLOSED` state. The CME/CBOT definitions also
+declare overlapping, DST-aware `ASIA`, `LONDON`, and `NEW_YORK` phases. These are descriptive
+product phases, not analytical windows; analytical capabilities still choose their own windows and
+candle sizes independently. The first connected run on 2026-08-30 rejected the cutover when the
+configured projection crossed mcal's terminal zero-length early-close break representation. The
+committed repair normalizes only that exact provider shape and bounds projection delivery with
+typed per-calendar outcomes and correlated consumer retries. Markeitect accepted the repaired
+2026-08-31 run: `SessionStateActor` served five projection requests with zero rejection or
+construction failure; Evidence Health, Session Metrics, and Historical Planning reported zero
+projection timeout or terminal outcome; the planner produced one exact plan with no deferral or
+rejection; IB returned 60/60 requested bars; operational persistence reconciled 36/36 records; and
+shutdown was clean. The run used the tracked 120-day lookback/14-day lookahead `cme_equity`
+profile. This bounded acceptance does not generalize to all five calendars, a scheduled phase
+boundary, late-consumer recovery, connected failure/retry paths, concurrent historical requests,
+or shutdown with provider work in flight. The wider `SessionMetricsActor` responsibility split
+remains deferred.
 
 The detailed ownership and semantics are recorded in
 [`architecture/v2-session-evidence-health.md`](architecture/v2-session-evidence-health.md).
@@ -344,8 +590,17 @@ calibration; this does not block Stage 9B.
 Stage 9B is complete and live-accepted as of 2026-08-17. One shared provider request served two
 independent consumers and produced separate readiness results while unrelated runtime activity
 continued. Historical observations remained transient; PostgreSQL stored only request, execution,
-and readiness lifecycle records. The accepted timestamp boundary is UTC internally with
-instrument-timezone formatting confined to the Nautilus IB adapter request boundary.
+and readiness lifecycle records. UTC remains the internal timestamp boundary. Installed Nautilus
+`2.0.0rc3` sends intraday historical bounds in UTC, but its pinned Rust `ibapi 3.3.0` rejects IB's
+valid dashed UTC `HistoricalDataEnd` form. TWS/Gateway therefore temporarily remains in instrument-
+timezone mode so the dependency can parse response metadata; Nautilus still normalizes resulting
+bar instants to Unix nanoseconds. A bounded connected calibration also exposed and reproduced an
+inclusive-to-exclusive native request-end defect as 4/5 returned one-minute bars. After the narrow
+port correction, one ES request returned five consecutive completed one-minute bars, READY 5/5,
+no forming bar, no retry or late callback, an independently active live stream, and fully
+reconciled operational persistence. This acceptance is limited to that exact recent-completed path.
+Daily and coarser provider bars remain date-semantic and are not accepted as exchange-session
+boundary truth.
 
 ## Stage 9C: Baseline Metric Contracts
 
@@ -370,6 +625,85 @@ instruments, published 1,281 completed-bar values from 183 accepted bars, and re
 calculation failure, duplicate, or conflict. Closed-session recent-history requests degraded
 independently without stopping live processing; this confirmed the need for Slice 3's exact,
 purpose-specific session windows rather than a universal recent-history warmup.
+
+The former temporary V3 ES debug baseline selected a bounded historical-only review of 60 direct
+five-minute `ESU6.CME` completed bars. It fixes the producer interval at 300 seconds, keeps the
+normal five-second live input operating, uses close-timestamped native bars through
+`timestamp_policy = "interval_end"`, requires two observations for prior-close metrics, and rejects
+unequal same-interval observations. The normal producer independently requests up to 60 historical
+observations. The visual observer targets those 60 historical bars and zero live-source bars for
+display; those projection targets do not set provider request size, retention, or runtime duration.
+The nominal selected span is five hours before any real gaps. Markeitect accepted the coordinated
+configuration changes as a usable baseline for continuing the debug, while explicitly recording
+that the number of coupled settings is not an accepted configuration interface. This is test
+authorization, not an accepted IB limit, general history policy, other-timeframe provider
+acceptance, or derived-metric value acceptance. The bounded 2026-08-28 connected run is accepted
+for its direct five-minute source/series gate: IB returned 60/60 requested bars, SessionMetrics
+accepted 60 historical completed bars with zero duplicates, conflicts, or calculation failures,
+and the passive artifact selected the same 60 historical bars and zero live bars with no declared
+gap. That layout was a provisional debug baseline; repeated per-bar historical-source markers
+remain recorded visual cleanup debt. Parameter effective time remains stored
+but unenforced and unpublished; the 1,000-observation retention remains provisionally coupled to a
+disabled rolling placeholder; and maximum output age remains metadata rather than enforced expiry.
+
+The committed correction made `visual_debug_capture` a strictly passive observer. It
+does not reuse either rejected visual component and it does not request a producer snapshot.
+Capture on/off composition differs only by the observer; SessionMetrics configuration, startup
+history, live demand, calculation, retention, persistence, and lifecycle remain identical. The
+observer selects already-published canonical bars and metrics into historical-only, live-only, or
+mixed projections. Real gaps, short populations, missing readiness, and incomplete metric cohorts
+produce prominently partial diagnostic artifacts. Unequal same-identity records remain terminal
+integrity failures. A capacity-one worker writes one self-contained Plotly HTML plus manifest
+through atomic directory publication. The artifact is a bounded observer receive cut, not globally
+final truth, review acceptance, raw-data persistence, restart state, or provider completeness.
+
+V3-02 subsequently disabled Session Metrics and the dependent Visual Debug and Entity Analysis
+surfaces in both tracked profiles. The actor code, historical acceptance evidence, and review
+contract remain available for the separately reviewed replacement; they are not current runtime
+outputs.
+
+The first connected capture attempt did not publish an artifact and is rejected as visual
+acceptance, but it supplied useful runtime evidence. History returned exactly five bars ending at
+13:53 UTC. The run then began inside the 13:53-13:54 live aggregation bucket, so that partial minute
+could never supply all twelve five-second constituents. The first possible complete live aggregate
+therefore began at 13:54, leaving a one-minute gap after the historical cohort. The projection
+correctly refused that non-contiguous `HHHHHLLLLL` sequence and expired its 15-minute deadline at
+14:08:21 UTC. The run processed 279 live five-second bars; session metrics reported one historical
+batch, 27 accepted completed bars, 189 completed-bar values, and zero duplicate, conflict, or
+calculation failures. Persistence reconciled 35 accepted/stored records with zero retry, failure,
+rejection, or pending write, and SIGINT shutdown completed cleanly. These observations refute the
+earlier timer-stall hypothesis: the deadline and live processing both progressed, but their log
+records were not visible in the file until shutdown.
+
+The rejected Option 1 capture-alignment behavior is removed. SessionMetrics publishes its normal
+startup foundation-history demand whether capture is enabled or disabled. The visual observer
+never calls IB, emits demand, chooses an upstream boundary, or publishes canonical truth. A natural
+mid-bucket startup gap is now useful debug evidence and remains `UNCLASSIFIED_TEMPORAL_GAP` until a
+stronger canonical schedule fact explains it.
+
+The 2-second quiet period, 15-minute completion deadline, and 30-second output drain remain
+provisional projection settings. The activation identity is an operator label, not a configuration
+digest. The capture schema and renderer policy are versioned separately; `MetricValue`
+still lacks bar specification/profile/trade-date/window identity; parameter effective time remains
+unenforced; prior-close metrics omit predecessor lineage and do not yet define health, contiguity,
+or session-transition compatibility completely. File logging also has measured live-observability
+debt: consequential READY, live-progress, and deadline records from the first capture attempt were
+buffered and appeared only during shutdown, so tailing the configured log file cannot currently be
+treated as reliable evidence that the runtime is stalled or progressing. Browser acceptance,
+formula-parity acceptance, accessibility acceptance, provider licensing decision, and final
+evidence-fitness decision remain incomplete for this component.
+
+The five-minute completed-bar source/series gate was accepted for that bounded run. At that review
+point, the intended next walkthrough was the completed-bar configuration followed by one-by-one
+OHLCV and derived-metric review. V3-02 stopped that sequence and disabled the faulty combined
+actor. The dormant `SessionMetricsActor` implementation groups completed-bar foundation, session
+reference, calendar-window, and rolling-measurement responsibilities in one configuration object.
+Its completed-bar foundation configuration is singular: one live selector, one
+historical selector, and one calculation interval. This does not impose a system-wide historical
+timeframe; other capabilities can declare independent selectors such as fifteen-minute bars.
+However, the temporary profile permits only one outstanding historical request, and a second
+parallel canonical completed-bar foundation cannot currently be configured. Both restrictions are
+explicit architecture/configuration debt, not accepted production policy; no redesign is selected.
 
 Slice 3 is accepted at commit `8696acf`. It adds only deterministic active-session,
 previous-session, optional overnight, and gap measurements. Historical and live observations
@@ -461,9 +795,9 @@ revision/expiry/invalidation semantics, and an approved compact completed-sessio
 boundary. Its approved scope now includes complete first deterministic implementations for
 objective session/reference/level entities; volatility and compression/expansion state;
 horizon-specific direction, trend, rotation, and range state; moving/anchored references; and
-swings, FVGs, and derived zones. It also includes a separately named bar-volume-distribution
-baseline with explicit `INFERRED_FROM_BARS` fidelity; observed trade-at-price profiles remain
-deferred.
+confirmed swings, deterministic swing legs, per-horizon pivot structure, FVGs, and derived zones.
+It also includes a separately named bar-volume-distribution baseline with explicit
+`INFERRED_FROM_BARS` fidelity; observed trade-at-price profiles remain deferred.
 
 Stage 9D does not introduce semantic interaction events such as approach, acceptance, rejection,
 breakout, or failure; options intelligence; Discord market alerts; ML; Sir Loke; raw market-data
@@ -504,6 +838,63 @@ formulae, dependencies, health, fidelity, failure modes, bounds, and mutability 
 Bar-volume output is always `INFERRED`; unsupported or partial volume remains honest. Eight focused
 prerequisite tests, 25 configuration tests, the 105-test intelligence suite, and the 327-test
 non-PostgreSQL suite pass with two PostgreSQL-marked tests deselected.
+
+Slice 9D.5A is approved and committed at `666b972`. It adds a framework-independent confirmed-swing
+payload, detector application contract, and bounded projection owner over completed bars. A swing
+is published as an immutable `COMPLETE` entity only after its configured right span exists in one
+contiguous evidence run. Identity preserves definition, detector/version, source bar specification,
+horizon, pivot timestamp, swing kind, instrument, and analytical profile. Payload preserves exact
+pivot and confirmation geometry, strict prominence, confirmation displacement, optional pivot-bar
+volume, configured spans, and source-bar references. Health and fidelity remain inherited from the
+full evidence window. Age stays query-relative from the confirmation timestamp instead of creating
+time-only entity revisions.
+
+The owner uses the shared entity registry/state book, rejects conflicting bar observations,
+suppresses historical/live duplicates, permits late bars to complete a previously gapped evidence
+window, requires contiguous bars, bounds retained candidate evidence and confirmed entities, and
+supports independent tactical and structural detector identities without interpreting either as
+trend, support, resistance, reversal, or direction. Seven focused tests plus the prerequisite tests
+pass 15/15; the complete intelligence suite passes 134 tests, and the full non-PostgreSQL suite
+passes 365 tests with two PostgreSQL-marked tests deselected. No actor, runtime composition,
+configuration migration, PostgreSQL schema, Discord projection, semantic event, connected run,
+or visual annotation is included.
+
+Slice 9D.5B is approved and committed at `4d2cee9`. A separate pure relationship owner consumes
+immutable complete confirmed-swing revisions and projects deterministic alternating swing legs and
+one revisable pivot-structure state per exact instrument/profile/detector/horizon/chain-policy
+subject. Legs preserve endpoint revisions, price and percentage displacement, bar and UTC duration,
+raw slope, optional normalized slope, path efficiency, excursion, volume context, completed-bar
+lineage, health, fidelity, and missing context. The structure payload preserves selected pivots,
+same-kind predecessor comparisons, structural bounds, leg-scale comparisons, superseded and
+unresolved pivots, and conflicts without changing confirmed swing truth or creating a universal
+direction score. Eighteen focused market-structure tests, 145 intelligence tests, and 376
+non-PostgreSQL tests passed for that reviewed batch.
+
+Slice 9D.5C is implemented locally for review. A pure bounded FVG owner applies the reviewed
+three-completed-bar wick-gap detector to contiguous evidence only. It projects stable formation
+identity, exact bounds and source bars, optional explicit width normalization, fill ratio,
+remaining interval, lifecycle bars, and configurable full-fill and completed-bar-age terminal
+outcomes. Exact duplicates and conflicts cannot rewrite accepted bar truth; late bars and
+normalization evidence reproject deterministically; retained bars, normalizations, entities, and
+publication work are bounded. FVG entities remain independent. The first baseline does not merge
+or reinterpret their identities.
+
+A separate pure derived-zone owner consumes approved objective-level, confirmed-swing, and active
+FVG revisions. Its versioned policy explicitly owns source types and horizons, lifecycle and
+developing eligibility, same-horizon or mixed-horizon compatibility, merge distance, padding,
+maximum width, minimum constituents, constituent age, deterministic ordered partitioning, equal
+weighting, withdrawal outcome, and source retention. Merge and split create inspectable zone
+lifecycle revisions while every zone payload and evidence reference preserves the exact source
+entity IDs and revisions. Zones carry geometry only: no support/resistance label, revisit claim,
+confidence, opportunity score, direction, alert, or execution meaning is introduced.
+
+Sixteen focused 9D.5C tests prove no-look-ahead formation, partial/full fill, configured
+completion/invalidation, expiry, late evidence, normalization, bounded retention, source and
+horizon eligibility, exact lineage, maximum-width splitting, merge/split history, reactivation,
+and arrival-order convergence. The complete intelligence suite passes 161 tests and the full
+non-PostgreSQL V2 suite passes 392 tests with two PostgreSQL-marked tests deselected. The slice adds
+no actor, runtime/configuration migration, PostgreSQL schema, Discord output, semantic event,
+renderer, connected run, or trading interpretation.
 
 The ignored local runtime configuration was operator-reviewed and migrated to schema 16 for the
 connected Group 1 acceptance run. It remains local and untracked; the tracked example remains
@@ -601,4 +992,14 @@ scope passes 173 tests. The complete non-PostgreSQL V2 suite passes 358 tests wi
 PostgreSQL-marked tests deselected. The tracked runtime example remains disabled and empty, so this
 batch does not activate new market semantics in a normal run. It adds no provider request,
 PostgreSQL schema, Discord projection, semantic event, opportunity, option selection, or Sir Loke
-behavior. Connected RTH acceptance remains pending.
+behavior.
+
+Connected acceptance closed on 2026-08-24 using the ignored local acceptance configuration and
+liquid London/ETH futures data. The actor consumed 645 metrics, published 645 valid revisions,
+completed 2,560 staleness-reconciliation cycles, retained 15 current metrics, and stopped with zero
+conflicts, rejected revisions, deferred or pending publications, projection failures, or snapshot
+failures. No evidence crossed its staleness boundary during the run, so no stale revision was
+observed. The surrounding runtime produced 64,064 rolling values without calculation failure,
+stored 2,261/2,261 operational events without retry or rejection, delivered 4/4 Discord health
+messages, remained resource-bounded, and disconnected cleanly. This closes 9D.4C without claiming
+the separately deferred 9D.3 opening-range boundary transition.

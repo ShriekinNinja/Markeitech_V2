@@ -33,7 +33,7 @@ class StubBar:
     ts_event: int
 
 
-def test_native_port_preserves_exact_bar_type_bounds_and_limit() -> None:
+def test_native_port_preserves_bar_type_start_and_limit() -> None:
     actor = RecordingActor()
     port = NautilusHistoricalPort(actor)
     request = HistoricalRequest(
@@ -61,6 +61,11 @@ def test_native_port_preserves_exact_bar_type_bounds_and_limit() -> None:
 
     port.submit(request)
 
+    assert port.provider_id == "IB"
+    assert port.adapter_id == "nautilus-ib"
+    assert port.source_stream_id == "historical-bars"
+    assert port.source_schema_id == "nautilus.bar.v1"
+
     bar_type, start, end, limit, client_id, params = actor.calls[0]
     assert str(bar_type) == "ESU6.CME-1-MINUTE-LAST-EXTERNAL"
     assert start.tzinfo is UTC
@@ -72,7 +77,7 @@ def test_native_port_preserves_exact_bar_type_bounds_and_limit() -> None:
     assert params == {"source": "acceptance"}
 
 
-def test_native_port_normalizes_nanosecond_bounds_to_provider_second_precision() -> None:
+def test_native_port_submits_completed_exclusive_end_boundary() -> None:
     actor = RecordingActor()
     port = NautilusHistoricalPort(actor)
     request = _request(start_ns=60_000_000_000, end_ns=119_999_999_999)
@@ -80,7 +85,35 @@ def test_native_port_normalizes_nanosecond_bounds_to_provider_second_precision()
     port.submit(request)
 
     _, _, end, _, _, _ = actor.calls[0]
-    assert end.isoformat() == "1970-01-01T00:01:59+00:00"
+    assert end.isoformat() == "1970-01-01T00:02:00+00:00"
+
+
+def test_native_port_submits_exact_five_minute_completed_window() -> None:
+    actor = RecordingActor()
+    port = NautilusHistoricalPort(actor)
+    minute_ns = 60_000_000_000
+    request = _request(
+        start_ns=49 * minute_ns,
+        end_ns=54 * minute_ns - 1,
+    )
+
+    port.submit(request)
+
+    _, start, end, _, _, _ = actor.calls[0]
+    assert start.isoformat() == "1970-01-01T00:49:00+00:00"
+    assert end.isoformat() == "1970-01-01T00:54:00+00:00"
+    assert request.end_ns == 54 * minute_ns - 1
+
+
+def test_native_port_rejects_timestamp_outside_datetime_range() -> None:
+    actor = RecordingActor()
+    port = NautilusHistoricalPort(actor)
+    request = _request(start_ns=60_000_000_000, end_ns=10**30)
+
+    with pytest.raises(ValueError, match="outside datetime range"):
+        port.submit(request)
+
+    assert actor.calls == []
 
 
 def test_historical_response_matches_requested_contract() -> None:

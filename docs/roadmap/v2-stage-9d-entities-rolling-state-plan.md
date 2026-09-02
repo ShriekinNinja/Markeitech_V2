@@ -1,13 +1,18 @@
 # V2 Stage 9D Entities And Rolling State Plan
 
-**Status:** Slices 9D.1 through 9D.4C approved and committed; 9D.3 RTH and 9D.4C connected
-acceptance debt recorded
+**Status:** Slices 9D.1 through 9D.4C approved, committed, and connected-accepted; 9D.5A and 9D.5B
+approved and committed; 9D.5C implemented locally for review; narrow 9D.3 window-boundary
+acceptance deferred
 
 **Branch:** `v2-stage-9d-entities-rolling-state`
 
-**Next gate:** Markeitect must explicitly close or defer the recorded connected-acceptance debt
-before 9D.5 implementation begins. The latest reviewed ETH run did not exercise the optional
-`MarketStateEntityActor` and is not 9D.4C acceptance evidence.
+**Acceptance branch:** `v2-stage-9d-connected-acceptance`
+
+**9D.5 branch:** `v2-stage-9d5-market-structure`
+
+**Next gate:** Review 9D.5C, then implement 9D.5D runtime, snapshot, visual, and connected
+acceptance. The unobserved 9D.3 opening-range developing-to-complete transition is explicitly
+deferred until a run crosses that configured boundary and does not block 9D.5.
 
 ## Purpose
 
@@ -27,6 +32,8 @@ The stage answers questions such as:
 - Is the current horizon directional, rotational, volatile, compressed, or expanding under a
   named configuration?
 - Which swings and FVGs are developing, confirmed, filled, invalidated, or expired?
+- Which confirmed pivots form the current bounded structure on one exact horizon, how are its
+  alternating legs related, and where does that structure remain mixed or insufficient?
 - What price/volume concentrations can be inferred honestly from completed bars?
 - Which revision is current, what changed, and is the entity still usable?
 - Which compact evidence from the completed session must survive restart?
@@ -75,8 +82,8 @@ This stage will:
 - implement rolling volatility, compression/expansion, direction, trend, rotation, and range-state
   entities across explicitly configured horizons;
 - implement configurable moving or anchored references required by the first trend-state contract;
-- implement confirmed swing, FVG, and derived-zone entities with explicit developing,
-  confirmation, fill, invalidation, and expiry semantics;
+- implement confirmed swing, swing-leg, per-horizon pivot-structure, FVG, and derived-zone
+  entities with explicit confirmation, relationship, fill, invalidation, and expiry semantics;
 - implement a separately named bar-volume-distribution entity with inferred POC, value area,
   HVN/LVN candidates, balance areas, and distribution shape where volume is supported;
 - retain explicit parameter, metric, calendar, analytical-profile, session, source, and fidelity
@@ -327,7 +334,7 @@ EMA is one configurable reference formula, not a mandatory or privileged impleme
 source, resolution, anchor, smoothing formula, warmup, applicability, and dynamic eligibility are
 all definition owned.
 
-### Group 4: Swings, FVGs, And Derived Zones
+### Group 4: Swings, Pivot Structure, FVGs, And Derived Zones
 
 #### Swing Entity
 
@@ -336,10 +343,53 @@ includes detector/version, horizon, instrument/profile, pivot timestamp, and swi
 includes pivot price, confirmation time, left/right evidence span, prominence/displacement
 evidence, age, health, fidelity, and invalidation/expiry status.
 
+Age is query-relative evidence derived from the immutable confirmation timestamp and the query's
+UTC timestamp. It is not stored as a changing payload field and cannot create time-only revisions.
+
 The detector's left/right span, minimum prominence, normalization, confirmation delay, source
 resolution, horizon, tie handling, and retention are configuration. Developing candidates may be
 tracked internally, but they cannot be published as confirmed swings without the required future
 evidence.
+
+Swing detection and swing interpretation remain separate. A confirmed swing records objective
+geometry; it does not by itself claim higher-high, lower-low, support, resistance, trend, reversal,
+or trade direction. Different configured detectors may expose tactical and structural pivots from
+the same source timeframe, and different source horizons remain independently identifiable. A
+lower-horizon pivot may be displayed beside a higher-horizon pivot, but it never inherits the
+higher horizon's identity.
+
+#### Swing Leg Entity
+
+A swing leg relates two compatible, alternating confirmed pivots under one configured chain
+policy. Its identity includes the chain definition/version and both endpoint entity IDs. Payload
+includes exact origin and destination revisions, price and percentage displacement, elapsed bars
+and UTC duration, raw and volatility-normalized slope, available path-efficiency and displacement
+evidence, optional volume context, health, fidelity, and complete lineage.
+
+The leg does not predict continuation or reversal. Volume is optional confirming context rather
+than a universal geometry requirement so instruments without meaningful volume can retain honest
+price structure.
+
+#### Pivot Structure State Entity
+
+A pivot-structure state owns the bounded current relationship among confirmed pivots for one exact
+instrument, analytical profile, detector, source horizon, and structure definition. It preserves
+the selected pivot chain, current structural bounds, high-to-high and low-to-low comparisons,
+successive-leg expansion or compression, unresolved conflicts, evidence age, and health. Initial
+relationship labels are descriptive: `HIGHER`, `LOWER`, `EQUAL`, `MIXED`, and `INSUFFICIENT` on
+their explicit axes. A derived geometry state may be `UPWARD`, `DOWNWARD`, `ROTATIONAL`, `MIXED`,
+or `INSUFFICIENT` only under its named versioned policy.
+
+All confirmed swings remain independently queryable. Consecutive same-kind pivots are never
+deleted or silently rewritten: the configured chain policy may replace the current terminal pivot,
+retain the pivots in separate compatible chains, or leave the chain unresolved until an opposite
+pivot confirms. Only the current relationship projection revises.
+
+Pivot structure is narrower than Group 3 direction/trend state. It describes confirmed swing
+relationships only. Later composites may combine independently queryable horizons with EMA,
+efficiency, volatility, volume, cross-instrument, options, and other evidence through explicit,
+decomposable, configuration-owned weights. Stage 9D.5 does not create that cross-horizon composite
+or a universal direction score.
 
 #### FVG Entity
 
@@ -434,7 +484,8 @@ One universal technical-analysis actor is rejected. The recommended bounded owne
   gap, and directly derived objective levels;
 - `MarketStateEntityActor`: volatility, compression/expansion, direction, trend/rotation, and
   moving/anchored reference state;
-- `MarketStructureEntityActor`: confirmed swings, FVGs, and derived zones; and
+- `MarketStructureEntityActor`: confirmed swings, swing legs, per-horizon pivot structure, FVGs,
+  and derived zones; and
 - `BarVolumeDistributionActor`: inferred bar-volume distributions and profile-node candidates.
 
 The exact names are reviewable, but the responsibility split is architectural: one actor may fail,
@@ -523,6 +574,12 @@ declare:
 - compression/expansion baseline, ratios/percentiles, boundaries, hysteresis, and confirmation;
 - directional/trend/rotation inputs, conflict policy, boundaries, hysteresis, and confirmation;
 - swing geometry, confirmation, normalization, tie handling, invalidation, and expiry;
+- swing-chain compatibility, alternating-leg construction, same-kind terminal-pivot policy,
+  equal-high/low tolerance, minimum leg displacement, scale mixing, revision, and retention;
+- swing-leg displacement, duration, slope normalization, path-efficiency, and optional volume
+  context;
+- pivot-structure relationship labels, bounds, expansion/compression, conflict handling, health,
+  and expiry;
 - FVG geometry, minimum width, fill, merge, invalidation, and expiry;
 - zone source eligibility, merge/split, width, weighting, age, and constituent requirements;
 - bar-volume allocation, binning, value-area, node detection, smoothing, update, and retention;
@@ -656,8 +713,10 @@ reference batches with 900 values and three window batches with 39 values, with 
 Group 1 actor accepted 42 metrics, published 45 revisions, suppressed nine duplicate revisions,
 rejected none, and stopped with no pending publication. PostgreSQL stored 682/682 accepted
 operational events, Discord delivered 3/3 health messages, runtime resource health remained normal,
-and shutdown completed cleanly. RTH live bars and developing-to-complete lifecycle transitions
-remain connected-acceptance debt.
+and shutdown completed cleanly. Live-bar updates were later exercised, but an opening-range
+developing-to-complete transition still requires a run which crosses the configured window
+boundary. Markeitect explicitly deferred that narrow proof; it remains recorded acceptance debt
+without blocking 9D.5.
 
 This slice adds no provider request, raw-data persistence, analytical PostgreSQL table, Discord
 market projection, semantic interaction event, opportunity, option selection, or Sir Loke behavior.
@@ -801,20 +860,242 @@ intelligence/configuration/composition/message scope passes 173 tests, and the c
 non-PostgreSQL V2 suite passes 358 tests with two PostgreSQL-marked tests deselected. The batch adds
 no provider request, analytical PostgreSQL persistence, Discord output, semantic transition,
 ranking, opportunity, option selection, or Sir Loke behavior. Connected acceptance is separate and
-must prove actual rolling evidence, revisions, staleness, resource behavior, and clean shutdown
-without assuming market-session coverage.
+must prove actual rolling evidence, revisions, staleness, resource behavior, and clean shutdown.
+Any liquid session which supplies the configured rolling inputs is valid evidence; US RTH is not a
+9D.4C requirement. Session- or window-specific transitions remain accepted only when the run
+actually crosses their configured boundaries.
 
-### 9D.5: Swing, FVG, And Zone Projection
+### 9D.5: Swing, Pivot-Structure, FVG, And Zone Projection
 
-- implement confirmed swing entities and developing-candidate containment;
+#### 9D.5A: Confirmed Swing Entities
+
+- implement confirmed swing payload, identity, lifecycle, and pure projection;
+- contain developing candidates internally and publish only after the configured right-span and
+  confirmation evidence is complete;
+- preserve exact detector, source horizon, pivot/confirmation time, prominence, displacement,
+  optional volume context, evidence bars, health, and fidelity; and
+- prove strict no-look-ahead behavior, tied-pivot policy, deterministic deduplication, late evidence
+  handling, and bounded candidate/confirmed retention.
+
+**Exit:** independently queryable tactical and structural pivots are truthful, horizon-specific
+entities rather than inferred chart labels.
+
+**Implementation evidence:** a framework-independent confirmed-swing payload, detector application
+contract, and bounded projection owner consume only `CompletedBarInput` evidence. The owner keeps a
+bounded first-accepted ledger per exact detector/application/instrument/bar-specification subject,
+splits evidence at every non-contiguous interval, and invokes the reviewed strict-pivot geometry
+only within contiguous runs. It publishes immutable `COMPLETE` revisions only after the configured
+right span exists. A late bar may complete a previously gapped window, while exact historical/live
+duplicates and conflicting observations cannot republish or rewrite accepted truth.
+
+Entity identity preserves definition, detector and version, source bar specification, horizon,
+pivot timestamp, swing kind, instrument, and analytical profile. Payload preserves pivot price,
+strict prominence, confirmation close and displacement from the pivot, optional pivot-bar volume,
+configured left/right spans, and exact source-bar references. Health and fidelity are inherited
+from the complete evidence window. The shared registry validates the required pivot-price and
+prominence metric contracts, and the shared state book provides deterministic admission, snapshot,
+terminal eviction, and global/per-instrument/per-type bounds. Multiple tactical and structural
+detector applications remain independently identifiable; no relationship label or directional
+meaning is introduced.
+
+Seven focused tests prove no-look-ahead confirmation, tied-pivot rejection, transport-independent
+deduplication, late contiguous evidence, detector/horizon identity isolation, degraded/partial and
+missing-volume honesty, and bounded candidate/confirmed retention. Together with prerequisite
+coverage, 15 focused tests pass, the complete intelligence suite passes 134 tests, and the full
+non-PostgreSQL suite passes 365 tests with two PostgreSQL-marked tests deselected. This slice adds
+no Nautilus actor, runtime configuration binding, PostgreSQL table, Discord output, semantic event,
+chart renderer, connected run, swing leg, pivot relationship, FVG, or zone.
+
+#### 9D.5B: Swing Legs And Per-Horizon Pivot Structure
+
+- implement deterministic alternating swing legs from compatible confirmed pivots;
+- implement explicit consecutive same-kind pivot handling without deleting confirmed swing truth;
+- implement high-to-high, low-to-low, structural-bound, leg-expansion/compression, and
+  insufficient/mixed relationship projection for one exact horizon;
+- preserve complete endpoint revisions, chain-policy identity, raw and normalized geometry,
+  optional volume context, health, fidelity, and conflicts; and
+- prove deterministic chain construction, equality-tolerance boundaries, terminal-chain revision,
+  arrival-order convergence, horizon isolation, and bounded retention.
+
+**Exit:** later consumers receive one canonical, inspectable pivot relationship state per configured
+horizon instead of reconstructing HH/HL/LH/LL and swing legs independently.
+
+**Implementation evidence:** a separate pure relationship owner consumes immutable complete
+confirmed-swing revisions without changing or deleting confirmed-swing truth. Exact application,
+instrument, analytical profile/version, detector/version, horizon, source-bar specification, and
+chain-policy/version define each bounded subject. The policy explicitly owns source interval,
+same-kind terminal handling, resolved-run selection, equality tolerance, minimum leg displacement,
+leg expansion/compression tolerance, pivot/bar/normalization retention, and selected-chain bounds.
+Each numerical market threshold declares its current value, floor, ceiling, step, and dynamic
+eligibility under the versioned policy. Equal-price selection within a same-kind run uses an
+explicit earliest/latest tie-break policy.
+
+Alternating compatible pivots produce revisable swing-leg entities with exact endpoint entity and
+revision lineage. Each leg records signed price and percentage change, UTC duration, elapsed bars,
+price slope per bar and hour, optional volatility-normalized displacement and slope, available path
+efficiency, favorable/adverse excursion, optional path volume, exact completed-bar references,
+health, fidelity, and explicit missing context. Supporting completed bars and normalization
+evidence are retained independently before or after the first swing so callback order cannot erase
+available context. No configured normalization is fabricated when its metric evidence is absent.
+
+One active pivot-structure entity revises per exact subject. It preserves the bounded selected
+alternating chain, every selected leg revision, explicit same-kind predecessor comparisons for all
+retained confirmed pivots, structural bounds, consecutive-leg scale comparisons, superseded
+confirmed pivots, unresolved pivots, and minimum-displacement conflicts. Comparison records own
+price and percentage change, elapsed bars, UTC duration, and slope. Geometry labels are
+limited to the named policy's descriptive `UPWARD`, `DOWNWARD`, `ROTATIONAL`, `MIXED`, and
+`INSUFFICIENT` relationships; they are not a trend score, prediction, support/resistance claim, or
+cross-horizon composite.
+
+Every retained confirmed pivot after the first of its kind owns an explicit comparison to that
+same-kind predecessor, including pivots which the current alternating chain supersedes. Only
+comparisons whose endpoints remain selected may influence the current geometry label. The baseline
+supports more-extreme terminal replacement, latest-terminal selection, and
+unresolved-until-opposite behavior. Equal-price boundaries are inclusive of configured tolerance.
+Late swings are sorted by immutable pivot identity and converge to the same current payload as
+chronological arrival. Eleven focused tests cover policy-envelope rejection, complete leg geometry
+and lineage, equality-boundary comparisons, explicit same-kind replacement and tie-breaking,
+unresolved-run resolution, late path/normalization enrichment, minimum displacement, leg scale and
+geometry labels, arrival-order convergence, detector/horizon isolation, and bounded pivot
+retention. This slice adds no Nautilus actor, runtime configuration binding, PostgreSQL table,
+Discord output, semantic event, chart renderer, connected run, FVG, zone, cross-horizon weighting,
+trendline, Fibonacci, or trading meaning.
+Together with prerequisite coverage, 18 focused market-structure tests pass, the complete
+intelligence suite passes 145 tests, and the full non-PostgreSQL suite passes 376 tests with two
+PostgreSQL-marked tests deselected.
+
+#### 9D.5C: FVG And Constituent-Preserving Zone Projection
+
 - implement FVG formation, fill, invalidation, expiry, and revision behavior;
-- implement derived zones with complete constituent lineage;
-- prove no look-ahead publication, deterministic overlap/merge behavior, late evidence handling,
-  and bounded retention; and
-- keep support/resistance and interaction meaning out of the entity payload.
+- implement derived zones with complete constituent lineage and explicit source/horizon
+  compatibility;
+- prove deterministic overlap, merge, split, maximum-width, minimum-constituent, late-evidence,
+  revision, and bounded-retention behavior; and
+- keep support/resistance, revisit expectation, interaction meaning, confidence, and opportunity
+  scoring out of FVG and zone payloads.
 
-**Exit:** reusable market geometry is available as truthful entities without pretending it is a
-trade setup.
+**Exit:** FVG and zone geometry remains useful and inspectable without turning every pattern into a
+market claim or repeating V1's noisy annotation behavior.
+
+**Implementation evidence:** a pure bounded FVG owner consumes only complete
+`CompletedBarInput` evidence. The first baseline applies the reviewed configurable three-bar wick
+geometry to exact contiguous windows and publishes stable formation identities with exact bounds,
+direction, source resolution and horizon, source-bar lineage, width, optional explicit
+normalization, fill ratio, remaining interval, lifecycle-bar lineage, health, fidelity, and missing
+context. Full fill has a configured `COMPLETE` or `INVALIDATED` outcome; unfilled geometry expires
+at an exact configured completed-bar age. Minimum width, age, terminal outcome, normalization
+identity and recency, retained bars and normalizations, entity limits, and publication limits are
+explicit versioned policy. Late bars and normalization evidence reproject from bounded ordered
+state; duplicates and conflicting bars cannot rewrite accepted observations.
+
+FVG entities retain independent identity throughout their lifecycle. The first baseline does not
+merge or reinterpret them. Compatible FVGs may become exact constituents of a separately owned
+derived zone, alongside approved objective levels and confirmed swings.
+
+The pure derived-zone owner consumes only typed entity revisions. Its application and versioned
+policy own exact source types/versions/horizons, permitted source lifecycles, developing-level
+eligibility, same-horizon or mixed-horizon compatibility, merge distance, padding, maximum width,
+minimum constituents, maximum constituent age, ordered-connected partition method, equal
+weighting, withdrawal outcome, source retention, entity limits, and publication limits. Every
+numerical market threshold declares current, floor, ceiling, step, and dynamic eligibility.
+Constituents are deterministically ordered by interval and identity; adjacency is accepted only
+when distance, horizon, and padded maximum-width policy all permit it. Failed adjacency starts a
+new component. This makes overlap, merge, and width-driven split behavior inspectable rather than
+hidden.
+
+Zone identity is based on the exact constituent entity set plus definition, application, and policy
+identity. Payload preserves every constituent entity/version/revision, lifecycle, horizon, bounds,
+effective time, health, and fidelity, together with zone bounds, width, equal-weighted center,
+horizon mix, and lifecycle timestamps. Composition change invalidates or expires the old zone under
+configured policy and publishes the new composition without deleting source truth. A previously
+withdrawn constituent set may become active again through a monotonic revision whose transition
+time comes from the newest causal source revision; original constituent timestamps remain
+unchanged.
+
+Sixteen focused tests prove no-look-ahead FVG formation, partial and full fill, configurable
+completion/invalidation, expiry, normalization, late arrival, bounded bar and normalization state,
+source/developing/horizon eligibility, swing/FVG/level extraction, exact lineage, maximum-width
+splitting, merge/split terminal history, constituent-set reactivation, source aging, bounded source
+retention, and arrival-order convergence. The complete intelligence suite passes 161 tests. The
+full non-PostgreSQL V2 suite passes 392 tests with two PostgreSQL-marked tests deselected. This
+slice adds no actor, provider request, runtime configuration binding, PostgreSQL schema, Discord
+output, semantic event, chart renderer, connected run, cross-horizon score, support/resistance
+meaning, opportunity, option selection, or Sir Loke behavior.
+
+#### 9D.5D: Runtime, Snapshot, Visual, And Connected Acceptance
+
+**Retirement note (2026-08-30):** The `VisualAcceptanceActor` described below was rejected and has
+been removed from current source, composition, configuration, dependencies, and tests. The text is
+retained as historical design and implementation evidence only. It does not describe a runnable
+current component. The independently implemented passive `VisualDebugCaptureActor` is the current
+progressive review projection and is governed by
+`docs/notes/v3-visual-debug-review-contract.md`.
+
+- compose the optional bounded `MarketStructureEntityActor` only for enabled reviewed definitions;
+- publish changed revisions through typed Nautilus custom data and serve immutable filtered
+  snapshots;
+- reconcile actor/entity/publication/resource counters and prove independent failure and clean
+  shutdown behavior;
+- project the same entity snapshots into a non-authoritative visual acceptance view without
+  calculating or mutating analytical truth in the renderer; and
+- compare selected pivots, relationships, FVGs, and zones with timestamped independent operator
+  references while treating visual agreement as calibration evidence rather than general proof.
+
+**Exit:** reusable market geometry and per-horizon pivot structure are available through the live
+runtime as truthful entities without pretending they are a trade setup or cross-horizon decision.
+
+**Runtime and visual implementation note (2026-08-24):** The optional bounded
+`MarketStructureEntityActor` is implemented locally for review. The accepted completed-bar ledger
+publishes only admitted `CompletedBarInput` observations through typed Nautilus custom data.
+Rolling calculation also returns the exact completed one-, five-, and fifteen-minute bars it used;
+`SessionMetricActor` publishes newly admitted derived bars on that same typed path while preserving
+historical/live aggregate lineage and rejecting duplicates or conflicts. The actor resolves the
+generic catalog into the exact 9D.5A-C owner contracts, requires every
+application to name one available parameter set, and never selects a latest or fallback set. The
+tracked catalog declares confirmed swing, swing leg, pivot structure state, fair value gap, and
+derived zone definitions for the reviewed 5-minute acceptance path. The actor publishes changed
+typed revisions, fans locally produced swings and FVGs into dependent owners without relying on
+bus loopback ordering, serves immutable filtered snapshots, logs every meaningful revision, and
+keeps failures and counters isolated by owner. Startup fails closed when relationship companions
+disagree on projection policy or when a relationship or derived-zone source does not cover the
+target application's exact instrument and analytical-profile scope. Offline tests prove the typed
+completed-bar path, all five entity types, exact parameter-set binding, companion-definition and
+scope rejection, and snapshot filtering. Numerical catalog values remain explicit test or
+operator-review candidates rather than
+calibrated trading policy. No PostgreSQL schema, Discord projection, support/resistance label,
+cross-horizon score, signal, opportunity, option selection, or Sir Loke behavior was added.
+The optional `VisualAcceptanceActor` is also implemented locally for review. It is a projection of
+canonical state, not another analytical owner: it subscribes only to accepted completed bars,
+metric values, and entity revisions and does not request provider data, read Nautilus cache state,
+read or write PostgreSQL, resample bars, or derive replacement analytics. It reuses the exact
+operational-readiness projection used by the Sir Loke readiness notification. The first render is
+therefore withheld until system health, configured watchlist membership, acquisition lifecycle,
+and historical-dependency evidence satisfy that existing contract. Subsequent bounded refreshes
+occur only when accepted evidence changes.
+
+Rendering is isolated on a background worker with a bounded queue and writes ignored review
+artifacts under `v2/data/visual-acceptance/`: one static PNG for every configured instrument and
+one-, five-, or fifteen-minute horizon. The PNG renderer uses Plotly with Kaleido in one bounded
+batch, publishes the complete batch atomically, removes the superseded HTML/JavaScript artifacts
+only after successful export, and never opens a browser. Each 1800-by-1000 image contains its own
+candles, volume, canonical overlays, and a right-side evidence panel covering retained/visible
+bars, source lineage, configured annotation coverage, lifecycle counts, selected-context metric
+values, health/fidelity, and latest entity counts. Confirmed swings, swing-leg comparisons, pivot
+structure, FVG lifecycle, derived zones, references, sessions, opening ranges, and objective levels
+are drawn only from their canonical entity payloads. Missing configured evidence and unconfigured
+horizons are shown explicitly rather than inferred. The tracked example keeps this actor disabled;
+the ignored local acceptance configuration may enable it. Visual comparison and
+Markeitect-owned connected acceptance remain open before 9D.5D closes.
+
+Each timeframe owns an independent visual viewport derived from its rolling family's already
+reviewed selected context candidate rather than a second renderer-only policy. The current fast,
+tactical, and structural-intraday selections therefore display 45 minutes of one-minute bars, four
+hours of five-minute bars, and eight hours of fifteen-minute bars. The renderer trims each image to
+that horizon's independent window, keeps candle and volume axes aligned, bounds the price scale to
+the visible candles so distant references cannot flatten price, and uses canonical source identity
+for human-readable objective labels. It does not copy an entity onto an unsupported horizon,
+create an annotation when no canonical revision exists, or derive display-only analytical
+replacements.
 
 ### 9D.6: Inferred Bar-Volume Distribution
 
@@ -869,6 +1150,12 @@ Offline verification must cover:
 - persistence idempotency, schema repair, retries, queue pressure, and restart compatibility;
 - exact threshold, hysteresis, confirmation, source-resolution, and horizon behavior;
 - no look-ahead swing or FVG confirmation;
+- deterministic swing-leg and pivot-chain construction, including consecutive same-kind pivots;
+- equal-high/low tolerance boundaries and same-kind terminal-pivot revision without rewriting
+  confirmed swing entities;
+- strict separation among detector identity, source horizon, pivot scale, pivot structure, and
+  broader directional/trend state;
+- deterministic raw and normalized leg displacement, duration, slope, and optional volume context;
 - deterministic zone construction and complete constituent lineage;
 - bar-volume conservation, binning, value-area/node calculation, and unsupported-volume behavior;
 - fidelity separation between inferred bar-volume distribution and future observed profiles;
@@ -877,7 +1164,31 @@ Offline verification must cover:
 
 Connected acceptance must prove only what the live run observes. It should reconcile publication
 and persistence counters, inspect memory/resource behavior with the Observatory off, verify clean
-shutdown, and record any market-session coverage which could not be exercised.
+shutdown, and record any market-session coverage which could not be exercised. London/ETH futures
+data may close 9D.4C when the configured rolling inputs flow and the optional actor is active; it
+cannot by itself close an opening-range lifecycle transition whose boundary occurred before the
+run.
+
+The connected-acceptance configuration initially declared only `READY`, `DEGRADED`, and `WARMING`
+for the volatility entity while its classifier can also truthfully emit `STALE` and `UNAVAILABLE`.
+The runtime correctly rejected that incomplete health envelope during actor construction. The local
+acceptance definition now includes all five outcomes, and offline construction of the complete
+`MarketStateEntityActor` succeeds. This was a configuration correction only: thresholds, bands,
+confirmation, staleness policy, actor ownership, and publication behavior were unchanged.
+
+Connected acceptance closed on 2026-08-24 using liquid London/ETH futures data. The optional actor
+consumed 645 rolling metrics and published 645 valid revisions with zero metric conflicts, stale
+inputs, rejected revisions, deferred or pending publications, projection failures, or snapshot
+failures. Its configured timer completed 2,560 reconciliation cycles; no evidence crossed the
+staleness boundary during the run, so `staleness_revisions=0` is the observed result rather than a
+claim that the transition was exercised. The surrounding session runtime produced 64,064 rolling
+values with zero calculation failures. Process and cache resources remained bounded, PostgreSQL
+stored all 2,261 accepted operational events without retry or rejection, Discord delivered all four
+health messages, and controlled shutdown disconnected IB cleanly. One resource warning correctly
+reported host disk headroom below its configured threshold. `^SPX.CBOE` was unobserved in this
+session, accounting for 17/18 watchlist instruments and 33/34 active streams; that unrelated
+session-specific absence does not weaken the futures-backed rolling-state evidence. This closes
+9D.4C without closing the separately deferred 9D.3 opening-range boundary transition.
 
 ## Stage Exit Criteria
 
@@ -913,10 +1224,15 @@ Markeitect approved the following decisions before implementation began:
    configured EMA 20/50/200 references, and one dynamic-eligible EMA initially set to 10 with a
    bounded 5-34 integer envelope. EMA is a registry formula, not privileged code; additional
    reference families require an explicit decision question.
-4. The first structure baseline uses a configurable confirmed-pivot swing detector; configurable
-   three-bar wick-gap FVG geometry; deterministic constituent-preserving derived zones; and a
-   deterministic uniform candle-volume allocation across intersected price bins. Order blocks and
-   supply/demand semantics remain deferred until precisely defined.
+4. The first structure baseline uses configurable confirmed-pivot swing detectors with explicit
+   scale and source-horizon identity; deterministic compatible alternating swing legs; bounded
+   per-horizon pivot-structure state with explicit same-kind, equality, conflict, revision, and
+   retention policy; configurable three-bar wick-gap FVG geometry; deterministic
+   constituent-preserving derived zones; and a deterministic uniform candle-volume allocation
+   across intersected price bins. Confirmed swing truth is never deleted to simplify a current
+   chain. Cross-horizon weighting, trendlines, channels, Fibonacci projections, support/resistance,
+   order blocks, and supply/demand semantics remain deferred until their own contracts are
+   reviewed.
 5. Durability has three explicit classes. Finalized session facts are persisted. The latest
    revision of explicitly configured cross-session entities may be checkpointed, including
    confirmed higher-timeframe swings, still-relevant FVGs/zones/levels, and compact finalized

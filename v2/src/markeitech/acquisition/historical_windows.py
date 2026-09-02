@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from markeitech.acquisition.demand import HistoricalWindow
 from markeitech.acquisition.historical import HistoricalWindowBounds
-from markeitech.intelligence.session import SessionCalendar, SessionWindow
+from markeitech.intelligence.session import CalendarProjectionView, SessionWindow
 
 _MINUTE_NS = 60 * 1_000_000_000
 
@@ -86,7 +86,7 @@ class HistoricalWindowResolver:
         self,
         window: HistoricalWindow,
         *,
-        calendar: SessionCalendar | None,
+        calendar: CalendarProjectionView | None,
         selector_interval_ns: int,
         as_of_ns: int,
         parameters: Mapping[HistoricalWindow, HistoricalWindowParameters],
@@ -197,7 +197,10 @@ class HistoricalWindowResolver:
         )
 
 
-def _calendar_windows(calendar: SessionCalendar, as_of_ns: int) -> tuple[SessionWindow, ...]:
+def _calendar_windows(
+    calendar: CalendarProjectionView,
+    as_of_ns: int,
+) -> tuple[SessionWindow, ...]:
     snapshot = calendar.evaluate(as_of_ns)
     if snapshot.trade_date is None:
         raise HistoricalWindowResolutionError("calendar has no trade date near as_of_ns")
@@ -222,7 +225,7 @@ def _latest_completed(
 
 
 def _phase_for_trade_date(
-    calendar: SessionCalendar,
+    calendar: CalendarProjectionView,
     windows: tuple[SessionWindow, ...],
     as_of_ns: int,
     window: HistoricalWindow,

@@ -249,7 +249,14 @@ class WatchlistActorConfig(DataActorConfig):
 
 
 class WatchlistActor(DataActor):
-    """Bounded owner of latest watchlist observation state."""
+    """Bounded owner of latest watchlist observation state.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.watchlist
+        architecture.component.label: Watchlist
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.acquisition
+    """
 
     def __init__(self, config: WatchlistActorConfig) -> None:
         super().__init__(config)

@@ -10,6 +10,7 @@ from markeitech.acquisition import (
     FeedKind,
     HistoricalWindow,
 )
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.completed_bars import CompletedBarInput
 from markeitech.intelligence.metrics import (
     MetricCadence,
@@ -21,12 +22,12 @@ from markeitech.intelligence.metrics import (
     MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
-    MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
     ParameterMutability,
+    _validate_legacy_metric_value,
 )
-from markeitech.intelligence.session import SessionCalendar, SessionWindow
+from markeitech.intelligence.session import CalendarProjectionView, SessionWindow
 
 _SECOND_NS = 1_000_000_000
 
@@ -46,6 +47,7 @@ OPENING_RANGE_FIELDS = (
     "distance_below_low_ratio",
     "coverage_ratio",
 )
+"""Ordered metric-field suffixes for configured opening-range windows."""
 POWER_HOUR_FIELDS = (
     "start_ns",
     "end_ns",
@@ -61,10 +63,13 @@ POWER_HOUR_FIELDS = (
     "directional_efficiency",
     "coverage_ratio",
 )
+"""Ordered metric-field suffixes for configured power-hour windows."""
 
 
 @dataclass(frozen=True, slots=True)
 class AnalyticalWindowPolicy:
+    """Configure a calendar-relative analytical window and its evidence bounds."""
+
     profile_id: str
     profile_version: int
     window_id: str
@@ -122,9 +127,7 @@ class AnalyticalWindowPolicy:
         ):
             _positive_int(getattr(self, name), name)
         if not (
-            self.minimum_duration_seconds
-            <= self.duration_seconds
-            <= self.maximum_duration_seconds
+            self.minimum_duration_seconds <= self.duration_seconds <= self.maximum_duration_seconds
         ):
             raise ValueError("duration is outside its configured envelope")
         if (self.duration_seconds - self.minimum_duration_seconds) % self.duration_step_seconds:
@@ -172,6 +175,8 @@ class AnalyticalWindowPolicy:
 
 @dataclass(frozen=True, slots=True)
 class AnalyticalWindowSpec:
+    """Resolve one analytical window to an exact session and UTC nanosecond range."""
+
     policy: AnalyticalWindowPolicy
     session_id: str
     start_ns: int
@@ -187,6 +192,8 @@ class AnalyticalWindowSpec:
 
 @dataclass(frozen=True, slots=True)
 class AnalyticalWindowSummary:
+    """Summarize one analytical window with coverage, fidelity, and bar lineage."""
+
     policy: AnalyticalWindowPolicy
     session_id: str
     start_ns: int
@@ -398,6 +405,12 @@ def resolve_analytical_window(
     *,
     session_id: str,
 ) -> AnalyticalWindowSpec:
+    """Resolve a configured window against its exact calendar session phase.
+
+    Raises:
+        ValueError: If the phase mismatches or the configured window lies outside it.
+    """
+
     if session.phase != policy.anchor_phase:
         raise ValueError("session phase does not match analytical window anchor")
     anchor_ns = session.start_ns if policy.anchor_boundary == "start" else session.end_ns
@@ -412,7 +425,7 @@ def resolve_analytical_window(
 
 def resolve_historical_analytical_window(
     policy: AnalyticalWindowPolicy,
-    calendar: SessionCalendar,
+    calendar: CalendarProjectionView,
     *,
     calendar_id: str,
     request_start_ns: int,
@@ -426,8 +439,7 @@ def resolve_historical_analytical_window(
         (
             item
             for item in sessions
-            if item.phase == policy.anchor_phase
-            and item.start_ns <= request_start_ns < item.end_ns
+            if item.phase == policy.anchor_phase and item.start_ns <= request_start_ns < item.end_ns
         ),
         None,
     )
@@ -444,6 +456,8 @@ def resolve_historical_analytical_window(
 def analytical_window_metric_definitions(
     policies: tuple[AnalyticalWindowPolicy, ...],
 ) -> tuple[MetricDefinition, ...]:
+    """Build metric definitions for configured opening-range and power-hour windows."""
+
     definitions: list[MetricDefinition] = []
     for policy in policies:
         historical = CapabilityHistoricalRequirement(
@@ -457,11 +471,7 @@ def analytical_window_metric_definitions(
                 "anchor_boundary": policy.anchor_boundary,
                 "offset_seconds": policy.offset_seconds,
                 "duration_seconds": policy.duration_seconds,
-                **(
-                    {"fallback_to_previous": True}
-                    if policy.purpose == "power_hour"
-                    else {}
-                ),
+                **({"fallback_to_previous": True} if policy.purpose == "power_hour" else {}),
             },
             parameters={"purpose": policy.purpose, "window_id": policy.window_id},
         )
@@ -578,6 +588,8 @@ def calculate_analytical_window_metrics(
     revision: int,
     missing_reason: str = "window_not_started",
 ) -> tuple[MetricValue, ...]:
+    """Calculate one analytical window's metrics or explicit unavailable values."""
+
     _text(instrument_id, "instrument_id")
     raw = _values(policy, summary, missing_reason)
     observed_ns = summary.observed_ts_ns if summary is not None else calculated_ts_ns
@@ -611,11 +623,13 @@ def calculate_analytical_window_metrics(
         for metric_id, (value, health, fidelity, reasons) in raw.items()
     )
     for value in result:
-        registry.validate_value(value)
+        _validate_legacy_metric_value(registry, value)
     return result
 
 
 def analytical_window_value_signature(value: MetricValue) -> tuple[object, ...]:
+    """Return fields that determine whether a window metric changed meaningfully."""
+
     return (
         value.metric_id,
         value.session_id,
@@ -673,9 +687,7 @@ def _values(
             },
         )
         if summary.volume is None:
-            reasons[f"{prefix}.volume"] = summary.volume_missing_reasons or (
-                "volume_unavailable",
-            )
+            reasons[f"{prefix}.volume"] = summary.volume_missing_reasons or ("volume_unavailable",)
     else:
         values.update(
             {

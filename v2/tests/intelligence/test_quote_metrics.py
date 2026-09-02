@@ -15,9 +15,9 @@ from markeitech.intelligence import (
     MetricRegistry,
     QuoteMetricCatalogPolicy,
     QuoteMetricInput,
-    calculate_quote_metrics,
     quote_metric_definitions,
 )
+from markeitech.intelligence.quote_metrics import calculate_quote_metrics
 
 
 def _registry() -> MetricRegistry:

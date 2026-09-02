@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 16
+schema_version = 23
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -108,6 +108,8 @@ poll_interval_ms = 100
 
 [historical.probe]
 enabled = false
+mode = "direct"
+omit_initial_snapshot_request = false
 actor_ids = ["HISTORICAL-PROBE-A", "HISTORICAL-PROBE-B"]
 instrument_id = "ESU6.CME"
 selector = "1-MINUTE-LAST-EXTERNAL"
@@ -118,14 +120,28 @@ priority = 10
 
 [sessions]
 evaluation_interval_ms = 1000
+projection_lookback_days = 120
+projection_lookahead_days = 14
+maximum_projection_days = 400
+maximum_calendars_per_request = 8
+calendar_catalog = "market-calendars.toml"
+calendar_ids = ["cme_equity"]
 
-[[sessions.calendars]]
-calendar_id = "cme_equity"
-provider_calendar = "CME_Equity"
-timezone = "America/New_York"
-schedule_version = "test-1"
-phases = []
-overrides = []
+[sessions.projection_retry]
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
+
+[sessions.current_state_delivery]
+policy_version = 1
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
+maximum_buffered_transitions_per_calendar = 8
+maximum_total_buffered_transitions = 32
+boundary_delivery_grace_ms = 2000
 
 [evidence_health]
 evaluation_interval_ms = 1000
@@ -288,15 +304,15 @@ active = true
 profile_id = "cme_equity_primary"
 version = 1
 calendar_id = "cme_equity"
-primary_phase = "OPEN"
+primary_phase = "GLOBEX"
 overnight_enabled = false
-overnight_phase = "OPEN"
+overnight_phase = "GLOBEX"
 volume_supported = true
 
 [[metrics.session_measurements.profiles.windows]]
 window_id = "opening_range_fast"
 purpose = "opening_range"
-anchor_phase = "OPEN"
+anchor_phase = "GLOBEX"
 anchor_boundary = "start"
 offset_seconds = 0
 duration_seconds = 300
@@ -311,7 +327,7 @@ maximum_historical_observations = 5
 [[metrics.session_measurements.profiles.windows]]
 window_id = "power_hour"
 purpose = "power_hour"
-anchor_phase = "OPEN"
+anchor_phase = "GLOBEX"
 anchor_boundary = "end"
 offset_seconds = -3600
 duration_seconds = 3600
@@ -356,6 +372,14 @@ capabilities = ["top_of_book", "watchlist_last"]
 """
 
 ENTITY_DEFINITIONS = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
+CALENDAR_CATALOG = (
+    Path(__file__).parents[2] / "config/market-calendars.toml"
+).read_text()
+
+
+@pytest.fixture(autouse=True)
+def _write_calendar_catalog(tmp_path: Path) -> None:
+    (tmp_path / "market-calendars.toml").write_text(CALENDAR_CATALOG)
 
 
 def _entity_enabled_config() -> str:
@@ -384,6 +408,11 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.discord.enabled is True
     assert config.discord.queue_capacity == 32
     assert config.discord.ping_critical_resource_alerts is True
+    assert config.visual_debug_capture.enabled is False
+    assert config.visual_debug_capture.instrument_id == "ESU6.CME"
+    assert config.visual_debug_capture.bar_specification == "1-MINUTE-LAST-EXTERNAL"
+    assert config.visual_debug_capture.target_historical_bars == 5
+    assert config.visual_debug_capture.target_live_bars == 5
     assert config.runtime_resources.enabled is True
     assert config.runtime_resources.sample_interval_ms == 10000
     assert config.runtime_resources.log_every_samples == 1
@@ -405,11 +434,40 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.historical.maximum_in_flight_requests == 1
     assert config.historical.probe.instrument_id == "ESU6.CME"
     assert config.historical.probe.enabled is False
+    assert config.historical.probe.mode == "direct"
+    assert config.historical.probe.omit_initial_snapshot_request is False
     assert config.historical.probe.actor_ids == (
         "HISTORICAL-PROBE-A",
         "HISTORICAL-PROBE-B",
     )
-    assert config.sessions.calendars[0].calendar_id == "cme_equity"
+    assert config.sessions.current_state_delivery.policy_version == 1
+    assert config.sessions.current_state_delivery.maximum_attempts == 3
+    assert config.sessions.current_state_delivery.maximum_total_buffered_transitions == 32
+    cme_equity = next(
+        calendar
+        for calendar in config.sessions.calendars
+        if calendar.calendar_id == "cme_equity"
+    )
+    assert cme_equity.provider_calendar == "CME_Equity"
+    assert cme_equity.exchange_timezone == "America/Chicago"
+    assert cme_equity.phases[0].timezone == "provider"
+    assert cme_equity.phases[0].name == "GLOBEX"
+    assert tuple(phase.name for phase in cme_equity.phases) == (
+        "GLOBEX",
+        "ASIA",
+        "LONDON",
+        "NEW_YORK",
+    )
+    assert cme_equity.phases[1].timezone == "America/Chicago"
+    assert cme_equity.phases[2].timezone == "Europe/London"
+    assert cme_equity.phases[3].timezone == "America/New_York"
+    assert cme_equity.schedule_columns == (
+        "market_open",
+        "break_start",
+        "break_end",
+        "market_close",
+    )
+    assert len(cme_equity.definition_digest) == 64
     assert config.evidence_health.policies[0].fresh_for_ms == 2000
     assert config.evidence_health.consumer_retry_interval_ms == 1000
     assert config.metrics.quote_quality.enabled is True
@@ -460,7 +518,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
         config.metrics.session_measurements.profiles[0].windows[1].maximum_historical_observations
         == 4
     )
-    assert config.schema_version == 16
+    assert config.schema_version == 23
     assert config.metrics.entity_analysis.enabled is False
     assert config.metrics.entity_analysis.catalog_version == 2
     assert config.metrics.entity_analysis.completed_session_retention == 2
@@ -472,6 +530,48 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
     assert config.watchlist.members[0].capabilities == ("top_of_book", "watchlist_last")
+
+
+def test_tracked_example_disables_faulty_session_metrics_surface() -> None:
+    root = Path(__file__).parents[2]
+
+    config = load_system_config(root / "config/system.example.toml")
+
+    assert config.metrics.session_measurements.enabled is False
+    assert config.metrics.entity_analysis.enabled is False
+    assert config.visual_debug_capture.enabled is False
+
+
+def test_rejects_completed_bar_historical_selector_interval_mismatch(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'historical_selector = "1-MINUTE-LAST-EXTERNAL"',
+            'historical_selector = "5-MINUTE-LAST-EXTERNAL"',
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="historical selector interval"):
+        load_system_config(path)
+
+
+def test_rejects_completed_bar_live_selector_that_does_not_divide_target(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'live_selector = "5-SECOND-LAST-EXTERNAL"',
+            'live_selector = "2-MINUTE-LAST-EXTERNAL"',
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="live selector interval"):
+        load_system_config(path)
 
 
 def test_loads_complete_entity_analysis_configuration_envelope(tmp_path: Path) -> None:
@@ -521,7 +621,13 @@ def test_rejects_market_state_binding_in_legacy_entity_catalog(tmp_path: Path) -
 
 def test_rejects_market_state_binding_without_explicit_runtime_limits(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(_entity_enabled_config().replace("maximum_metric_values = 20000\n", ""))
+    path.write_text(
+        _entity_enabled_config().replace(
+            "maximum_input_age_ms = 120000\nmaximum_metric_values = 20000\n"
+            "market_state_reconciliation_interval_ms = 1000\n",
+            "maximum_input_age_ms = 120000\nmarket_state_reconciliation_interval_ms = 1000\n",
+        ),
+    )
 
     with pytest.raises(ValueError, match="require explicit runtime limits.*maximum_metric_values"):
         load_system_config(path)
@@ -638,6 +744,368 @@ def test_rejects_unknown_configuration(tmp_path: Path) -> None:
         load_system_config(path)
 
 
+@pytest.mark.parametrize("section", ["visual_acceptance", "live_evidence_review"])
+def test_rejects_retired_visual_review_sections(tmp_path: Path, section: str) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG + f"\n[{section}]\nenabled = false\n")
+
+    with pytest.raises(ValueError, match=rf"root has unknown keys: {section}"):
+        load_system_config(path)
+
+
+def test_rejects_invalid_historical_probe_mode(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace('mode = "direct"', 'mode = "unknown"', 1))
+
+    with pytest.raises(ValueError, match="historical.probe.mode must be one of"):
+        load_system_config(path)
+
+
+def test_current_state_historical_probe_requires_one_actor(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace('mode = "direct"', 'mode = "current_state_gated"', 1),
+    )
+
+    with pytest.raises(ValueError, match="must be exactly CURRENT-STATE-HISTORICAL-PROBE"):
+        load_system_config(path)
+
+
+def test_rejects_pre_current_state_delivery_schema(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace("schema_version = 23", "schema_version = 22", 1))
+
+    with pytest.raises(ValueError, match="unsupported schema_version: 22"):
+        load_system_config(path)
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement", "message"),
+    [
+        ("response_timeout_ms = 5000", "response_timeout_ms = 99", "response_timeout_ms"),
+        (
+            "response_timeout_ms = 5000\nmaximum_attempts = 3\nretry_backoff_ms",
+            "response_timeout_ms = 5000\nmaximum_attempts = 11\nretry_backoff_ms",
+            "maximum_attempts",
+        ),
+        ("retry_backoff_ms = 1000", "retry_backoff_ms = 60001", "retry_backoff_ms"),
+        ("maximum_elapsed_ms = 60000", "maximum_elapsed_ms = 999", "maximum_elapsed_ms"),
+    ],
+)
+def test_rejects_projection_retry_values_outside_safety_envelopes(
+    tmp_path: Path,
+    original: str,
+    replacement: str,
+    message: str,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace(original, replacement, 1))
+
+    with pytest.raises(ValueError, match=message):
+        load_system_config(path)
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement", "message"),
+    [
+        ("policy_version = 1", "policy_version = 2", "policy_version must be 1"),
+        (
+            "[sessions.current_state_delivery]\npolicy_version = 1\n"
+            "response_timeout_ms = 5000\nmaximum_attempts = 3",
+            "[sessions.current_state_delivery]\npolicy_version = 1\n"
+            "response_timeout_ms = 5000\nmaximum_attempts = 11",
+            "maximum_attempts",
+        ),
+        (
+            "maximum_buffered_transitions_per_calendar = 8\n"
+            "maximum_total_buffered_transitions = 32",
+            "maximum_buffered_transitions_per_calendar = 33\n"
+            "maximum_total_buffered_transitions = 32",
+            "maximum_total_buffered_transitions",
+        ),
+    ],
+)
+def test_rejects_invalid_current_state_delivery_policy(
+    tmp_path: Path,
+    original: str,
+    replacement: str,
+    message: str,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace(original, replacement, 1))
+
+    with pytest.raises(ValueError, match=message):
+        load_system_config(path)
+
+
+def test_rejects_missing_or_unknown_current_state_delivery_configuration(
+    tmp_path: Path,
+) -> None:
+    block = """\
+[sessions.current_state_delivery]
+policy_version = 1
+response_timeout_ms = 5000
+maximum_attempts = 3
+retry_backoff_ms = 1000
+maximum_elapsed_ms = 60000
+maximum_buffered_transitions_per_calendar = 8
+maximum_total_buffered_transitions = 32
+boundary_delivery_grace_ms = 2000
+"""
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace(block, ""))
+    with pytest.raises(ValueError, match="sessions missing keys: current_state_delivery"):
+        load_system_config(path)
+
+    path.write_text(
+        VALID_CONFIG.replace(
+            "boundary_delivery_grace_ms = 2000",
+            "boundary_delivery_grace_ms = 2000\nmaximum_cached_responses = 99",
+            1,
+        ),
+    )
+    with pytest.raises(
+        ValueError,
+        match="current_state_delivery has unknown keys: maximum_cached_responses",
+    ):
+        load_system_config(path)
+
+
+def test_rejects_missing_dedicated_calendar_catalog(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace("market-calendars.toml", "missing.toml", 1))
+
+    with pytest.raises(ValueError, match="session calendar catalog does not exist"):
+        load_system_config(path)
+
+
+def test_rejects_pre_cleanup_calendar_catalog_schema(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    (tmp_path / "market-calendars.toml").write_text(
+        CALENDAR_CATALOG.replace("schema_version = 3", "schema_version = 2", 1),
+    )
+    path.write_text(VALID_CONFIG)
+
+    with pytest.raises(ValueError, match="unsupported calendar_catalog.schema_version: 2"):
+        load_system_config(path)
+
+
+def test_rejects_calendar_catalog_for_a_different_engine_version(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    (tmp_path / "market-calendars.toml").write_text(
+        CALENDAR_CATALOG.replace(
+            'calendar_engine_version = "5.4.0"',
+            'calendar_engine_version = "5.5.0"',
+            1,
+        ),
+    )
+    path.write_text(VALID_CONFIG)
+
+    with pytest.raises(
+        ValueError,
+        match="requires pandas-market-calendars 5.5.0, installed 5.4.0",
+    ):
+        load_system_config(path)
+
+
+def test_rejects_inline_session_calendars(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'calendar_catalog = "market-calendars.toml"',
+            'calendar_catalog = "market-calendars.toml"\ncalendars = []',
+        ),
+    )
+
+    with pytest.raises(ValueError, match="sessions has unknown keys: calendars"):
+        load_system_config(path)
+
+
+def test_rejects_default_projection_window_above_runtime_bound(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            "maximum_projection_days = 400",
+            "maximum_projection_days = 134",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="lookback and lookahead exceed"):
+        load_system_config(path)
+
+
+def test_rejects_selected_calendars_above_request_bound(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            'maximum_calendars_per_request = 8\ncalendar_catalog',
+            'maximum_calendars_per_request = 1\ncalendar_catalog',
+        ).replace(
+            'calendar_ids = ["cme_equity"]',
+            'calendar_ids = ["cme_equity", "cme_energy"]',
+        ),
+    )
+
+    with pytest.raises(ValueError, match="calendar_ids exceed"):
+        load_system_config(path)
+
+
+def test_rejects_invalid_product_phase_timezone(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    catalog_path = tmp_path / "market-calendars.toml"
+    catalog_path.write_text(
+        CALENDAR_CATALOG.replace(
+            '[[calendars.phases]]\nname = "GLOBEX"\ntimezone = "provider"',
+            '[[calendars.phases]]\nname = "GLOBEX"\ntimezone = "Not/AZone"',
+            1,
+        ),
+    )
+    path.write_text(VALID_CONFIG)
+
+    with pytest.raises(
+        ValueError,
+        match=r"phases\[GLOBEX\]\.timezone is not an IANA timezone",
+    ):
+        load_system_config(path)
+
+
+def test_rejects_calendar_correction_without_product_scope(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "system.toml"
+    (tmp_path / "market-calendars.toml").write_text(
+        CALENDAR_CATALOG.replace(
+            'product_roots = ["ES", "NQ", "YM"]',
+            "product_roots = []",
+            1,
+        ),
+    )
+    path.write_text(VALID_CONFIG)
+
+    with pytest.raises(ValueError, match="product_roots must be a non-empty array"):
+        load_system_config(path)
+
+
+def test_rejects_unavailable_provider_schedule_column(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    catalog_path = tmp_path / "market-calendars.toml"
+    catalog_path.write_text(
+        CALENDAR_CATALOG.replace(
+            'schedule_columns = ["market_open", "market_close"]',
+            'schedule_columns = ["market_open", "break_start", "break_end", "market_close"]',
+            1,
+        ),
+    )
+    path.write_text(VALID_CONFIG)
+
+    with pytest.raises(ValueError, match="schedule_columns are unavailable"):
+        load_system_config(path)
+
+
+def test_calendar_definition_digest_is_stable_and_content_derived(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG)
+    first = load_system_config(path)
+    second = load_system_config(path)
+    original = next(
+        item for item in first.sessions.calendars if item.calendar_id == "cme_equity"
+    )
+    repeated = next(
+        item for item in second.sessions.calendars if item.calendar_id == "cme_equity"
+    )
+
+    assert original.definition_digest == repeated.definition_digest
+    assert first.sessions.catalog_digest == second.sessions.catalog_digest
+
+    catalog_path = tmp_path / "market-calendars.toml"
+    catalog_path.write_text(
+        CALENDAR_CATALOG.replace(
+            'calendar_id = "cme_equity"\n'
+            'calendar_engine = "pandas_market_calendars"\n'
+            'provider_calendar = "CME_Equity"\n'
+            'schedule_columns = ["market_open", "break_start", "break_end", "market_close"]\n'
+            "definition_version = 4",
+            'calendar_id = "cme_equity"\n'
+            'calendar_engine = "pandas_market_calendars"\n'
+            'provider_calendar = "CME_Equity"\n'
+            'schedule_columns = ["market_open", "break_start", "break_end", "market_close"]\n'
+            "definition_version = 5",
+            1,
+        ),
+    )
+    changed = load_system_config(path)
+    revised = next(
+        item for item in changed.sessions.calendars if item.calendar_id == "cme_equity"
+    )
+
+    assert revised.definition_version == 5
+    assert revised.definition_digest != original.definition_digest
+    assert changed.sessions.catalog_digest != first.sessions.catalog_digest
+
+
+def test_equal_definition_versions_with_unequal_content_have_unequal_digests(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG)
+    original_config = load_system_config(path)
+    original = next(
+        item
+        for item in original_config.sessions.calendars
+        if item.calendar_id == "cme_equity"
+    )
+    (tmp_path / "market-calendars.toml").write_text(
+        CALENDAR_CATALOG.replace(
+            'calendar_id = "cme_equity"\n'
+            'calendar_engine = "pandas_market_calendars"\n'
+            'provider_calendar = "CME_Equity"\n'
+            'schedule_columns = ["market_open", "break_start", "break_end", "market_close"]',
+            'calendar_id = "cme_equity"\n'
+            'calendar_engine = "pandas_market_calendars"\n'
+            'provider_calendar = "CME_Equity"\n'
+            'schedule_columns = ["market_open", "market_close"]',
+            1,
+        ),
+    )
+    changed_config = load_system_config(path)
+    changed = next(
+        item
+        for item in changed_config.sessions.calendars
+        if item.calendar_id == "cme_equity"
+    )
+
+    assert original.definition_version == changed.definition_version == 4
+    assert original.definition_digest != changed.definition_digest
+
+
+def test_rejects_legacy_instrument_mappings_in_calendar_catalog(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    (tmp_path / "market-calendars.toml").write_text(
+        CALENDAR_CATALOG.replace(
+            'calendar_engine_version = "5.4.0"',
+            'calendar_engine_version = "5.4.0"\ninstrument_mappings = []',
+            1,
+        ),
+    )
+    path.write_text(VALID_CONFIG)
+
+    with pytest.raises(
+        ValueError,
+        match="calendar_catalog has unknown keys: instrument_mappings",
+    ):
+        load_system_config(path)
+
+
+def test_futures_contract_roll_does_not_require_calendar_catalog_edit(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace("ESU6.CME", "ESZ6.CME"))
+
+    config = load_system_config(path)
+
+    assert config.watchlist.members[0].instrument_id == "ESZ6.CME"
+    assert config.watchlist.members[0].calendar_id == "cme_equity"
+
+
 def test_rejects_duplicate_watchlist_instruments(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
     path.write_text(
@@ -711,25 +1179,46 @@ def test_rejects_enabled_session_measurements_without_profile_binding(tmp_path: 
 
 def test_rejects_session_measurements_above_active_calendar_bound(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(
-        VALID_CONFIG.replace("maximum_active_sessions = 3", "maximum_active_sessions = 1")
+    (tmp_path / "market-calendars.toml").write_text(
+        CALENDAR_CATALOG
         + """
 
-[[sessions.calendars]]
+[[calendars]]
 calendar_id = "second_calendar"
+calendar_engine = "pandas_market_calendars"
 provider_calendar = "NYSE"
-timezone = "America/New_York"
-schedule_version = "test-1"
-phases = []
-overrides = []
+schedule_columns = ["market_open", "market_close"]
+definition_version = 2
+effective_from = "2026-08-30T00:00:00Z"
+correction_ids = []
+
+[[calendars.phases]]
+name = "EXCHANGE_SESSION"
+timezone = "provider"
+start_kind = "schedule_boundary"
+start_value = "market_open"
+start_day_offset = 0
+end_kind = "schedule_boundary"
+end_value = "market_close"
+end_day_offset = 0
+exchange_constraint = "clip"
+""",
+    )
+    path.write_text(
+        VALID_CONFIG.replace("maximum_active_sessions = 3", "maximum_active_sessions = 1")
+        .replace(
+            'calendar_ids = ["cme_equity"]',
+            'calendar_ids = ["cme_equity", "second_calendar"]',
+        )
+        + """
 
 [[metrics.session_measurements.profiles]]
 profile_id = "second_profile"
 version = 1
 calendar_id = "second_calendar"
-primary_phase = "OPEN"
+primary_phase = "EXCHANGE_SESSION"
 overnight_enabled = false
-overnight_phase = "OPEN"
+overnight_phase = "EXCHANGE_SESSION"
 volume_supported = true
 windows = []
 
@@ -767,15 +1256,41 @@ def test_rejects_duplicate_session_measurement_profile_binding(tmp_path: Path) -
 
 def test_rejects_profile_binding_calendar_mismatch(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
+    (tmp_path / "market-calendars.toml").write_text(
+        (
+            CALENDAR_CATALOG
+            + """
+
+[[calendars]]
+calendar_id = "other_calendar"
+calendar_engine = "pandas_market_calendars"
+provider_calendar = "NYSE"
+schedule_columns = ["market_open", "market_close"]
+definition_version = 2
+effective_from = "2026-08-30T00:00:00Z"
+correction_ids = []
+
+[[calendars.phases]]
+name = "EXCHANGE_SESSION"
+timezone = "provider"
+start_kind = "schedule_boundary"
+start_value = "market_open"
+start_day_offset = 0
+end_kind = "schedule_boundary"
+end_value = "market_close"
+end_day_offset = 0
+exchange_constraint = "clip"
+"""
+        ),
+    )
     path.write_text(
         VALID_CONFIG.replace(
             'calendar_id = "cme_equity"\nowner_ids',
             'calendar_id = "other_calendar"\nowner_ids',
-        )
-        + '\n[[sessions.calendars]]\ncalendar_id = "other_calendar"\n'
-        + 'provider_calendar = "NYSE"\n'
-        + 'timezone = "America/New_York"\n'
-        + 'schedule_version = "test-1"\nphases = []\noverrides = []\n',
+        ).replace(
+            'calendar_ids = ["cme_equity"]',
+            'calendar_ids = ["cme_equity", "other_calendar"]',
+        ),
     )
 
     with pytest.raises(ValueError, match="profile binding calendar mismatch"):
@@ -836,25 +1351,19 @@ max_unavailable_ms = 60000
         load_system_config(path)
 
 
-def test_rejects_session_override_for_an_undefined_phase(tmp_path: Path) -> None:
+def test_rejects_obsolete_calendar_overrides(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(
-        VALID_CONFIG.replace(
-            "phases = []\noverrides = []",
-            """
-phases = []
-
-[[sessions.calendars.overrides]]
-trade_date = "2026-08-17"
-phase = "GTH"
-start = "20:15"
-end = "09:25"
-start_day_offset = -1
-""",
+    (tmp_path / "market-calendars.toml").write_text(
+        CALENDAR_CATALOG.replace(
+            'calendar_id = "us_equities"\ncalendar_engine = "pandas_market_calendars"',
+            'calendar_id = "us_equities"\noverrides = []\n'
+            'calendar_engine = "pandas_market_calendars"',
+            1,
         ),
     )
+    path.write_text(VALID_CONFIG)
 
-    with pytest.raises(ValueError, match="overrides reference undefined phases: GTH"):
+    with pytest.raises(ValueError, match="unknown keys: overrides"):
         load_system_config(path)
 
 
@@ -906,8 +1415,8 @@ def test_rejects_unknown_session_measurement_profile_calendar(tmp_path: Path) ->
     path = tmp_path / "system.toml"
     path.write_text(
         VALID_CONFIG.replace(
-            'calendar_id = "cme_equity"\nprimary_phase = "OPEN"',
-            'calendar_id = "unknown"\nprimary_phase = "OPEN"',
+            'calendar_id = "cme_equity"\nprimary_phase = "GLOBEX"',
+            'calendar_id = "unknown"\nprimary_phase = "GLOBEX"',
         ),
     )
 

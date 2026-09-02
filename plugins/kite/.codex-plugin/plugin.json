@@ -1,0 +1,49 @@
+{
+  "name": "kite",
+  "version": "0.1.0+codex.20260829091645",
+  "description": "Repository-owned routed engineering and market-evidence advisor council for Markeitech",
+  "author": {
+    "name": "Markeitect and Kite"
+  },
+  "repository": "https://github.com/ShriekinNinja/Markeitech_V2",
+  "license": "Proprietary",
+  "keywords": [
+    "markeitech",
+    "nautilustrader",
+    "market-evidence",
+    "data-lineage",
+    "microstructure",
+    "security",
+    "data-licensing",
+    "options",
+    "0dte",
+    "statistical-learning",
+    "architecture",
+    "engineering",
+    "audit"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Kite",
+    "shortDescription": "Explicitly invoked Markeitech engineering advisor suite.",
+    "longDescription": "When explicitly invoked, Kite uses bounded selection to route Markeitech work through the smallest sufficient set of repository custom advisors, then executes explicit dependencies while preserving evidence, conflict, authority, and read-only consultation boundaries.",
+    "developerName": "Markeitect and Kite",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Advisory",
+      "Advisor Routing",
+      "Architecture Review",
+      "Code Review",
+      "Market Evidence Validation",
+      "Options Evidence Review",
+      "Statistical Learning Review",
+      "Security Boundary Review",
+      "Vendor Data Licensing Review"
+    ],
+    "defaultPrompt": [
+      "Use $kite:markeitech-advisor-router to activate Kite and route this Markeitech task through the required specialist council.",
+      "Use $kite:markeitech-advisor-router to activate Kite and audit this evidence or design against its exact owners.",
+      "Use $kite:markeitech-advisor-router to activate Kite and review this Markeitech batch defect-first."
+    ]
+  }
+}

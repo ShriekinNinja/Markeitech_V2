@@ -13,11 +13,11 @@ from markeitech.intelligence import (
     MetricHealth,
     MetricRegistry,
     analytical_window_metric_definitions,
-    calculate_analytical_window_metrics,
     resolve_analytical_window,
     resolve_historical_analytical_window,
 )
-from markeitech.intelligence.session import SessionSnapshot, SessionWindow
+from markeitech.intelligence.session import CanonicalSessionSnapshot, SessionWindow
+from markeitech.intelligence.session_windows import calculate_analytical_window_metrics
 
 MINUTE_NS = 60 * 1_000_000_000
 
@@ -85,16 +85,21 @@ def test_historical_window_uses_request_session_identity() -> None:
     session = SessionWindow(date(2026, 8, 20), "OPEN", 0, 1_380 * MINUTE_NS)
 
     class Calendar:
-        def evaluate(self, _timestamp_ns: int) -> SessionSnapshot:
-            return SessionSnapshot(
+        def evaluate(self, _timestamp_ns: int) -> CanonicalSessionSnapshot:
+            return CanonicalSessionSnapshot(
                 calendar_id="cme_equity",
                 schedule_version="test",
-                timezone="UTC",
+                definition_version=1,
+                definition_digest="digest",
+                calendar_engine_version="test",
+                exchange_timezone="UTC",
                 trade_date=session.trade_date,
-                phase=session.phase,
-                phase_open_ns=session.start_ns,
-                phase_close_ns=session.end_ns,
+                phase_memberships=(session.phase,),
+                market_state="OPEN",
+                segment_open_ns=session.start_ns,
+                segment_close_ns=session.end_ns,
                 next_transition_ns=session.end_ns,
+                state_effective_from_ns=session.start_ns,
             )
 
         def windows(self, _start: date, _end: date) -> tuple[SessionWindow, ...]:
@@ -225,9 +230,7 @@ def test_opening_range_price_evidence_does_not_depend_on_volume() -> None:
     assert by_id[f"{policy.metric_prefix}.high"].health is MetricHealth.READY
     assert by_id[f"{policy.metric_prefix}.volume"].value is None
     assert by_id[f"{policy.metric_prefix}.volume"].health is MetricHealth.UNSUPPORTED
-    assert by_id[f"{policy.metric_prefix}.volume"].missing_reasons == (
-        "volume_unsupported",
-    )
+    assert by_id[f"{policy.metric_prefix}.volume"].missing_reasons == ("volume_unsupported",)
 
 
 def test_power_hour_reports_only_ohlcv_derived_evidence() -> None:

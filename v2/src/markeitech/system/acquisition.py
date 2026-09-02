@@ -1,37 +1,28 @@
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Callable
-from dataclasses import dataclass, replace
-from typing import Protocol
 
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
-from nautilus_trader.model import ActorId, BarType, CustomData, DataType, InstrumentId
+from nautilus_trader.model import ActorId, CustomData, DataType, InstrumentId
 
 from markeitech.acquisition import (
     HISTORICAL_BATCH_TYPE_NAME,
-    HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
     HISTORICAL_EXECUTION_SIGNAL,
     HISTORICAL_READINESS_SIGNAL,
+    HISTORICAL_REQUEST_PLAN_TYPE_NAME,
     AcquisitionCoordinator,
     AcquisitionLifecycleEvent,
-    CapabilityDeclaration,
-    CapabilityHistoricalRequirement,
     DemandOwner,
     DemandOwnerKind,
     FeedKind,
     FeedRequirement,
-    HistoricalCapabilityBinding,
-    HistoricalDependencyCompiler,
-    HistoricalDependencyDemandEvent,
     HistoricalExecutionCoordinator,
     HistoricalExecutionEventMessage,
     HistoricalExecutionPolicy,
     HistoricalExecutionUpdate,
     HistoricalReadinessEvent,
     HistoricalRequest,
-    HistoricalResourcePolicy,
-    HistoricalWindow,
+    HistoricalRequestPlan,
     NautilusHistoricalPort,
     NautilusSubscriptionPort,
     ObservationDemand,
@@ -40,13 +31,6 @@ from markeitech.acquisition.historical_native import (
     HistoricalResponseMismatch,
     validate_historical_bars,
 )
-from markeitech.acquisition.historical_windows import (
-    HistoricalWindowParameters,
-    HistoricalWindowResolver,
-    HistoricalWindowUnavailable,
-)
-from markeitech.intelligence.messages import SESSION_STATE_SIGNAL, SessionStateEvent
-from markeitech.intelligence.session import SessionCalendar, definition_from_config
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STATUS_SIGNAL,
@@ -69,108 +53,6 @@ from markeitech.system.messages import (
 )
 
 _HISTORICAL_TIMER = "historical-execution"
-_HISTORICAL_DEMAND_RETRY_ALERT = "historical-window-demand-retry"
-
-
-@dataclass(frozen=True, slots=True)
-class DeferredHistoricalDemand:
-    event: HistoricalDependencyDemandEvent
-    calendar_id: str
-    retry_at_ns: int
-
-
-class HistoricalDemandRetryBook:
-    def __init__(self) -> None:
-        self._demands: dict[str, DeferredHistoricalDemand] = {}
-
-    @property
-    def next_retry_ns(self) -> int | None:
-        if not self._demands:
-            return None
-        return min(item.retry_at_ns for item in self._demands.values())
-
-    @property
-    def demand_ids(self) -> tuple[str, ...]:
-        return tuple(sorted(self._demands))
-
-    def retain(
-        self,
-        event: HistoricalDependencyDemandEvent,
-        *,
-        calendar_id: str,
-        retry_at_ns: int,
-    ) -> None:
-        self._demands[event.demand_id] = DeferredHistoricalDemand(
-            event=event,
-            calendar_id=calendar_id,
-            retry_at_ns=retry_at_ns,
-        )
-
-    def discard(self, demand_id: str) -> None:
-        self._demands.pop(demand_id, None)
-
-    def release_due(self, now_ns: int) -> tuple[HistoricalDependencyDemandEvent, ...]:
-        return self._release(
-            demand_id for demand_id, item in self._demands.items() if item.retry_at_ns <= now_ns
-        )
-
-    def release_calendar(
-        self,
-        calendar_id: str,
-    ) -> tuple[HistoricalDependencyDemandEvent, ...]:
-        return self._release(
-            demand_id
-            for demand_id, item in self._demands.items()
-            if item.calendar_id == calendar_id
-        )
-
-    def clear(self) -> None:
-        self._demands.clear()
-
-    def _release(self, demand_ids) -> tuple[HistoricalDependencyDemandEvent, ...]:  # noqa: ANN001
-        released = []
-        for demand_id in sorted(tuple(demand_ids)):
-            item = self._demands.pop(demand_id, None)
-            if item is not None:
-                released.append(item.event)
-        return tuple(released)
-
-
-class HistoricalDemandRetryClock(Protocol):
-    def timer_names(self) -> list[str]: ...
-
-    def cancel_timer(self, name: str) -> None: ...
-
-    def set_time_alert_ns(
-        self,
-        name: str,
-        alert_time_ns: int,
-        callback: Callable[[object], None],
-    ) -> None: ...
-
-
-def synchronize_historical_demand_retry_timer(
-    clock: HistoricalDemandRetryClock,
-    *,
-    current_retry_at_ns: int | None,
-    next_retry_at_ns: int | None,
-    callback: Callable[[object], None],
-) -> int | None:
-    timer_exists = _HISTORICAL_DEMAND_RETRY_ALERT in clock.timer_names()
-    if next_retry_at_ns is None:
-        if timer_exists:
-            clock.cancel_timer(_HISTORICAL_DEMAND_RETRY_ALERT)
-        return None
-    if timer_exists and current_retry_at_ns == next_retry_at_ns:
-        return next_retry_at_ns
-    if timer_exists:
-        clock.cancel_timer(_HISTORICAL_DEMAND_RETRY_ALERT)
-    clock.set_time_alert_ns(
-        _HISTORICAL_DEMAND_RETRY_ALERT,
-        next_retry_at_ns,
-        callback,
-    )
-    return next_retry_at_ns
 
 
 class InstrumentDefinitionTracker:
@@ -227,8 +109,6 @@ class DataAcquisitionActorConfig(DataActorConfig):
         cls,
         instrument_ids: list[str],
         historical: dict[str, int],
-        calendars: list[dict[str, object]],
-        instrument_calendars: dict[str, str],
         actor_id: str | ActorId = "DATA-ACQUISITION",
     ) -> DataAcquisitionActorConfig:
         resolved_actor_id = (
@@ -237,12 +117,25 @@ class DataAcquisitionActorConfig(DataActorConfig):
         obj = super().__new__(cls, actor_id=resolved_actor_id)
         obj.instrument_ids = tuple(instrument_ids)
         obj.historical = dict(historical)
-        obj.calendars = tuple(dict(value) for value in calendars)
-        obj.instrument_calendars = dict(instrument_calendars)
         return obj
 
 
 class DataAcquisitionActor(DataActor):
+    """Own provider-facing acquisition demand and historical execution.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.data-acquisition
+        architecture.component.label: Data Acquisition
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.acquisition
+        architecture.component.responsibilities:
+            - Own provider-facing live demand reconciliation, subscription lifetime, historical
+              queueing, pacing, retries, and execution.
+            - Execute exact HistoricalRequestPlan values without deciding sessions or
+              calendar-relative request bounds.
+            - Publish acquisition lifecycle, historical batches, and consumer readiness.
+    """
+
     def __init__(self, config: DataAcquisitionActorConfig) -> None:
         super().__init__(config)
         self._tracker = InstrumentDefinitionTracker(config.instrument_ids)
@@ -251,19 +144,6 @@ class DataAcquisitionActor(DataActor):
         self._managed_stream_keys: set[tuple[str, str, str]] = set()
         self._coordinator = AcquisitionCoordinator(NautilusSubscriptionPort(self))
         historical = config.historical
-        self._historical_compiler = HistoricalDependencyCompiler(
-            HistoricalResourcePolicy(
-                maximum_requests=historical["maximum_plan_requests"],
-                maximum_observations_per_request=historical["maximum_observations_per_request"],
-                maximum_total_observations=historical["maximum_total_observations"],
-            ),
-        )
-        self._historical_window_resolver = HistoricalWindowResolver()
-        self._historical_calendars = {
-            definition.calendar_id: SessionCalendar(definition)
-            for definition in (definition_from_config(value) for value in config.calendars)
-        }
-        self._instrument_calendars = dict(config.instrument_calendars)
         self._historical = HistoricalExecutionCoordinator(
             NautilusHistoricalPort(self),
             HistoricalExecutionPolicy(
@@ -275,10 +155,15 @@ class DataAcquisitionActor(DataActor):
             ),
         )
         self._historical_poll_interval_ns = historical["poll_interval_ms"] * 1_000_000
+        self._maximum_historical_observations_per_request = historical[
+            "maximum_observations_per_request"
+        ]
+        self._maximum_historical_observations_outstanding = historical[
+            "maximum_total_observations"
+        ]
+        self._historical_plan_type = DataType(HISTORICAL_REQUEST_PLAN_TYPE_NAME)
         self._historical_requests: dict[str, HistoricalRequest] = {}
-        self._pending_historical_demands: dict[str, HistoricalDependencyDemandEvent] = {}
-        self._deferred_historical_demands = HistoricalDemandRetryBook()
-        self._historical_demand_retry_at_ns: int | None = None
+        self._pending_historical_plans: dict[str, HistoricalRequestPlan] = {}
         self._historical_counts: Counter[str] = Counter()
         self._observation_counts: Counter[tuple[str, str, str]] = Counter()
         self._lifecycle_counts: Counter[str] = Counter()
@@ -296,8 +181,7 @@ class DataAcquisitionActor(DataActor):
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.subscribe_signal(WATCHLIST_DEMAND_SIGNAL)
         self.subscribe_signal(ANALYTICAL_DEMAND_SIGNAL)
-        self.subscribe_signal(HISTORICAL_DEPENDENCY_DEMAND_SIGNAL)
-        self.subscribe_signal(SESSION_STATE_SIGNAL)
+        self.subscribe_data(self._historical_plan_type)
         self.publish_signal(
             PERSISTENCE_READY_REQUEST_SIGNAL,
             PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
@@ -333,12 +217,6 @@ class DataAcquisitionActor(DataActor):
             self._duplicate_instruments += 1
 
     def on_signal(self, signal: Signal) -> None:
-        if signal.name == HISTORICAL_DEPENDENCY_DEMAND_SIGNAL:
-            self._handle_historical_demand(signal.value)
-            return
-        if signal.name == SESSION_STATE_SIGNAL:
-            self._handle_session_state(signal.value)
-            return
         if signal.name == WATCHLIST_DEMAND_SIGNAL:
             self._handle_watchlist_demand(signal.value)
             return
@@ -371,6 +249,18 @@ class DataAcquisitionActor(DataActor):
             )
             return
         self._publish_status()
+
+    def on_data(self, data) -> None:  # noqa: ANN001
+        payload = data.data if isinstance(data, CustomData) else data
+        if not isinstance(payload, HistoricalRequestPlan):
+            return
+        if payload.request.instrument_id not in self._expected_instrument_ids:
+            self.log.error(
+                "HISTORICAL_PLAN_REJECTED | reason=instrument_outside_acquisition_scope",
+            )
+            return
+        self._pending_historical_plans[payload.demand_id] = payload
+        self._start_pending_demands_if_ready()
 
     def on_quote(self, quote) -> None:  # noqa: ANN001
         self._observe(str(quote.instrument_id), FeedKind.QUOTES)
@@ -439,17 +329,9 @@ class DataAcquisitionActor(DataActor):
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.unsubscribe_signal(WATCHLIST_DEMAND_SIGNAL)
         self.unsubscribe_signal(ANALYTICAL_DEMAND_SIGNAL)
-        self.unsubscribe_signal(HISTORICAL_DEPENDENCY_DEMAND_SIGNAL)
-        self.unsubscribe_signal(SESSION_STATE_SIGNAL)
+        self.unsubscribe_data(self._historical_plan_type)
         if _HISTORICAL_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_HISTORICAL_TIMER)
-        self._historical_demand_retry_at_ns = synchronize_historical_demand_retry_timer(
-            self.clock,
-            current_retry_at_ns=self._historical_demand_retry_at_ns,
-            next_retry_at_ns=None,
-            callback=self._retry_historical_demands,
-        )
-        self._deferred_historical_demands.clear()
         now_ns = self.clock.timestamp_ns()
         for request_id in (
             self._historical.pending_request_ids + self._historical.active_request_ids
@@ -548,94 +430,42 @@ class DataAcquisitionActor(DataActor):
             self._publish_lifecycle_events(
                 self._coordinator.request(demand, now=self.clock.utc_now()),
             )
-        for demand_id in sorted(tuple(self._pending_historical_demands)):
-            event = self._pending_historical_demands.pop(demand_id)
-            self._start_historical_demand(event)
-        self._schedule_historical_demand_retry()
+        for demand_id in sorted(tuple(self._pending_historical_plans)):
+            plan = self._pending_historical_plans.pop(demand_id)
+            self._start_historical_plan(plan)
 
-    def _handle_historical_demand(self, value: str) -> None:
-        try:
-            event = HistoricalDependencyDemandEvent.from_signal_value(value)
-            if event.instrument_id not in self._expected_instrument_ids:
-                raise ValueError("historical demand instrument is outside acquisition scope")
-        except ValueError as exc:
-            self.log.error(
-                f"HISTORICAL_DEMAND_REJECTED | reason=invalid_event | error={type(exc).__name__}",
-            )
-            return
-        self._deferred_historical_demands.discard(event.demand_id)
-        self._pending_historical_demands[event.demand_id] = event
-        self._start_pending_demands_if_ready()
-
-    def _start_historical_demand(
-        self,
-        event: HistoricalDependencyDemandEvent,
-        *,
-        retry: bool = False,
-    ) -> None:
+    def _start_historical_plan(self, plan: HistoricalRequestPlan) -> None:
         now_ns = self.clock.timestamp_ns()
-        candidate = replace(event, as_of_ns=now_ns) if retry else event
-        calendar_id = self._instrument_calendars[candidate.instrument_id]
         try:
-            request = _compile_historical_demand(
-                candidate,
-                self._historical_compiler,
-                resolver=self._historical_window_resolver,
-                calendar=self._historical_calendars[calendar_id],
+            request = plan.request
+            outstanding = tuple(
+                candidate
+                for request_id in (
+                    self._historical.pending_request_ids + self._historical.active_request_ids
+                )
+                if (candidate := self._historical.request_for(request_id)) is not None
+            )
+            validate_historical_plan_limits(
+                request,
+                outstanding_requests=outstanding,
+                maximum_observations_per_request=(
+                    self._maximum_historical_observations_per_request
+                ),
+                maximum_observations_outstanding=(
+                    self._maximum_historical_observations_outstanding
+                ),
             )
             update = self._historical.enqueue((request,), now_ns=now_ns)
             current = self._historical.request_for(request.request_id)
             if current is None:
                 raise RuntimeError("historical coordinator lost an enqueued request")
             self._historical_requests[request.request_id] = current
-            self._deferred_historical_demands.discard(candidate.demand_id)
             self._publish_historical_update(update)
-        except HistoricalWindowUnavailable as exc:
-            self._deferred_historical_demands.retain(
-                candidate,
-                calendar_id=calendar_id,
-                retry_at_ns=exc.retry_at_ns,
-            )
-            self.log.info(
-                "HISTORICAL_DEMAND_DEFERRED"
-                f" | demand_id={candidate.demand_id} | calendar_id={calendar_id}"
-                f" | retry_at_ns={exc.retry_at_ns} | reason={exc}",
-            )
         except ValueError as exc:
             self.log.error(
-                "HISTORICAL_DEMAND_REJECTED"
-                f" | demand_id={candidate.demand_id} | error={type(exc).__name__}",
+                "HISTORICAL_PLAN_REJECTED"
+                f" | demand_id={plan.demand_id} | error={type(exc).__name__}",
             )
-
-    def _handle_session_state(self, value: str) -> None:
-        try:
-            event = SessionStateEvent.from_signal_value(value)
-        except ValueError as exc:
-            self.log.error(
-                f"HISTORICAL_SESSION_STATE_REJECTED | error={type(exc).__name__}",
-            )
-            return
-        pending = self._deferred_historical_demands.release_calendar(event.calendar_id)
-        if not pending:
-            return
-        for demand in pending:
-            self._start_historical_demand(demand, retry=True)
-        self._schedule_historical_demand_retry()
-
-    def _schedule_historical_demand_retry(self) -> None:
-        self._historical_demand_retry_at_ns = synchronize_historical_demand_retry_timer(
-            self.clock,
-            current_retry_at_ns=self._historical_demand_retry_at_ns,
-            next_retry_at_ns=self._deferred_historical_demands.next_retry_ns,
-            callback=self._retry_historical_demands,
-        )
-
-    def _retry_historical_demands(self, _event) -> None:  # noqa: ANN001
-        now_ns = self.clock.timestamp_ns()
-        self._historical_demand_retry_at_ns = None
-        for demand in self._deferred_historical_demands.release_due(now_ns):
-            self._start_historical_demand(demand, retry=True)
-        self._schedule_historical_demand_retry()
 
     def _advance_historical(self, _event) -> None:  # noqa: ANN001
         self._publish_historical_update(
@@ -744,6 +574,26 @@ class DataAcquisitionActor(DataActor):
             )
 
 
+def validate_historical_plan_limits(
+    request: HistoricalRequest,
+    *,
+    outstanding_requests: tuple[HistoricalRequest, ...],
+    maximum_observations_per_request: int,
+    maximum_observations_outstanding: int,
+) -> None:
+    """Enforce provider resource limits without interpreting temporal meaning."""
+
+    if request.kind is not FeedKind.BARS:
+        raise ValueError("historical acquisition currently executes bar requests only")
+    if request.limit > maximum_observations_per_request:
+        raise ValueError("historical plan exceeds per-request observation limit")
+    if any(item.request_id == request.request_id for item in outstanding_requests):
+        return
+    outstanding_observations = sum(item.limit for item in outstanding_requests)
+    if outstanding_observations + request.limit > maximum_observations_outstanding:
+        raise ValueError("historical plan exceeds outstanding observation limit")
+
+
 def _watchlist_observation_demand(event: WatchlistDemandEvent) -> ObservationDemand:
     return ObservationDemand(
         demand_id=event.demand_id,
@@ -770,58 +620,3 @@ def _analytical_observation_demand(event: AnalyticalDemandEvent) -> ObservationD
         priority=event.priority,
         purpose=event.purpose,
     )
-
-
-def _compile_historical_demand(
-    event: HistoricalDependencyDemandEvent,
-    compiler: HistoricalDependencyCompiler,
-    *,
-    resolver: HistoricalWindowResolver | None = None,
-    calendar: SessionCalendar | None = None,
-) -> HistoricalRequest:
-    window = HistoricalWindow(event.window)
-    interval_ns = BarType.from_str(
-        f"{event.instrument_id}-{event.selector}",
-    ).spec.get_interval_ns()
-    resolved_parameters = dict(event.window_parameters or {})
-    if window is HistoricalWindow.RECENT_COMPLETED and not resolved_parameters:
-        resolved_parameters = {"observation_count": event.maximum_observations}
-    try:
-        policy = HistoricalWindowParameters(**resolved_parameters)
-    except TypeError as exc:
-        raise ValueError("invalid historical window parameters") from exc
-    bounds = (resolver or HistoricalWindowResolver()).resolve(
-        window,
-        calendar=calendar,
-        selector_interval_ns=interval_ns,
-        as_of_ns=event.as_of_ns,
-        parameters={window: policy},
-    )
-    capability = CapabilityDeclaration(
-        capability_id=event.capability_id,
-        version=event.capability_version,
-        historical_requirements=(
-            CapabilityHistoricalRequirement(
-                kind=FeedKind.BARS,
-                selector=event.selector,
-                window=window,
-                minimum_observations=event.minimum_observations,
-                maximum_observations=event.maximum_observations,
-                window_parameters=event.window_parameters,
-                parameters=event.parameters,
-            ),
-        ),
-    )
-    requests = compiler.compile(
-        (
-            HistoricalCapabilityBinding(
-                consumer_id=event.consumer_id,
-                instrument_id=event.instrument_id,
-                capability=capability,
-                purpose=event.purpose,
-                priority=event.priority,
-            ),
-        ),
-        {(event.instrument_id, window): bounds},
-    )
-    return requests[0]

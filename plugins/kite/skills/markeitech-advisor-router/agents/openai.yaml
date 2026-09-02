@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: false
+
+interface:
+  display_name: "Markeitech Advisor Router"
+  short_description: "Explicitly activate Kite and route advisors"
+  default_prompt: "Use $kite:markeitech-advisor-router to activate Kite for this Markeitech task and select the smallest sufficient advisor set."

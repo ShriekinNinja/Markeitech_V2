@@ -28,7 +28,7 @@ The runtime does not place orders. Automated execution is intentionally absent.
 
 The accepted V2 runtime includes:
 
-- NautilusTrader `2.0.0rc1` with a guarded Interactive Brokers paper-data connection;
+- NautilusTrader `2.0.0rc3` with a guarded Interactive Brokers paper-data connection;
 - actor-owned system control, static watchlist, and shared native acquisition;
 - session/calendar ownership and adaptive evidence-health contracts;
 - purpose-specific historical dependency execution;

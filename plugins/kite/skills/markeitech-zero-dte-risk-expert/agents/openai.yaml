@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: false
+
+interface:
+  display_name: "Markeitech Zero DTE Candidate Risk Expert"
+  short_description: "Evidence-bound 0DTE candidate risk review"
+  default_prompt: "Use $kite:markeitech-zero-dte-risk-expert to review the supplied long, single-leg 0DTE candidate's risk validity, convexity, expiry consequences, unknowns, and disclosure without ranking or recommending a trade."

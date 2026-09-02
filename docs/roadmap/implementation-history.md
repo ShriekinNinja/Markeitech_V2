@@ -474,3 +474,51 @@ outside the LiveNode and does not modify canonical analytics or signal state.
 Future stages previously listed here now live only in the active
 [implementation roadmap](implementation-roadmap.md). Keeping unstarted work out
 of the history prevents an old sequence from becoming an accidental requirement.
+
+## V3 Calendar Authority And Current-State Delivery
+
+### V3-01: Canonical Calendar Authority
+
+V3-01 established one mcal-backed `SessionStateActor` as the runtime owner of configured canonical
+calendars, typed source/run-scoped transitions, bounded immutable schedule projections, one
+separate symbolic historical planner, acquisition-owned provider execution, definition lineage,
+and operational transition audit. The accepted connected repair normalized only the exact pinned
+mcal terminal `break_start == break_end == market_close` representation and returned typed bounded
+projection failures instead of silence. The repaired tracked ES run completed one `60/60`
+historical request and clean shutdown. Its acceptance did not cover late-consumer recovery.
+
+### V3-02: Session-State Current-State Delivery
+
+V3-02 was implemented in four reviewed slices:
+
+- disable the faulty `SessionMetricsActor`, Visual Debug, and Session-Metrics-dependent Entity
+  Analysis in both tracked profiles without deleting their recovery code or tests;
+- add strict transition-v2 and current-state snapshot-v1 contracts plus one bounded pure
+  subscribe-buffer-snapshot-reconcile state machine;
+- make `SessionStateActor` evaluate each admitted request at one owner-clock cut, retain the exact
+  canonical state-effective boundary separately from evaluated-as-of time, return complete typed
+  outcomes, enforce exact requester admission, and stop terminally; and
+- migrate only `EvidenceHealthActor` and `HistoricalEvidencePlannerActor`, preserve projection and
+  historical-demand meaning, map transition v2 mechanically into existing operational audit, and
+  add a temporary current-state historical acceptance probe with no provider or analytical
+  authority.
+
+The core slices were committed as `d71551a`, `2cb5761`, `e98e386`, and `e3cada7`. Public V2 API
+docstrings were then merged as `ed16294`, followed by the V3-02 architecture-count integration
+correction `4a414d0`. System configuration advanced once for the producer contract and once for the
+temporary probe mode, ending at schema 23.
+
+Markeitect separately authorized one bounded connected run on 2026-08-31. The probe deliberately
+omitted snapshot attempt 1, recovered on attempt 2, observed `GLOBEX+NEW_YORK`, and caused the
+existing planner to align five completed one-minute bars from `13:51:00.000000000Z` through
+`13:55:59.999999999Z`. The existing acquisition owner submitted one IB request, accepted and
+delivered `5/5` bars, published `READY`, and reported zero historical degradation or late callback.
+Session State rejected no snapshot request, operational persistence stored `31/31` accepted facts,
+and shutdown was clean. One non-terminal planner projection timeout occurred during startup before
+successful recovery.
+
+The temporary probe remains enabled by Markeitect's explicit decision for additional bounded live
+checks. This one run accepts the exact late-consumer recovery and historical-request chain only. It
+does not accept same-run producer replacement, multi-calendar behavior, phase-boundary delivery,
+repeated provider reliability, performance, value parity, general market-session correctness, the
+Session Metrics replacement, Visual Debug, Entity Analysis, semantic events, advice, or execution.

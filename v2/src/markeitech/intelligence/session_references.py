@@ -10,6 +10,7 @@ from markeitech.acquisition import (
     FeedKind,
     HistoricalWindow,
 )
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.completed_bars import CompletedBarInput
 from markeitech.intelligence.metrics import (
     MetricCadence,
@@ -22,10 +23,10 @@ from markeitech.intelligence.metrics import (
     MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
-    MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
     ParameterMutability,
+    _validate_legacy_metric_value,
 )
 
 ACTIVE_SESSION_METRIC_IDS = (
@@ -42,6 +43,7 @@ ACTIVE_SESSION_METRIC_IDS = (
     "active_session.bar_vwap_estimate",
     "active_session.coverage_ratio",
 )
+"""Ordered identities of active-session reference metrics."""
 PREVIOUS_SESSION_METRIC_IDS = (
     "previous_session.start_ns",
     "previous_session.end_ns",
@@ -56,6 +58,7 @@ PREVIOUS_SESSION_METRIC_IDS = (
     "previous_session.bar_vwap_estimate",
     "previous_session.coverage_ratio",
 )
+"""Ordered identities of previous-session reference metrics."""
 OVERNIGHT_METRIC_IDS = (
     "overnight.open",
     "overnight.high",
@@ -63,21 +66,26 @@ OVERNIGHT_METRIC_IDS = (
     "overnight.latest_close",
     "overnight.range",
 )
+"""Ordered identities of optional overnight reference metrics."""
 GAP_METRIC_IDS = (
     "gap.indicative.points",
     "gap.indicative.ratio",
     "gap.opening.points",
     "gap.opening.ratio",
 )
+"""Ordered identities of indicative and opening gap metrics."""
 SESSION_REFERENCE_METRIC_IDS = (
     *ACTIVE_SESSION_METRIC_IDS,
     *PREVIOUS_SESSION_METRIC_IDS,
     *OVERNIGHT_METRIC_IDS,
     *GAP_METRIC_IDS,
 )
+"""Ordered identities of the complete session-reference metric family."""
 
 
 class SessionReferenceRole(StrEnum):
+    """Semantic roles assigned to configured session reference windows."""
+
     ACTIVE = "active"
     PREVIOUS = "previous"
     OVERNIGHT = "overnight"
@@ -85,6 +93,8 @@ class SessionReferenceRole(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class SessionReferenceCatalogPolicy:
+    """Configure session-reference inputs, coverage, price basis, and resource bounds."""
+
     live_selector: str
     historical_selector: str
     active_window: HistoricalWindow
@@ -143,6 +153,8 @@ class SessionReferenceCatalogPolicy:
 
 @dataclass(frozen=True, slots=True)
 class SessionWindowSpec:
+    """Identify one exact session window and its UTC Unix nanosecond bounds."""
+
     role: SessionReferenceRole
     session_id: str
     start_ns: int
@@ -161,6 +173,8 @@ class SessionWindowSpec:
 
 @dataclass(frozen=True, slots=True)
 class SessionReferenceSummary:
+    """Summarize one bounded session window with explicit coverage and fidelity."""
+
     role: SessionReferenceRole
     session_id: str
     start_ns: int
@@ -190,6 +204,8 @@ class SessionReferenceSummary:
 
 @dataclass(frozen=True, slots=True)
 class SessionReferenceSnapshot:
+    """Carry current active, previous, and optional overnight session summaries."""
+
     instrument_id: str
     active: SessionReferenceSummary | None
     previous: SessionReferenceSummary | None
@@ -330,6 +346,8 @@ class SessionReferenceBook:
 def session_reference_metric_definitions(
     policy: SessionReferenceCatalogPolicy,
 ) -> tuple[MetricDefinition, ...]:
+    """Build definitions for active, previous, overnight, and gap metrics."""
+
     live = CapabilityFeedRequirement(kind=FeedKind.BARS, selector=policy.live_selector)
     historical = {
         SessionReferenceRole.ACTIVE: _historical_input(
@@ -439,6 +457,12 @@ def calculate_session_reference_metrics(
     source: str,
     revision: int,
 ) -> tuple[MetricValue, ...]:
+    """Calculate session-reference values or explicit unavailable outcomes.
+
+    The function preserves calendar-derived session identity, completed-bar
+    lineage, coverage, missing volume, and historical/live evidence quality.
+    """
+
     values: dict[str, tuple[object | None, MetricHealth, MetricFidelity, tuple[str, ...]]] = {}
     _summary_values(values, "active_session", snapshot.active, snapshot.active_missing_reason)
     _summary_values(values, "previous_session", snapshot.previous, snapshot.previous_missing_reason)
@@ -492,7 +516,7 @@ def calculate_session_reference_metrics(
             ),
         )
     for value in result:
-        registry.validate_value(value)
+        _validate_legacy_metric_value(registry, value)
     return tuple(result)
 
 

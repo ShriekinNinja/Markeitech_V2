@@ -15,6 +15,8 @@ from markeitech.acquisition.demand import (
 
 
 class SubscriptionPort(Protocol):
+    """Provider-facing subscription commands consumed by the coordinator."""
+
     def subscribe(self, requirement: FeedRequirement) -> None: ...
 
     def unsubscribe(self, requirement: FeedRequirement) -> None: ...
@@ -22,6 +24,8 @@ class SubscriptionPort(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class AcquisitionLifecycleEvent:
+    """Describe one logical or provider subscription lifecycle transition."""
+
     state: AcquisitionLifecycleState
     stream_key: StreamKey
     demand_id: str | None

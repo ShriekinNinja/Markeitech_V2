@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: false
+
+interface:
+  display_name: "Markeitech Market Structure Expert"
+  short_description: "Evidence-bound market structure for Markeitech"
+  default_prompt: "Use $kite:markeitech-market-structure-expert to review this market-structure question against tracked Stage 9D contracts and point-in-time evidence."

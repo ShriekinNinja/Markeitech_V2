@@ -6,6 +6,7 @@ from decimal import Decimal
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, CustomData, DataType
 
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.entities import (
     ENTITY_REVISION_TYPE_NAME,
     ENTITY_SNAPSHOT_REQUEST_TYPE_NAME,
@@ -33,7 +34,6 @@ from markeitech.intelligence.metrics import (
     METRIC_VALUE_TYPE_NAME,
     MetricFidelity,
     MetricHealth,
-    MetricValue,
 )
 from markeitech.system.messages import (
     PERSISTENCE_READY_REQUEST_SIGNAL,
@@ -76,7 +76,14 @@ class MarketStateEntityActorConfig(DataActorConfig):
 
 
 class MarketStateEntityActor(DataActor):
-    """Publishes configured metric-driven market state without deriving source metrics."""
+    """Publishes configured metric-driven market state without deriving source metrics.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.market-state-entities
+        architecture.component.label: Market State Entities
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.intelligence
+    """
 
     def __init__(self, config: MarketStateEntityActorConfig) -> None:
         super().__init__(config)

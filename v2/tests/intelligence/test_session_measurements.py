@@ -15,7 +15,7 @@ from markeitech.intelligence import (
     MetricRegistry,
     ParameterMutability,
 )
-from markeitech.intelligence.session import SessionCalendar, definition_from_config
+from markeitech.intelligence.session import CalendarProjectionView
 from markeitech.intelligence.session_measurements import (
     COMPLETED_BAR_CLOSE_METRIC_ID,
     COMPLETED_BAR_METRIC_IDS,
@@ -30,28 +30,11 @@ from markeitech.intelligence.session_metric_actor import (
     _active_reference_attempt_ns,
     _recalculation_contexts,
 )
+from tests.calendar_fixtures import projection_view
 
 
-def _us_equities_calendar() -> SessionCalendar:
-    return SessionCalendar(
-        definition_from_config(
-            {
-                "calendar_id": "us_equities",
-                "provider_calendar": "NYSE",
-                "timezone": "America/New_York",
-                "schedule_version": "test-1",
-                "phases": [
-                    {
-                        "name": "OPEN",
-                        "start": "09:30",
-                        "end": "16:00",
-                        "start_day_offset": 0,
-                    },
-                ],
-                "overrides": [],
-            },
-        ),
-    )
+def _us_equities_calendar() -> CalendarProjectionView:
+    return projection_view("us_equities")
 
 
 def _timestamp_ns(value: str) -> int:
@@ -61,7 +44,7 @@ def _timestamp_ns(value: str) -> int:
 def test_active_reference_waits_for_first_completed_selector_interval() -> None:
     attempt_ns = _active_reference_attempt_ns(
         _us_equities_calendar(),
-        "OPEN",
+        "EXCHANGE_SESSION",
         _timestamp_ns("2026-08-21T09:31:34-04:00"),
         15 * 60 * 1_000_000_000,
     )
@@ -75,7 +58,21 @@ def test_active_reference_is_immediately_eligible_after_completed_interval() -> 
     assert (
         _active_reference_attempt_ns(
             _us_equities_calendar(),
-            "OPEN",
+            "EXCHANGE_SESSION",
+            now_ns,
+            15 * 60 * 1_000_000_000,
+        )
+        == now_ns
+    )
+
+
+def test_primary_globex_reference_remains_eligible_during_overlapping_region_phase() -> None:
+    now_ns = _timestamp_ns("2026-08-24T10:00:00-04:00")
+
+    assert (
+        _active_reference_attempt_ns(
+            projection_view("cme_equity", date(2026, 8, 24), date(2026, 8, 24)),
+            "GLOBEX",
             now_ns,
             15 * 60 * 1_000_000_000,
         )
@@ -87,7 +84,7 @@ def test_active_reference_is_not_scheduled_outside_primary_phase() -> None:
     assert (
         _active_reference_attempt_ns(
             _us_equities_calendar(),
-            "OPEN",
+            "EXCHANGE_SESSION",
             _timestamp_ns("2026-08-21T08:00:00-04:00"),
             15 * 60 * 1_000_000_000,
         )

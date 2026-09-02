@@ -1,0 +1,51 @@
+site_name: Markeitech V2 API
+site_description: Static, non-authoritative API documentation for Markeitech V2.
+docs_dir: docs
+strict: true
+
+theme:
+  name: readthedocs
+  highlightjs: false
+
+nav:
+  - Overview: index.md
+  - Architecture components: architecture-components.md
+  - API:
+      - System: api/system.md
+      - Acquisition: api/acquisition.md
+      - Intelligence: api/intelligence.md
+      - CLI: api/cli.md
+
+extra_css:
+  - stylesheets/markeitech.css
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - ../../v2/src
+          inventories: []
+          load_external_modules: false
+          options:
+            allow_inspection: false
+            force_inspection: false
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: true
+            show_object_full_path: true
+            show_signature_annotations: true
+            separate_signature: true
+            members_order: source
+            docstring_style: google
+            docstring_section_style: list
+            extensions:
+              - markeitech_api_docs.griffe_extension:MarkeitechMetadataExtension
+
+markdown_extensions:
+  - fenced_code
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 2

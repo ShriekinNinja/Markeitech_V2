@@ -113,6 +113,15 @@ class RuntimeResourceActorConfig(DataActorConfig):
 
 
 class RuntimeResourceActor(DataActor):
+    """Observe bounded runtime resource samples.
+
+    Markeitech Metadata:
+        architecture.component.id: actor.runtime-resources
+        architecture.component.label: Runtime Resources
+        architecture.component.kind: markeitech_actor
+        architecture.component.boundary: boundary.system
+    """
+
     def __init__(self, config: RuntimeResourceActorConfig) -> None:
         super().__init__(config)
         self._sample_interval_ms = config.sample_interval_ms

@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: false
+
+interface:
+  display_name: "Markeitech Semantic Events And Opportunities"
+  short_description: "Review event and opportunity lifecycle semantics"
+  default_prompt: "Use $kite:markeitech-semantic-events-opportunity-lifecycle-expert to review these derived event or concurrent opportunity states and transitions."

@@ -1,0 +1,20 @@
+[project]
+name = "markeitech-api-docs"
+version = "0.1.0"
+description = "Offline static API documentation and sanitized metadata tooling for Markeitech V2."
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "griffe==2.2.0",
+  "mkdocs==1.6.1",
+  "mkdocstrings-python==2.0.5",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: false
+
+interface:
+  display_name: "Markeitech Live Agent Governance Expert"
+  short_description: "Authority-bound governance for Sir Loke"
+  default_prompt: "Use $kite:markeitech-live-agent-governance-expert to review Sir Loke-facing citations, tools, approvals, audit requirements, abstention, and no-execution boundaries."

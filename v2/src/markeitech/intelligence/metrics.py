@@ -6,28 +6,39 @@ from decimal import Decimal
 from enum import StrEnum
 from math import isfinite
 from types import MappingProxyType
+from uuid import UUID
 
 from markeitech.acquisition import (
     CapabilityDeclaration,
     CapabilityFeedRequirement,
     CapabilityHistoricalRequirement,
 )
+from markeitech.intelligence._legacy_metric_value import (
+    LEGACY_METRIC_VALUE_TYPE_NAME,
+    LegacyMetricValue,
+)
+from markeitech.intelligence.metric_messages import (
+    MetricFidelity,
+    MetricReasonCode,
+    MetricSubjectIdentity,
+    MetricValue,
+    MetricValueKind,
+)
+from markeitech.intelligence.metric_messages import (
+    MetricHealth as MetricHealth,
+)
 
 type MetricParameterValue = str | int | float | Decimal | bool
 type MetricScalarValue = str | int | float | Decimal | bool
 type MetricKey = tuple[str, int]
 
-METRIC_VALUE_TYPE_NAME = "markeitech.metric.value"
-
-
-class MetricValueKind(StrEnum):
-    NUMBER = "number"
-    INTEGER = "integer"
-    BOOLEAN = "boolean"
-    TEXT = "text"
+METRIC_VALUE_TYPE_NAME = LEGACY_METRIC_VALUE_TYPE_NAME
+"""Temporary active v1 metric wire name retained until the atomic v2 cutover."""
 
 
 class MetricCadence(StrEnum):
+    """Event categories that may trigger deterministic metric evaluation."""
+
     OBSERVATION = "observation"
     COMPLETED_BAR = "completed_bar"
     TIMER = "timer"
@@ -36,6 +47,8 @@ class MetricCadence(StrEnum):
 
 
 class MetricRetainedState(StrEnum):
+    """Bounded state-retention shapes declared by a metric definition."""
+
     NONE = "none"
     LATEST = "latest"
     ROLLING_WINDOW = "rolling_window"
@@ -43,36 +56,24 @@ class MetricRetainedState(StrEnum):
 
 
 class MetricFailureBehavior(StrEnum):
+    """Output behavior a metric declares when its calculation cannot succeed."""
+
     EMIT_NULL = "emit_null"
     HOLD_LAST_STALE = "hold_last_stale"
     SUPPRESS_OUTPUT = "suppress_output"
 
 
-class MetricHealth(StrEnum):
-    READY = "READY"
-    WARMING = "WARMING"
-    DEGRADED = "DEGRADED"
-    STALE = "STALE"
-    UNAVAILABLE = "UNAVAILABLE"
-    UNSUPPORTED = "UNSUPPORTED"
-    FAILED = "FAILED"
-
-
-class MetricFidelity(StrEnum):
-    REPORTED = "REPORTED"
-    DERIVED = "DERIVED"
-    INFERRED = "INFERRED"
-    PARTIAL = "PARTIAL"
-    UNAVAILABLE = "UNAVAILABLE"
-
-
 class ParameterMutability(StrEnum):
+    """Reviewed boundaries at which a metric parameter may change."""
+
     STARTUP_ONLY = "startup_only"
     POLICY_CONTROLLED_RUNTIME = "policy_controlled_runtime"
 
 
 @dataclass(frozen=True, slots=True)
 class MetricParameterDefinition:
+    """Define one typed, bounded, version-ready metric parameter."""
+
     parameter_id: str
     meaning: str
     value_kind: MetricValueKind
@@ -118,6 +119,11 @@ class MetricParameterDefinition:
 
 @dataclass(frozen=True, slots=True)
 class MetricParameterSet:
+    """Bind exact parameter values and effective time to one metric version.
+
+    ``effective_from_ns`` is a UTC Unix nanosecond timestamp.
+    """
+
     metric_id: str
     metric_version: int
     parameter_version: int
@@ -141,6 +147,8 @@ class MetricParameterSet:
 
 @dataclass(frozen=True, slots=True)
 class MetricDependency:
+    """Reference one exact upstream metric definition."""
+
     metric_id: str
     version: int
 
@@ -155,6 +163,8 @@ class MetricDependency:
 
 @dataclass(frozen=True, slots=True)
 class MetricWarmupPolicy:
+    """Declare observation, elapsed-nanosecond, and dependency warmup gates."""
+
     minimum_observations: int
     minimum_elapsed_ns: int
     require_all_dependencies: bool
@@ -168,6 +178,8 @@ class MetricWarmupPolicy:
 
 @dataclass(frozen=True, slots=True)
 class MetricResourcePolicy:
+    """Bound retained observations, update cadence, and output age."""
+
     maximum_retained_observations: int
     minimum_update_interval_ms: int
     maximum_output_age_ms: int
@@ -180,6 +192,13 @@ class MetricResourcePolicy:
 
 @dataclass(frozen=True, slots=True)
 class MetricDefinition:
+    """Describe a versioned deterministic metric and its evidence contract.
+
+    The definition binds meaning, formula, normalization, cadence, lineage,
+    health behavior, resource limits, and tunable parameter envelopes without
+    calculating a value.
+    """
+
     metric_id: str
     version: int
     decision_question: str
@@ -291,87 +310,9 @@ class MetricDefinition:
         )
 
 
-@dataclass(frozen=True, slots=True)
-class MetricValue:
-    metric_id: str
-    metric_version: int
-    parameter_version: int
-    instrument_id: str
-    session_id: str | None
-    value: MetricScalarValue | None
-    unit: str
-    effective_ts_ns: int
-    observed_ts_ns: int
-    received_ts_ns: int
-    calculated_ts_ns: int
-    published_ts_ns: int
-    health: MetricHealth
-    fidelity: MetricFidelity
-    source: str
-    evidence_refs: tuple[str, ...]
-    missing_reasons: tuple[str, ...]
-    revision: int
-
-    def __post_init__(self) -> None:
-        for field in ("metric_id", "instrument_id", "unit", "source"):
-            object.__setattr__(self, field, _required_text(getattr(self, field), field))
-        if self.session_id is not None:
-            object.__setattr__(self, "session_id", _required_text(self.session_id, "session_id"))
-        _positive_int(self.metric_version, "metric_version")
-        _positive_int(self.parameter_version, "parameter_version")
-        _positive_int(self.revision, "revision")
-        for field in (
-            "effective_ts_ns",
-            "observed_ts_ns",
-            "received_ts_ns",
-            "calculated_ts_ns",
-            "published_ts_ns",
-        ):
-            _timestamp(getattr(self, field), field)
-        if not (
-            self.observed_ts_ns
-            <= self.received_ts_ns
-            <= self.calculated_ts_ns
-            <= self.published_ts_ns
-        ):
-            raise ValueError(
-                "metric timestamps must satisfy observed <= received <= calculated <= published",
-            )
-        if not isinstance(self.health, MetricHealth):
-            raise ValueError("health must be a MetricHealth")
-        if not isinstance(self.fidelity, MetricFidelity):
-            raise ValueError("fidelity must be a MetricFidelity")
-        object.__setattr__(self, "evidence_refs", _text_tuple(self.evidence_refs, "evidence ref"))
-        object.__setattr__(
-            self,
-            "missing_reasons",
-            _text_tuple(self.missing_reasons, "missing reason"),
-        )
-        if self.value is None and not self.missing_reasons:
-            raise ValueError("a null metric value requires a missing reason")
-        if self.value is not None and self.health in {
-            MetricHealth.UNAVAILABLE,
-            MetricHealth.UNSUPPORTED,
-            MetricHealth.FAILED,
-        }:
-            raise ValueError("unavailable, unsupported, or failed metrics cannot carry a value")
-
-    @property
-    def key(self) -> MetricKey:
-        return (self.metric_id, self.metric_version)
-
-    @property
-    def ts_event(self) -> int:
-        """Nautilus event timestamp for typed CustomData publication."""
-        return self.effective_ts_ns
-
-    @property
-    def ts_init(self) -> int:
-        """Nautilus initialization timestamp for typed CustomData publication."""
-        return self.published_ts_ns
-
-
 class MetricRegistry:
+    """Validate and resolve an immutable set of metric definitions."""
+
     def __init__(self, definitions: tuple[MetricDefinition, ...]) -> None:
         _typed_tuple(definitions, MetricDefinition, "definitions")
         by_key: dict[MetricKey, MetricDefinition] = {}
@@ -415,11 +356,15 @@ class MetricRegistry:
             declared[parameter_id].validate(value)
 
     def validate_value(self, value: MetricValue) -> None:
+        """Validate one public v2 metric value against its registered definition."""
+
         if not isinstance(value, MetricValue):
-            raise ValueError("value must be a MetricValue")
+            raise ValueError("value must be a public v2 MetricValue")
         definition = self.get(value.metric_id, value.metric_version)
         if value.unit != definition.unit:
             raise ValueError("metric value unit does not match its definition")
+        if value.kind is not definition.value_kind:
+            raise ValueError("metric value kind does not match its definition")
         if value.fidelity not in definition.allowed_fidelities:
             raise ValueError("metric value fidelity is incompatible with its definition")
         if value.value is None:
@@ -427,6 +372,76 @@ class MetricRegistry:
                 raise ValueError("metric definition does not permit null values")
             return
         _validate_value_kind(value.value, definition.value_kind, definition.metric_id)
+
+
+def _validate_legacy_metric_value(
+    registry: MetricRegistry,
+    value: LegacyMetricValue,
+) -> None:
+    """Validate the temporary private active-wire value without widening public API."""
+
+    if not isinstance(registry, MetricRegistry):
+        raise ValueError("registry must be a MetricRegistry")
+    if not isinstance(value, LegacyMetricValue):
+        raise ValueError("value must be a LegacyMetricValue")
+    definition = registry.get(value.metric_id, value.metric_version)
+    if value.unit != definition.unit:
+        raise ValueError("metric value unit does not match its definition")
+    if value.fidelity not in definition.allowed_fidelities:
+        raise ValueError("metric value fidelity is incompatible with its definition")
+    if value.value is None:
+        if not definition.nullable:
+            raise ValueError("metric definition does not permit null values")
+        return
+    _validate_value_kind(value.value, definition.value_kind, definition.metric_id)
+
+
+def _migrate_legacy_metric_value(
+    value: LegacyMetricValue,
+    *,
+    subject: MetricSubjectIdentity,
+    kind: MetricValueKind,
+    run_epoch: UUID,
+    previous_revision: int | None,
+    reason_codes: tuple[MetricReasonCode, ...],
+) -> MetricValue:
+    """Adapt one pure legacy calculation into an unpublished v2 value.
+
+    The caller must provide complete subject identity and an explicit mapping
+    from legacy free-form reasons to reviewed typed reason codes. Runtime
+    actors do not call this helper during Slice 1.
+    """
+
+    if not isinstance(value, LegacyMetricValue):
+        raise ValueError("value must be a LegacyMetricValue")
+    if value.key != (subject.metric_id, subject.metric_version):
+        raise ValueError("legacy value and v2 subject metric identity must match")
+    if value.parameter_version != subject.parameter_version:
+        raise ValueError("legacy value and v2 subject parameter version must match")
+    if value.instrument_id != subject.instrument_id:
+        raise ValueError("legacy value and v2 subject instrument identity must match")
+    if value.session_id != subject.session_id:
+        raise ValueError("legacy value and v2 subject session identity must match")
+    if len(reason_codes) != len(value.missing_reasons):
+        raise ValueError("every legacy reason requires one explicit typed reason mapping")
+    return MetricValue(
+        subject=subject,
+        kind=kind,
+        value=value.value,  # type: ignore[arg-type]
+        unit_id=value.unit,
+        effective_ts_ns=value.effective_ts_ns,
+        observed_ts_ns=value.observed_ts_ns,
+        received_ts_ns=value.received_ts_ns,
+        calculated_ts_ns=value.calculated_ts_ns,
+        published_ts_ns=value.published_ts_ns,
+        health=value.health,
+        fidelity=value.fidelity,
+        reasons=reason_codes,
+        evidence_refs=value.evidence_refs,
+        run_epoch=run_epoch,
+        revision=value.revision,
+        previous_revision=previous_revision,
+    )
 
 
 def _validate_parameter_envelope(definition: MetricParameterDefinition) -> None:

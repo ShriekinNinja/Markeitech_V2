@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from markeitech.acquisition import CapabilityFeedRequirement, FeedKind
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.metrics import (
     MetricCadence,
     MetricDefinition,
@@ -13,19 +14,23 @@ from markeitech.intelligence.metrics import (
     MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
-    MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
+    _validate_legacy_metric_value,
 )
 
 QUOTE_MIDPOINT_METRIC_ID = "quote.midpoint"
+"""Metric identity for the arithmetic bid-ask midpoint."""
 QUOTE_ABSOLUTE_SPREAD_METRIC_ID = "quote.spread.absolute"
+"""Metric identity for ask minus bid in price units."""
 QUOTE_RELATIVE_SPREAD_METRIC_ID = "quote.spread.relative"
+"""Metric identity for absolute spread divided by midpoint."""
 QUOTE_METRIC_IDS = (
     QUOTE_MIDPOINT_METRIC_ID,
     QUOTE_ABSOLUTE_SPREAD_METRIC_ID,
     QUOTE_RELATIVE_SPREAD_METRIC_ID,
 )
+"""Ordered identities of the deterministic quote-quality metric family."""
 
 _VALUE_EVIDENCE_STATES = {"HEALTHY", "DEGRADED"}
 _NULL_HEALTH_BY_EVIDENCE_STATE = {
@@ -39,6 +44,8 @@ _NULL_HEALTH_BY_EVIDENCE_STATE = {
 
 @dataclass(frozen=True, slots=True)
 class QuoteMetricCatalogPolicy:
+    """Configure quote metric definition identity, resource bounds, and priority."""
+
     minimum_update_interval_ms: int
     maximum_output_age_ms: int
     priority: int
@@ -64,6 +71,12 @@ class QuoteMetricCatalogPolicy:
 
 @dataclass(frozen=True, slots=True)
 class QuoteMetricInput:
+    """Represent one bid-ask observation with timing and evidence-health lineage.
+
+    Observation and receive times are UTC Unix nanoseconds. Missing or invalid
+    sides are preserved for explicit unavailable metric outcomes.
+    """
+
     instrument_id: str
     bid: Decimal | None
     ask: Decimal | None
@@ -95,6 +108,8 @@ class QuoteMetricInput:
 
 
 def quote_metric_definitions(policy: QuoteMetricCatalogPolicy) -> tuple[MetricDefinition, ...]:
+    """Build definitions for midpoint, absolute spread, and relative spread."""
+
     if not isinstance(policy, QuoteMetricCatalogPolicy):
         raise ValueError("policy must be a QuoteMetricCatalogPolicy")
     input_requirement = CapabilityFeedRequirement(kind=FeedKind.QUOTES)
@@ -172,6 +187,12 @@ def calculate_quote_metrics(
     source: str,
     revision: int,
 ) -> tuple[MetricValue, ...]:
+    """Calculate quote metrics or explicit unavailable values from one quote.
+
+    Crossed, missing, non-finite, non-positive, or unhealthy quote evidence does
+    not produce a numeric midpoint or spread.
+    """
+
     if not isinstance(quote, QuoteMetricInput):
         raise ValueError("quote must be a QuoteMetricInput")
     if not isinstance(registry, MetricRegistry):
@@ -223,7 +244,7 @@ def calculate_quote_metrics(
             for definition, value in zip(definitions, calculated, strict=True)
         )
     for value in results:
-        registry.validate_value(value)
+        _validate_legacy_metric_value(registry, value)
     return results
 
 

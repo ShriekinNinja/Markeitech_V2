@@ -13,7 +13,64 @@ from markeitech.intelligence.rolling_measurements import (
 from markeitech.intelligence.session_references import SESSION_REFERENCE_METRIC_IDS
 from markeitech.intelligence.session_windows import OPENING_RANGE_FIELDS
 from markeitech.system.config import SystemConfig
-from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
+from markeitech.system.discord import (
+    OPERATIONAL_EVENTS_WEBHOOK_ENV,
+    SYSTEM_HEALTH_WEBHOOK_ENV,
+)
+
+
+def _canonical_calendar_payload(calendar) -> dict[str, object]:  # noqa: ANN001
+    return {
+        "calendar_id": calendar.calendar_id,
+        "schedule_version": calendar.schedule_version,
+        "calendar_engine": calendar.calendar_engine,
+        "calendar_engine_version": calendar.calendar_engine_version,
+        "provider_calendar": calendar.provider_calendar,
+        "provider_calendar_class": calendar.provider_calendar_class,
+        "exchange_timezone": calendar.exchange_timezone,
+        "schedule_columns": list(calendar.schedule_columns),
+        "definition_version": calendar.definition_version,
+        "effective_from_ns": calendar.effective_from_ns,
+        "definition_digest": calendar.definition_digest,
+        "phases": [
+            {
+                "name": phase.name,
+                "timezone": phase.timezone,
+                "start_kind": phase.start_kind,
+                "start_value": phase.start_value,
+                "start_day_offset": phase.start_day_offset,
+                "end_kind": phase.end_kind,
+                "end_value": phase.end_value,
+                "end_day_offset": phase.end_day_offset,
+                "exchange_constraint": phase.exchange_constraint,
+            }
+            for phase in calendar.phases
+        ],
+        "corrections": [
+            {
+                "correction_id": correction.correction_id,
+                "kind": correction.kind,
+                "source_id": correction.source_id,
+                "product_roots": list(correction.product_roots),
+                "effective_from_trade_date": correction.effective_from_trade_date,
+                "timezone": correction.timezone,
+                "expected_start": correction.expected_start,
+                "expected_end": correction.expected_end,
+            }
+            for correction in calendar.corrections
+        ],
+        "sources": [
+            {
+                "source_id": source.source_id,
+                "title": source.title,
+                "url": source.url,
+                "retrieved_at_ns": source.retrieved_at_ns,
+                "content_sha256": source.content_sha256,
+                "retrieval_status": source.retrieval_status,
+            }
+            for source in calendar.sources
+        ],
+    }
 
 
 def _watchlist_feeds(config: SystemConfig) -> list[dict[str, str]]:
@@ -71,10 +128,14 @@ def _entity_definition_payload(definition) -> dict[str, object]:  # noqa: ANN001
         "applications": [
             {
                 "application_id": application.application_id,
+                "parameter_set_id": application.parameter_set_id,
                 "analytical_profile_ids": list(application.analytical_profile_ids),
                 "instrument_ids": list(application.instrument_ids),
+                "instrument_classes": list(application.instrument_classes),
                 "session_phases": list(application.session_phases),
                 "horizon": application.horizon,
+                "source_selector": application.source_selector,
+                "requires_volume": application.requires_volume,
             }
             for application in definition.applications
         ],
@@ -163,18 +224,14 @@ def _entity_definition_payload(definition) -> dict[str, object]:  # noqa: ANN001
                                     {}
                                     if band.lower_bound_parameter_id is None
                                     else {
-                                        "lower_bound_parameter_id": (
-                                            band.lower_bound_parameter_id
-                                        ),
+                                        "lower_bound_parameter_id": (band.lower_bound_parameter_id),
                                     }
                                 ),
                                 **(
                                     {}
                                     if band.upper_bound_parameter_id is None
                                     else {
-                                        "upper_bound_parameter_id": (
-                                            band.upper_bound_parameter_id
-                                        ),
+                                        "upper_bound_parameter_id": (band.upper_bound_parameter_id),
                                     }
                                 ),
                             }
@@ -252,6 +309,40 @@ def build_actor_plan(
         raise ValueError("operational persistence must pass preflight before actor composition")
 
     instrument_ids = list(config.instrument_ids)
+    projection_retry = {
+        "response_timeout_ms": config.sessions.projection_retry.response_timeout_ms,
+        "maximum_attempts": config.sessions.projection_retry.maximum_attempts,
+        "retry_backoff_ms": config.sessions.projection_retry.retry_backoff_ms,
+        "maximum_elapsed_ms": config.sessions.projection_retry.maximum_elapsed_ms,
+    }
+    current_state_delivery = {
+        "policy_version": config.sessions.current_state_delivery.policy_version,
+        "response_timeout_ms": config.sessions.current_state_delivery.response_timeout_ms,
+        "maximum_attempts": config.sessions.current_state_delivery.maximum_attempts,
+        "retry_backoff_ms": config.sessions.current_state_delivery.retry_backoff_ms,
+        "maximum_elapsed_ms": config.sessions.current_state_delivery.maximum_elapsed_ms,
+        "maximum_buffered_transitions_per_calendar": (
+            config.sessions.current_state_delivery.maximum_buffered_transitions_per_calendar
+        ),
+        "maximum_total_buffered_transitions": (
+            config.sessions.current_state_delivery.maximum_total_buffered_transitions
+        ),
+        "boundary_delivery_grace_ms": (
+            config.sessions.current_state_delivery.boundary_delivery_grace_ms
+        ),
+    }
+    current_state_probe_actor_id = (
+        "CURRENT-STATE-HISTORICAL-PROBE"
+        if config.historical.probe.enabled
+        and config.historical.probe.mode == "current_state_gated"
+        else None
+    )
+    allowed_current_state_requesters = [
+        "EVIDENCE-HEALTH",
+        "HISTORICAL-EVIDENCE-PLANNER",
+    ]
+    if current_state_probe_actor_id is not None:
+        allowed_current_state_requesters.append(current_state_probe_actor_id)
     registrations = [
         ActorRegistration(
             key="system_control",
@@ -275,32 +366,15 @@ def build_actor_plan(
                 config={
                     "actor_id": "SESSION-STATE",
                     "evaluation_interval_ms": config.sessions.evaluation_interval_ms,
+                    "source_epoch": str(prerequisites.run_id),
+                    "maximum_projection_days": config.sessions.maximum_projection_days,
+                    "maximum_calendars_per_request": (
+                        config.sessions.maximum_calendars_per_request
+                    ),
+                    "current_state_delivery": current_state_delivery,
+                    "allowed_current_state_requesters": allowed_current_state_requesters,
                     "calendars": [
-                        {
-                            "calendar_id": calendar.calendar_id,
-                            "provider_calendar": calendar.provider_calendar,
-                            "timezone": calendar.timezone,
-                            "schedule_version": calendar.schedule_version,
-                            "phases": [
-                                {
-                                    "name": phase.name,
-                                    "start": phase.start,
-                                    "end": phase.end,
-                                    "start_day_offset": phase.start_day_offset,
-                                }
-                                for phase in calendar.phases
-                            ],
-                            "overrides": [
-                                {
-                                    "trade_date": override.trade_date,
-                                    "phase": override.phase,
-                                    "start": override.start,
-                                    "end": override.end,
-                                    "start_day_offset": override.start_day_offset,
-                                }
-                                for override in calendar.overrides
-                            ],
-                        }
+                        _canonical_calendar_payload(calendar)
                         for calendar in config.sessions.calendars
                     ],
                 },
@@ -324,6 +398,18 @@ def build_actor_plan(
                         config.evidence_health.profile_checkpoint_samples
                     ),
                     "recency_profiles": list(prerequisites.evidence_recency_profiles),
+                    "calendar_source": "SESSION-STATE",
+                    "calendar_source_epoch": str(prerequisites.run_id),
+                    "current_state_delivery": current_state_delivery,
+                    "calendar_expectations": [
+                        {
+                            "calendar_id": calendar.calendar_id,
+                            "definition_version": calendar.definition_version,
+                            "definition_digest": calendar.definition_digest,
+                            "definition_effective_from_ns": calendar.effective_from_ns,
+                        }
+                        for calendar in config.sessions.calendars
+                    ],
                     "policies": [
                         {
                             "feed_kind": policy.feed_kind,
@@ -350,6 +436,65 @@ def build_actor_plan(
             ),
         ),
     ]
+    if config.discord.enabled:
+        registrations.append(
+            ActorRegistration(
+                key="discord_health",
+                actor_id="DISCORD-HEALTH",
+                config=ImportableActorConfig(
+                    actor_path="markeitech.system.discord:DiscordHealthActor",
+                    config_path="markeitech.system.discord:DiscordHealthActorConfig",
+                    config={
+                        "actor_id": "DISCORD-HEALTH",
+                        "request_timeout_seconds": config.discord.request_timeout_seconds,
+                        "queue_capacity": config.discord.queue_capacity,
+                        "ping_critical_resource_alerts": (
+                            config.discord.ping_critical_resource_alerts
+                        ),
+                        "webhook_env": SYSTEM_HEALTH_WEBHOOK_ENV,
+                        "operational_events_webhook_env": OPERATIONAL_EVENTS_WEBHOOK_ENV,
+                    },
+                ),
+            ),
+        )
+    if config.visual_debug_capture.enabled:
+        capture = config.visual_debug_capture
+        registrations.append(
+            ActorRegistration(
+                key="visual_debug_capture",
+                actor_id="VISUAL-DEBUG-CAPTURE",
+                config=ImportableActorConfig(
+                    actor_path=(
+                        "markeitech.intelligence.visual_debug_capture_actor:VisualDebugCaptureActor"
+                    ),
+                    config_path=(
+                        "markeitech.intelligence.visual_debug_capture_actor:"
+                        "VisualDebugCaptureActorConfig"
+                    ),
+                    config={
+                        "actor_id": "VISUAL-DEBUG-CAPTURE",
+                        "run_id": str(prerequisites.run_id),
+                        "configuration_identity": capture.configuration_identity,
+                        "instrument_id": capture.instrument_id,
+                        "analytical_profile_id": capture.analytical_profile_id,
+                        "analytical_profile_version": capture.analytical_profile_version,
+                        "bar_specification": capture.bar_specification,
+                        "parameter_version": capture.parameter_version,
+                        "output_directory": str(capture.output_directory),
+                        "capture_policy_version": capture.capture_policy_version,
+                        "target_historical_bars": capture.target_historical_bars,
+                        "target_live_bars": capture.target_live_bars,
+                        "quiet_period_ms": capture.quiet_period_ms,
+                        "completion_deadline_ms": capture.completion_deadline_ms,
+                        "output_drain_timeout_ms": capture.output_drain_timeout_ms,
+                        "candle_pane_height_px": capture.candle_pane_height_px,
+                        "volume_pane_height_px": capture.volume_pane_height_px,
+                        "metric_pane_height_px": capture.metric_pane_height_px,
+                        "pane_gap_px": capture.pane_gap_px,
+                    },
+                ),
+            ),
+        )
     if config.metrics.quote_quality.enabled:
         quote_metrics = config.metrics.quote_quality
         registrations.append(
@@ -410,34 +555,21 @@ def build_actor_plan(
                             for member in config.watchlist.members
                             if member.instrument_id in selected_instruments
                         },
-                        "calendars": [
-                            {
-                                "calendar_id": calendar.calendar_id,
-                                "provider_calendar": calendar.provider_calendar,
-                                "timezone": calendar.timezone,
-                                "schedule_version": calendar.schedule_version,
-                                "phases": [
-                                    {
-                                        "name": phase.name,
-                                        "start": phase.start,
-                                        "end": phase.end,
-                                        "start_day_offset": phase.start_day_offset,
-                                    }
-                                    for phase in calendar.phases
-                                ],
-                                "overrides": [
-                                    {
-                                        "trade_date": override.trade_date,
-                                        "phase": override.phase,
-                                        "start": override.start,
-                                        "end": override.end,
-                                        "start_day_offset": override.start_day_offset,
-                                    }
-                                    for override in calendar.overrides
-                                ],
-                            }
+                        "expected_calendar_digests": {
+                            calendar.calendar_id: calendar.definition_digest
                             for calendar in config.sessions.calendars
-                        ],
+                            if calendar.calendar_id
+                            in {
+                                member.calendar_id
+                                for member in config.watchlist.members
+                                if member.instrument_id in selected_instruments
+                            }
+                        },
+                        "projection_lookback_days": config.sessions.projection_lookback_days,
+                        "projection_lookahead_days": config.sessions.projection_lookahead_days,
+                        "calendar_source": "SESSION-STATE",
+                        "calendar_source_epoch": str(prerequisites.run_id),
+                        "projection_retry": projection_retry,
                         "profiles": [
                             {
                                 "profile_id": profile.profile_id,
@@ -730,8 +862,7 @@ def build_actor_plan(
                 actor_id="SESSION-REFERENCE-ENTITIES",
                 config=ImportableActorConfig(
                     actor_path=(
-                        "markeitech.intelligence.session_entity_actor:"
-                        "SessionReferenceEntityActor"
+                        "markeitech.intelligence.session_entity_actor:SessionReferenceEntityActor"
                     ),
                     config_path=(
                         "markeitech.intelligence.session_entity_actor:"
@@ -751,9 +882,7 @@ def build_actor_plan(
                         "definitions": [
                             _entity_definition_payload(definition) for definition in group_one
                         ],
-                        "maximum_entities_global": (
-                            entity_analysis.maximum_entities_global
-                        ),
+                        "maximum_entities_global": (entity_analysis.maximum_entities_global),
                         "maximum_entities_per_instrument": (
                             entity_analysis.maximum_entities_per_instrument
                         ),
@@ -825,8 +954,7 @@ def build_actor_plan(
                     actor_id="MARKET-STATE-ENTITIES",
                     config=ImportableActorConfig(
                         actor_path=(
-                            "markeitech.intelligence.market_state_actor:"
-                            "MarketStateEntityActor"
+                            "markeitech.intelligence.market_state_actor:MarketStateEntityActor"
                         ),
                         config_path=(
                             "markeitech.intelligence.market_state_actor:"
@@ -847,9 +975,7 @@ def build_actor_plan(
                                 _entity_definition_payload(definition)
                                 for definition in market_state_definitions
                             ],
-                            "maximum_entities_global": (
-                                entity_analysis.maximum_entities_global
-                            ),
+                            "maximum_entities_global": (entity_analysis.maximum_entities_global),
                             "maximum_entities_per_instrument": (
                                 entity_analysis.maximum_entities_per_instrument
                             ),
@@ -871,8 +997,109 @@ def build_actor_plan(
                     ),
                 ),
             )
+        market_structure_definitions = [
+            definition
+            for definition in entity_analysis.definitions
+            if definition.enabled and definition.group == "swing_fvg_zone"
+        ]
+        if market_structure_definitions:
+            registrations.append(
+                ActorRegistration(
+                    key="market_structure_entities",
+                    actor_id="MARKET-STRUCTURE-ENTITIES",
+                    config=ImportableActorConfig(
+                        actor_path=(
+                            "markeitech.intelligence.market_structure_actor:"
+                            "MarketStructureEntityActor"
+                        ),
+                        config_path=(
+                            "markeitech.intelligence.market_structure_actor:"
+                            "MarketStructureEntityActorConfig"
+                        ),
+                        config={
+                            "actor_id": "MARKET-STRUCTURE-ENTITIES",
+                            "instrument_profiles": {
+                                instrument_id: {
+                                    "profile_id": profile_by_instrument[instrument_id],
+                                    "profile_version": profile_by_id[
+                                        profile_by_instrument[instrument_id]
+                                    ].version,
+                                }
+                                for instrument_id in selected_instruments
+                            },
+                            "definitions": [
+                                _entity_definition_payload(definition)
+                                for definition in market_structure_definitions
+                            ],
+                            "maximum_entities_global": (entity_analysis.maximum_entities_global),
+                            "maximum_entities_per_instrument": (
+                                entity_analysis.maximum_entities_per_instrument
+                            ),
+                            "maximum_entities_per_type": (
+                                entity_analysis.maximum_entities_per_instrument_type
+                            ),
+                            "minimum_snapshot_interval_ms": (
+                                entity_analysis.minimum_snapshot_interval_ms
+                            ),
+                            "maximum_publications_per_cycle": (
+                                entity_analysis.maximum_publications_per_cycle
+                            ),
+                            "schema_version": entity_analysis.catalog_version,
+                        },
+                    ),
+                ),
+            )
     registrations.extend(
         [
+            ActorRegistration(
+                key="historical_evidence_planner",
+                actor_id="HISTORICAL-EVIDENCE-PLANNER",
+                config=ImportableActorConfig(
+                    actor_path=(
+                        "markeitech.system.historical_planner:HistoricalEvidencePlannerActor"
+                    ),
+                    config_path=(
+                        "markeitech.system.historical_planner:"
+                        "HistoricalEvidencePlannerActorConfig"
+                    ),
+                    config={
+                        "actor_id": "HISTORICAL-EVIDENCE-PLANNER",
+                        "instrument_ids": instrument_ids,
+                        "instrument_calendars": {
+                            member.instrument_id: member.calendar_id
+                            for member in config.watchlist.members
+                        },
+                        "expected_calendar_digests": {
+                            calendar.calendar_id: calendar.definition_digest
+                            for calendar in config.sessions.calendars
+                        },
+                        "projection_lookback_days": config.sessions.projection_lookback_days,
+                        "projection_lookahead_days": config.sessions.projection_lookahead_days,
+                        "calendar_source": "SESSION-STATE",
+                        "calendar_source_epoch": str(prerequisites.run_id),
+                        "projection_retry": projection_retry,
+                        "current_state_delivery": current_state_delivery,
+                        "calendar_expectations": [
+                            {
+                                "calendar_id": calendar.calendar_id,
+                                "definition_version": calendar.definition_version,
+                                "definition_digest": calendar.definition_digest,
+                                "definition_effective_from_ns": calendar.effective_from_ns,
+                            }
+                            for calendar in config.sessions.calendars
+                        ],
+                        "historical": {
+                            "maximum_plan_requests": config.historical.maximum_plan_requests,
+                            "maximum_observations_per_request": (
+                                config.historical.maximum_observations_per_request
+                            ),
+                            "maximum_total_observations": (
+                                config.historical.maximum_total_observations
+                            ),
+                        },
+                    },
+                ),
+            ),
             ActorRegistration(
                 key="watchlist",
                 actor_id="WATCHLIST",
@@ -903,38 +1130,6 @@ def build_actor_plan(
                     config={
                         "actor_id": "DATA-ACQUISITION",
                         "instrument_ids": instrument_ids,
-                        "instrument_calendars": {
-                            member.instrument_id: member.calendar_id
-                            for member in config.watchlist.members
-                        },
-                        "calendars": [
-                            {
-                                "calendar_id": calendar.calendar_id,
-                                "provider_calendar": calendar.provider_calendar,
-                                "timezone": calendar.timezone,
-                                "schedule_version": calendar.schedule_version,
-                                "phases": [
-                                    {
-                                        "name": phase.name,
-                                        "start": phase.start,
-                                        "end": phase.end,
-                                        "start_day_offset": phase.start_day_offset,
-                                    }
-                                    for phase in calendar.phases
-                                ],
-                                "overrides": [
-                                    {
-                                        "trade_date": override.trade_date,
-                                        "phase": override.phase,
-                                        "start": override.start,
-                                        "end": override.end,
-                                        "start_day_offset": override.start_day_offset,
-                                    }
-                                    for override in calendar.overrides
-                                ],
-                            }
-                            for calendar in config.sessions.calendars
-                        ],
                         "historical": {
                             "maximum_plan_requests": config.historical.maximum_plan_requests,
                             "maximum_observations_per_request": (
@@ -961,30 +1156,72 @@ def build_actor_plan(
     )
     if config.historical.probe.enabled:
         probe = config.historical.probe
-        registrations.extend(
-            ActorRegistration(
-                key=f"historical_dependency_probe:{index}",
-                actor_id=actor_id,
-                config=ImportableActorConfig(
-                    actor_path=(
-                        "markeitech.system.historical_probe:HistoricalDependencyProbeActor"
+        if probe.mode == "current_state_gated":
+            registrations.append(
+                ActorRegistration(
+                    key="current_state_historical_probe",
+                    actor_id="CURRENT-STATE-HISTORICAL-PROBE",
+                    config=ImportableActorConfig(
+                        actor_path=(
+                            "markeitech.system.historical_probe:"
+                            "CurrentStateHistoricalDemandProbeActor"
+                        ),
+                        config_path=(
+                            "markeitech.system.historical_probe:"
+                            "CurrentStateHistoricalDemandProbeActorConfig"
+                        ),
+                        config={
+                            "actor_id": "CURRENT-STATE-HISTORICAL-PROBE",
+                            "calendar_expectations": [
+                                {
+                                    "calendar_id": calendar.calendar_id,
+                                    "definition_version": calendar.definition_version,
+                                    "definition_digest": calendar.definition_digest,
+                                    "definition_effective_from_ns": calendar.effective_from_ns,
+                                }
+                                for calendar in config.sessions.calendars
+                            ],
+                            "source_epoch": str(prerequisites.run_id),
+                            "current_state_delivery": current_state_delivery,
+                            "instrument_id": probe.instrument_id,
+                            "selector": probe.selector,
+                            "window": probe.window,
+                            "minimum_observations": probe.minimum_observations,
+                            "maximum_observations": probe.maximum_observations,
+                            "priority": probe.priority,
+                            "omit_initial_snapshot_request": (
+                                probe.omit_initial_snapshot_request
+                            ),
+                        },
                     ),
-                    config_path=(
-                        "markeitech.system.historical_probe:HistoricalDependencyProbeActorConfig"
-                    ),
-                    config={
-                        "actor_id": actor_id,
-                        "instrument_id": probe.instrument_id,
-                        "selector": probe.selector,
-                        "window": probe.window,
-                        "minimum_observations": probe.minimum_observations,
-                        "maximum_observations": probe.maximum_observations,
-                        "priority": probe.priority,
-                    },
                 ),
             )
-            for index, actor_id in enumerate(probe.actor_ids, start=1)
-        )
+        else:
+            registrations.extend(
+                ActorRegistration(
+                    key=f"historical_dependency_probe:{index}",
+                    actor_id=actor_id,
+                    config=ImportableActorConfig(
+                        actor_path=(
+                            "markeitech.system.historical_probe:HistoricalDependencyProbeActor"
+                        ),
+                        config_path=(
+                            "markeitech.system.historical_probe:"
+                            "HistoricalDependencyProbeActorConfig"
+                        ),
+                        config={
+                            "actor_id": actor_id,
+                            "instrument_id": probe.instrument_id,
+                            "selector": probe.selector,
+                            "window": probe.window,
+                            "minimum_observations": probe.minimum_observations,
+                            "maximum_observations": probe.maximum_observations,
+                            "priority": probe.priority,
+                        },
+                    ),
+                )
+                for index, actor_id in enumerate(probe.actor_ids, start=1)
+            )
     if config.acquisition.native_consumer_probe_enabled:
         registrations.append(
             ActorRegistration(
@@ -1001,26 +1238,6 @@ def build_actor_plan(
                         "unsubscribe_after_seconds": (
                             config.acquisition.native_consumer_probe_unsubscribe_after_seconds
                         ),
-                    },
-                ),
-            ),
-        )
-    if config.discord.enabled:
-        registrations.append(
-            ActorRegistration(
-                key="discord_health",
-                actor_id="DISCORD-HEALTH",
-                config=ImportableActorConfig(
-                    actor_path="markeitech.system.discord:DiscordHealthActor",
-                    config_path="markeitech.system.discord:DiscordHealthActorConfig",
-                    config={
-                        "actor_id": "DISCORD-HEALTH",
-                        "request_timeout_seconds": config.discord.request_timeout_seconds,
-                        "queue_capacity": config.discord.queue_capacity,
-                        "ping_critical_resource_alerts": (
-                            config.discord.ping_critical_resource_alerts
-                        ),
-                        "webhook_env": SYSTEM_HEALTH_WEBHOOK_ENV,
                     },
                 ),
             ),
@@ -1107,7 +1324,7 @@ def validate_runtime_environment(
 ) -> None:
     required = [config.persistence.dsn_env]
     if config.discord.enabled:
-        required.append(SYSTEM_HEALTH_WEBHOOK_ENV)
+        required.extend((SYSTEM_HEALTH_WEBHOOK_ENV, OPERATIONAL_EVENTS_WEBHOOK_ENV))
     missing = [name for name in required if not environment.get(name, "").strip()]
     if missing:
         raise RuntimeError(f"required runtime environment is missing: {', '.join(sorted(missing))}")

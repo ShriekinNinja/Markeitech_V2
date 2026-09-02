@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: false
+
+interface:
+  display_name: "Markeitech IB Market Data Expert"
+  short_description: "IB provider truth for Markeitech market data"
+  default_prompt: "Use $kite:markeitech-ib-market-data-expert to establish current IB provider truth, limits, session meaning, and evidence gaps before recommending a Markeitech market-data decision."

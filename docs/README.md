@@ -47,6 +47,9 @@ accidental disagreement.
 - [V2 provider and canonical data boundary (historical discovery record)](architecture/v2-provider-data-boundary-discovery.md)
 - [V2 adaptive market-data plane](architecture/v2-adaptive-market-data-plane.md)
 - [V2 historical dependency execution](architecture/v2-historical-dependency-execution.md)
+- [Kite advisor council](architecture/markeitech-advisor-council.md)
+- [TOML-driven system/data-flow manifest maintenance](architecture/system-dataflow-maintenance.md)
+- [TOML-driven system/data-flow implementation plan](architecture/toml-driven-system-dataflow-plan.md)
 
 Preserved V1 architecture remains available in
 [runtime architecture](architecture/runtime-architecture.md),
@@ -62,6 +65,7 @@ Preserved V1 architecture remains available in
 - [Legacy V1 runtime, market events, and Discord delivery plan](roadmap/runtime-market-events-discord-plan.md)
 - [V2 Stage 9C session measurements plan](roadmap/v2-stage-9c-session-measurements-plan.md)
 - [V2 Stage 9D entities and rolling state plan](roadmap/v2-stage-9d-entities-rolling-state-plan.md)
+- [V2 API documentation plan](roadmap/v2-api-documentation-plan.md)
 - [Legacy V1 trading quality evidence plan](roadmap/trading-quality-evidence-plan.md)
 - [Detailed implementation history](roadmap/implementation-history.md)
 
@@ -71,6 +75,7 @@ for investigation and context, but it does not reopen old stage gates.
 ## Operations
 
 - [V2 developer setup and machine handoff](operations/developer-setup.md)
+- [V2 static API documentation](operations/v2-api-documentation.md)
 - [GitHub workflow](operations/github-workflow.md)
 - [V2 runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
 - [V2 operational PostgreSQL](operations/v2-postgresql.md)
@@ -96,6 +101,13 @@ decision or roadmap item promotes a tested result.
 
 ## Notes And Archive
 
+- [Desired runtime requirements](notes/desired-arch.md) — informative Markeitect requirements and
+  council input; not accepted architecture or a roadmap.
+- [Desired-runtime council review handoff](notes/desired-arch-council-review-handoff.md) — completed
+  historical process record; not an active instruction.
+- [Desired-runtime council review report](notes/desired-arch-council-review-report.md) — informative
+  council discovery record and proposal source; not a plan, authoritative debt ledger, or
+  implementation approval.
 - [Preserved V1 project boundary](../LEGACY.md)
 - [Markeitect notes](notes/markeitect-notes.md)
 - [Original greenfield brief](archive/initial-greenfield-brief.md)

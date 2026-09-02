@@ -6,6 +6,7 @@ from decimal import Decimal
 from math import isfinite, log, sqrt
 from statistics import median
 
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue as MetricValue
 from markeitech.intelligence.completed_bars import CompletedBarInput, CompletedBarSource
 from markeitech.intelligence.metrics import (
     MetricCadence,
@@ -18,10 +19,10 @@ from markeitech.intelligence.metrics import (
     MetricRegistry,
     MetricResourcePolicy,
     MetricRetainedState,
-    MetricValue,
     MetricValueKind,
     MetricWarmupPolicy,
     ParameterMutability,
+    _validate_legacy_metric_value,
 )
 from markeitech.intelligence.session import SessionWindow
 from markeitech.intelligence.session_measurements import (
@@ -148,14 +149,10 @@ class RollingBaselinePolicy:
         if not self.eligible_reference_fidelities or any(
             not isinstance(item, MetricFidelity) for item in self.eligible_reference_fidelities
         ):
-            raise ValueError(
-                "eligible_reference_fidelities must contain MetricFidelity values"
-            )
+            raise ValueError("eligible_reference_fidelities must contain MetricFidelity values")
         if len(set(self.eligible_reference_health)) != len(self.eligible_reference_health):
             raise ValueError("eligible_reference_health values must be unique")
-        if len(set(self.eligible_reference_fidelities)) != len(
-            self.eligible_reference_fidelities
-        ):
+        if len(set(self.eligible_reference_fidelities)) != len(self.eligible_reference_fidelities):
             raise ValueError("eligible_reference_fidelities values must be unique")
         for field in (
             "recent_reference_count",
@@ -275,6 +272,14 @@ class RollingCandidateResult:
     phase_missing_reasons: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class RollingMeasurementProjection:
+    """One deterministic rolling calculation and its exact completed-bar inputs."""
+
+    completed_bars: tuple[CompletedBarInput, ...]
+    candidates: tuple[RollingCandidateResult, ...]
+
+
 def rolling_metric_id(family_id: str, candidate_id: str, suffix: str) -> str:
     if suffix not in ROLLING_METRIC_SUFFIXES:
         raise ValueError(f"unsupported rolling metric suffix: {suffix}")
@@ -303,6 +308,19 @@ def calculate_rolling_candidates(
     phase_windows: tuple[SessionWindow, ...],
     policy: RollingMeasurementPolicy,
 ) -> tuple[RollingCandidateResult, ...]:
+    return calculate_rolling_projection(
+        bars,
+        phase_windows=phase_windows,
+        policy=policy,
+    ).candidates
+
+
+def calculate_rolling_projection(
+    bars: tuple[CompletedBarInput, ...],
+    *,
+    phase_windows: tuple[SessionWindow, ...],
+    policy: RollingMeasurementPolicy,
+) -> RollingMeasurementProjection:
     if not isinstance(bars, tuple) or any(not isinstance(item, CompletedBarInput) for item in bars):
         raise ValueError("bars must be a tuple of CompletedBarInput values")
     if not isinstance(phase_windows, tuple) or any(
@@ -312,13 +330,15 @@ def calculate_rolling_candidates(
     if not isinstance(policy, RollingMeasurementPolicy):
         raise ValueError("policy must be a RollingMeasurementPolicy")
     if not bars or not policy.enabled:
-        return ()
+        return RollingMeasurementProjection((), ())
     ordered = tuple(sorted(bars, key=lambda item: (item.interval_start_ns, item.interval_end_ns)))
+    completed_bars: list[CompletedBarInput] = []
     results: list[RollingCandidateResult] = []
     for family in policy.families:
         family_bars = _family_bars(ordered, family)
         if not family_bars:
             continue
+        completed_bars.extend(family_bars)
         series = _BarSeries(
             bars=family_bars,
             starts=tuple(item.interval_start_ns for item in family_bars),
@@ -329,7 +349,7 @@ def calculate_rolling_candidates(
                 results.append(
                     _calculate_candidate(series, phase_windows, policy, family, candidate),
                 )
-    return tuple(results)
+    return RollingMeasurementProjection(tuple(completed_bars), tuple(results))
 
 
 def rolling_metric_values(
@@ -425,7 +445,7 @@ def rolling_metric_values(
             missing_reasons=tuple(dict.fromkeys(missing_reasons)),
             revision=revision,
         )
-        registry.validate_value(metric)
+        _validate_legacy_metric_value(registry, metric)
         values.append(metric)
     return tuple(values)
 

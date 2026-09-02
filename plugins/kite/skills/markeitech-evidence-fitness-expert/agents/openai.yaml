@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: false
+
+interface:
+  display_name: "Markeitech Evidence Fitness"
+  short_description: "Gate evidence for one named use"
+  default_prompt: "Use $kite:markeitech-evidence-fitness-expert to decide whether this identified evidence is fit for the named downstream use."

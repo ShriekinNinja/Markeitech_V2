@@ -7,20 +7,24 @@ The agent is expected to exercise senior engineering judgment, raise concerns ea
 unsafe or weak assumptions with evidence. That independence supports Markeitect's decisions; it
 does not replace them.
 
-## Markeitect And Kite
+## Codex And Optional Kite Mode
 
-The engineering collaborator role is Kite. Markeitect contributes market expertise, product
-direction, operator experience, and the final call. Kite contributes architecture, implementation,
-verification, evidence discipline, and an independent technical point of view.
+A fresh Codex task starts in normal Codex mode. The installed or enabled Kite plugin is available,
+not active. Do not invoke Kite, its router, a Kite specialist skill, or a Kite custom advisor unless
+Markeitect explicitly selects the Kite plugin, invokes `$kite:markeitech-advisor-router`, or
+explicitly invokes one named specialist skill. Direct specialist invocation is a narrow user
+override; it does not activate Kite mode or count as router acceptance. Merely mentioning or
+discussing Kite is not activation.
 
-Kite should be warm, direct, and professionally candid. Do not agree merely to preserve momentum.
-Explain tradeoffs, admit uncertainty and mistakes quickly, protect the evidence bar when excitement
-or urgency rises, and remain open when Markeitect's domain judgment reveals a better design. Ask
-for logs, screenshots, or market references when they can settle a real ambiguity. Resource limits
-change sequencing, never quality or honesty.
+Explicit activation starts Kite mode for that task and its direct follow-ups. A new task or an
+unrelated request returns to normal Codex mode unless Kite is explicitly invoked again. While Kite
+mode is active, the plugin owns advisor selection and uses its smallest sufficient advisor set by
+default; Markeitect does not need to name individual advisors.
 
-The shared posture is: **No Obstacles, Only Challenges.** Progress may pause for a sound reason;
-standards do not quietly fall.
+Kite and its advisor council are development-time engineering collaborators. Sir Loke is a future
+V2 runtime advisory component. Kite consultation does not create Sir Loke behavior, product
+semantics, tool authority, policy acceptance, runtime readiness, or completed work. Sir Loke does
+not invoke or inherit authority from the development-time Kite advisor council.
 
 ## Authority And Precedence
 
@@ -54,6 +58,48 @@ accurate.
 Before acting, inspect the current branch, worktree status, relevant code, and nearby tests. Assume
 unfamiliar local changes belong to Markeitect or generated tooling. Work with them; never discard,
 overwrite, or normalize them away merely to simplify the task.
+
+## Kite Advisor Consultation
+
+The repository-owned Kite plugin packages specialist Markeitech advisors. Those advisors provide
+evidence and recommendations; they do not override this file, tracked project authority, or
+Markeitect's final decision.
+
+This section applies only while Kite mode is active. Kite performs the advisor-coverage check
+automatically after explicit activation. Select the smallest sufficient set: every selected role
+must own one exact question whose answer can materially change the recommendation, edit,
+acceptance result, or stop gate. Selection is evidence-bounded Kite judgment; dependency execution
+becomes deterministic only after selected-role edges are recorded. Dependency tiers and adjacent
+usefulness do not activate advisors. Consult each selected domain through its exact custom role
+before planning or editing; do not use a specialist skill directly when that role exists unless
+Markeitect explicitly invoked that skill. An explicit specialist invocation does not count as
+router acceptance. Keep successful, unnecessary, and `NOT_NEEDED` routing silent unless a
+consultation changes the recommendation, exposes material risk, or supplies useful evidence. If
+coverage is missing, report the domain and proposed advisor briefly, then wait for Markeitect's
+approval before creating it or making the consequential domain decision. Do not silently replace
+missing or failed coverage with general engineering knowledge, and do not create advisors merely
+to accumulate generic skills.
+
+Advisor roles have a mandatory read-only consultation contract and declare a read-only sandbox
+default. Effective tool isolation depends on the parent task's live permissions and requires
+separate acceptance evidence; configuration or cooperative behavior alone is not proof of least
+authority. Advisors never receive permission to edit, commit, connect services, consume paid
+capacity, mutate data, or make a project decision.
+
+While Kite mode is active, before a consequential NautilusTrader design, review, plan, or edit
+involving actors, LiveNode, indicators, cache, persistence, catalog, message bus, market data,
+adapters, lifecycle, concurrency, configuration, or framework alignment, delegate a narrow
+read-only consultation to the project-scoped `markeitech_nautilus_advisor` custom agent. That
+advisor must invoke the bundled `$kite:markeitech-nautilus-v2-expert` skill and complete its
+native-capability gate and Nautilus Alignment Matrix before Kite recommends or implements custom
+behavior. Kite remains responsible for validating the returned evidence against tracked authority
+and the current checkout.
+
+If a required advisor is unavailable, stale, or cannot inspect its required sources, report that
+limitation and stop before the consequential decision or edit. Do not silently substitute memory,
+stable-channel documentation, or the current custom implementation for the required consultation.
+Invoking an advisor never grants permission to edit, commit, connect services, mutate data, or
+perform another restricted action.
 
 ## Working Boundaries
 
@@ -126,6 +172,42 @@ change.
   and history rewrites require explicit approval and a recovery plan.
 - External messages and alerts are projections of canonical state. Discord, console, UI, and future
   agents must not calculate or mutate market truth.
+
+## V2 API Documentation
+
+The V2 API documentation utility is an isolated, static source-analysis tool under
+`tools/api-docs`. Future agents working on V2 public APIs or this tool must follow these rules:
+
+- Write Google-style docstrings for intentionally public V2 objects. Use annotations as type
+  authority; document meaning, units, lineage, side effects, failures, and abstention where they
+  matter.
+- Do not run bare `mkdocs` or `mkdocstrings` commands. Provision with the locked tool project and
+  invoke only the first-party `markeitech_api_docs validate` or `generate` wrapper documented in
+  `docs/operations/v2-api-documentation.md`.
+- Generation must stay offline and static. It must not import Markeitech, inspect modules
+  dynamically, resolve external inventories, connect services, read runtime configuration or
+  secrets, or mutate runtime source.
+- The public denominator is the versioned `schema/public-surface.toml` registry. An intentional
+  export change requires a reviewed count/hash update and registry-version bump; never weaken or
+  bypass the drift check to make a build pass.
+- Custom attributes are permitted only in the exact `Markeitech Metadata:` docstring section and
+  only acquire typed meaning through `schema/attribute-registry.toml`. A new field requires
+  Markeitect approval, a namespace, exact type, cardinality, bounds, exposure policy, registry-
+  version bump, and parser/render/leak tests.
+- Unknown, invalid, hidden, or conflicting custom values must remain quarantined. Do not copy raw
+  values into HTML, JSON, logs, errors, hashes intended for display, or other generated artifacts.
+- Caller/callee, ownership, flow, contract, or dependency attributes are not currently approved.
+  Do not encode relationships in scalar strings or declare both incoming and outgoing views.
+- The approved `architecture.component.*` attributes own only implementation-backed component
+  identity, label, kind, boundary, and substantive responsibilities. The API-doc generator must
+  discover these classes separately from the public API denominator and must not read the current
+  architecture TOML.
+- The existing system-diagram tool continues to consume `docs/architecture/system-dataflow.toml`
+  during the migration interval. A future, separately reviewed exporter may make validated source
+  documentation upstream of generated TOML and diagrams; until it exists, do not declare the TOML
+  generated or remove its maintenance procedure.
+- Generated `docs/api` and `tools/api-docs/.build` content is untracked and must not be hand-edited.
+  Commit source/configuration/registries/tests/lockfiles, then regenerate locally or in approved CI.
 
 ## Completion Standard
 

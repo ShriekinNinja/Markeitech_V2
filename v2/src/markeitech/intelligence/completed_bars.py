@@ -7,8 +7,13 @@ from enum import StrEnum
 
 from markeitech.intelligence.metrics import MetricFidelity, MetricHealth
 
+COMPLETED_BAR_INPUT_TYPE_NAME = "markeitech.completed_bar.input"
+"""Nautilus custom-data type name for normalized completed-bar inputs."""
+
 
 class CompletedBarSource(StrEnum):
+    """Lineage categories for provider and aggregated completed bars."""
+
     HISTORICAL_PROVIDER = "historical_provider"
     HISTORICAL_AGGREGATE = "historical_aggregate"
     LIVE_NATIVE = "live_native"
@@ -16,10 +21,14 @@ class CompletedBarSource(StrEnum):
 
 
 class BarConflictPolicy(StrEnum):
+    """Policies for handling conflicting observations with one completed-bar key."""
+
     REJECT_CONFLICT = "reject_conflict"
 
 
 class BarAdmissionStatus(StrEnum):
+    """Outcomes from admitting a completed bar to the first-accepted ledger."""
+
     ACCEPTED = "accepted"
     DUPLICATE = "duplicate"
     CONFLICT = "conflict"
@@ -30,6 +39,13 @@ type CompletedBarKey = tuple[str, str, int]
 
 @dataclass(frozen=True, slots=True)
 class CompletedBarInput:
+    """Represent one immutable completed-bar observation with analytical lineage.
+
+    Interval and transport timestamps are UTC Unix nanoseconds. Prices and
+    optional volume retain ``Decimal`` precision. Missing or partial evidence is
+    expressed explicitly through health, fidelity, and reason fields.
+    """
+
     instrument_id: str
     bar_specification: str
     calendar_id: str
@@ -117,6 +133,14 @@ class CompletedBarInput:
         return self.interval_end_ns - self.interval_start_ns
 
     @property
+    def ts_event(self) -> int:
+        return self.interval_end_ns
+
+    @property
+    def ts_init(self) -> int:
+        return self.normalized_ts_ns
+
+    @property
     def equivalence_key(self) -> tuple[object, ...]:
         """Market and analytical identity, excluding transport-specific lineage."""
         return (
@@ -142,6 +166,8 @@ class CompletedBarInput:
 
 @dataclass(frozen=True, slots=True)
 class BarAdmission:
+    """Report the candidate and canonical bar for one ledger admission attempt."""
+
     status: BarAdmissionStatus
     candidate: CompletedBarInput
     accepted: CompletedBarInput
@@ -197,6 +223,23 @@ def aggregate_completed_bars(
     normalized_ts_ns: int,
     require_full_coverage: bool = True,
 ) -> CompletedBarInput:
+    """Aggregate contiguous completed bars into one deterministic larger interval.
+
+    Args:
+        bars: Non-empty tuple of compatible, complete source bars.
+        target_bar_specification: Identity assigned to the aggregated interval.
+        target_interval_seconds: Positive target duration in seconds.
+        normalized_ts_ns: UTC Unix nanosecond normalization timestamp.
+        require_full_coverage: Require sources to span the complete target bucket.
+
+    Returns:
+        A derived completed bar retaining ordered source evidence lineage.
+
+    Raises:
+        ValueError: If bars are empty, incompatible, incomplete, discontinuous,
+            outside one target bucket, or do not satisfy requested coverage.
+    """
+
     if not isinstance(bars, tuple) or not bars:
         raise ValueError("bars must be a non-empty tuple")
     if any(not isinstance(bar, CompletedBarInput) for bar in bars):

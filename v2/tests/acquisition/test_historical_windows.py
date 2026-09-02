@@ -11,27 +11,14 @@ from markeitech.acquisition.historical_windows import (
     HistoricalWindowResolver,
     HistoricalWindowUnavailable,
 )
-from markeitech.intelligence.session import SessionCalendar, definition_from_config
+from markeitech.intelligence.session import CalendarProjectionView
+from tests.calendar_fixtures import projection_view
 
 MINUTE_NS = 60 * 1_000_000_000
 
 
-def _calendar() -> SessionCalendar:
-    return SessionCalendar(
-        definition_from_config(
-            {
-                "calendar_id": "cboe_spxw",
-                "provider_calendar": "CBOE_Index_Options",
-                "timezone": "America/New_York",
-                "schedule_version": "test-1",
-                "phases": [
-                    {"name": "GTH", "start": "20:15", "end": "09:25", "start_day_offset": -1},
-                    {"name": "RTH", "start": "09:30", "end": "16:15", "start_day_offset": 0},
-                ],
-                "overrides": [],
-            },
-        ),
-    )
+def _calendar() -> CalendarProjectionView:
+    return projection_view("cboe_spxw")
 
 
 def _ns(value: str) -> int:
@@ -97,6 +84,18 @@ def test_recent_completed_requires_and_uses_configured_duration() -> None:
 
     assert bounds.start_ns == _ns("2026-08-17T10:20:00-04:00")
     assert bounds.end_ns == _ns("2026-08-17T10:40:00-04:00") - 1
+
+
+def test_recent_completed_aligns_subsecond_as_of_to_five_complete_minutes() -> None:
+    bounds = _resolve(
+        HistoricalWindow.RECENT_COMPLETED,
+        "2026-08-17T13:36:00.650000+00:00",
+        HistoricalWindowParameters(observation_count=5),
+        interval_minutes=1,
+    )
+
+    assert bounds.start_ns == _ns("2026-08-17T13:31:00+00:00")
+    assert bounds.end_ns == _ns("2026-08-17T13:36:00+00:00") - 1
 
 
 def test_current_rth_clips_to_last_completed_five_minute_interval() -> None:
@@ -280,7 +279,7 @@ def test_explicit_interval_windows_clip_to_completed_boundary(
     ],
 )
 def test_missing_inputs_fail_deterministically(
-    calendar: SessionCalendar | None,
+    calendar: CalendarProjectionView | None,
     window: HistoricalWindow,
     policy: HistoricalWindowParameters,
     message: str,

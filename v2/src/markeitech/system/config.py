@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import tomllib
 from dataclasses import dataclass
@@ -7,6 +9,10 @@ from datetime import UTC, date, datetime, time
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+import pandas_market_calendars as market_calendars
+from nautilus_trader.model import BarSpecification
 
 type EntityConfigScalar = str | int | float | bool
 
@@ -87,7 +93,26 @@ class AcquisitionConfig:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalProbeConfig:
+    """Configure a disabled-by-default historical acceptance harness.
+
+    Attributes:
+        enabled: Whether composition admits the acceptance probe.
+        mode: ``direct`` for the Stage 9B probe set or ``current_state_gated`` for
+            one V3-02 probe which synchronizes before publishing its demand.
+        omit_initial_snapshot_request: Whether the current-state mode deliberately
+            omits attempt one to exercise bounded consumer retry.
+        actor_ids: Exact actor identities; current-state mode requires one.
+        instrument_id: Watchlist instrument used by the demand.
+        selector: Historical data selector.
+        window: Symbolic historical window.
+        minimum_observations: Minimum acceptable observation count.
+        maximum_observations: Maximum requested observation count.
+        priority: Demand priority from zero through one hundred.
+    """
+
     enabled: bool
+    mode: str
+    omit_initial_snapshot_request: bool
     actor_ids: tuple[str, ...]
     instrument_id: str
     selector: str
@@ -114,33 +139,107 @@ class HistoricalConfig:
 @dataclass(frozen=True, slots=True)
 class SessionPhaseConfig:
     name: str
-    start: str
-    end: str
+    timezone: str
+    start_kind: str
+    start_value: str
     start_day_offset: int
+    end_kind: str
+    end_value: str
+    end_day_offset: int
+    exchange_constraint: str
 
 
 @dataclass(frozen=True, slots=True)
-class SessionOverrideConfig:
-    trade_date: str
-    phase: str
-    start: str
-    end: str
-    start_day_offset: int
+class CalendarSourceConfig:
+    source_id: str
+    title: str
+    url: str
+    retrieved_at_ns: int
+    content_sha256: str | None
+    retrieval_status: str
+
+
+@dataclass(frozen=True, slots=True)
+class CalendarCorrectionConfig:
+    correction_id: str
+    kind: str
+    source_id: str
+    product_roots: tuple[str, ...]
+    effective_from_trade_date: str
+    timezone: str
+    expected_start: str
+    expected_end: str
 
 
 @dataclass(frozen=True, slots=True)
 class SessionCalendarConfig:
     calendar_id: str
+    calendar_engine: str
+    calendar_engine_version: str
     provider_calendar: str
-    timezone: str
+    provider_calendar_class: str
+    exchange_timezone: str
+    schedule_columns: tuple[str, ...]
+    definition_version: int
+    effective_from_ns: int
+    definition_digest: str
     schedule_version: str
     phases: tuple[SessionPhaseConfig, ...]
-    overrides: tuple[SessionOverrideConfig, ...]
+    corrections: tuple[CalendarCorrectionConfig, ...]
+    sources: tuple[CalendarSourceConfig, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ProjectionRetryConfig:
+    response_timeout_ms: int
+    maximum_attempts: int
+    retry_backoff_ms: int
+    maximum_elapsed_ms: int
+
+
+@dataclass(frozen=True, slots=True)
+class CurrentStateDeliveryConfig:
+    """Bound current-session snapshot delivery and consumer reconciliation.
+
+    All durations are positive integer milliseconds. Buffer limits bound transient consumer
+    synchronization state; they do not authorize persistence of calendar snapshots.
+
+    Attributes:
+        policy_version: Exact supported delivery-policy version.
+        response_timeout_ms: Per-attempt response timeout in milliseconds.
+        maximum_attempts: Maximum attempts in one synchronization cycle.
+        retry_backoff_ms: Fixed retry delay in milliseconds.
+        maximum_elapsed_ms: Maximum total synchronization-cycle duration in milliseconds.
+        maximum_buffered_transitions_per_calendar: Per-calendar consumer transition bound.
+        maximum_total_buffered_transitions: Total consumer transition bound.
+        boundary_delivery_grace_ms: Grace period for transition/response reordering in
+            milliseconds.
+    """
+
+    policy_version: int
+    response_timeout_ms: int
+    maximum_attempts: int
+    retry_backoff_ms: int
+    maximum_elapsed_ms: int
+    maximum_buffered_transitions_per_calendar: int
+    maximum_total_buffered_transitions: int
+    boundary_delivery_grace_ms: int
 
 
 @dataclass(frozen=True, slots=True)
 class SessionsConfig:
     evaluation_interval_ms: int
+    projection_lookback_days: int
+    projection_lookahead_days: int
+    maximum_projection_days: int
+    maximum_calendars_per_request: int
+    projection_retry: ProjectionRetryConfig
+    current_state_delivery: CurrentStateDeliveryConfig
+    catalog_id: str
+    catalog_version: int
+    catalog_path: Path
+    catalog_digest: str
+    available_calendars: tuple[SessionCalendarConfig, ...]
     calendars: tuple[SessionCalendarConfig, ...]
 
 
@@ -352,6 +451,7 @@ class SessionMeasurementsConfig:
 @dataclass(frozen=True, slots=True)
 class EntityApplicationConfig:
     application_id: str
+    parameter_set_id: str
     analytical_profile_ids: tuple[str, ...]
     instrument_ids: tuple[str, ...]
     instrument_classes: tuple[str, ...]
@@ -507,6 +607,28 @@ class DiscordConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class VisualDebugCaptureConfig:
+    enabled: bool
+    configuration_identity: str
+    instrument_id: str
+    analytical_profile_id: str
+    analytical_profile_version: int
+    bar_specification: str
+    parameter_version: int
+    output_directory: Path
+    capture_policy_version: int
+    target_historical_bars: int
+    target_live_bars: int
+    quiet_period_ms: int
+    completion_deadline_ms: int
+    output_drain_timeout_ms: int
+    candle_pane_height_px: int
+    volume_pane_height_px: int
+    metric_pane_height_px: int
+    pane_gap_px: int
+
+
+@dataclass(frozen=True, slots=True)
 class RuntimeResourceThresholdConfig:
     host_memory_available_percent: float
     host_cpu_percent: float
@@ -574,11 +696,14 @@ class PersistenceConfig:
 
 @dataclass(frozen=True, slots=True)
 class SystemConfig:
+    """Hold the fully validated, immutable V2 runtime configuration."""
+
     schema_version: int
     runtime: RuntimeConfig
     ib: InteractiveBrokersConfig
     logging: LoggingConfig
     discord: DiscordConfig
+    visual_debug_capture: VisualDebugCaptureConfig
     runtime_resources: RuntimeResourcesConfig
     persistence: PersistenceConfig
     acquisition: AcquisitionConfig
@@ -594,13 +719,28 @@ class SystemConfig:
 
 
 def load_system_config(path: str | Path) -> SystemConfig:
+    """Load and validate one schema-versioned V2 TOML configuration.
+
+    Relative filesystem paths are resolved against the configuration file's
+    directory. The loader performs no provider, database, or runtime connection.
+
+    Args:
+        path: Filesystem path to the V2 TOML configuration.
+
+    Returns:
+        The normalized immutable system configuration.
+
+    Raises:
+        OSError: If the configuration file cannot be opened.
+        tomllib.TOMLDecodeError: If the file is not valid TOML.
+        ValueError: If schema identity, fields, values, or cross-references are invalid.
+    """
+
     config_path = Path(path)
     with config_path.open("rb") as file:
         raw = tomllib.load(file)
 
-    _require_keys(
-        raw,
-        {
+    root_keys = {
             "schema_version",
             "runtime",
             "ib",
@@ -614,24 +754,69 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "sessions",
             "evidence_health",
             "metrics",
-        },
+        }
+    if "visual_debug_capture" in raw:
+        root_keys.add("visual_debug_capture")
+    _require_keys(
+        raw,
+        root_keys,
         "root",
     )
-    if raw["schema_version"] != 16:
+    if raw["schema_version"] != 23:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
     ib = _load_ib(raw["ib"])
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
+    visual_debug_capture = _load_visual_debug_capture(
+        raw.get(
+            "visual_debug_capture",
+            {
+                "enabled": False,
+                "configuration_identity": "not-configured",
+                "instrument_id": "ESU6.CME",
+                "analytical_profile_id": "cme_equity_primary",
+                "analytical_profile_version": 1,
+                "bar_specification": "1-MINUTE-LAST-EXTERNAL",
+                "parameter_version": 1,
+                "output_directory": "../data/visual-debug-captures",
+                "capture_policy_version": 1,
+                "target_historical_bars": 5,
+                "target_live_bars": 5,
+                "quiet_period_ms": 2000,
+                "completion_deadline_ms": 900000,
+                "output_drain_timeout_ms": 30000,
+                "candle_pane_height_px": 720,
+                "volume_pane_height_px": 130,
+                "metric_pane_height_px": 110,
+                "pane_gap_px": 18,
+            },
+        ),
+        config_path.parent,
+    )
     runtime_resources = _load_runtime_resources(raw["runtime_resources"])
     persistence = _load_persistence(raw["persistence"])
     watchlist = _load_watchlist(raw["watchlist"])
     acquisition = _load_acquisition(raw["acquisition"], watchlist)
     historical = _load_historical(raw["historical"], watchlist)
-    sessions = _load_sessions(raw["sessions"])
+    sessions = _load_sessions(raw["sessions"], config_path.parent)
     evidence_health = _load_evidence_health(raw["evidence_health"])
     metrics = _load_metrics(raw["metrics"])
+    if visual_debug_capture.enabled:
+        if not metrics.session_measurements.enabled:
+            raise ValueError("visual debug capture requires session measurements enabled")
+        if tuple(member.instrument_id for member in watchlist.members) != (
+            visual_debug_capture.instrument_id,
+        ):
+            raise ValueError("visual debug capture requires an exact matching one-member watchlist")
+        completed = metrics.session_measurements.completed_bars
+        if (
+            visual_debug_capture.bar_specification != completed.historical_selector
+            or visual_debug_capture.parameter_version
+            != metrics.session_measurements.parameter_version
+        ):
+            raise ValueError("visual debug capture must match the completed-bar producer identity")
     known_calendars = {calendar.calendar_id for calendar in sessions.calendars}
     unknown_calendars = sorted(
         {member.calendar_id for member in watchlist.members} - known_calendars,
@@ -773,6 +958,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         ib=ib,
         logging=logging,
         discord=discord,
+        visual_debug_capture=visual_debug_capture,
         runtime_resources=runtime_resources,
         persistence=persistence,
         acquisition=acquisition,
@@ -894,6 +1080,108 @@ def _load_discord(raw: Any) -> DiscordConfig:
         ping_critical_resource_alerts=_bool(
             values["ping_critical_resource_alerts"],
             "discord.ping_critical_resource_alerts",
+        ),
+    )
+
+
+def _load_visual_debug_capture(
+    raw: Any,
+    config_directory: Path,
+) -> VisualDebugCaptureConfig:
+    values = _mapping(raw, "visual_debug_capture")
+    keys = {
+        "enabled",
+        "configuration_identity",
+        "instrument_id",
+        "analytical_profile_id",
+        "analytical_profile_version",
+        "bar_specification",
+        "parameter_version",
+        "output_directory",
+        "capture_policy_version",
+        "target_historical_bars",
+        "target_live_bars",
+        "quiet_period_ms",
+        "completion_deadline_ms",
+        "output_drain_timeout_ms",
+        "candle_pane_height_px",
+        "volume_pane_height_px",
+        "metric_pane_height_px",
+        "pane_gap_px",
+    }
+    _require_keys(values, keys, "visual_debug_capture")
+    output_directory = Path(
+        _non_empty_string(values["output_directory"], "visual_debug_capture.output_directory"),
+    )
+    if not output_directory.is_absolute():
+        output_directory = (config_directory / output_directory).resolve()
+    target_historical_bars = _non_negative_int(
+        values["target_historical_bars"],
+        "visual_debug_capture.target_historical_bars",
+    )
+    target_live_bars = _non_negative_int(
+        values["target_live_bars"],
+        "visual_debug_capture.target_live_bars",
+    )
+    if target_historical_bars + target_live_bars == 0:
+        raise ValueError("visual debug capture requires at least one positive population target")
+    return VisualDebugCaptureConfig(
+        enabled=_bool(values["enabled"], "visual_debug_capture.enabled"),
+        configuration_identity=_non_empty_string(
+            values["configuration_identity"],
+            "visual_debug_capture.configuration_identity",
+        ),
+        instrument_id=_non_empty_string(
+            values["instrument_id"], "visual_debug_capture.instrument_id"
+        ),
+        analytical_profile_id=_non_empty_string(
+            values["analytical_profile_id"],
+            "visual_debug_capture.analytical_profile_id",
+        ),
+        analytical_profile_version=_positive_int(
+            values["analytical_profile_version"],
+            "visual_debug_capture.analytical_profile_version",
+        ),
+        bar_specification=_non_empty_string(
+            values["bar_specification"],
+            "visual_debug_capture.bar_specification",
+        ),
+        parameter_version=_positive_int(
+            values["parameter_version"], "visual_debug_capture.parameter_version"
+        ),
+        output_directory=output_directory,
+        capture_policy_version=_positive_int(
+            values["capture_policy_version"],
+            "visual_debug_capture.capture_policy_version",
+        ),
+        target_historical_bars=target_historical_bars,
+        target_live_bars=target_live_bars,
+        quiet_period_ms=_positive_int(
+            values["quiet_period_ms"], "visual_debug_capture.quiet_period_ms"
+        ),
+        completion_deadline_ms=_positive_int(
+            values["completion_deadline_ms"],
+            "visual_debug_capture.completion_deadline_ms",
+        ),
+        output_drain_timeout_ms=_positive_int(
+            values["output_drain_timeout_ms"],
+            "visual_debug_capture.output_drain_timeout_ms",
+        ),
+        candle_pane_height_px=_positive_int(
+            values["candle_pane_height_px"],
+            "visual_debug_capture.candle_pane_height_px",
+        ),
+        volume_pane_height_px=_positive_int(
+            values["volume_pane_height_px"],
+            "visual_debug_capture.volume_pane_height_px",
+        ),
+        metric_pane_height_px=_positive_int(
+            values["metric_pane_height_px"],
+            "visual_debug_capture.metric_pane_height_px",
+        ),
+        pane_gap_px=_positive_int(
+            values["pane_gap_px"],
+            "visual_debug_capture.pane_gap_px",
         ),
     )
 
@@ -1189,26 +1477,88 @@ def _load_watchlist(raw: Any) -> WatchlistConfig:
     )
 
 
-def _load_sessions(raw: Any) -> SessionsConfig:
+def _load_sessions(raw: Any, config_directory: Path) -> SessionsConfig:
     values = _mapping(raw, "sessions")
-    _require_keys(values, {"evaluation_interval_ms", "calendars"}, "sessions")
-    calendars_raw = values["calendars"]
+    _require_keys(
+        values,
+        {
+            "evaluation_interval_ms",
+            "projection_lookback_days",
+            "projection_lookahead_days",
+            "maximum_projection_days",
+            "maximum_calendars_per_request",
+            "projection_retry",
+            "current_state_delivery",
+            "calendar_catalog",
+            "calendar_ids",
+        },
+        "sessions",
+    )
+    catalog_path = config_directory / _non_empty_string(
+        values["calendar_catalog"],
+        "sessions.calendar_catalog",
+    )
+    try:
+        with catalog_path.open("rb") as file:
+            catalog_raw = tomllib.load(file)
+    except FileNotFoundError as exc:
+        raise ValueError(f"session calendar catalog does not exist: {catalog_path}") from exc
+    catalog = _mapping(catalog_raw, "calendar_catalog")
+    _require_keys(
+        catalog,
+        {
+            "schema_version",
+            "catalog_id",
+            "catalog_version",
+            "calendar_engine_version",
+            "sources",
+            "corrections",
+            "calendars",
+        },
+        "calendar_catalog",
+    )
+    if catalog["schema_version"] != 3:
+        raise ValueError(
+            "unsupported calendar_catalog.schema_version: "
+            f"{catalog['schema_version']!r}",
+        )
+    catalog_id = _non_empty_string(catalog["catalog_id"], "calendar_catalog.catalog_id")
+    catalog_version = _positive_int(
+        catalog["catalog_version"],
+        "calendar_catalog.catalog_version",
+    )
+    calendar_engine_version = _non_empty_string(
+        catalog["calendar_engine_version"],
+        "calendar_catalog.calendar_engine_version",
+    )
+    if calendar_engine_version != market_calendars.__version__:
+        raise ValueError(
+            "calendar catalog requires pandas-market-calendars "
+            f"{calendar_engine_version}, installed {market_calendars.__version__}",
+        )
+    sources = _load_calendar_sources(catalog["sources"])
+    sources_by_id = {source.source_id: source for source in sources}
+    corrections = _load_calendar_corrections(catalog["corrections"], sources_by_id)
+    corrections_by_id = {correction.correction_id: correction for correction in corrections}
+    calendars_raw = catalog["calendars"]
     if not isinstance(calendars_raw, list) or not calendars_raw:
-        raise ValueError("sessions.calendars must be a non-empty array")
+        raise ValueError("calendar_catalog.calendars must be a non-empty array")
     calendars: list[SessionCalendarConfig] = []
     seen: set[str] = set()
     for index, item in enumerate(calendars_raw):
-        label = f"sessions.calendars[{index}]"
+        label = f"calendar_catalog.calendars[{index}]"
         calendar = _mapping(item, label)
         _require_keys(
             calendar,
             {
                 "calendar_id",
+                "calendar_engine",
                 "provider_calendar",
-                "timezone",
-                "schedule_version",
+                "schedule_columns",
+                "definition_version",
+                "effective_from",
                 "phases",
-                "overrides",
+                "correction_ids",
             },
             label,
         )
@@ -1217,38 +1567,354 @@ def _load_sessions(raw: Any) -> SessionsConfig:
             raise ValueError(f"duplicate session calendar id: {calendar_id}")
         seen.add(calendar_id)
         phases = _load_session_phases(calendar["phases"], f"{label}.phases")
-        overrides = _load_session_overrides(calendar["overrides"], f"{label}.overrides")
-        phase_names = {phase.name for phase in phases}
-        unknown_override_phases = sorted(
-            {override.phase for override in overrides} - phase_names,
+        correction_ids = _unique_strings(
+            calendar["correction_ids"],
+            f"{label}.correction_ids",
         )
-        if unknown_override_phases:
+        unknown_corrections = sorted(set(correction_ids) - set(corrections_by_id))
+        if unknown_corrections:
             raise ValueError(
-                f"{label}.overrides reference undefined phases: "
-                f"{', '.join(unknown_override_phases)}",
+                f"{label}.correction_ids reference unknown corrections: "
+                f"{', '.join(unknown_corrections)}",
             )
+        selected_corrections = tuple(corrections_by_id[item] for item in correction_ids)
+        calendar_engine = _non_empty_string(
+            calendar["calendar_engine"],
+            f"{label}.calendar_engine",
+        )
+        if calendar_engine != "pandas_market_calendars":
+            raise ValueError(
+                f"{label}.calendar_engine must be 'pandas_market_calendars'",
+            )
+        provider_calendar = _non_empty_string(
+            calendar["provider_calendar"],
+            f"{label}.provider_calendar",
+        )
+        try:
+            provider = market_calendars.get_calendar(provider_calendar)
+        except (KeyError, RuntimeError) as exc:
+            raise ValueError(
+                f"{label}.provider_calendar is unavailable: {provider_calendar}",
+            ) from exc
+        exchange_timezone = str(provider.tz)
+        schedule_columns = _unique_strings(
+            calendar["schedule_columns"],
+            f"{label}.schedule_columns",
+        )
+        if not schedule_columns:
+            raise ValueError(f"{label}.schedule_columns must not be empty")
+        for phase in phases:
+            timezone = exchange_timezone if phase.timezone == "provider" else phase.timezone
+            try:
+                ZoneInfo(timezone)
+            except ZoneInfoNotFoundError as exc:
+                raise ValueError(
+                    f"{label}.phases[{phase.name}].timezone is not an IANA timezone",
+                ) from exc
+            for kind, value, boundary in (
+                (phase.start_kind, phase.start_value, "start"),
+                (phase.end_kind, phase.end_value, "end"),
+            ):
+                if kind == "schedule_boundary" and value not in schedule_columns:
+                    raise ValueError(
+                        f"{label}.phases[{phase.name}].{boundary}_value must be admitted "
+                        "in schedule_columns",
+                    )
+        if schedule_columns[0] != "market_open" or schedule_columns[-1] != "market_close":
+            raise ValueError(
+                f"{label}.schedule_columns must start with market_open and end with market_close",
+            )
+        available_market_times = set(provider.regular_market_times)
+        unknown_schedule_columns = sorted(set(schedule_columns) - available_market_times)
+        if unknown_schedule_columns:
+            raise ValueError(
+                f"{label}.schedule_columns are unavailable from {provider_calendar}: "
+                f"{', '.join(unknown_schedule_columns)}",
+            )
+        if ("break_start" in schedule_columns) != ("break_end" in schedule_columns):
+            raise ValueError(
+                f"{label}.schedule_columns must admit break_start and break_end together",
+            )
+        definition_version = _positive_int(
+            calendar["definition_version"],
+            f"{label}.definition_version",
+        )
+        effective_from_ns = _utc_timestamp_ns(
+            calendar["effective_from"],
+            f"{label}.effective_from",
+        )
+        provider_calendar_class = (
+            f"{provider.__class__.__module__}.{provider.__class__.__qualname__}"
+        )
+        normalized_definition = {
+            "calendar_id": calendar_id,
+            "calendar_engine": calendar_engine,
+            "calendar_engine_version": calendar_engine_version,
+            "provider_calendar": provider_calendar,
+            "provider_calendar_class": provider_calendar_class,
+            "exchange_timezone": exchange_timezone,
+            "schedule_columns": schedule_columns,
+            "definition_version": definition_version,
+            "effective_from_ns": effective_from_ns,
+            "phases": [
+                {
+                    "name": phase.name,
+                    "timezone": phase.timezone,
+                    "start_kind": phase.start_kind,
+                    "start_value": phase.start_value,
+                    "start_day_offset": phase.start_day_offset,
+                    "end_kind": phase.end_kind,
+                    "end_value": phase.end_value,
+                    "end_day_offset": phase.end_day_offset,
+                    "exchange_constraint": phase.exchange_constraint,
+                }
+                for phase in phases
+            ],
+            "corrections": [
+                {
+                    "correction_id": correction.correction_id,
+                    "kind": correction.kind,
+                    "source_id": correction.source_id,
+                    "product_roots": correction.product_roots,
+                    "effective_from_trade_date": correction.effective_from_trade_date,
+                    "timezone": correction.timezone,
+                    "expected_start": correction.expected_start,
+                    "expected_end": correction.expected_end,
+                }
+                for correction in selected_corrections
+            ],
+            "sources": [
+                {
+                    "source_id": source.source_id,
+                    "title": source.title,
+                    "url": source.url,
+                    "retrieved_at_ns": source.retrieved_at_ns,
+                    "content_sha256": source.content_sha256,
+                    "retrieval_status": source.retrieval_status,
+                }
+                for source in sources
+                if source.source_id in {item.source_id for item in selected_corrections}
+            ],
+        }
+        definition_digest = _sha256_digest(normalized_definition)
+        schedule_version = (
+            f"pmc-{calendar_engine_version}:{calendar_id}:"
+            f"v{definition_version}:{definition_digest[:12]}"
+        )
         calendars.append(
             SessionCalendarConfig(
                 calendar_id=calendar_id,
-                provider_calendar=_non_empty_string(
-                    calendar["provider_calendar"],
-                    f"{label}.provider_calendar",
-                ),
-                timezone=_non_empty_string(calendar["timezone"], f"{label}.timezone"),
-                schedule_version=_non_empty_string(
-                    calendar["schedule_version"],
-                    f"{label}.schedule_version",
-                ),
+                calendar_engine=calendar_engine,
+                calendar_engine_version=calendar_engine_version,
+                provider_calendar=provider_calendar,
+                provider_calendar_class=provider_calendar_class,
+                exchange_timezone=exchange_timezone,
+                schedule_columns=schedule_columns,
+                definition_version=definition_version,
+                effective_from_ns=effective_from_ns,
+                definition_digest=definition_digest,
+                schedule_version=schedule_version,
                 phases=phases,
-                overrides=overrides,
+                corrections=selected_corrections,
+                sources=tuple(
+                    source
+                    for source in sources
+                    if source.source_id in {item.source_id for item in selected_corrections}
+                ),
             ),
+        )
+    selected_calendar_ids = _unique_strings(values["calendar_ids"], "sessions.calendar_ids")
+    if not selected_calendar_ids:
+        raise ValueError("sessions.calendar_ids must not be empty")
+    calendars_by_id = {calendar.calendar_id: calendar for calendar in calendars}
+    unknown_selected_calendars = sorted(set(selected_calendar_ids) - set(calendars_by_id))
+    if unknown_selected_calendars:
+        raise ValueError(
+            "sessions.calendar_ids reference unknown catalog calendars: "
+            f"{', '.join(unknown_selected_calendars)}",
+        )
+    selected_calendars = tuple(calendars_by_id[item] for item in selected_calendar_ids)
+    catalog_digest = _sha256_digest(
+        {
+            "catalog_id": catalog_id,
+            "catalog_version": catalog_version,
+            "definitions": [calendar.definition_digest for calendar in calendars],
+        },
+    )
+    projection_lookback_days = _positive_int(
+        values["projection_lookback_days"],
+        "sessions.projection_lookback_days",
+    )
+    projection_lookahead_days = _positive_int(
+        values["projection_lookahead_days"],
+        "sessions.projection_lookahead_days",
+    )
+    maximum_projection_days = _positive_int(
+        values["maximum_projection_days"],
+        "sessions.maximum_projection_days",
+    )
+    requested_projection_days = projection_lookback_days + projection_lookahead_days + 1
+    if requested_projection_days > maximum_projection_days:
+        raise ValueError(
+            "sessions projection lookback and lookahead exceed maximum_projection_days",
+        )
+    maximum_calendars_per_request = _positive_int(
+        values["maximum_calendars_per_request"],
+        "sessions.maximum_calendars_per_request",
+    )
+    if len(selected_calendars) > maximum_calendars_per_request:
+        raise ValueError(
+            "sessions.calendar_ids exceed maximum_calendars_per_request",
+        )
+    retry_values = _mapping(values["projection_retry"], "sessions.projection_retry")
+    _require_keys(
+        retry_values,
+        {
+            "response_timeout_ms",
+            "maximum_attempts",
+            "retry_backoff_ms",
+            "maximum_elapsed_ms",
+        },
+        "sessions.projection_retry",
+    )
+    response_timeout_ms = _positive_int(
+        retry_values["response_timeout_ms"],
+        "sessions.projection_retry.response_timeout_ms",
+    )
+    maximum_attempts = _positive_int(
+        retry_values["maximum_attempts"],
+        "sessions.projection_retry.maximum_attempts",
+    )
+    retry_backoff_ms = _positive_int(
+        retry_values["retry_backoff_ms"],
+        "sessions.projection_retry.retry_backoff_ms",
+    )
+    maximum_elapsed_ms = _positive_int(
+        retry_values["maximum_elapsed_ms"],
+        "sessions.projection_retry.maximum_elapsed_ms",
+    )
+    for value, minimum, maximum, label in (
+        (response_timeout_ms, 100, 60_000, "response_timeout_ms"),
+        (maximum_attempts, 1, 10, "maximum_attempts"),
+        (retry_backoff_ms, 100, 60_000, "retry_backoff_ms"),
+        (maximum_elapsed_ms, 1_000, 600_000, "maximum_elapsed_ms"),
+    ):
+        if not minimum <= value <= maximum:
+            raise ValueError(
+                f"sessions.projection_retry.{label} must be between {minimum} and {maximum}",
+            )
+    if maximum_elapsed_ms < response_timeout_ms:
+        raise ValueError(
+            "sessions.projection_retry.maximum_elapsed_ms must cover response_timeout_ms",
+        )
+    delivery_values = _mapping(
+        values["current_state_delivery"],
+        "sessions.current_state_delivery",
+    )
+    delivery_keys = {
+        "policy_version",
+        "response_timeout_ms",
+        "maximum_attempts",
+        "retry_backoff_ms",
+        "maximum_elapsed_ms",
+        "maximum_buffered_transitions_per_calendar",
+        "maximum_total_buffered_transitions",
+        "boundary_delivery_grace_ms",
+    }
+    _require_keys(
+        delivery_values,
+        delivery_keys,
+        "sessions.current_state_delivery",
+    )
+    delivery_policy_version = _positive_int(
+        delivery_values["policy_version"],
+        "sessions.current_state_delivery.policy_version",
+    )
+    if delivery_policy_version != 1:
+        raise ValueError("sessions.current_state_delivery.policy_version must be 1")
+    delivery_response_timeout_ms = _positive_int(
+        delivery_values["response_timeout_ms"],
+        "sessions.current_state_delivery.response_timeout_ms",
+    )
+    delivery_maximum_attempts = _positive_int(
+        delivery_values["maximum_attempts"],
+        "sessions.current_state_delivery.maximum_attempts",
+    )
+    delivery_retry_backoff_ms = _positive_int(
+        delivery_values["retry_backoff_ms"],
+        "sessions.current_state_delivery.retry_backoff_ms",
+    )
+    delivery_maximum_elapsed_ms = _positive_int(
+        delivery_values["maximum_elapsed_ms"],
+        "sessions.current_state_delivery.maximum_elapsed_ms",
+    )
+    per_calendar_buffer = _positive_int(
+        delivery_values["maximum_buffered_transitions_per_calendar"],
+        "sessions.current_state_delivery.maximum_buffered_transitions_per_calendar",
+    )
+    total_buffer = _positive_int(
+        delivery_values["maximum_total_buffered_transitions"],
+        "sessions.current_state_delivery.maximum_total_buffered_transitions",
+    )
+    boundary_delivery_grace_ms = _positive_int(
+        delivery_values["boundary_delivery_grace_ms"],
+        "sessions.current_state_delivery.boundary_delivery_grace_ms",
+    )
+    for value, minimum, maximum, label in (
+        (delivery_response_timeout_ms, 100, 60_000, "response_timeout_ms"),
+        (delivery_maximum_attempts, 1, 10, "maximum_attempts"),
+        (delivery_retry_backoff_ms, 100, 60_000, "retry_backoff_ms"),
+        (delivery_maximum_elapsed_ms, 1_000, 600_000, "maximum_elapsed_ms"),
+        (per_calendar_buffer, 1, 256, "maximum_buffered_transitions_per_calendar"),
+        (total_buffer, 1, 1_024, "maximum_total_buffered_transitions"),
+        (boundary_delivery_grace_ms, 1, 60_000, "boundary_delivery_grace_ms"),
+    ):
+        if not minimum <= value <= maximum:
+            raise ValueError(
+                "sessions.current_state_delivery."
+                f"{label} must be between {minimum} and {maximum}",
+            )
+    if delivery_maximum_elapsed_ms < delivery_response_timeout_ms:
+        raise ValueError(
+            "sessions.current_state_delivery.maximum_elapsed_ms must cover "
+            "response_timeout_ms",
+        )
+    if total_buffer < per_calendar_buffer:
+        raise ValueError(
+            "sessions.current_state_delivery.maximum_total_buffered_transitions must not be "
+            "below maximum_buffered_transitions_per_calendar",
         )
     return SessionsConfig(
         evaluation_interval_ms=_positive_int(
             values["evaluation_interval_ms"],
             "sessions.evaluation_interval_ms",
         ),
-        calendars=tuple(calendars),
+        projection_lookback_days=projection_lookback_days,
+        projection_lookahead_days=projection_lookahead_days,
+        maximum_projection_days=maximum_projection_days,
+        maximum_calendars_per_request=maximum_calendars_per_request,
+        projection_retry=ProjectionRetryConfig(
+            response_timeout_ms=response_timeout_ms,
+            maximum_attempts=maximum_attempts,
+            retry_backoff_ms=retry_backoff_ms,
+            maximum_elapsed_ms=maximum_elapsed_ms,
+        ),
+        current_state_delivery=CurrentStateDeliveryConfig(
+            policy_version=delivery_policy_version,
+            response_timeout_ms=delivery_response_timeout_ms,
+            maximum_attempts=delivery_maximum_attempts,
+            retry_backoff_ms=delivery_retry_backoff_ms,
+            maximum_elapsed_ms=delivery_maximum_elapsed_ms,
+            maximum_buffered_transitions_per_calendar=per_calendar_buffer,
+            maximum_total_buffered_transitions=total_buffer,
+            boundary_delivery_grace_ms=boundary_delivery_grace_ms,
+        ),
+        catalog_id=catalog_id,
+        catalog_version=catalog_version,
+        catalog_path=catalog_path.resolve(),
+        catalog_digest=catalog_digest,
+        available_calendars=tuple(calendars),
+        calendars=selected_calendars,
     )
 
 
@@ -1260,59 +1926,207 @@ def _load_session_phases(raw: Any, label: str) -> tuple[SessionPhaseConfig, ...]
     for index, item in enumerate(raw):
         item_label = f"{label}[{index}]"
         phase = _mapping(item, item_label)
-        _require_keys(phase, {"name", "start", "end", "start_day_offset"}, item_label)
+        _require_keys(
+            phase,
+            {
+                "name",
+                "timezone",
+                "start_kind",
+                "start_value",
+                "start_day_offset",
+                "end_kind",
+                "end_value",
+                "end_day_offset",
+                "exchange_constraint",
+            },
+            item_label,
+        )
         name = _non_empty_string(phase["name"], f"{item_label}.name").upper()
-        if name == "CLOSED":
-            raise ValueError(f"{item_label}.name cannot use reserved phase CLOSED")
+        if name in {"CLOSED", "BREAK"}:
+            raise ValueError(f"{item_label}.name uses a reserved market state")
         if name in seen:
             raise ValueError(f"duplicate session phase: {name}")
         seen.add(name)
+        timezone = _non_empty_string(phase["timezone"], f"{item_label}.timezone")
+        start_kind = _phase_boundary_kind(phase["start_kind"], f"{item_label}.start_kind")
+        end_kind = _phase_boundary_kind(phase["end_kind"], f"{item_label}.end_kind")
         phases.append(
             SessionPhaseConfig(
                 name=name,
-                start=_clock_time(phase["start"], f"{item_label}.start"),
-                end=_clock_time(phase["end"], f"{item_label}.end"),
+                timezone=timezone,
+                start_kind=start_kind,
+                start_value=_phase_boundary_value(
+                    phase["start_value"],
+                    start_kind,
+                    f"{item_label}.start_value",
+                ),
                 start_day_offset=_small_day_offset(
                     phase["start_day_offset"],
                     f"{item_label}.start_day_offset",
+                ),
+                end_kind=end_kind,
+                end_value=_phase_boundary_value(
+                    phase["end_value"],
+                    end_kind,
+                    f"{item_label}.end_value",
+                ),
+                end_day_offset=_small_day_offset(
+                    phase["end_day_offset"],
+                    f"{item_label}.end_day_offset",
+                ),
+                exchange_constraint=_enum_string(
+                    phase["exchange_constraint"],
+                    {"none", "clip", "omit_if_exchange_closes_before_start"},
+                    f"{item_label}.exchange_constraint",
                 ),
             ),
         )
     return tuple(phases)
 
 
-def _load_session_overrides(raw: Any, label: str) -> tuple[SessionOverrideConfig, ...]:
+def _load_calendar_sources(raw: Any) -> tuple[CalendarSourceConfig, ...]:
     if not isinstance(raw, list):
-        raise ValueError(f"{label} must be an array")
-    overrides: list[SessionOverrideConfig] = []
-    seen: set[tuple[str, str]] = set()
+        raise ValueError("calendar_catalog.sources must be an array")
+    sources: list[CalendarSourceConfig] = []
+    seen: set[str] = set()
     for index, item in enumerate(raw):
-        item_label = f"{label}[{index}]"
-        override = _mapping(item, item_label)
+        label = f"calendar_catalog.sources[{index}]"
+        source = _mapping(item, label)
         _require_keys(
-            override,
-            {"trade_date", "phase", "start", "end", "start_day_offset"},
-            item_label,
+            source,
+            {
+                "source_id",
+                "title",
+                "url",
+                "retrieved_at",
+                "content_sha256",
+                "retrieval_status",
+            },
+            label,
         )
-        trade_date = _iso_date(override["trade_date"], f"{item_label}.trade_date")
-        phase = _non_empty_string(override["phase"], f"{item_label}.phase").upper()
-        identity = (trade_date, phase)
-        if identity in seen:
-            raise ValueError(f"duplicate session override: {trade_date}/{phase}")
-        seen.add(identity)
-        overrides.append(
-            SessionOverrideConfig(
-                trade_date=trade_date,
-                phase=phase,
-                start=_clock_time(override["start"], f"{item_label}.start"),
-                end=_clock_time(override["end"], f"{item_label}.end"),
-                start_day_offset=_small_day_offset(
-                    override["start_day_offset"],
-                    f"{item_label}.start_day_offset",
+        source_id = _non_empty_string(source["source_id"], f"{label}.source_id")
+        if source_id in seen:
+            raise ValueError(f"duplicate calendar source: {source_id}")
+        seen.add(source_id)
+        digest = source["content_sha256"]
+        if digest == "":
+            digest = None
+        if digest is not None and (
+            not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        ):
+            raise ValueError(f"{label}.content_sha256 must be null or lowercase SHA-256")
+        retrieval_status = _non_empty_string(
+            source["retrieval_status"],
+            f"{label}.retrieval_status",
+        ).upper()
+        if retrieval_status not in {"VERIFIED", "HASH_UNAVAILABLE"}:
+            raise ValueError(f"{label}.retrieval_status is unsupported")
+        if retrieval_status == "VERIFIED" and digest is None:
+            raise ValueError(f"{label} VERIFIED source requires content_sha256")
+        sources.append(
+            CalendarSourceConfig(
+                source_id=source_id,
+                title=_non_empty_string(source["title"], f"{label}.title"),
+                url=_non_empty_string(source["url"], f"{label}.url"),
+                retrieved_at_ns=_utc_timestamp_ns(
+                    source["retrieved_at"],
+                    f"{label}.retrieved_at",
+                ),
+                content_sha256=digest,
+                retrieval_status=retrieval_status,
+            ),
+        )
+    return tuple(sources)
+
+
+def _load_calendar_corrections(
+    raw: Any,
+    sources: dict[str, CalendarSourceConfig],
+) -> tuple[CalendarCorrectionConfig, ...]:
+    if not isinstance(raw, list):
+        raise ValueError("calendar_catalog.corrections must be an array")
+    corrections: list[CalendarCorrectionConfig] = []
+    seen: set[str] = set()
+    for index, item in enumerate(raw):
+        label = f"calendar_catalog.corrections[{index}]"
+        correction = _mapping(item, label)
+        _require_keys(
+            correction,
+            {
+                "correction_id",
+                "kind",
+                "source_id",
+                "product_roots",
+                "effective_from_trade_date",
+                "timezone",
+                "expected_start",
+                "expected_end",
+            },
+            label,
+        )
+        correction_id = _non_empty_string(
+            correction["correction_id"],
+            f"{label}.correction_id",
+        )
+        if correction_id in seen:
+            raise ValueError(f"duplicate calendar correction: {correction_id}")
+        seen.add(correction_id)
+        kind = _non_empty_string(correction["kind"], f"{label}.kind")
+        if kind != "remove_regular_break":
+            raise ValueError(f"{label}.kind is unsupported")
+        source_id = _non_empty_string(correction["source_id"], f"{label}.source_id")
+        if source_id not in sources:
+            raise ValueError(f"{label}.source_id references unknown source: {source_id}")
+        timezone = _non_empty_string(correction["timezone"], f"{label}.timezone")
+        try:
+            ZoneInfo(timezone)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError(f"{label}.timezone is not an IANA timezone") from exc
+        corrections.append(
+            CalendarCorrectionConfig(
+                correction_id=correction_id,
+                kind=kind,
+                source_id=source_id,
+                product_roots=_unique_non_empty_strings(
+                    correction["product_roots"],
+                    f"{label}.product_roots",
+                ),
+                effective_from_trade_date=_iso_date(
+                    correction["effective_from_trade_date"],
+                    f"{label}.effective_from_trade_date",
+                ),
+                timezone=timezone,
+                expected_start=_clock_time(
+                    correction["expected_start"],
+                    f"{label}.expected_start",
+                ),
+                expected_end=_clock_time(
+                    correction["expected_end"],
+                    f"{label}.expected_end",
                 ),
             ),
         )
-    return tuple(overrides)
+    return tuple(corrections)
+
+
+def _phase_boundary_kind(value: Any, label: str) -> str:
+    kind = _non_empty_string(value, label)
+    if kind not in {"schedule_boundary", "local_time"}:
+        raise ValueError(f"{label} must be schedule_boundary or local_time")
+    return kind
+
+
+def _enum_string(value: Any, allowed: set[str], label: str) -> str:
+    normalized = _non_empty_string(value, label)
+    if normalized not in allowed:
+        raise ValueError(f"{label} must be one of: {', '.join(sorted(allowed))}")
+    return normalized
+
+
+def _phase_boundary_value(value: Any, kind: str, label: str) -> str:
+    if kind == "local_time":
+        return _clock_time(value, label)
+    return _non_empty_string(value, label)
 
 
 def _load_evidence_health(raw: Any) -> EvidenceHealthConfig:
@@ -1752,6 +2566,18 @@ def _load_entity_definition(raw: Any, *, index: int) -> EntityDefinitionConfig:
     parameter_set_ids = tuple(item.parameter_set_id for item in parameter_sets)
     if len(parameter_set_ids) != len(set(parameter_set_ids)):
         raise ValueError(f"{label} parameter-set IDs must be unique")
+    unavailable_parameter_sets = sorted(
+        {
+            application.parameter_set_id
+            for application in applications
+            if application.parameter_set_id not in set(parameter_set_ids)
+        },
+    )
+    if unavailable_parameter_sets:
+        raise ValueError(
+            f"{label} applications reference unavailable parameter sets: "
+            + ", ".join(unavailable_parameter_sets),
+        )
     market_state = (
         None
         if "market_state" not in values
@@ -1814,6 +2640,7 @@ def _load_entity_application(raw: Any, *, label: str) -> EntityApplicationConfig
         values,
         {
             "application_id",
+            "parameter_set_id",
             "analytical_profile_ids",
             "instrument_ids",
             "instrument_classes",
@@ -1833,6 +2660,10 @@ def _load_entity_application(raw: Any, *, label: str) -> EntityApplicationConfig
         raise ValueError(f"{label} must select instrument IDs or instrument classes")
     return EntityApplicationConfig(
         application_id=_non_empty_string(values["application_id"], f"{label}.application_id"),
+        parameter_set_id=_non_empty_string(
+            values["parameter_set_id"],
+            f"{label}.parameter_set_id",
+        ),
         analytical_profile_ids=_unique_non_empty_strings(
             values["analytical_profile_ids"],
             f"{label}.analytical_profile_ids",
@@ -2494,6 +3325,34 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
         )
     if 86_400 % interval:
         raise ValueError("completed-bar UTC-fixed interval must divide one UTC day exactly")
+    historical_selector = _non_empty_string(
+        completed["historical_selector"],
+        "metrics.session_measurements.completed_bars.historical_selector",
+    )
+    live_selector = _non_empty_string(
+        completed["live_selector"],
+        "metrics.session_measurements.completed_bars.live_selector",
+    )
+    try:
+        historical_interval = BarSpecification.from_str(
+            historical_selector.rsplit("-", maxsplit=1)[0],
+        ).get_interval_ns()
+        live_interval = BarSpecification.from_str(
+            live_selector.rsplit("-", maxsplit=1)[0],
+        ).get_interval_ns()
+    except ValueError as exc:
+        raise ValueError(
+            "completed-bar selectors must be valid Nautilus bar specifications",
+        ) from exc
+    interval_ns = interval * 1_000_000_000
+    if historical_interval != interval_ns:
+        raise ValueError(
+            "completed-bar historical selector interval must equal calculation interval",
+        )
+    if live_interval > interval_ns or interval_ns % live_interval:
+        raise ValueError(
+            "completed-bar live selector interval must divide calculation interval",
+        )
     timestamp_policy = _non_empty_string(
         completed["timestamp_policy"],
         "metrics.session_measurements.completed_bars.timestamp_policy",
@@ -3332,6 +4191,8 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
         probe_values,
         {
             "enabled",
+            "mode",
+            "omit_initial_snapshot_request",
             "actor_ids",
             "instrument_id",
             "selector",
@@ -3374,6 +4235,26 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
     )
     if not actor_ids:
         raise ValueError("historical.probe.actor_ids must be non-empty")
+    mode = _enum_string(
+        probe_values["mode"],
+        {"current_state_gated", "direct"},
+        "historical.probe.mode",
+    )
+    omit_initial_snapshot_request = _bool(
+        probe_values["omit_initial_snapshot_request"],
+        "historical.probe.omit_initial_snapshot_request",
+    )
+    if mode == "current_state_gated" and actor_ids != (
+        "CURRENT-STATE-HISTORICAL-PROBE",
+    ):
+        raise ValueError(
+            "historical.probe.actor_ids must be exactly "
+            "CURRENT-STATE-HISTORICAL-PROBE in current_state_gated mode",
+        )
+    if mode == "direct" and omit_initial_snapshot_request:
+        raise ValueError(
+            "historical.probe.omit_initial_snapshot_request requires current_state_gated mode",
+        )
     return HistoricalConfig(
         maximum_plan_requests=maximum_plan_requests,
         maximum_observations_per_request=maximum_per_request,
@@ -3395,6 +4276,8 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
         ),
         probe=HistoricalProbeConfig(
             enabled=_bool(probe_values["enabled"], "historical.probe.enabled"),
+            mode=mode,
+            omit_initial_snapshot_request=omit_initial_snapshot_request,
             actor_ids=actor_ids,
             instrument_id=instrument_id,
             selector=_non_empty_string(probe_values["selector"], "historical.probe.selector"),
@@ -3575,6 +4458,16 @@ def _small_day_offset(value: Any, label: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or not -7 <= value <= 7:
         raise ValueError(f"{label} must be an integer from -7 through 7")
     return value
+
+
+def _sha256_digest(value: object) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _bool(value: Any, label: str) -> bool:

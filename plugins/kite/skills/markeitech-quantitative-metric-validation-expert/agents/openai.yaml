@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: false
+
+interface:
+  display_name: "Markeitech Quantitative Metric Validation"
+  short_description: "Validate formulas and numerical invariants"
+  default_prompt: "Use $kite:markeitech-quantitative-metric-validation-expert to validate this metric's formula, units, windows, warmup, and numerical behavior."
