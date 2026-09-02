@@ -124,6 +124,18 @@ The V2 project is rooted directly in the repository; no nested project selector 
 [root-promotion plan](docs/roadmap/v2-complete-codebase-migration-plan.md) records the migration and
 its recovery boundaries. `scripts/check-env` is the active setup doctor.
 
+## Making Changes
+
+Every repository change gets a new scoped branch and a GitHub PR, including documentation and
+small fixes. Agents implement and verify the requested scope, commit and push the branch, and
+open the PR for review. **Markeitect approves and owns the merge; green CI is not merge
+permission.** An agent merges only when that specific operation is explicitly delegated.
+
+The integration branch is currently `master`. Do not commit or push changes directly to it,
+enable auto-merge, or force-push. Review fixes stay on the same open PR; a new change after merge
+gets a new branch. See [CONTRIBUTING](CONTRIBUTING.md) and the
+[GitHub workflow](docs/operations/github-workflow.md) for the complete protocol.
+
 ## Documentation
 
 Start with the [documentation map](docs/README.md), then read:

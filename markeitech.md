@@ -138,11 +138,22 @@ statistical validation.
 ## Working Agreement
 
 - Pause and raise architectural concerns when implementation exposes them.
-- Commit the previously approved batch before starting a new change batch.
-- Leave each new batch uncommitted for Markeitect's IDE review.
-- Commit reviewed changes with a detailed message after approval.
+- Every repository change has a new scoped branch and GitHub PR, including documentation and
+  small fixes. Never implement, commit, or push directly on the integration branch (`master`).
+- A request to make a repository change includes scoped commits, pushes, and PR publication for
+  review unless the task explicitly restricts them. PR review replaces the former default of
+  stopping with uncommitted changes; local IDE review remains available when requested.
+- Markeitect approves the current PR head and owns its merge. Agents stop with the PR unmerged
+  unless Markeitect explicitly delegates that exact merge. Passing CI is required, not permission
+  to merge; later commits require renewed approval. No auto-merge or force-push.
+- Keep review fixes on the same open PR. Start a new change on a new branch, and wait for a
+  prerequisite PR to merge before dependent work unless Markeitect approves another arrangement.
 - Keep current status separate from implementation history and future intent.
 - Do not claim validation that has not occurred.
+
+The [GitHub workflow](docs/operations/github-workflow.md) defines the operational protocol and
+supersedes older uncommitted-review instructions. Explicit task restrictions and all architecture,
+connected-run, secret-handling, and destructive-action approval boundaries still apply.
 
 See [`docs/README.md`](docs/README.md) for the documentation authority order and
 navigation map.
