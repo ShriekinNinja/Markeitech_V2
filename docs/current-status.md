@@ -1,6 +1,6 @@
 # Current Status
 
-Last reviewed: 2026-09-01
+Last reviewed: 2026-09-02
 
 This page is the source of truth for current implementation progress. Markeitech V2 is the active
 system. The preserved V1 status is available in
@@ -142,7 +142,8 @@ system. The preserved V1 status is available in
   duplicate/conflict/stale/gap handling. Existing enabled MetricValue publishers and consumers
   remain together on one private legacy v1 wire until a later atomic v2 cutover; there is no dual
   publication.
-- A V3-03 Slice 2 batch is present uncommitted for local review. It corrects canonical completed-bar
+- V3-03 Slice 2 is approved and committed at `eb3995b`, then merged into the stage branch at
+  `e8f49e3`. It corrects canonical completed-bar
   identity by keeping provider/adapter/source-path dimensions in the new public
   `CompletedBarInputIdentity` carried by each lineage entry, not in
   `CompletedBarSeriesIdentity`. It adds a private, disabled multi-series foundation actor and
@@ -163,7 +164,7 @@ system. The preserved V1 status is available in
   No actor is composed or enabled; no tracked profile, provider request/subscription behavior, or
   demand implementation has changed; the existing historical execution port now exposes its
   read-only source identity on each transient batch. No connected acceptance is claimed. Evidence
-  for this uncommitted batch remains disconnected only: the 105-test focused correction set,
+  for this slice remains disconnected only: the 105-test focused correction set,
   including 88 intelligence-contract tests, and all 616 non-PostgreSQL V2 tests pass. The full V2
   Ruff gate is clean, all 31 API-documentation utility tests pass, and the locked API-documentation
   validator selects and documents all 261 registered entries with no missing docstrings.
