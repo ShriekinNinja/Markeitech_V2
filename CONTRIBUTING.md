@@ -15,6 +15,21 @@ Read, in order:
 Markeitect has final product and trading authority. Architecture and implementation decisions are
 discussed before code changes.
 
+## Publishing Identity And Issues
+
+Before opening an authorized issue or PR, confirm whom the agent represents and the publishing
+identity. Agents working for Markeitect (`ShriekinNinja`) use his locally configured Sir Kite
+GitHub App and verify that the resulting author is `sir-kite[bot]`. Other contributors and their
+agents use the contributor's authorized GitHub identity and verify the resulting author; they do
+not need Sir Kite or its credentials. Report an unavailable identity instead of silently switching
+to another account. The [GitHub workflow](docs/operations/github-workflow.md#publishing-identity)
+contains the commands for both routes.
+
+For issue-tracked work, follow **Issue -> PR -> Approve -> Merge**: open or reuse the authorized
+tracking issue with the problem and acceptance criteria, link the implementation PR, and leave
+approval of its current head and merge to Markeitect. An issue alone needs no branch or PR and
+does not authorize implementation. Repository changes follow the branch/PR process below.
+
 ## Branch And PR Workflow
 
 Every repository change, including a documentation edit or small fix, follows this protocol.
@@ -25,9 +40,7 @@ Every repository change, including a documentation edit or small fix, follows th
 3. Implement the authorized scope, update its documentation, and run proportional verification.
 4. Commit the scoped files with a detailed message, push the change branch, and open a detailed
    PR into `master`. Use a draft if unfinished; an implementation-ready handoff includes a PR URL.
-   Contributors and their agents use the contributor's authorized GitHub identity. Markeitect's
-   agents use his locally configured Sir Kite app so `ShriekinNinja` can approve their PRs;
-   other contributors do not need Sir Kite or its credentials. Request `@ShriekinNinja` as reviewer
+   Use the publishing identity above. Request `@ShriekinNinja` as reviewer
    when the PR is ready and verify the request in GitHub. His approval is required for every PR,
    regardless of author; a mention alone does not satisfy the review requirement.
 5. Address requested review fixes through ordinary commits on that same open PR and rerun the

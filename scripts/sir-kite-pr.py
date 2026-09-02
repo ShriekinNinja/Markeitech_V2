@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish a Markeitech PR using a locally configured GitHub App installation.
+"""Publish a Markeitech issue or PR through the local Sir Kite GitHub App.
 
 Uses Python's standard library, curl's verified TLS, and OpenSSL. Credentials stay
 outside Git; tokens travel through stdin, are never printed, and are revoked on exit.
@@ -17,7 +17,16 @@ from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlencode
 
-EXPECTED_PERMISSIONS = {"contents": "read", "metadata": "read", "pull_requests": "write"}
+INSTALLATION_PERMISSIONS = {
+    "contents": "read",
+    "issues": "write",
+    "metadata": "read",
+    "pull_requests": "write",
+}
+TOKEN_PERMISSIONS = {
+    "pr": {"contents": "read", "metadata": "read", "pull_requests": "write"},
+    "issue": {"metadata": "read", "issues": "write"},
+}
 
 
 def load_config(path):
@@ -80,7 +89,7 @@ def request(path, token, method="GET", payload=None):
     headers = (
         f"Authorization: Bearer {token}\nAccept: application/vnd.github+json\n"
         "X-GitHub-Api-Version: 2022-11-28\nContent-Type: application/json\n"
-        "User-Agent: Sir-Kite-PR\n"
+        "User-Agent: Sir-Kite-Publisher\n"
     )
     result = subprocess.run(command, input=headers.encode(), capture_output=True, timeout=40)
     if result.returncode:
@@ -110,8 +119,11 @@ def make_jwt(config):
 
 
 @contextmanager
-def installation_token(config):
-    """Validate app/installation identity, narrow scope, and revoke the issued token."""
+def installation_token(config, *, operation="pr"):
+    """Validate the approved installation and issue/revoke an operation-scoped token."""
+    if operation not in TOKEN_PERMISSIONS:
+        raise ValueError("Unsupported publishing operation")
+    permissions = TOKEN_PERMISSIONS[operation]
     jwt = make_jwt(config)
     app = request("/app", jwt)
     if (app["id"], app["slug"], app["owner"]["login"]) != (
@@ -125,20 +137,20 @@ def installation_token(config):
         installation["app_id"] != config["app_id"]
         or installation["account"]["login"] != config["owner"]
         or installation["repository_selection"] != "selected"
-        or installation["permissions"] != EXPECTED_PERMISSIONS
+        or installation["permissions"] != INSTALLATION_PERMISSIONS
     ):
         raise ValueError("Installation identity or permissions differ from the approved scope")
     result = request(
         f"/app/installations/{config['installation_id']}/access_tokens",
         jwt,
         "POST",
-        {"repository_ids": [config["repository_id"]], "permissions": EXPECTED_PERMISSIONS},
+        {"repository_ids": [config["repository_id"]], "permissions": permissions},
     )
     token = result["token"]
     try:
         repositories = request("/installation/repositories", token)
         if (
-            result["permissions"] != EXPECTED_PERMISSIONS
+            result["permissions"] != permissions
             or repositories["total_count"] != 1
             or [(r["id"], r["full_name"]) for r in repositories["repositories"]]
             != [(config["repository_id"], config["repository"])]
@@ -150,6 +162,19 @@ def installation_token(config):
             request("/installation/token", token, "DELETE")
         except (RuntimeError, subprocess.TimeoutExpired):
             print("Warning: token revocation failed; it expires within one hour.", file=sys.stderr)
+
+
+def publish_issue(config, token, args):
+    """Create one issue with its labels and report its URL before author validation."""
+    payload = {"title": args.title, "body": args.body_file.read_text()}
+    if args.label:
+        payload["labels"] = args.label
+    issue = request(f"/repos/{config['repository']}/issues", token, "POST", payload)
+    # A returned resource must remain discoverable even if a later check fails.
+    print(issue["html_url"], flush=True)
+    if issue["user"]["login"] != config["slug"] + "[bot]":
+        raise ValueError("GitHub returned an unexpected issue author")
+    print(f"Author: {issue['user']['login']}; issue: #{issue['number']}")
 
 
 def publish(config, token, args):
@@ -196,8 +221,14 @@ def main():
             )
         ).expanduser(),
     )
-    parser.add_argument("--verify", action="store_true", help="Verify credentials/scope only")
-    parser.add_argument("--head", help="Published branch; master is the fixed PR base")
+    parser.add_argument(
+        "--verify",
+        action="store_true",
+        help="Verify credentials/scope only; add --issue for issues",
+    )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--head", help="Published branch; master is the fixed PR base")
+    mode.add_argument("--issue", action="store_true", help="Create a new issue instead of a PR")
     parser.add_argument("--title")
     parser.add_argument("--body-file", type=Path)
     parser.add_argument("--label", action="append", default=[])
@@ -205,13 +236,21 @@ def main():
         "--draft", action="store_true", help="Create as draft without a review request"
     )
     args = parser.parse_args()
-    if not args.verify and not all((args.head, args.title, args.body_file)):
-        parser.error("Publishing requires --head, --title, and --body-file")
+    if args.issue and args.draft:
+        parser.error("--draft applies only to PRs")
+    if not args.verify:
+        if not args.title or not args.title.strip() or not args.body_file:
+            parser.error("Publishing requires a non-empty --title and --body-file")
+        if not args.issue and not args.head:
+            parser.error("PR publishing requires --head; use --issue to create an issue")
+    operation = "issue" if args.issue else "pr"
     try:
         config = load_config(args.config)
-        with installation_token(config) as token:
+        with installation_token(config, operation=operation) as token:
             if args.verify:
-                print(f"Verified {config['slug']} on {config['repository']}")
+                print(f"Verified {config['slug']} on {config['repository']} for {operation}")
+            elif args.issue:
+                publish_issue(config, token, args)
             else:
                 publish(config, token, args)
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
