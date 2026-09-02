@@ -14,10 +14,11 @@
 - [x] Do not implement an unresolved architecture decision before consultation and approval.
 - [x] Commit accepted work before beginning the next change batch.
 - [x] Prefer NautilusTrader V2 capabilities when they meet the accepted requirement.
-- [x] Keep V2 isolated from the V1 runtime, configuration, environment, and dependencies.
-- [x] Preserve useful V1 work for reference; do not silently import its design into V2.
-- [x] Treat all previous analytics, indicators, levels, signals, models, and trading assumptions as
-      out of scope. V2 analytics will be designed later from a blank page with Markeitect.
+- [x] Give V2 an isolated runtime, configuration, environment, and dependency boundary during its
+      foundation stage.
+- [x] Admit no earlier implementation or product assumption implicitly into V2.
+- [x] Treat analytics, indicators, levels, signals, models, and trading assumptions as requiring
+      current review and explicit V2 contracts.
 
 ## Proven Foundation
 

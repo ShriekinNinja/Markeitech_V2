@@ -1,7 +1,8 @@
 # Markeitech Agent Entry Point
 
-This repository contains the active Markeitech V2 runtime and preserved V1 source. Markeitect has
-final product, trading, architecture, review, and release authority.
+This repository contains the active Markeitech V2 runtime. The retired predecessor remains
+recoverable through Git history and the recorded migration tags; it is not current source or
+authority. Markeitect has final product, trading, architecture, review, and release authority.
 
 The agent is expected to exercise senior engineering judgment, raise concerns early, and challenge
 unsafe or weak assumptions with evidence. That independence supports Markeitect's decisions; it
@@ -120,8 +121,8 @@ perform another restricted action.
   paid credits, or external quotas with redundant probes when logs or deterministic tests suffice.
 - Never commit secrets, local configuration, `.idea/`, vendor exports, raw market data, runtime
   logs, database dumps, or licensed data.
-- Never delete preserved V1 source, notes, instructions, research, or archives without a separately
-  reviewed migration and recovery point.
+- Do not reintroduce retired source, product semantics, or historical authority without a
+  separately reviewed admission into current V2 contracts.
 - Work with existing user changes. Do not reset, revert, or overwrite unrelated work.
 - Do not update packages, lockfiles, containers, databases, GitHub metadata, or third-party
   services as incidental cleanup.
@@ -140,7 +141,8 @@ change.
   provider subscription and canonical stream.
 - Preserve evidence fidelity, lineage, UTC internal time, explicit contract identity, bounded
   resources, typed contracts, and durable operational audit.
-- Do not reactivate V1 analytics, signals, thresholds, or one-active-instrument assumptions.
+- Analytics, signals, thresholds, and instrument-selection assumptions require explicit current
+  V2 authority and may not be inherited implicitly from retired implementations.
 - No trade-expression instrument is globally preferred. Preserve multiple concurrent
   opportunities and keep evidence instruments distinct from options expressions.
 - Anything reasonably variable must be typed, bounded, versioned configuration and ready for

@@ -11,10 +11,9 @@ product or dependency approval. Refresh versioned or drift-prone sources before 
 | `markeitech.md` | Current charter: live-first, advisory, canonical-boundary separation, UTC, evidence fidelity, projection isolation, typed/versioned configuration | Governs durable product and engineering meaning |
 | `docs/current-status.md` | Current implementation and acceptance ledger, including the local 9D.5D visual-acceptance projection | Passing/offline/current claims remain limited to recorded scope |
 | `docs/development-guidelines.md` | Consumer/projection separation, evidence lineage, operator comparison metadata, and configuration discipline | Does not create new product semantics |
-| `docs/README.md` | Documentation authority order and navigation | Drafts and legacy decisions do not override accepted V2 authority |
+| `docs/README.md` | Documentation authority order and navigation | Drafts and historical records do not override accepted V2 authority |
 | `docs/roadmap/v2-market-events-live-agent-plan.md` | Accepted future Sir Loke sequence and evidence boundaries | Roadmap intent is not implementation proof |
 | `docs/roadmap/v2-stage-9d-entities-rolling-state-plan.md` | Accepted entity/state identities, lifecycle, health/fidelity, visual-acceptance scope, and open acceptance debt | Numerical fixtures are not trading calibration |
-| `docs/operations/analytics-chart.md` | Historical/experimental read-only chart precedent | Point-in-time V1-era operations material does not define the future V2 dashboard |
 | `docs/roadmap/v2-live-dashboard-plan-draft.md` | Detailed 2026-08-24 visualization hypothesis and decision-gate inventory | Explicitly draft: no architecture, dependency, transport, runtime, or delivery choice is approved |
 | Current source, tests, fixtures, and rendered artifacts | Executable evidence for actual payloads and presentation behavior | Inspect per task; a symbol or screenshot alone is not semantic proof |
 

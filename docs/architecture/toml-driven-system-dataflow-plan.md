@@ -66,7 +66,7 @@ Markeitect approved the following decisions on 2026-08-30:
 
 The proposed utility documents the system/data-flow architecture; it is not part of that architecture’s live execution. The implementation must satisfy all of the following as hard boundaries:
 
-- It lives outside `v2/src/markeitech` and outside the preserved V1 package.
+- It lives outside the runtime package and remains an isolated offline repository tool.
 - It is not a Nautilus actor, plugin, projection actor, service, worker, or runtime CLI subcommand.
 - It never imports `markeitech`, `nautilus_trader`, `dotenv`, `psycopg`, HTTP clients, Docker clients, browser/viewer code, or runtime configuration modules.
 - It never constructs or starts a `LiveNode`, data client, actor, worker, timer, subscription, historical request, persistence store, or external projection.
@@ -109,7 +109,10 @@ Relevant accepted architecture, roadmap, operations, source, configuration, and 
 
 Discovery was static and read-only. No runtime module was imported, no test suite or service was run, no `.env` or ignored local profile was opened, no provider or database was contacted, and no dependency was installed. Tracked documents establish accepted intent and status; implementation establishes current code behavior; passing tests establish only their exercised scope; previously recorded connected evidence remains bounded to its named run.
 
-The file `docs/architecture/runtime-data-flow-audit.md` describes obsolete V1-era SQLite/Parquet behavior despite its non-versioned filename. It is historical evidence and must be excluded from automated current-V2 evidence admission. The intentionally absent `docs/architecture/current-system-dataflow.png` is neither tracked nor present in this checkout and was not used.
+The retired runtime data-flow audit described obsolete SQLite/Parquet behavior and was excluded
+from automated current-V2 evidence admission before its removal. The intentionally absent
+`docs/architecture/current-system-dataflow.png` is neither tracked nor present in this checkout and
+was not used.
 
 ## Kite council: selected advisors, questions, and status
 
@@ -693,7 +696,9 @@ tools/system-diagram/
   src/markeitech_system_diagram/
 ```
 
-This project owns only offline parsing, source census, view projection, DOT construction, controlled rendering, artifact publication, and its tests. It must not depend on the root preserved V1 project or `v2` runtime package.
+This project owns only offline parsing, source census, view projection, DOT construction,
+controlled rendering, artifact publication, and its tests. It must not depend on the runtime
+package.
 
 ### Load and normalize
 
@@ -1094,7 +1099,7 @@ The run configuration must operate from repository root and never use `uv run` i
 - persistence mapping required for any claimed durable edge;
 - unsupported AST shapes fail closed;
 - sensitive-path change requires manifest or audited exception;
-- obsolete V1 audit excluded from current evidence.
+- retired runtime audit excluded from current evidence.
 
 ### Offline/security tests
 

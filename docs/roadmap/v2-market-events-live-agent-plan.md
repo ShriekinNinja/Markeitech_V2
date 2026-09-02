@@ -83,8 +83,8 @@ The accepted foundation currently provides:
 
 V2 now has approved deterministic measurements and the Stage 9D typed entity/rolling-state
 foundation through Slice 9D.4C. It does not yet have approved semantic interaction events, options
-intelligence, an ML model, an advisory agent, an opportunity lifecycle, or execution. V1
-analytical/signal models are reference material only.
+intelligence, an ML model, an advisory agent, an opportunity lifecycle, or execution. Retired
+analytical and signal models are neither active nor admissible by default.
 
 ## Target Topology
 
@@ -469,9 +469,9 @@ revisions; notification delivery; and operator feedback.
 Use explicit migrations, schemas, idempotency, transaction boundaries, retention, and boot-time
 schema verification. Required persistence failure must affect health/lifecycle honestly.
 
-Redis is deferred until measured cross-process need. Parquet is not selected merely because V1
-used it. A vector DB may later index research but never becomes evidence truth. LLM transcripts are
-not canonical opportunity records.
+Redis is deferred until measured cross-process need. Parquet is not selected merely because a
+predecessor used it. A vector DB may later index research but never becomes evidence truth. LLM
+transcripts are not canonical opportunity records.
 
 ## Configuration And Optimization
 

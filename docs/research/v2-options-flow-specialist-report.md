@@ -1300,8 +1300,6 @@ publish immutable batches through Nautilus and audit lifecycle after the contrac
   deduplication, readiness, and PostgreSQL boundary.
 - `docs/architecture/v2-session-evidence-health.md` — session truth, evidence-health semantics, and
   failure isolation.
-- `docs/architecture/data-contracts.md` — informative legacy identity/fidelity/event lineage
-  patterns; not used to override V2 authority.
 - `docs/research/market-analysis-specialist-brief.md` — required metric/event rigor and trading-
   domain boundaries.
 - `docs/research/semantic-events-ai-options-baseline.md` — informative event envelope, options-flow

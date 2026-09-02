@@ -653,7 +653,6 @@ Files:
 - `docs/notes/v3-02-session-state-actor-role-review.md`;
 - `docs/notes/v3-03-session-metrics-actor-split-review.md`;
 - `docs/notes/v3-visual-debug-review-contract.md` and handoff only to mark the mission disabled;
-- `docs/roadmap/implementation-history.md` when closure is reviewed; and
 - this plan for exact closure evidence.
 
 Deliver:

@@ -20,9 +20,6 @@ census.
 | `docs/architecture/v2-baseline-metric-contracts.md` | Accepted architecture | Completed-bar prerequisites, health/fidelity, parameter lineage | Numerical measurement is not interpretation |
 | `docs/roadmap/v2-market-specialist-requirements-traceability.md` | Audit aid | Maps specialist needs to stages and evidence | Planned rows are not runtime claims |
 | `docs/research/market-analysis-specialist-brief.md` | Tracked research brief | Metric/entity/event separation and research questions | Informative, not product semantics |
-| `docs/research/trading-frameworks-study.md` | Non-authoritative research | Testable auction/price-action vocabulary and explicit anti-copy boundary | Public educators and secondary reconstructions are hypotheses only |
-| `docs/research/markeitect-model.md` and `docs/research/markeitect-model-plan.md` | Working Markeitect research/examples | Participant-outcome examples, auction locations, retest/reload memory, unresolved questions | Examples calibrate questions; they do not establish universal thresholds or signals |
-| `docs/operations/operator-context-logs.md` | Legacy/operator reference | Fidelity distinctions and required visual-comparison metadata | Older context output does not override V2 Stage 9D contracts |
 
 ## 2. External Market And Research Sources
 

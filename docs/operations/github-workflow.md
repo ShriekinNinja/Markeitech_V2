@@ -49,7 +49,8 @@ merge the reviewed work directly.
 Use merge commits for stage pull requests. Deliberate stage history is useful for auditing
 architecture decisions and live acceptance. Do not squash away that sequence by default.
 
-V1 remains preserved by `v1-runtime-final`; this CI workflow does not reactivate or alter V1.
+Pre-migration source remains recoverable through the annotated migration tags and Git history.
+This CI workflow runs only the current V2 project.
 
 ## Deployment Boundary
 

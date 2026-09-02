@@ -17,8 +17,8 @@ Apply this order without blending categories:
 7. Public skills, public educators, books, secondary explanations, and practitioner conventions as
    research inspiration only.
 
-An older V1 decision, current custom implementation, charting convention, or familiar term cannot
-override accepted V2 authority.
+An older retired decision, current custom implementation, charting convention, or familiar term
+cannot override accepted V2 authority.
 
 ## 2. Evidence Labels
 

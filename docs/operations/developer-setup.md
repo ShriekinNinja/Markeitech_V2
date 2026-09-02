@@ -55,7 +55,9 @@ cd Markeitech
 uv sync --project v2 --locked --dev
 ```
 
-The locked install creates `v2/.venv`. Do not run root `uv sync`; the root project is preserved V1.
+The locked install creates `v2/.venv`. During the accepted two-PR root-promotion transition, the
+runtime project is still nested, so use the explicit `--project v2` command until the promotion PR
+lands.
 
 ### Install The Kite Advisor Plugin
 
