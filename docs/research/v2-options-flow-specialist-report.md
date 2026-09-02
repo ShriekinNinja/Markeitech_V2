@@ -1,7 +1,7 @@
 # Markeitech V2 Options-Flow Specialist Report
 
 - **Research date:** 2026-08-17
-- **Primary evidence:** `v2/data/OptionsFlow.csv`, a manually downloaded BlackBoxStocks options-flow export
+- **Primary evidence:** `data/OptionsFlow.csv`, a manually downloaded BlackBoxStocks options-flow export
 - **Scope:** data-product audit, options-market interpretation, V2 ingestion boundary, deterministic metrics/state/events, evidence joins, delivery gates, and risk review
 - **Status:** specialist recommendation; not implementation approval and not a trading model
 
@@ -66,7 +66,7 @@ The recommended product stance is therefore:
 
 | Property | Measured result |
 |---|---|
-| Path | `v2/data/OptionsFlow.csv` |
+| Path | `data/OptionsFlow.csv` |
 | Size | 2,837,331 bytes (about 2.7 MiB) |
 | SHA-256 | `bde0f66d937967386038589455a84331d098f95c13461909839b7dad15c7dd4e` |
 | Filesystem creation/mtime | 2026-08-17 16:13:54 +0300; this is workstation metadata, not an export timestamp |
@@ -1304,7 +1304,7 @@ publish immutable batches through Nautilus and audit lifecycle after the contrac
   domain boundaries.
 - `docs/research/semantic-events-ai-options-baseline.md` — informative event envelope, options-flow
   ambiguity, persistence, and agent baseline.
-- `v2/data/OptionsFlow.csv` — sole measured market-data artifact; 20,271 rows; SHA-256 above.
+- `data/OptionsFlow.csv` — sole measured market-data artifact; 20,271 rows; SHA-256 above.
 
 ### External primary/official sources
 

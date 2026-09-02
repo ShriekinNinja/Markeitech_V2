@@ -94,7 +94,7 @@ contracts are documented in
 - [ ] Confirm that the active subscription and market-data terms permit internal machine analysis,
       source retention, normalized derivatives, model/agent use, and derived-event projection.
 - [ ] Approve whether original exports may be retained outside Git and PostgreSQL, with explicit
-      access controls and retention. Until then, `v2/data/OptionsFlow.csv` remains ignored local
+      access controls and retention. Until then, `data/OptionsFlow.csv` remains ignored local
       data outside Git.
 - [ ] Capture the export timezone, download timestamp, schema/version identity, and complete active
       BlackBox filter profile with every future artifact.

@@ -32,11 +32,11 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-          cache-dependency-glob: v2/uv.lock
+          cache-dependency-glob: uv.lock
       - name: Install locked V2 environment
-        run: uv sync --project v2 --locked --dev
+        run: uv sync --locked --dev
       - name: Run Ruff
-        run: uv run --project v2 ruff check v2/src v2/tests
+        run: uv run ruff check src tests
 
   offline-tests:
     name: V2 Offline Tests
@@ -53,11 +53,11 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-          cache-dependency-glob: v2/uv.lock
+          cache-dependency-glob: uv.lock
       - name: Install locked V2 environment
-        run: uv sync --project v2 --locked --dev
+        run: uv sync --locked --dev
       - name: Run offline V2 tests
-        run: uv run --project v2 pytest -q v2/tests -m "not postgres"
+        run: uv run pytest -q tests -m "not postgres"
 
   postgres-tests:
     name: V2 PostgreSQL Integration
@@ -90,8 +90,8 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-          cache-dependency-glob: v2/uv.lock
+          cache-dependency-glob: uv.lock
       - name: Install locked V2 environment
-        run: uv sync --project v2 --locked --dev
+        run: uv sync --locked --dev
       - name: Run PostgreSQL integration tests
-        run: uv run --project v2 pytest -q v2/tests -m postgres
+        run: uv run pytest -q tests -m postgres

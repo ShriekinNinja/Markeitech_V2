@@ -13,7 +13,7 @@
 #
 # Values inside disabled sections are schema-required inert placeholders. They are not accepted
 # analytical defaults and must be reviewed before their owning engine is enabled.
-# Never place secrets in this file; local secrets belong in the ignored v2/.env.
+# Never place secrets in this file; local secrets belong in the ignored .env.
 
 schema_version = 23
 

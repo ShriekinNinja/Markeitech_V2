@@ -55,7 +55,7 @@ Before a substantive consultation:
 1. Read `AGENTS.md`, `markeitech.md`, `docs/current-status.md`,
    `docs/development-guidelines.md`, `docs/README.md`, and the accepted architecture, roadmap, and
    operations documents governing the requested persistence boundary.
-2. Inspect the current branch and worktree, `v2/compose.yaml`, `v2/pyproject.toml`, `v2/uv.lock`,
+2. Inspect the current branch and worktree, `compose.yaml`, `pyproject.toml`, `uv.lock`,
    exact migration/schema definitions, persistence code, relevant tests, and captured acceptance
    evidence. Do not infer the running server patch version from an unpinned container tag.
 3. Read [references/evidence-and-sources.md](references/evidence-and-sources.md) and apply its

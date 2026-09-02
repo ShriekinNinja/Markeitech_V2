@@ -25,7 +25,7 @@ limitations = ["Does not prove provider delivery"]
 
 [[profiles]]
 id = "profile.v3"
-config_path = "v2/config/system.v3-es-minimal.toml"
+config_path = "config/system.v3-es-minimal.toml"
 config_schema_version = 18
 status = "tracked_profile"
 limitations = ["Not an ignored operator-local profile"]
@@ -68,7 +68,7 @@ label = "Data Acquisition"
 kind = "markeitech_actor"
 logical_area = "data-acquisition-processing-intelligence-state"
 boundary = "boundary.node"
-implementation_ref = "v2/src/markeitech/system/acquisition.py:DataAcquisitionActor"
+implementation_ref = "src/markeitech/system/acquisition.py:DataAcquisitionActor"
 composition_key = "data_acquisition"
 composition_order = 1
 actor_id = "DATA-ACQUISITION"

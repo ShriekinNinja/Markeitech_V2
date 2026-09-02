@@ -20,7 +20,7 @@ Read only the documents relevant to the task, after the mandatory repository ent
   default at-least-once/idempotent-consumer posture, failure independence, recovery, and resources.
 - `docs/roadmap/v2-stage-9d-entities-rolling-state-plan.md` — bounded projection, revision,
   conflict, publication deferral, staleness, recovery, and actor-isolation contracts.
-- Relevant implementation and tests under `v2/src/markeitech/` and `v2/tests/` — final evidence of
+- Relevant implementation and tests under `src/markeitech/` and `tests/` — final evidence of
   current local behavior where documents lag.
 
 Historical documents must not be promoted to current truth. Use `docs/current-status.md` to resolve

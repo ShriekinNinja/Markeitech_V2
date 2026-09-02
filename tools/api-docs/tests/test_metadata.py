@@ -49,7 +49,7 @@ Returns:
                 AttributeField("docs.hidden", "list", "one", "status_only", 3),
             ),
             object_path="markeitech.fixture.func",
-            source="v2/src/markeitech/fixture.py",
+            source="src/markeitech/fixture.py",
             base_line=10,
         )
 
@@ -81,7 +81,7 @@ Markeitech Metadata:
                 AttributeField("docs.key", "scalar", "one", "public", 1)
             ),
             object_path="markeitech.fixture.func",
-            source="v2/src/markeitech/fixture.py",
+            source="src/markeitech/fixture.py",
             base_line=1,
         )
         self.assertEqual([item.status for item in result.occurrences], ["conflict", "conflict"])
@@ -99,7 +99,7 @@ Markeitech Metadata:
                 AttributeField("docs.key", "scalar", "one", "public", 1)
             ),
             object_path="markeitech.fixture.func",
-            source="v2/src/markeitech/fixture.py",
+            source="src/markeitech/fixture.py",
             base_line=1,
         )
         self.assertEqual(result.occurrences[0].status, "invalid_syntax")
@@ -120,7 +120,7 @@ Markeitech Metadata:
                 AttributeField("docs.items", "list", "one", "public", 3)
             ),
             object_path="markeitech.fixture.Component",
-            source="v2/src/markeitech/fixture.py",
+            source="src/markeitech/fixture.py",
             base_line=1,
         )
         self.assertEqual(
@@ -146,7 +146,7 @@ Markeitech Metadata:
                 AttributeField("docs.hidden", "scalar", "one", "status_only", 1),
             ),
             object_path="markeitech.fixture.Component",
-            source="v2/src/markeitech/fixture.py",
+            source="src/markeitech/fixture.py",
             base_line=1,
         )
 
@@ -170,7 +170,7 @@ Markeitech Metadata:
                 AttributeField("docs.hidden", "scalar", "one", "status_only", 1)
             ),
             object_path="markeitech.fixture.Component",
-            source="v2/src/markeitech/fixture.py",
+            source="src/markeitech/fixture.py",
             base_line=1,
         )
 
@@ -195,7 +195,7 @@ Markeitech Metadata:
                 )
             ),
             object_path="markeitech.fixture.Component",
-            source="v2/src/markeitech/fixture.py",
+            source="src/markeitech/fixture.py",
             base_line=1,
         )
 
@@ -223,7 +223,7 @@ Markeitech Metadata:
                 )
             ),
             object_path="markeitech.fixture.Component",
-            source="v2/src/markeitech/fixture.py",
+            source="src/markeitech/fixture.py",
             base_line=1,
         )
 

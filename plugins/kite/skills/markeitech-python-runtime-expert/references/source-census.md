@@ -10,8 +10,8 @@ can drift. This census records why a source belongs in the workflow, not permane
 | `AGENTS.md`, `markeitech.md`, `docs/current-status.md`, `docs/development-guidelines.md`, `docs/README.md` | commit `c6af7a59f33700f5f1c263f38dc41a835fe59981` | Permissions, evidence bar, current implementation, authority order | Repository authority; refresh in current checkout |
 | `docs/architecture/v2-runtime-control-plane.md` | same commit | Health ownership and lifecycle history | Later accepted documents and status can supersede it |
 | `docs/operations/v2-runtime-resource-telemetry.md` | same commit | Current measurement meanings and resource-policy separation | Correlation is not causation |
-| `v2/pyproject.toml`, `v2/uv.lock` | same commit | Python pin, dependencies, build, tests, lint target | Lockfile does not prove runtime behavior |
-| Relevant `v2/src/markeitech` and `v2/tests` | task-specific | Exact implementation and exercised behavior | Inspect narrowly; tests prove only covered paths |
+| `pyproject.toml`, `uv.lock` | same commit | Python pin, dependencies, build, tests, lint target | Lockfile does not prove runtime behavior |
+| Relevant `src/markeitech` and `tests` | task-specific | Exact implementation and exercised behavior | Inspect narrowly; tests prove only covered paths |
 
 At this snapshot the project declares Python `>=3.13,<3.14` and the lock declares `==3.13.*`.
 Reinspect rather than carrying that fact forward.

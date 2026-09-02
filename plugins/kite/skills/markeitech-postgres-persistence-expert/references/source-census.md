@@ -11,10 +11,10 @@ guardrails, not permanent conclusions.
 | `AGENTS.md`, `markeitech.md`, `docs/current-status.md`, `docs/development-guidelines.md`, `docs/README.md` | commit `f029715ac17801d51012d7603cf4174db036d2c7` | Permissions, evidence bar, present storage boundary, authority order | Refresh in current checkout |
 | `docs/architecture/v2-persistence-boundary-discovery.md` | same commit | Accepted operational-audit ownership and raw-observation exclusion | Initial discovery references older Nautilus RC; current status governs implementation |
 | `docs/operations/v2-postgresql.md` and `docs/roadmap/v2-infrastructure-plan.md` | same commit | Implemented startup/repair/failure behavior and accepted foundation gates | Operations text is not a schema dump or live database measurement |
-| `v2/src/markeitech/system/persistence.py` and `persistence_migrations.py` | same commit | Exact migration, schema verification, transactions, identity collision, reads/writes | Inspect current files and all callers before advising |
-| `v2/tests/system/test_persistence.py` and `test_persistence_postgres.py` | same commit | Exercised record conversion, ordering, idempotency, restart reads, and missing-table recreation | Tests prove only covered fixtures and disposable-database paths |
-| `v2/compose.yaml` | same commit; declares `postgres:17-alpine` | Declared local PostgreSQL major family and volume | Floating tag does not prove running patch version or digest |
-| `v2/uv.lock` | same commit; locks Psycopg `3.3.4` | Exact packaged driver version | Lock does not prove imported version or runtime behavior |
+| `src/markeitech/system/persistence.py` and `persistence_migrations.py` | same commit | Exact migration, schema verification, transactions, identity collision, reads/writes | Inspect current files and all callers before advising |
+| `tests/system/test_persistence.py` and `test_persistence_postgres.py` | same commit | Exercised record conversion, ordering, idempotency, restart reads, and missing-table recreation | Tests prove only covered fixtures and disposable-database paths |
+| `compose.yaml` | same commit; declares `postgres:17-alpine` | Declared local PostgreSQL major family and volume | Floating tag does not prove running patch version or digest |
+| `uv.lock` | same commit; locks Psycopg `3.3.4` | Exact packaged driver version | Lock does not prove imported version or runtime behavior |
 
 At this snapshot, tracked authority says PostgreSQL stores runtime runs, system-health events,
 generic operational events, and compact evidence-recency profiles; raw provider observations and

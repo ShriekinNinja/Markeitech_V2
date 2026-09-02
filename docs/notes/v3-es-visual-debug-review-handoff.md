@@ -22,7 +22,7 @@ covered by offline tests.
 - Disposition: almost acceptable baseline; not final visual acceptance
 - Connected instrument: `ESU6.CME`
 - Runtime: connected Interactive Brokers through installed NautilusTrader `2.0.0rc3`
-- Active local configuration: `v2/config/system.v3-es-minimal.toml`
+- Active local configuration: `config/system.v3-es-minimal.toml`
 
 The rejected `VisualAcceptanceActor` and `LiveEvidenceReviewActor` have been removed from the
 current runtime, configuration schema, source tree, and test suite. Schema 18 rejects their old
@@ -68,7 +68,7 @@ multi-timeframe or historical-only review process.
 
 ### Minimal connected configuration
 
-`v2/config/system.v3-es-minimal.toml` activates only the bounded surface required for the ES review:
+`config/system.v3-es-minimal.toml` activates only the bounded surface required for the ES review:
 
 - `ESU6.CME` as the only watchlist instrument;
 - the shared five-second last-price bar acquisition needed for live aggregation;
@@ -366,19 +366,19 @@ select a redesign until the later multi-series review.
 
 ```bash
 docker compose \
-  --env-file "/Users/markeitect/PycharmProjects/Markeitech/v2/.env" \
-  -f "/Users/markeitect/PycharmProjects/Markeitech/v2/compose.yaml" \
+  --env-file "/Users/markeitect/PycharmProjects/Markeitech/.env" \
+  -f "/Users/markeitect/PycharmProjects/Markeitech/compose.yaml" \
   up -d --wait postgres \
-&& exec "/Users/markeitect/PycharmProjects/Markeitech/v2/.venv/bin/python" \
+&& exec "/Users/markeitect/PycharmProjects/Markeitech/.venv/bin/python" \
   -m markeitech.system.cli \
-  "/Users/markeitect/PycharmProjects/Markeitech/v2/config/system.v3-es-minimal.toml" \
+  "/Users/markeitect/PycharmProjects/Markeitech/config/system.v3-es-minimal.toml" \
   --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB \
   --keep-awake
 ```
 
 Expected output root:
 
-`v2/data/visual-debug-captures/`
+`data/visual-debug-captures/`
 
 The expected success marker is `VISUAL_DEBUG_CAPTURE_OUTPUT_PUBLISHED`, but the output directory and
 shutdown-flushed lifecycle counters are stronger evidence while the file-buffering debt remains.

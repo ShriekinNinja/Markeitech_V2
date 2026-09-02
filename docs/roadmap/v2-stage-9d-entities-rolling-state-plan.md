@@ -1074,7 +1074,7 @@ and historical-dependency evidence satisfy that existing contract. Subsequent bo
 occur only when accepted evidence changes.
 
 Rendering is isolated on a background worker with a bounded queue and writes ignored review
-artifacts under `v2/data/visual-acceptance/`: one static PNG for every configured instrument and
+artifacts under `data/visual-acceptance/`: one static PNG for every configured instrument and
 one-, five-, or fifteen-minute horizon. The PNG renderer uses Plotly with Kaleido in one bounded
 batch, publishes the complete batch atomically, removes the superseded HTML/JavaScript artifacts
 only after successful export, and never opens a browser. Each 1800-by-1000 image contains its own

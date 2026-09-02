@@ -114,7 +114,7 @@ def validate_interpreter(tool_root: Path) -> None:
         raise ApiDocsError("ENVIRONMENT_INVALID: use the locked tools/api-docs interpreter")
     if sys.version_info[:2] != (3, 13):
         raise ApiDocsError("ENVIRONMENT_INVALID: Python 3.13 is required")
-    forbidden = (tool_root.parents[1] / "v2" / "src").resolve()
+    forbidden = (tool_root.parents[1] / "src").resolve()
     for entry in sys.path:
         if not entry:
             continue

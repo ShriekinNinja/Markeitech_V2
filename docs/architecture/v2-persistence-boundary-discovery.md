@@ -3,7 +3,7 @@
 **Status:** Initial Decision Gate 4 accepted on 2026-08-05; operational-audit scope expanded by
 Markeitect on 2026-08-13.
 
-**Scope:** The current V2 runtime and NautilusTrader `2.0.0rc1` installed in `v2/.venv`.
+**Scope:** The current V2 runtime and NautilusTrader `2.0.0rc1` installed in `.venv`.
 This document recommends a boundary. It does not approve or implement a database.
 
 ## Executive Finding

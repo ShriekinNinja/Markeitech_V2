@@ -13,10 +13,7 @@ from markeitech.acquisition import (
     CapabilityFeedRequirement,
     CapabilityHistoricalRequirement,
 )
-from markeitech.intelligence._legacy_metric_value import (
-    LEGACY_METRIC_VALUE_TYPE_NAME,
-    LegacyMetricValue,
-)
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue
 from markeitech.intelligence.metric_messages import (
     MetricFidelity,
     MetricReasonCode,
@@ -32,7 +29,7 @@ type MetricParameterValue = str | int | float | Decimal | bool
 type MetricScalarValue = str | int | float | Decimal | bool
 type MetricKey = tuple[str, int]
 
-METRIC_VALUE_TYPE_NAME = LEGACY_METRIC_VALUE_TYPE_NAME
+METRIC_VALUE_TYPE_NAME = "markeitech.metric.value"
 """Temporary active v1 metric wire name retained until the atomic v2 cutover."""
 
 

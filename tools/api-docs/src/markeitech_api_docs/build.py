@@ -80,7 +80,7 @@ class FixedPaths:
         return cls(
             tool_root=tool_root,
             repository_root=repository_root,
-            source_root=repository_root / "v2" / "src" / "markeitech",
+            source_root=repository_root / "src" / "markeitech",
             config=tool_root / "mkdocs.yml",
             public_surface_registry=tool_root / "schema" / "public-surface.toml",
             attribute_registry=tool_root / "schema" / "attribute-registry.toml",
@@ -118,7 +118,7 @@ def _validate_fixed_paths(paths: FixedPaths) -> None:
     if not _is_within(paths.tool_root, paths.repository_root):
         raise ApiDocsError("PATH_INVALID: tool root is outside the repository")
     _validate_output_path(paths)
-    if paths.source_root.resolve() != (paths.repository_root / "v2/src/markeitech").resolve():
+    if paths.source_root.resolve() != (paths.repository_root / "src/markeitech").resolve():
         raise ApiDocsError("PATH_INVALID: source root is not the fixed V2 package")
     required = (
         paths.source_root,
@@ -245,7 +245,7 @@ def _validate_mkdocs_policy(path: Path) -> None:
         "options",
     }:
         raise ApiDocsError("CONFIG_INVALID: Python handler policy changed")
-    if handler.get("paths") != ["../../v2/src"]:
+    if handler.get("paths") != ["../../src"]:
         raise ApiDocsError("CONFIG_INVALID: Python source path changed")
     options = handler["options"]
     allowed_options = {

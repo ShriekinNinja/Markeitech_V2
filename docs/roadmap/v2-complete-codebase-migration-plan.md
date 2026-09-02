@@ -1,6 +1,6 @@
 # V2 Root Promotion And V1 Retirement Plan
 
-Status: **ACCEPTED — implementation proceeds as two separately reviewed pull requests**
+Status: **IMPLEMENTED — PR 2 merge is the final integration step**
 
 Originally prepared: 2026-08-30
 
@@ -9,6 +9,12 @@ Accepted and revised: 2026-09-02
 Execution baseline: `553ad135` (`Merge pull request #12 from MarkeiTech/v3-03-session-metrics-slice-2`)
 
 PR 1 branch: `v2-root-promotion-v1-retirement`
+
+PR 1: merged as GitHub pull request 13 at `1c430b5`
+
+PR 2 branch: `v2-root-promotion`
+
+PR 2 implementation commit: `b2c5bf4`
 
 Pre-migration recovery tag: `pre-v2-root-promotion-2026-09-02` at `553ad135`
 
@@ -76,7 +82,7 @@ local state.
 
 PR 2 starts only after PR 1 is reviewed and merged. It atomically moves:
 
-| Current path | Final path |
+| Previous path | Final path |
 |---|---|
 | `v2/src/` | `src/` |
 | `v2/tests/` | `tests/` |
@@ -309,10 +315,15 @@ moved.
 
 ### The full migration is complete when
 
-- [ ] PR 1 is reviewed, committed, pushed, merged, and its merge is verified;
-- [ ] PR 2 promotes every V2 project surface to the root and removes the empty `v2/` directory;
-- [ ] all root commands, CI, scripts, tools, plugins, documentation, and generated artifacts agree;
-- [ ] root locked setup, lint, offline tests, documentation validation, and drift checks pass;
+- [x] PR 1 is reviewed, committed, pushed, merged, and its merge is verified;
+- [x] PR 2 promotes every tracked V2 project surface to the root and removes the tracked `v2/`
+      directory;
+- [x] all root commands, CI, scripts, tools, plugins, documentation, and generated artifacts agree;
+- [x] root locked setup, lint, offline tests, documentation validation, and drift checks pass;
 - [ ] local environment and PyCharm cutover is completed separately by the operator;
-- [ ] the active tree contains one V2 runtime and no V1 project surface; and
-- [ ] package rename, ref cleanup, and any future behavior work remain separate decisions.
+- [x] the active tree contains one V2 runtime and no V1 project surface; and
+- [x] package rename, ref cleanup, and any future behavior work remain separate decisions.
+
+The unchecked operator item is intentionally outside Git and does not block the tracked migration.
+It protects ignored secrets, local configuration, data, IDE state, and existing virtual
+environments from automatic movement or deletion.

@@ -38,7 +38,7 @@ Subscribe in phases:
 
 The tracked V3 profile currently enables one explicit instrument, `ESU6.CME`, and one acquisition
 capability, `watchlist_last`. It also makes bounded historical-bar requests. See
-[`v2/config/system.v3-es-minimal.toml`](../../v2/config/system.v3-es-minimal.toml).
+[`config/system.v3-es-minimal.toml`](../../config/system.v3-es-minimal.toml).
 
 | IBKR subscription | Coverage | Markeitech requirement | Published non-professional price |
 | --- | --- | --- | ---: |
@@ -79,7 +79,7 @@ waivers. Do not apply this total to a professional subscriber; professional prod
 differ substantially.
 
 The relevant configured instruments are declared in
-[`v2/config/system.example.toml`](../../v2/config/system.example.toml).
+[`config/system.example.toml`](../../config/system.example.toml).
 
 ### Consolidated Equity Data Requirement
 

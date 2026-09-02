@@ -19,6 +19,12 @@ behavior.
 
 ## Current Snapshot
 
+- The V1 retirement PR is merged, and the active V2 Python project has been promoted from the
+  former nested `v2/` directory to the repository root. Source, tests, configuration templates,
+  Compose, package metadata, the lockfile, CI, operations commands, and static documentation tools
+  now share that root. The `markeitech-v2` distribution name and all product/runtime semantics are
+  unchanged. Ignored secrets, local configuration, data, IDE state, and pre-existing virtual
+  environments remain outside the tracked migration and require deliberate operator selection.
 - The active audit-and-alignment branch upgrades NautilusTrader from `2.0.0rc1` to `2.0.0rc3`.
   RC3 removed the generic Python network helpers and embedded `LiveNode.start()` lifecycle used by
   Markeitech's Discord transport and integration-test harness. Discord now uses one isolated
@@ -181,12 +187,10 @@ behavior.
   six tracked SVG/PNG/DOT/Markdown views plus an artifact index and hashes. It is not imported or
   composed by V2, reads no runtime state or secrets, and changes no runtime behavior. The shared
   PyCharm **Generate Sys Diagram** configuration runs only this locked documentation environment.
-- The 2026-09-02 pre-retirement baseline has one system-diagram drift debt: the static source
-  census rejects `METRIC_VALUE_TYPE_NAME = LEGACY_METRIC_VALUE_TYPE_NAME` in
-  `v2/src/markeitech/intelligence/metrics.py` because canonical contract identities must be literal
-  strings. The migration branch does not change that runtime file or the canonical manifest.
-  Thirty of 31 tool tests pass; the canonical-census test fails for the same reason. Correct this
-  within V3-03 before claiming a clean architecture-drift gate or regenerating topology.
+- The pre-retirement system-diagram census debt is resolved without changing the active metric
+  wire identity: `METRIC_VALUE_TYPE_NAME` now declares the same `markeitech.metric.value` value as
+  a literal string, as required by static architecture reconciliation. Root-promotion validation
+  includes the complete locked diagram-tool test, generation, and drift-check boundary.
 - A separate locked API-documentation utility now statically analyzes the curated V2 Python public
   surface and produces an untracked MkDocs site at `docs/api` plus sanitized metadata and artifact
   indexes. Its
@@ -515,7 +519,7 @@ Stage 9A is complete and accepted at commit `ce9076e`:
 
 The approved V3 canonical-calendar cutover is implemented and connected-accepted for the exact
 tracked V3 ES profile. System
-schema 21 loads `v2/config/market-calendars.toml` schema 3/catalog version 4 as one dedicated
+schema 21 loads `config/market-calendars.toml` schema 3/catalog version 4 as one dedicated
 startup catalog;
 inline definitions, old overrides, and older schemas are rejected. Each system profile selects
 its active `calendar_ids`; available but unused definitions are validated without being

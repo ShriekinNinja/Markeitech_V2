@@ -62,7 +62,7 @@ class PublicationSafetyTest(unittest.TestCase):
     def test_source_mutation_invalidates_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            source = root / "v2" / "src" / "markeitech" / "fixture.py"
+            source = root / "src" / "markeitech" / "fixture.py"
             source.parent.mkdir(parents=True)
             source.write_text("VALUE = 1\n", encoding="utf-8")
             snapshot = SourceSnapshot(
@@ -72,7 +72,7 @@ class PublicationSafetyTest(unittest.TestCase):
                 dirty_state_sha256=None,
                 files=(
                     SourceFileIdentity(
-                        path="v2/src/markeitech/fixture.py",
+                        path="src/markeitech/fixture.py",
                         sha256=sha256_file(source),
                         size_bytes=source.stat().st_size,
                     ),

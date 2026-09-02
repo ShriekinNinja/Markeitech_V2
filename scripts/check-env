@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_FILE="$ROOT_DIR/v2/.env"
-CONFIG_FILE="$ROOT_DIR/v2/config/system.local.toml"
-COMPOSE_FILE="$ROOT_DIR/v2/compose.yaml"
+ENV_FILE="$ROOT_DIR/.env"
+CONFIG_FILE="$ROOT_DIR/config/system.local.toml"
+COMPOSE_FILE="$ROOT_DIR/compose.yaml"
 WITH_IB=false
 
 usage() {
@@ -66,24 +66,24 @@ require_command git
 docker compose version >/dev/null 2>&1 || fail "Docker Compose is unavailable"
 pass "Docker Compose is available"
 
-[[ -f "$ENV_FILE" ]] || fail "missing v2/.env; copy v2/.env.example without overwriting existing files"
-[[ -f "$CONFIG_FILE" ]] || fail "missing v2/config/system.local.toml; copy the tracked example"
+[[ -f "$ENV_FILE" ]] || fail "missing .env; copy .env.example without overwriting existing files"
+[[ -f "$CONFIG_FILE" ]] || fail "missing config/system.local.toml; copy the tracked example"
 pass "local environment and system configuration exist"
 
-git check-ignore -q "$ENV_FILE" || fail "v2/.env is not ignored by Git"
+git check-ignore -q "$ENV_FILE" || fail ".env is not ignored by Git"
 git check-ignore -q "$CONFIG_FILE" || fail "system.local.toml is not ignored by Git"
-git check-ignore -q "$ROOT_DIR/v2/data/OptionsFlow.csv" \
-  || fail "v2/data vendor/runtime files are not protected by Git ignore rules"
-pass "local secrets, machine configuration, and v2/data are protected from Git"
+git check-ignore -q "$ROOT_DIR/data/OptionsFlow.csv" \
+  || fail "data vendor/runtime files are not protected by Git ignore rules"
+pass "local secrets, machine configuration, and data are protected from Git"
 
-[[ -x "$ROOT_DIR/v2/.venv/bin/python" ]] \
-  || fail "locked V2 environment is missing; run uv sync --project v2 --locked --dev"
+[[ -x "$ROOT_DIR/.venv/bin/python" ]] \
+  || fail "locked V2 environment is missing; run uv sync --locked --dev"
 
-python_version="$("$ROOT_DIR/v2/.venv/bin/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+python_version="$("$ROOT_DIR/.venv/bin/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
 [[ "$python_version" == "3.13" ]] || fail "V2 interpreter must be Python 3.13, found $python_version"
 pass "V2 Python $python_version environment exists"
 
-"$ROOT_DIR/v2/.venv/bin/python" - "$ENV_FILE" "$CONFIG_FILE" <<'PY'
+"$ROOT_DIR/.venv/bin/python" - "$ENV_FILE" "$CONFIG_FILE" <<'PY'
 from __future__ import annotations
 
 import os
@@ -107,9 +107,9 @@ dsn = file_values.get("MARKEITECH_POSTGRES_DSN", "")
 webhook = file_values.get("MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK", "")
 
 if not password or password == "change-me":
-    raise SystemExit("FAIL: set a non-placeholder MARKEITECH_POSTGRES_PASSWORD in v2/.env")
+    raise SystemExit("FAIL: set a non-placeholder MARKEITECH_POSTGRES_PASSWORD in .env")
 if not dsn:
-    raise SystemExit("FAIL: MARKEITECH_POSTGRES_DSN is missing from v2/.env")
+    raise SystemExit("FAIL: MARKEITECH_POSTGRES_DSN is missing from .env")
 parsed = urlparse(dsn)
 if parsed.scheme not in {"postgresql", "postgres"}:
     raise SystemExit("FAIL: MARKEITECH_POSTGRES_DSN must be a PostgreSQL URL")
@@ -134,7 +134,7 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config --quiet \
 pass "PostgreSQL Compose model is valid"
 
 if [[ "$WITH_IB" == true ]]; then
-  "$ROOT_DIR/v2/.venv/bin/python" - "$CONFIG_FILE" <<'PY'
+  "$ROOT_DIR/.venv/bin/python" - "$CONFIG_FILE" <<'PY'
 from __future__ import annotations
 
 import socket

@@ -15,9 +15,9 @@ from markeitech.system.node import build_system_node
 from markeitech.system.persistence import OperationalStore
 
 IB_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_IB"
-V2_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_CONFIG_FILE = V2_ROOT / "config/system.local.toml"
-DEFAULT_ENV_FILE = V2_ROOT / ".env"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_CONFIG_FILE = PROJECT_ROOT / "config/system.local.toml"
+DEFAULT_ENV_FILE = PROJECT_ROOT / ".env"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -45,7 +45,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         nargs="?",
         type=Path,
         default=DEFAULT_CONFIG_FILE,
-        help="Path to the local V2 system TOML (default: v2/config/system.local.toml).",
+        help="Path to the local V2 system TOML (default: config/system.local.toml).",
     )
     parser.add_argument(
         "--connect",
@@ -56,7 +56,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--env-file",
         type=Path,
         default=DEFAULT_ENV_FILE,
-        help="Path to the V2 environment file (default: v2/.env).",
+        help="Path to the V2 environment file (default: .env).",
     )
     parser.add_argument(
         "--keep-awake",

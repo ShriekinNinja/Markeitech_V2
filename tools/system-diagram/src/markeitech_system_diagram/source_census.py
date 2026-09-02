@@ -27,16 +27,16 @@ class ContractConstantFact:
 
 @dataclass(frozen=True, slots=True)
 class CensusPolicy:
-    node_path: str = "v2/src/markeitech/system/node.py"
-    composition_path: str = "v2/src/markeitech/system/composition.py"
+    node_path: str = "src/markeitech/system/node.py"
+    composition_path: str = "src/markeitech/system/composition.py"
     contract_paths: tuple[str, ...] = (
-        "v2/src/markeitech/system/messages.py",
-        "v2/src/markeitech/system/resource_contracts.py",
-        "v2/src/markeitech/acquisition/historical_messages.py",
-        "v2/src/markeitech/intelligence/messages.py",
-        "v2/src/markeitech/intelligence/metrics.py",
-        "v2/src/markeitech/intelligence/completed_bars.py",
-        "v2/src/markeitech/intelligence/entities.py",
+        "src/markeitech/system/messages.py",
+        "src/markeitech/system/resource_contracts.py",
+        "src/markeitech/acquisition/historical_messages.py",
+        "src/markeitech/intelligence/messages.py",
+        "src/markeitech/intelligence/metrics.py",
+        "src/markeitech/intelligence/completed_bars.py",
+        "src/markeitech/intelligence/entities.py",
     )
 
 
@@ -111,7 +111,7 @@ def _string_expression(node: ast.expr) -> str | None:
 
 def extract_actor_registrations(
     repository_root: Path,
-    relative_path: str = "v2/src/markeitech/system/composition.py",
+    relative_path: str = "src/markeitech/system/composition.py",
 ) -> tuple[ActorRegistrationFact, ...]:
     tree = _parse_python(repository_root, relative_path)
     facts: list[ActorRegistrationFact] = []
