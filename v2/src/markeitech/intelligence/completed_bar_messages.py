@@ -45,10 +45,6 @@ _COMPLETED_BAR_SERIES_IDENTITY_KEYS = frozenset(
     {
         "instrument_id",
         "venue",
-        "provider_id",
-        "adapter_id",
-        "source_stream_id",
-        "source_selector",
         "canonical_bar_specification",
         "interval_ns",
         "aggregation_policy",
@@ -69,9 +65,20 @@ _COMPLETED_BAR_SERIES_IDENTITY_KEYS = frozenset(
     },
 )
 
+_COMPLETED_BAR_INPUT_IDENTITY_KEYS = frozenset(
+    {
+        "provider_id",
+        "adapter_id",
+        "source_stream_id",
+        "source_selector",
+        "source_schema_id",
+    },
+)
+
 _COMPLETED_BAR_LINEAGE_KEYS = frozenset(
     {
         "source_class",
+        "input_identity",
         "provider_observation_ref",
         "evidence_refs",
         "source_observed_ts_ns",
@@ -132,21 +139,69 @@ class VolumeState(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class CompletedBarSeriesIdentity:
-    """Identify one canonical completed-bar series completely.
+class CompletedBarInputIdentity:
+    """Identify one exact upstream path contributing to a canonical bar.
 
-    The short ``series_id`` is a bounded routing token, not a substitute for
-    this identity. The deterministic digest binds provider, source selector,
-    canonical bar semantics, calendar/profile configuration, and producer
-    schema without actor-local interpretation.
+    Canonical series identity is intentionally independent of the provider path
+    which supplied an observation. Historical one-minute and live five-second
+    inputs therefore converge into one output series while each lineage entry
+    preserves its exact provider, adapter, stream, raw selector, and source
+    schema identity.
+
+    Attributes:
+        provider_id: Bounded provider identity, such as ``IB``.
+        adapter_id: Bounded adapter implementation identity.
+        source_stream_id: Exact upstream stream or request-lane identity.
+        source_selector: Exact raw input selector or native bar type.
+        source_schema_id: Exact schema identity of the upstream observation.
+
+    Raises:
+        ValueError: If an identity is empty, non-ASCII, or exceeds its bound.
     """
 
-    instrument_id: str
-    venue: str
     provider_id: str
     adapter_id: str
     source_stream_id: str
     source_selector: str
+    source_schema_id: str
+
+    def __post_init__(self) -> None:
+        for field in self.__dataclass_fields__:
+            object.__setattr__(self, field, bounded_ascii(getattr(self, field), field))
+
+    def to_dict(self) -> dict[str, str]:
+        """Return the canonical serialization-ready input identity mapping."""
+
+        return {field: getattr(self, field) for field in self.__dataclass_fields__}
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> CompletedBarInputIdentity:
+        """Reconstruct and validate an input identity from canonical data."""
+
+        fields = exact_dict(value, _COMPLETED_BAR_INPUT_IDENTITY_KEYS, cls.__name__)
+        return cls(
+            provider_id=raw_string(fields["provider_id"], "provider_id"),
+            adapter_id=raw_string(fields["adapter_id"], "adapter_id"),
+            source_stream_id=raw_string(fields["source_stream_id"], "source_stream_id"),
+            source_selector=raw_string(fields["source_selector"], "source_selector"),
+            source_schema_id=raw_string(fields["source_schema_id"], "source_schema_id"),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CompletedBarSeriesIdentity:
+    """Identify one canonical completed-bar series completely.
+
+    The short ``series_id`` is a bounded routing token, not a substitute for
+    this identity. The deterministic digest binds canonical output semantics,
+    calendar/profile configuration, and producer schema without actor-local
+    interpretation. Upstream provider paths belong to
+    :class:`CompletedBarInputIdentity` values in lineage and never split this
+    canonical output identity.
+    """
+
+    instrument_id: str
+    venue: str
     canonical_bar_specification: str
     interval_ns: int
     aggregation_policy: str
@@ -169,10 +224,6 @@ class CompletedBarSeriesIdentity:
         for field in (
             "instrument_id",
             "venue",
-            "provider_id",
-            "adapter_id",
-            "source_stream_id",
-            "source_selector",
             "canonical_bar_specification",
             "aggregation_policy",
             "timestamp_policy",
@@ -238,10 +289,6 @@ class CompletedBarSeriesIdentity:
         return cls(
             instrument_id=raw_string(fields["instrument_id"], "instrument_id"),
             venue=raw_string(fields["venue"], "venue"),
-            provider_id=raw_string(fields["provider_id"], "provider_id"),
-            adapter_id=raw_string(fields["adapter_id"], "adapter_id"),
-            source_stream_id=raw_string(fields["source_stream_id"], "source_stream_id"),
-            source_selector=raw_string(fields["source_selector"], "source_selector"),
             canonical_bar_specification=raw_string(
                 fields["canonical_bar_specification"],
                 "canonical_bar_specification",
@@ -296,12 +343,15 @@ class CompletedBarSeriesIdentity:
 class CompletedBarLineageEntry:
     """Preserve one historical or live source path into a canonical bar.
 
-    Source, receive, and normalization times are positive UTC Unix
-    nanoseconds. Correction metadata is an immutable ordered key/value tuple;
-    it records provider facts but never authorizes a canonical revision.
+    ``input_identity`` preserves the exact upstream path without changing the
+    canonical output series identity. Source, receive, and normalization times
+    are positive UTC Unix nanoseconds. Correction metadata is an immutable
+    ordered key/value tuple; it records provider facts but never authorizes a
+    canonical revision.
     """
 
     source_class: Literal["HISTORICAL", "LIVE"]
+    input_identity: CompletedBarInputIdentity
     provider_observation_ref: str
     evidence_refs: tuple[str, ...]
     source_observed_ts_ns: int
@@ -313,6 +363,8 @@ class CompletedBarLineageEntry:
     def __post_init__(self) -> None:
         if self.source_class not in {"HISTORICAL", "LIVE"}:
             raise ValueError("source_class must be HISTORICAL or LIVE")
+        if not isinstance(self.input_identity, CompletedBarInputIdentity):
+            raise ValueError("input_identity must be a CompletedBarInputIdentity")
         if not isinstance(self.provider_observation_ref, str) or not self.provider_observation_ref:
             raise ValueError("provider_observation_ref must be a non-empty string")
         if len(self.provider_observation_ref) > 256:
@@ -358,6 +410,7 @@ class CompletedBarLineageEntry:
 
         return {
             "source_class": self.source_class,
+            "input_identity": self.input_identity.to_dict(),
             "provider_observation_ref": self.provider_observation_ref,
             "evidence_refs": list(self.evidence_refs),
             "source_observed_ts_ns": self.source_observed_ts_ns,
@@ -385,6 +438,7 @@ class CompletedBarLineageEntry:
             )
         return cls(
             source_class=raw_string(fields["source_class"], "source_class"),  # type: ignore[arg-type]
+            input_identity=CompletedBarInputIdentity.from_dict(fields["input_identity"]),
             provider_observation_ref=raw_string(
                 fields["provider_observation_ref"],
                 "provider_observation_ref",

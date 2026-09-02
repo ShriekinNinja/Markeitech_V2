@@ -25,6 +25,11 @@ class RecordingHistoricalPort:
         self.canceled: list[str] = []
         self.fail_submissions = 0
 
+    provider_id = "IB"
+    adapter_id = "nautilus-ib"
+    source_stream_id = "historical-bars"
+    source_schema_id = "nautilus.bar.v1"
+
     def submit(self, request: HistoricalRequest) -> None:
         self.submitted.append(request.request_id)
         if self.fail_submissions > 0:
@@ -120,11 +125,42 @@ def test_completion_fans_out_one_batch_with_independent_readiness() -> None:
 
     update = coordinator.complete("shared", ("a", "b", "c"), now_ns=5)
 
-    assert update.batches == (HistoricalBatch(request, ("a", "b", "c"), 5),)
+    assert update.batches == (
+        HistoricalBatch(
+            request,
+            ("a", "b", "c"),
+            5,
+            "IB",
+            "nautilus-ib",
+            "historical-bars",
+            "nautilus.bar.v1",
+        ),
+    )
     assert tuple((result.dependency.consumer_id, result.state) for result in update.results) == (
         ("metric:a", HistoricalReadinessState.READY),
         ("metric:b", HistoricalReadinessState.DEGRADED),
     )
+
+
+def test_completion_uses_authority_snapshotted_before_request_lifecycle() -> None:
+    port = RecordingHistoricalPort()
+    coordinator = _coordinator(port)
+    request = _request("snapshotted")
+    coordinator.enqueue((request,), now_ns=1)
+    port.provider_id = "MUTATED-AFTER-SUBMISSION"
+    port.adapter_id = "mutated-adapter"
+    port.source_stream_id = "mutated-stream"
+    port.source_schema_id = "mutated.schema.v1"
+
+    update = coordinator.complete("snapshotted", ("a", "b"), now_ns=2)
+
+    batch = update.batches[0]
+    assert (
+        batch.provider_id,
+        batch.adapter_id,
+        batch.source_stream_id,
+        batch.source_schema_id,
+    ) == ("IB", "nautilus-ib", "historical-bars", "nautilus.bar.v1")
 
 
 def test_identical_active_requests_share_provider_call_and_merge_consumers() -> None:

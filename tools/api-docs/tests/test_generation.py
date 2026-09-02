@@ -14,7 +14,7 @@ class GenerationTest(unittest.TestCase):
         first = generate()
         second = generate()
         self.assertEqual(first["artifact_set_sha256"], second["artifact_set_sha256"])
-        self.assertEqual(first["selected"], 260)
+        self.assertEqual(first["selected"], 261)
         self.assertEqual(source.read_bytes(), source_before)
 
         self.assertEqual(paths.output, paths.repository_root / "docs" / "api")
@@ -22,7 +22,7 @@ class GenerationTest(unittest.TestCase):
         index = json.loads((output / "metadata-index.json").read_text(encoding="utf-8"))
         self.assertEqual(index["authority"], "non_authoritative_discovery_only")
         self.assertTrue(index["not_runtime_configuration"])
-        self.assertEqual(index["public_surface"]["selected"], 260)
+        self.assertEqual(index["public_surface"]["selected"], 261)
         self.assertEqual(index["metadata"]["occurrence_count"], 0)
         self.assertEqual(index["architecture_components"]["counts"]["components"], 20)
         self.assertEqual(

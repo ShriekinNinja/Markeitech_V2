@@ -29,10 +29,6 @@ def _series(series_id: str = "es_1m") -> CompletedBarSeriesIdentity:
     return CompletedBarSeriesIdentity(
         instrument_id="ESU6.CME",
         venue="CME",
-        provider_id="IB",
-        adapter_id="nautilus-ib",
-        source_stream_id="watchlist-last-5s",
-        source_selector="ESU6.CME-5-SECOND-LAST-EXTERNAL",
         canonical_bar_specification="ESU6.CME-1-MINUTE-LAST-EXTERNAL",
         interval_ns=60 * SECOND_NS,
         aggregation_policy="contiguous-fixed-interval",
@@ -265,13 +261,17 @@ def test_readiness_seals_immediately_after_every_exact_pair_subscribes() -> None
     barrier = _barrier()
     manifest_digest = _manifest().manifest_digest
 
-    assert barrier.acknowledge(_ack("COMPLETED-BAR-METRICS", manifest_digest)) is (
+    assert barrier.acknowledge(
+        _ack("COMPLETED-BAR-METRICS", manifest_digest), received_at_ns=SECOND_NS + 1
+    ) is (
         _AcknowledgementDisposition.ACCEPTED
     )
     waiting = barrier.evaluate(now_ns=SECOND_NS + 2)
     assert waiting.sealed is False
     assert waiting.demand_series_ids == ()
-    assert barrier.acknowledge(_ack("ROLLING-MEASUREMENTS", manifest_digest)) is (
+    assert barrier.acknowledge(
+        _ack("ROLLING-MEASUREMENTS", manifest_digest), received_at_ns=SECOND_NS + 3
+    ) is (
         _AcknowledgementDisposition.ACCEPTED
     )
     sealed = barrier.evaluate(now_ns=SECOND_NS + 3)
@@ -284,14 +284,18 @@ def test_readiness_seals_immediately_after_every_exact_pair_subscribes() -> None
 def test_readiness_timeout_quarantines_only_missing_and_rejects_late_ack() -> None:
     barrier = _barrier()
     manifest_digest = _manifest().manifest_digest
-    barrier.acknowledge(_ack("COMPLETED-BAR-METRICS", manifest_digest))
+    barrier.acknowledge(
+        _ack("COMPLETED-BAR-METRICS", manifest_digest), received_at_ns=SECOND_NS + 1
+    )
 
     decision = barrier.evaluate(now_ns=SECOND_NS + 5 * SECOND_NS)
 
     assert decision.sealed is True
     assert decision.demand_series_ids == ("es_1m",)
     assert decision.quarantined_pairs == (("ROLLING-MEASUREMENTS", "es_1m"),)
-    assert barrier.acknowledge(_ack("ROLLING-MEASUREMENTS", manifest_digest)) is (
+    assert barrier.acknowledge(
+        _ack("ROLLING-MEASUREMENTS", manifest_digest), received_at_ns=SECOND_NS + 5 * SECOND_NS
+    ) is (
         _AcknowledgementDisposition.LATE_REJECTED
     )
 
@@ -306,6 +310,7 @@ def test_readiness_ack_at_the_exact_deadline_is_late_and_seals_at_deadline() -> 
                 _manifest().manifest_digest,
                 timestamp=SECOND_NS + 5 * SECOND_NS,
             ),
+            received_at_ns=SECOND_NS + 5 * SECOND_NS,
         )
         is _AcknowledgementDisposition.LATE_REJECTED
     )
@@ -316,21 +321,72 @@ def test_readiness_ack_at_the_exact_deadline_is_late_and_seals_at_deadline() -> 
     assert decision.demand_series_ids == ()
 
 
+def test_readiness_timeliness_uses_foundation_receipt_not_consumer_timestamp() -> None:
+    barrier = _barrier()
+    manifest_digest = _manifest().manifest_digest
+    after_deadline_evidence = SECOND_NS + 10 * SECOND_NS
+
+    assert barrier.acknowledge(
+        _ack(
+            "COMPLETED-BAR-METRICS",
+            manifest_digest,
+            timestamp=after_deadline_evidence,
+        ),
+        received_at_ns=SECOND_NS + SECOND_NS,
+    ) is _AcknowledgementDisposition.ACCEPTED
+    assert barrier.acknowledge(
+        _ack(
+            "ROLLING-MEASUREMENTS",
+            manifest_digest,
+            timestamp=after_deadline_evidence,
+        ),
+        received_at_ns=SECOND_NS + 2 * SECOND_NS,
+    ) is _AcknowledgementDisposition.ACCEPTED
+
+    decision = barrier.evaluate(now_ns=SECOND_NS + 2 * SECOND_NS)
+    assert decision.sealed
+    assert decision.sealed_at_ns == SECOND_NS + 2 * SECOND_NS
+    assert decision.demand_series_ids == ("es_1m",)
+
+
+def test_readiness_validator_rejects_mixed_series_population() -> None:
+    mixed = (
+        _StartupConsumerRequirement("COMPLETED-BAR-METRICS", "es_1m", "COMPLETED-BARS-1"),
+        _StartupConsumerRequirement("ROLLING-MEASUREMENTS", "nq_1m", "COMPLETED-BARS-1"),
+    )
+
+    with pytest.raises(ValueError, match="exactly one series"):
+        _StartupReadinessValidator(
+            requirements=mixed,
+            startup_epoch=STARTUP_EPOCH,
+            manifest_digest=_manifest().manifest_digest,
+            started_at_ns=SECOND_NS,
+        )
+
+
 def test_readiness_is_idempotent_and_conflict_quarantines_one_pair() -> None:
     barrier = _barrier()
     manifest_digest = _manifest().manifest_digest
     acknowledgement = _ack("COMPLETED-BAR-METRICS", manifest_digest)
 
-    assert barrier.acknowledge(acknowledgement) is _AcknowledgementDisposition.ACCEPTED
-    assert barrier.acknowledge(acknowledgement) is _AcknowledgementDisposition.DUPLICATE
+    assert barrier.acknowledge(
+        acknowledgement, received_at_ns=SECOND_NS + 1
+    ) is _AcknowledgementDisposition.ACCEPTED
+    assert barrier.acknowledge(
+        acknowledgement, received_at_ns=SECOND_NS + 1
+    ) is _AcknowledgementDisposition.DUPLICATE
     conflicting = _ack(
         "COMPLETED-BAR-METRICS",
         manifest_digest,
         status=_SubscriptionReadinessStatus.REJECTED,
         reason="subscription_rejected",
     )
-    assert barrier.acknowledge(conflicting) is _AcknowledgementDisposition.CONFLICT
-    barrier.acknowledge(_ack("ROLLING-MEASUREMENTS", manifest_digest))
+    assert barrier.acknowledge(
+        conflicting, received_at_ns=SECOND_NS + 1
+    ) is _AcknowledgementDisposition.CONFLICT
+    barrier.acknowledge(
+        _ack("ROLLING-MEASUREMENTS", manifest_digest), received_at_ns=SECOND_NS + 1
+    )
 
     decision = barrier.evaluate(now_ns=SECOND_NS + 2)
 
@@ -349,6 +405,7 @@ def test_zero_subscribed_consumers_produce_no_demand() -> None:
             status=_SubscriptionReadinessStatus.REJECTED,
             reason="manifest_mismatch",
         ),
+        received_at_ns=SECOND_NS + 1,
     )
     barrier.acknowledge(
         _ack(
@@ -357,6 +414,7 @@ def test_zero_subscribed_consumers_produce_no_demand() -> None:
             status=_SubscriptionReadinessStatus.REJECTED,
             reason="series_mismatch",
         ),
+        received_at_ns=SECOND_NS + 1,
     )
 
     decision = barrier.evaluate(now_ns=SECOND_NS + 2)
@@ -369,13 +427,17 @@ def test_zero_subscribed_consumers_produce_no_demand() -> None:
 def test_wrong_epoch_digest_or_unknown_pair_is_rejected_without_mutating_accounting() -> None:
     barrier = _barrier()
     wrong_digest = _ack("COMPLETED-BAR-METRICS", "f" * 64)
-    assert barrier.acknowledge(wrong_digest) is _AcknowledgementDisposition.REJECTED
+    assert barrier.acknowledge(
+        wrong_digest, received_at_ns=SECOND_NS + 1
+    ) is _AcknowledgementDisposition.REJECTED
 
     unknown = replace(
         _ack("COMPLETED-BAR-METRICS", _manifest().manifest_digest),
         consumer_actor_id="UNKNOWN-CONSUMER",
     )
-    assert barrier.acknowledge(unknown) is _AcknowledgementDisposition.REJECTED
+    assert barrier.acknowledge(
+        unknown, received_at_ns=SECOND_NS + 1
+    ) is _AcknowledgementDisposition.REJECTED
     assert barrier.evaluate(now_ns=SECOND_NS + 2).missing_pairs == tuple(
         item.key for item in _requirements()
     )

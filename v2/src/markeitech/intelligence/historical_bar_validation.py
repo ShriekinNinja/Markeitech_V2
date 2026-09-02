@@ -17,6 +17,7 @@ from markeitech.intelligence._contract_validation import (
 )
 from markeitech.intelligence.completed_bar_messages import (
     BarCompletionState,
+    CompletedBarInputIdentity,
     CompletedBarLineageEntry,
     CompletedBarSeriesIdentity,
     VolumeState,
@@ -239,6 +240,7 @@ class _HistoricalValidationRequest:
     request_digest: str
     usage: _HistoricalUsage
     series_identity: CompletedBarSeriesIdentity
+    expected_input_identity: CompletedBarInputIdentity
     requested_start_ns: int
     requested_end_ns: int
     maximum_raw_observations: int
@@ -250,6 +252,8 @@ class _HistoricalValidationRequest:
             raise ValueError("usage must be a _HistoricalUsage")
         if not isinstance(self.series_identity, CompletedBarSeriesIdentity):
             raise ValueError("series_identity must be a CompletedBarSeriesIdentity")
+        if not isinstance(self.expected_input_identity, CompletedBarInputIdentity):
+            raise ValueError("expected_input_identity must be a CompletedBarInputIdentity")
         positive_int64(self.requested_start_ns, "requested_start_ns")
         positive_int64(self.requested_end_ns, "requested_end_ns")
         if self.requested_end_ns <= self.requested_start_ns:
@@ -276,6 +280,7 @@ class _HistoricalValidationRequest:
             "request_id": self.request_id,
             "usage": self.usage.value,
             "series_identity_digest": self.series_identity.identity_digest,
+            "expected_input_identity": self.expected_input_identity.to_dict(),
             "requested_start_ns": self.requested_start_ns,
             "requested_end_ns": self.requested_end_ns,
             "maximum_raw_observations": self.maximum_raw_observations,
@@ -288,6 +293,7 @@ class _HistoricalValidationRequest:
         request_id: str,
         usage: _HistoricalUsage,
         series_identity: CompletedBarSeriesIdentity,
+        expected_input_identity: CompletedBarInputIdentity,
         requested_start_ns: int,
         requested_end_ns: int,
         maximum_raw_observations: int,
@@ -296,6 +302,7 @@ class _HistoricalValidationRequest:
             "request_id": request_id,
             "usage": usage.value,
             "series_identity_digest": series_identity.identity_digest,
+            "expected_input_identity": expected_input_identity.to_dict(),
             "requested_start_ns": requested_start_ns,
             "requested_end_ns": requested_end_ns,
             "maximum_raw_observations": maximum_raw_observations,
@@ -305,6 +312,7 @@ class _HistoricalValidationRequest:
             request_digest=canonical_digest(content),
             usage=usage,
             series_identity=series_identity,
+            expected_input_identity=expected_input_identity,
             requested_start_ns=requested_start_ns,
             requested_end_ns=requested_end_ns,
             maximum_raw_observations=maximum_raw_observations,
@@ -317,6 +325,7 @@ class _HistoricalValidationResult:
     request_digest: str
     usage: _HistoricalUsage
     series_identity: CompletedBarSeriesIdentity
+    expected_input_identity: CompletedBarInputIdentity
     requested_start_ns: int
     requested_end_ns: int
     disposition: _HistoricalValidationDisposition
@@ -340,6 +349,8 @@ class _HistoricalValidationResult:
             raise ValueError("usage must be typed")
         if not isinstance(self.series_identity, CompletedBarSeriesIdentity):
             raise ValueError("series_identity must be typed")
+        if not isinstance(self.expected_input_identity, CompletedBarInputIdentity):
+            raise ValueError("expected_input_identity must be typed")
         positive_int64(self.requested_start_ns, "requested_start_ns")
         positive_int64(self.requested_end_ns, "requested_end_ns")
         if self.requested_end_ns <= self.requested_start_ns:
@@ -465,6 +476,7 @@ class _HistoricalValidationResult:
             "request_digest": self.request_digest,
             "usage": self.usage.value,
             "series_identity": self.series_identity.to_dict(),
+            "expected_input_identity": self.expected_input_identity.to_dict(),
             "requested_start_ns": self.requested_start_ns,
             "requested_end_ns": self.requested_end_ns,
             "disposition": self.disposition.value,
@@ -505,7 +517,11 @@ def _validate_historical_batch(
     rejection_reasons: set[_HistoricalValidationReason] = set()
     prior_start: int | None = None
     for observation in observations:
-        if observation.series_identity != request.series_identity:
+        if observation.series_identity != request.series_identity or any(
+            item.source_class != "HISTORICAL"
+            or item.input_identity != request.expected_input_identity
+            for item in observation.lineage
+        ):
             rejection_reasons.add(_HistoricalValidationReason.IDENTITY_MISMATCH)
         if observation.source_revision != 1:
             rejection_reasons.add(_HistoricalValidationReason.REVISION_REJECTED)
@@ -604,6 +620,7 @@ def _validate_historical_batch(
         request_digest=request.request_digest,
         usage=request.usage,
         series_identity=request.series_identity,
+        expected_input_identity=request.expected_input_identity,
         requested_start_ns=request.requested_start_ns,
         requested_end_ns=request.requested_end_ns,
         disposition=disposition,

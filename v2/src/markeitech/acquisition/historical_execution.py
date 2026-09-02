@@ -36,9 +36,55 @@ class HistoricalReadinessState(StrEnum):
 class HistoricalExecutionPort(Protocol):
     """Provider commands required by the historical execution coordinator."""
 
+    @property
+    def provider_id(self) -> str: ...
+
+    @property
+    def adapter_id(self) -> str: ...
+
+    @property
+    def source_stream_id(self) -> str: ...
+
+    @property
+    def source_schema_id(self) -> str: ...
+
     def submit(self, request: HistoricalRequest) -> None: ...
 
     def cancel(self, request: HistoricalRequest) -> None: ...
+
+
+@dataclass(frozen=True, slots=True)
+class _HistoricalExecutionAuthority:
+    """Freeze the source identity owned by one historical execution port."""
+
+    provider_id: str
+    adapter_id: str
+    source_stream_id: str
+    source_schema_id: str
+
+    @classmethod
+    def from_port(cls, port: HistoricalExecutionPort) -> _HistoricalExecutionAuthority:
+        """Snapshot and validate port authority before any request lifecycle starts."""
+
+        return cls(
+            provider_id=port.provider_id,
+            adapter_id=port.adapter_id,
+            source_stream_id=port.source_stream_id,
+            source_schema_id=port.source_schema_id,
+        )
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "provider_id",
+            "adapter_id",
+            "source_stream_id",
+            "source_schema_id",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _required_text(getattr(self, field_name), field_name),
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,12 +124,39 @@ class HistoricalBatch:
     """Carry one provider response with its request identity and receive time.
 
     ``received_at_ns`` is a UTC Unix nanosecond timestamp. Observations remain
-    native provider objects and are not made durable by this contract.
+    native provider objects and are not made durable by this contract. Provider,
+    adapter, stream, and schema identity are copied from the execution port which
+    actually submitted the request; downstream consumers must not reconstruct or
+    replace that source authority from their own expected configuration.
     """
 
     request: HistoricalRequest
     observations: tuple[object, ...]
     received_at_ns: int
+    provider_id: str
+    adapter_id: str
+    source_stream_id: str
+    source_schema_id: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request, HistoricalRequest):
+            raise ValueError("historical batch request must be typed")
+        if not isinstance(self.observations, tuple):
+            raise ValueError("historical batch observations must be a tuple")
+        if (
+            not isinstance(self.received_at_ns, int)
+            or isinstance(self.received_at_ns, bool)
+            or self.received_at_ns <= 0
+        ):
+            raise ValueError("historical batch receipt must be a positive integer")
+        for value, label in (
+            (self.provider_id, "provider_id"),
+            (self.adapter_id, "adapter_id"),
+            (self.source_stream_id, "source_stream_id"),
+            (self.source_schema_id, "source_schema_id"),
+        ):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"historical batch {label} must be non-empty")
 
     @property
     def observation_count(self) -> int:
@@ -153,6 +226,7 @@ class HistoricalExecutionCoordinator:
         policy: HistoricalExecutionPolicy,
     ) -> None:
         self._port = port
+        self._authority = _HistoricalExecutionAuthority.from_port(port)
         self._policy = policy
         self._pending: dict[str, _PendingRequest] = {}
         self._active: dict[str, _ActiveRequest] = {}
@@ -247,11 +321,20 @@ class HistoricalExecutionCoordinator:
         now_ns: int,
     ) -> HistoricalExecutionUpdate:
         _non_negative_int(now_ns, "now_ns")
-        active = self._active.pop(request_id, None)
+        active = self._active.get(request_id)
         if active is None:
             raise HistoricalExecutionError(f"historical request is not active: {request_id}")
+        batch = HistoricalBatch(
+            active.request,
+            tuple(observations),
+            now_ns,
+            self._authority.provider_id,
+            self._authority.adapter_id,
+            self._authority.source_stream_id,
+            self._authority.source_schema_id,
+        )
+        del self._active[request_id]
         self._terminal.add(request_id)
-        batch = HistoricalBatch(active.request, tuple(observations), now_ns)
         results = tuple(
             self._readiness_result(
                 active.request,

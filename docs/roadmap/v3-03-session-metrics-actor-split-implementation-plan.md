@@ -34,7 +34,7 @@ and approved batch.
 | Producer-manifest representation | Composition derives one immutable `ProducerManifestV1` from validated configuration and canonical catalogs before constructing `LiveNode`; there is no second hand-authored manifest. It contains schema version, configuration epoch/digest, sorted exact bar-series ownership/partition entries, sorted typed metric-producer claim entries, dependencies, activation disposition, and a deterministic manifest digest. Each actor receives only its immutable relevant entries plus the full digest; readiness acknowledgements echo that digest. Validation fails closed before actor construction or provider demand. |
 | Subject identity | Introduce complete completed-bar and metric subject identities before any replacement owner publishes canonical data. An opaque `session_id`, metric ID, or bar specification alone is insufficient. |
 | Startup delivery | All enabled numerical consumers start gated and attempt to subscribe to their exact canonical completed-bar series. Before foundation demand, each participating numerical consumer must acknowledge subscription readiness; a consumer quarantined by the accepted timeout is excluded from the sealed run set. Participating consumers reconstruct and become evidence-ready independently; no required consumer attaches after foundation warmup. Completed-bar snapshots and same-run consumer recovery are deferred. Visual Debug is the explicit passive exception: it is composed and subscribed before publishers but is not in the required readiness set and cannot delay demand. |
-| Readiness acknowledgement | Every required numerical consumer publishes one typed acknowledgement per exact `(consumer_actor_id, series_id)` pair immediately after subscribing and validating the expected series and producer manifest. The acknowledgement carries the startup epoch, consumer actor ID, series ID, manifest digest, subscription status, timestamp, and an explicit reason when rejected. `SUBSCRIBED` means only that bar delivery cannot be missed; metric/evidence readiness remains a later independent state. Visual Debug publishes no readiness acknowledgement. |
+| Readiness acknowledgement | Every required numerical consumer publishes one typed acknowledgement per exact `(consumer_actor_id, series_id)` pair immediately after subscribing and validating the expected series and producer manifest. The acknowledgement carries the startup epoch, consumer actor ID, series ID, manifest digest, subscription status, timestamp, and an explicit reason when rejected. The foundation owner's own clock sampled when the callback is admitted decides timeliness; the consumer timestamp remains evidence only. `SUBSCRIBED` means only that bar delivery cannot be missed; metric/evidence readiness remains a later independent state. Visual Debug publishes no readiness acknowledgement. |
 | Readiness timeout and failure | Set `consumer_readiness_timeout_ms = 5000`. Begin demand immediately when the expected acknowledgements arrive. At timeout, quarantine only missing/rejected consumers for that run and continue the series for acknowledged consumers; if no consumer acknowledged a series, publish no demand for it. Reject late acknowledgements and recover quarantined consumers through a whole-runtime restart in V3-03. |
 | Late-consumer recovery scope | V3-03 may quarantine a consumer which misses the startup barrier and require a whole-runtime restart for recovery; healthy acknowledged consumers continue. This is a deliberate temporary scope limit, not accepted steady-state resilience. A mandatory later capability must let every configured late, failed, or restarted consumer subscribe, buffer live input, reconstruct purpose-specific history through an exact watermark, reconcile, and rejoin without corrupting canonical order. No actor may remain permanently left behind after a recoverable failure. |
 | First historical usage | Classify the 15 completed historical `ESU6.CME` one-minute bars as `canonical_series_bootstrap`. They are the ordered prefix of the same canonical `es_1m` series continued by live bars, so the foundation validates and publishes them once to every acknowledged subscriber. They are not a local bounded calculation. |
@@ -44,12 +44,13 @@ and approved batch.
 | Historical validator envelope | Every immutable result carries request ID/digest and usage, exact series identity, requested UTC bounds, disposition, raw/accepted-unique/duplicate/conflict/gap counts, exact missing or gap intervals, evidence health and fidelity, lineage/evidence references, typed reason codes, and ordered unique bars only for `COMPLETE` or `PARTIAL`. `REJECTED` exposes no usable bars. A requesting owner may calculate from `PARTIAL` only when its own policy permits and must preserve the validator disposition and reasons in its output. |
 | Subscriber routing | Route canonical completed bars through metadata-qualified Nautilus `DataType` values whose stable schema-versioned type name carries exactly one bounded, topic-safe `series_id` metadata value. Publishers, subscribers, and unsubscription use the identical `DataType`. Payload identity must match the route. Do not use `DataType.identifier`, raw message-bus injection, or type-only fan-out as the first contract. |
 | Canonical wire-type names | Accept `markeitech.completed_bar.canonical.v1` for canonical closed-interval bars and `markeitech.metric.value.v2` for the breaking replacement of the incomplete metric-value contract. Encode schema versions in the stable type names and never dual-publish old and new canonical types in one active profile. |
-| Completed-bar public API | Make `CompletedBarV1`, `CompletedBarSeriesIdentity`, `CompletedBarLineageEntry`, `BarCompletionState`, and `VolumeState` public V2 Python APIs because independent actors exchange and interpret them. Give them stable exports, public docstrings, public-surface registry coverage, and compatibility tests. Keep the foundation actor, aggregation buckets, ledgers, deduplication, validation, conversion, and codec mechanics private unless separately reviewed. |
+| Completed-bar public API | Make `CompletedBarV1`, `CompletedBarSeriesIdentity`, `CompletedBarInputIdentity`, `CompletedBarLineageEntry`, `BarCompletionState`, and `VolumeState` public V2 Python APIs because independent actors exchange and interpret them. Give them stable exports, public docstrings, public-surface registry coverage, and compatibility tests. Keep the foundation actor, aggregation buckets, ledgers, deduplication, validation, conversion, and codec mechanics private unless separately reviewed. |
 | Metric public API | Make the v2-schema `MetricValue`, `MetricSubjectIdentity`, `MetricValueKind`, `MetricHealth`, `MetricFidelity`, and typed `MetricReasonCode` public V2 Python APIs because independent actors publish and consume them. Give them stable exports, public docstrings, public-surface registry coverage, and compatibility tests. Keep new formula implementations, rolling-state mechanics, owner actors, and new internal registries private unless separately reviewed. |
 | Canonical payload bounds | Apply the accepted final field-and-bound table to `CompletedBarV1`, its nested public identities/lineage, `MetricValue` v2, and `MetricSubjectIdentity`. Bound `series_id` to 64 safe ASCII characters; other identifiers and enum tokens to 128 ASCII characters; text metric values to 512 Unicode characters; typed reason tuples to 16 entries; total deduplicated evidence references per payload to 256 entries of at most 256 characters; and completed-bar lineage to 64 entries. Use positive signed 64-bit timestamps, sequences, and revisions plus UUID runtime epochs. Missing subintervals cannot exceed the declared constituent count, which is exactly 12 for the first ES one-minute series. Decimal precision remains definition-owned with no float conversion or global truncation. Reject and count an over-bound payload; never truncate it. |
 | MetricRegistry compatibility | Preserve the already-public `MetricRegistry` and its compatible public surface through V3-03. Do not make it private or replace it as an incidental part of the owner split. New producer, owner, or rolling-state registries remain private; any future `MetricRegistry` removal or replacement requires a separate API-migration decision. |
 | Operational API privacy | Keep `ProducerManifestV1` and its producer claims, startup-readiness acknowledgements, historical validator/result envelopes, foundation ledgers/buckets/counters, actor classes, and new internal registries private. They remain typed, bounded, documented internally, and fully tested, but are orchestration mechanics rather than supported extension APIs. |
-| Completed-bar payload identity | Every canonical completed-bar payload carries both its short routing `series_id` and the complete immutable `CompletedBarSeriesIdentity`. The identity includes instrument/venue, provider/source stream, source selector, canonical bar specification, interval, timestamp/completion/aggregation/revision policy, calendar/profile/configuration identity, and canonical producer/schema identity. Consumers validate the route, payload identity, and manifest together; they do not recover meaning from the short ID alone. |
+| Completed-bar payload identity | Every canonical completed-bar payload carries both its short routing `series_id` and the complete immutable `CompletedBarSeriesIdentity`. The canonical identity includes instrument/venue, canonical bar specification, interval, timestamp/completion/aggregation/revision policy, calendar/profile/configuration identity, and canonical producer/schema identity. Provider, adapter, source-stream, selector, and source-schema identity belong only to one exact `CompletedBarInputIdentity` on each lineage entry. Historical and live inputs therefore converge into one canonical output identity without erasing their distinct source paths. Consumers validate the route, payload identity, lineage input identities, and manifest together; they do not recover meaning from the short ID alone. |
+| Live completion grace | `completion_grace_ms` is a private startup-only, typed, versioned foundation policy with default `1000` and inclusive configuration envelope `1..5000`. The immutable cutoff is `interval_end_ns + completion_grace_ms * 1_000_000`. A callback is eligible only when the foundation owner's admission-clock sample is strictly before cutoff; exactly at or after cutoff is late and cannot mutate the interval. A timer firing at or after cutoff seals once and never extends the cutoff or authorizes a revision. |
 | Completed-bar event time | Set `timestamp_policy = "interval_end"`. A canonical bar for `[interval_start_ns, interval_end_ns)` uses `interval_end_ns` as its event time for both historical and live lineage. Source-receive, normalization, and foundation-publication timestamps remain separate fields. Forming bars are never canonically published. |
 | Completed-bar volume truth | Never use numeric zero for unknown volume. Preserve observed zero as `0` with `VolumeState.OBSERVED`; use null with `VolumeState.UNSUPPORTED` when the source cannot supply volume and null with `VolumeState.MISSING` when expected volume is absent. Preserve an observed partial amount only with `VolumeState.PARTIAL`. Price evidence may remain usable, but volume-dependent outputs must retain partial/unavailable truth. |
 | Completed-bar value representation | Publish a versioned custom `CompletedBarV1` payload rather than embedding a native Nautilus `Bar`. Copy prices and available volume exactly from Nautilus fixed-point values without any `float` conversion. Represent volume as `Decimal | None` plus a typed `VolumeState` enum: `OBSERVED`, `MISSING`, `UNSUPPORTED`, or `PARTIAL`. Negative sentinels and free-form reason strings are forbidden. Preserve exact round-trip precision in the reviewed codec before any serialized transport is accepted. |
@@ -559,8 +560,9 @@ health/value, volume, subject-dimension, or revision rules explicitly permit `No
 | Payload | Required fields |
 |---|---|
 | `CompletedBarV1` | `series_id`; complete `series_identity`; `interval_start_ns`; `interval_end_ns`; `run_epoch`; per-series `publication_sequence`; `completion_state`; `expected_constituent_count`; `received_constituent_count`; exact `missing_subintervals`; typed `completion_reasons`; exact `open`, `high`, `low`, `close`; `volume`; `volume_state`; trade-date, exchange-state, product-phase, and state/projection evidence; `published_ts_ns`; ordered `lineage`; `health`; `fidelity`; and evidence references. It contains no `bar_revision`, raw constituent bars, negative sentinel, or free-form reason. |
-| `CompletedBarSeriesIdentity` | Exact instrument/contract and venue; provider, adapter, and source stream; source selector and canonical bar specification; interval, aggregation, timestamp, completion, and revision policies; calendar ID/version/digest/effective epoch; analytical profile ID/version; configuration epoch/digest; canonical producer ID; output schema version; and derived stable `series_id`. |
-| `CompletedBarLineageEntry` | Typed `HISTORICAL` or `LIVE` source class; provider observation and evidence references; source-observed, source-received, and normalized UTC nanoseconds; transformation chain; and source correction metadata. |
+| `CompletedBarSeriesIdentity` | Exact instrument/contract and venue; canonical bar specification; interval, aggregation, timestamp, completion, and revision policies; calendar ID/version/digest/effective epoch; analytical profile ID/version; configuration epoch/digest; canonical producer ID; output schema version; and derived stable `series_id`. It contains no provider, adapter, source-stream, or source-selector dimension. |
+| `CompletedBarInputIdentity` | Exact provider ID, adapter ID, source-stream ID, source selector, and source schema ID for one upstream path. Historical request validation binds its expected input identity separately from the canonical output identity; live configuration maps its exact input identity and `BarType` to that output. |
+| `CompletedBarLineageEntry` | Typed `HISTORICAL` or `LIVE` source class; exactly one complete `input_identity`; provider observation and evidence references; source-observed, source-received, and normalized UTC nanoseconds; transformation chain; and source correction metadata. |
 | `MetricValue` v2 | Complete `subject`; `kind`; typed `value`; definition-owned `unit_id`; `effective_ts_ns`; `observed_ts_ns`; `received_ts_ns`; `calculated_ts_ns`; `published_ts_ns`; `health`; `fidelity`; ordered typed `reasons`; evidence references; `run_epoch`; positive `revision`; and nullable `previous_revision` only for revision 1. |
 | `MetricSubjectIdentity` | Metric ID and definition version; parameter version, effective time, and parameter/configuration epoch; exact instrument and input completed-bar series; calendar-definition identity; analytical profile ID/version; applicable session/trade-date, window, rolling-family, candidate, timeframe, horizon, and baseline-policy dimensions; output schema version; and canonical producer ID. Inapplicable dimensions are explicitly absent rather than encoded into an opaque ID. |
 
@@ -753,8 +755,10 @@ are not derived from the 16-bar retention value or the 15-history/five-live coho
 ### CompletedBarFoundationActor
 
 Use native `DataActor` lifecycle, `on_bar`, `Bar`/`BarType`, typed `CustomData`, data
-publish/subscribe, actor clock timers/alerts, and the existing subscription port. Reuse
-`CompletedBarLedger` and `aggregate_completed_bars` after strengthening their identity model.
+publish/subscribe, actor clock timers/alerts, and the existing subscription port. The legacy
+`CompletedBarLedger` and `aggregate_completed_bars` operate on the incomplete pre-v3 input model;
+Slice 2 therefore keeps them dormant and uses private canonical-v1-aware buckets, convergence, and
+admission state rather than treating compatibility helpers as canonical authority.
 
 The actor:
 
@@ -763,20 +767,28 @@ The actor:
 - maintains independent ledger, aggregation, health, failure, counter, and publication state per
   series;
 - attaches only to configured native series and publishes only configured canonical series;
+- parses canonical, live, and historical `BarType` values and fails before actor construction when
+  their instrument, interval, native-client authority, or immutable execution-port authority
+  snapshot contradicts the complete series and request;
 - constructs and retains one metadata-qualified `DataType` per owned canonical series and uses
   the identical value for publication and shutdown accounting;
 - waits for exact-series consumer readiness before declaring live or historical demand and
   releases owned logical demand through the accepted acquisition boundary;
 - consumes only `canonical_series_bootstrap` historical batches mapped to an owned series without
   owning provider execution;
-- consumes immutable calendar projections and V3-02 current-state delivery without evaluating
-  mcal;
+- owns bounded correlated projection and V3-02 current-state request cycles, admits only exact
+  requester/request/source/run/calendar/coverage/policy identity, reconciles revision gaps through
+  a new bounded snapshot cycle, preserves refresh intent arriving during one outstanding
+  projection request, and never evaluates mcal;
 - interprets provider timestamps under the exact configured policy;
 - closes each configured interval once, publishes `COMPLETE` from the full valid constituent set,
   publishes final `PARTIAL` OHLCV from one or more valid constituents with exact missingness, and
   publishes no bar when no valid constituent exists;
 - bounds per-series and aggregate partial buckets, ledgers, callbacks, timers, and publication
   work;
+- rejects off-grid five-second constituents before bucket mutation, validates a publication batch
+  before committing sequence or retention, and treats delivery-only evidence as mergeable rather
+  than market-content conflict authority;
 - publishes explicit per-series health and shutdown accounting; and
 - rejects callbacks, messages, timer rearming, and publication after `STOPPING`.
 
@@ -1016,8 +1028,8 @@ the current slice uncommitted for Markeitect's IDE review.
 - Add canonical bar and MetricValue v2 wire contracts with enforced degraded-value/non-value
   invariants.
 - Export and document the accepted public completed-bar contracts only: `CompletedBarV1`,
-  `CompletedBarSeriesIdentity`, `CompletedBarLineageEntry`, `BarCompletionState`, and
-  `VolumeState`; keep foundation mechanics private.
+  `CompletedBarSeriesIdentity`, `CompletedBarInputIdentity`, `CompletedBarLineageEntry`,
+  `BarCompletionState`, and `VolumeState`; keep foundation mechanics private.
 - Export and document the accepted public metric contracts: v2-schema `MetricValue`,
   `MetricSubjectIdentity`, `MetricValueKind`, `MetricHealth`, `MetricFidelity`, and
   `MetricReasonCode`; keep new calculation and owner mechanics private.
@@ -1052,19 +1064,30 @@ atomic v2 runtime-wire cutover occurs; old and new types are never dual-publishe
 - Start with one bounded multi-series instance and independently isolated per-series state.
 - Implement the first `ESU6.CME` path as five-second live input to one-minute canonical output;
   keep unreviewed five-minute, fifteen-minute, hourly, and other coarser outputs disabled.
-- Reuse native bar callbacks, typed data, clock, existing subscription port, ledger, and
-  aggregation functions.
-- Consume V3-02 current state plus bounded immutable calendar projections.
+- Close each minute under the versioned private `completion_grace_ms = 1000` default and strict
+  pre-cutoff callback rule; timer lateness never extends eligibility or revises a sealed bar.
+- Reuse native bar callbacks, typed data, clock, and the existing subscription port; keep the
+  legacy input ledger/aggregation helpers dormant and use private canonical-v1-aware state.
+- Request and consume V3-02 current state plus bounded immutable calendar projections through the
+  accepted correlated delivery/retry protocols; resynchronize transition revision gaps.
 - Wait for exact-series consumer readiness before declaring demand.
 - Canonicalize only manifest-admitted live inputs and `canonical_series_bootstrap` history.
+- Bind parsed canonical/live/historical `BarType` identity to the native live client and an
+  immutable snapshot taken from the actual historical execution port before actor construction or
+  demand; retain the same snapshot as batch source authority and reject every contradiction.
 - Reject `bounded_batch_calculation` and unrelated historical inputs.
 - Publish canonical bars once with per-series health and shutdown counters in disconnected
   fixtures only.
 - Enforce the accepted 16-bar recent ledger, one-bar overlap, two-completed-bar pending-live
   buffer, reject-revision, duplicate-drop, conflict-stop, and stale-reject policies.
 - Prove history-first/live-first overlap, partial aggregation, gaps, duplicates, conflicts,
-  timestamp policies, calendar-definition mismatch, projection refresh, consumer-readiness
-  timeout, series isolation, per-series and aggregate overflow, and terminal stop behavior.
+  timestamp policies, calendar-definition mismatch, projection refresh, delivery-only evidence
+  merge, consumer-readiness timeout, calendar delivery timeout/retry/revision-gap reconciliation,
+  five-second grid rejection, atomic publication, series isolation, per-series and aggregate
+  overflow, and terminal stop behavior.
+- Prove one-outstanding-request projection refresh: a transition during `WAITING` produces no
+  duplicate publication, retains refresh intent, and starts exactly one new correlated generation
+  after the in-flight response completes.
 - Reproduce the pinned-rc3 routing fixture: publication for metadata-qualified series `A` reaches
   subscriber `A` exactly once, reaches subscriber `B` zero times, and reaches a metadata-free
   type-only subscriber zero times; reject any route/payload series mismatch.
@@ -1392,21 +1415,34 @@ Stop and return to Markeitect before implementation or continuation if:
 - [x] Markeitect accepted the V3-03 planning decisions on 2026-09-01.
 - [ ] Complete bar/metric subject identity is implemented and reviewed.
 - [ ] Global producer/partition uniqueness fails closed before runtime construction.
-- [ ] One bounded multi-series foundation instance passes per-series isolation and aggregate-bound
+- [x] One bounded multi-series foundation instance passes per-series isolation and aggregate-bound
   tests for the exact first ES scope.
-- [ ] The first ES foundation series is exactly five-second live input to one-minute canonical
+- [x] The first ES foundation series is exactly five-second live input to one-minute canonical
   output with the accepted 16-series instance and 64-series total ceilings.
-- [ ] Its acceptance cohort contains exactly 15 historical plus five newly completed live
+- [x] Its acceptance cohort contains exactly 15 historical plus five newly completed live
   `COMPLETE` bars, producing 20 unique contiguous one-minute publications with no forming bar.
-- [ ] Its 16-bar retention, one-bar overlap, two-completed-bar pending-live buffer,
+- [x] Its 16-bar retention, one-bar overlap, two-completed-bar pending-live buffer,
   reject-revision, duplicate-drop, conflict-stop, and stale-reject policies pass.
+- [x] Canonical and input routes are parsed and bound to exact instrument, interval, native live
+  client, and an immutable snapshot of the actual execution-port historical authority before
+  actor construction or demand; provider, adapter, stream, and schema contradictions fail closed.
+- [x] Projection and V3-02 current-state delivery use owned bounded request cycles, reject stale or
+  unrelated responses, preserve refresh intent without republishing an in-flight request, retry
+  within policy, and resynchronize transition revision gaps.
+- [x] Off-grid constituents are rejected before mutation, multi-candidate publication is atomic,
+  and compatible overlap merges delivery-only evidence under public bar equivalence.
+- [x] Deterministic pinned-rc3 lifecycle coverage drives native `Bar` values through production
+  `on_bar` using `Clock.new_test`, fires the actual scheduled cutoff callback at the exact cutoff,
+  proves strict pre/exact-cutoff behavior before and after timer firing, and proves
+  subscribe-before-ack, exact unsubscribe/release symmetry, absorbing stop, and shutdown
+  accounting.
 - [ ] Required numerical exact-series consumers subscribe and acknowledge readiness before
   foundation demand; passive Visual Debug subscribes first without joining the required set.
-- [ ] The five-second readiness timeout quarantines only missing consumers, continues for the
+- [x] The five-second readiness timeout quarantines only missing consumers, continues for the
   acknowledged set, emits no zero-consumer demand, and rejects late acknowledgements.
-- [ ] Historical requirements use `canonical_series_bootstrap` or
+- [x] Historical requirements use `canonical_series_bootstrap` or
   `bounded_batch_calculation`, with no historical-only canonical leak.
-- [ ] The pure historical validator returns the accepted immutable envelope and never exposes
+- [x] The pure historical validator returns the accepted immutable envelope and never exposes
   usable observations on `REJECTED` or silently upgrades `PARTIAL` evidence.
 - [ ] Foundation is the only writer for every enabled canonical bar series.
 - [ ] Each numerical owner passes independently.
@@ -1416,12 +1452,12 @@ Stop and return to Markeitect before implementation or continuation if:
 - [ ] Visual Debug is migrated to canonical v1/v2 inputs, remains passive and non-gating, and
   passes capture-on/off non-interference plus bounded artifact review; Entity Analysis remains
   disabled and separately gated.
-- [ ] Focused and full disconnected verification pass.
+- [x] Focused and full disconnected verification pass.
 - [ ] Architecture manifest and generated artifacts agree and are visually inspected.
-- [ ] Public API documentation gates pass for intentional surface changes.
-- [ ] No connected or destructive action occurs without exact authorization.
+- [x] Public API documentation gates pass for intentional surface changes.
+- [x] No connected or destructive action occurs without exact authorization.
 - [ ] Connected evidence, if authorized, is stated only to its observed scope.
-- [ ] Final diff is clean, reviewable, and uncommitted for Markeitect.
+- [x] Final diff is clean, reviewable, and uncommitted for Markeitect.
 
 ## Kite Advisory Basis
 

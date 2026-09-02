@@ -372,7 +372,6 @@ class _StartupConsumerRequirement:
     def key(self) -> tuple[str, str]:
         return (self.consumer_actor_id, self.series_id)
 
-
 @dataclass(frozen=True, slots=True)
 class _SubscriptionReadinessAcknowledgement:
     startup_epoch: UUID
@@ -405,6 +404,14 @@ class _SubscriptionReadinessAcknowledgement:
     def key(self) -> tuple[str, str]:
         return (self.consumer_actor_id, self.series_id)
 
+    @property
+    def ts_event(self) -> int:
+        return self.acknowledged_ts_ns
+
+    @property
+    def ts_init(self) -> int:
+        return self.acknowledged_ts_ns
+
 
 @dataclass(frozen=True, slots=True)
 class _StartupReadinessDecision:
@@ -417,7 +424,13 @@ class _StartupReadinessDecision:
 
 
 class _StartupReadinessValidator:
-    """Pure bounded acknowledgement barrier with deterministic sealing."""
+    """Pure single-series acknowledgement barrier with deterministic sealing.
+
+    One foundation actor owns one validator per exact series so a slow or
+    rejected consumer on one series cannot delay another. Runtime timeliness is
+    decided from the foundation owner's receipt clock supplied to
+    :meth:`acknowledge`; the consumer timestamp remains evidence only.
+    """
 
     def __init__(
         self,
@@ -435,6 +448,8 @@ class _StartupReadinessValidator:
         keys = tuple(item.key for item in requirements)
         if keys != tuple(sorted(keys)) or len(keys) != len(set(keys)):
             raise ValueError("requirements must be unique and deterministically sorted")
+        if len({item.series_id for item in requirements}) != 1:
+            raise ValueError("one readiness validator must own exactly one series")
         uuid_value(startup_epoch, "startup_epoch")
         self._requirements = {item.key: item for item in requirements}
         producers_by_series: dict[str, str] = {}
@@ -453,35 +468,35 @@ class _StartupReadinessValidator:
         self._timeout_ns = timeout_ms * 1_000_000
         self._acks: dict[tuple[str, str], _SubscriptionReadinessAcknowledgement] = {}
         self._conflicts: set[tuple[str, str]] = set()
-        self._latest_acknowledged_ts_ns = self._started_at_ns
+        self._latest_received_at_ns = self._started_at_ns
         self._sealed_at_ns: int | None = None
 
     def acknowledge(
         self,
         acknowledgement: _SubscriptionReadinessAcknowledgement,
+        *,
+        received_at_ns: int,
     ) -> _AcknowledgementDisposition:
         if not isinstance(acknowledgement, _SubscriptionReadinessAcknowledgement):
             raise ValueError("acknowledgement must be typed")
+        positive_int64(received_at_ns, "received_at_ns")
         if self._sealed_at_ns is not None:
             return _AcknowledgementDisposition.LATE_REJECTED
         deadline_ns = self._started_at_ns + self._timeout_ns
-        if acknowledgement.acknowledged_ts_ns >= deadline_ns:
+        if received_at_ns >= deadline_ns:
             self._sealed_at_ns = deadline_ns
             return _AcknowledgementDisposition.LATE_REJECTED
         if (
             acknowledgement.startup_epoch != self._startup_epoch
             or acknowledgement.manifest_digest != self._manifest_digest
             or acknowledgement.key not in self._requirements
-            or acknowledgement.acknowledged_ts_ns < self._started_at_ns
+            or received_at_ns < self._started_at_ns
         ):
             return _AcknowledgementDisposition.REJECTED
         existing = self._acks.get(acknowledgement.key)
         if existing == acknowledgement:
             return _AcknowledgementDisposition.DUPLICATE
-        self._latest_acknowledged_ts_ns = max(
-            self._latest_acknowledged_ts_ns,
-            acknowledgement.acknowledged_ts_ns,
-        )
+        self._latest_received_at_ns = max(self._latest_received_at_ns, received_at_ns)
         if existing is not None:
             self._conflicts.add(acknowledgement.key)
             self._seal_if_terminal()
@@ -493,7 +508,7 @@ class _StartupReadinessValidator:
     def _seal_if_terminal(self) -> None:
         terminal_keys = set(self._acks) | self._conflicts
         if terminal_keys == set(self._requirements):
-            self._sealed_at_ns = self._latest_acknowledged_ts_ns
+            self._sealed_at_ns = self._latest_received_at_ns
 
     def evaluate(self, *, now_ns: int) -> _StartupReadinessDecision:
         positive_int64(now_ns, "now_ns")

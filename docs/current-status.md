@@ -134,18 +134,39 @@ system. The preserved V1 status is available in
   run accepts only the exact late-consumer recovery and historical-request chain; it does not
   establish multi-calendar behavior, phase-boundary delivery, repeated provider reliability,
   performance, value parity, or general market-session correctness.
-- A V3-03 Slice 1 correction batch is present uncommitted and remains under review; it is not yet
-  accepted current implementation. The proposed batch is limited to public, immutable completed-bar
-  and MetricValue v2 contracts plus private pure validation, admission, manifest, readiness, and
-  legacy-compatibility helpers. Its contract checks include exact wire shapes and primitive types,
-  canonical decimal strings, complete subject dependencies, exact missing-slot geometry, bounded
-  historical requests and producer claims, and revision-chain duplicate/conflict/stale/gap
-  handling. No new actor is composed, no new type is published or subscribed, acquisition
-  admission is unchanged, and no tracked profile or Quote Quality setting changed. Existing
-  enabled MetricValue publishers and consumers remain together on one private legacy v1 wire until
-  a later atomic v2 cutover; there is no dual publication. The batch has only disconnected test
-  evidence and does not establish provider, session, persistence, performance, or connected-runtime
-  acceptance.
+- V3-03 Slice 1 is merged at `4631df5`. It supplies the public immutable completed-bar and
+  MetricValue v2 contracts plus private pure validation, admission, producer-manifest, readiness,
+  and legacy-compatibility helpers. Its contract checks cover exact wire shapes and primitive
+  types, canonical decimal strings, complete subject dependencies, exact missing-slot geometry,
+  bounded historical requests and producer claims, and revision-chain
+  duplicate/conflict/stale/gap handling. Existing enabled MetricValue publishers and consumers
+  remain together on one private legacy v1 wire until a later atomic v2 cutover; there is no dual
+  publication.
+- A V3-03 Slice 2 batch is present uncommitted for local review. It corrects canonical completed-bar
+  identity by keeping provider/adapter/source-path dimensions in the new public
+  `CompletedBarInputIdentity` carried by each lineage entry, not in
+  `CompletedBarSeriesIdentity`. It adds a private, disabled multi-series foundation actor and
+  configuration/state model for the exact ES five-second-live to one-minute-canonical path,
+  independently gated per-series readiness using the foundation receipt clock, the versioned
+  bounded close-grace policy, owned and correlated projection/current-state request cycles,
+  bounded calendar timeout/retry and transition-gap reconciliation, canonical-bootstrap
+  history/live convergence, exact five-second slot admission, atomic publication, final
+  complete/partial/empty outcomes, bounded admission, and exact metadata routing. Parsed native
+  `BarType` values and the live subscription client bind configured route identity. An immutable
+  authority snapshot taken from the actual historical execution port now fails provider, adapter,
+  stream, or schema contradictions before foundation actor construction or demand and remains the
+  source identity carried by each batch. A transition received while a projection request is
+  waiting no longer republishes that request; its refresh intent starts exactly one new correlated
+  generation after completion. The production lifecycle fixture now uses pinned-rc3
+  `Clock.new_test`, native `Bar` values through `on_bar`, and the actual deterministic cutoff
+  callback, including exact-cutoff admission checks on both sides of timer firing.
+  No actor is composed or enabled; no tracked profile, provider request/subscription behavior, or
+  demand implementation has changed; the existing historical execution port now exposes its
+  read-only source identity on each transient batch. No connected acceptance is claimed. Evidence
+  for this uncommitted batch remains disconnected only: the 105-test focused correction set,
+  including 88 intelligence-contract tests, and all 616 non-PostgreSQL V2 tests pass. The full V2
+  Ruff gate is clean, all 31 API-documentation utility tests pass, and the locked API-documentation
+  validator selects and documents all 261 registered entries with no missing docstrings.
 - PostgreSQL currently stores runtime runs, system-health events, generic operational events, and
   compact evidence-recency profiles. Raw provider observations and transient numerical metric
   values remain outside PostgreSQL.
@@ -162,8 +183,8 @@ system. The preserved V1 status is available in
 - A separate locked API-documentation utility now statically analyzes the curated V2 Python public
   surface and produces an untracked MkDocs site at `docs/api` plus sanitized metadata and artifact
   indexes. Its
-  versioned denominator currently selects 259 package exports plus one explicit operator entry
-  point, 260 objects in total; all 260 selected objects have source docstrings and none are
+  versioned denominator currently selects 260 package exports plus one explicit operator entry
+  point, 261 objects in total; all 261 selected objects have source docstrings and none are
   reported as missing. Static analysis and rendering deny target imports, dynamic
   inspection, external inventories, network access, and child processes; the wrapper first uses
   bounded read-only Git queries for source identity. It verifies source stability and publishes

@@ -2,6 +2,7 @@
 
 from markeitech.intelligence.completed_bar_messages import (
     BarCompletionState,
+    CompletedBarInputIdentity,
     CompletedBarLineageEntry,
     CompletedBarSeriesIdentity,
     CompletedBarV1,
@@ -266,6 +267,7 @@ __all__ = [
     "COMPLETED_BAR_VOLUME_METRIC_ID",
     "CompletedBarCatalogPolicy",
     "CompletedBarInput",
+    "CompletedBarInputIdentity",
     "CompletedBarLineageEntry",
     "COMPLETED_BAR_INPUT_TYPE_NAME",
     "CompletedBarLedger",

@@ -10,6 +10,7 @@ from nautilus_trader.model import DataType
 
 from markeitech.intelligence import (
     BarCompletionState,
+    CompletedBarInputIdentity,
     CompletedBarLineageEntry,
     CompletedBarSeriesIdentity,
     CompletedBarV1,
@@ -34,10 +35,6 @@ def _identity(*, series_id: str = "es_1m") -> CompletedBarSeriesIdentity:
     return CompletedBarSeriesIdentity(
         instrument_id="ESU6.CME",
         venue="CME",
-        provider_id="IB",
-        adapter_id="nautilus-ib",
-        source_stream_id="watchlist-last-5s",
-        source_selector="ESU6.CME-5-SECOND-LAST-EXTERNAL",
         canonical_bar_specification="ESU6.CME-1-MINUTE-LAST-EXTERNAL",
         interval_ns=60 * SECOND_NS,
         aggregation_policy="contiguous-fixed-interval",
@@ -65,6 +62,19 @@ def _lineage(
 ) -> CompletedBarLineageEntry:
     return CompletedBarLineageEntry(
         source_class=source_class,  # type: ignore[arg-type]
+        input_identity=CompletedBarInputIdentity(
+            provider_id="IB",
+            adapter_id="nautilus-ib",
+            source_stream_id=(
+                "historical-bars" if source_class == "HISTORICAL" else "watchlist-last-5s"
+            ),
+            source_selector=(
+                "ESU6.CME-1-MINUTE-LAST-EXTERNAL"
+                if source_class == "HISTORICAL"
+                else "ESU6.CME-5-SECOND-LAST-EXTERNAL"
+            ),
+            source_schema_id="nautilus.bar.v1",
+        ),
         provider_observation_ref=observation_ref,
         evidence_refs=(f"evidence:{observation_ref}",),
         source_observed_ts_ns=61 * SECOND_NS,
@@ -129,6 +139,15 @@ def test_series_identity_digest_is_deterministic_and_epoch_sensitive() -> None:
     assert changed.identity_digest != first.identity_digest
 
 
+def test_canonical_series_identity_is_shared_across_distinct_input_paths() -> None:
+    live = _lineage(source_class="LIVE")
+    historical = _lineage(source_class="HISTORICAL")
+
+    assert live.input_identity != historical.input_identity
+    assert _identity() == _identity()
+    assert CompletedBarInputIdentity.from_dict(live.input_identity.to_dict()) == live.input_identity
+
+
 def test_completed_bar_round_trip_preserves_decimal_and_observed_zero_volume() -> None:
     bar = _bar()
 
@@ -171,6 +190,10 @@ def test_nested_completed_bar_identity_and_lineage_deserialization_fail_closed()
         CompletedBarSeriesIdentity.from_dict({**identity, "interval_ns": "60000000000"})
     with pytest.raises(ValueError, match="keys are not exact"):
         CompletedBarLineageEntry.from_dict({**lineage, "unknown": "value"})
+    with pytest.raises(ValueError, match="keys are not exact"):
+        CompletedBarInputIdentity.from_dict(
+            {**lineage["input_identity"], "unknown": "value"},
+        )
     with pytest.raises(ValueError, match="source_observed_ts_ns must be an integer"):
         CompletedBarLineageEntry.from_dict({**lineage, "source_observed_ts_ns": True})
 
