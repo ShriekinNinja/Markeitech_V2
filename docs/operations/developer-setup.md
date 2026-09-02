@@ -183,8 +183,9 @@ Markeitech's tracked example currently reflects the project's paper Gateway-styl
 TWS port is valid when TWS and `system.local.toml` agree.
 
 Configure TWS or IB Gateway to send instrument-specific API attributes in **instrument timezone**
-for the pinned Nautilus `2.0.0rc3` runtime. Its Rust `ibapi 3.3.0` dependency cannot parse IB's
-valid dashed UTC `HistoricalDataEnd` metadata. This is a temporary transport compatibility setting:
+for the pinned Nautilus `2.0.0rc4` runtime. Its Rust `ibapi 3.3.0` dependency is unchanged; the
+rc3-established dashed UTC `HistoricalDataEnd` parsing limitation remains open, and rc4 connected
+timestamp calibration is pending. This is a temporary transport compatibility setting:
 Nautilus and Markeitech still normalize bar instants to Unix nanoseconds and use UTC internally.
 Keep execution unavailable. Each user must supply their own account, permissions, and
 subscriptions. A dependency or TWS/Gateway change requires one bounded connected timestamp

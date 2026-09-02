@@ -47,8 +47,10 @@ The repository does not include account credentials or entitlements.
 5. Note the configured socket port.
 6. Ensure the selected client ID is not already in use.
 7. Set “Send instrument-specific attributes for dual-mode API client” to **instrument timezone**
-   for pinned Nautilus `2.0.0rc3`. Its Rust `ibapi 3.3.0` dependency rejects IB's valid dashed UTC
-   `HistoricalDataEnd` metadata. This affects response transport syntax only: Nautilus and
+   for pinned Nautilus `2.0.0rc4`. The [rc4 Cargo lockfile](https://github.com/nautechsystems/nautilus_trader/blob/v2.0.0rc4/Cargo.lock)
+   retains Rust `ibapi 3.3.0`, whose rejection of IB's valid dashed UTC `HistoricalDataEnd`
+   metadata was established under rc3. The upgrade does not close this debt; rc4 connected
+   timestamp calibration remains pending. This affects response transport syntax only: Nautilus and
    Markeitech retain absolute Unix-nanosecond timestamps internally. Do not infer API behavior from
    the TWS chart display timezone. Recalibrate with one bounded connected request after a
    consequential TWS/Gateway, Nautilus adapter, or `ibapi` parser change.

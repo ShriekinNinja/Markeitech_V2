@@ -808,7 +808,7 @@ class CompletedBarV1:
 
 
 def _canonical_completed_bar_data_type(series_id: str) -> DataType:
-    """Construct the one pinned-rc3 metadata-qualified route for a series."""
+    """Construct the pinned Nautilus metadata-qualified route for a series."""
 
     return DataType(COMPLETED_BAR_V1_TYPE_NAME, metadata={"series_id": topic_token(series_id)})
 

@@ -24,10 +24,10 @@ the two root-migration PRs. The original planning baseline above is historical c
 from which to resume. Current implementation evidence is recorded in
 [`current-status.md`](../current-status.md).
 
-**Next overall PR:** upgrade NautilusTrader from `2.0.0rc3` to `2.0.0rc4` on a separate branch
-after this handoff is merged. That upgrade has not started and is not included in this handoff.
-Complete its separate compatibility verification and Markeitect review/merge before resuming
-Slice 3; it does not expand or reorder the V3-03 slices below.
+**Prerequisite PR:** the separate NautilusTrader `2.0.0rc3` to `2.0.0rc4` upgrade is implemented
+and offline-verified; its evidence and connected-acceptance limits are recorded in
+[`current-status.md`](../current-status.md). Complete its required CI and Markeitect review/merge
+before resuming Slice 3; it does not expand or reorder the V3-03 slices below.
 
 | Slice | Current state |
 |---|---|
@@ -73,14 +73,15 @@ merged and Markeitect authorizes the slice:
   [GitHub workflow](../operations/github-workflow.md). Stop for Markeitect's approval and merge;
   publishing a PR and passing CI grant no merge or connected-run authority.
 
-Version freshness: the installed and locked contract is NautilusTrader `2.0.0rc3`. On
-2026-09-02 the [nightly guides](https://nautilustrader.io/docs/nightly/) identified themselves as
+Version freshness at the pre-upgrade handoff: the installed and locked contract was NautilusTrader
+`2.0.0rc3`. On 2026-09-02 the [nightly guides](https://nautilustrader.io/docs/nightly/) identified themselves as
 unreleased, and the [nightly Python API](https://nautechsystems.github.io/nautilus_docs/python-api-nightly/)
-displayed `v2.0.0rc4`. Recheck exact APIs against the version installed and locked on the new
-branch. This handoff changes no dependency; the requested rc4 upgrade belongs to its own PR
-and must establish its compatibility evidence before Slice 3. Local `DataActor` typed
+displayed `v2.0.0rc4`. The handoff changed no dependency. Local `DataActor` typed
 publish/subscribe/unsubscribe stubs and the existing rc3 routing fixtures were inspected; no
-provider, persistence, performance, or connected acceptance was repeated.
+provider, persistence, performance, or connected acceptance was repeated. The separate upgrade now
+pins `2.0.0rc4`; use its current-status evidence for the new baseline and recheck exact APIs before
+each slice. Older rc3-specific findings below retain their historical scope; future slice gates
+must run against the current locked version.
 
 ## Accepted Decision Record
 
@@ -1156,7 +1157,7 @@ atomic v2 runtime-wire cutover occurs; old and new types are never dual-publishe
 - Prove one-outstanding-request projection refresh: a transition during `WAITING` produces no
   duplicate publication, retains refresh intent, and starts exactly one new correlated generation
   after the in-flight response completes.
-- Reproduce the pinned-rc3 routing fixture: publication for metadata-qualified series `A` reaches
+- Reproduce the pinned-version routing fixture: publication for metadata-qualified series `A` reaches
   subscriber `A` exactly once, reaches subscriber `B` zero times, and reaches a metadata-free
   type-only subscriber zero times; reject any route/payload series mismatch.
 
@@ -1241,7 +1242,7 @@ admitted.
 - Prove capture-on/off non-interference for actor ownership, provider and historical demand,
   foundation readiness, canonical bar/metric counts, health, persistence, lifecycle, and shutdown.
 
-**Gate:** a disconnected pinned-rc3 fixture proves Visual Debug subscribes before first selected
+**Gate:** a disconnected pinned-version fixture proves Visual Debug subscribes before first selected
 publication, exact bar and metric delivery, route/payload/manifest agreement, hard collection and
 callback bounds, clean unsubscribe/shutdown, and projection-local failure. No tracked profile is
 enabled if the observer changes any canonical producer behavior.
