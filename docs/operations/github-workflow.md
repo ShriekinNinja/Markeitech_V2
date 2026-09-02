@@ -46,7 +46,8 @@ are unchanged.
 4. Run proportional local verification and inspect the full diff for unintended files, secrets,
    local configuration, data, or generated churn. Commit only task-owned paths, with a detailed
    message, and push the branch without force.
-5. Open a PR into `master` once the first coherent batch is published. Use a draft for unfinished
+5. Open a PR into `master` as Sir Kite using the publishing command below once the first coherent
+   batch is published. Use a draft for unfinished
    work and state its remaining gates. A review-ready delivery includes the PR URL, exact head,
    scope, validation, known debt, and current CI state; uncommitted files alone are not the default
    handoff. If credentials, connectivity, or an explicit task restriction block publication,
@@ -133,20 +134,22 @@ code-owner reviews on eligible non-draft PRs once the file is merged. Existing o
 be checked explicitly. Draft PRs receive automatic requests when marked ready. See
 [GitHub code owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
 
-There is an identity prerequisite: GitHub does not allow PR authors to approve their own PRs.
-On 2026-09-02, the CLI authenticated as `ShriekinNinja`, so PRs created with that authentication
-are authored by the required reviewer. A distinct GitHub account or GitHub App must open PRs
-for `ShriekinNinja` to review them. Changing Git commit author name/email does not change PR
-authorship. Agents must not submit an approval using Markeitect's credentials or treat an
+GitHub does not allow PR authors to approve their own PRs. Sir Kite is the private GitHub App
+used to open PRs as `sir-kite[bot]`, leaving `ShriekinNinja` available as the human reviewer.
+The ordinary GitHub CLI login remains `ShriekinNinja`; use the dedicated publishing command
+below for new PRs. Changing Git commit author name/email does not change PR authorship.
+Agents must not submit an approval using Markeitect's credentials or treat an
 assignee, comment, label, or checklist as an approving review. See
 [GitHub's approval rules](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/approving-a-pull-request-with-required-reviews).
 
-**Activation is pending the separate author identity; this PR does not enable the server-side
-approval gate.** Before activating it, settle the author identity and handling of already-open
-self-authored PRs with Markeitect. Keep such PRs unmerged until he resolves that conflict. Do not
-silently weaken the review rule, add another approving owner, or create a bypass to avoid it.
+On 2026-09-02, Markeitect authorized Sir Kite's registration and installation on only
+`ShriekinNinja/Markeitech_V2`. App authentication and a single-repository installation token
+were verified against GitHub. The app has contents/metadata read access and pull-request
+read/write access; it has no administration, secrets, or workflow permissions. Webhooks and
+user OAuth are disabled. App registration ID is `4807574`; installation ID is `158548175`.
+These identifiers are not credentials. The private key and local configuration stay outside Git.
 
-After that prerequisite, configure the existing `master` protection with:
+The following `master` protection settings were read back after activation on 2026-09-02:
 
 | Setting | Required value |
 | --- | --- |
@@ -160,26 +163,84 @@ After that prerequisite, configure the existing `master` protection with:
 | Require conversation resolution | Preserve enabled |
 | Allow force pushes / branch deletion | Preserve disabled |
 
-The 2026-09-02 read-only API inspection found zero required approvals, code-owner reviews disabled,
-and stale-review dismissal disabled. The other protection settings above were already present;
-there were no repository rulesets. This is an inspection snapshot, not proof of later enforcement.
-Re-read live protection before any update and preserve unrelated settings. GitHub's
+The activation changed only the approval count, code-owner requirement, and stale-review
+dismissal. A before/after comparison confirmed all other protection settings were preserved.
+There were no repository rulesets. This is a dated settings observation; re-read live protection
+before any later update. GitHub's
 [branch-protection guide](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
 describes these controls.
 
-Verify activation using a PR authored by the separate identity: confirm the reviewer request and
-blocked merge state before approval, then the review requirement after Markeitect approves and
-after a subsequent change dismisses that approval. Inspect API/UI state without attempting an
-unapproved merge. GitHub's stale-review dismissal covers code-modifying pushes; the project rule
-still requires Markeitect to review the current head after every new commit. Record the tested
-scope and resulting settings before claiming this gate is enforced.
+The initial workflow PR introduces `CODEOWNERS`, so automatic routing and owner-specific
+enforcement depend on Markeitect merging that file into `master`. Before that merge, the
+one-approval requirement already applies, and the publishing command explicitly requests
+`ShriekinNinja`. Keep the self-authored predecessor unmerged and preserve its history when
+replacing it with the bot-authored PR. Do not weaken protection or create a bypass.
+
+Inspect API/UI state without attempting an unapproved merge. Approval and subsequent stale-review
+dismissal still require human acceptance evidence; no agent submits a review on Markeitect's
+behalf. GitHub's stale-review dismissal covers code-modifying pushes; the project rule requires
+Markeitect to review the current head after every new commit.
+
+## Publishing As Sir Kite
+
+Use `scripts/sir-kite-pr.py` after committing and pushing the scoped branch with the normal Git
+workflow. It requires Python 3, OpenSSL, and curl, all available in the supported development
+environment. It adds no Python package dependency and does not change the normal `gh` login.
+
+```bash
+python3 scripts/sir-kite-pr.py --verify
+python3 scripts/sir-kite-pr.py \
+  --head github-pr-issue-workflow \
+  --title "Improve PR and issue workflow" \
+  --body-file /tmp/pr-description.md \
+  --label enhancement --label documentation
+```
+
+Replace the branch, title, body file, and labels for the task. `master` is the fixed base.
+The command creates or updates the open Sir Kite PR for that branch and requests
+`ShriekinNinja` on non-draft PRs. `--draft` applies when creating a PR; it does not change an
+existing PR's draft state. An existing PR by a different author is rejected without changing it.
+If a later reviewer/label operation fails, the PR URL is printed first; inspect that resource
+and rerun the command rather than assuming no PR was created. It never approves or merges PRs.
+
+The default machine configuration is `~/.config/markeitech/sir-kite/config.json`; use
+`SIR_KITE_CONFIG` or `--config` for another local path. It has the following fields:
+
+```json
+{
+  "app_id": 4807574,
+  "client_id": "Iv23li4ifiTkL9po4BA6",
+  "installation_id": 158548175,
+  "repository_id": 1336146392,
+  "repository": "ShriekinNinja/Markeitech_V2",
+  "owner": "ShriekinNinja",
+  "slug": "sir-kite",
+  "private_key": "/absolute/path/outside/the/repository/private-key.pem"
+}
+```
+
+This is a configuration example, not a key. Keep the actual key in a private directory with
+mode `0700`, and key/config files with mode `0600`. New-machine key provisioning remains a
+separate authorized operation; do not copy credentials into a PR, chat, repository, or log.
+
+The helper signs a short-lived app JWT locally, validates the app and installation identity,
+requires the approved permission set, and requests a token narrowed to this repository ID.
+It checks token scope before publication and revokes the token on exit. Tokens pass to curl
+through stdin rather than command arguments; curl's default config and redirects are disabled,
+and certificate verification stays enabled. A failed revocation is reported; an unreleased
+installation token expires within one hour. A terminated process may likewise leave a token
+valid until expiration. See GitHub's
+[installation-token procedure](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app).
+
+The command is a development-time publishing utility. It is separate from the optional Kite
+advisor plugin and from Sir Loke, and does not grant either component runtime or review authority.
 
 ## Required CI
 
 Pull requests targeting `master` and manual workflow runs execute `.github/workflows/v2-ci.yml`.
 The workflow has three branch-protection-ready jobs:
 
-- **V2 Ruff** runs `ruff check` over `src` and `tests`.
+- **V2 Ruff** runs `ruff check` over `src`, `tests`, and the Sir Kite publishing helper.
 - **V2 Offline Tests** runs the V2 pytest suite with PostgreSQL-marked tests excluded.
 - **V2 PostgreSQL Integration** starts an ephemeral PostgreSQL 17 service and runs only the
   PostgreSQL-marked tests with a synthetic CI DSN.

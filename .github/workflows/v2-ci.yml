@@ -36,7 +36,7 @@ jobs:
       - name: Install locked V2 environment
         run: uv sync --locked --dev
       - name: Run Ruff
-        run: uv run ruff check src tests
+        run: uv run ruff check src tests scripts/sir-kite-pr.py
 
   offline-tests:
     name: V2 Offline Tests
