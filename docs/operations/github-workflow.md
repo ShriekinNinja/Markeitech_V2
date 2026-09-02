@@ -33,6 +33,27 @@ planning/skill text do not override it. Local IDE review remains available when 
 for it; architecture approval, connected acceptance, secrets, and destructive-action boundaries
 are unchanged.
 
+## Publishing Identity
+
+Before an authorized issue or PR publication, identify the contributor the agent represents and
+verify the publishing identity. The repository owner or a Git commit author setting alone does
+not identify whom the agent represents.
+
+| Contributor represented | Required publishing route | Author to verify |
+| --- | --- | --- |
+| Markeitect (`ShriekinNinja`) | His locally configured Sir Kite GitHub App | `sir-kite[bot]` |
+| Another contributor | That contributor's authorized GitHub account | The contributor's verified account |
+
+This rule applies to both issues and PRs. Other contributors do not need Sir Kite credentials.
+If the required identity is unavailable, report the blocker instead of silently falling back to
+another account, CLI login, or connector. The Codex GitHub connector and Sir Kite are separate
+integrations; the availability of a connector does not establish the required publishing identity.
+Verify the returned author and report the issue or PR URL after creation.
+
+The commands below document [the contributor route](#publishing-as-another-contributor) and
+[the local Sir Kite route](#publishing-locally-for-markeitect-as-sir-kite). This routing rule does
+not itself authorize external publication, implementation, approval, or merge.
+
 ## Change Lifecycle
 
 1. Inspect the current branch, worktree, remote default branch, and task scope. Refresh the
@@ -46,9 +67,8 @@ are unchanged.
 4. Run proportional local verification and inspect the full diff for unintended files, secrets,
    local configuration, data, or generated churn. Commit only task-owned paths, with a detailed
    message, and push the branch without force.
-5. Open a PR into `master` through the contributor's authorized GitHub identity once the first
-   coherent batch is published. Markeitect's local agents use Sir Kite; other contributors and
-   their agents use their own accounts, as described below. Request `@ShriekinNinja` as reviewer
+5. Open a PR into `master` through the required [publishing identity](#publishing-identity) once
+   the first coherent batch is published. Request `@ShriekinNinja` as reviewer
    when ready and verify the request in GitHub. Use a draft for unfinished
    work and state its remaining gates. A review-ready delivery includes the PR URL, exact head,
    scope, validation, known debt, and current CI state; uncommitted files alone are not the default
@@ -87,6 +107,20 @@ the exact head reviewed and does not by itself delegate merge execution to an ag
 ## Issues, Labels, And Planning
 
 Use an issue for a bug, improvement proposal, or documentation gap that benefits from tracking.
+For issue-tracked changes, follow **Issue -> PR -> Approve -> Merge**:
+
+1. Check for an existing relevant issue, then open or reuse the authorized tracking issue using
+   the required publishing identity. State the problem, evidence, bounded scope, and acceptance
+   criteria. Verify the author and record its URL.
+2. Implement the authorized change on a scoped branch and link the PR to the issue.
+3. Present the verified PR head for Markeitect's approval. An agent never approves on his behalf.
+4. Markeitect owns the merge after the required CI and current-head approval gates pass. An agent
+   may perform only a specifically delegated merge under the existing change lifecycle.
+
+Opening an issue alone changes GitHub metadata and needs no source branch or PR. It grants no
+implementation or merge authority. Do not create a duplicate merely to test permissions or retry
+an uncertain write: inspect the reported resource or recent issues first.
+
 The forms in `.github/ISSUE_TEMPLATE/` prompt for the problem, evidence, and expected result and
 apply the existing `bug`, `enhancement`, or `documentation` label. They become available in the
 normal issue chooser after merge into `master`; blank issues remain available for other work.
@@ -154,7 +188,10 @@ assignee, comment, label, or checklist as an approving review. See
 
 On 2026-09-02, Markeitect authorized Sir Kite's registration and installation on only
 `ShriekinNinja/Markeitech_V2`. App authentication and a single-repository installation token
-were verified against GitHub. The app has contents/metadata read access and pull-request
+were verified against GitHub. Later that day Markeitect added Issues read/write and approved the
+installation update; [issue #23](https://github.com/ShriekinNinja/Markeitech_V2/issues/23) was
+created as `sir-kite[bot]` in the bounded live permission test.
+The approved installation now has contents/metadata read access and issues/pull-request
 read/write access; it has no administration, secrets, or workflow permissions. Webhooks and
 user OAuth are disabled. App registration ID is `4807574`; installation ID is `158548175`.
 These identifiers are not credentials. The private key and local configuration stay outside Git.
@@ -191,9 +228,21 @@ Markeitect to review the current head after every new commit.
 
 ## Publishing As Another Contributor
 
-Use the contributor's own authorized GitHub account to open or update a PR through GitHub's UI,
-CLI, or API. Confirm the active account before publishing. For a branch already pushed to the
-target repository, a ready PR can be opened with:
+Use the contributor's own authorized GitHub account for issues and PRs through GitHub's UI, CLI,
+or API. Confirm the active account before publishing; agents representing Markeitect use Sir Kite
+instead. To open an authorized issue:
+
+```bash
+gh api user --jq .login
+gh issue create --repo ShriekinNinja/Markeitech_V2 \
+  --title "Describe the problem" --body-file /tmp/issue-description.md --label enhancement
+```
+
+Read back the returned issue with
+`gh issue view ISSUE-NUMBER --repo ShriekinNinja/Markeitech_V2 --json url,author`
+and verify its author matches the intended contributor. Replace the example title, body file,
+label, and issue number with the authorized scope. For a branch already pushed to the target
+repository, a ready PR can be opened with:
 
 ```bash
 gh api user --jq .login
@@ -206,33 +255,58 @@ For a fork, select the fork branch in GitHub or use `--head YOUR-LOGIN:your-chan
 Replace the example values and apply the relevant existing labels. Use a draft for unfinished
 work, then verify the reviewer request when marking it ready. If the PR already exists, update
 it and use `gh pr edit PR-NUMBER --repo ShriekinNinja/Markeitech_V2 --add-reviewer ShriekinNinja`
-when a review request is missing and the account has permission. If the account is
-`ShriekinNinja`, use the local Sir Kite route below to avoid an approving self-review blocker.
+when a review request is missing and the account has permission. Verify the resulting PR author
+with `gh pr view PR-NUMBER --repo ShriekinNinja/Markeitech_V2 --json url,author`. Agents working for
+`ShriekinNinja` use the local Sir Kite route for both issues and PRs.
 
 ## Publishing Locally For Markeitect As Sir Kite
 
 This section applies to Markeitect's agents using his authorized local Sir Kite setup.
-Use `scripts/sir-kite-pr.py` after committing and pushing the scoped branch with the normal Git
-workflow. Markeitect's ordinary GitHub CLI login remains `ShriekinNinja`; the helper changes only
-the PR publishing identity. It requires Python 3, OpenSSL, and curl and adds no Python package
-dependency. If this local setup is unavailable, report the blocker rather than publish a PR that
-`ShriekinNinja` cannot approve. Other contributors use the preceding section.
+Use `scripts/sir-kite-pr.py` for issues and PRs. Its existing path and PR arguments remain
+compatible; `--issue` selects issue creation. Markeitect's ordinary GitHub CLI login remains
+`ShriekinNinja`; the helper authenticates its publications as `sir-kite[bot]`. It requires Python 3,
+OpenSSL, and curl and adds no Python package dependency. If this local setup is unavailable,
+report the blocker instead of publishing under another identity. Other contributors use the
+preceding section.
+
+To open an authorized tracking issue before implementation:
 
 ```bash
-python3 scripts/sir-kite-pr.py --verify
+python3 scripts/sir-kite-pr.py --issue \
+  --title "Describe the problem" \
+  --body-file /tmp/issue-description.md \
+  --label enhancement
+```
+
+The issue command creates one issue with the supplied labels in the same request, prints its URL,
+and verifies its author is `sir-kite[bot]`. It does not update or close an existing issue, create a
+branch, request PR review, or implement the issue. `--head` and `--draft` are PR-only. Do not rerun
+issue creation blindly after a timeout, error, or unexpected author: a write may have succeeded.
+Inspect the printed URL or recent issues before deciding whether another creation is needed.
+
+After implementing, verifying, committing, and pushing the scoped branch, publish its PR using
+the existing command. Include the tracking issue in the PR body with the appropriate `Closes`
+or `Refs` relationship:
+
+```bash
 python3 scripts/sir-kite-pr.py \
-  --head github-pr-issue-workflow \
-  --title "Improve PR and issue workflow" \
+  --head your-change-branch \
+  --title "Describe the change" \
   --body-file /tmp/pr-description.md \
   --label enhancement --label documentation
 ```
 
 Replace the branch, title, body file, and labels for the task. `master` is the fixed base.
-The command creates or updates the open Sir Kite PR for that branch and requests
-`ShriekinNinja` on non-draft PRs. `--draft` applies when creating a PR; it does not change an
+The PR command creates or updates the open Sir Kite PR for that branch, verifies its author, and
+requests `ShriekinNinja` on non-draft PRs. `--draft` applies when creating a PR; it does not change an
 existing PR's draft state. An existing PR by a different author is rejected without changing it.
 If a later reviewer/label operation fails, the PR URL is printed first; inspect that resource
 and rerun the command rather than assuming no PR was created. It never approves or merges PRs.
+
+When diagnosing authentication, `python3 scripts/sir-kite-pr.py --verify` checks PR token scope;
+add `--issue` to check issue token scope. Verification issues and revokes a temporary token but
+does not publish an issue or PR. A successful publication already exercises its authentication
+checks, so a separate verification run is not required before every publication.
 
 The default machine configuration is `~/.config/markeitech/sir-kite/config.json`; use
 `SIR_KITE_CONFIG` or `--config` for another local path. It has the following fields:
@@ -256,10 +330,23 @@ do not distribute it to other contributors or make it part of general developer 
 Provisioning it on another machine for Markeitect remains a separately authorized operation;
 do not copy credentials into a PR, chat, repository, or log.
 
-The helper signs a short-lived app JWT locally, validates the app and installation identity,
-requires the approved permission set, and requests a token narrowed to this repository ID.
-It checks token scope before publication and revokes the token on exit. Tokens pass to curl
-through stdin rather than command arguments; curl's default config and redirects are disabled,
+The helper signs a short-lived app JWT locally, validates the app and installation identity, and
+requires the exact approved installation permission set above. Missing or unapproved permissions
+stop the operation before token issuance; changing the app registration also requires approval of
+the new permissions on the installation. No helper command changes GitHub app or installation
+settings.
+
+Tokens are narrowed to this repository ID and the selected operation:
+
+| Operation | Requested token permissions |
+| --- | --- |
+| PR creation/update or default `--verify` | Contents read, Metadata read, Pull requests write |
+| Issue creation or `--issue --verify` | Metadata read, Issues write |
+
+Installation permissions and operation token permissions are validated separately: the approved
+Issues grant no longer breaks PR authentication, and PR tokens do not acquire it incidentally.
+The helper checks the exact token scope before publication and revokes the token on exit.
+Tokens pass to curl through stdin rather than command arguments; curl's default config and redirects are disabled,
 and certificate verification stays enabled. A failed revocation is reported; an unreleased
 installation token expires within one hour. A terminated process may likewise leave a token
 valid until expiration. See GitHub's

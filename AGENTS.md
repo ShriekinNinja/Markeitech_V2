@@ -123,12 +123,18 @@ perform another restricted action.
   CI is green or the task says to finish the workflow. An agent may merge only when Markeitect
   explicitly delegates that specific merge; approval to implement, commit, publish, or revise a
   PR is not merge authority. New commits require renewed approval of the new head before merge.
-- Agents working for other contributors publish through their contributor's authorized GitHub
-  identity. Sir Kite is Markeitect's locally configured publishing identity, used by his agents
-  so `ShriekinNinja` can review and approve their PRs; other contributors do not need Sir Kite
-  credentials. Every PR must request `@ShriekinNinja` as reviewer when ready and requires his
-  approval of the current head, regardless of author. Verify the review request in GitHub;
-  a mention alone is not a review request or approval.
+- Before an authorized issue or PR publication, identify the contributor the agent represents
+  and verify the publishing identity. Agents working for Markeitect (`ShriekinNinja`) use his
+  locally configured Sir Kite GitHub App and verify the resulting author is `sir-kite[bot]`.
+  Agents working for other contributors use that contributor's authorized GitHub identity and
+  verify the resulting author; they do not need Sir Kite credentials. If the required identity
+  is unavailable, report the blocker instead of silently publishing under another account.
+  Follow the issue and PR commands in `docs/operations/github-workflow.md`.
+- Every PR must request `@ShriekinNinja` as reviewer when ready and requires his approval of the
+  current head, regardless of author. Verify the review request in GitHub; a mention alone is
+  not a review request or approval. For issue-tracked work, open or reuse the authorized issue,
+  link its implementation PR, then leave approval and merge to Markeitect. Opening an issue
+  does not itself authorize implementation or merge.
 - No auto-merge, force-push, check bypass, or unapproved branch/worktree deletion. A delegated
   merge uses the reviewed head and a merge commit only after all required CI checks pass.
 - PRs are the default review surface; local IDE review remains available on request. Every PR
