@@ -1,6 +1,6 @@
 # Markeitech V2 API
 
-This site documents the curated Python API under `v2/src/markeitech` from static source analysis.
+This site documents the curated Python API under `src/markeitech` from static source analysis.
 Generation does not import or run Markeitech. The site and its metadata index are regenerable,
 non-authoritative documentation projections; they are not runtime configuration, runtime evidence,
 or the canonical architecture representation.

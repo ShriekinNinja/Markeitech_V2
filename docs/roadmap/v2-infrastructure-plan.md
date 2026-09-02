@@ -22,14 +22,14 @@
 
 ## Proven Foundation
 
-- [x] Isolated `v2/` Python project and lockfile.
+- [x] Isolated root Python project and lockfile.
 - [x] NautilusTrader V2 `LiveNode` builds successfully.
 - [x] Interactive Brokers connection succeeds through TWS paper trading.
 - [x] Configured ES and SPY instrument definitions resolve.
 - [x] The runtime publishes a basic `SYSTEM_READY` indication.
 - [x] Graceful stop and IB disconnection are verified from live logs.
 - [x] V2 owns its TOML configuration and `.env` loading.
-- [x] Process environment values take precedence over `v2/.env`.
+- [x] Process environment values take precedence over `.env`.
 - [x] Nautilus runtime logs persist to a Git-ignored V2 log file.
 - [x] One PyCharm run configuration launches the runtime and keeps macOS awake.
 - [x] Focused offline tests and lint checks pass.

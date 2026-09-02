@@ -7,7 +7,7 @@
 > inventory. Use `docs/current-status.md` for current behavior; retain this document for the
 > evidence behind the native-bus decision.
 
-**Scope:** NautilusTrader `2.0.0rc1` as installed in `v2/.venv`. This document records
+**Scope:** NautilusTrader `2.0.0rc1` as installed in `.venv`. This document records
 available runtime communication facilities and their constraints. It does not approve a
 Markeitech message contract or change runtime behavior.
 

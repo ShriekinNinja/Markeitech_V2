@@ -132,7 +132,7 @@ ordering, provider-session correctness, or downstream analytical fitness.
   incarnation identity;
 - new threads, workers, executors, queues, processes, dependencies, lockfiles, or containers;
 - replay, backtesting, ML, order routing, recommendation, or execution authority; and
-- editing the ignored `v2/config/system.local.toml`.
+- editing the ignored `config/system.local.toml`.
 
 ## Runtime Topology After Deactivation
 
@@ -376,7 +376,7 @@ or publication. The same actor object is never restarted.
 Add a pure framework-independent module:
 
 ```text
-v2/src/markeitech/intelligence/session_state_delivery.py
+src/markeitech/intelligence/session_state_delivery.py
 ```
 
 It owns synchronization state only. It does not evaluate calendars, calculate evidence, resolve
@@ -463,7 +463,7 @@ bounds.
 ### Opt-in current-state historical-demand acceptance probe
 
 Add `CurrentStateHistoricalDemandProbeActor` beside the existing acceptance harness in
-`v2/src/markeitech/system/historical_probe.py`. It appears in runtime composition only when
+`src/markeitech/system/historical_probe.py`. It appears in runtime composition only when
 `historical.probe.enabled = true` and `historical.probe.mode = "current_state_gated"`. Both
 tracked profiles remain disabled; the V3 ES profile selects this mode and explicitly enables the
 bounded initial-request omission for a future separately authorized connected acceptance run.
@@ -524,13 +524,13 @@ authority change outside this plan.
 
 Files:
 
-- `v2/config/system.example.toml`;
-- `v2/config/system.v3-es-minimal.toml`;
-- `v2/tests/system/test_config.py`;
-- `v2/tests/system/test_composition.py`;
-- `v2/tests/system/test_v3_es_minimal_config.py`;
-- `v2/tests/system/test_message_delivery.py`; and
-- `v2/tests/intelligence/test_session_metric_capture_alignment.py`.
+- `config/system.example.toml`;
+- `config/system.v3-es-minimal.toml`;
+- `tests/system/test_config.py`;
+- `tests/system/test_composition.py`;
+- `tests/system/test_v3_es_minimal_config.py`;
+- `tests/system/test_message_delivery.py`; and
+- `tests/intelligence/test_session_metric_capture_alignment.py`.
 
 Deliver:
 
@@ -546,12 +546,12 @@ Deliver:
 
 Files:
 
-- `v2/src/markeitech/intelligence/calendar_messages.py`;
-- new `v2/src/markeitech/intelligence/session_state_delivery.py`;
-- `v2/src/markeitech/intelligence/__init__.py` only if an existing internal import surface requires
+- `src/markeitech/intelligence/calendar_messages.py`;
+- new `src/markeitech/intelligence/session_state_delivery.py`;
+- `src/markeitech/intelligence/__init__.py` only if an existing internal import surface requires
   it;
-- `v2/tests/intelligence/test_calendar_messages.py`; and
-- new `v2/tests/intelligence/test_session_state_delivery.py`.
+- `tests/intelligence/test_calendar_messages.py`; and
+- new `tests/intelligence/test_session_state_delivery.py`.
 
 Deliver:
 
@@ -570,10 +570,10 @@ public-surface change is required.
 
 Files:
 
-- `v2/src/markeitech/intelligence/session.py`;
-- `v2/src/markeitech/intelligence/actors.py`;
-- `v2/src/markeitech/system/config.py`;
-- `v2/src/markeitech/system/composition.py`;
+- `src/markeitech/intelligence/session.py`;
+- `src/markeitech/intelligence/actors.py`;
+- `src/markeitech/system/config.py`;
+- `src/markeitech/system/composition.py`;
 - `docs/architecture/system-dataflow.toml` and its generated artifacts only for the mechanical
   tracked-profile schema-version synchronization and the already-approved Slice 1 Session
   Metrics/Visual Debug disablement;
@@ -598,25 +598,25 @@ Deliver:
 
 Files:
 
-- `v2/src/markeitech/intelligence/actors.py` for Evidence Health;
-- `v2/src/markeitech/intelligence/session_state_delivery.py` for the bounded live-gap
+- `src/markeitech/intelligence/actors.py` for Evidence Health;
+- `src/markeitech/intelligence/session_state_delivery.py` for the bounded live-gap
   resynchronization entry point;
-- `v2/src/markeitech/system/composition.py` for the already-approved delivery policy and exact
+- `src/markeitech/system/composition.py` for the already-approved delivery policy and exact
   definition wiring to both consumers;
-- `v2/src/markeitech/system/historical_planner.py`;
-- `v2/src/markeitech/system/historical_probe.py` for the bounded live acceptance adapter, initially
+- `src/markeitech/system/historical_planner.py`;
+- `src/markeitech/system/historical_probe.py` for the bounded live acceptance adapter, initially
   disabled and later explicitly enabled and retained temporarily;
-- `v2/src/markeitech/system/config.py` and both tracked TOMLs for the strict `direct` versus
+- `src/markeitech/system/config.py` and both tracked TOMLs for the strict `direct` versus
   `current_state_gated` probe mode, explicit retry fault-injection option, and system schema 23;
 - `docs/architecture/system-dataflow.toml`, its generated artifacts, and the generator's exact
   roster/inventory count tests for the conditional runtime component and current snapshot/v2
   transition flows;
-- `v2/src/markeitech/system/persistence.py` for the mechanical transition-v2 mapping;
+- `src/markeitech/system/persistence.py` for the mechanical transition-v2 mapping;
 - focused reconciliation, composition, and persistence regression tests;
-- `v2/tests/system/message_actor_fixtures.py`;
-- `v2/tests/system/test_message_delivery.py`;
+- `tests/system/message_actor_fixtures.py`;
+- `tests/system/test_message_delivery.py`;
 - existing evidence-health and historical-planner regression tests; and
-- `v2/tests/acquisition/test_historical_windows.py` for the subsecond alignment regression.
+- `tests/acquisition/test_historical_windows.py` for the subsecond alignment regression.
 
 Deliver:
 

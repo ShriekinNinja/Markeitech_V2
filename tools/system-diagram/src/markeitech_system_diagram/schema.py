@@ -23,8 +23,9 @@ _ALLOWED_EVIDENCE_ROOTS = frozenset(
         "AGENTS.md",
         "CONTRIBUTING.md",
         "markeitech.md",
+        "config",
         "docs",
-        "v2",
+        "src",
         "tools",
     }
 )
@@ -206,13 +207,13 @@ def validate_manifest(manifest: ArchitectureManifest) -> None:
 
     for profile in manifest.profiles:
         validate_repository_path(profile.config_path, f"profiles.{profile.id}.config_path")
-        if not profile.config_path.startswith("v2/config/") or profile.config_path.endswith(
+        if not profile.config_path.startswith("config/") or profile.config_path.endswith(
             ".local.toml"
         ):
             raise ManifestError(
                 "MANIFEST_PROFILE_PATH",
                 f"profiles.{profile.id}.config_path",
-                "profile must be a tracked non-local TOML under v2/config",
+                "profile must be a tracked non-local TOML under config",
             )
         if profile.content_sha256 is not None and not _SHA256.fullmatch(profile.content_sha256):
             raise ManifestError(

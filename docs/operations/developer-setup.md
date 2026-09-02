@@ -52,12 +52,11 @@ the network. See the
 ```bash
 git clone https://github.com/ShriekinNinja/Markeitech_V2.git Markeitech
 cd Markeitech
-uv sync --project v2 --locked --dev
+uv sync --locked --dev
 ```
 
-The locked install creates `v2/.venv`. During the accepted two-PR root-promotion transition, the
-runtime project is still nested, so use the explicit `--project v2` command until the promotion PR
-lands.
+The locked install creates the root `.venv` used by the runtime, tests, and normal PyCharm project
+interpreter.
 
 ### Install The Kite Advisor Plugin
 
@@ -102,9 +101,9 @@ execution, effective read-only tool isolation, redaction, safe failure, or plugi
 The following commands never overwrite existing machine files:
 
 ```bash
-test -e v2/.env || cp v2/.env.example v2/.env
-test -e v2/config/system.local.toml || \
-  cp v2/config/system.example.toml v2/config/system.local.toml
+test -e .env || cp .env.example .env
+test -e config/system.local.toml || \
+  cp config/system.example.toml config/system.local.toml
 ```
 
 Both destination files are ignored by Git.
@@ -119,7 +118,7 @@ projection settings shown in `system.example.toml`: `projection_lookback_days`,
 `response_timeout_ms`, `maximum_attempts`, `retry_backoff_ms`, and `maximum_elapsed_ms` values;
 these local actor-delivery controls are independent of IB historical polling and metric-demand
 retries. The referenced catalog path is resolved relative to the system
-TOML and must exist; the tracked catalog is `v2/config/market-calendars.toml`. Set `calendar_ids`
+TOML and must exist; the tracked catalog is `config/market-calendars.toml`. Set `calendar_ids`
 to the exact catalog definitions this profile needs; unused entries are validated but are not
 instantiated. Analytical profiles and windows must use the configured product-phase names, such
 as `GLOBEX` for the CME/CBOT equity definitions. Concrete instrument-to-calendar bindings belong
@@ -136,7 +135,7 @@ its reviewed IB, instrument, analytical-profile, persistence, and metric setting
 
 ### Environment file
 
-Set these values in `v2/.env`:
+Set these values in `.env`:
 
 - `MARKEITECH_POSTGRES_PASSWORD`: a local password for the Docker PostgreSQL service
 - `MARKEITECH_POSTGRES_DSN`: the same password in the application connection string
@@ -147,7 +146,7 @@ its values into issues, pull requests, logs, or documentation.
 
 ### System configuration
 
-Review `v2/config/system.local.toml` before connecting:
+Review `config/system.local.toml` before connecting:
 
 1. `[ib].host`, `[ib].port`, and `[ib].client_id`
 2. current explicit futures contracts in historical probes, profile bindings, and watchlist members
@@ -197,14 +196,14 @@ connect to IB. Use `./scripts/check-env --with-ib` only when TWS/Gateway should 
 Run offline verification:
 
 ```bash
-uv run --project v2 ruff check v2/src v2/tests
-uv run --project v2 pytest -q v2/tests -m "not postgres"
+uv run ruff check src tests
+uv run pytest -q tests -m "not postgres"
 ```
 
 ## 5. Configure PyCharm
 
 1. Open the repository root.
-2. Select the existing interpreter at `v2/.venv/bin/python`.
+2. Select the existing interpreter at `.venv/bin/python`.
 3. Allow PyCharm to create its local module and workspace files.
 4. Confirm Docker Desktop and TWS/IB Gateway are running.
 5. Create a local Shell run configuration around the command in the next section if desired.
@@ -215,8 +214,8 @@ layout, and interpreter metadata remain local and cannot affect another machine'
 ## 6. Run From The Terminal
 
 ```bash
-docker compose --env-file v2/.env -f v2/compose.yaml up -d --wait postgres
-uv run --project v2 markeitech-system v2/config/system.local.toml \
+docker compose --env-file .env -f compose.yaml up -d --wait postgres
+uv run markeitech-system config/system.local.toml \
   --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
 ```
 
@@ -232,7 +231,7 @@ Expected startup behavior:
 5. System control publishes `READY` only when mandatory prerequisites are satisfied.
 6. Discord receives eligible system-health transitions.
 
-Runtime logs are written under `v2/data/logs/`. All `v2/data/` content is local and ignored.
+Runtime logs are written under `data/logs/`. All `data/` content is local and ignored.
 
 ## 7. Stop And Inspect
 
@@ -242,8 +241,8 @@ bounded persistence work, returns from Nautilus, and closes the run as `STOPPED`
 PostgreSQL remains running after Markeitech stops:
 
 ```bash
-docker compose --env-file v2/.env -f v2/compose.yaml ps
-docker compose --env-file v2/.env -f v2/compose.yaml stop postgres
+docker compose --env-file .env -f compose.yaml ps
+docker compose --env-file .env -f compose.yaml stop postgres
 ```
 
 Do not use `docker compose down --volumes` unless the operational history is intentionally being
@@ -254,16 +253,16 @@ destroyed.
 Git alone restores source, tests, project instructions, notes, and the portable AI entrypoint. To
 continue with local state, transfer these separately through a secure channel:
 
-- `v2/.env`
-- `v2/config/system.local.toml`
-- required files under `v2/data/`, such as licensed vendor exports
+- `.env`
+- `config/system.local.toml`
+- required files under `data/`, such as licensed vendor exports
 - an optional PostgreSQL dump when operational history must continue
 
 Create a PostgreSQL backup on the original machine:
 
 ```bash
 mkdir -p "$HOME/markeitech-backups"
-docker compose --env-file v2/.env -f v2/compose.yaml exec -T postgres \
+docker compose --env-file .env -f compose.yaml exec -T postgres \
   pg_dump -U markeitech -d markeitech -Fc \
   > "$HOME/markeitech-backups/markeitech-postgres.dump"
 ```
@@ -271,8 +270,8 @@ docker compose --env-file v2/.env -f v2/compose.yaml exec -T postgres \
 On the new machine, start PostgreSQL and restore the dump:
 
 ```bash
-docker compose --env-file v2/.env -f v2/compose.yaml up -d --wait postgres
-docker compose --env-file v2/.env -f v2/compose.yaml exec -T postgres \
+docker compose --env-file .env -f compose.yaml up -d --wait postgres
+docker compose --env-file .env -f compose.yaml exec -T postgres \
   pg_restore -U markeitech -d markeitech --clean --if-exists \
   < "$HOME/markeitech-backups/markeitech-postgres.dump"
 ```
@@ -295,16 +294,15 @@ rather than relying on chat history alone.
 
 ### `markeitech-system` is missing
 
-Run `uv sync --project v2 --locked --dev`, then invoke commands through
-`uv run --project v2` or `v2/.venv/bin/python`.
+Run `uv sync --locked --dev`, then invoke commands through `uv run` or `.venv/bin/python`.
 
 ### PostgreSQL does not start
 
 Confirm Docker Desktop is running, port `5432` is available, and the password/DSN agree. Inspect:
 
 ```bash
-docker compose --env-file v2/.env -f v2/compose.yaml ps
-docker compose --env-file v2/.env -f v2/compose.yaml logs postgres
+docker compose --env-file .env -f compose.yaml ps
+docker compose --env-file .env -f compose.yaml logs postgres
 ```
 
 ### IB cannot connect
@@ -320,4 +318,4 @@ requested market is currently publishing. A missing entitlement is not repaired 
 ### Discord startup fails
 
 Create a webhook in a channel owned by the current user and place its complete URL only in
-`v2/.env`. The tracked example intentionally contains no webhook.
+`.env`. The tracked example intentionally contains no webhook.

@@ -35,7 +35,7 @@ Before a substantive consultation:
 1. Read `AGENTS.md`, `markeitech.md`, `docs/current-status.md`,
    `docs/development-guidelines.md`, `docs/README.md`, and the accepted documents governing the
    requested slice.
-2. Inspect the current branch and worktree, `v2/pyproject.toml`, `v2/uv.lock`, the exact Python
+2. Inspect the current branch and worktree, `pyproject.toml`, `uv.lock`, the exact Python
    interpreter/build, relevant source, nearby tests, and existing runtime evidence.
 3. Read [references/evidence-and-sources.md](references/evidence-and-sources.md) and label every
    consequential claim using its evidence vocabulary.

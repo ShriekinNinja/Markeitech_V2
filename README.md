@@ -57,22 +57,22 @@ Node.js is not part of the current runtime setup.
 
 ## Quick Start
 
-Clone the repository, then install the locked V2 environment:
+Clone the repository, then install the locked environment from the repository root:
 
 ```bash
-uv sync --project v2 --locked --dev
+uv sync --locked --dev
 ```
 
 Create local files without replacing an existing machine configuration:
 
 ```bash
-test -e v2/.env || cp v2/.env.example v2/.env
-test -e v2/config/system.local.toml || \
-  cp v2/config/system.example.toml v2/config/system.local.toml
+test -e .env || cp .env.example .env
+test -e config/system.local.toml || \
+  cp config/system.example.toml config/system.local.toml
 ```
 
-Edit `v2/.env` with a local PostgreSQL password, matching DSN, and a Discord system-health
-webhook. Edit `v2/config/system.local.toml` for the local IB port/client ID, current explicit
+Edit `.env` with a local PostgreSQL password, matching DSN, and a Discord system-health
+webhook. Edit `config/system.local.toml` for the local IB port/client ID, current explicit
 futures contracts, entitled instruments, and reviewed runtime policy.
 
 Start Docker Desktop, then run the setup doctor:
@@ -84,15 +84,15 @@ Start Docker Desktop, then run the setup doctor:
 Run offline verification:
 
 ```bash
-uv run --project v2 ruff check v2/src v2/tests
-uv run --project v2 pytest -q v2/tests -m "not postgres"
+uv run ruff check src tests
+uv run pytest -q tests -m "not postgres"
 ```
 
 For the normal connected workflow, start Docker Desktop and run:
 
 ```bash
-docker compose --env-file v2/.env -f v2/compose.yaml up -d --wait postgres
-uv run --project v2 markeitech-system v2/config/system.local.toml \
+docker compose --env-file .env -f compose.yaml up -d --wait postgres
+uv run markeitech-system config/system.local.toml \
   --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
 ```
 
@@ -101,28 +101,28 @@ This command connects to IB. Review the [developer setup](docs/operations/develo
 
 ## Configuration Ownership
 
-- `v2/config/system.example.toml` is the tracked starting template.
-- `v2/config/system.local.toml` is the ignored machine/runtime configuration.
-- `v2/.env.example` documents required environment keys.
-- `v2/.env` contains ignored local secrets.
+- `config/system.example.toml` is the tracked starting template.
+- `config/system.local.toml` is the ignored machine/runtime configuration.
+- `.env.example` documents required environment keys.
+- `.env` contains ignored local secrets.
 - `.idea/` is entirely local; create IDE launchers around the documented command as needed.
 
 Never commit `.env`, `system.local.toml`, runtime logs, vendor exports, database dumps, or other
-files under `v2/data/`.
+files under `data/`.
 
 ## Repository Map
 
-- `v2/` - active runtime, tests, configuration template, and Docker service during the
-  root-promotion transition
+- `src/markeitech/` - the sole active runtime package
+- `tests/` - runtime and contract tests
+- `config/` - tracked configuration templates and calendar definitions
+- `compose.yaml`, `pyproject.toml`, and `uv.lock` - root service and Python project definitions
 - `docs/` - current authority, architecture, operations, roadmap, research, and notes
 - `AGENTS.md` - portable AI-agent entrypoint and mandatory working boundaries
 - `markeitech.md` - governing project and engineering charter
 
-During the first root-promotion PR, the sole runtime remains under `v2/`, so use the explicit
-`--project v2` commands above. The accepted
-[root-promotion plan](docs/roadmap/v2-complete-codebase-migration-plan.md) moves that project to the
-repository root in the second PR. The root `scripts/check-env` command remains the active setup
-doctor throughout the transition.
+The V2 project is rooted directly in the repository; no nested project selector is required. The
+[root-promotion plan](docs/roadmap/v2-complete-codebase-migration-plan.md) records the migration and
+its recovery boundaries. `scripts/check-env` is the active setup doctor.
 
 ## Documentation
 

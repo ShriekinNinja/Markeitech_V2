@@ -31,7 +31,7 @@ The branch name should identify the stage, such as `v2-ci-foundation`. Do not us
 Pull requests targeting `master` and manual workflow runs execute `.github/workflows/v2-ci.yml`.
 The workflow has three branch-protection-ready jobs:
 
-- **V2 Ruff** runs `ruff check` over `v2/src` and `v2/tests`.
+- **V2 Ruff** runs `ruff check` over `src` and `tests`.
 - **V2 Offline Tests** runs the V2 pytest suite with PostgreSQL-marked tests excluded.
 - **V2 PostgreSQL Integration** starts an ephemeral PostgreSQL 17 service and runs only the
   PostgreSQL-marked tests with a synthetic CI DSN.

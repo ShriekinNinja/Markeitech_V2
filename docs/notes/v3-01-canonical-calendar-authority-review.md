@@ -432,7 +432,7 @@ divergence, not normalized away to make parity appear green.
 The review batch now implements one breaking cutover with no shadow or legacy calendar authority:
 
 - system schema 21 loads the dedicated schema-3/catalog-version-4
-  `v2/config/market-calendars.toml` catalog and
+  `config/market-calendars.toml` catalog and
   rejects inline definitions, old dated overrides, and older system/catalog schemas;
 - the loader pins mcal 5.4.0, provider class, provider timezone, admitted columns, product phases,
   source/correction identity, deterministic digests, and bounded default projection requests
@@ -511,8 +511,8 @@ local terminal projection outcomes but does not silently redefine global readine
 
 On 2026-08-31, Markeitect accepted operational run
 `c35f7d8b-97fe-4a2e-bddc-aaf0f6e9a6d7` as the bounded V3-01 repair acceptance. The run used the
-tracked `v2/config/system.v3-es-minimal.toml` schema-21 profile and
-`v2/config/market-calendars.toml` schema-3/catalog-version-4 definitions from repair commit
+tracked `config/system.v3-es-minimal.toml` schema-21 profile and
+`config/market-calendars.toml` schema-3/catalog-version-4 definitions from repair commit
 `5b00af3e4e61b8b1f32aa5680b267f9f7904814d`. At closure, the system-config SHA-256 was
 `08fa5fad2af4e77eeb7670a2212b48095effda7da41764d92f8685c62085257f`, the catalog-file
 SHA-256 was `a753b96d959fc2609308cc5414d0a555cde938d3c84dd084fe97e79e4873ea5e`, and the accepted

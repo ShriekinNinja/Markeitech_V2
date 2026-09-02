@@ -25,7 +25,7 @@ plugins:
       handlers:
         python:
           paths:
-            - ../../v2/src
+            - ../../src
           inventories: []
           load_external_modules: false
           options:

@@ -158,7 +158,7 @@ def build_public_entries(
                 raise ApiDocsError("PUBLIC_OBJECT_MISSING: export has no static object") from exc
             target = _target(surface_object)
             source = _object_source_path(target, repository_root)
-            if not source.startswith("v2/src/markeitech/"):
+            if not source.startswith("src/markeitech/"):
                 raise ApiDocsError("PUBLIC_ALIAS_EXTERNAL: export resolves outside V2 source")
             metadata = target.extra.get("markeitech", {}).get("metadata", [])
             occurrence_ids = tuple(
@@ -211,7 +211,7 @@ def build_public_entries(
 
 
 def documentation_input_paths(repository_root: Path, tool_root: Path) -> tuple[Path, ...]:
-    paths = list((repository_root / "v2" / "src" / "markeitech").rglob("*.py"))
+    paths = list((repository_root / "src" / "markeitech").rglob("*.py"))
     paths.extend((tool_root / "src").rglob("*.py"))
     paths.extend((tool_root / "docs").rglob("*.md"))
     paths.extend((tool_root / "docs").rglob("*.css"))
@@ -262,7 +262,7 @@ def capture_source_snapshot(repository_root: Path, tool_root: Path) -> SourceSna
         "--porcelain=v1",
         "--untracked-files=all",
         "--",
-        "v2/src/markeitech",
+        "src/markeitech",
         "tools/api-docs",
     )
     status_lines = tuple(line for line in status.splitlines() if line)
@@ -299,7 +299,7 @@ def build_api_index(
     surface: PublicSurfaceRegistry,
     attributes: AttributeRegistry,
 ) -> ApiIndex:
-    source_root = repository_root / "v2" / "src"
+    source_root = repository_root / "src"
     package, extension = load_static_package(source_root, attributes)
     entries = build_public_entries(
         package=package,

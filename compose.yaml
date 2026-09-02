@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: markeitech
       POSTGRES_USER: markeitech
-      POSTGRES_PASSWORD: ${MARKEITECH_POSTGRES_PASSWORD:?set in v2/.env}
+      POSTGRES_PASSWORD: ${MARKEITECH_POSTGRES_PASSWORD:?set in .env}
     ports:
       - "127.0.0.1:5432:5432"
     healthcheck:

@@ -1,6 +1,6 @@
 # Tracked V2 starting template. Copy this file to system.local.toml before a connected run.
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
-# Never place secrets in this file; local secrets belong in the ignored v2/.env.
+# Never place secrets in this file; local secrets belong in the ignored .env.
 
 schema_version = 23
 

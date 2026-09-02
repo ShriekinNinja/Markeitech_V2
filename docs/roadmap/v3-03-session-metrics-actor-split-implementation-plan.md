@@ -1278,50 +1278,50 @@ Exact filenames may be adjusted during review, but ownership must remain explici
 
 ### Reuse or extend
 
-- `v2/src/markeitech/intelligence/completed_bars.py`
-- `v2/src/markeitech/intelligence/metrics.py`
-- `v2/src/markeitech/intelligence/session_measurements.py`
-- `v2/src/markeitech/intelligence/session_references.py`
-- `v2/src/markeitech/intelligence/session_windows.py`
-- `v2/src/markeitech/intelligence/rolling_measurements.py`
-- `v2/src/markeitech/intelligence/visual_debug_capture.py`
-- `v2/src/markeitech/intelligence/visual_debug_capture_actor.py`
-- `v2/src/markeitech/intelligence/visual_debug_capture_plotly.py`
-- `v2/src/markeitech/intelligence/calendar_delivery.py`
-- `v2/src/markeitech/system/config.py`
-- `v2/src/markeitech/system/composition.py`
+- `src/markeitech/intelligence/completed_bars.py`
+- `src/markeitech/intelligence/metrics.py`
+- `src/markeitech/intelligence/session_measurements.py`
+- `src/markeitech/intelligence/session_references.py`
+- `src/markeitech/intelligence/session_windows.py`
+- `src/markeitech/intelligence/rolling_measurements.py`
+- `src/markeitech/intelligence/visual_debug_capture.py`
+- `src/markeitech/intelligence/visual_debug_capture_actor.py`
+- `src/markeitech/intelligence/visual_debug_capture_plotly.py`
+- `src/markeitech/intelligence/calendar_delivery.py`
+- `src/markeitech/system/config.py`
+- `src/markeitech/system/composition.py`
 
 ### Proposed new focused modules
 
-- `v2/src/markeitech/intelligence/completed_bar_messages.py`
-- `v2/src/markeitech/intelligence/historical_bar_validation.py`
-- `v2/src/markeitech/intelligence/metric_producer_manifest.py`
-- `v2/src/markeitech/intelligence/completed_bar_foundation_actor.py`
-- `v2/src/markeitech/intelligence/completed_bar_metric_actor.py`
-- `v2/src/markeitech/intelligence/session_reference_metric_actor.py`
-- `v2/src/markeitech/intelligence/analytical_window_metric_actor.py`
-- `v2/src/markeitech/intelligence/rolling_measurement_actor.py`
+- `src/markeitech/intelligence/completed_bar_messages.py`
+- `src/markeitech/intelligence/historical_bar_validation.py`
+- `src/markeitech/intelligence/metric_producer_manifest.py`
+- `src/markeitech/intelligence/completed_bar_foundation_actor.py`
+- `src/markeitech/intelligence/completed_bar_metric_actor.py`
+- `src/markeitech/intelligence/session_reference_metric_actor.py`
+- `src/markeitech/intelligence/analytical_window_metric_actor.py`
+- `src/markeitech/intelligence/rolling_measurement_actor.py`
 
 ### Retirement candidate after cutover
 
-- `v2/src/markeitech/intelligence/session_metric_actor.py`
+- `src/markeitech/intelligence/session_metric_actor.py`
 
 ### Focused verification
 
-- retain and migrate `v2/tests/intelligence/test_completed_bars.py`;
-- retain and migrate `v2/tests/intelligence/test_session_references.py`;
-- retain and migrate `v2/tests/intelligence/test_session_windows.py`;
-- retain and extend `v2/tests/intelligence/test_rolling_measurements.py`;
-- retain and migrate `v2/tests/intelligence/test_visual_debug_capture.py`;
+- retain and migrate `tests/intelligence/test_completed_bars.py`;
+- retain and migrate `tests/intelligence/test_session_references.py`;
+- retain and migrate `tests/intelligence/test_session_windows.py`;
+- retain and extend `tests/intelligence/test_rolling_measurements.py`;
+- retain and migrate `tests/intelligence/test_visual_debug_capture.py`;
 - add focused identity, producer/partition-manifest, startup-readiness, historical-usage,
   historical-validation, exact-series-routing, route/payload mismatch, safe-topic-token, and
   one-actor-per-owner tests;
-- extend `v2/tests/system/test_config.py` and
-  `v2/tests/system/test_v3_es_minimal_config.py`;
-- extend `v2/tests/system/test_composition.py` for uniqueness and cutover exclusion;
-- extend `v2/tests/system/test_message_delivery.py` for native typed end-to-end delivery; and
+- extend `tests/system/test_config.py` and
+  `tests/system/test_v3_es_minimal_config.py`;
+- extend `tests/system/test_composition.py` for uniqueness and cutover exclusion;
+- extend `tests/system/test_message_delivery.py` for native typed end-to-end delivery; and
 - migrate the valid non-interference assertions from
-  `v2/tests/intelligence/test_session_metric_capture_alignment.py` to the new topology before
+  `tests/intelligence/test_session_metric_capture_alignment.py` to the new topology before
   retiring that legacy-monolith fixture.
 
 ## Acceptance Matrix

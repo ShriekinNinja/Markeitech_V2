@@ -1,7 +1,7 @@
 # V2 Static API Documentation
 
 The API documentation utility generates a curated HTML reference and machine-readable indexes from
-`v2/src/markeitech` without importing or running Markeitech. It is documentation infrastructure
+`src/markeitech` without importing or running Markeitech. It is documentation infrastructure
 only: it does not define runtime behavior, public compatibility guarantees, or accepted
 architecture.
 

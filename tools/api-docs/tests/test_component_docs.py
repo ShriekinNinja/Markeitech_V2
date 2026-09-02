@@ -45,7 +45,7 @@ class ComponentDocsTest(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         repository_root = Path(temporary.name)
-        source_root = repository_root / "v2" / "src" / "markeitech"
+        source_root = repository_root / "src" / "markeitech"
         source_root.mkdir(parents=True)
         for name, value in sources.items():
             (source_root / name).write_text(value, encoding="utf-8")
@@ -63,7 +63,7 @@ class ComponentDocsTest(unittest.TestCase):
         self.assertEqual(component["object_path"], "markeitech.private_actor.FixtureActor")
         self.assertEqual(
             component["implementation_ref"],
-            "v2/src/markeitech/private_actor.py:FixtureActor",
+            "src/markeitech/private_actor.py:FixtureActor",
         )
 
     def test_duplicate_component_identity_fails_closed(self) -> None:

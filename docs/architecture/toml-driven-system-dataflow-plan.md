@@ -104,8 +104,8 @@ Relevant accepted architecture, roadmap, operations, source, configuration, and 
 - `docs/operations/developer-setup.md`
 - `docs/operations/github-workflow.md`
 - current composition, node construction, configuration, acquisition, historical, session, health, metric, entity, persistence, Discord, resource, and visual-debug source and nearby tests
-- `v2/config/system.v3-es-minimal.toml`
-- `v2/pyproject.toml` and `v2/uv.lock`
+- `config/system.v3-es-minimal.toml`
+- `pyproject.toml` and `uv.lock`
 
 Discovery was static and read-only. No runtime module was imported, no test suite or service was run, no `.env` or ignored local profile was opened, no provider or database was contacted, and no dependency was installed. Tracked documents establish accepted intent and status; implementation establishes current code behavior; passing tests establish only their exercised scope; previously recorded connected evidence remains bounded to its named run.
 
@@ -143,7 +143,7 @@ Additional specialists were intentionally not selected for this planning decisio
 
 ### Current runtime container and native boundary
 
-`v2/src/markeitech/system/node.py` constructs one NautilusTrader `LiveNode` through `LiveNode.builder(...)`, configures one Interactive Brokers data client, builds the node, and registers the code-owned actor plan using `add_actor_from_config(...)`. The project is pinned to NautilusTrader `2.0.0rc3` by `v2/pyproject.toml` and `v2/uv.lock`.
+`src/markeitech/system/node.py` constructs one NautilusTrader `LiveNode` through `LiveNode.builder(...)`, configures one Interactive Brokers data client, builds the node, and registers the code-owned actor plan using `add_actor_from_config(...)`. The project is pinned to NautilusTrader `2.0.0rc3` by `pyproject.toml` and `uv.lock`.
 
 The manifest may identify these current native boundaries:
 
@@ -161,7 +161,7 @@ The RC3 public actor surface verifies signals and custom data, but not a current
 
 ### Actor composition and ordering
 
-`v2/src/markeitech/system/composition.py` is the code-owned actor-plan authority. Its registration order is:
+`src/markeitech/system/composition.py` is the code-owned actor-plan authority. Its registration order is:
 
 1. `system_control` — always composed
 2. `session_state` — always composed
@@ -184,7 +184,7 @@ The RC3 public actor surface verifies signals and custom data, but not a current
 
 Duplicate actor IDs are rejected. Registration order is not startup order, event-delivery order, callback order, readiness order, stop order, or a dependency guarantee. These relationship classes must be independently represented.
 
-The tracked `v2/config/system.v3-es-minimal.toml` profile is schema 18. Static evaluation and the focused profile test establish this eight-actor plan:
+The tracked `config/system.v3-es-minimal.toml` profile is schema 18. Static evaluation and the focused profile test establish this eight-actor plan:
 
 1. `SYSTEM-CONTROL`
 2. `SESSION-STATE`
@@ -539,7 +539,7 @@ limitations = [
 
 [[profiles]]
 id = "v3-progressive-review"
-config_path = "v2/config/system.v3-es-minimal.toml"
+config_path = "config/system.v3-es-minimal.toml"
 config_schema_version = 18
 content_sha256 = "<generated-during-approved-reconciliation>"
 status = "tracked_profile"
@@ -556,7 +556,7 @@ label = "Session Metrics"
 kind = "markeitech_actor"
 logical_area = "data-processing-intelligence-state"
 boundary = "boundary.nautilus-live-node"
-implementation_ref = "v2/src/markeitech/system/session_metrics.py:SessionMetricsActor"
+implementation_ref = "src/markeitech/system/session_metrics.py:SessionMetricsActor"
 actor_id = "SESSION-METRICS"
 responsibilities = ["completed-bar admission", "configured metric publication"]
 semantic_owner = "actor.session-metrics"
@@ -732,7 +732,7 @@ Validate before creating a graph:
 
 Use `ast`, `tomllib`, and bounded source text only. Never import or execute source. Initial supported checks should include:
 
-- exact Nautilus pin in `v2/pyproject.toml` and `v2/uv.lock`;
+- exact Nautilus pin in `pyproject.toml` and `uv.lock`;
 - the whitelisted `LiveNode.builder(...).add_data_client(...).build()` and `add_actor_from_config(...)` shape in `node.py`;
 - literal `ActorRegistration` keys, actor IDs, import/config paths, registration order, and explicit enablement conditions in `composition.py`;
 - tracked profile schema and values through `tomllib`, evaluated only by closed declarative rules;
@@ -1029,7 +1029,7 @@ Recommendation: approve a **separate exact-locked documentation-tool environment
 The implementation spike verified and adopted Diagrams `0.25.1`, Python Graphviz `0.20.3`, Python `3.13.3`, and native Graphviz `15.1.1` in the separately locked documentation-tool boundary. The exact Python closure is recorded in `tools/system-diagram/uv.lock`; the native Graphviz identity is checked and recorded during each generation. The final uncommitted batch still requires Markeitect's dependency and license review before commit.
 
 - complete lock/transitive review with hashes and current advisory check;
-- verification under the project’s approved Python version rather than relying on the missing worktree-local `v2/.venv`;
+- verification under the project’s approved Python version rather than relying on the missing worktree-local `.venv`;
 - native Graphviz executable origin/version/plugin/font review;
 - license/notice review for MIT and EPL-2.0 components;
 - confirmation that generation works offline after provisioning;

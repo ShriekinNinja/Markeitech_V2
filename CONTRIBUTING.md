@@ -30,8 +30,8 @@ or raw market data.
 ## Verification
 
 ```bash
-uv run --project v2 ruff check v2/src v2/tests
-uv run --project v2 pytest -q v2/tests -m "not postgres"
+uv run ruff check src tests
+uv run pytest -q tests -m "not postgres"
 ```
 
 Connected IB acceptance is manual and operator-owned. Automated tests and CI must never connect to

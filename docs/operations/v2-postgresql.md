@@ -42,8 +42,8 @@ callbacks into database records.
 The **Markeitech V2** PyCharm run configuration starts the local PostgreSQL service, waits until it
 is healthy, and then starts Markeitech. This remains the only run configuration required.
 
-The service configuration is `v2/compose.yaml`. Local credentials and the application DSN live in
-the Git-ignored `v2/.env`:
+The service configuration is `compose.yaml`. Local credentials and the application DSN live in
+the Git-ignored `.env`:
 
 - `MARKEITECH_POSTGRES_PASSWORD`
 - `MARKEITECH_POSTGRES_DSN`
@@ -80,7 +80,7 @@ write.
 
 ## Manual Service Commands
 
-From `v2/`:
+From ``:
 
 ```bash
 docker compose up -d --wait postgres

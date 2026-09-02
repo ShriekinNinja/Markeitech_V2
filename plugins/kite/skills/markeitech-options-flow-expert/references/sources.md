@@ -16,7 +16,7 @@ govern local claims. Refresh vendor pages and terms for each consequential consu
   and [filters](https://docs.blackboxstocks.com/en/options-platform/options-flow-filters/): vendor
   interface fields and filtering. The current docs show filters and vendor labels but do not
   establish exchange-level grouping, participant intent or a complete export schema.
-- Local `v2/data/OptionsFlow.csv` and prior research are context only. The file is a filtered vendor
+- Local `data/OptionsFlow.csv` and prior research are context only. The file is a filtered vendor
   export and remains untracked/vendor data; it must not enter the plugin or diff.
 
 No third-party skill, proprietary schema text, or undocumented vendor claim is copied. Vendor and

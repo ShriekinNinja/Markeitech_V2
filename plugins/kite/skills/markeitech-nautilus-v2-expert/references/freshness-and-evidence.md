@@ -17,7 +17,7 @@ Begin with broad subsystem navigation before exact-symbol search. Likely guide f
 
 Inspect without modifying:
 
-- `v2/pyproject.toml` and `v2/uv.lock`;
+- `pyproject.toml` and `uv.lock`;
 - installed distribution version and module path;
 - public package exports and `.pyi` stubs;
 - exact imports, constructors, fields, methods, callbacks, and enums;

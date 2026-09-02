@@ -60,15 +60,15 @@ Common IB defaults:
 | TWS | `7497` | `7496` |
 | IB Gateway | `4002` | `4001` |
 
-A custom port is valid when TWS/Gateway and `v2/config/system.local.toml` agree.
+A custom port is valid when TWS/Gateway and `config/system.local.toml` agree.
 
 ## Local Configuration
 
 Create the ignored local file once:
 
 ```bash
-test -e v2/config/system.local.toml || \
-  cp v2/config/system.example.toml v2/config/system.local.toml
+test -e config/system.local.toml || \
+  cp config/system.example.toml config/system.local.toml
 ```
 
 Review the `[ib]` section:
@@ -116,8 +116,8 @@ market data, validate entitlements, or start Nautilus.
 Run offline checks before a connected acceptance:
 
 ```bash
-uv run --project v2 ruff check v2/src v2/tests
-uv run --project v2 pytest -q v2/tests -m "not postgres"
+uv run ruff check src tests
+uv run pytest -q tests -m "not postgres"
 ```
 
 ## Connected Run
@@ -125,8 +125,8 @@ uv run --project v2 pytest -q v2/tests -m "not postgres"
 Run the guarded command directly or place it in a local, untracked PyCharm Shell configuration:
 
 ```bash
-docker compose --env-file v2/.env -f v2/compose.yaml up -d --wait postgres
-uv run --project v2 markeitech-system v2/config/system.local.toml \
+docker compose --env-file .env -f compose.yaml up -d --wait postgres
+uv run markeitech-system config/system.local.toml \
   --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
 ```
 
@@ -139,7 +139,7 @@ instrument readiness; unrelated data paths continue attempting recovery when one
 Inspect:
 
 - console system/actor lifecycle output;
-- `v2/data/logs/markeitech-v2.log`;
+- `data/logs/markeitech-v2.log`;
 - Discord system-health transitions;
 - PostgreSQL runtime and operational-event records; and
 - actor shutdown summaries after controlled `SIGINT`.

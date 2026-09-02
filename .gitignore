@@ -12,18 +12,8 @@ tools/api-docs/.build/
 tools/api-docs/site/
 /docs/api/
 *.dump
-data/catalog/
-data/runtime/
-data/backups/
-data/logs/
-v2/data/logs/
-v2/data/
-v2/config/system.local.toml
-v2/config/system.es-visual-review.local.toml
-data/charts/
-data/research/
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
+data/
 .idea/
 config/*.local.toml
+# Preserve predecessor-local profiles until the operator performs the separate machine cutover.
+v2/config/*.local.toml

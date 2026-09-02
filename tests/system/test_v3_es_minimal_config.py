@@ -9,7 +9,7 @@ from markeitech.system.config import load_system_config
 
 
 def test_v3_es_minimal_config_disables_faulty_session_metrics_surface() -> None:
-    config = load_system_config("v2/config/system.v3-es-minimal.toml")
+    config = load_system_config("config/system.v3-es-minimal.toml")
     plan = build_actor_plan(
         config,
         StartupPrerequisites(
@@ -161,7 +161,7 @@ def test_v3_es_minimal_config_disables_faulty_session_metrics_surface() -> None:
 
 
 def test_v3_es_minimal_composes_active_calendar_operational_and_probe_path() -> None:
-    config = load_system_config("v2/config/system.v3-es-minimal.toml")
+    config = load_system_config("config/system.v3-es-minimal.toml")
 
     plan = build_actor_plan(
         config,
