@@ -131,13 +131,22 @@ looks similar.
 
 ## Collaboration And Git
 
-Work in reviewable batches:
+Every repository change is a reviewable branch/PR batch, including documentation and small fixes:
 
-1. Commit the previously approved batch before starting new changes.
-2. Explain the intent and meaningful tradeoffs before substantial edits.
-3. Leave the new batch uncommitted for Markeitect to inspect in the IDE.
-4. Commit only after explicit approval, using a detailed message.
-5. Use a dedicated branch for a new stage or intentionally divergent work.
+1. Create a new scoped branch from current `master` before editing; preserve unrelated work.
+2. Explain the intent and meaningful tradeoffs, implement only the authorized scope, and verify it.
+3. Commit the scoped files, push the branch, and open a PR. This is included in an authorized
+   change request unless the task explicitly restricts commits or publication.
+4. Keep review fixes on that open PR. Leave it unmerged for Markeitect's approval of the current
+   head and merge after required CI passes. Agents may merge only when that exact operation is
+   explicitly delegated; new commits require renewed approval.
+5. After merge, use a new branch/PR for the next change. Do not begin dependent work before its
+   prerequisite merges unless Markeitect explicitly approves another arrangement.
+
+No direct integration-branch commits/pushes, auto-merge, force-push, or check bypass. Local IDE
+review remains available when requested. The current
+[GitHub workflow](operations/github-workflow.md) replaces older uncommitted-only review language
+without widening architecture, service, data, or destructive-operation authority.
 
 Pause when an architectural assumption becomes questionable. A short design
 review is cheaper than carrying a convenient workaround into persistence or

@@ -107,14 +107,29 @@ perform another restricted action.
 - Explain the intended batch and meaningful tradeoffs before editing.
 - Consult Markeitect before introducing or changing architecture, infrastructure, persistence,
   dependencies, provider ownership, schemas, runtime policy, or product semantics.
-- Commit the previously reviewed batch before beginning a separately approved batch.
-- Leave each new batch uncommitted for Markeitect's local review.
-- Commit only after explicit approval, with a detailed message.
-- Use stage-specific branches without a `codex/` prefix. Push, open a PR, merge, or delete a branch
-  only when that integration step is approved. Never force-push.
-- Pull requests are an external integration record, not a substitute for local review. Every PR
+- Every repository change, including documentation and small fixes, starts on a new scoped branch
+  and is delivered through a GitHub PR. Use stage/task-specific names without a `codex/` prefix.
+  The integration branch is currently `master`; references to the main branch do not authorize a
+  rename. Never implement or commit changes directly on it or push directly to it.
+- An authorized repository-change request includes scoped commits, branch pushes, and opening or
+  updating its PR after verification. Do not stop at an uncommitted-only handoff by default.
+  Read-only requests authorize no edits; plan-only requests authorize only the requested planning
+  artifact, not implementation. Explicit no-commit or no-push instructions limit publication.
+- Keep one coherent change per branch/PR. Review fixes stay on the same open PR; new work after
+  merge gets a new branch/PR. Preserve unrelated work in place and use a separate worktree when
+  needed. Dependent work starts only after its prerequisite PR is merged unless Markeitect
+  explicitly approves a different arrangement.
+- Markeitect owns approval and merge of the current PR head. Agents leave PRs unmerged, even when
+  CI is green or the task says to finish the workflow. An agent may merge only when Markeitect
+  explicitly delegates that specific merge; approval to implement, commit, publish, or revise a
+  PR is not merge authority. New commits require renewed approval of the new head before merge.
+- No auto-merge, force-push, check bypass, or unapproved branch/worktree deletion. A delegated
+  merge uses the reviewed head and a merge commit only after all required CI checks pass.
+- PRs are the default review surface; local IDE review remains available on request. Every PR
   must describe scope, contracts, data/persistence effects, validation, live acceptance, and known
-  debt in detail.
+  debt in detail. Follow `docs/operations/github-workflow.md`; its current protocol supersedes
+  older plan/skill language requiring uncommitted-only review or separate routine PR-publication
+  approval, but never overrides a newer explicit task restriction.
 - Do not run connected IB, Discord, database-destructive, or execution paths unless Markeitect
   explicitly authorizes that exact run. Offline tests are allowed when relevant.
 - Markeitect normally owns connected acceptance runs. Do not consume time, market-data capacity,
@@ -221,8 +236,9 @@ deferred acceptance is stated honestly. Before presenting work for review:
 2. verify local configuration and IDE state were not overwritten;
 3. confirm no connected or destructive action occurred without approval;
 4. summarize what changed, what was verified, and what remains unknown; and
-5. leave the batch uncommitted for Markeitect unless approval to commit was already explicit for
-   that completed diff.
+5. commit only the scoped files, push the change branch, open or update its PR, and report its
+   exact head and CI status while leaving it unmerged for Markeitect; if an explicit task
+   restriction prevents publication, preserve the work and state the remaining gate.
 
-See `CONTRIBUTING.md` and `docs/operations/github-workflow.md` for the local review, commit, PR, CI,
-and merge process.
+See `CONTRIBUTING.md` and `docs/operations/github-workflow.md` for the branch, PR review, CI, and
+Markeitect-owned merge process.
