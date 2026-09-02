@@ -61,6 +61,11 @@ def test_native_port_preserves_bar_type_start_and_limit() -> None:
 
     port.submit(request)
 
+    assert port.provider_id == "IB"
+    assert port.adapter_id == "nautilus-ib"
+    assert port.source_stream_id == "historical-bars"
+    assert port.source_schema_id == "nautilus.bar.v1"
+
     bar_type, start, end, limit, client_id, params = actor.calls[0]
     assert str(bar_type) == "ESU6.CME-1-MINUTE-LAST-EXTERNAL"
     assert start.tzinfo is UTC

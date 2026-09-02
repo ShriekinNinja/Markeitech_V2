@@ -22,8 +22,8 @@ class StaticSourceTest(unittest.TestCase):
     def test_current_index_is_complete_for_declared_denominator(self) -> None:
         index, snapshot, versions = prepare_index(self.paths)
         surface = index.payload["public_surface"]
-        self.assertEqual(surface["expected"], 260)
-        self.assertEqual(surface["selected"], 260)
+        self.assertEqual(surface["expected"], 261)
+        self.assertEqual(surface["selected"], 261)
         self.assertEqual(surface["parse_failed"], 0)
         self.assertEqual(surface["unresolved_alias"], 0)
         self.assertNotIn("LegacyMetricValue", json.dumps(index.payload, sort_keys=True))

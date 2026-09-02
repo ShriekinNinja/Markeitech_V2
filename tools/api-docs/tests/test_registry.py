@@ -83,8 +83,8 @@ class RegistryTest(unittest.TestCase):
         }
         self.assertEqual(actual, expected)
         self.assertEqual(surface.schema_version, 1)
-        self.assertEqual(surface.registry_version, 3)
-        self.assertEqual(sum(item.expected_export_count for item in surface.packages), 259)
+        self.assertEqual(surface.registry_version, 4)
+        self.assertEqual(sum(item.expected_export_count for item in surface.packages), 260)
 
     def test_unsafe_registry_source_path_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

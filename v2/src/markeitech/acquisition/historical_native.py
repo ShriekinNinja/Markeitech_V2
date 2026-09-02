@@ -33,9 +33,40 @@ class NautilusHistoricalPort:
         self,
         actor: NativeHistoricalActor,
         client_id: ClientId | None = None,
+        *,
+        adapter_id: str = "nautilus-ib",
+        source_stream_id: str = "historical-bars",
+        source_schema_id: str = "nautilus.bar.v1",
     ) -> None:
         self._actor = actor
         self._client_id = client_id or ClientId.from_str("IB")
+        self._adapter_id = _required_identity(adapter_id, "adapter_id")
+        self._source_stream_id = _required_identity(source_stream_id, "source_stream_id")
+        self._source_schema_id = _required_identity(source_schema_id, "source_schema_id")
+
+    @property
+    def provider_id(self) -> str:
+        """Return the exact native client identity used for provider requests."""
+
+        return str(self._client_id)
+
+    @property
+    def adapter_id(self) -> str:
+        """Return the configured adapter implementation identity."""
+
+        return self._adapter_id
+
+    @property
+    def source_stream_id(self) -> str:
+        """Return the configured historical response lane identity."""
+
+        return self._source_stream_id
+
+    @property
+    def source_schema_id(self) -> str:
+        """Return the native observation schema identity."""
+
+        return self._source_schema_id
 
     def submit(self, request: HistoricalRequest) -> None:
         bar_type = BarType.from_str(f"{request.instrument_id}-{request.selector}")
@@ -107,3 +138,9 @@ def _utc_datetime(timestamp_ns: int) -> datetime:
         return datetime.fromtimestamp(seconds, UTC)
     except (OverflowError, OSError, ValueError) as exc:
         raise ValueError("historical request timestamp is outside datetime range") from exc
+
+
+def _required_identity(value: str, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a non-empty string")
+    return value.strip()

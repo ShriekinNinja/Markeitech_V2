@@ -8,6 +8,7 @@ import pytest
 
 from markeitech.intelligence import (
     BarCompletionState,
+    CompletedBarInputIdentity,
     CompletedBarLineageEntry,
     CompletedBarSeriesIdentity,
     MetricFidelity,
@@ -34,10 +35,6 @@ def _series() -> CompletedBarSeriesIdentity:
     return CompletedBarSeriesIdentity(
         instrument_id="ESU6.CME",
         venue="CME",
-        provider_id="IB",
-        adapter_id="nautilus-ib",
-        source_stream_id="historical-bars",
-        source_selector="ESU6.CME-1-MINUTE-LAST-EXTERNAL",
         canonical_bar_specification="ESU6.CME-1-MINUTE-LAST-EXTERNAL",
         interval_ns=MINUTE_NS,
         aggregation_policy="direct-provider-completed-bar",
@@ -58,10 +55,21 @@ def _series() -> CompletedBarSeriesIdentity:
     )
 
 
+def _input_identity() -> CompletedBarInputIdentity:
+    return CompletedBarInputIdentity(
+        provider_id="IB",
+        adapter_id="nautilus-ib",
+        source_stream_id="historical-bars",
+        source_selector="ESU6.CME-1-MINUTE-LAST-EXTERNAL",
+        source_schema_id="nautilus.bar.v1",
+    )
+
+
 def _lineage(index: int, *, suffix: str = "primary") -> CompletedBarLineageEntry:
     interval_end = (index + 2) * MINUTE_NS
     return CompletedBarLineageEntry(
         source_class="HISTORICAL",
+        input_identity=_input_identity(),
         provider_observation_ref=f"ib:historical:{index}:{suffix}",
         evidence_refs=(f"request-evidence:{suffix}",),
         source_observed_ts_ns=interval_end,
@@ -118,6 +126,7 @@ def _request(
         request_id="history-es-1m-001",
         usage=usage,
         series_identity=_series(),
+        expected_input_identity=_input_identity(),
         requested_start_ns=MINUTE_NS,
         requested_end_ns=4 * MINUTE_NS,
         maximum_raw_observations=maximum_raw_observations,
@@ -234,6 +243,19 @@ def test_unequal_same_interval_is_rejected_and_exposes_no_usable_bars() -> None:
     assert _canonical_admission_observations(result) == ()
 
 
+def test_live_lineage_is_rejected_from_historical_validation() -> None:
+    live_lineage = replace(_lineage(0), source_class="LIVE")
+
+    result = _validate_historical_batch(
+        _request(),
+        (replace(_observation(0), lineage=(live_lineage,)),),
+    )
+
+    assert result.disposition is _HistoricalValidationDisposition.REJECTED
+    assert result.observations == ()
+    assert _HistoricalValidationReason.IDENTITY_MISMATCH in result.reasons
+
+
 def test_out_of_order_identity_mismatch_and_revision_are_rejected() -> None:
     wrong_identity = replace(
         _observation(0),
@@ -283,6 +305,7 @@ def test_historical_request_range_and_raw_allocation_ceiling_are_explicit() -> N
             request_id="history-too-wide",
             usage=_HistoricalUsage.CANONICAL_SERIES_BOOTSTRAP,
             series_identity=_series(),
+            expected_input_identity=_input_identity(),
             requested_start_ns=MINUTE_NS,
             requested_end_ns=17 * MINUTE_NS,
             maximum_raw_observations=16,
@@ -313,6 +336,24 @@ def test_request_digest_is_deterministic_and_usage_sensitive() -> None:
     assert canonical.request_digest != bounded.request_digest
     with pytest.raises(ValueError, match="does not match"):
         replace(canonical, request_digest="f" * 64)
+
+
+def test_wrong_historical_input_path_is_rejected_without_splitting_series() -> None:
+    wrong_path = replace(
+        _observation(0),
+        lineage=(
+            replace(
+                _lineage(0),
+                input_identity=replace(_input_identity(), source_stream_id="watchlist-last-5s"),
+            ),
+        ),
+    )
+
+    result = _validate_historical_batch(_request(), (wrong_path,))
+
+    assert result.series_identity == _series()
+    assert result.disposition is _HistoricalValidationDisposition.REJECTED
+    assert _HistoricalValidationReason.IDENTITY_MISMATCH in result.reasons
 
 
 def test_result_envelope_rejects_untyped_reasons_and_unordered_usable_bars() -> None:
