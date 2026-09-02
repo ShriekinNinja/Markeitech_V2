@@ -123,6 +123,12 @@ perform another restricted action.
   CI is green or the task says to finish the workflow. An agent may merge only when Markeitect
   explicitly delegates that specific merge; approval to implement, commit, publish, or revise a
   PR is not merge authority. New commits require renewed approval of the new head before merge.
+- Agents working for other contributors publish through their contributor's authorized GitHub
+  identity. Sir Kite is Markeitect's locally configured publishing identity, used by his agents
+  so `ShriekinNinja` can review and approve their PRs; other contributors do not need Sir Kite
+  credentials. Every PR must request `@ShriekinNinja` as reviewer when ready and requires his
+  approval of the current head, regardless of author. Verify the review request in GitHub;
+  a mention alone is not a review request or approval.
 - No auto-merge, force-push, check bypass, or unapproved branch/worktree deletion. A delegated
   merge uses the reviewed head and a merge commit only after all required CI checks pass.
 - PRs are the default review surface; local IDE review remains available on request. Every PR
