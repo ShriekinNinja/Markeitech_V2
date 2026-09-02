@@ -104,9 +104,17 @@ This command connects to IB. Review the [developer setup](docs/operations/develo
 
 - `config/system.example.toml` is the tracked starting template.
 - `config/system.local.toml` is the ignored machine/runtime configuration.
+- [`config/market-calendars.toml`](config/market-calendars.toml) is the tracked calendar catalog,
+  containing reusable exchange-calendar definitions, product phases, and source-cited corrections.
 - `.env.example` documents required environment keys.
 - `.env` contains ignored local secrets.
 - `.idea/` is entirely local; create IDE launchers around the documented command as needed.
+
+Under `[sessions]` in the system TOML, `calendar_catalog = "market-calendars.toml"` selects the
+catalog relative to that system file, and `calendar_ids` selects the active definitions. Each
+`[[watchlist.members]]` entry binds its instrument to a `calendar_id`; rolling a futures contract
+does not require editing the calendar catalog. See [developer setup](docs/operations/developer-setup.md)
+for configuration details.
 
 Never commit `.env`, `system.local.toml`, runtime logs, vendor exports, database dumps, or other
 files under `data/`.
