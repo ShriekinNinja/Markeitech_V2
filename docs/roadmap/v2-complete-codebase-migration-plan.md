@@ -14,6 +14,8 @@ PR 1: merged as GitHub pull request 13 at `1c430b5`
 
 PR 2 branch: `v2-root-promotion`
 
+PR 2 implementation commit: `b2c5bf4`
+
 Pre-migration recovery tag: `pre-v2-root-promotion-2026-09-02` at `553ad135`
 
 Earlier V1 reference: annotated tag `v1-runtime-final`, peeled commit `b398bdf`

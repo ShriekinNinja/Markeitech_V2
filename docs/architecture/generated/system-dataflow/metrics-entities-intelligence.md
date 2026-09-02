@@ -7,7 +7,7 @@ Show implemented metrics/state and profile-disabled entity capabilities with the
 - View ID: `view.metrics-entities-intelligence`
 - Profile: `profile.v3-es-minimal`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `4a414d0c5ce9b3eead005b674e6ce1997fe966b1`
+- Checkout evidence: `b2c5bf41d00e43dea47369e569cd4f326ea758af`
 - Review status: `proposed`
 
 ## Components
