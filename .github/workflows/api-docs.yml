@@ -1,0 +1,84 @@
+name: Markeitech API Documentation
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-docs-${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  UV_VERSION: "0.8.15"
+
+jobs:
+  verify:
+    name: API docs verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: tools/api-docs/uv.lock
+      - name: Install locked docs environment
+        run: uv sync --project tools/api-docs --locked
+      - name: Run docs validation
+        run: >
+          env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0
+          PYTHONPATH=tools/api-docs/src TZ=UTC
+          tools/api-docs/.venv/bin/python -m markeitech_api_docs validate
+      - name: Check committed API docs output
+        run: >
+          env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0
+          PYTHONPATH=tools/api-docs/src TZ=UTC
+          tools/api-docs/.venv/bin/python -m markeitech_api_docs check
+      - name: Run API docs test suite
+        run: >
+          env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0
+          PYTHONPATH=tools/api-docs/src TZ=UTC
+          tools/api-docs/.venv/bin/python -m unittest discover -s tools/api-docs/tests -v
+      - name: Upload committed docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-docs
+          path: docs/api
+
+  deploy:
+    name: Deploy API docs to GitHub Pages
+    if: github.ref == 'refs/heads/master'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/api
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

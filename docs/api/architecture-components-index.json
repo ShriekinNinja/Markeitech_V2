@@ -1,0 +1,314 @@
+{
+  "analysis_mode": "static_ast",
+  "authority": "source_documentation_component_declarations",
+  "components": [
+    {
+      "boundary": "boundary.acquisition",
+      "definition_line": 220,
+      "id": "actor.current-state-historical-probe",
+      "implementation_ref": "src/markeitech/system/historical_probe.py:CurrentStateHistoricalDemandProbeActor",
+      "kind": "markeitech_actor",
+      "label": "Current-State Historical Demand Probe",
+      "object_path": "markeitech.system.historical_probe.CurrentStateHistoricalDemandProbeActor",
+      "record_sha256": "ce5fa0bc0404374a2d4f2d26f98ac0d92885f79cf25ddfa3bdf3b1d39bf1002d",
+      "responsibilities": [
+        "Gate one acceptance-only historical demand on reconciled current session state.",
+        "Observe the correlated plan, readiness, and transient historical batches.",
+        "Exercise one bounded snapshot retry when explicitly configured."
+      ],
+      "source": "src/markeitech/system/historical_probe.py",
+      "source_sha256": "4f2a481f667b731bdae540723c5ad962bbf6d0204b41ebc25296755a600c6d75"
+    },
+    {
+      "boundary": "boundary.acquisition",
+      "definition_line": 123,
+      "id": "actor.data-acquisition",
+      "implementation_ref": "src/markeitech/system/acquisition.py:DataAcquisitionActor",
+      "kind": "markeitech_actor",
+      "label": "Data Acquisition",
+      "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
+      "record_sha256": "9b37aba693e166881c87740b1da11c541c3a673b41eba836f7cc8946a67ea37c",
+      "responsibilities": [
+        "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
+        "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
+        "Publish acquisition lifecycle, historical batches, and consumer readiness."
+      ],
+      "source": "src/markeitech/system/acquisition.py",
+      "source_sha256": "af1e0e6e56e3174d465ae9742a543d3314f51505f2544d1d41b4c94c595b7007"
+    },
+    {
+      "boundary": "boundary.system",
+      "definition_line": 305,
+      "id": "actor.discord-health",
+      "implementation_ref": "src/markeitech/system/discord.py:DiscordHealthActor",
+      "kind": "markeitech_actor",
+      "label": "Discord Health Projection",
+      "object_path": "markeitech.system.discord.DiscordHealthActor",
+      "record_sha256": "842710d05f6b0fc2c19d09158b480391370f784a6625941ded31fbe34db0b280",
+      "responsibilities": [],
+      "source": "src/markeitech/system/discord.py",
+      "source_sha256": "7b8a2a8df7619bde7e6effc4271811e3159e29592662bee32193201fb736ea40"
+    },
+    {
+      "boundary": "boundary.intelligence",
+      "definition_line": 861,
+      "id": "actor.evidence-health",
+      "implementation_ref": "src/markeitech/intelligence/actors.py:EvidenceHealthActor",
+      "kind": "markeitech_actor",
+      "label": "Evidence Health",
+      "object_path": "markeitech.intelligence.actors.EvidenceHealthActor",
+      "record_sha256": "4421810d8fbc9b4f7911b047b5c3abbaffcf8404dee65d90b028962d274aa60a",
+      "responsibilities": [
+        "Evaluate observation freshness and availability.",
+        "Consume definition-identified calendar context without owning mcal.",
+        "Synchronize bounded current state without inferring calendar phase from silence."
+      ],
+      "source": "src/markeitech/intelligence/actors.py",
+      "source_sha256": "7527a6e12548cdbcceb7d6a5524ba579420ae278293e5d4e950a16f5bd477d1f"
+    },
+    {
+      "boundary": "boundary.intelligence",
+      "definition_line": 218,
+      "id": "actor.historical-planner",
+      "implementation_ref": "src/markeitech/system/historical_planner.py:HistoricalEvidencePlannerActor",
+      "kind": "markeitech_actor",
+      "label": "Historical Evidence Planner",
+      "object_path": "markeitech.system.historical_planner.HistoricalEvidencePlannerActor",
+      "record_sha256": "7d7211b64b62149d9ef96cbb2d1b53526b38e16c384d9bdcc3260e93453eec72",
+      "responsibilities": [
+        "Resolve semantic historical evidence demands into exact UTC request plans.",
+        "Use immutable canonical-calendar projections for calendar-relative windows.",
+        "Publish exact plans without calling providers or owning provider pacing."
+      ],
+      "source": "src/markeitech/system/historical_planner.py",
+      "source_sha256": "bdb00413964129ecb0f93edddc4de54323a10f3e3c033f538ef47eb78424e9b8"
+    },
+    {
+      "boundary": "boundary.acquisition",
+      "definition_line": 68,
+      "id": "actor.historical-probe",
+      "implementation_ref": "src/markeitech/system/historical_probe.py:HistoricalDependencyProbeActor",
+      "kind": "markeitech_actor",
+      "label": "Historical Dependency Probe",
+      "object_path": "markeitech.system.historical_probe.HistoricalDependencyProbeActor",
+      "record_sha256": "d46073733ccacb475550afdc9e6d52c3a796aa0bd906ceff47757af353467880",
+      "responsibilities": [],
+      "source": "src/markeitech/system/historical_probe.py",
+      "source_sha256": "4f2a481f667b731bdae540723c5ad962bbf6d0204b41ebc25296755a600c6d75"
+    },
+    {
+      "boundary": "boundary.intelligence",
+      "definition_line": 78,
+      "id": "actor.market-state-entities",
+      "implementation_ref": "src/markeitech/intelligence/market_state_actor.py:MarketStateEntityActor",
+      "kind": "markeitech_actor",
+      "label": "Market State Entities",
+      "object_path": "markeitech.intelligence.market_state_actor.MarketStateEntityActor",
+      "record_sha256": "0d88d790c54a47745aed3fc103e7f4554a936bf6a0a4229164ea39af08f65ad3",
+      "responsibilities": [],
+      "source": "src/markeitech/intelligence/market_state_actor.py",
+      "source_sha256": "bfeb0bedc7346d0ba78cb8a708b85ccfd2e8e1215fd469b3150dc19c1e887a50"
+    },
+    {
+      "boundary": "boundary.intelligence",
+      "definition_line": 69,
+      "id": "actor.market-structure-entities",
+      "implementation_ref": "src/markeitech/intelligence/market_structure_actor.py:MarketStructureEntityActor",
+      "kind": "markeitech_actor",
+      "label": "Market Structure Entities",
+      "object_path": "markeitech.intelligence.market_structure_actor.MarketStructureEntityActor",
+      "record_sha256": "8f80a23f6ab8a511cd3b362c733ae4d47b409fbbf03bae7c14b4fb8cea38ac07",
+      "responsibilities": [],
+      "source": "src/markeitech/intelligence/market_structure_actor.py",
+      "source_sha256": "824ce1ea020c9247c8da0b13a3a50b27870f69e40dc8cf9f4f6a9ee2452a1b6a"
+    },
+    {
+      "boundary": "boundary.system",
+      "definition_line": 30,
+      "id": "actor.native-consumer-probe",
+      "implementation_ref": "src/markeitech/system/native_consumer_probe.py:NativeConsumerProbeActor",
+      "kind": "markeitech_actor",
+      "label": "Native Consumer Probe",
+      "object_path": "markeitech.system.native_consumer_probe.NativeConsumerProbeActor",
+      "record_sha256": "1c47c53641f79ff4bebb787061d02e172ed206cae6c83fe591a63265e64e7a51",
+      "responsibilities": [],
+      "source": "src/markeitech/system/native_consumer_probe.py",
+      "source_sha256": "6a7b194952ab13e56572314f73c0cf672ddcb48a4ca028588d475275b4e33216"
+    },
+    {
+      "boundary": "boundary.system",
+      "definition_line": 749,
+      "id": "actor.operational-persistence",
+      "implementation_ref": "src/markeitech/system/persistence.py:OperationalPersistenceActor",
+      "kind": "markeitech_actor",
+      "label": "Operational Persistence",
+      "object_path": "markeitech.system.persistence.OperationalPersistenceActor",
+      "record_sha256": "daf77506dd9e6471cee46eb0198e0ffe847cb1d690cf64bbd32d62b30359af03",
+      "responsibilities": [],
+      "source": "src/markeitech/system/persistence.py",
+      "source_sha256": "dd18d798090a59007d881eb8432d9cc0b9acf8083298bc65d138894a446b3f6a"
+    },
+    {
+      "boundary": "boundary.intelligence",
+      "definition_line": 60,
+      "id": "actor.quote-quality",
+      "implementation_ref": "src/markeitech/intelligence/quote_metric_actor.py:QuoteQualityMetricsActor",
+      "kind": "markeitech_actor",
+      "label": "Quote Quality Metrics",
+      "object_path": "markeitech.intelligence.quote_metric_actor.QuoteQualityMetricsActor",
+      "record_sha256": "fc301fccc915ccf29ce018d6fe4b4857ee6c29079bba2f9059dda4eca014a017",
+      "responsibilities": [],
+      "source": "src/markeitech/intelligence/quote_metric_actor.py",
+      "source_sha256": "4139c7f9f262eac4de52981c8f0b34f33f269276cf54f448acbf5f5c4390e3cc"
+    },
+    {
+      "boundary": "boundary.system",
+      "definition_line": 181,
+      "id": "actor.runtime-resource-health",
+      "implementation_ref": "src/markeitech/system/resource_health_actor.py:RuntimeResourceHealthActor",
+      "kind": "markeitech_actor",
+      "label": "Runtime Resource Health",
+      "object_path": "markeitech.system.resource_health_actor.RuntimeResourceHealthActor",
+      "record_sha256": "e31bb1be351b202b08e1793c071832b9fefc979e12a91a4f9cb3310b4168bc82",
+      "responsibilities": [],
+      "source": "src/markeitech/system/resource_health_actor.py",
+      "source_sha256": "f92f8e9a96b6f2a0a1b952492759e9a7c2723957a51309fa036ffe5a2feb1753"
+    },
+    {
+      "boundary": "boundary.system",
+      "definition_line": 115,
+      "id": "actor.runtime-resources",
+      "implementation_ref": "src/markeitech/system/resource_actor.py:RuntimeResourceActor",
+      "kind": "markeitech_actor",
+      "label": "Runtime Resources",
+      "object_path": "markeitech.system.resource_actor.RuntimeResourceActor",
+      "record_sha256": "264fa00d79a39986a6bd3f6f6a595f44c0cff631c3fe4b1ddc9fc37fad8a69f8",
+      "responsibilities": [],
+      "source": "src/markeitech/system/resource_actor.py",
+      "source_sha256": "0c1f9de601ccc02bcd2d8c5d2a182c745eef1271c9fafae4bf206178f10c6607"
+    },
+    {
+      "boundary": "boundary.intelligence",
+      "definition_line": 221,
+      "id": "actor.session-metrics",
+      "implementation_ref": "src/markeitech/intelligence/session_metric_actor.py:SessionMetricsActor",
+      "kind": "markeitech_actor",
+      "label": "Session Metrics",
+      "object_path": "markeitech.intelligence.session_metric_actor.SessionMetricsActor",
+      "record_sha256": "4cbc83f774b8fafddd0a337cc11f5909bbd43f3fff9eb48ab24514ecbb7d4660",
+      "responsibilities": [
+        "Converge bounded historical and live bars into completed-bar, session, window, and rolling measurements.",
+        "Consume immutable calendar projections and transitions without instantiating mcal.",
+        "Publish live and historical evidence demands for configured metric capabilities."
+      ],
+      "source": "src/markeitech/intelligence/session_metric_actor.py",
+      "source_sha256": "99abd097e3b926d9684343986cd82b09e75e68be41ddf4390ebb1c684d3fd075"
+    },
+    {
+      "boundary": "boundary.intelligence",
+      "definition_line": 68,
+      "id": "actor.session-reference-entities",
+      "implementation_ref": "src/markeitech/intelligence/session_entity_actor.py:SessionReferenceEntityActor",
+      "kind": "markeitech_actor",
+      "label": "Session Reference Entities",
+      "object_path": "markeitech.intelligence.session_entity_actor.SessionReferenceEntityActor",
+      "record_sha256": "dc1961a757fa612f7178e7021df08024161a587c127fc6e9f8db0ac83f77d6db",
+      "responsibilities": [],
+      "source": "src/markeitech/intelligence/session_entity_actor.py",
+      "source_sha256": "9fc7ed2327a9ebfdfed1fc3f206d4f3542dbf1aa88b8b912a3a9866a09202a72"
+    },
+    {
+      "boundary": "boundary.intelligence",
+      "definition_line": 134,
+      "id": "actor.session-state",
+      "implementation_ref": "src/markeitech/intelligence/actors.py:SessionStateActor",
+      "kind": "markeitech_actor",
+      "label": "Session State",
+      "object_path": "markeitech.intelligence.actors.SessionStateActor",
+      "record_sha256": "8ddbc40dc2f0828639eb6e7f25c45cdb225c618d6a96e79ff2ae85c37ed18cdc",
+      "responsibilities": [
+        "Sole runtime owner of active CanonicalCalendar instances.",
+        "Publish definition-identified calendar transitions and bounded immutable projections.",
+        "Contain ordinary per-calendar projection construction failures without redefining provider data."
+      ],
+      "source": "src/markeitech/intelligence/actors.py",
+      "source_sha256": "7527a6e12548cdbcceb7d6a5524ba579420ae278293e5d4e950a16f5bd477d1f"
+    },
+    {
+      "boundary": "boundary.system",
+      "definition_line": 46,
+      "id": "actor.system-control",
+      "implementation_ref": "src/markeitech/system/actor.py:SystemControlActor",
+      "kind": "markeitech_actor",
+      "label": "System Control",
+      "object_path": "markeitech.system.actor.SystemControlActor",
+      "record_sha256": "3627ae3d6254499793a6ab779b0ee2b975f352aeb16a34c0ed3f4a2cc63642a4",
+      "responsibilities": [],
+      "source": "src/markeitech/system/actor.py",
+      "source_sha256": "037d0dd89570884bdfcb37d58fb316dac6da8a55b210f2e30943ca07b65863da"
+    },
+    {
+      "boundary": "boundary.intelligence",
+      "definition_line": 198,
+      "id": "actor.visual-debug",
+      "implementation_ref": "src/markeitech/intelligence/visual_debug_capture_actor.py:VisualDebugCaptureActor",
+      "kind": "markeitech_actor",
+      "label": "Visual Debug Capture",
+      "object_path": "markeitech.intelligence.visual_debug_capture_actor.VisualDebugCaptureActor",
+      "record_sha256": "7a54bfa946cca351b58db79f400668ce3bbfdbcfc20524063cc23d55da2f51c0",
+      "responsibilities": [],
+      "source": "src/markeitech/intelligence/visual_debug_capture_actor.py",
+      "source_sha256": "f93356de132e019bfef2fdfea120685ac12835d283134936c10e96e625fb5981"
+    },
+    {
+      "boundary": "boundary.acquisition",
+      "definition_line": 251,
+      "id": "actor.watchlist",
+      "implementation_ref": "src/markeitech/system/watchlist.py:WatchlistActor",
+      "kind": "markeitech_actor",
+      "label": "Watchlist",
+      "object_path": "markeitech.system.watchlist.WatchlistActor",
+      "record_sha256": "ae50e45fb3afb9050c6311a9720c84c2dc5347cb76ce4528f6656ef155b9fbf0",
+      "responsibilities": [],
+      "source": "src/markeitech/system/watchlist.py",
+      "source_sha256": "2a25bb33e55fe0592015ed17d35cc0de81ac9074dc1baac71ee359e9954e7658"
+    },
+    {
+      "boundary": "boundary.intelligence",
+      "definition_line": 344,
+      "id": "component.canonical-calendar",
+      "implementation_ref": "src/markeitech/intelligence/session.py:CanonicalCalendar",
+      "kind": "engine",
+      "label": "Canonical Calendar",
+      "object_path": "markeitech.intelligence.session.CanonicalCalendar",
+      "record_sha256": "29caf3ca8f371423884c009c497b06b74f57c59157969cded21891b9a5208c31",
+      "responsibilities": [
+        "Evaluate one immutable versioned calendar definition from admitted mcal schedule facts and configured product phases.",
+        "Produce UTC exchange segments, phase windows, trade-date assignments, and bounded projections.",
+        "Record source-cited corrections and the exact admitted terminal-break normalization outcome."
+      ],
+      "source": "src/markeitech/intelligence/session.py",
+      "source_sha256": "092a640d884b3dfbb0b284bfb921465a5b3dcf6e9eea27e443d122e2a32acef9"
+    }
+  ],
+  "counts": {
+    "components": 20,
+    "with_responsibilities": 7,
+    "without_responsibilities": 13
+  },
+  "evidence_class": "author_declared_source_architecture",
+  "limitations": [
+    "This index covers implementation-backed class components only.",
+    "A source declaration does not prove runtime calls, delivery, or acceptance.",
+    "Relationships, contracts, non-Python components, status, and diagram generation are not implemented in this schema."
+  ],
+  "not_runtime_configuration": true,
+  "registry": {
+    "id": "markeitech-docstring-attributes",
+    "sha256": "6e2aeba63ad491e344be5a1d136f9716a34aa2ed87eeb991aae393aa9df94b84",
+    "version": 2
+  },
+  "schema_id": "markeitech-architecture-class-components",
+  "schema_version": 1,
+  "source_snapshot_sha256": "81ae2b7a54e00da81cf83c8db1ba4501f56347aa5e9f3a2ea63e6f306e4bef49"
+}

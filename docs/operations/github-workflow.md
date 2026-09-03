@@ -3,6 +3,10 @@
 Markeitech uses GitHub for reviewable integration of the V2 runtime. This is a source-control
 and continuous-integration workflow; it is not a deployment system.
 
+The API-reference Pages site is deployed by `.github/workflows/api-docs.yml` after the API-docs
+verification pipeline succeeds. Runtime services and deployment targets are managed separately from
+this document.
+
 Fresh-machine preparation is documented in
 [`developer-setup.md`](developer-setup.md). The conventional repository contribution summary is
 available at the root in [`CONTRIBUTING.md`](../../CONTRIBUTING.md).

@@ -1,0 +1,2815 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Static, non-authoritative API documentation for Markeitech V2.">
+      
+      
+      
+        <link rel="canonical" href="https://shriekinninja.github.io/Markeitech_V2/api/acquisition/">
+      
+      
+        <link rel="prev" href="../system/">
+      
+      
+        <link rel="next" href="../intelligence/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.5">
+    
+    
+      
+        <title>Acquisition - Markeitech V2 API</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.8608ea7d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/markeitech.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#acquisition-api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Markeitech V2 API" class="md-header__button md-logo" aria-label="Markeitech V2 API" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Markeitech V2 API
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Acquisition
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Markeitech V2 API" class="md-nav__button md-logo" aria-label="Markeitech V2 API" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Markeitech V2 API
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture-components/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Architecture components
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    API
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../system/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Acquisition
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Acquisition
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.acquisition" class="md-nav__link">
+    <span class="md-ellipsis">
+      acquisition
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intelligence/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Intelligence
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CLI
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.acquisition" class="md-nav__link">
+    <span class="md-ellipsis">
+      acquisition
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="acquisition-api">Acquisition API<a class="headerlink" href="#acquisition-api" title="Permanent link">&para;</a></h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="markeitech.acquisition" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">markeitech.acquisition</span>
+
+
+<a href="#markeitech.acquisition" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="markeitech.acquisition.HISTORICAL_BATCH_TYPE_NAME" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">markeitech.acquisition.HISTORICAL_BATCH_TYPE_NAME</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HISTORICAL_BATCH_TYPE_NAME" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">HISTORICAL_BATCH_TYPE_NAME</span> <span class="o">=</span> <span class="s1">'MarkeitechHistoricalBatch'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Nautilus custom-data type name for historical observation batches.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="markeitech.acquisition.HISTORICAL_DEPENDENCY_DEMAND_SIGNAL" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">markeitech.acquisition.HISTORICAL_DEPENDENCY_DEMAND_SIGNAL</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HISTORICAL_DEPENDENCY_DEMAND_SIGNAL" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">HISTORICAL_DEPENDENCY_DEMAND_SIGNAL</span> <span class="o">=</span> <span class="s1">'markeitech.historical.dependency_demand'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Message-bus signal name for historical dependency demand.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="markeitech.acquisition.HISTORICAL_EXECUTION_SIGNAL" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">markeitech.acquisition.HISTORICAL_EXECUTION_SIGNAL</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HISTORICAL_EXECUTION_SIGNAL" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">HISTORICAL_EXECUTION_SIGNAL</span> <span class="o">=</span> <span class="s1">'markeitech.historical.execution'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Message-bus signal name for historical execution lifecycle events.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="markeitech.acquisition.HISTORICAL_READINESS_SIGNAL" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">markeitech.acquisition.HISTORICAL_READINESS_SIGNAL</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HISTORICAL_READINESS_SIGNAL" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">HISTORICAL_READINESS_SIGNAL</span> <span class="o">=</span> <span class="s1">'markeitech.historical.readiness'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Message-bus signal name for consumer historical-readiness outcomes.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="markeitech.acquisition.HISTORICAL_REQUEST_PLAN_TYPE_NAME" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">markeitech.acquisition.HISTORICAL_REQUEST_PLAN_TYPE_NAME</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HISTORICAL_REQUEST_PLAN_TYPE_NAME" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">HISTORICAL_REQUEST_PLAN_TYPE_NAME</span> <span class="o">=</span> <span class="s1">'markeitech.historical.request_plan.v1'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Nautilus custom-data type name for calendar-resolved historical plans.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="markeitech.acquisition.__all__" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">markeitech.acquisition.__all__</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.__all__" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'AcquisitionCoordinator'</span><span class="p">,</span> <span class="s1">'AcquisitionLifecycleEvent'</span><span class="p">,</span> <span class="s1">'AcquisitionLifecycleState'</span><span class="p">,</span> <span class="s1">'CapabilityDeclaration'</span><span class="p">,</span> <span class="s1">'CapabilityFeedRequirement'</span><span class="p">,</span> <span class="s1">'CapabilityHistoricalRequirement'</span><span class="p">,</span> <span class="s1">'DemandConflictError'</span><span class="p">,</span> <span class="s1">'DemandOwner'</span><span class="p">,</span> <span class="s1">'DemandOwnerKind'</span><span class="p">,</span> <span class="s1">'DemandReconciler'</span><span class="p">,</span> <span class="s1">'FeedKind'</span><span class="p">,</span> <span class="s1">'FeedRequirement'</span><span class="p">,</span> <span class="s1">'HistoricalCapabilityBinding'</span><span class="p">,</span> <span class="s1">'HistoricalBatch'</span><span class="p">,</span> <span class="s1">'HISTORICAL_BATCH_TYPE_NAME'</span><span class="p">,</span> <span class="s1">'HISTORICAL_DEPENDENCY_DEMAND_SIGNAL'</span><span class="p">,</span> <span class="s1">'HISTORICAL_EXECUTION_SIGNAL'</span><span class="p">,</span> <span class="s1">'HISTORICAL_READINESS_SIGNAL'</span><span class="p">,</span> <span class="s1">'HISTORICAL_REQUEST_PLAN_TYPE_NAME'</span><span class="p">,</span> <span class="s1">'HistoricalDependencyCompiler'</span><span class="p">,</span> <span class="s1">'HistoricalDependencyDemandEvent'</span><span class="p">,</span> <span class="s1">'HistoricalDependencyRef'</span><span class="p">,</span> <span class="s1">'HistoricalDependencyResult'</span><span class="p">,</span> <span class="s1">'HistoricalExecutionCoordinator'</span><span class="p">,</span> <span class="s1">'HistoricalExecutionError'</span><span class="p">,</span> <span class="s1">'HistoricalExecutionEvent'</span><span class="p">,</span> <span class="s1">'HistoricalExecutionEventMessage'</span><span class="p">,</span> <span class="s1">'HistoricalExecutionPolicy'</span><span class="p">,</span> <span class="s1">'HistoricalExecutionPort'</span><span class="p">,</span> <span class="s1">'HistoricalExecutionState'</span><span class="p">,</span> <span class="s1">'HistoricalExecutionUpdate'</span><span class="p">,</span> <span class="s1">'HistoricalPlanningError'</span><span class="p">,</span> <span class="s1">'HistoricalRequest'</span><span class="p">,</span> <span class="s1">'HistoricalResourcePolicy'</span><span class="p">,</span> <span class="s1">'HistoricalReadinessState'</span><span class="p">,</span> <span class="s1">'HistoricalReadinessEvent'</span><span class="p">,</span> <span class="s1">'HistoricalRequestPlan'</span><span class="p">,</span> <span class="s1">'HistoricalWindow'</span><span class="p">,</span> <span class="s1">'HistoricalWindowBounds'</span><span class="p">,</span> <span class="s1">'NativeSubscriptionActor'</span><span class="p">,</span> <span class="s1">'NativeHistoricalActor'</span><span class="p">,</span> <span class="s1">'NautilusHistoricalPort'</span><span class="p">,</span> <span class="s1">'NautilusSubscriptionPort'</span><span class="p">,</span> <span class="s1">'ObservationDemand'</span><span class="p">,</span> <span class="s1">'ProviderDemand'</span><span class="p">,</span> <span class="s1">'SubscriptionPort'</span><span class="p">,</span> <span class="s1">'UnsupportedNativeFeedError'</span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.AcquisitionCoordinator" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.AcquisitionCoordinator</span>
+
+
+<a href="#markeitech.acquisition.AcquisitionCoordinator" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Owns logical demand and the lifetime of provider subscriptions.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.AcquisitionLifecycleEvent" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.AcquisitionLifecycleEvent</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.AcquisitionLifecycleEvent" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Describe one logical or provider subscription lifecycle transition.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.SubscriptionPort" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.SubscriptionPort</span>
+
+
+<a href="#markeitech.acquisition.SubscriptionPort" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
+
+
+
+        <p>Provider-facing subscription commands consumed by the coordinator.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.AcquisitionLifecycleState" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.AcquisitionLifecycleState</span>
+
+
+<a href="#markeitech.acquisition.AcquisitionLifecycleState" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="enum.StrEnum">StrEnum</span></code></p>
+
+
+
+        <p>Observable states in a logical acquisition demand's lifecycle.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.CapabilityDeclaration" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.CapabilityDeclaration</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.CapabilityDeclaration" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Version the live and historical evidence needs of one capability.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.CapabilityFeedRequirement" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.CapabilityFeedRequirement</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.CapabilityFeedRequirement" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Declare an instrument-independent live-feed need for a capability.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.CapabilityHistoricalRequirement" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.CapabilityHistoricalRequirement</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.CapabilityHistoricalRequirement" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Declare one bounded historical-bar need for a capability.</p>
+<p>Observation bounds are counts. Window parameters retain the symbolic
+planning inputs; feed parameters are passed to the provider boundary.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.DemandConflictError" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.DemandConflictError</span>
+
+
+<a href="#markeitech.acquisition.DemandConflictError" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="ValueError">ValueError</span></code></p>
+
+
+
+        <p>Report incompatible reuse of a demand or logical stream identity.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.DemandOwner" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.DemandOwner</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.DemandOwner" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Identify the component responsible for one observation demand.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.DemandOwnerKind" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.DemandOwnerKind</span>
+
+
+<a href="#markeitech.acquisition.DemandOwnerKind" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="enum.StrEnum">StrEnum</span></code></p>
+
+
+
+        <p>Kinds of components authorized to identify an observation-demand owner.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.DemandReconciler" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.DemandReconciler</span>
+
+
+<a href="#markeitech.acquisition.DemandReconciler" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Reconcile many logical consumers into deterministic provider demands.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.FeedKind" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.FeedKind</span>
+
+
+<a href="#markeitech.acquisition.FeedKind" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="enum.StrEnum">StrEnum</span></code></p>
+
+
+
+        <p>Provider-neutral native feed categories supported by acquisition demand.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.FeedRequirement" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.FeedRequirement</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.FeedRequirement" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Bind one provider-neutral feed specification to an exact instrument.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalWindow" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalWindow</span>
+
+
+<a href="#markeitech.acquisition.HistoricalWindow" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="enum.StrEnum">StrEnum</span></code></p>
+
+
+
+        <p>Symbolic time-window identities accepted by historical planning.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.ObservationDemand" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.ObservationDemand</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.ObservationDemand" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Represent one consumer's expiring request for a native observation stream.</p>
+<p><code>expires_at</code> and the <code>now</code> value supplied to :meth:<code>is_expired</code> are
+normalized to UTC. Priority is bounded from zero through 100.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.ProviderDemand" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.ProviderDemand</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.ProviderDemand" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Combine compatible consumer demands into one provider-facing requirement.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalCapabilityBinding" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalCapabilityBinding</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalCapabilityBinding" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Bind a capability's historical evidence needs to one consumer and instrument.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalDependencyCompiler" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalDependencyCompiler</span>
+
+
+<a href="#markeitech.acquisition.HistoricalDependencyCompiler" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Compiles capability needs into deterministic, shared provider requests.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalDependencyRef" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalDependencyRef</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalDependencyRef" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Retain the consumer lineage attached to a shared historical request.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalPlanningError" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalPlanningError</span>
+
+
+<a href="#markeitech.acquisition.HistoricalPlanningError" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="ValueError">ValueError</span></code></p>
+
+
+
+        <p>Report an unresolved window or historical resource-policy violation.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalRequest" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalRequest</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalRequest" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Describe one bounded, provider-facing historical bar request.</p>
+<p><code>start_ns</code> and <code>end_ns</code> are UTC Unix nanoseconds. Dependencies preserve
+every consumer whose readiness depends on the shared request.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalResourcePolicy" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalResourcePolicy</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalResourcePolicy" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Bound compiled request count and observation budgets.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalWindowBounds" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalWindowBounds</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalWindowBounds" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Resolve one symbolic historical window to an inclusive nanosecond range.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalBatch" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalBatch</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalBatch" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Carry one provider response with its request identity and receive time.</p>
+<p><code>received_at_ns</code> is a UTC Unix nanosecond timestamp. Observations remain
+native provider objects and are not made durable by this contract. Provider,
+adapter, stream, and schema identity are copied from the execution port which
+actually submitted the request; downstream consumers must not reconstruct or
+replace that source authority from their own expected configuration.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalDependencyResult" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalDependencyResult</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalDependencyResult" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>State whether one consumer dependency received sufficient observations.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalExecutionCoordinator" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalExecutionCoordinator</span>
+
+
+<a href="#markeitech.acquisition.HistoricalExecutionCoordinator" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Runs bounded asynchronous history without coupling consumers to the provider.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalExecutionError" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalExecutionError</span>
+
+
+<a href="#markeitech.acquisition.HistoricalExecutionError" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="ValueError">ValueError</span></code></p>
+
+
+
+        <p>Report invalid or conflicting historical execution state.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalExecutionEvent" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalExecutionEvent</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalExecutionEvent" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Record one request lifecycle transition at a UTC Unix nanosecond timestamp.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalExecutionPolicy" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalExecutionPolicy</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalExecutionPolicy" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Bound historical queueing, concurrency, timeouts, attempts, and backoff.</p>
+<p>Durations are expressed as nanoseconds.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalExecutionPort" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalExecutionPort</span>
+
+
+<a href="#markeitech.acquisition.HistoricalExecutionPort" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
+
+
+
+        <p>Provider commands required by the historical execution coordinator.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalExecutionState" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalExecutionState</span>
+
+
+<a href="#markeitech.acquisition.HistoricalExecutionState" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="enum.StrEnum">StrEnum</span></code></p>
+
+
+
+        <p>Provider-request lifecycle states emitted by historical execution.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalExecutionUpdate" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalExecutionUpdate</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalExecutionUpdate" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Collect immutable lifecycle events, batches, and dependency outcomes.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalReadinessState" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalReadinessState</span>
+
+
+<a href="#markeitech.acquisition.HistoricalReadinessState" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="enum.StrEnum">StrEnum</span></code></p>
+
+
+
+        <p>Consumer readiness outcomes derived from a terminal historical request.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalDependencyDemandEvent" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalDependencyDemandEvent</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalDependencyDemandEvent" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Serialize one consumer's symbolic historical dependency onto the signal bus.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalExecutionEventMessage" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalExecutionEventMessage</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalExecutionEventMessage" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Serialize one historical request lifecycle transition onto the signal bus.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalReadinessEvent" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalReadinessEvent</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalReadinessEvent" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Serialize one consumer-specific historical readiness outcome.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.HistoricalRequestPlan" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.HistoricalRequestPlan</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.HistoricalRequestPlan" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Bind one calendar-resolved request to its demand and definition lineage.</p>
+<p><code>planned_at_ns</code> and the request time bounds are UTC Unix nanoseconds.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.NativeHistoricalActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.NativeHistoricalActor</span>
+
+
+<a href="#markeitech.acquisition.NativeHistoricalActor" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
+
+
+
+        <p>Nautilus actor operation required to request native historical bars.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.NautilusHistoricalPort" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.NautilusHistoricalPort</span>
+
+
+<a href="#markeitech.acquisition.NautilusHistoricalPort" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Translate resolved historical requests into Nautilus bar requests.</p>
+<p>Cancellation is intentionally local because Nautilus exposes no cancellation
+command for an in-flight historical bar request.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="markeitech.acquisition.NautilusHistoricalPort.provider_id" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">markeitech.acquisition.NautilusHistoricalPort.provider_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.NautilusHistoricalPort.provider_id" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">provider_id</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the exact native client identity used for provider requests.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="markeitech.acquisition.NautilusHistoricalPort.adapter_id" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">markeitech.acquisition.NautilusHistoricalPort.adapter_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.NautilusHistoricalPort.adapter_id" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">adapter_id</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the configured adapter implementation identity.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="markeitech.acquisition.NautilusHistoricalPort.source_stream_id" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">markeitech.acquisition.NautilusHistoricalPort.source_stream_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.NautilusHistoricalPort.source_stream_id" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">source_stream_id</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the configured historical response lane identity.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="markeitech.acquisition.NautilusHistoricalPort.source_schema_id" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">markeitech.acquisition.NautilusHistoricalPort.source_schema_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#markeitech.acquisition.NautilusHistoricalPort.source_schema_id" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">source_schema_id</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the native observation schema identity.</p>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.NativeSubscriptionActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.NativeSubscriptionActor</span>
+
+
+<a href="#markeitech.acquisition.NativeSubscriptionActor" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
+
+
+
+        <p>Nautilus actor subscription operations used by the native port.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.NautilusSubscriptionPort" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.NautilusSubscriptionPort</span>
+
+
+<a href="#markeitech.acquisition.NautilusSubscriptionPort" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Translates simple provider-neutral requirements into native actor calls.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="markeitech.acquisition.UnsupportedNativeFeedError" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.acquisition.UnsupportedNativeFeedError</span>
+
+
+<a href="#markeitech.acquisition.UnsupportedNativeFeedError" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="ValueError">ValueError</span></code></p>
+
+
+
+        <p>Report a feed that requires a richer native subscription contract.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f1b6f286.min.js"></script>
+      
+    
+  </body>
+</html>

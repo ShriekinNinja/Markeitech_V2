@@ -10,6 +10,7 @@ from typing import Any
 from markeitech_api_docs.metadata import parse_metadata_docstring
 from markeitech_api_docs.models import ApiDocsError, AttributeRegistry, SourceSnapshot
 from markeitech_api_docs.registry import sha256_bytes, sha256_file
+from markeitech_api_docs.source import source_snapshot_signature
 
 SCHEMA_ID = "markeitech-architecture-class-components"
 SCHEMA_VERSION = 1
@@ -229,9 +230,7 @@ def build_component_docs_projection(
             "Relationships, contracts, non-Python components, status, and diagram generation "
             "are not implemented in this schema.",
         ],
-        "source_snapshot_sha256": sha256_bytes(
-            json.dumps(snapshot.to_dict(), sort_keys=True, separators=(",", ":")).encode()
-        ),
+        "source_snapshot_sha256": source_snapshot_signature(snapshot),
         "registry": {
             "id": registry.registry_id,
             "version": registry.registry_version,

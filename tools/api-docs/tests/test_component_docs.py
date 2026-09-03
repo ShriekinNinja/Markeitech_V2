@@ -35,6 +35,7 @@ class ComponentDocsTest(unittest.TestCase):
         )
         self.snapshot = SourceSnapshot(
             commit="0" * 40,
+            input_signature="0" * 64,
             state="clean",
             dirty_path_count=0,
             dirty_state_sha256=None,

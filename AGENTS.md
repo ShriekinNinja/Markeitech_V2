@@ -235,8 +235,10 @@ The V2 API documentation utility is an isolated, static source-analysis tool und
   during the migration interval. A future, separately reviewed exporter may make validated source
   documentation upstream of generated TOML and diagrams; until it exists, do not declare the TOML
   generated or remove its maintenance procedure.
-- Generated `docs/api` and `tools/api-docs/.build` content is untracked and must not be hand-edited.
-  Commit source/configuration/registries/tests/lockfiles, then regenerate locally or in approved CI.
+- Generated `docs/api` is a tracked, versioned artifact in this repository and may be regenerated
+  only through the approval-reviewed documentation tool. `tools/api-docs/.build` is disposable.
+  Commit source/configuration/registries/tests/lockfiles, then regenerate and commit `docs/api`
+  through an explicit implementation batch when it changes.
 
 ## Completion Standard
 

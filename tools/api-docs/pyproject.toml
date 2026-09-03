@@ -6,6 +6,7 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
   "griffe==2.2.0",
   "mkdocs==1.6.1",
+  "mkdocs-material==9.6.5",
   "mkdocstrings-python==2.0.5",
 ]
 

@@ -27,7 +27,8 @@ The direct dependencies are locked exactly in the isolated `tools/api-docs` proj
 
 | Dependency | Version | License | Purpose |
 |---|---:|---|---|
-| MkDocs | 1.6.1 | BSD-2-Clause | Strict static-site rendering with the built-in theme |
+| MkDocs | 1.6.1 | BSD-2-Clause | Strict static-site rendering |
+| mkdocs-material | 9.6.5 | MIT | Material theme and Material-style components |
 | mkdocstrings-python | 2.0.5 | ISC | Python API rendering and Google docstring support |
 | Griffe | 2.2.0 | ISC | Static Python source extraction and the custom extension API |
 
@@ -46,6 +47,9 @@ env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 \
   tools/api-docs/.venv/bin/python -m markeitech_api_docs validate
 env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 \
   PYTHONPATH=tools/api-docs/src TZ=UTC \
+  tools/api-docs/.venv/bin/python -m markeitech_api_docs check
+env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 \
+  PYTHONPATH=tools/api-docs/src TZ=UTC \
   tools/api-docs/.venv/bin/python -m markeitech_api_docs generate
 ```
 
@@ -59,9 +63,10 @@ Before entering that constrained analysis/rendering environment, the wrapper run
 read-only `git rev-parse` and scoped `git status` queries to bind the artifact to a commit and dirty
 input state. Those identity queries are the only intended child processes.
 
-Generated output is written to `docs/api`. Both `docs/api` and `tools/api-docs/.build` are ignored
-and must not be committed or edited manually. The legacy `tools/api-docs/site` ignore rule remains
-temporarily so a stale local projection cannot enter a commit; the generator no longer writes it.
+Generated output is written to `docs/api` and committed as a reviewable tracked artifact after
+regeneration. `tools/api-docs/.build` remains disposable and ignored. The legacy `tools/api-docs/site`
+ignore rule remains temporarily so a stale local projection cannot enter a commit; the generator no
+longer writes it.
 
 Architecture-component declarations are rendered separately from the curated public API
 denominator. The generator discovers them through the closed custom-attribute registry and

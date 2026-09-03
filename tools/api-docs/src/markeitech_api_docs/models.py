@@ -121,6 +121,7 @@ class SourceFileIdentity:
 @dataclass(frozen=True)
 class SourceSnapshot:
     commit: str
+    input_signature: str
     state: Literal["clean", "dirty"]
     dirty_path_count: int
     dirty_state_sha256: str | None
@@ -129,6 +130,7 @@ class SourceSnapshot:
     def to_dict(self) -> dict[str, Any]:
         return {
             "commit": self.commit,
+            "input_signature": self.input_signature,
             "state": self.state,
             "dirty_path_count": self.dirty_path_count,
             "dirty_state_sha256": self.dirty_state_sha256,

@@ -3,7 +3,8 @@ from __future__ import annotations
 import json
 import unittest
 
-from markeitech_api_docs.build import FixedPaths, generate
+from markeitech_api_docs.build import FixedPaths, check, generate
+from markeitech_api_docs.models import ApiDocsError
 
 
 class GenerationTest(unittest.TestCase):
@@ -61,6 +62,39 @@ class GenerationTest(unittest.TestCase):
                 value = path.read_text(encoding="utf-8")
                 self.assertNotIn("Markeitech Metadata:", value)
                 self.assertNotIn(str(paths.repository_root), value)
+
+    def test_check_is_repeatable_and_detects_drift(self) -> None:
+        paths = FixedPaths.discover()
+        generate()
+        index = check()
+        self.assertEqual(index["mode"], "check")
+        self.assertIn("artifact_set_sha256", index)
+        again = check()
+        self.assertEqual(index["artifact_set_sha256"], again["artifact_set_sha256"])
+
+        index_marker = (paths.tool_root / "docs" / "index.md")
+        original = index_marker.read_text(encoding="utf-8")
+        index_marker.write_text(f"{original}\n", encoding="utf-8")
+        try:
+            with self.assertRaisesRegex(ApiDocsError, "OUTPUT_DRIFT"):
+                check()
+        finally:
+            index_marker.write_text(original, encoding="utf-8")
+        healed = check()
+        self.assertEqual(index["artifact_set_sha256"], healed["artifact_set_sha256"])
+
+    def test_check_rejects_tampered_committed_output(self) -> None:
+        paths = FixedPaths.discover()
+        generate()
+        output = paths.output
+        index_path = output / "artifact-index.json"
+        original = index_path.read_text(encoding="utf-8")
+        index_path.write_text("{\"tampered\":true}", encoding="utf-8")
+        try:
+            with self.assertRaisesRegex(ApiDocsError, "OUTPUT_DRIFT"):
+                check()
+        finally:
+            index_path.write_text(original, encoding="utf-8")
 
 
 if __name__ == "__main__":

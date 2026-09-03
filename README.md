@@ -155,6 +155,11 @@ Start with the [documentation map](docs/README.md), then read:
 - [developer setup](docs/operations/developer-setup.md)
 - [GitHub workflow](docs/operations/github-workflow.md)
 
+API documentation artifacts:
+- Repository file source: [docs/api/index.html](docs/api/index.html)
+- Hosted site: [https://shriekinninja.github.io/Markeitech_V2/](https://shriekinninja.github.io/Markeitech_V2/)
+- Generator and deployment instructions: [docs/operations/v2-api-documentation.md](docs/operations/v2-api-documentation.md)
+
 ## License
 
 Copyright (c) 2026 Markeitect. All rights reserved. See [LICENSE](LICENSE).
