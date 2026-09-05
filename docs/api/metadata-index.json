@@ -311,7 +311,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "486f42cdab9bbcb9de43b3d09b2740ce3f980af142f46c56e517f93b9c61ed37"
+    "source_snapshot_sha256": "75dc78ed62026619107ab904f905b645999e2b4d5b1dd5154f77ddc2f5eb2451"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -845,6 +845,17 @@
         "kind": "class",
         "metadata_occurrence_ids": [],
         "source": "src/markeitech/acquisition/native.py"
+      },
+      {
+        "alias": false,
+        "canonical": "markeitech.cli.main",
+        "definition_line": 364,
+        "exposed": "markeitech.cli.main",
+        "has_docstring": true,
+        "inclusion_reason": "Installed operator command entry point.",
+        "kind": "function",
+        "metadata_occurrence_ids": [],
+        "source": "src/markeitech/cli.py"
       },
       {
         "alias": true,
@@ -3179,17 +3190,6 @@
         "source": "src/markeitech/system/node.py"
       },
       {
-        "alias": false,
-        "canonical": "markeitech.system.cli.main",
-        "definition_line": 23,
-        "exposed": "markeitech.system.cli.main",
-        "has_docstring": true,
-        "inclusion_reason": "Installed operator command entry point.",
-        "kind": "function",
-        "metadata_occurrence_ids": [],
-        "source": "src/markeitech/system/cli.py"
-      },
-      {
         "alias": true,
         "canonical": "markeitech.system.config.load_system_config",
         "definition_line": 721,
@@ -3219,15 +3219,15 @@
       "id": "markeitech-v2-public-api",
       "schema_version": 1,
       "selection_policy": "literal-package-all-plus-explicit",
-      "sha256": "9ec8e8b4b4439e9affa2967c0b6c6e8d8c98d848b8f848eea387186bc7c989c2",
-      "version": 4
+      "sha256": "3b1f7c37bbfe4c98ccded1a8ebfa55f1886e1ded5ee9767a4efbd4867251c798",
+      "version": 5
     }
   },
   "schema_id": "markeitech-api-metadata-index",
   "schema_version": 2,
   "source_snapshot": {
-    "file_count": 92,
-    "input_signature": "486f42cdab9bbcb9de43b3d09b2740ce3f980af142f46c56e517f93b9c61ed37"
+    "file_count": 94,
+    "input_signature": "75dc78ed62026619107ab904f905b645999e2b4d5b1dd5154f77ddc2f5eb2451"
   },
-  "source_snapshot_sha256": "486f42cdab9bbcb9de43b3d09b2740ce3f980af142f46c56e517f93b9c61ed37"
+  "source_snapshot_sha256": "75dc78ed62026619107ab904f905b645999e2b4d5b1dd5154f77ddc2f5eb2451"
 }

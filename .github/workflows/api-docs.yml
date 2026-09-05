@@ -39,20 +39,17 @@ jobs:
       - name: Install locked docs environment
         run: uv sync --project tools/api-docs --locked
       - name: Run docs validation
-        run: >
-          env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0
-          PYTHONPATH=tools/api-docs/src TZ=UTC
-          tools/api-docs/.venv/bin/python -m markeitech_api_docs validate
+        run: tools/api-docs/.venv/bin/python -P -m markeitech docs validate
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
       - name: Check committed API docs output
-        run: >
-          env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0
-          PYTHONPATH=tools/api-docs/src TZ=UTC
-          tools/api-docs/.venv/bin/python -m markeitech_api_docs check
+        run: tools/api-docs/.venv/bin/python -P -m markeitech docs check
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
       - name: Run API docs test suite
-        run: >
-          env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0
-          PYTHONPATH=tools/api-docs/src TZ=UTC
-          tools/api-docs/.venv/bin/python -m unittest discover -s tools/api-docs/tests -v
+        run: tools/api-docs/.venv/bin/python -P -m markeitech docs test
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
       - name: Verify tests preserved committed docs artifact
         run: |
           git diff --exit-code -- docs/api

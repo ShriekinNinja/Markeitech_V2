@@ -66,6 +66,8 @@ updated. Correct the document rather than preserving an accidental disagreement.
 
 ## Operations
 
+- Run `.venv/bin/markeitech --help` for the authoritative terminal command hierarchy; dedicated
+  operation guides below own prerequisites, side effects, and intentionally excluded procedures.
 - [Developer setup and machine handoff](operations/developer-setup.md)
 - [Static API documentation](operations/v2-api-documentation.md)
 - [Generated API reference (`docs/api/index.html`)](../docs/api/index.html)

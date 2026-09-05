@@ -61,19 +61,21 @@ Generation itself is offline and never downloads dependencies.
 After every sensitive change:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/system-diagram/src \
-  tools/system-diagram/.venv/bin/python -m markeitech_system_diagram \
-  validate --manifest docs/architecture/system-dataflow.toml --check-drift
-
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/system-diagram/src \
-  tools/system-diagram/.venv/bin/python -m markeitech_system_diagram \
-  generate --manifest docs/architecture/system-dataflow.toml \
-  --output docs/architecture/generated/system-dataflow --check-drift
-
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/system-diagram/src \
-  tools/system-diagram/.venv/bin/python -m unittest discover \
-  -s tools/system-diagram/tests -v
+PYTHONPATH="$PWD/src" tools/system-diagram/.venv/bin/python -P -m markeitech diagrams check
+PYTHONPATH="$PWD/src" tools/system-diagram/.venv/bin/python -P -m markeitech diagrams generate
+PYTHONPATH="$PWD/src" tools/system-diagram/.venv/bin/python -P -m markeitech diagrams test
 ```
+
+This dependency-minimal launch uses the already-provisioned diagram interpreter to enter the same
+unified Python CLI without creating or synchronizing the root runtime environment. Do not use
+`uv run`: dependency synchronization remains the separate explicit step above. The root CLI
+supplies the canonical manifest/output paths and drift flag, then dispatches through the exact
+isolated interpreter with absolute source binding, safe-path mode, a fixed minimal environment,
+and owned process-group cancellation. It never provisions the tool. A missing or invalid tool
+environment fails non-zero and reports `uv sync --project tools/system-diagram --locked` as the
+remediation. Use the same launch prefix with `diagrams validate` only for schema/semantic manifest
+validation without the source/configuration drift census. A fully provisioned root environment may
+use the shorter equivalent `.venv/bin/markeitech diagrams ...` form.
 
 The shared PyCharm configuration **Generate Sys Diagram** runs the same validation, source/config
 drift census, and atomic complete-set generation from the repository root. It uses only the

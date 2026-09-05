@@ -17,19 +17,18 @@ uv sync --project tools/system-diagram --locked
 Generate the canonical six-view documentation set from the repository root:
 
 ```text
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/system-diagram/src \
-  tools/system-diagram/.venv/bin/python -m markeitech_system_diagram \
-  generate --manifest docs/architecture/system-dataflow.toml \
-  --output docs/architecture/generated/system-dataflow --check-drift
+PYTHONPATH="$PWD/src" tools/system-diagram/.venv/bin/python -P -m markeitech diagrams generate
 ```
 
 Run the tests:
 
 ```text
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/system-diagram/src \
-  tools/system-diagram/.venv/bin/python -m unittest discover \
-  -s tools/system-diagram/tests -v
+PYTHONPATH="$PWD/src" tools/system-diagram/.venv/bin/python -P -m markeitech diagrams test
 ```
+
+The same launch prefix with `diagrams check` validates the manifest and source/configuration drift
+without modifying output. The root CLI uses this project's exact interpreter and deterministic
+environment; it does not merge diagram dependencies into the runtime environment or provision it.
 
 The canonical manifest and maintenance contract are documented under `docs/architecture/`.
 Generated files are review artifacts only and must never be edited manually.

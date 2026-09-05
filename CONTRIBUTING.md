@@ -62,9 +62,12 @@ Do not commit secrets, machine configuration, vendor data, logs, database dumps,
 ## Verification
 
 ```bash
-uv run ruff check src tests
-uv run pytest -q tests -m "not postgres"
+.venv/bin/markeitech verify all
 ```
+
+Run `.venv/bin/markeitech verify postgres` separately only against an explicitly configured
+disposable PostgreSQL database. Focused task-specific Ruff or pytest invocations remain valid for
+development, but the full-repository acceptance scope is owned by `markeitech verify`.
 
 Connected IB acceptance is manual and operator-owned. Automated tests and CI must never connect to
 TWS/IB Gateway, Discord, or a live market-data provider.

@@ -21,3 +21,8 @@ commit. `tools/api-docs/.build` is disposable and ignored. The generator stages 
 `.build` and publishes only the validated result to `docs/api`. Its committed input identity uses
 repository-relative paths and the supported Python series; the actual interpreter patch remains
 execution provenance in command and CI output.
+
+After provisioning with `uv sync --project tools/api-docs --locked`, use the root command surface:
+`PYTHONPATH="$PWD/src" tools/api-docs/.venv/bin/python -P -m markeitech docs validate`, `check`,
+`generate`, or `test`. It retains this project's exact
+interpreter and deterministic environment rather than importing the tool into the runtime project.

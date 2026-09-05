@@ -407,7 +407,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#markeitech.system.cli.main" class="md-nav__link">
+  <a href="#markeitech.cli.main" class="md-nav__link">
     <span class="md-ellipsis">
       main
     </span>
@@ -458,7 +458,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#markeitech.system.cli.main" class="md-nav__link">
+  <a href="#markeitech.cli.main" class="md-nav__link">
     <span class="md-ellipsis">
       main
     </span>
@@ -488,21 +488,21 @@
 <div class="doc doc-object doc-function">
 
 
-<h2 id="markeitech.system.cli.main" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">markeitech.system.cli.main</span>
+<h2 id="markeitech.cli.main" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">markeitech.cli.main</span>
 
 
-<a href="#markeitech.system.cli.main" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#markeitech.cli.main" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
 
-        <p>Build the configured node or explicitly connect and run it.</p>
-<p>Building without <code>--connect</code> performs no provider connection. Connected
-mode validates the exact IB confirmation, initializes operational
-persistence, may start the macOS keep-awake helper, and blocks in the native
-node lifecycle until shutdown.</p>
+        <p>Route one explicit Markeitech runtime or repository operation.</p>
+<p>The command hierarchy owns parsing and fixed child-process mappings only. Runtime behavior
+remains owned by <code>markeitech.system.cli</code>; API documentation and diagrams remain in their
+isolated locked tool projects. No command provisions dependencies, starts Docker, supplies the
+Interactive Brokers confirmation, or broadens connected or persistence authority.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -526,7 +526,7 @@ node lifecycle until shutdown.</p>
               <code><span title="int">int</span></code>
           –
           <div class="doc-md-description">
-            <p>Zero after a successful disconnected build or clean connected shutdown.</p>
+            <p>The selected in-process owner or fixed child process exit code.</p>
           </div>
         </li>
     </ul>
@@ -538,14 +538,14 @@ node lifecycle until shutdown.</p>
               <code><span title="SystemExit">SystemExit</span></code>
             –
           <div class="doc-md-description">
-            <p>If command-line parsing or the explicit IB confirmation fails.</p>
+            <p>If command-line parsing or exact connection confirmation fails.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><span title="BaseException">BaseException</span></code>
+              <code><span title="KeyboardInterrupt">KeyboardInterrupt</span></code>
             –
           <div class="doc-md-description">
-            <p>Propagates a connected node failure after cleanup.</p>
+            <p>If the operator interrupts command execution.</p>
           </div>
         </li>
     </ul>

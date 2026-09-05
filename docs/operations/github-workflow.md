@@ -364,10 +364,10 @@ advisor plugin and from Sir Loke, and does not grant either component runtime or
 Pull requests targeting `master` and manual workflow runs execute `.github/workflows/v2-ci.yml`.
 The workflow has three branch-protection-ready jobs:
 
-- **V2 Ruff** runs `ruff check` over `src`, `tests`, and the Sir Kite publishing helper.
-- **V2 Offline Tests** runs the V2 pytest suite with PostgreSQL-marked tests excluded.
+- **V2 Ruff** runs `markeitech verify lint` over `src`, `tests`, and the Sir Kite publishing helper.
+- **V2 Offline Tests** runs `markeitech verify test`, with PostgreSQL-marked tests excluded.
 - **V2 PostgreSQL Integration** starts an ephemeral PostgreSQL 17 service and runs only the
-  PostgreSQL-marked tests with a synthetic CI DSN.
+  PostgreSQL-marked tests with a synthetic CI DSN through `markeitech verify postgres`.
 
 CI uses Python 3.13 and the V2 `uv.lock` with frozen installation. It has `contents: read`,
 cancels superseded pull-request runs, and never launches the Markeitech runtime, IB/TWS,
