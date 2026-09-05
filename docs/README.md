@@ -45,6 +45,8 @@ generated review artifacts now live with the isolated tool under
   active V3 replacement work; not proof that disabled owners are available.
 - [Kite advisor council](development/kite-advisor-council.md) — development-time consultation,
   separate from Sir Loke runtime behavior.
+- [Kite allocation design](development/kite-advisor-allocation-design.md) — issue #39 proposal
+  for per-consultation model/effort selection; pending policy decision and implementation.
 
 ## Operations
 

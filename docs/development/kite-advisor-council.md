@@ -185,6 +185,11 @@ was split; Rust/PyO3 remains deferred; and no candidate worktree was deleted.
 
 ## Known Gaps
 
+- [Per-consultation resource allocation](kite-advisor-allocation-design.md) is proposed under
+  issue #39. The current 20 role files still enforce fixed model/effort settings. The proposal
+  records platform feasibility, source/cache drift, policy decisions, and migration/acceptance
+  gates; it changes no active allocation or installation.
+
 - Fresh-task dormancy, explicit Kite activation, exact-role invocation, ordering, stop behavior,
   task-follow-up continuity, unrelated-task reset, and proportional synthesis remain unmeasured.
 - Effective built-in write-tool denial cannot be inferred from `sandbox_mode`; parent permissions
