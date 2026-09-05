@@ -25,8 +25,8 @@ maintained owners; this page records implementation scope and acceptance limits.
 - Council schema 3 contains allocation schema 1 and versioned advisor intent. Advisor defaults
   are profile references, separate from mandatory capability/compatibility constraints.
 - Existing Sol/effort assignments survive as preferences. The spawning agent may choose another
-  eligible allocation for the actual question. The initial real-model admission remains Sol;
-  a synthetic second-model fixture proves generic resolution without admitting another real model.
+  eligible allocation for the actual question. The real-model catalog admits Sol and Astra high using current host support and primary model
+  documentation. A synthetic fixture separately proves extensibility without advisor edits.
 - Task assessment is recorded judgment. Default resolution, constraint validation, and bounded
   alternatives are deterministic. Complete model/effort pairs prevent accidental inheritance.
 - Full or partial user choices are honored when compatible; invalid choices are not silently
@@ -51,7 +51,7 @@ intent/profile and allocation validation.
 The inspected installed cache and old source both identified `0.1.0+codex.20260829091645` and
 contained 111 files excluding bytecode, but 14 differed: 3 specialist skill files and 11 reference
 files. Policy and manifest matched. This observation predates the new package; no reinstall or
-cache mutation occurred. The CLI reports `codex-cli 0.150.1`, which does not identify the desktop
+cache mutation had occurred at that baseline checkpoint. The CLI reports `codex-cli 0.150.1`, which does not identify the desktop
 host build or establish a minimum supported version.
 
 [Official Codex subagent documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents#custom-agents)
@@ -74,7 +74,12 @@ receipts are test inputs, not live host evidence or quality evaluation.
 Run the council validator and complete plugin unittest discovery as described in the
 [allocation contract](../../plugins/kite/skills/markeitech-advisor-router/references/resource-allocation.md).
 
-Installation and fresh-task execution remain outstanding: refresh the complete reviewed package,
+The [operations runbook](../operations/kite.md) owns installation, updates, verification, purge,
+project-role lifecycle, recovery, and rollback. The resolver accepts stdin and emits stdout, so
+read-only consultations can retain control records in tool history without filesystem writes.
+
+The current [acceptance record](kite-allocation-acceptance.md) owns observed installation and
+fresh-task results. The required procedure is to refresh the complete reviewed package,
 reconcile the project role files, compare source/cache hashes, and start a fresh task. Exercise the
 actual router-to-resolver-to-exact-role path with two allocations for one unchanged advisor. Record
 host version, source/package identity, context, requested pair, and effective settings when the host

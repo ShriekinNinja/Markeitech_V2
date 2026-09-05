@@ -486,8 +486,11 @@ def resolve(policy: dict, request: dict) -> dict:
 
 def read_json(path: Path) -> dict:
     # Sanitized control records only, bounded to 1 MiB. Do not read model prompts or logs.
-    with path.open("rb") as handle:
-        payload = handle.read(1024 * 1024 + 1)
+    if path == Path("-"):
+        payload = sys.stdin.buffer.read(1024 * 1024 + 1)
+    else:
+        with path.open("rb") as handle:
+            payload = handle.read(1024 * 1024 + 1)
     require(len(payload) <= 1024 * 1024, "INPUT_TOO_LARGE")
 
     def unique_keys(items: list[tuple[str, Any]]) -> dict:
@@ -504,7 +507,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     resolution = sub.add_parser("resolve")
-    resolution.add_argument("--request", type=Path, required=True)
+    resolution.add_argument("--request", type=Path, required=True, help="JSON path or - for stdin")
     resolution.add_argument(
         "--policy",
         type=Path,
@@ -512,8 +515,9 @@ def main(argv: list[str] | None = None) -> int:
         / "skills/markeitech-advisor-router/references/council-policy.toml",
     )
     receipt = sub.add_parser("receipt")
-    receipt.add_argument("--decision", type=Path, required=True)
-    receipt.add_argument("--receipt", type=Path, required=True)
+    receipt.add_argument("--decision", type=Path)
+    receipt.add_argument("--receipt", type=Path)
+    receipt.add_argument("--record", type=Path, help="Combined decision/receipt JSON path or -")
     args = parser.parse_args(argv)
     try:
         if args.command == "resolve":
@@ -521,7 +525,18 @@ def main(argv: list[str] | None = None) -> int:
                 policy = tomllib.load(handle)
             result = resolve(policy, read_json(args.request))
         else:
-            result = check_receipt(read_json(args.decision), read_json(args.receipt))
+            if args.record is not None:
+                require(args.decision is None and args.receipt is None, "INPUT_MODE_CONFLICT")
+                record = read_json(args.record)
+                table(record, {"decision", "receipt"})
+                result = check_receipt(record["decision"], record["receipt"])
+            else:
+                require(args.decision is not None and args.receipt is not None, "MISSING_FIELD")
+                require(
+                    not (args.decision == Path("-") and args.receipt == Path("-")),
+                    "STDIN_ALREADY_CONSUMED",
+                )
+                result = check_receipt(read_json(args.decision), read_json(args.receipt))
     except (AllocationError, OSError, ValueError, TypeError, KeyError, RecursionError) as exc:
         reason = str(exc) if isinstance(exc, AllocationError) else "INVALID_INPUT"
         print(json.dumps({"schema_version": 1, "status": "BLOCKED", "reason": reason}))

@@ -153,7 +153,9 @@ Issue #39 migrates the source to council schema 3 with per-consultation allocati
 files omit fixed model/effort settings; intent/default references and concrete mappings are owned
 by central policy. Primary Kite validates each explicit pair before spawning the exact role.
 See [resource allocation](kite-advisor-allocation-design.md) for implementation and acceptance.
-The updated package has not been installed, and effective execution remains unverified.
+The current [acceptance record](kite-allocation-acceptance.md) records installation and effective
+execution status; the [operations runbook](../operations/kite.md) owns package and project-role
+lifecycle procedures.
 
 The following records describe earlier fixed-allocation versions. A 2026-09-05 comparison found
 14 differences between the old installed cache and source despite their identical version strings;

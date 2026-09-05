@@ -290,6 +290,49 @@ class AllocationTests(unittest.TestCase):
         self.assertEqual(self.resolve()["requested"], choice)
         self.assertEqual(advisor, self.policy["advisors"][0])
 
+    def test_real_second_model_requires_current_host_support(self) -> None:
+        original = copy.deepcopy(self.policy["advisors"])
+        choice = {"model": "gpt-6-astra", "reasoning_effort": "high"}
+        self.request["proposed_choice"] = choice
+        with self.assertRaises(ALLOCATION.AllocationError):
+            self.resolve()
+        self.request["host"]["models"]["gpt-6-astra"] = {
+            "efforts": ["high"],
+            "capabilities": ["source_analysis", "tool_use", "evidence_reporting"],
+            "context_tokens": None,
+        }
+        self.assertEqual(self.resolve()["requested"], choice)
+        self.assertEqual(self.policy["advisors"], original)
+
+    def test_stdin_transport_resolves_and_checks_receipt_without_files(self) -> None:
+        def run(command: list[str], payload: str) -> subprocess.CompletedProcess:
+            return subprocess.run(
+                [sys.executable, "-B", str(SCRIPT), *command],
+                input=payload,
+                capture_output=True,
+                text=True,
+            )
+
+        result = run(["resolve", "--request", "-"], json.dumps(self.request))
+        self.assertEqual(result.returncode, 0, result.stdout)
+        decision = json.loads(result.stdout)
+        receipt = self.receipt(decision, "completed", decision["requested"])
+        record = json.dumps({"decision": decision, "receipt": receipt})
+        result = run(["receipt", "--record", "-"], record)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(json.loads(result.stdout)["status"], "EXECUTION_VERIFIED")
+        for command, payload, reason in (
+            (["resolve", "--request", "-"], '{"canary":1,"canary":2}', "DUPLICATE_KEY"),
+            (["resolve", "--request", "-"], "x" * (1024 * 1024 + 1), "INPUT_TOO_LARGE"),
+            (["receipt", "--record", "-", "--decision", "-"], record, "INPUT_MODE_CONFLICT"),
+            (["receipt", "--decision", "-", "--receipt", "-"], record, "STDIN_ALREADY_CONSUMED"),
+            (["receipt", "--record", "-"], '{"canary":1}', "MISSING_FIELD"),
+        ):
+            result = run(command, payload)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(json.loads(result.stdout)["reason"], reason)
+            self.assertNotIn("canary", result.stdout + result.stderr)
+
     def test_policy_strict_fields_capabilities_versions_and_retry_bounds(self) -> None:
         original = copy.deepcopy(self.policy)
         mutations = [

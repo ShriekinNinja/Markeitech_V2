@@ -23,8 +23,15 @@ Selection of advisors and dependency ordering remain governed by the existing ro
 4. Run from the reviewed checkout with its matching installed package:
 
    ```bash
-   python3 -B plugins/kite/scripts/resolve_advisor_allocation.py resolve --request /tmp/kite-allocation-request.json
+   python3 -B plugins/kite/scripts/resolve_advisor_allocation.py resolve --request -
    ```
+
+   Pass the request JSON through the tool's process-input stream or a pipe; do not create a file
+   during read-only work. For shell tools, a properly quoted `python3 -c` producer can write the
+   control JSON to stdout and pipe it to this command. Avoid heredocs on shells that materialize
+   temporary files. Retain decisions/receipts in the conversation/tool record; durable file output
+   requires separately authorized write access. File-path inputs remain supported for callers
+   that already have authorized records.
 
    When the root checkout is unavailable, invoke the same script from the matching installed
    plugin and use its adjacent policy. Never execute a mismatched script/policy package.
@@ -39,8 +46,12 @@ Selection of advisors and dependency ordering remain governed by the existing ro
    Otherwise use `effective: null`. Validate the receipt using:
 
    ```bash
-   python3 -B plugins/kite/scripts/resolve_advisor_allocation.py receipt --decision /tmp/kite-allocation-decision.json --receipt /tmp/kite-allocation-receipt.json
+   python3 -B plugins/kite/scripts/resolve_advisor_allocation.py receipt --record -
    ```
+
+   With `--record -`, stdin is one JSON object with exactly `decision` (the returned decision)
+   and `receipt` (the host-evidence receipt). Both are validated in memory; stdout carries the
+   result. File callers may still use `--decision PATH --receipt PATH`. Never read stdin twice.
 
    A receipt contains exactly `decision_id`, `execution_id`, `effective`, `outcome`, and `evidence`.
    Its outcome is `completed`, `model_unavailable`, `execution_failure`, `insufficient_resources`,
@@ -113,11 +124,11 @@ passes. `EXECUTION_VERIFIED` requires a matching effective pair and a completed 
 
 ## Installation And Acceptance
 
-The inspected installed cache predates this schema and differs from source. No installation is
-performed by the resolver. Refresh the complete reviewed package and reconcile project role files
-through the established installation workflow before using it. Compare relative paths/hashes and
-start a fresh task; already-running tasks retain old role definitions. Source/cache identity does
-not prove host execution.
+No installation is performed by the resolver. Follow the repository's
+`docs/operations/kite.md` runbook for exact install, versioning, verification, purge, and rollback
+commands. Refresh the complete reviewed package and reconcile project role files before using it.
+Compare relative paths/hashes and start a fresh task; already-running tasks retain old role
+definitions. Source/cache identity does not prove host execution.
 
 Fresh-task acceptance must exercise the router, resolver, and exact-role tool calls for two
 different allocations of one unchanged role. Record actual host version, source/package identities,

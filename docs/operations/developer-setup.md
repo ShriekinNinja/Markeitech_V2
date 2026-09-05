@@ -119,9 +119,10 @@ dormant unless explicitly invoked.
 The council overview and acceptance status are documented in
 [`kite-advisor-council.md`](../development/kite-advisor-council.md); that document
 links the canonical machine-checkable policy and observed acceptance ledger.
-During local plugin development, validate source first, then use the supported cachebuster helper
-and reinstall `kite@markeitech` only after that cache mutation is approved. A new task is required
-to test discovery. Repository/source validation must not be reported as installed routing proof.
+For installation, update/reinstall, byte verification, purge, project-role behavior, fresh-task
+acceptance, recovery, and rollback, follow the [Kite operations runbook](kite.md).
+The tracked `python3 -B scripts/kite-package.py bump` procedure updates both package version owners;
+source validation must not be reported as installed routing proof.
 
 Run the dependency-free source validator from the repository root:
 

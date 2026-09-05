@@ -51,6 +51,7 @@ generated review artifacts now live with the isolated tool under
 ## Operations
 
 - [Developer setup](operations/developer-setup.md)
+- [Kite installation and operations](operations/kite.md)
 - [GitHub workflow](operations/github-workflow.md)
 - [Interactive Brokers setup and broker-observation gate](operations/ib-setup.md)
 - [IB market-data subscriptions](operations/ib-market-data-subscriptions.md)
