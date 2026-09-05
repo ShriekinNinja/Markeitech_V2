@@ -8,18 +8,14 @@ Markeitech authority or prove the installed NautilusTrader contract.
 
 Read only the documents relevant to the task, after the mandatory repository entry authorities:
 
-- `docs/architecture/v2-runtime-messaging-discovery.md` — accepted native-bus decision history,
-  signal/custom-data distinction, startup ordering risk, and event/snapshot/command vocabulary.
-- `docs/architecture/v2-runtime-control-plane.md` — system-health ownership, transition rules,
-  startup delivery, and explicit omissions.
-- `docs/architecture/v2-adaptive-market-data-plane.md` — one subscription owner, native data path,
-  shared demand, lifecycle distinctions, leases, and bounded provider work.
-- `docs/architecture/v2-historical-dependency-execution.md` — request identity, deduplication,
-  single-lane correlation, retry/cancellation, per-consumer readiness, and transient raw evidence.
-- `docs/roadmap/v2-market-events-live-agent-plan.md` — accepted destination for channel contracts,
-  default at-least-once/idempotent-consumer posture, failure independence, recovery, and resources.
-- `docs/roadmap/v2-stage-9d-entities-rolling-state-plan.md` — bounded projection, revision,
-  conflict, publication deferral, staleness, recovery, and actor-isolation contracts.
+- `docs/architecture/runtime-foundation.md` — native-bus, system-health, ownership, projection,
+  delivery, bounded work, persistence, and failure-isolation boundaries.
+- `docs/architecture/market-data-and-acquisition.md` — one subscription/request owner, native data
+  path, shared demand, correlation, retry/cancellation, readiness, and transient raw evidence.
+- `docs/architecture/deterministic-evidence-contracts.md` — bounded projection, revision,
+  conflict, staleness, recovery, and evidence lifecycle contracts.
+- `docs/roadmap/sir-loke-v1-delivery-plan.md` — accepted destination for product-channel contracts,
+  independent path health, scoped reliability, recovery, and resource gates.
 - Relevant implementation and tests under `src/markeitech/` and `tests/` — final evidence of
   current local behavior where documents lag.
 

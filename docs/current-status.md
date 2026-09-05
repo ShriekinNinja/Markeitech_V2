@@ -6,12 +6,12 @@
 
 This page is the source of truth for what the active Markeitech checkout implements now. It is
 deliberately a current-state ledger, not an implementation diary. Completed design and acceptance
-detail remains in the linked architecture, stage, operations, Git history, and pull-request
+detail remains in the linked architecture, reference, operations, Git history, and pull-request
 records.
 
 The [project charter](../markeitech.md) defines product and engineering invariants. The canonical
 [Sir Loke v1 product definition](product/sir-loke-v1.md) defines the first useful user experience.
-The [delivery blueprint](roadmap/v2-market-events-live-agent-plan.md) defines future sequence.
+The [delivery plan](roadmap/sir-loke-v1-delivery-plan.md) defines future sequence.
 None of those future documents proves implementation.
 
 ## Status At A Glance
@@ -26,23 +26,25 @@ None of those future documents proves implementation.
 | Trade observation | Unimplemented; no execution client, account/order/fill/position owner, or trade lifecycle |
 | Discord | Outbound webhook health projection exists; inbound conversational bot does not |
 | Agent/model | Unimplemented; no live model, Sir Loke read model, conversation state, or agent tools |
-| Execution | Absent; no submit, modify, cancel, replace, or close path |
+| Execution | Absent; no submit, modify, bind-for-control, cancel, replace, exercise, or close path |
 | Persistence | PostgreSQL operational audit and compact evidence-recency profiles; no raw market-data store |
-| Current implementation focus | Product direction has moved to the shortest honest Sir Loke v1 path; each code batch still needs focused approval |
+| Current implementation focus | Gate 1 offline native IB/TWS broker-observation safety decision; each code/connected batch still needs focused approval |
 
 ## Current Offline Verification
 
-On 2026-09-05, after aligning the Sir Loke documentation consolidation with the unified Python CLI
-merge at `295cdb7`:
+On 2026-09-05, after aligning the Sir Loke documentation consolidation and tool relocation with the
+unified Python CLI merge at `295cdb7`:
 
 - an offline locked environment sync installed the merged CLI without changing the lockfile;
 - `.venv/bin/markeitech verify all` passed Ruff and `700` non-PostgreSQL tests, with `2`
   PostgreSQL-marked tests deselected;
 - `.venv/bin/markeitech docs check` documented `261/261` selected public objects and matched all
   `60` committed artifacts;
-- `.venv/bin/markeitech diagrams check` passed the manifest/source/configuration drift census and
+- `.venv/bin/markeitech diagrams check` passed the manifest/source/configuration drift census,
+  generation produced the complete five-view `22`-artifact package, and
   `.venv/bin/markeitech diagrams test` passed all `31` tests;
-- all `252` local Markdown link targets across `155` tracked Markdown files resolved; and
+- all `210` local Markdown link targets across the intended `126` tracked Markdown files resolved;
+  and
 - `git diff --check` was clean.
 
 These checks establish offline code and documentation consistency only. They do not establish
@@ -129,8 +131,8 @@ See [developer setup](operations/developer-setup.md) for the complete command co
 - V3-02 supplies a subscribe-buffer-snapshot-reconcile current-state protocol for late calendar
   consumers. Its connected evidence is bounded to the recorded ES/current-session case.
 
-See [session and evidence health](architecture/v2-session-evidence-health.md) and
-[historical dependency execution](architecture/v2-historical-dependency-execution.md).
+See [session and evidence health](architecture/session-evidence-health.md) and
+[market data and acquisition](architecture/market-data-and-acquisition.md).
 
 ### Measurements, entities, and V3 replacement work
 
@@ -154,8 +156,8 @@ must not be conflated:
   must be reconciled with the accepted Sir Loke v1 delivery priority.
 
 The detailed replacement boundary remains in the
-[V3-03 plan](roadmap/v3-03-session-metrics-actor-split-implementation-plan.md). Passing tests for
-inactive owners do not make them current live outputs.
+[session-metrics replacement plan](reference/session-metrics-replacement-plan.md). Passing tests
+for inactive owners do not make them current live outputs.
 
 ### Persistence and operational health
 
@@ -185,9 +187,10 @@ Enabling the webhook actor cannot turn it into Sir Loke.
 
 ### Documentation tooling
 
-- The offline system-diagram utility statically reconciles the canonical architecture TOML and
-  generates the tracked diagram set. Generated diagrams describe their recorded manifest and
-  checkout, not automatically the current runtime.
+- The offline system-diagram utility keeps its manifest, maintenance guide, and generated review
+  package under `tools/system-diagram/docs`. It statically reconciles declared sources and
+  configuration. Generated diagrams describe their recorded manifest and checkout, not
+  automatically the current runtime.
 - The isolated API-documentation utility statically validates the versioned public surface and
   generates tracked `docs/api` output. Its GitHub Pages workflow is current at this baseline.
 - Neither documentation tool imports the runtime, connects services, or proves live behavior.
@@ -221,9 +224,10 @@ reconciliation, cache access to accounts/orders/positions, typed strategy callba
 reports. Markeitech has not configured or accepted those facilities. Exact delivery of manually
 entered TWS orders under a safe client-ID and read-only configuration remains unknown.
 
-No connected order-observation probe has run. No order has been placed, modified, canceled,
-replaced, or closed by Markeitech. The first observation design must prove the native path before
-considering custom IB access and must expose no order action to Sir Loke.
+No connected order-observation probe has run. No order has been placed, modified, bound for
+control, canceled, replaced, exercised, or closed by Markeitech. The first observation design must
+inspect every exact startup/open-order/binding call and prove the native path before considering
+custom IB access; it must expose no order action to Sir Loke.
 
 See the [Sir Loke v1 product definition](product/sir-loke-v1.md#broker-observation) and
 [IB setup boundary](operations/ib-setup.md).
@@ -285,24 +289,16 @@ architecture, configuration, schema, dependency, connected run, and implementati
 uses its focused review and PR.
 
 The detailed gates and reuse mapping are maintained in the
-[canonical delivery blueprint](roadmap/v2-market-events-live-agent-plan.md).
+[Sir Loke V1 delivery plan](roadmap/sir-loke-v1-delivery-plan.md).
 
 ## Historical Detail
 
-The active tree intentionally does not repeat every former stage log here. Use:
-
-- [V2 infrastructure foundation](roadmap/v2-infrastructure-plan.md) for completed early-runtime
-  gates;
-- [Stage 9C session measurements](roadmap/v2-stage-9c-session-measurements-plan.md) for the
-  predecessor measurement implementation and connected evidence;
-- [Stage 9D entities and rolling state](roadmap/v2-stage-9d-entities-rolling-state-plan.md) for
-  entity/state design and bounded acceptance;
-- [V3-01/V3-02 architecture](architecture/v2-session-evidence-health.md) and the
-  [V3-02 plan](roadmap/v3-02-session-state-actor-implementation-plan.md) for current calendar-state
-  delivery;
-- the [V3-03 replacement plan](roadmap/v3-03-session-metrics-actor-split-implementation-plan.md)
-  for incomplete cutover work; and
-- Git and pull-request history for exact implementation chronology.
+The active tree intentionally does not retain completed stage logs as competing authority. Stable
+decisions are consolidated in the five architecture documents linked from
+[`README.md`](README.md). The one detailed active cutover reference is the
+[session-metrics replacement plan](reference/session-metrics-replacement-plan.md). Use Git,
+migration tags, and merged pull requests for exact implementation chronology, former research,
+review handoffs, and superseded plans.
 
 Historical claims retain only their recorded contract, version, configuration, provider, session,
 and acceptance envelope. They do not become current implementation merely because this status page

@@ -14,7 +14,7 @@ Provision the exact locked documentation environment once:
 uv sync --project tools/system-diagram --locked
 ```
 
-Generate the canonical six-view documentation set from the repository root:
+Generate the canonical five-view documentation set from the repository root:
 
 ```text
 PYTHONPATH="$PWD/src" tools/system-diagram/.venv/bin/python -P -m markeitech diagrams generate
@@ -30,5 +30,6 @@ The same launch prefix with `diagrams check` validates the manifest and source/c
 without modifying output. The root CLI uses this project's exact interpreter and deterministic
 environment; it does not merge diagram dependencies into the runtime environment or provision it.
 
-The canonical manifest and maintenance contract are documented under `docs/architecture/`.
-Generated files are review artifacts only and must never be edited manually.
+The canonical manifest, maintenance contract, and generated review package live under this
+tool's `docs/` directory. Generated files are review artifacts only and must never be edited
+manually.

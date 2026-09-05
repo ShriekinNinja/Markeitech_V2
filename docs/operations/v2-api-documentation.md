@@ -15,7 +15,7 @@ architecture.
   kind, boundary, and substantive responsibility fields.
 - `metadata-index.json` is non-authoritative discovery output. API visibility and author-declared
   metadata do not prove runtime calls, ownership, completeness, or architecture membership.
-- `docs/architecture/system-dataflow.toml` is not a generator input. Its currently reviewed,
+- `tools/system-diagram/docs/system-dataflow.toml` is not a generator input. Its currently reviewed,
   implementation-referenced component facts were used once to seed V2 class docstrings. Source
   documentation is the upstream declaration surface for future generated TOML and diagrams.
 - Retired implementations, tests, private helpers, and third-party Nautilus APIs are outside the

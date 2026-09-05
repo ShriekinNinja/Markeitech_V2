@@ -10,8 +10,8 @@ from .loader import load_manifest
 from .render import generate_all
 from .source_census import validate_source_census
 
-_MANIFEST = Path("docs/architecture/system-dataflow.toml")
-_OUTPUT = Path("docs/architecture/generated/system-dataflow")
+_MANIFEST = Path("tools/system-diagram/docs/system-dataflow.toml")
+_OUTPUT = Path("tools/system-diagram/docs/generated")
 
 
 def _parser() -> argparse.ArgumentParser:

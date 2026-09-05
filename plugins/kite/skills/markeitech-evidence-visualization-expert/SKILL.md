@@ -39,8 +39,9 @@ Before a substantive plan, review, design, or recommendation:
    `docs/development-guidelines.md`, `docs/README.md`, and the accepted documents governing the
    requested stage.
 2. Inspect the current branch, worktree, relevant canonical contracts, projection code, tests,
-   fixtures, screenshots, and acceptance evidence. Treat `docs/roadmap/v2-live-dashboard-plan-draft.md`
-   as an informative draft only unless its status changes in tracked authority.
+   fixtures, screenshots, and acceptance evidence. Read
+   `docs/operations/visual-evidence-review.md`; full dashboard work remains deferred in
+   `docs/roadmap/development-backlog.md`.
 3. Read [references/research-and-sources.md](references/research-and-sources.md). Refresh any source
    whose version, accessibility guidance, browser behavior, library contract, or license could have
    changed before relying on it consequentially.

@@ -12,7 +12,7 @@ papers remain conceptual authorities but do not prove current library behavior o
 | `markeitech.md` | Product and engineering charter | Live-first/read-only/advisory; deterministic truth is separate from model output; all variable behavior is typed, bounded, versioned, auditable policy. |
 | `docs/current-status.md` | Current implementation truth | ML evaluation and richer intelligence remain future work; raw observations are not a PostgreSQL feature store. |
 | `docs/development-guidelines.md` | Engineering guidance | Deterministic features and labels precede training; feature and model identity accompany inference; no silent configuration control. |
-| `docs/roadmap/v2-market-events-live-agent-plan.md`, Statistical And ML Models and Stage 9K | Accepted future boundary | Named questions, leakage-safe temporal/regime evaluation, calibration/discrimination/abstention/stability/utility, shadow/rollback, and a mandatory approved data strategy before training. |
+| `docs/roadmap/development-backlog.md` and `docs/architecture/deterministic-evidence-contracts.md` | Accepted future boundary | ML remains deferred pending an approved leakage-safe data, label, evaluation, monitoring, rollback, and bounded-optimization strategy. |
 
 ## Primary, Official, And Peer-Reviewed Domain Sources
 

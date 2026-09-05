@@ -243,13 +243,13 @@ def _diagram_command(args: argparse.Namespace) -> int:
         _DIAGRAMS.module,
         "validate" if args.operation == "check" else args.operation,
         "--manifest",
-        "docs/architecture/system-dataflow.toml",
+        "tools/system-diagram/docs/system-dataflow.toml",
     ]
     if args.operation == "test":
         arguments = ["-m", _DIAGRAMS.module, "test"]
     elif args.operation == "generate":
         arguments.extend(
-            ["--output", "docs/architecture/generated/system-dataflow", "--check-drift"]
+            ["--output", "tools/system-diagram/docs/generated", "--check-drift"]
         )
     elif args.operation == "check":
         arguments.append("--check-drift")

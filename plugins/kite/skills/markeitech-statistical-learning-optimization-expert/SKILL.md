@@ -16,8 +16,9 @@ Before a substantive review or recommendation:
 
 1. Read repository `AGENTS.md`, `markeitech.md`, `docs/current-status.md`,
    `docs/development-guidelines.md`, `docs/README.md`, and the accepted documents governing the
-   requested stage. For ML readiness, always read the Stage 9K section of
-   `docs/roadmap/v2-market-events-live-agent-plan.md`.
+   requested stage. For ML readiness, always read the deferred statistical-learning gate in
+   `docs/roadmap/development-backlog.md` and the evidence boundary in
+   `docs/architecture/deterministic-evidence-contracts.md`.
 2. Inspect the current branch, worktree, relevant definitions, configuration metadata, evidence
    contracts, outcome/feedback contracts, persistence boundaries, and focused tests. Current code
    and tests are evidence, not authority to bypass an unapproved gate.

@@ -12,9 +12,9 @@ product or dependency approval. Refresh versioned or drift-prone sources before 
 | `docs/current-status.md` | Current implementation and acceptance ledger, including the local 9D.5D visual-acceptance projection | Passing/offline/current claims remain limited to recorded scope |
 | `docs/development-guidelines.md` | Consumer/projection separation, evidence lineage, operator comparison metadata, and configuration discipline | Does not create new product semantics |
 | `docs/README.md` | Documentation authority order and navigation | Drafts and historical records do not override accepted V2 authority |
-| `docs/roadmap/v2-market-events-live-agent-plan.md` | Accepted future Sir Loke sequence and evidence boundaries | Roadmap intent is not implementation proof |
-| `docs/roadmap/v2-stage-9d-entities-rolling-state-plan.md` | Accepted entity/state identities, lifecycle, health/fidelity, visual-acceptance scope, and open acceptance debt | Numerical fixtures are not trading calibration |
-| `docs/roadmap/v2-live-dashboard-plan-draft.md` | Detailed 2026-08-24 visualization hypothesis and decision-gate inventory | Explicitly draft: no architecture, dependency, transport, runtime, or delivery choice is approved |
+| `docs/roadmap/sir-loke-v1-delivery-plan.md` | Accepted future Sir Loke sequence and evidence boundaries | Roadmap intent is not implementation proof |
+| `docs/architecture/deterministic-evidence-contracts.md` | Accepted entity/state identity, lifecycle, health, and fidelity | Numerical fixtures are not trading calibration |
+| `docs/operations/visual-evidence-review.md` and `docs/roadmap/development-backlog.md` | Stable passive review contract and deferred dashboard status | No architecture, dependency, transport, runtime, or dashboard delivery choice is implied |
 | Current source, tests, fixtures, and rendered artifacts | Executable evidence for actual payloads and presentation behavior | Inspect per task; a symbol or screenshot alone is not semantic proof |
 
 ## Primary Standards And Technical Sources

@@ -237,7 +237,8 @@ The V2 API documentation utility is an isolated, static source-analysis tool und
   identity, label, kind, boundary, and substantive responsibilities. The API-doc generator must
   discover these classes separately from the public API denominator and must not read the current
   architecture TOML.
-- The existing system-diagram tool continues to consume `docs/architecture/system-dataflow.toml`
+- The existing system-diagram tool continues to consume
+  `tools/system-diagram/docs/system-dataflow.toml`
   during the migration interval. A future, separately reviewed exporter may make validated source
   documentation upstream of generated TOML and diagrams; until it exists, do not declare the TOML
   generated or remove its maintenance procedure.

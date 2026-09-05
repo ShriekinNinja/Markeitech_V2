@@ -134,15 +134,16 @@ files under `data/`.
 - `tests/` - runtime and contract tests
 - `config/` - tracked configuration templates and calendar definitions
 - `compose.yaml`, `pyproject.toml`, and `uv.lock` - root service and Python project definitions
-- `docs/` - current authority, architecture, operations, roadmap, research, and notes
+- `docs/` - current product, status, architecture, roadmap, reference, development, operations, and
+  generated API documentation
 - `AGENTS.md` - portable AI-agent entrypoint and mandatory working boundaries
 - `markeitech.md` - governing project and engineering charter
 
-The V2 project is rooted directly in the repository; no nested project selector is required. The
-[root-promotion plan](docs/roadmap/v2-complete-codebase-migration-plan.md) records the migration and
-its recovery boundaries. Run `.venv/bin/markeitech --help` for the authoritative runtime, static-doc,
-diagram, verification, and environment-check command hierarchy. The retained `markeitech-system`
-entry point is a backward-compatible runtime alias; it delegates to the same behavior owner.
+The V2 project is rooted directly in the repository; no nested project selector is required.
+Migration history and recovery boundaries remain in Git and the recorded migration tags. Run
+`.venv/bin/markeitech --help` for the authoritative runtime, static-doc, diagram, verification, and
+environment-check command hierarchy. The retained `markeitech-system` entry point is a backward-
+compatible runtime alias; it delegates to the same behavior owner.
 
 ## Making Changes
 

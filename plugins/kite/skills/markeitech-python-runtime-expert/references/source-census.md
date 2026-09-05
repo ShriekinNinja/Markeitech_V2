@@ -8,7 +8,7 @@ can drift. This census records why a source belongs in the workflow, not permane
 | Source | Snapshot | Use | Boundary |
 |---|---|---|---|
 | `AGENTS.md`, `markeitech.md`, `docs/current-status.md`, `docs/development-guidelines.md`, `docs/README.md` | commit `c6af7a59f33700f5f1c263f38dc41a835fe59981` | Permissions, evidence bar, current implementation, authority order | Repository authority; refresh in current checkout |
-| `docs/architecture/v2-runtime-control-plane.md` | same commit | Health ownership and lifecycle history | Later accepted documents and status can supersede it |
+| `docs/architecture/runtime-foundation.md` | current checkout | Health ownership, lifecycle, worker, shutdown, and failure boundaries | Current code and status govern implementation |
 | `docs/operations/v2-runtime-resource-telemetry.md` | same commit | Current measurement meanings and resource-policy separation | Correlation is not causation |
 | `pyproject.toml`, `uv.lock` | same commit | Python pin, dependencies, build, tests, lint target | Lockfile does not prove runtime behavior |
 | Relevant `src/markeitech` and `tests` | task-specific | Exact implementation and exercised behavior | Inspect narrowly; tests prove only covered paths |

@@ -10,8 +10,9 @@ Trader Workstation (TWS) and participating in an allowlisted private Discord con
 This document is the canonical product definition for the first useful Markeitech release. The
 [project charter](../../markeitech.md) supplies repository-wide invariants, the
 [current-status ledger](../current-status.md) says what exists now, and the
-[delivery blueprint](../roadmap/v2-market-events-live-agent-plan.md) defines the implementation
-path. Detailed stage and architecture documents remain authoritative only for their bounded
+[delivery plan](../roadmap/sir-loke-v1-delivery-plan.md) defines the implementation path, and the
+[Sir Loke boundaries](../architecture/sir-loke-v1-boundaries.md) own component, request, tool, and
+side-effect authority. Detailed reference documents remain authoritative only for their bounded
 technical subjects.
 
 ## Product Outcome
@@ -176,7 +177,7 @@ Sir Loke v1 cannot:
 
 - prevent Markeitect from trading directly through TWS;
 - enforce a broker-side risk limit;
-- submit, modify, cancel, replace, or close an order;
+- submit, modify, bind for control, cancel, replace, exercise, or close an order;
 - claim that a recommendation was an executed control;
 - claim that an attempted or partial fill completed a position change; or
 - guarantee that it can prevent an account loss.
@@ -287,8 +288,8 @@ The product requires four independently observable and failure-isolated live pat
    the approved first expressions.
 2. **Broker observation:** timely account/order/fill/position/closure facts from the accepted
    paper-through-TWS path.
-3. **Sir Loke reasoning and policy:** compact read model, conversation state, typed read-only tools,
-   citations, abstention, intervention, and audit.
+3. **Sir Loke reasoning and policy:** compact read model, conversation state, bounded typed tools
+   with explicit side-effect classes, citations, abstention, intervention, and audit.
 4. **Discord conversation:** authenticated inbound dialogue and bounded outbound replies/proactive
    messages.
 
@@ -304,24 +305,28 @@ connected paper evidence demonstrate all of the following:
 1. Sir Loke enters the private Discord context and reports the actual readiness of market,
    options, broker-observation, agent, Discord, and audit dependencies.
 2. Markeitect can ask for current context and receives an evidence-qualified response.
-3. Sir Loke can proactively publish one genuinely supported SPXW or QQQ 0DTE recommendation—or
-   abstain with the exact missing/conflicting reasons.
-4. A corresponding manually entered TWS paper trade is detected and linked to the recommendation
-   only when its identity supports the link.
-5. A separate trader-originated TWS paper trade is detected, acknowledged, analyzed, and monitored
-   without an invented thesis.
-6. Partial fills, scale changes, cancel/replace behavior, manual closure, duplicate delivery, and
+3. In a qualified-evidence scenario, Sir Loke proactively publishes one genuinely supported SPXW
+   or QQQ 0DTE recommendation. A corresponding manually entered TWS paper trade is detected and
+   linked only when its identity supports the link.
+4. In a separate insufficient/conflicting-evidence scenario, Sir Loke names the limitation and
+   abstains without inventing a recommendation or recommendation linkage.
+5. In a separate independent-trade scenario, a trader-originated TWS paper trade is detected,
+   acknowledged, analyzed, and monitored without an invented earlier recommendation or thesis.
+6. A system which always abstains fails the qualified-evidence scenario; a system which always
+   recommends fails the insufficient-evidence scenario.
+7. Partial fills, scale changes, cancel/replace behavior, manual closure, duplicate delivery, and
    reconnect/reconciliation preserve the correct trade episode and account environment.
-7. A controlled material contradiction or invalidation produces the configured firm warning and
+8. A controlled material contradiction or invalidation produces the configured firm warning and
    acknowledgement behavior within its configured timing envelope.
-8. Sir Loke preserves the original thesis and later revisions, and it records the trader's
+9. Sir Loke preserves the original thesis and later revisions, and it records the trader's
    response or non-response without rewriting history.
-9. Closure produces a factual after-trade report and any configured Sir-Loke-side cooldown.
-10. No agent, Discord, policy, or observation path can submit, modify, cancel, replace, or close an
+10. Closure produces a factual after-trade report and any configured Sir-Loke-side cooldown.
+11. No agent, Discord, policy, or observation path can submit, modify, bind for control, cancel,
+    replace, exercise, or close an
     order, and no such action is attempted during acceptance.
-11. A failure of Discord, the model, an optional analysis, or one instrument remains contained and
+12. A failure of Discord, the model, an optional analysis, or one instrument remains contained and
     does not corrupt broker state, market truth, unrelated capabilities, or durable audit.
-12. The acceptance record states its exact account environment, contracts, sessions, configuration,
+13. The acceptance record states its exact account environment, contracts, sessions, configuration,
     versions, timestamps, evidence gaps, and unsupported generalizations.
 
 ## Explicitly Deferred

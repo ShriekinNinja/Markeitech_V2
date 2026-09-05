@@ -12,9 +12,8 @@ A normal clone includes the active V2 source and tests plus the tracked project 
 - `markeitech.md`
 - `docs/development-guidelines.md`
 - `docs/current-status.md`
-- `docs/notes/`
-- accepted architecture and operations documents
-- roadmaps, research, history, and archives
+- the accepted product, architecture, roadmap, reference, development, and operations documents
+- the isolated tools and their tracked documentation artifacts
 
 These files preserve project rules, limits, decisions, handoffs, and implementation state. Local
 Codex/AI chat history, account memory, IDE workspace state, secrets, vendor data, runtime logs, and
@@ -45,7 +44,7 @@ The shared PyCharm configuration **Generate Sys Diagram** then validates the can
 checks supported source/configuration drift, and atomically regenerates the tracked documentation
 artifacts. It does not use the V2 runtime environment, `.env`, IB, Docker, PostgreSQL, Discord, or
 the network. See the
-[system/data-flow maintenance procedure](../architecture/system-dataflow-maintenance.md).
+[system/data-flow maintenance procedure](../../tools/system-diagram/docs/maintenance.md).
 
 After provisioning, use the root Python-owned CLI for supported operations:
 
@@ -118,7 +117,7 @@ by the plugin manifest. `AGENTS.md` remains the always-on repository authority w
 dormant unless explicitly invoked.
 
 The council overview and acceptance status are documented in
-[`markeitech-advisor-council.md`](../architecture/markeitech-advisor-council.md); that document
+[`kite-advisor-council.md`](../development/kite-advisor-council.md); that document
 links the canonical machine-checkable policy and observed acceptance ledger.
 During local plugin development, validate source first, then use the supported cachebuster helper
 and reinstall `kite@markeitech` only after that cache mutation is approved. A new task is required
