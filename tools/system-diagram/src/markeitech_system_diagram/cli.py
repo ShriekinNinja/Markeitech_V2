@@ -18,7 +18,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Validate and generate offline Markeitech diagrams"
     )
-    parser.add_argument("command", choices=("validate", "generate"))
+    parser.add_argument("command", choices=("validate", "generate", "test"))
     parser.add_argument("--manifest", type=Path, default=_MANIFEST)
     parser.add_argument("--output", type=Path, default=_OUTPUT)
     parser.add_argument("--check-drift", action="store_true")
@@ -27,6 +27,8 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    if args.command == "test":
+        return _run_tests()
     repository_root = Path.cwd().resolve()
     if args.manifest != _MANIFEST:
         print(
@@ -64,6 +66,15 @@ def main(argv: list[str] | None = None) -> int:
         print("GENERATOR_IO at output: offline generation failed", file=sys.stderr)
         return 2
     return 0
+
+
+def _run_tests() -> int:
+    import unittest
+
+    tests = Path(__file__).resolve().parents[2] / "tests"
+    suite = unittest.defaultTestLoader.discover(str(tests))
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    return 0 if result.wasSuccessful() else 1
 
 
 if __name__ == "__main__":

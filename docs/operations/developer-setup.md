@@ -47,6 +47,32 @@ artifacts. It does not use the V2 runtime environment, `.env`, IB, Docker, Postg
 the network. See the
 [system/data-flow maintenance procedure](../architecture/system-dataflow-maintenance.md).
 
+After provisioning, use the root Python-owned CLI for supported operations:
+
+```bash
+uv run markeitech --help
+uv run markeitech docs --help
+uv run markeitech diagrams --help
+```
+
+The closed hierarchy and its side-effect class are:
+
+| Command | Class | Owned behavior |
+| --- | --- | --- |
+| `system build` | disconnected | Builds the configured Nautilus node without running or connecting it. |
+| `system run` | connected | Requires the exact IB token, then delegates to the existing runtime owner. |
+| `docs validate` / `check` / `test` | offline read-only | Uses the locked API-doc interpreter; `check` compares a fresh build with tracked output. |
+| `docs generate` | offline write | Atomically regenerates the complete tracked `docs/api` artifact set. |
+| `diagrams validate` / `check` / `test` | offline read-only | Uses the locked diagram interpreter; `check` includes the drift census. |
+| `diagrams generate` | offline write | Regenerates the canonical complete diagram artifact set with drift checking. |
+| `verify lint` / `test` / `all` | offline read-only | Uses the active root interpreter; `all` runs lint then non-PostgreSQL tests and fails fast. |
+| `verify postgres` | local service | Runs only PostgreSQL-marked tests against the explicitly configured test database. |
+| `environment check` | local diagnostic | Reads local setup/configuration and checks Docker without starting a service; `--with-ib` opts into a TCP-listener check. |
+
+All fixed child-process commands run from the repository root and return their child exit code.
+The CLI has no command registry, shell interpolation, arbitrary-command escape hatch, or automatic
+dependency provisioning.
+
 ## 1. Clone And Install
 
 ```bash
@@ -198,18 +224,18 @@ See [V2 Interactive Brokers setup](ib-setup.md) for the complete checklist.
 Start Docker Desktop, then run:
 
 ```bash
-./scripts/check-env
+uv run markeitech environment check
 ```
 
 The doctor checks the supported OS, required commands, locked V2 environment, local files,
 configuration parsing, required environment values, Docker daemon, and Compose model. It does not
-connect to IB. Use `./scripts/check-env --with-ib` only when TWS/Gateway should already be listening.
+connect to IB. Use `uv run markeitech environment check --with-ib` only when TWS/Gateway should
+already be listening.
 
 Run offline verification:
 
 ```bash
-uv run ruff check src tests
-uv run pytest -q tests -m "not postgres"
+uv run markeitech verify all
 ```
 
 ## 5. Configure PyCharm
@@ -225,9 +251,18 @@ layout, and interpreter metadata remain local and cannot affect another machine'
 
 ## 6. Run From The Terminal
 
+To construct the configured node without provider or service connection:
+
+```bash
+uv run markeitech system build --config config/system.local.toml
+```
+
+For the connected runtime, start PostgreSQL explicitly and supply the exact confirmation:
+
 ```bash
 docker compose --env-file .env -f compose.yaml up -d --wait postgres
-uv run markeitech-system config/system.local.toml \
+uv run markeitech system run \
+  --config config/system.local.toml \
   --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
 ```
 
@@ -310,9 +345,30 @@ rather than relying on chat history alone.
 
 ## Troubleshooting
 
-### `markeitech-system` is missing
+### `markeitech` is missing
 
 Run `uv sync --locked --dev`, then invoke commands through `uv run` or `.venv/bin/python`.
+The retained `markeitech-system` entry point is a compatibility alias for the original runtime
+surface; new terminal and CI workflows use `markeitech`.
+
+## Commands Intentionally Outside The Unified CLI
+
+The repository command census keeps the following operations explicit and separate because they
+have different authority, prerequisites, or side effects:
+
+- `uv sync` provisions locked root or tool environments; the CLI diagnoses missing environments
+  but never installs or updates them.
+- `docker compose` owns local PostgreSQL service lifecycle; the CLI never starts or stops Docker.
+- `verify postgres` is a conspicuous local-service test command and is excluded from `verify all`.
+- `scripts/sir-kite-pr.py` and Git commands own authenticated publication and source-control
+  workflow; the CLI provides no GitHub or arbitrary-command executor.
+- the repository-owned Kite validator and plugin install/cachebuster commands remain development-
+  time plugin maintenance, not V2 runtime or repository verification.
+- backup, restore, connected acceptance, browser review, and other operator procedures remain
+  explicit operations under their dedicated guides.
+
+The shell implementation at `scripts/check-env` remains the single setup-doctor behavior owner
+behind `markeitech environment check`; it is not a second command-definition surface.
 
 ### PostgreSQL does not start
 

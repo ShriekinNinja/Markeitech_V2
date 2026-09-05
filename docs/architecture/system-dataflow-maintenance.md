@@ -61,19 +61,17 @@ Generation itself is offline and never downloads dependencies.
 After every sensitive change:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/system-diagram/src \
-  tools/system-diagram/.venv/bin/python -m markeitech_system_diagram \
-  validate --manifest docs/architecture/system-dataflow.toml --check-drift
-
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/system-diagram/src \
-  tools/system-diagram/.venv/bin/python -m markeitech_system_diagram \
-  generate --manifest docs/architecture/system-dataflow.toml \
-  --output docs/architecture/generated/system-dataflow --check-drift
-
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=tools/system-diagram/src \
-  tools/system-diagram/.venv/bin/python -m unittest discover \
-  -s tools/system-diagram/tests -v
+uv run markeitech diagrams check
+uv run markeitech diagrams generate
+uv run markeitech diagrams test
 ```
+
+The root CLI supplies the canonical manifest/output paths and drift flag, then dispatches through
+the exact isolated interpreter with a deterministic, offline environment. It never provisions the
+tool. A missing or invalid tool environment fails non-zero and reports
+`uv sync --project tools/system-diagram --locked` as the remediation. Use
+`uv run markeitech diagrams validate` only for schema/semantic manifest validation without the
+source/configuration drift census.
 
 The shared PyCharm configuration **Generate Sys Diagram** runs the same validation, source/config
 drift census, and atomic complete-set generation from the repository root. It uses only the

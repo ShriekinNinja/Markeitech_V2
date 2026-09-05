@@ -57,6 +57,13 @@ behavior.
   ignored migration backup. Other machines still follow the
   [developer setup](operations/developer-setup.md); Git does not transfer secrets, local
   configuration, data, IDE state, or virtual environments.
+- One Python-owned root command hierarchy now exposes explicit system build/run, isolated API-doc
+  and diagram operations, root verification, and environment checks through
+  `uv run markeitech`. The legacy `markeitech-system` entry point remains a compatibility alias to
+  the same runtime owner. The CLI adds no generic task runner, automatic provisioning, Docker
+  lifecycle, provider connection, persistence mutation, GitHub publication, or connected
+  acceptance behavior; `verify all` remains offline and excludes the conspicuous
+  `verify postgres` local-service path.
 - The completed audit-and-alignment work upgraded NautilusTrader from `2.0.0rc1` to `2.0.0rc3`.
   RC3 removed the generic Python network helpers and embedded `LiveNode.start()` lifecycle used by
   Markeitech's Discord transport and integration-test harness. Discord now uses one isolated

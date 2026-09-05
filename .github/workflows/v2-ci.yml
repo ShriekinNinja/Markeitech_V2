@@ -36,7 +36,7 @@ jobs:
       - name: Install locked V2 environment
         run: uv sync --locked --dev
       - name: Run Ruff
-        run: uv run ruff check src tests scripts/sir-kite-pr.py
+        run: uv run --locked markeitech verify lint
 
   offline-tests:
     name: V2 Offline Tests
@@ -57,7 +57,7 @@ jobs:
       - name: Install locked V2 environment
         run: uv sync --locked --dev
       - name: Run offline V2 tests
-        run: uv run pytest -q tests -m "not postgres"
+        run: uv run --locked markeitech verify test
 
   postgres-tests:
     name: V2 PostgreSQL Integration
@@ -94,4 +94,4 @@ jobs:
       - name: Install locked V2 environment
         run: uv sync --locked --dev
       - name: Run PostgreSQL integration tests
-        run: uv run pytest -q tests -m postgres
+        run: uv run --locked markeitech verify postgres

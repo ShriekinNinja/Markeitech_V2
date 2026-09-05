@@ -1,6 +1,6 @@
 schema_version = 1
 registry_id = "markeitech-v2-public-api"
-registry_version = 4
+registry_version = 5
 selection_policy = "literal-package-all-plus-explicit"
 
 [[packages]]
@@ -22,8 +22,8 @@ expected_export_count = 210
 expected_exports_sha256 = "d22add142a9a113acf034b49868d58b0f6dc77c16f9b4d4ec1272fc065dba658"
 
 [[explicit]]
-exposed = "markeitech.system.cli.main"
-canonical = "markeitech.system.cli.main"
-source = "src/markeitech/system/cli.py"
+exposed = "markeitech.cli.main"
+canonical = "markeitech.cli.main"
+source = "src/markeitech/cli.py"
 kind = "function"
 reason = "Installed operator command entry point."
