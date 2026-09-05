@@ -407,9 +407,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#markeitech.cli.main" class="md-nav__link">
+  <a href="#invocation" class="md-nav__link">
     <span class="md-ellipsis">
-      main
+      Invocation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Command hierarchy
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operations-and-side-effects" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operations and side effects
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-and-authority-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      Process and authority boundaries
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#public-python-entry-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      Public Python entry point
     </span>
   </a>
   
@@ -458,9 +494,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#markeitech.cli.main" class="md-nav__link">
+  <a href="#invocation" class="md-nav__link">
     <span class="md-ellipsis">
-      main
+      Invocation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Command hierarchy
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operations-and-side-effects" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operations and side effects
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-and-authority-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      Process and authority boundaries
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#public-python-entry-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      Public Python entry point
     </span>
   </a>
   
@@ -486,7 +558,7 @@
 <p>The unified Python CLI is the closed command surface for the Markeitech runtime and supported
 repository tools. It is independent of PyCharm and other IDEs: an IDE launcher may call the same
 entry point, but it does not own a command, argument, environment rule, or safety policy.</p>
-<h3 id="invocation">Invocation<a class="headerlink" href="#invocation" title="Permanent link">&para;</a></h3>
+<h2 id="invocation">Invocation<a class="headerlink" href="#invocation" title="Permanent link">&para;</a></h2>
 <p>Provision the root environment explicitly with <code>uv sync --locked --dev</code>. Routine commands then use
 the already-provisioned entry point:</p>
 <pre><code class="language-bash">.venv/bin/markeitech --help
@@ -498,7 +570,7 @@ also equivalent:</p>
 <p>Do not put <code>uv run</code> in front of routine operations. It may create or synchronize the root
 environment before the CLI can enforce its offline and tool-isolation checks. Dependency
 provisioning remains a separate, explicit operation.</p>
-<h3 id="command-hierarchy">Command hierarchy<a class="headerlink" href="#command-hierarchy" title="Permanent link">&para;</a></h3>
+<h2 id="command-hierarchy">Command hierarchy<a class="headerlink" href="#command-hierarchy" title="Permanent link">&para;</a></h2>
 <pre><code class="language-text">markeitech
 ├── system
 │   ├── build
@@ -523,7 +595,7 @@ provisioning remains a separate, explicit operation.</p>
 </code></pre>
 <p>Use nested help for current arguments and defaults, for example
 <code>.venv/bin/markeitech system run --help</code>.</p>
-<h3 id="operations-and-side-effects">Operations and side effects<a class="headerlink" href="#operations-and-side-effects" title="Permanent link">&para;</a></h3>
+<h2 id="operations-and-side-effects">Operations and side effects<a class="headerlink" href="#operations-and-side-effects" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -561,7 +633,7 @@ provisioning remains a separate, explicit operation.</p>
 <tr>
 <td><code>docs test</code></td>
 <td>API-doc tool</td>
-<td>Runs the isolated API-documentation test suite.</td>
+<td>Runs the isolated suite, whose generation tests can rewrite tracked <code>docs/api</code>; inspect scoped diffs, untracked files, and worktree status afterward.</td>
 </tr>
 <tr>
 <td><code>diagrams validate</code></td>
@@ -617,7 +689,7 @@ uv sync --project tools/system-diagram --locked
 </code></pre>
 <p>The CLI diagnoses a missing or invalid tool environment and exits non-zero; it never provisions or
 updates either environment itself.</p>
-<h3 id="process-and-authority-boundaries">Process and authority boundaries<a class="headerlink" href="#process-and-authority-boundaries" title="Permanent link">&para;</a></h3>
+<h2 id="process-and-authority-boundaries">Process and authority boundaries<a class="headerlink" href="#process-and-authority-boundaries" title="Permanent link">&para;</a></h2>
 <p>Fixed child processes run from the repository root and return their child exit codes. Interrupts
 are forwarded to the owned process group, and cancellation returns the corresponding
 shell-compatible status. The isolated tools receive deterministic Python and locale controls, not
@@ -634,17 +706,17 @@ their dedicated procedures.</p>
 and
 <a href="https://github.com/ShriekinNinja/Markeitech_V2/blob/master/tools/system-diagram/docs/maintenance.md">system-diagram maintenance procedure</a>
 for detailed prerequisites, configuration, generation, review, and safety requirements.</p>
-<h3 id="public-python-entry-point">Public Python entry point<a class="headerlink" href="#public-python-entry-point" title="Permanent link">&para;</a></h3>
+<h2 id="public-python-entry-point">Public Python entry point<a class="headerlink" href="#public-python-entry-point" title="Permanent link">&para;</a></h2>
 
 
 <div class="doc doc-object doc-function">
 
 
-<h2 id="markeitech.cli.main" class="doc doc-heading">
+<h3 id="markeitech.cli.main" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">markeitech.cli.main</span>
 
 
-<a href="#markeitech.cli.main" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#markeitech.cli.main" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span>
 </code></pre></div>
 
