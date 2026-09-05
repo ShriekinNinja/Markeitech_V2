@@ -83,6 +83,22 @@ run. The remaining operational gate is to identify/reconcile the host's replacem
 retain the same package through fresh-task acceptance. No repeated reinstall loop or extra model
 calls were used to hide the failure.
 
+## Final Documentation-Only Package Follow-Up
+
+A final consistency check found that the bundled `routing-acceptance.md` still described the
+initial uninstalled checkpoint in present tense. Revision
+`0f92a93eb6dbaee29a23445e01448bae18dbc0ab` makes that checkpoint explicitly historical and points to
+this external record. It changes that reference and the coordinated manifest/policy package
+identifiers only. Resolver bytes and advisor definitions are unchanged from the tested revision.
+
+The resulting `0.1.0+codex.20260905203558` package was installed through `plugin add`; its 116-file
+source/cache SHA-256 is `6bcb6f46a1e2c7add29da004035ad8f7ecf22ca38d1b3be89872870439cc4995`, verified
+`BYTE_IDENTICAL`. No additional model calls were made. The earlier run remains evidence for the
+unchanged allocation behavior, with its original policy/package binding preserved in JSON. This
+later documentation package has no separate fresh-task stability pass, and does not close either
+remaining acceptance gate. Replay the recorded decisions against their recorded source revision's
+policy, not a different package-version binding.
+
 ## Model Admission And Scope Limits
 
 Central policy admits two real models: Sol at medium/high/xhigh and Astra at high. Sol preserves

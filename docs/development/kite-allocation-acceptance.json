@@ -244,5 +244,14 @@
       },
       "receipt_status": "EXECUTION_VERIFIED"
     }
-  ]
+  ],
+  "documentation_followup_package": {
+    "source_revision": "0f92a93eb6dbaee29a23445e01448bae18dbc0ab",
+    "version": "0.1.0+codex.20260905203558",
+    "files": 116,
+    "sha256": "6bcb6f46a1e2c7add29da004035ad8f7ecf22ca38d1b3be89872870439cc4995",
+    "installation_check": "BYTE_IDENTICAL",
+    "resolver_and_role_bytes": "unchanged from tested source",
+    "fresh_task_stability": "not established"
+  }
 }
