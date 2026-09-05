@@ -3,7 +3,7 @@
 **Status:** Source architecture implemented; bounded desired-runtime review completed; general
 Phase 1 acceptance pending
 
-**Reviewed:** 2026-08-30
+**Reviewed:** 2026-09-05 (allocation source migration; earlier execution evidence remains dated below)
 
 ## Purpose And Authority
 
@@ -24,7 +24,8 @@ inherit authority from this council.
 | Selection and orchestration algorithm | [Advisor router skill](../../plugins/kite/skills/markeitech-advisor-router/SKILL.md) |
 | Concise human boundary guide | [`council-routing-contracts.md`](../../plugins/kite/skills/markeitech-advisor-router/references/council-routing-contracts.md) |
 | Detailed specialist methodology | Each specialist `SKILL.md` and its required references |
-| Model, reasoning, prompt safety kernel, sandbox default, and MCP override | `.codex/agents/*.toml` |
+| Prompt safety kernel, sandbox default, and MCP override; no fixed execution allocation | `.codex/agents/*.toml` |
+| Per-consultation allocation validation and execution handoff | [Allocation contract](../../plugins/kite/skills/markeitech-advisor-router/references/resource-allocation.md) and its offline resolver |
 | Expected route fixtures | [`routing-cases.toml`](../../plugins/kite/skills/markeitech-advisor-router/references/routing-cases.toml) |
 | Observed versioned behavior | [`routing-acceptance.md`](../../plugins/kite/skills/markeitech-advisor-router/references/routing-acceptance.md) |
 | Current implementation and acceptance status | [`docs/current-status.md`](../current-status.md) |
@@ -148,7 +149,17 @@ Acceptance claims remain separate:
 
 ## Source And Installed Status
 
-Kite `0.1.0+codex.20260829091645` is installed and enabled from the local `markeitech` marketplace;
+Issue #39 migrates the source to council schema 3 with per-consultation allocation. All 20 role
+files omit fixed model/effort settings; intent/default references and concrete mappings are owned
+by central policy. Primary Kite validates each explicit pair before spawning the exact role.
+See [resource allocation](kite-advisor-allocation-design.md) for implementation and acceptance.
+The updated package has not been installed, and effective execution remains unverified.
+
+The following records describe earlier fixed-allocation versions. A 2026-09-05 comparison found
+14 differences between the old installed cache and source despite their identical version strings;
+the earlier byte-equality observation does not establish current installed identity.
+
+Kite `0.1.0+codex.20260829091645` was installed and enabled from the local `markeitech` marketplace;
 its installed cache matched the cache-busted repository source byte-for-byte. Its structural
 validator covers 20 advisors, 27 in-Kite routing cases, and explicit activation fixtures, but
 packaging and source validation do not prove fresh-task routing behavior. Codex 0.149.1's actual
@@ -185,10 +196,9 @@ was split; Rust/PyO3 remains deferred; and no candidate worktree was deleted.
 
 ## Known Gaps
 
-- [Per-consultation resource allocation](kite-advisor-allocation-design.md) is proposed under
-  issue #39. The current 20 role files still enforce fixed model/effort settings. The proposal
-  records platform feasibility, source/cache drift, policy decisions, and migration/acceptance
-  gates; it changes no active allocation or installation.
+- [Per-consultation resource allocation](kite-advisor-allocation-design.md) is implemented in
+  source under issue #39; authorized installation and fresh-task effective execution remain
+  outstanding. No quality, latency, or cost improvement has been measured.
 
 - Fresh-task dormancy, explicit Kite activation, exact-role invocation, ordering, stop behavior,
   task-follow-up continuity, unrelated-task reset, and proportional synthesis remain unmeasured.

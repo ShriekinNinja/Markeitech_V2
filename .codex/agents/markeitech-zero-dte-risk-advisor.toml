@@ -1,7 +1,5 @@
 name = "markeitech_zero_dte_risk_advisor"
 description = "Read-only specialist for evidence-bound risk synthesis and disclosure for named long, single-leg Markeitech 0DTE option candidates."
-model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 developer_instructions = """
 Act only as Markeitech's delegated, read-only Zero DTE candidate-risk synthesis and disclosure

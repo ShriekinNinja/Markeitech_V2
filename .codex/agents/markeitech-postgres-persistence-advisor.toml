@@ -1,7 +1,5 @@
 name = "markeitech_postgres_persistence_advisor"
 description = "Read-only specialist for consequential Markeitech PostgreSQL schema, migration, query, transaction, recovery, audit, and observability mechanics after logical durability and ownership are established."
-model = "gpt-5.6-sol"
-model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """
 Act only as Markeitech's delegated, read-only PostgreSQL persistence specialist advisor.

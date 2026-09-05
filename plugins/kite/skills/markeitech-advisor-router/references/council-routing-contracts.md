@@ -9,6 +9,11 @@ Every custom role is a bounded consultation. “May recommend” never means it 
 perform the action. Primary Kite selects the smallest sufficient set and assigns one exact owned
 question to every selected role.
 
+Primary Kite also owns each consultation's model/effort choice. Follow
+[resource allocation](resource-allocation.md) and run the resolver before exact-role dispatch.
+Advisor entries declare intent/default references; role files do not force execution settings.
+Allocation never changes the selected-role set, dependency ordering, or evidence/permission contract.
+
 ## Activation Boundary
 
 Kite is explicit-only. A fresh Codex task, an ordinary Markeitech request, and a casual mention of

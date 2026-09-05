@@ -19,6 +19,13 @@ A useful specialist advisor must define:
 - the output expected from the advisor and the evidence required before implementation;
 - the same repository permissions, approval gates, and side-effect restrictions as Kite.
 
+Each advisor's council-policy entry also declares versioned capability requirements and default,
+constraint, and retry profile references under the [allocation contract](resource-allocation.md).
+Concrete model/effort mappings belong only to central policy. Do not add `model`,
+`model_reasoning_effort`, or invented intent metadata to the Codex role file. Primary Kite makes
+and validates the final per-consultation choice. Defaults are preferences, not execution pins;
+mandatory restrictions require evidence and belong in the constraint profile.
+
 Prefer one strong advisor per coherent domain over a collection of shallow prompt fragments. Do
 not encode a temporary conclusion as permanent expertise. A specialist should improve decisions
 by forcing relevant evidence and boundaries into view, not by supplying confident vocabulary.

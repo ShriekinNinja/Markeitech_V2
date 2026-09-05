@@ -33,6 +33,18 @@ order, unnecessary roles, stop/handoff behavior, sanitized evidence location, an
 
 ## Fresh-Task Acceptance Requirements
 
+Issue #39 changes source to council schema 3 with per-consultation allocation. Offline fixtures
+exercise defaults, distinct allocations for one role, overrides, unavailable/unsupported pairs,
+capability/context conflicts, retry bounds, and requested/effective receipts. This is source
+validation only. No schema-3 package refresh or fresh-task effective-allocation acceptance has run.
+The inspected legacy installed package shares its version with the old source but differs in
+14 files; byte equality must be re-established after an authorized refresh.
+
+For allocation acceptance, follow [resource allocation](resource-allocation.md). Record the actual
+router-to-resolver-to-exact-role calls, current host/version and context mode, complete requested
+pair, and effective settings from host evidence or an explicit observability limitation. Exercise
+two allocations for one unchanged advisor. An echoed model name is not effective-setting proof.
+
 Run only after a separately approved cache-busting install or reinstall:
 
 1. In fresh tasks, prove that ordinary conversation, substantive Markeitech work without explicit
