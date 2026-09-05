@@ -56,6 +56,7 @@ CANONICAL_LINK_PATTERN = re.compile(
     re.IGNORECASE,
 )
 EXPECTED_SITE_URL = "https://shriekinninja.github.io/Markeitech_V2/"
+SUPPORTED_PYTHON_SERIES = "3.13"
 
 UNSAFE_CSS_PATTERN = re.compile(
     r"@import\b|@font-face\b|url\s*\(|expression\s*\(|"
@@ -184,10 +185,26 @@ def _validate_installed_versions(lock_path: Path) -> dict[str, str]:
         versions[distribution] = actual
     versions["mkdocstrings"] = importlib.metadata.version("mkdocstrings")
     python_version = sys.version_info
+    python_series = f"{python_version.major}.{python_version.minor}"
+    if python_series != SUPPORTED_PYTHON_SERIES:
+        raise ApiDocsError("ENVIRONMENT_INVALID: unsupported documentation Python series")
     versions["python"] = (
         f"{python_version.major}.{python_version.minor}.{python_version.micro}"
     )
     return dict(sorted(versions.items()))
+
+
+def _deterministic_artifact_environment(versions: dict[str, str]) -> dict[str, object]:
+    python_version = versions.get("python", "")
+    python_parts = python_version.split(".")
+    if len(python_parts) != 3 or ".".join(python_parts[:2]) != SUPPORTED_PYTHON_SERIES:
+        raise ApiDocsError("ENVIRONMENT_INVALID: unsupported documentation Python series")
+    return {
+        "python_series": SUPPORTED_PYTHON_SERIES,
+        "tool_versions": {
+            name: version for name, version in sorted(versions.items()) if name != "python"
+        },
+    }
 
 
 def _validate_mkdocs_policy(path: Path) -> None:
@@ -321,10 +338,14 @@ def _assert_output_match(candidate_root: Path, committed_root: Path) -> None:
     candidate = _output_checksum_map(candidate_root)
     committed = _output_checksum_map(committed_root)
     if candidate.keys() != committed.keys():
-        raise ApiDocsError("OUTPUT_DRIFT: committed documentation output and generated output differ")
+        raise ApiDocsError(
+            "OUTPUT_DRIFT: committed documentation output and generated output differ"
+        )
     for path, signature in candidate.items():
         if committed[path] != signature:
-            raise ApiDocsError("OUTPUT_DRIFT: committed documentation output and generated output differ")
+            raise ApiDocsError(
+                "OUTPUT_DRIFT: committed documentation output and generated output differ"
+            )
 
 
 def _verify_snapshot_unchanged(
@@ -421,12 +442,12 @@ def _write_artifact_manifests(
     base_entries = _hash_entries(root, exclude={"artifact-index.json", "SHA256SUMS"})
     artifact_index: dict[str, Any] = {
         "schema_id": "markeitech-api-docs-artifact-index",
-        "schema_version": 2,
+        "schema_version": 3,
         "authority": "generated_projection_only",
         "not_runtime_configuration": True,
         "source_signature": snapshot.input_signature,
         "tool_version": __version__,
-        "tool_versions": versions,
+        **_deterministic_artifact_environment(versions),
         "lock_sha256": sha256_file(paths.tool_root / "uv.lock"),
         "config_sha256": sha256_file(paths.config),
         "artifacts": base_entries,
