@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "consultation_id": "fixture-owner-lookup",
+  "role": "markeitech_architecture_boundaries_advisor",
+  "question": "Locate the declared owner in the supplied source fixture.",
+  "assessment": {
+    "complexity": "low",
+    "ambiguity": "low",
+    "evidence_volume": "low",
+    "consequence": "low"
+  },
+  "rationale": "Synthetic fixture: one bounded ownership lookup; no quality or cost claim.",
+  "required_capabilities": ["source_analysis"],
+  "required_context_tokens": 0,
+  "kite_active": true,
+  "sources_ready": true,
+  "dependencies_ready": true,
+  "proposed_choice": {"model": "gpt-5.6-sol", "reasoning_effort": "medium"},
+  "fork_turns": "none",
+  "host": {
+    "snapshot_id": "synthetic-fixture-not-live-host-evidence",
+    "evidence": "Illustrative snapshot only. Replace from the current task tool contract; never dispatch this fixture.",
+    "role": "markeitech_architecture_boundaries_advisor",
+    "role_overrides": {},
+    "models": {
+      "gpt-5.6-sol": {
+        "efforts": ["medium", "high", "xhigh"],
+        "capabilities": ["source_analysis", "tool_use", "evidence_reporting"],
+        "context_tokens": null
+      }
+    },
+    "fork_modes": ["none", "bounded"]
+  },
+  "limits": {"max_attempts": 1},
+  "history": []
+}

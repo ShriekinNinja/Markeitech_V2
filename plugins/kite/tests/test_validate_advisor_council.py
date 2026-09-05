@@ -314,18 +314,40 @@ class AdvisorCouncilValidatorTests(unittest.TestCase):
             )
             policy.write_text(
                 policy.read_text(encoding="utf-8").replace(
-                    'reasoning = "xhigh"',
-                    'reasoning = "ultra"',
+                    'reasoning_effort = "xhigh"',
+                    'reasoning_effort = "unsupported"',
                     1,
                 ),
                 encoding="utf-8",
             )
             self.assertTrue(
                 any(
-                    "unsupported reasoning 'ultra'" in error
+                    "UNSUPPORTED_EFFORT" in error
                     for error in VALIDATOR.validate_repo(root)
                 )
             )
+
+    def test_fixed_role_execution_overrides_are_rejected(self) -> None:
+        for field in ("model", "model_reasoning_effort"):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                self.copy_validation_tree(root)
+                agent = root / ".codex/agents/markeitech-nautilus-advisor.toml"
+                agent.write_text(f'{field} = "unapproved"\n' + agent.read_text())
+                self.assertTrue(any("fixed execution overrides" in error
+                                    for error in VALIDATOR.validate_repo(root)))
+
+    def test_unknown_advisor_intent_field_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.copy_validation_tree(root)
+            policy = (
+                root / "plugins/kite/skills/markeitech-advisor-router/references"
+                / "council-policy.toml"
+            )
+            policy.write_text(policy.read_text().replace(
+                'intent_version = 1', 'intent_version = 1\nunknown_intent = true', 1))
+            self.assertIn("allocation policy: UNKNOWN_FIELD", VALIDATOR.validate_repo(root))
 
     def test_network_default_drift_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

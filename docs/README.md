@@ -45,10 +45,13 @@ generated review artifacts now live with the isolated tool under
   active V3 replacement work; not proof that disabled owners are available.
 - [Kite advisor council](development/kite-advisor-council.md) — development-time consultation,
   separate from Sir Loke runtime behavior.
+- [Kite resource allocation](development/kite-advisor-allocation-design.md) — per-consultation
+  model/effort selection, with bounded execution evidence and remaining acceptance gates.
 
 ## Operations
 
 - [Developer setup](operations/developer-setup.md)
+- [Kite installation and operations](operations/kite.md)
 - [GitHub workflow](operations/github-workflow.md)
 - [Interactive Brokers setup and broker-observation gate](operations/ib-setup.md)
 - [IB market-data subscriptions](operations/ib-market-data-subscriptions.md)

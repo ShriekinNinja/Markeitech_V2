@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import stat
@@ -13,8 +14,13 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
-ALLOWED_MODELS = {"gpt-5.6-sol"}
-ALLOWED_REASONING = {"medium", "high", "xhigh"}
+_ALLOCATION_SPEC = importlib.util.spec_from_file_location(
+    "resolve_advisor_allocation", Path(__file__).with_name("resolve_advisor_allocation.py")
+)
+if _ALLOCATION_SPEC is None or _ALLOCATION_SPEC.loader is None:
+    raise RuntimeError("allocation validator unavailable")
+ALLOCATION = importlib.util.module_from_spec(_ALLOCATION_SPEC)
+_ALLOCATION_SPEC.loader.exec_module(ALLOCATION)
 ROUTE_MODES = {"NO_COUNCIL", "SINGLE", "MULTI", "BLOCKED"}
 ACTIVATION_SOURCES = {
     "none": False,
@@ -40,22 +46,7 @@ DEPRECATED_IDENTIFIERS = {
     "markeitech_market_evidence_validation_advisor",
     "markeitech-market-evidence-validation-expert",
 }
-REQUIRED_POLICY_FIELDS = {
-    "role",
-    "skill",
-    "domain",
-    "model",
-    "reasoning",
-    "tier",
-    "owns",
-    "excludes",
-    "inputs",
-    "output",
-    "default_after",
-    "handoffs",
-    "fresh_primary_sources",
-    "network",
-}
+REQUIRED_POLICY_FIELDS = ALLOCATION.ADVISOR_FIELDS
 
 
 def repository_root() -> Path:
@@ -182,8 +173,11 @@ def validate_repo(root: Path) -> list[str]:
         return ["council policy must define [[advisors]] entries"]
     if len(advisors) != 20:
         errors.append(f"expected 20 policy advisors, found {len(advisors)}")
-    if policy.get("schema_version") != 2:
-        errors.append("council policy schema_version must be 2")
+    try:
+        ALLOCATION.validate_policy(policy)
+    except (ValueError, TypeError, KeyError) as exc:
+        reason = str(exc) if isinstance(exc, ALLOCATION.AllocationError) else "INVALID_INPUT"
+        return [f"allocation policy: {reason}"]
 
     policy_roles: list[str] = []
     policy_skills: list[str] = []
@@ -204,10 +198,6 @@ def validate_repo(root: Path) -> list[str]:
         policy_roles.append(role)
         policy_skills.append(skill)
         advisor_by_role[role] = raw
-        if raw.get("model") not in ALLOWED_MODELS:
-            errors.append(f"{role}: unsupported model {raw.get('model')!r}")
-        if raw.get("reasoning") not in ALLOWED_REASONING:
-            errors.append(f"{role}: unsupported reasoning {raw.get('reasoning')!r}")
         fresh_sources = raw.get("fresh_primary_sources")
         if not isinstance(fresh_sources, bool):
             errors.append(f"{role}: fresh_primary_sources must be boolean")
@@ -246,6 +236,8 @@ def validate_repo(root: Path) -> list[str]:
     for field, expected in expected_defaults.items():
         if defaults.get(field) != expected:
             errors.append(f"policy defaults.{field} must be {expected!r}")
+    if set(defaults) != set(expected_defaults):
+        errors.append("policy defaults fields must exactly match the supported contract")
 
     graph: dict[str, list[str]] = {}
     role_set = set(policy_roles)
@@ -296,10 +288,11 @@ def validate_repo(root: Path) -> list[str]:
         if policy_agent is None:
             errors.append(f"{role}: custom role missing from policy")
             continue
-        if agent.get("model") != policy_agent["model"]:
-            errors.append(f"{role}: model differs from policy")
-        if agent.get("model_reasoning_effort") != policy_agent["reasoning"]:
-            errors.append(f"{role}: reasoning differs from policy")
+        allowed_role_fields = {
+            "name", "description", "developer_instructions", "sandbox_mode", "mcp_servers"
+        }
+        if set(agent) - allowed_role_fields:
+            errors.append(f"{role}: unsupported role fields or fixed execution overrides")
         if agent.get("sandbox_mode") != "read-only":
             errors.append(f"{role}: sandbox_mode must be read-only")
         instructions = agent.get("developer_instructions")

@@ -47,7 +47,12 @@ For substantive Markeitech work after explicit Kite activation:
    their evidence relationship fits the scoped question; add or override an edge only for an exact
    recorded evidence dependency. Reject cycles. Stable role name breaks ties between genuinely
    independent consultations; it does not create semantic precedence.
-7. For ordinary routing, delegate through each exact project custom-agent role. Do not run its
+7. Before each selected role is spawned, follow [resource allocation](references/resource-allocation.md).
+   Primary Kite chooses the model and reasoning effort for that question within council policy;
+   run the allocation resolver and pass both validated fields explicitly with a supported context
+   mode. This instruction authorizes per-spawn choices within that policy after explicit Kite
+   activation. A failed resolver or fixed host role override stops the affected consultation.
+   For ordinary routing, delegate through each exact project custom-agent role. Do not run its
    specialist skill directly in primary Kite when a custom role exists. A specialist remains
    available when Markeitect explicitly invokes its `$kite:` skill; that explicit path is not
    evidence that ordinary router selection works. Advisors never delegate.

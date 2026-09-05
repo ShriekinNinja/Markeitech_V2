@@ -33,6 +33,22 @@ order, unnecessary roles, stop/handoff behavior, sanitized evidence location, an
 
 ## Fresh-Task Acceptance Requirements
 
+Issue #39 changes source to council schema 3 with per-consultation allocation. Offline fixtures
+exercise defaults, distinct allocations for one role, overrides, unavailable/unsupported pairs,
+capability/context conflicts, retry bounds, and requested/effective receipts. This is source
+validation only. At the initial source-only checkpoint, no schema-3 package refresh or fresh-task
+effective-allocation acceptance had run; the legacy installed package differed from source in
+14 files despite a matching version. Current allocation observations and remaining gates are
+maintained outside the bundle in the repository
+`docs/development/kite-allocation-acceptance.md` and its sanitized JSON record. Keeping run results
+outside the bundle avoids changing the package merely to record its own acceptance. Always verify
+current byte identity; neither a historical observation nor a matching version establishes it.
+
+For allocation acceptance, follow [resource allocation](resource-allocation.md). Record the actual
+router-to-resolver-to-exact-role calls, current host/version and context mode, complete requested
+pair, and effective settings from host evidence or an explicit observability limitation. Exercise
+two allocations for one unchanged advisor. An echoed model name is not effective-setting proof.
+
 Run only after a separately approved cache-busting install or reinstall:
 
 1. In fresh tasks, prove that ordinary conversation, substantive Markeitech work without explicit

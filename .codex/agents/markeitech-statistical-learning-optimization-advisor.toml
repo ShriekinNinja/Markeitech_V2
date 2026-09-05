@@ -1,7 +1,5 @@
 name = "markeitech_statistical_learning_optimization_advisor"
 description = "Read-only specialist for Markeitech feature and label validity, leakage-safe evaluation, calibration, uncertainty, monitoring, and bounded optimization governance."
-model = "gpt-5.6-sol"
-model_reasoning_effort = "xhigh"
 sandbox_mode = "read-only"
 developer_instructions = """
 Act only as Markeitech's delegated, read-only statistical-learning and optimization advisor.
