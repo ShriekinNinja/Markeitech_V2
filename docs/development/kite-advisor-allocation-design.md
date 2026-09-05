@@ -1,7 +1,8 @@
 # Kite Per-Consultation Resource Allocation
 
-**Status:** Source implementation and offline verification; installation and fresh-task effective
-execution remain unverified.
+**Status:** Source and offline checks pass; two task-driven effective effort allocations are
+verified. Complete acceptance remains blocked by installed-package stability and live cross-model
+evidence; see the [acceptance record](kite-allocation-acceptance.md).
 
 **Tracking:** [Issue #39](https://github.com/ShriekinNinja/Markeitech_V2/issues/39)
 
@@ -60,8 +61,9 @@ fields permits explicit caller choices while retaining required role identity/in
 This task's host separately prohibits explicit overrides on full-history forks. The updated router
 uses a complete bounded handoff with a supported explicit-choice context mode.
 
-The currently loaded roles still advertise their old fixed settings. Editing the source does not
-reload them. No advisor was spawned, and no dynamic execution acceptance is claimed from this task.
+The original task retained its earlier role catalog after source edits. Acceptance therefore used
+a fresh CLI session; its exact-role execution evidence and host/package limitations are recorded
+separately in the acceptance record.
 
 ## Verification And Remaining Acceptance
 

@@ -172,6 +172,7 @@ records are retained and are outside the capability-purge scope.
 | Missing/malformed custom role | Check that task cwd is the reviewed project and role TOML parses; fix source through its PR, then start a new task. Do not substitute a generic agent. |
 | Fixed overrides in the live role | The task or checkout is stale; load the matching role source in a fresh task. Do not declare an allocation pass. |
 | Resolver reports blocked | Preserve the sanitized reason and stop that consultation; correct evidence/requirements through the normal workflow. Do not invent host capacity or silently switch models. |
+| Candidate cache disappears or an older version returns | Preserve initial/final identities and check registration again. One repair reinstall can restore current bytes, but stop installed-behavior acceptance until host replacement behavior is resolved; do not loop reinstalls or edit cache files. |
 | Installation partially fails | Inspect CLI listing and the recorded cache path before retrying; never assume a failed response means no mutation occurred. |
 
 Rollback uses a known reviewed revision containing a coherent bundle **and** project-role set.
