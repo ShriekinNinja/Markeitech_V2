@@ -200,7 +200,7 @@ read/write access; it has no administration, secrets, or workflow permissions. W
 user OAuth are disabled. App registration ID is `4807574`; installation ID is `158548175`.
 These identifiers are not credentials. The private key and local configuration stay outside Git.
 
-The following `master` protection settings were read back after activation on 2026-09-02:
+The following `master` protection settings were read back after activation and the issue-34 update on 2026-09-05:
 
 | Setting | Required value |
 | --- | --- |
@@ -209,13 +209,13 @@ The following `master` protection settings were read back after activation on 20
 | Require review from Code Owners | Enabled; `ShriekinNinja` is the sole owner of every path |
 | Dismiss stale approvals when new commits are pushed | Enabled |
 | Apply protection to administrators | Enabled; no review bypass allowances |
-| Required status checks | Preserve all three existing V2 checks and their GitHub Actions source |
+| Required status checks | Preserve the three existing V2 checks and add `API docs verification` as required |
 | Require branch to be up to date | Preserve enabled |
 | Require conversation resolution | Preserve enabled |
 | Allow force pushes / branch deletion | Preserve disabled |
 
-The activation changed only the approval count, code-owner requirement, and stale-review
-dismissal. A before/after comparison confirmed all other protection settings were preserved.
+The issue-34 update added `API docs verification` to the required checks while preserving the rest
+of the branch-protection settings. A before/after comparison confirmed no other settings changed.
 There were no repository rulesets. This is a dated settings observation; re-read live protection
 before any later update. GitHub's
 [branch-protection guide](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
