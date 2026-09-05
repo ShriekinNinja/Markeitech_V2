@@ -1,6 +1,6 @@
 schema_version = 3
-policy_version = "2026-09-05-v5"
-plugin_version = "0.1.0+codex.20260905203558"
+policy_version = "2026-09-05-v6"
+plugin_version = "0.1.0+codex.20260905204949"
 router_skill = "markeitech-advisor-router"
 
 # Allocation mappings live only here. Prior use is continuity evidence, not quality parity.
@@ -15,7 +15,7 @@ evidence = "council baseline policy-2026-08-29-v3; prior exact-role consultation
 [allocation.models."gpt-6-astra"]
 efforts = ["high"]
 capabilities = ["source_analysis", "tool_use", "evidence_reporting"]
-evidence = "2026-09-05 Codex host spawn schema admits gpt-6-astra/high; https://developers.openai.com/api/docs/models/gpt-6-astra documents reasoning and tool support; bounded execution acceptance is recorded in docs/development/kite-allocation-acceptance.md, not comparative quality evidence"
+evidence = "Policy-level eligibility: 2026-09-05 desktop Codex spawn metadata and https://developers.openai.com/api/docs/models/gpt-6-astra support the admitted reasoning/tool capabilities. Offline fixtures validate eligible and unavailable-host cases. Live Astra execution remains unverified; the observed fresh CLI schema did not expose Astra. See docs/development/kite-allocation-acceptance.md for scope and current host evidence; no comparative quality claim."
 
 [allocation.profiles.astra_high]
 model = "gpt-6-astra"
