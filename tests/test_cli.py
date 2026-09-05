@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
+import os
+import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -114,6 +117,33 @@ def test_system_build_delegates_without_connection(monkeypatch: pytest.MonkeyPat
         ["config/system.example.toml", "--env-file", "missing.env"]
     )
     assert "--connect" not in system_main.call_args.args[0]
+
+
+def test_system_defaults_remain_owned_by_the_runtime_cli(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    system_main = Mock(return_value=0)
+    monkeypatch.setattr("markeitech.system.cli.main", system_main)
+
+    assert cli.main(["system", "build"]) == 0
+
+    system_main.assert_called_once_with([])
+
+
+def test_system_run_forwards_no_default_path_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    system_main = Mock(return_value=0)
+    monkeypatch.setattr("markeitech.system.cli.main", system_main)
+
+    assert (
+        cli.main(
+            ["system", "run", "--connect", "I_UNDERSTAND_THIS_CONNECTS_TO_IB"]
+        )
+        == 0
+    )
+
+    system_main.assert_called_once_with(
+        ["--connect", "I_UNDERSTAND_THIS_CONNECTS_TO_IB"]
+    )
 
 
 @pytest.mark.parametrize(
@@ -253,14 +283,22 @@ def test_isolated_environment_is_deterministic_and_does_not_name_runtime_files(
 ) -> None:
     monkeypatch.setenv("PYTHONHOME", "/unsafe")
     monkeypatch.setenv("PYTHONHASHSEED", "random")
+    monkeypatch.setenv("PYTHONINSPECT", "1")
+    monkeypatch.setenv("MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK", "secret-sentinel")
 
     environment = cli._tool_environment(cli._DOCS)
 
     assert "PYTHONHOME" not in environment
+    assert "PYTHONINSPECT" not in environment
+    assert "MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK" not in environment
+    assert environment["LANG"] == "C"
+    assert environment["LC_ALL"] == "C"
     assert environment["PYTHONUNBUFFERED"] == "1"
     assert environment["PYTHONDONTWRITEBYTECODE"] == "1"
     assert environment["PYTHONHASHSEED"] == "0"
-    assert environment["PYTHONPATH"] == "tools/api-docs/src"
+    assert environment["PYTHONNOUSERSITE"] == "1"
+    assert environment["PYTHONSAFEPATH"] == "1"
+    assert environment["PYTHONPATH"] == str(cli._DOCS.source_path)
     assert environment["TZ"] == "UTC"
     assert ".env" not in environment.values()
 
@@ -287,7 +325,6 @@ def test_missing_isolated_environment_reports_remediation(
         name="test tool",
         project=str(tmp_path / "missing-tool"),
         module="missing_tool",
-        import_probe="import missing_tool",
     )
 
     result = cli._run_isolated(tool, ["-m", "missing_tool"])
@@ -311,17 +348,14 @@ def test_invalid_isolated_environment_reports_remediation(
         name="test tool",
         project=str(tool_root),
         module="invalid_tool",
-        import_probe="import invalid_tool",
     )
-    monkeypatch.setattr(
-        cli.subprocess,
-        "run",
-        Mock(return_value=SimpleNamespace(returncode=1)),
-    )
+    run_process = Mock(return_value=1)
+    monkeypatch.setattr(cli, "_run_process", run_process)
 
     result = cli._run_isolated(tool, ["-m", "invalid_tool"])
 
     assert result == 1
+    run_process.assert_called_once()
     assert f"uv sync --project {tool_root} --locked" in capsys.readouterr().err
 
 
@@ -398,33 +432,48 @@ def test_environment_check_preserves_explicit_ib_opt_in(monkeypatch: pytest.Monk
     )
 
 
-def test_child_exit_code_is_propagated(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        cli.subprocess,
-        "run",
-        Mock(return_value=SimpleNamespace(returncode=23)),
-    )
-
-    assert cli._run_process(["fixed", "command"]) == 23
+def test_child_exit_code_is_propagated() -> None:
+    assert cli._run_process([sys.executable, "-c", "raise SystemExit(23)"]) == 23
 
 
-def test_child_signal_is_returned_as_a_shell_interrupt_code(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        cli.subprocess,
-        "run",
-        Mock(return_value=SimpleNamespace(returncode=-2)),
-    )
+def test_child_signal_is_returned_as_a_shell_interrupt_code() -> None:
+    command = [
+        sys.executable,
+        "-c",
+        "import os, signal; os.kill(os.getpid(), signal.SIGTERM)",
+    ]
 
-    assert cli._run_process(["fixed", "command"]) == 130
+    assert cli._run_process(command) == 143
 
 
 def test_child_interruption_is_propagated(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(cli.subprocess, "run", Mock(side_effect=KeyboardInterrupt))
+    process = Mock(pid=91234)
+    process.wait.side_effect = [KeyboardInterrupt, 0]
+    monkeypatch.setattr(cli.subprocess, "Popen", Mock(return_value=process))
+    signal_group = Mock()
+    monkeypatch.setattr(cli, "_signal_process_group", signal_group)
 
     with pytest.raises(KeyboardInterrupt):
         cli._run_process(["fixed", "command"])
+
+    signal_group.assert_called_once_with(process.pid, signal.SIGKILL)
+
+
+def test_launch_oserror_is_sanitized(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        cli.subprocess,
+        "Popen",
+        Mock(side_effect=OSError("/private/secret/tool: permission denied")),
+    )
+
+    assert cli._run_process(["/private/secret/tool"]) == 1
+
+    error = capsys.readouterr().err
+    assert error == "ERROR: unable to start the requested process.\n"
+    assert "/private" not in error
 
 
 def test_isolated_command_uses_fixed_root_and_environment(
@@ -439,20 +488,161 @@ def test_isolated_command_uses_fixed_root_and_environment(
         name="test tool",
         project=str(tool_root),
         module="test_tool",
-        import_probe="import test_tool",
     )
-    probe = Mock(return_value=SimpleNamespace(returncode=0))
-    child = Mock(return_value=4)
-    monkeypatch.setattr(cli.subprocess, "run", probe)
-    monkeypatch.setattr(cli, "_run_process", child)
+    run_process = Mock(side_effect=[0, 4])
+    monkeypatch.setattr(cli, "_run_process", run_process)
 
     result = cli._run_isolated(tool, ["-m", "test_tool", "validate"])
 
     assert result == 4
-    probe.assert_called_once()
-    assert probe.call_args.kwargs["cwd"] == cli.PROJECT_ROOT
-    assert probe.call_args.kwargs["env"]["PYTHONPATH"] == f"{tool_root}/src"
-    child.assert_called_once_with(
-        [str(interpreter), "-m", "test_tool", "validate"],
-        environment=probe.call_args.kwargs["env"],
+    probe_call, child_call = run_process.call_args_list
+    assert probe_call.args[0][:3] == [str(interpreter), "-P", "-c"]
+    assert probe_call.args[0][-2:] == ["test_tool.cli", str(tool.cli_path)]
+    assert probe_call.kwargs["environment"]["PYTHONPATH"] == str(tool.source_path)
+    assert probe_call.kwargs["report_launch_error"] is False
+    assert child_call == (
+        ([str(interpreter), "-P", "-m", "test_tool", "validate"],),
+        {"environment": probe_call.kwargs["environment"]},
     )
+
+
+def _write_isolated_test_tool(root: Path, module: str = "test_tool") -> cli._IsolatedTool:
+    tool_root = root / "tool"
+    interpreter = tool_root / ".venv/bin/python"
+    interpreter.parent.mkdir(parents=True)
+    interpreter.symlink_to(sys.executable)
+    package = tool_root / "src" / module
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "cli.py").write_text("def main(): return 0\n", encoding="utf-8")
+    (package / "__main__.py").write_text(
+        "import json, os, pathlib, sys\n"
+        "pathlib.Path(sys.argv[1]).write_text(json.dumps(dict(os.environ)))\n",
+        encoding="utf-8",
+    )
+    return cli._IsolatedTool(name="test tool", project="tool", module=module)
+
+
+def test_real_isolated_child_receives_only_the_reviewed_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setenv("PYTHONINSPECT", "1")
+    monkeypatch.setenv("PYTHONWARNINGS", "error")
+    monkeypatch.setenv("DATABASE_URL", "database-secret")
+    monkeypatch.setenv("GITHUB_TOKEN", "github-secret")
+    monkeypatch.setenv("MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK", "discord-secret")
+    tool = _write_isolated_test_tool(tmp_path)
+    observed_path = tmp_path / "observed-environment.json"
+
+    assert cli._run_isolated(tool, ["-m", tool.module, str(observed_path)]) == 0
+
+    observed = json.loads(observed_path.read_text(encoding="utf-8"))
+    expected = cli._tool_environment(tool)
+    assert {key: observed[key] for key in expected} == expected
+    assert "PYTHONINSPECT" not in observed
+    assert "PYTHONWARNINGS" not in observed
+    assert "DATABASE_URL" not in observed
+    assert "GITHUB_TOKEN" not in observed
+    assert "MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK" not in observed
+
+
+def test_tool_import_is_bound_to_the_absolute_tool_source(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli, "PROJECT_ROOT", tmp_path)
+    tool = _write_isolated_test_tool(tmp_path)
+    shadow = tmp_path / tool.module
+    shadow.mkdir()
+    (shadow / "__init__.py").write_text("", encoding="utf-8")
+    (shadow / "cli.py").write_text(
+        "raise RuntimeError('root shadow imported')\n",
+        encoding="utf-8",
+    )
+    observed_path = tmp_path / "origin-environment.json"
+
+    assert cli._run_isolated(tool, ["-m", tool.module, str(observed_path)]) == 0
+    assert observed_path.is_file()
+
+
+@pytest.mark.parametrize(
+    ("termination_signal", "send_to_group", "expected_status"),
+    [
+        (signal.SIGTERM, False, 143),
+        (signal.SIGHUP, False, 129),
+        (signal.SIGINT, True, 130),
+    ],
+)
+def test_parent_cancellation_terminates_child_group_without_post_cancel_writes(
+    tmp_path: Path,
+    termination_signal: int,
+    send_to_group: bool,
+    expected_status: int,
+) -> None:
+    wrapper_code = (
+        "import sys\n"
+        "from markeitech import cli\n"
+        "cli._TERMINATION_GRACE_SECONDS = 0.1\n"
+        "raise SystemExit(cli._run_process([sys.executable, sys.argv[1], sys.argv[2], "
+        "sys.argv[3]]))\n"
+    )
+    child_path = tmp_path / "cancellation_child.py"
+    child_path.write_text(
+        "import os, pathlib, signal, subprocess, sys, time\n"
+        "for value in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):\n"
+        "    signal.signal(value, signal.SIG_IGN)\n"
+        "descendant = subprocess.Popen([sys.executable, '-c', "
+        "'import pathlib, signal, sys, time; '"
+        "+ 'signal.signal(signal.SIGINT, signal.SIG_IGN); '"
+        "+ 'signal.signal(signal.SIGTERM, signal.SIG_IGN); '"
+        "+ 'signal.signal(signal.SIGHUP, signal.SIG_IGN); '"
+        "+ 'time.sleep(0.5); pathlib.Path(sys.argv[1]).write_text(\"descendant\")', "
+        "sys.argv[2]])\n"
+        "print(f'{os.getpid()} {descendant.pid}', flush=True)\n"
+        "time.sleep(0.5)\n"
+        "pathlib.Path(sys.argv[1]).write_text('child')\n",
+        encoding="utf-8",
+    )
+    child_marker = tmp_path / "child-published"
+    descendant_marker = tmp_path / "descendant-published"
+    wrapper = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            wrapper_code,
+            str(child_path),
+            str(child_marker),
+            str(descendant_marker),
+        ],
+        cwd=cli.PROJECT_ROOT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    assert wrapper.stdout is not None
+    child_ids = wrapper.stdout.readline().strip().split()
+    assert len(child_ids) == 2
+
+    child_process_group = int(child_ids[0])
+    try:
+        if send_to_group:
+            os.killpg(wrapper.pid, termination_signal)
+        else:
+            wrapper.send_signal(termination_signal)
+        wrapper.communicate(timeout=5)
+        time.sleep(0.6)
+
+        assert wrapper.returncode == expected_status
+        assert not child_marker.exists()
+        assert not descendant_marker.exists()
+    finally:
+        try:
+            os.killpg(child_process_group, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        if wrapper.poll() is None:
+            os.killpg(wrapper.pid, signal.SIGKILL)
+            wrapper.wait(timeout=5)

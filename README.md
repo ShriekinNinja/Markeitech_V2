@@ -79,20 +79,20 @@ futures contracts, entitled instruments, and reviewed runtime policy.
 Start Docker Desktop, then run the setup doctor:
 
 ```bash
-uv run markeitech environment check
+.venv/bin/markeitech environment check
 ```
 
 Run offline verification:
 
 ```bash
-uv run markeitech verify all
+.venv/bin/markeitech verify all
 ```
 
 For the normal connected workflow, start Docker Desktop and run:
 
 ```bash
 docker compose --env-file .env -f compose.yaml up -d --wait postgres
-uv run markeitech system run \
+.venv/bin/markeitech system run \
   --config config/system.local.toml \
   --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
 ```
@@ -131,7 +131,7 @@ files under `data/`.
 
 The V2 project is rooted directly in the repository; no nested project selector is required. The
 [root-promotion plan](docs/roadmap/v2-complete-codebase-migration-plan.md) records the migration and
-its recovery boundaries. Run `uv run markeitech --help` for the authoritative runtime, static-doc,
+its recovery boundaries. Run `.venv/bin/markeitech --help` for the authoritative runtime, static-doc,
 diagram, verification, and environment-check command hierarchy. The retained `markeitech-system`
 entry point is a backward-compatible runtime alias; it delegates to the same behavior owner.
 

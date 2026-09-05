@@ -2,15 +2,27 @@ from __future__ import annotations
 
 import argparse
 import os
+import signal
 import subprocess
 import sys
+import threading
+import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG_FILE = PROJECT_ROOT / "config/system.local.toml"
-DEFAULT_ENV_FILE = PROJECT_ROOT / ".env"
+_TERMINATION_GRACE_SECONDS = 2.0
+_IMPORT_ORIGIN_PROBE = """
+import importlib
+import pathlib
+import sys
+
+module = importlib.import_module(sys.argv[1])
+actual = pathlib.Path(module.__file__).resolve()
+expected = pathlib.Path(sys.argv[2]).resolve()
+raise SystemExit(0 if actual == expected else 1)
+"""
 
 
 @dataclass(frozen=True)
@@ -18,15 +30,18 @@ class _IsolatedTool:
     name: str
     project: str
     module: str
-    import_probe: str
 
     @property
     def interpreter(self) -> Path:
         return PROJECT_ROOT / self.project / ".venv/bin/python"
 
     @property
-    def source_path(self) -> str:
-        return f"{self.project}/src"
+    def source_path(self) -> Path:
+        return (PROJECT_ROOT / self.project / "src").resolve()
+
+    @property
+    def cli_path(self) -> Path:
+        return self.source_path / self.module / "cli.py"
 
     @property
     def remediation(self) -> str:
@@ -37,13 +52,11 @@ _DOCS = _IsolatedTool(
     name="API documentation",
     project="tools/api-docs",
     module="markeitech_api_docs",
-    import_probe="from markeitech_api_docs.cli import main",
 )
 _DIAGRAMS = _IsolatedTool(
     name="system diagram",
     project="tools/system-diagram",
     module="markeitech_system_diagram",
-    import_probe="from markeitech_system_diagram.cli import main",
 )
 
 
@@ -127,14 +140,14 @@ def _add_system_paths(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--config",
         type=Path,
-        default=DEFAULT_CONFIG_FILE,
-        help="Path to the local system TOML (default: config/system.local.toml).",
+        default=argparse.SUPPRESS,
+        help="Override the runtime owner's default system TOML path.",
     )
     parser.add_argument(
         "--env-file",
         type=Path,
-        default=DEFAULT_ENV_FILE,
-        help="Path to the runtime environment file (default: .env).",
+        default=argparse.SUPPRESS,
+        help="Override the runtime owner's default environment-file path.",
     )
 
 
@@ -147,7 +160,12 @@ def _connection_confirmation(value: str) -> str:
 
 
 def _system_arguments(args: argparse.Namespace) -> list[str]:
-    return [str(args.config), "--env-file", str(args.env_file)]
+    arguments: list[str] = []
+    if hasattr(args, "config"):
+        arguments.append(str(args.config))
+    if hasattr(args, "env_file"):
+        arguments.extend(["--env-file", str(args.env_file)])
+    return arguments
 
 
 def _system_build(args: argparse.Namespace) -> int:
@@ -166,18 +184,20 @@ def _system_run(args: argparse.Namespace) -> int:
 
 
 def _tool_environment(tool: _IsolatedTool) -> dict[str, str]:
-    environment = os.environ.copy()
-    environment.pop("PYTHONHOME", None)
-    environment.update(
-        {
-            "PYTHONUNBUFFERED": "1",
-            "PYTHONDONTWRITEBYTECODE": "1",
-            "PYTHONHASHSEED": "0",
-            "PYTHONPATH": tool.source_path,
-            "TZ": "UTC",
-        }
-    )
-    return environment
+    return {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONPATH": str(tool.source_path),
+        "PYTHONSAFEPATH": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONUTF8": "1",
+        "TZ": "UTC",
+    }
 
 
 def _isolated_environment_error(tool: _IsolatedTool) -> None:
@@ -193,22 +213,24 @@ def _run_isolated(tool: _IsolatedTool, arguments: Sequence[str]) -> int:
         _isolated_environment_error(tool)
         return 1
     environment = _tool_environment(tool)
-    try:
-        probe = subprocess.run(
-            [str(interpreter), "-c", tool.import_probe],
-            cwd=PROJECT_ROOT,
-            env=environment,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-    except OSError:
+    probe_result = _run_process(
+        [
+            str(interpreter),
+            "-P",
+            "-c",
+            _IMPORT_ORIGIN_PROBE,
+            f"{tool.module}.cli",
+            str(tool.cli_path),
+        ],
+        environment=environment,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        report_launch_error=False,
+    )
+    if probe_result != 0:
         _isolated_environment_error(tool)
         return 1
-    if probe.returncode != 0:
-        _isolated_environment_error(tool)
-        return 1
-    return _run_process([str(interpreter), *arguments], environment=environment)
+    return _run_process([str(interpreter), "-P", *arguments], environment=environment)
 
 
 def _docs_command(args: argparse.Namespace) -> int:
@@ -269,16 +291,74 @@ def _run_process(
     command: Sequence[str],
     *,
     environment: dict[str, str] | None = None,
+    stdout: int | None = None,
+    stderr: int | None = None,
+    report_launch_error: bool = True,
 ) -> int:
-    result = subprocess.run(
-        list(command),
-        cwd=PROJECT_ROOT,
-        env=environment,
-        check=False,
-    )
-    if result.returncode < 0:
-        return 128 - result.returncode
-    return result.returncode
+    try:
+        process = subprocess.Popen(
+            list(command),
+            cwd=PROJECT_ROOT,
+            env=environment,
+            stdout=stdout,
+            stderr=stderr,
+            start_new_session=True,
+        )
+    except OSError:
+        if report_launch_error:
+            print("ERROR: unable to start the requested process.", file=sys.stderr)
+        return 1
+
+    cancellation_signal: int | None = None
+    cancellation_deadline: float | None = None
+    previous_handlers: dict[int, signal.Handlers] = {}
+
+    def forward_signal(signum: int, _frame: object) -> None:
+        nonlocal cancellation_deadline, cancellation_signal
+        if cancellation_signal is None:
+            cancellation_signal = signum
+            cancellation_deadline = time.monotonic() + _TERMINATION_GRACE_SECONDS
+            _signal_process_group(process.pid, signum)
+        else:
+            _signal_process_group(process.pid, signal.SIGKILL)
+
+    if threading.current_thread() is threading.main_thread():
+        for handled_signal in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+            previous_handlers[handled_signal] = signal.getsignal(handled_signal)
+            signal.signal(handled_signal, forward_signal)
+
+    try:
+        while True:
+            try:
+                returncode = process.wait(timeout=0.1)
+                break
+            except subprocess.TimeoutExpired:
+                if (
+                    cancellation_deadline is not None
+                    and time.monotonic() >= cancellation_deadline
+                ):
+                    _signal_process_group(process.pid, signal.SIGKILL)
+    except BaseException:
+        _signal_process_group(process.pid, signal.SIGKILL)
+        process.wait()
+        raise
+    finally:
+        for handled_signal, previous_handler in previous_handlers.items():
+            signal.signal(handled_signal, previous_handler)
+
+    if cancellation_signal is not None:
+        _signal_process_group(process.pid, signal.SIGKILL)
+        return 128 + cancellation_signal
+    if returncode < 0:
+        return 128 - returncode
+    return returncode
+
+
+def _signal_process_group(process_group_id: int, signum: int) -> None:
+    try:
+        os.killpg(process_group_id, signum)
+    except OSError:
+        pass
 
 
 def main(argv: Sequence[str] | None = None) -> int:

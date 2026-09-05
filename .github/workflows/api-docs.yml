@@ -38,14 +38,18 @@ jobs:
           cache-dependency-glob: tools/api-docs/uv.lock
       - name: Install locked docs environment
         run: uv sync --project tools/api-docs --locked
-      - name: Install locked root command environment
-        run: uv sync --locked --dev
       - name: Run docs validation
-        run: uv run --locked markeitech docs validate
+        run: tools/api-docs/.venv/bin/python -P -m markeitech docs validate
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
       - name: Check committed API docs output
-        run: uv run --locked markeitech docs check
+        run: tools/api-docs/.venv/bin/python -P -m markeitech docs check
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
       - name: Run API docs test suite
-        run: uv run --locked markeitech docs test
+        run: tools/api-docs/.venv/bin/python -P -m markeitech docs test
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
       - name: Verify tests preserved committed docs artifact
         run: |
           git diff --exit-code -- docs/api

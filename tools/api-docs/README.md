@@ -23,5 +23,6 @@ repository-relative paths and the supported Python series; the actual interprete
 execution provenance in command and CI output.
 
 After provisioning with `uv sync --project tools/api-docs --locked`, use the root command surface:
-`uv run markeitech docs validate`, `check`, `generate`, or `test`. It retains this project's exact
+`PYTHONPATH="$PWD/src" tools/api-docs/.venv/bin/python -P -m markeitech docs validate`, `check`,
+`generate`, or `test`. It retains this project's exact
 interpreter and deterministic environment rather than importing the tool into the runtime project.

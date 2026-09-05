@@ -66,7 +66,7 @@ updated. Correct the document rather than preserving an accidental disagreement.
 
 ## Operations
 
-- Run `uv run markeitech --help` for the authoritative terminal/CI command hierarchy; dedicated
+- Run `.venv/bin/markeitech --help` for the authoritative terminal command hierarchy; dedicated
   operation guides below own prerequisites, side effects, and intentionally excluded procedures.
 - [Developer setup and machine handoff](operations/developer-setup.md)
 - [Static API documentation](operations/v2-api-documentation.md)

@@ -50,10 +50,16 @@ the network. See the
 After provisioning, use the root Python-owned CLI for supported operations:
 
 ```bash
-uv run markeitech --help
-uv run markeitech docs --help
-uv run markeitech diagrams --help
+.venv/bin/markeitech --help
+.venv/bin/markeitech docs --help
+.venv/bin/markeitech diagrams --help
 ```
+
+Invoke the already-provisioned entry point directly. Do not put `uv run` in front of routine CLI
+operations: `uv run` may create or synchronize the root environment before the CLI can enforce its
+own offline and isolation checks. Dependency installation remains the separate, explicit
+`uv sync --locked --dev` step above. `.venv/bin/python -m markeitech` is the equivalent module
+entry point when an installed script is inconvenient.
 
 The closed hierarchy and its side-effect class are:
 
@@ -69,9 +75,15 @@ The closed hierarchy and its side-effect class are:
 | `verify postgres` | local service | Runs only PostgreSQL-marked tests against the explicitly configured test database. |
 | `environment check` | local diagnostic | Reads local setup/configuration and checks Docker without starting a service; `--with-ib` opts into a TCP-listener check. |
 
-All fixed child-process commands run from the repository root and return their child exit code.
-The CLI has no command registry, shell interpolation, arbitrary-command escape hatch, or automatic
-dependency provisioning.
+All fixed child-process commands run from the repository root in an owned process group and return
+their child exit code. Parent `SIGINT`, `SIGTERM`, and `SIGHUP` are forwarded to the complete child
+group. The first signal permits two seconds for cleanup; a repeated signal or expired deadline
+kills the group, including descendants. A cancellation returns the shell-compatible status
+`128 + signal` (`130`, `143`, or `129`, respectively), and no owned child remains able to publish
+after the wrapper returns. The isolated docs and diagram launcher passes only deterministic
+Python/locale controls and the caller's executable `PATH`; runtime, provider, database, Discord,
+GitHub, proxy, cloud, and other caller variables are not inherited. The CLI has no command registry,
+shell interpolation, arbitrary-command escape hatch, or automatic dependency provisioning.
 
 ## 1. Clone And Install
 
@@ -224,18 +236,18 @@ See [V2 Interactive Brokers setup](ib-setup.md) for the complete checklist.
 Start Docker Desktop, then run:
 
 ```bash
-uv run markeitech environment check
+.venv/bin/markeitech environment check
 ```
 
 The doctor checks the supported OS, required commands, locked V2 environment, local files,
 configuration parsing, required environment values, Docker daemon, and Compose model. It does not
-connect to IB. Use `uv run markeitech environment check --with-ib` only when TWS/Gateway should
+connect to IB. Use `.venv/bin/markeitech environment check --with-ib` only when TWS/Gateway should
 already be listening.
 
 Run offline verification:
 
 ```bash
-uv run markeitech verify all
+.venv/bin/markeitech verify all
 ```
 
 ## 5. Configure PyCharm
@@ -254,14 +266,14 @@ layout, and interpreter metadata remain local and cannot affect another machine'
 To construct the configured node without provider or service connection:
 
 ```bash
-uv run markeitech system build --config config/system.local.toml
+.venv/bin/markeitech system build --config config/system.local.toml
 ```
 
 For the connected runtime, start PostgreSQL explicitly and supply the exact confirmation:
 
 ```bash
 docker compose --env-file .env -f compose.yaml up -d --wait postgres
-uv run markeitech system run \
+.venv/bin/markeitech system run \
   --config config/system.local.toml \
   --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
 ```

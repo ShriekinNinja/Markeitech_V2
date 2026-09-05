@@ -59,7 +59,7 @@ behavior.
   configuration, data, IDE state, or virtual environments.
 - One Python-owned root command hierarchy now exposes explicit system build/run, isolated API-doc
   and diagram operations, root verification, and environment checks through
-  `uv run markeitech`. The legacy `markeitech-system` entry point remains a compatibility alias to
+  the pre-provisioned `.venv/bin/markeitech` entry point. The legacy `markeitech-system` entry point remains a compatibility alias to
   the same runtime owner. The CLI adds no generic task runner, automatic provisioning, Docker
   lifecycle, provider connection, persistence mutation, GitHub publication, or connected
   acceptance behavior; `verify all` remains offline and excludes the conspicuous
