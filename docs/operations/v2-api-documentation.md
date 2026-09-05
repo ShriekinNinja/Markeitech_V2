@@ -83,6 +83,11 @@ regeneration. `tools/api-docs/.build` remains disposable and ignored. The legacy
 ignore rule remains temporarily so a stale local projection cannot enter a commit; the generator no
 longer writes it.
 
+MkDocs Material emits whitespace-only lines in generated HTML navigation blocks. The repository
+`.gitattributes` disables only Git's trailing-space diagnostic for generator-owned `docs/api` HTML;
+hand-edited Markdown, Python, configuration, and every other changed artifact remain covered by
+`git diff --check`. Never hand-edit generated HTML to normalize template whitespace.
+
 Architecture-component declarations are rendered separately from the curated public API
 denominator. The generator discovers them through the closed custom-attribute registry and
 validates their approved identity fields. Relationship, contract, ownership, status, evidence, and
