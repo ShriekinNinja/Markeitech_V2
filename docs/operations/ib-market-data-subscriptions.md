@@ -11,7 +11,7 @@ market-data subscriptions. It separates:
 
 - the exact current V3 ES runtime;
 - the broader configured observation universe;
-- the future SPXW, SPY, and QQQ 0DTE expression universe; and
+- the first-version SPXW and QQQ 0DTE expressions plus later SPY candidates; and
 - feeds which should not be purchased until a named capability requires them.
 
 It does not authorize a subscription purchase, change the runtime configuration, establish
@@ -27,7 +27,7 @@ Subscribe in phases:
 1. For the exact current tracked V3 runtime, retain only `CME Real-Time (L1)`.
 2. Add direct Level 1 exchange feeds when the corresponding instruments are enabled in a connected
    profile.
-3. Add `OPRA (US Options Exchanges)(L1)` only when bounded live SPXW, SPY, and QQQ options
+3. Add `OPRA (US Options Exchanges)(L1)` only when bounded live SPXW and QQQ options
    acquisition is approved and implemented.
 4. Do not buy Level 2, venue-specific depth, quote boosters, or news packages before a named
    capability and measured resource need exist.
@@ -100,12 +100,12 @@ Sources:
 - [IBKR popular market-data subscriptions](https://www.interactivebrokers.com/docs/general/market-data-subscriptions/popular-market-data-subscriptions/introduction)
 - [IBKR market-data pricing](https://www.interactivebrokers.com/en/pricing/market-data-pricing.php)
 
-## Phase 3: Future Live SPXW, SPY, And QQQ Options
+## Phase 3: First-Version SPXW/QQQ And Later SPY Options
 
-SPXW, SPY, and QQQ 0DTE options are Markeitech's initial configurable expression universe. No
-expression product is globally preferred. Options intelligence and bounded option-chain
-acquisition are not currently accepted live runtime capabilities, so OPRA should not be purchased
-solely because options appear in the product charter.
+SPXW and QQQ 0DTE options are Markeitech's first-version configurable expressions; SPY remains a
+later candidate. No expression product is globally preferred. Options intelligence and bounded
+option-chain acquisition are not currently accepted live runtime capabilities, so OPRA should not
+be purchased solely because options appear in the product charter.
 
 When live options discovery and context are approved, the smallest product-neutral entitlement
 set is:
@@ -120,7 +120,7 @@ set is:
 
 IBKR's published non-professional OPRA price is approximately **USD 1.50/month**. If all Phase 2
 underlying feeds are already active, OPRA is the only additional exchange subscription in this
-initial options-data plan. The indicative direct-feed total would then be approximately
+broader options-data plan. The indicative direct-feed total would then be approximately
 **USD 14.15/month**.
 
 IBKR states that an options subscription does not include the underlying feed and that option

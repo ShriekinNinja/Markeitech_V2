@@ -1,111 +1,72 @@
 # Markeitech Documentation
 
-This index separates current authority, implemented architecture, future intent, operations,
-research, working notes, and historical decision records.
+The repository documents current authority, accepted future direction, operations, and generated
+API output. Completed stage plans, research snapshots, and review handoffs live in Git and merged
+pull requests rather than competing with current documents.
 
 ## Authority Order
 
-When documents disagree, use this order:
+When sources disagree, use this order and stop for Markeitect's decision on a material conflict:
 
-1. [`markeitech.md`](../markeitech.md) defines current product and engineering invariants.
-2. [`current-status.md`](current-status.md) records implemented behavior, current work, and
-   validation debt.
-3. Accepted architecture documents govern their implemented subject boundaries.
-4. The canonical [Stage 9A-9K blueprint](roadmap/v2-market-events-live-agent-plan.md) and accepted
-   stage plans govern future sequence within their approved scope.
-5. The [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md) preserves completed foundation
-   gates; it is not the current progress ledger.
-6. Future roadmaps express future intent and may change through review.
-7. Operations documents describe how to run and inspect the system.
-8. Research, notes, and historical decision records are informative, not normative.
+1. [`../markeitech.md`](../markeitech.md) — durable product and engineering charter.
+2. [`product/sir-loke-v1.md`](product/sir-loke-v1.md) — first useful product outcome.
+3. [`current-status.md`](current-status.md) — what is implemented and accepted now.
+4. [`roadmap/sir-loke-v1-delivery-plan.md`](roadmap/sir-loke-v1-delivery-plan.md) — ordered future
+   gates; [Gate 1](roadmap/sir-loke-v1-delivery-plan.md#gate-1-native-ibtws-observation-proof) is the
+   next product batch.
+5. [`development-guidelines.md`](development-guidelines.md) — implementation and review rules.
+6. The smallest accepted architecture or operations document governing the exact subject.
 
-Implementation and tests remain the final evidence when a descriptive document has not yet been
-updated. Correct the document rather than preserving an accidental disagreement.
+A plan, generated diagram, test result, historical note, or remembered conversation is not proof
+of current implementation.
 
-## Current Guidance
+## Product And Status
 
-- [Project charter](../markeitech.md)
+- [Sir Loke V1 product definition](product/sir-loke-v1.md)
 - [Current status](current-status.md)
-- [Development guidelines](development-guidelines.md)
-- [Market intelligence request catalog](market-intelligence-request-catalog.md)
+- [Sir Loke V1 delivery plan](roadmap/sir-loke-v1-delivery-plan.md)
+- [Unresolved development backlog](roadmap/development-backlog.md)
 
 ## Architecture
 
-- [V2 runtime messaging discovery](architecture/v2-runtime-messaging-discovery.md)
-- [V2 runtime control plane](architecture/v2-runtime-control-plane.md)
-- [V2 Discord system health](architecture/v2-discord-health.md)
-- [V2 supervision and failure policy](architecture/v2-supervision-failure-policy.md)
-- [V2 persistence boundary discovery](architecture/v2-persistence-boundary-discovery.md)
-- [V2 actor composition discovery](architecture/v2-actor-composition-discovery.md)
-- [V2 provider and canonical data boundary](architecture/v2-provider-data-boundary-discovery.md)
-- [V2 adaptive market-data plane](architecture/v2-adaptive-market-data-plane.md)
-- [V2 historical dependency execution](architecture/v2-historical-dependency-execution.md)
-- [V2 session and evidence health](architecture/v2-session-evidence-health.md)
-- [V2 baseline metric contracts](architecture/v2-baseline-metric-contracts.md)
-- [Kite advisor council](architecture/markeitech-advisor-council.md)
-- [System/data-flow manifest maintenance](architecture/system-dataflow-maintenance.md)
-- [System/data-flow implementation plan](architecture/toml-driven-system-dataflow-plan.md)
-- [Generated system/data-flow inventory](architecture/generated/system-dataflow/complete-inventory.md)
+- [Runtime foundation](architecture/runtime-foundation.md)
+- [Market data and acquisition](architecture/market-data-and-acquisition.md)
+- [Session and evidence health](architecture/session-evidence-health.md)
+- [Deterministic evidence contracts](architecture/deterministic-evidence-contracts.md)
+- [Sir Loke V1 boundaries](architecture/sir-loke-v1-boundaries.md)
 
-## Roadmaps And Plans
+These five documents consolidate the active architecture. The system-diagram manifest and its
+generated review artifacts now live with the isolated tool under
+[`../tools/system-diagram/docs/`](../tools/system-diagram/docs/).
 
-- [V2 infrastructure foundation](roadmap/v2-infrastructure-plan.md)
-- [V2 market events and live-agent blueprint](roadmap/v2-market-events-live-agent-plan.md)
-- [First market-intelligence coding sequence](roadmap/v2-first-market-intelligence-coding-sequence.md)
-- [Market-specialist requirements traceability](roadmap/v2-market-specialist-requirements-traceability.md)
-- [Stage 9C session measurements](roadmap/v2-stage-9c-session-measurements-plan.md)
-- [Stage 9D entities and rolling state](roadmap/v2-stage-9d-entities-rolling-state-plan.md)
-- [V3-02 session-state actor](roadmap/v3-02-session-state-actor-implementation-plan.md)
-- [V3-03 session-metrics actor split](roadmap/v3-03-session-metrics-actor-split-implementation-plan.md)
-- [V2 static watchlist handoff](roadmap/v2-static-watchlist-handoff.md)
-- [V2 dynamic watchlist](roadmap/v2-dynamic-watchlist-plan.md)
-- [V2 API documentation](roadmap/v2-api-documentation-plan.md)
-- [V2 live dashboard draft](roadmap/v2-live-dashboard-plan-draft.md)
-- [V2 backlog](roadmap/v2-backlog.md)
-- [V2 root promotion and V1 retirement](roadmap/v2-complete-codebase-migration-plan.md)
+## Detailed Reference And Development Collaboration
+
+- [Session-metrics replacement plan](reference/session-metrics-replacement-plan.md) — detailed
+  active V3 replacement work; not proof that disabled owners are available.
+- [Kite advisor council](development/kite-advisor-council.md) — development-time consultation,
+  separate from Sir Loke runtime behavior.
 
 ## Operations
 
-- Run `.venv/bin/markeitech --help` for the authoritative terminal command hierarchy; dedicated
-  operation guides below own prerequisites, side effects, and intentionally excluded procedures.
-- [Developer setup and machine handoff](operations/developer-setup.md)
-- [Static API documentation](operations/v2-api-documentation.md)
-- [Generated API reference (`docs/api/index.html`)](../docs/api/index.html)
-- [Hosted API reference (GitHub Pages)](https://shriekinninja.github.io/Markeitech_V2/)
+- [Developer setup](operations/developer-setup.md)
 - [GitHub workflow](operations/github-workflow.md)
-- [Runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
-- [Operational PostgreSQL](operations/v2-postgresql.md)
+- [Interactive Brokers setup and broker-observation gate](operations/ib-setup.md)
+- [IB market-data subscriptions](operations/ib-market-data-subscriptions.md)
 - [Futures rollover](operations/v2-futures-rollover.md)
-- [Interactive Brokers setup](operations/ib-setup.md)
-- [Interactive Brokers market-data subscriptions](operations/ib-market-data-subscriptions.md)
+- [PostgreSQL](operations/v2-postgresql.md)
+- [Runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
+- [Discord health webhook](operations/discord-health-webhook.md)
+- [Visual evidence review](operations/visual-evidence-review.md)
+- [V2 API documentation](operations/v2-api-documentation.md)
 
-## Research
+## Generated API Documentation
 
-- [Market-analysis specialist brief](research/market-analysis-specialist-brief.md)
-- [Semantic events, AI observer, and options intelligence baseline](research/semantic-events-ai-options-baseline.md)
-- [Gamma exposure and 0DTE GEX maps](research/gamma-exposure-and-0dte-gex-maps.md)
-- [Options-flow specialist report](research/v2-options-flow-specialist-report.md)
-- [Bokeh live-system visualization assessment](research/bokeh-live-system-visualization-shallow-assessment.md)
-- [TOML/code reconciliation assessment](research/toml-code-reconciliation-shallow-assessment.md)
+[`api/`](api/) is tracked generated output. Its source-analysis tool, registries, templates, and
+tests live under [`../tools/api-docs/`](../tools/api-docs/). Do not edit generated API pages by
+hand or run bare MkDocs commands; use the first-party wrapper described in the operations guide.
 
-Research documents preserve sourced ideas, hypotheses, and unresolved questions. They are
-informative and do not define product behavior until an accepted decision or roadmap item promotes
-a tested result.
+## History
 
-## Notes
-
-- [Desired runtime requirements](notes/desired-arch.md) — informative Markeitect requirements and
-  council input; not accepted architecture or a roadmap.
-- [Desired-runtime council review handoff](notes/desired-arch-council-review-handoff.md) — completed
-  historical process record; not an active instruction.
-- [Desired-runtime council review report](notes/desired-arch-council-review-report.md) — informative
-  discovery record and proposal source.
-- [V3-01 canonical calendar authority review](notes/v3-01-canonical-calendar-authority-review.md)
-- [V3-02 session-state actor role review](notes/v3-02-session-state-actor-role-review.md)
-- [V3-03 session-metrics actor split review](notes/v3-03-session-metrics-actor-split-review.md)
-- [V3-04 watchlist/capability read-model review](notes/v3-04-watchlist-capability-read-model-review.md)
-- [V3 visual-debug review contract](notes/v3-visual-debug-review-contract.md)
-- [V3 ES visual-debug handoff](notes/v3-es-visual-debug-review-handoff.md)
-
-Historical tracked source removed from the active tree remains recoverable through Git history and
-the annotated migration tags. It is not current documentation authority.
+Retired V1 source and superseded V2 plans remain recoverable through Git history, migration tags,
+and merged pull requests. They are not current product or architecture authority and must not be
+reintroduced without a separately reviewed admission into current V2 contracts.

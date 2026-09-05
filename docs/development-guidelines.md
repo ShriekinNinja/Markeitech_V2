@@ -5,9 +5,11 @@ while building and operating Markeitech. They supplement the project charter.
 
 ## Product Posture
 
-Markeitech serves a discretionary operator first. Optimize for trustworthy
-context, inspectable evidence, useful timing, and recovery rather than HFT
-latency or automated execution.
+Markeitech serves one discretionary operator first through Sir Loke, its live trading companion,
+mentor, and configurable advisory governor. Optimize for trustworthy context, timely intervention,
+inspectable evidence, disciplined trade decisions, and recovery rather than HFT latency or
+automated execution. The canonical first-version experience is defined in
+[`product/sir-loke-v1.md`](product/sir-loke-v1.md).
 
 Separate the markets used to form a thesis from the instrument used to express
 the trade. Underlyings, indexes, futures, volatility, sectors, and other context
@@ -16,12 +18,18 @@ require distinct chain, expiry, strike, liquidity, and Greek semantics.
 
 The current priority order is:
 
-1. dependable live operation
-2. human-readable console signals and analysis
-3. Discord webhook delivery and reports
-4. strategy runtime, ML, and agent research workflows
-5. gateway and UI
-6. execution only after explicit risk design and approval
+1. prove safe read-only observation of Markeitect's paper-account TWS trades;
+2. define the canonical trade episode, recommendation linkage, advisory policy, and audit;
+3. provide an authenticated, failure-isolated two-way Discord bot;
+4. complete the minimum honest SPXW/QQQ evidence needed for recommendation or abstention;
+5. deliver Sir Loke's live recommendation, monitoring, mentoring, governance, and reporting loop;
+6. harden and extend deterministic intelligence according to demonstrated product needs;
+7. add a dashboard or broader user experience only when it supports an approved need; and
+8. consider execution only through a separately approved future risk and execution program.
+
+Existing calendar, acquisition, evidence-health, persistence, measurement, and entity work remains
+reusable foundation. This priority change does not declare inactive or unverified capabilities
+live, and it does not authorize a language model to substitute for missing evidence.
 
 Replay and backtesting are outside current scope until Markeitect explicitly
 reopens them. Do not add storage or abstractions for that hypothetical path.
@@ -33,10 +41,11 @@ active analytical capabilities, and temporary focus; it has no one-active-instru
 background-timeframe invariant. Multiple
 instruments may receive granular continuous data when justified and supported.
 
-SPXW, SPY, and QQQ 0DTE options form the initial configurable trade-expression universe. No
-instrument is preferred by implementation or configuration. The agent may maintain and rank
-multiple simultaneous opportunities. SPY, QQQ, SPX, ES, and NQ are useful initial evidence
-examples, not a complete or fixed observation universe. Crypto is not a current product priority.
+SPXW and QQQ 0DTE options form the first-version trade-expression boundary. SPY and other products
+remain later candidates. No instrument is globally preferred by implementation or configuration.
+Sir Loke may maintain and rank multiple simultaneous opportunities. SPY, QQQ, SPX, ES, NQ,
+volatility, and other approved instruments are useful evidence candidates, not a complete or fixed
+observation universe. Crypto is not a current product priority.
 
 Analytical capabilities declare the native feeds and historical evidence they
 require. The acquisition owner expands approved demand, coordinates provider
@@ -53,6 +62,13 @@ Markeitech boundaries when the product requires semantics Nautilus does not own.
 Do not pursue framework purity at the expense of clear ownership. Product-specific analytical
 entities, semantic events, rolling state, agent policy, and operator projections may be
 legitimate Markeitech responsibilities after their requirements are approved.
+
+Broker account, order, fill, and position observation is distinct from market-data acquisition.
+Evaluate NautilusTrader's native IB execution client, live reconciliation, cache, event, and report
+contracts before custom provider access. If native execution facilities are used to observe, place
+a narrow fact-only boundary in front of Sir Loke and expose no mutable order object or order action.
+The account environment, account alias/identity, broker/source identity, reconciliation origin,
+and exact order/fill/position identities must remain visible.
 
 Only one component may own a subscription or canonical stream. Native IB access
 is allowed only for a capability Nautilus does not expose and must share the
@@ -88,15 +104,30 @@ Rolling state, ML outputs, and agent interpretations must retain evidence lineag
 score, or agent proposal is an order instruction. Do not infer product validation from one
 profitable trade, one screenshot, or one live session.
 
+A canonical trade episode may include recommendations, independent trader entries, multiple
+orders, partial fills, scale changes, plan revisions, interventions, acknowledgements, closure, and
+an after-trade report. Preserve the original thesis and each later revision. Recommendation-to-
+execution attribution must be explicit and may remain ambiguous; never invent why the trader
+entered. A new opportunity after a loss must qualify independently and must not be framed as a
+recovery trade.
+
 ## ML And AI
 
 Build deterministic features and labels before training models. Persist the
 feature definition and model identity with every inference.
 
-ML may later rank, classify, or calibrate deterministic evidence. AI may synthesize live semantic
-state and issue typed, policy-checked intents for observation and analysis. Neither may silently
-alter canonical data, invent evidence, control the IB connection, or bypass reviewed resource and
-risk boundaries.
+ML may later rank, classify, or calibrate deterministic evidence. Sir Loke may synthesize live
+semantic and broker-observation state, recommend or abstain, monitor open trades, mentor the trader,
+and issue typed policy-checked intents for observation and analysis. Deterministic code—not the
+model—owns evidence admission, authorization, intervention transitions, acknowledgement state,
+cooldown enforcement, and the no-execution invariant. Neither ML nor AI may silently alter
+canonical data, invent evidence, control the IB connection, reach an order method, or bypass
+reviewed resource and risk boundaries.
+
+Sir Loke's firmness is policy state, not prose style. Concern, warning, invalidation,
+acknowledgement-required, noncompliance, cooldown, and resolution behavior must have explicit
+inputs, transitions, timing, recovery, and audit. A generated forceful sentence is not an enforced
+risk control.
 
 ## Configuration And Optimization
 
@@ -155,7 +186,7 @@ live-runtime behavior.
 ## Documentation Discipline
 
 Architecture-sensitive changes must follow the
-[system/data-flow manifest maintenance procedure](architecture/system-dataflow-maintenance.md).
+[system/data-flow manifest maintenance procedure](../tools/system-diagram/docs/maintenance.md).
 Update the canonical TOML and its complete generated artifact set in the same reviewed batch.
 Generated diagrams are never hand-edited authority, and successful generation does not prove live
 runtime behavior.

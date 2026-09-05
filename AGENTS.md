@@ -22,10 +22,11 @@ unrelated request returns to normal Codex mode unless Kite is explicitly invoked
 mode is active, the plugin owns advisor selection and uses its smallest sufficient advisor set by
 default; Markeitect does not need to name individual advisors.
 
-Kite and its advisor council are development-time engineering collaborators. Sir Loke is a future
-V2 runtime advisory component. Kite consultation does not create Sir Loke behavior, product
-semantics, tool authority, policy acceptance, runtime readiness, or completed work. Sir Loke does
-not invoke or inherit authority from the development-time Kite advisor council.
+Kite and its advisor council are development-time engineering collaborators. Sir Loke is the
+accepted first V2 product experience but remains an unimplemented runtime advisory component.
+Kite consultation does not create Sir Loke behavior, product semantics, tool authority, policy
+acceptance, runtime readiness, or completed work. Sir Loke does not invoke or inherit authority
+from the development-time Kite advisor council.
 
 ## Authority And Precedence
 
@@ -33,6 +34,7 @@ not invoke or inherit authority from the development-time Kite advisor council.
 - Markeitect's newest explicit instruction governs the current task and supersedes older project
   preferences when they conflict.
 - `markeitech.md` governs durable product and engineering principles.
+- `docs/product/sir-loke-v1.md` governs the accepted first useful product experience.
 - `docs/current-status.md` states what is implemented now; plans and roadmaps are not proof of
   implementation.
 - Accepted architecture and stage documents govern their bounded subject area.
@@ -47,10 +49,11 @@ the most convenient interpretation.
 Before planning or editing, read in order:
 
 1. `markeitech.md`
-2. `docs/current-status.md`
-3. `docs/development-guidelines.md`
-4. `docs/README.md`
-5. the accepted architecture, roadmap, and operations documents relevant to the requested stage
+2. `docs/product/sir-loke-v1.md`
+3. `docs/current-status.md`
+4. `docs/development-guidelines.md`
+5. `docs/README.md`
+6. the accepted architecture, roadmap, and operations documents relevant to the requested stage
 
 Treat tracked documents as authority over remembered chat context. When implementation changes an
 accepted boundary, update the smallest authoritative document needed to keep a fresh checkout
@@ -162,6 +165,8 @@ change.
 ## Engineering Invariants
 
 - V2 is live-first, event-driven, read-only, and advisory. It does not place orders.
+- Sir Loke v1 may observe admitted broker account/order/fill/position facts but receives no submit,
+  modify, cancel, replace, or close capability. Observation and execution authority remain separate.
 - Independent actors and unrelated capabilities must continue operating through partial failure;
   recovery is bounded, observable, and continuously retried where policy permits.
 - Use NautilusTrader native contracts and bus semantics where they fit; keep one owner for every
@@ -210,9 +215,10 @@ The V2 API documentation utility is an isolated, static source-analysis tool und
 - Write Google-style docstrings for intentionally public V2 objects. Use annotations as type
   authority; document meaning, units, lineage, side effects, failures, and abstention where they
   matter.
-- Do not run bare `mkdocs` or `mkdocstrings` commands. Provision with the locked tool project and
-  invoke only the first-party `markeitech_api_docs validate` or `generate` wrapper documented in
-  `docs/operations/v2-api-documentation.md`.
+- Do not run bare `mkdocs`, `mkdocstrings`, or the internal `markeitech_api_docs` module. Provision
+  the locked tool project, then invoke only the unified `markeitech docs validate`, `check`,
+  `generate`, or `test` hierarchy documented in `docs/operations/v2-api-documentation.md`. Use the
+  exact isolated-interpreter launch there when the root environment is not provisioned.
 - Generation must stay offline and static. It must not import Markeitech, inspect modules
   dynamically, resolve external inventories, connect services, read runtime configuration or
   secrets, or mutate runtime source.
@@ -231,7 +237,8 @@ The V2 API documentation utility is an isolated, static source-analysis tool und
   identity, label, kind, boundary, and substantive responsibilities. The API-doc generator must
   discover these classes separately from the public API denominator and must not read the current
   architecture TOML.
-- The existing system-diagram tool continues to consume `docs/architecture/system-dataflow.toml`
+- The existing system-diagram tool continues to consume
+  `tools/system-diagram/docs/system-dataflow.toml`
   during the migration interval. A future, separately reviewed exporter may make validated source
   documentation upstream of generated TOML and diagrams; until it exists, do not declare the TOML
   generated or remove its maintenance procedure.

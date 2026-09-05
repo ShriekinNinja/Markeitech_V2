@@ -9,8 +9,8 @@ guardrails, not permanent conclusions.
 | Source | Snapshot | Use | Boundary |
 | --- | --- | --- | --- |
 | `AGENTS.md`, `markeitech.md`, `docs/current-status.md`, `docs/development-guidelines.md`, `docs/README.md` | commit `f029715ac17801d51012d7603cf4174db036d2c7` | Permissions, evidence bar, present storage boundary, authority order | Refresh in current checkout |
-| `docs/architecture/v2-persistence-boundary-discovery.md` | same commit | Accepted operational-audit ownership and raw-observation exclusion | Initial discovery references older Nautilus RC; current status governs implementation |
-| `docs/operations/v2-postgresql.md` and `docs/roadmap/v2-infrastructure-plan.md` | same commit | Implemented startup/repair/failure behavior and accepted foundation gates | Operations text is not a schema dump or live database measurement |
+| `docs/architecture/runtime-foundation.md` | current checkout | Accepted operational-audit ownership and raw-observation exclusion | Current status governs implemented scope |
+| `docs/operations/v2-postgresql.md` and `docs/current-status.md` | current checkout | Implemented startup/repair/failure behavior and bounded acceptance | Operations text is not a schema dump or live database measurement |
 | `src/markeitech/system/persistence.py` and `persistence_migrations.py` | same commit | Exact migration, schema verification, transactions, identity collision, reads/writes | Inspect current files and all callers before advising |
 | `tests/system/test_persistence.py` and `test_persistence_postgres.py` | same commit | Exercised record conversion, ordering, idempotency, restart reads, and missing-table recreation | Tests prove only covered fixtures and disposable-database paths |
 | `compose.yaml` | same commit; declares `postgres:17-alpine` | Declared local PostgreSQL major family and volume | Floating tag does not prove running patch version or digest |

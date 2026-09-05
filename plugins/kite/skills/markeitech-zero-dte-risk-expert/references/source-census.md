@@ -9,14 +9,14 @@ for every review.
 - `AGENTS.md`, `markeitech.md`, `docs/current-status.md`, `docs/development-guidelines.md`, and
   `docs/README.md`: authority, product boundary, current implementation, evidence discipline, and
   permissions.
-- `docs/roadmap/v2-market-events-live-agent-plan.md`: accepted Options Intelligence ownership,
+- `docs/roadmap/sir-loke-v1-delivery-plan.md`: accepted Options Intelligence ownership,
   opportunity/expression separation, bounded options proof, candidate evidence, and advisory limit.
-- `docs/roadmap/v2-first-market-intelligence-coding-sequence.md`: configurable SPXW/SPY/QQQ seed
-  universe, long-option ask comparison, candidate-quality fields, settlement, and reference state.
-- `docs/market-intelligence-request-catalog.md`: requested quote, Greek, IV, liquidity, expiry,
-  degradation, and event evidence.
-- `docs/research/gamma-exposure-and-0dte-gex-maps.md`: research-only gamma/GEX limitations; it does
-  not authorize live dealer-position or contract-risk claims.
+- `docs/product/sir-loke-v1.md`: first-version SPXW/QQQ scope, recommendation, trade episode,
+  monitoring, governance, account-observation, and no-execution boundary.
+- `docs/architecture/sir-loke-v1-boundaries.md`: requested quote, Greek, IV, liquidity, expiry,
+  degradation, request, and side-effect evidence.
+- `docs/roadmap/development-backlog.md`: deferred GEX assumptions and provenance gates; historical
+  research in Git does not authorize live dealer-position or contract-risk claims.
 
 Tracked research is subordinate to the charter, accepted plans, current implementation, and exact
 current market evidence.

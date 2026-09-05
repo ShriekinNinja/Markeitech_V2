@@ -15,15 +15,12 @@ material is paraphrased; no external skill text or code is copied into this prop
 | `docs/current-status.md` | Current implemented owners, accepted evidence, deferred work, and validation debt. |
 | `docs/development-guidelines.md` | Runtime ownership, transport-neutral analytics, configuration, and review discipline. |
 | `docs/README.md` | Documentation precedence and current-versus-historical classification. |
-| `docs/architecture/v2-runtime-messaging-discovery.md` | Native-bus decision and warning against parallel messaging infrastructure. |
-| `docs/architecture/v2-runtime-control-plane.md` | System-health meaning and sole transition ownership. |
-| `docs/architecture/v2-persistence-boundary-discovery.md` | Operational audit ownership, explicit non-storage boundaries, and rejected speculative stores. |
-| `docs/architecture/v2-actor-composition-discovery.md` | One-responsibility actor plan and code-owned composition. |
-| `docs/architecture/v2-provider-data-boundary-discovery.md` | Native canonical transport and separate acquisition context. |
-| `docs/architecture/v2-adaptive-market-data-plane.md` | Provider-demand ownership, native fan-out, analytical and agent boundaries. |
-| `docs/architecture/v2-historical-dependency-execution.md` | Consumer intent versus acquisition execution and transient raw-history boundary. |
-| `docs/roadmap/v2-market-events-live-agent-plan.md` | Canonical Stage 9 ownership topology, contracts, persistence, and future gates. |
-| `docs/roadmap/v2-infrastructure-plan.md` | Completed decision-gate history and demonstrated-requirement discipline. |
+| `docs/architecture/runtime-foundation.md` | Native messaging, composition, system control, persistence, projection, failure, and bounded-work boundaries. |
+| `docs/architecture/market-data-and-acquisition.md` | Native provider transport, demand ownership, watchlist, and historical execution boundaries. |
+| `docs/architecture/session-evidence-health.md` | Calendar/session ownership and evidence-health semantics. |
+| `docs/architecture/deterministic-evidence-contracts.md` | Completed-bar, measurement, entity, identity, health, and fidelity boundaries. |
+| `docs/architecture/sir-loke-v1-boundaries.md` | Future Sir Loke ownership, request, tool, and side-effect boundaries. |
+| `docs/roadmap/sir-loke-v1-delivery-plan.md` | Canonical future product gates and scoped reliability requirements. |
 | `plugins/kite/skills/markeitech-advisor-router/references/advisor-design.md` | Minimum specialist contract and evidence/permission expectations. |
 | `plugins/kite/skills/markeitech-nautilus-v2-expert/` | Nautilus-specific contract to which this advisor defers. |
 

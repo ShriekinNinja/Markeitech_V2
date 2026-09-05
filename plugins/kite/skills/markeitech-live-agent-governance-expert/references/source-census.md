@@ -16,10 +16,11 @@ outrank external patterns for Markeitech product decisions.
 - `docs/development-guidelines.md`: deterministic truth, typed intents, provider ownership,
   evidence lineage, and no-execution boundaries.
 - `docs/README.md`: documentation authority order.
-- `docs/roadmap/v2-market-events-live-agent-plan.md`: accepted destination for the read model,
+- `docs/roadmap/sir-loke-v1-delivery-plan.md` and
+  `docs/architecture/sir-loke-v1-boundaries.md`: accepted destination for the read model,
   policy/resource governor, tools, bounded options/data requests, audit, state, abstention, Stage
   9I, and no-execution boundary.
-- `docs/research/semantic-events-ai-options-baseline.md`: informative historical research only; no
+- Git history for the superseded semantic-events/options research: informative history only; no
   proposed schema, score, or confidence range was promoted into this skill.
 - Current Kite advisor/router conventions reviewed in the integrated
   `v2-nautilus-audit-alignment` catalog at commit `74f47f4`, including the architecture-boundaries,

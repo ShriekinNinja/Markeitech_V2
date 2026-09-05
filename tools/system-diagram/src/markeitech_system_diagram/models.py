@@ -202,7 +202,6 @@ class ViewKind(StrEnum):
     PROVIDER_TO_CANONICAL_DATA = "provider_to_canonical_data"
     METRICS_ENTITIES_INTELLIGENCE = "metrics_entities_intelligence"
     PERSISTENCE_AUDIT_PROJECTIONS = "persistence_audit_projections"
-    FUTURE_GOVERNED_BOUNDARIES = "future_governed_boundaries"
 
 
 @dataclass(frozen=True, slots=True)

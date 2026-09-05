@@ -20,8 +20,8 @@ from markeitech_system_diagram.view_model import select_view
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 FIXTURE = Path(__file__).parent / "fixtures" / "minimal-valid.toml"
-CANONICAL = REPOSITORY_ROOT / "docs" / "architecture" / "system-dataflow.toml"
-GENERATED = REPOSITORY_ROOT / "docs" / "architecture" / "generated" / "system-dataflow"
+CANONICAL = REPOSITORY_ROOT / "tools" / "system-diagram" / "docs" / "system-dataflow.toml"
+GENERATED = REPOSITORY_ROOT / "tools" / "system-diagram" / "docs" / "generated"
 
 
 def _tree_digest(directory: Path) -> str:
@@ -134,7 +134,7 @@ class GenerationTests(unittest.TestCase):
         manifest = load_manifest(CANONICAL, repository_root=REPOSITORY_ROOT)
         selected = select_view(manifest, "view.complete-inventory")
 
-        self.assertEqual(len(selected.components), 36)
+        self.assertEqual(len(selected.components), 35)
         self.assertEqual(len(selected.tombstones), 5)
         self.assertEqual(selected.edges, ())
 
