@@ -1,21 +1,23 @@
-# V2 Market Events And Live Agent Blueprint
+# Sir Loke V1 Delivery And Market-Evidence Blueprint
 
-**Status:** Product direction approved; implementation details are approved stage by stage
+**Status:** Product direction and delivery order accepted on 2026-09-05; implementation details
+remain approved batch by batch
 
-**Scope:** Complete path from provider observations to auditable concurrent 0DTE advisory
-opportunities
+**Scope:** Shortest honest path from the implemented V2 foundation to a live private Sir Loke who
+recommends, observes, monitors, mentors, governs advisably, and reports on SPXW/QQQ 0DTE trades
 
-**Near-term sequence:**
-[`v2-first-market-intelligence-coding-sequence.md`](v2-first-market-intelligence-coding-sequence.md)
-
-This document is the canonical Stage 9A-9K product sequence. Focused stage plans may refine
-implementation details, but they must not silently renumber, omit, or reorder the canonical stages.
+The canonical product behavior is defined in
+[`../product/sir-loke-v1.md`](../product/sir-loke-v1.md). Earlier Stage 9A-9K names remain stable
+historical and technical scope identifiers, but they are no longer a strict instruction to finish
+every planned analytical stage before showing the first useful Sir Loke experience. This blueprint
+maps reusable completed and unfinished work into the new product-first delivery path.
 
 ## Purpose
 
-This is the master blueprint for Markeitech's market-intelligence system. It describes the target
-product, component ownership, data flow, contracts, persistence, analytical and model layers,
-agent behavior, options intelligence, safety, observability, and delivery stages.
+This is the master delivery blueprint for Markeitech's first product. It describes component
+ownership, data flow, broker observation, trade lifecycle, contracts, persistence, analytical and
+model layers, Sir Loke behavior, options intelligence, Discord conversation, safety,
+observability, and delivery gates.
 
 It is detailed direction, not blanket implementation approval. Every stage receives a focused
 design review before code. Stage documents may refine this blueprint, but an approved change to
@@ -23,28 +25,36 @@ the destination must also update this file.
 
 ## Product Goal
 
-Markeitech will convert live market evidence into an inspectable set of concurrent 0DTE advisory
-opportunities for human judgment.
+Markeitech will provide Markeitect with a live Discord trading companion who converts admitted
+market, options, broker, trader, and policy evidence into inspectable 0DTE recommendations,
+continuous trade monitoring, firm advisory intervention, abstention, and after-trade reports.
 
 ```text
 Provider observations
     -> deterministic measurements
     -> analytical entities and rolling state
-    -> quiet semantic events
-    -> cross-instrument and options evidence
-    -> advisory live agent
-    -> policy-checked requests for additional work
-    -> ranked concurrent opportunities or explicit abstention
-    -> operator feedback and auditable outcomes
+    -> minimum semantic/options evidence corridor
+    -> compact Sir Loke read model
+    -> recommendation or explicit abstention
+
+TWS broker observations
+    -> read-only reconciliation and sanitized trade facts
+    -> canonical trade episode
+
+Discord conversation <-> Sir Loke reasoning and advisory policy
+    -> monitoring, challenge, acknowledgement, cooldown, and report
+    -> auditable trader disposition and outcome
 ```
 
-The initial configurable expression universe is SPXW, SPY, and QQQ 0DTE options. It is a seed, not
-a permanent whitelist. No expression instrument is globally preferred.
+The first-version expression products are SPXW and QQQ 0DTE options. They are a delivery boundary,
+not a permanent whitelist. SPY and other products remain later candidates, and no expression
+instrument is globally preferred.
 
 The observation universe is broader and dynamic. ES, NQ, SPX, SPY, QQQ, VIX, sectors, leaders,
 commodities, and later sources may provide evidence without becoming the proposed trade vehicle.
 The system may maintain several opportunities at once and must not force one thesis, direction,
-active instrument, or contract.
+active instrument, or contract. The first acceptance may prove a small number of simultaneous
+episodes, but the contracts must not encode a one-opportunity or one-position invariant.
 
 ## Non-Negotiable Boundaries
 
@@ -52,28 +62,35 @@ active instrument, or contract.
 - NautilusTrader and its IB adapter own connectivity and native normalized market objects.
 - `DataAcquisitionActor` owns logical provider demand and provider-facing subscription/request
   lifetime. Analytical actors do not connect to IB directly.
+- Broker account/order/fill/position observation is a separate read-only responsibility. It uses
+  the narrowest safe Nautilus-native execution/reconciliation boundary and publishes sanitized
+  immutable facts; it does not give Sir Loke an execution client or mutable order object.
 - Native high-volume observations stay on Nautilus paths and outside PostgreSQL.
 - PostgreSQL stores meaningful operational, analytical, agent, opportunity, and delivery audit;
   it is not a raw tick/bar warehouse.
 - Deterministic components calculate facts before ML or an LLM interprets them.
 - Reported, derived, inferred, partial, stale, and unavailable evidence remain distinct.
-- The agent receives compact state and typed tools, not raw ticks, arbitrary SQL/Python, provider
-  APIs, database credentials, or unrestricted configuration.
+- Sir Loke receives compact state and typed read-only tools, not raw ticks, arbitrary SQL/Python,
+  provider APIs, database credentials, mutable broker/framework objects, or unrestricted
+  configuration.
 - Every agent/operator request is policy checked, bounded, expiring where appropriate, and audited
   through its complete lifecycle.
-- AI output is advisory. Automated execution is absent until separately designed and approved.
+- Sir Loke v1 is advisory even when it firmly challenges, requires acknowledgement, recommends a
+  close, or withholds its own recommendations during a cooldown. No order-action surface exists.
+  Future broker-side execution requires a separate product, risk, security, and architecture
+  approval.
 - Replay and backtesting remain out of scope until Markeitect explicitly reopens them.
 - All variable market, analytical, timing, policy, product, and resource decisions follow the
   charter's configuration and optimization principle.
 
 ## Current V2 Foundation
 
-The accepted foundation currently provides:
+The implemented foundation currently provides:
 
-- one NautilusTrader `LiveNode` connected to Interactive Brokers paper data;
+- one NautilusTrader `2.0.0rc4` `LiveNode` configured for Interactive Brokers paper market data;
 - explicit startup confirmation and read-only/data-only intent;
 - system control, health evaluation, supervision, and rotating file logs;
-- Discord system-health projection;
+- optional outbound Discord system-health webhooks, not an inbound bot;
 - PostgreSQL schema verification and operational-event audit;
 - a configuration-owned bootstrap watchlist;
 - native quote and external five-second-bar observation for that watchlist;
@@ -81,20 +98,28 @@ The accepted foundation currently provides:
 - native multi-actor delivery without a Markeitech raw-data fan-out wrapper; and
 - bounded demand lifecycle facts: requested, subscribed, active, failed, canceled, and stopped.
 
-V2 now has approved deterministic measurements and the Stage 9D typed entity/rolling-state
-foundation through Slice 9D.4C. It does not yet have approved semantic interaction events, options
-intelligence, an ML model, an advisory agent, an opportunity lifecycle, or execution. Retired
-analytical and signal models are neither active nor admissible by default.
+Earlier profiles supplied bounded deterministic measurement/entity evidence, while the active V3
+profile now contains only eight calendar/evidence/acquisition/probe/persistence actors. V3-03
+Slices 1-2 provide inactive replacement contracts and a disabled completed-bar foundation;
+Slices 3-9 are incomplete. The runtime has no broker execution client, account/order/fill/position
+observation, trade episode, semantic interaction events, options intelligence, live model, Sir
+Loke, conversational Discord bot, opportunity lifecycle, or order action. See
+[`../current-status.md`](../current-status.md) for the exact current surface.
 
 ## Target Topology
 
 ```mermaid
 flowchart TD
-    IB["Interactive Brokers"] --> NT["Nautilus DataEngine and cache"]
-    NT --> DA["DataAcquisitionActor"]
+    IBMD["IB market data"] --> NT["Nautilus DataEngine and cache"]
+    IBACCT["IB paper account via TWS"] --> EXEC["Native execution reconciliation"]
+    EXEC --> OBS["Read-only broker observation bridge"]
+    OBS --> TRADE["Canonical trade episode"]
+    NT --> DA["Data acquisition owner"]
     NT --> CAP["Deterministic capability actors"]
-    OP["Operator"] --> INT["Typed intents"]
-    AG["Advisory agent"] --> INT
+    OP["Markeitect via private Discord"] <--> DCBOT["Discord bot transport"]
+    DCBOT --> CONV["Conversation and operator statements"]
+    CONV --> AG["Sir Loke"]
+    AG --> INT["Typed intents"]
     INT --> POL["Policy and resource governor"]
     POL --> DA
     POL --> REG["Capability registry/manager"]
@@ -108,20 +133,34 @@ flowchart TD
     MET --> READ
     ENT --> READ
     OPT --> READ
+    TRADE --> READ
+    CONV --> READ
     READ --> AG
-    AG --> OPP["Concurrent opportunity lifecycle"]
-    OPP --> PROJ["Discord and later UI"]
+    AG --> OPP["Recommendation/opportunity lifecycle"]
+    OPP --> TRADE
+    AG --> GOV["Deterministic advisory intervention policy"]
+    TRADE --> GOV
+    GOV --> AG
+    AG --> DCBOT
+    GOV --> DCBOT
+    TRADE --> REPORT["After-trade report"]
+    REPORT --> DCBOT
     DA --> DB["PostgreSQL audit"]
     POL --> DB
     DET --> DB
     OPT --> DB
     AG --> DB
     OPP --> DB
+    OBS --> DB
+    TRADE --> DB
+    GOV --> DB
+    DCBOT --> DB
 ```
 
 Boxes express ownership, not mandatory one-actor-per-box design. Components separate when
 responsibility, lifecycle, workload, or failure isolation requires it, not for decorative
-modularity.
+modularity. Arrows into or out of native execution reconciliation describe observation only; no
+arrow grants Sir Loke an order command.
 
 ## Domain Vocabulary
 
@@ -136,8 +175,12 @@ modularity.
 | Model score | Versioned probabilistic estimate | Follow-through probability |
 | Agent interpretation | Evidence-cited advisory synthesis | S&P catch-up thesis |
 | Opportunity | Target-exposure decision episode | Bullish S&P 20-minute opportunity |
-| Expression candidate | Possible vehicle | Specific SPXW or SPY call |
+| Expression candidate | Possible vehicle | Specific SPXW or QQQ call |
 | Proposal | Operator-facing advisory output | Ranked contract/thesis/invalidation |
+| Broker fact | Sanitized broker-reported account/order/fill/position state | Partial paper fill |
+| Trade episode | Recommendation/trader plan plus broker execution and monitoring history | One QQQ position from entry through closure |
+| Intervention | Deterministic advisory-policy state and Sir Loke communication | Invalidation with acknowledgement required |
+| Acknowledgement | Trader response to a named intervention revision | Continued despite warning |
 
 A changed metric is not automatically an event. A composite is not source truth. A model score is
 not a trade. An affordable option is not an opportunity.
@@ -151,7 +194,7 @@ relationship episode, evidence set/versions, trigger state, invalidation, and li
 It is not owned by the leading evidence instrument or a particular contract.
 
 NQ may lead an aligned breakout while ES lags. With additional evidence, that can support an S&P
-catch-up opportunity expressed through SPXW/SPY. The same graph may separately support QQQ
+catch-up opportunity expressed through SPXW. The same graph may separately support QQQ
 continuation. These remain independent opportunities with independent invalidations.
 
 ### Expression candidates
@@ -199,6 +242,19 @@ provider-capability evidence; first/stale observation lifecycle; and demand/reso
 
 It does not interpret market meaning. After authorization and demand anchoring, capability actors
 may consume native Nautilus callbacks directly.
+
+### Broker Observation Owner
+
+Owns the admitted read-only view of broker account, order, fill, position, commission, closure,
+reconciliation, and connection state. It preserves broker, account alias/identity, paper/live
+environment, client/order/fill/position/contract identity, event and receive timestamps, source,
+revision, partial/duplicate/conflict state, and reconciliation origin.
+
+Use the smallest Nautilus-native IB execution/reconciliation path which can observe the required
+manual TWS activity safely. The owner emits sanitized immutable facts and never exposes execution
+client handles or mutable order objects to the agent, Discord, trade lifecycle, or analytical
+actors. It does not infer the trader's thesis and does not submit, modify, cancel, replace, or close
+orders.
 
 ### Capability Registry And Manager
 
@@ -277,17 +333,21 @@ quality.
 
 Builds a compact timestamped view containing runtime/provider/session/evidence health, relevant
 versioned metrics, active entities/events, relationships, option candidates, opportunities,
-intent outcomes, conflicts, uncertainty, and stale/missing sections. It excludes raw streams,
-unlimited history, credentials, unrelated watchlist noise, and prose as source truth.
+broker facts, trade episodes, original plans and revisions, advisory-policy state, trader
+statements/acknowledgements, intent outcomes, conflicts, uncertainty, and stale/missing sections.
+It excludes raw streams, unlimited history, credentials, unrelated watchlist noise, mutable broker
+objects, and prose as source truth.
 
-### Advisory Live Agent
+### Sir Loke
 
-May inspect state, maintain concurrent hypotheses, cite support/conflict/missing evidence, request
-approved observation/history/capabilities/focus/options, rank expressions, and publish proposals,
-revisions, invalidations, or abstentions.
+May converse with Markeitect; inspect state; maintain concurrent hypotheses; cite support,
+conflict, and missing evidence; request approved observation/history/capabilities/focus/options;
+rank expressions; publish proposals, revisions, invalidations, warnings, mentoring responses,
+monitoring updates, reports, or abstentions; and explain deterministic policy outcomes.
 
 It cannot connect to IB, read arbitrary raw streams/SQL, modify code/schema/config outside typed
-tools, change policy envelopes, hide missing evidence, invent facts, or execute orders.
+tools, change policy envelopes, hide missing evidence, invent facts or trader intent, rewrite an
+earlier thesis, or execute orders.
 
 ### Opportunity Lifecycle Owner
 
@@ -300,28 +360,60 @@ observing -> candidate -> proposed -> revised -> invalidated | expired | closed
 Operator disposition and realized outcome are separate records. Every revision preserves exact
 evidence, parameter, model, prompt, policy, and agent versions.
 
-### Projection Actors
+### Trade Episode Owner
 
-Render existing events/opportunities to Discord and later UI. They own format, route, cooldown,
-deduplication, retry, and delivery outcome, but never recalculate meaning.
+Joins a recommendation or trader-originated plan to broker-reported activity without collapsing
+one into the other. It maintains the complete episode across multiple orders, partial fills,
+cancel/replace, scale changes, closure, interventions, acknowledgements, and reports. A proposed
+recommendation match can be accepted, rejected, or left ambiguous. No component invents a match to
+make the narrative convenient.
+
+The owner preserves the original thesis, trigger, invalidation, horizon, and risk declaration as
+historical revisions. It records subsequent evidence and advice without hindsight rewriting. A
+new opportunity after a loss is independent and is never a recovery trade.
+
+### Advisory Intervention Policy
+
+Owns deterministic configured transitions among observation, concern, warning, urgent
+invalidation, acknowledgement required, noncompliance recorded, Sir-Loke recommendation cooldown,
+and resolution. It decides whether Sir Loke must interrupt, request acknowledgement, withhold its
+own recommendations, or report noncompliance. The model supplies explanation but cannot weaken,
+skip, or fabricate a policy transition.
+
+This owner has no broker control. A recommendation to reduce or close remains advisory. Future
+order authority is a separate program, not another value in the v1 firmness configuration.
+
+### Discord Bot Transport And Other Projections
+
+The private Discord bot receives authenticated allowlisted operator messages and renders Sir Loke
+responses, proactive interventions, opportunities, and reports. It owns connection/session state,
+message identity, ordering, deduplication, rate limits, reconnect, bounded queues, formatting,
+route, and delivery outcome, but never recalculates market, broker, policy, or trade meaning.
+
+The current outbound webhook health actor remains a separate operational projection. A later UI
+may render the same canonical state but is not part of v1.
 
 ## Data Flow And Bus Contracts
 
 ### Native path
 
 ```text
-IB -> Nautilus adapter -> DataEngine/cache -> native actor handlers
+IB market data -> Nautilus adapter -> DataEngine/cache -> native actor handlers
+TWS account state -> Nautilus execution reconciliation -> broker observation owner -> sanitized facts
 ```
 
 Acquisition authorizes/anchors demand. Raw observations are not copied to PostgreSQL or republished
-as semantic events just to create another bus.
+as semantic events just to create another bus. Broker observation is admitted because account,
+order, fill, and position facts have durable trade/audit meaning; its existence grants no order
+authority.
 
 ### Control and semantic paths
 
 Low-volume typed messages use named Nautilus channels for acquisition intents/lifecycle,
 capability intents/health, session/evidence state, justified metric snapshots, entity lifecycle,
 semantic events, options lifecycle, policy decisions, agent tools, opportunities, operator
-feedback, and notification outcomes.
+feedback, broker observations, recommendation linkage, trade episodes, interventions,
+acknowledgements, reports, conversation envelopes, and notification outcomes.
 
 ### Universal contract envelope
 
@@ -334,6 +426,8 @@ Cross-component/durable contracts define:
 - causation and correlation identity;
 - parameter/config version;
 - evidence references/fidelity;
+- broker account/environment and order/fill/position identity where applicable;
+- advisory or execution authority class;
 - expiry/invalidation semantics; and
 - bounded typed payload.
 
@@ -416,9 +510,10 @@ remaining validity separate. A rank may consume them later; it may not erase the
 
 ### Product/session identity
 
-Model SPXW GTH, RTH, and Curb separately with exchange time/calendar. Model SPY/QQQ eligibility
-independently. Contract identity includes underlying, expiry, strike, right, multiplier, exchange,
-settlement style, and last eligible trade time.
+Model SPXW GTH, RTH, and Curb separately with exchange time/calendar. Model QQQ eligibility
+independently for v1 and retain the same product-specific boundary for later SPY work. Contract
+identity includes underlying, expiry, strike, right, multiplier, exchange, settlement style, and
+last eligible trade time.
 
 ### Bounded acquisition
 
@@ -457,6 +552,11 @@ thesis; an attractive premium does not create one.
 | Agent read model | Generated projection | Exact decision snapshot only when used | Audit, not live restore |
 | Agent intents/tools | Bus/policy | Full lifecycle | Reconcile valid active leases |
 | Opportunities/proposals | Lifecycle owner | All revisions/evidence/disposition | Restore if still valid |
+| Broker account/order/fill/position facts | Native cache plus observation owner | Approved immutable facts/reconciliation lifecycle; never credentials or mutable handles | Reconcile with broker before use |
+| Trade episodes and recommendation links | Trade episode owner | Identity, immutable plan/revisions, linkage disposition, broker references, closure | Restore then reconcile before monitoring |
+| Advisory interventions/acknowledgements | Policy/trade owner | Full policy transition and trader response | Restore only if episode/policy remains valid |
+| Discord conversation envelopes | Bot/conversation owner | Approved bounded/redacted turns and delivery identity | Reconcile session and pending delivery explicitly |
+| After-trade reports | Trade/report owner | Versioned report and referenced facts | Historical audit; never silently regenerated |
 | Prompts/responses | Restricted audit if approved | Redacted, explicit retention | Accountability/evaluation |
 | Feedback/outcomes | PostgreSQL | Versioned labels/provenance | Evaluation/ML |
 | Logs | Rotating files | Do not duplicate line by line | Operations only |
@@ -464,7 +564,9 @@ thesis; an attractive premium does not create one.
 PostgreSQL is the operational and semantic audit, not the bus. It records run/connection/health;
 acquisition/history lifecycles; capability versions/readiness; approved entity/event lifecycles;
 policy and leases; option request/candidate decisions; agent invocation/evidence/tools; opportunity
-revisions; notification delivery; and operator feedback.
+revisions; admitted broker facts; trade episodes; recommendation linkage; interventions;
+acknowledgements; approved conversation audit; reports; notification delivery; and operator
+feedback.
 
 Use explicit migrations, schemas, idempotency, transaction boundaries, retention, and boot-time
 schema verification. Required persistence failure must affect health/lifecycle honestly.
@@ -478,7 +580,9 @@ transcripts are not canonical opportunity records.
 Explicit typed/versioned configuration covers instruments/contracts, feeds/history, sessions,
 horizons/windows/lookbacks, freshness, detector thresholds/hysteresis, capability parameters,
 relationships, option premium/strike/spread/liquidity/Greeks, scoring, resource budgets, agent
-cadence/model/context/tool permissions, Discord routing, and retention.
+cadence/model/context/tool permissions, broker account alias/environment and observation mode,
+trade linkage, advisory firmness/acknowledgement/cooldown, Discord bot allowlist/routing, and
+retention.
 
 Every parameter defines identity, meaning, unit/type, default, scope, validation envelope,
 mutability class, source, version/effective time, and rollback/audit. Initial code may load at
@@ -506,16 +610,18 @@ operating envelope/abstention, mode (offline/shadow/advisory/disabled), resource
 health, rollback, and links every score to model/features. Models cannot subscribe, call IB, alter
 policy, or execute.
 
-## Live Agent Design
+## Sir Loke Design
 
-The agent is a stateful advisory reasoner, not the market-data processor. It directs attention,
-requests bounded evidence, maintains hypotheses, compares expressions, and explains opportunities
-or abstention.
+Sir Loke is a stateful advisory reasoner and trading-discipline companion, not the market-data,
+broker, policy, or execution processor. It directs attention, requests bounded evidence, maintains
+hypotheses, compares expressions, recommends or abstains, monitors active trade episodes, explains
+deterministic interventions, asks for missing trader intent, and creates after-trade synthesis from
+preserved facts.
 
-Invocation may follow meaningful events, session transitions, material opportunity/option changes,
-operator request, bounded heartbeat, or tool completion/failure. Cadence, coalescing, cooldown,
-context budget, and model selection are configurable. Raw update frequency never equals LLM
-invocation frequency.
+Invocation may follow meaningful events, broker order/fill/position changes, session transitions,
+material opportunity/option/thesis changes, intervention state, operator request, bounded
+heartbeat, or tool completion/failure. Cadence, coalescing, notification cooldown, context budget,
+and model selection are configurable. Raw update frequency never equals LLM invocation frequency.
 
 Illustrative typed tools (finalized in their stage):
 
@@ -527,14 +633,25 @@ Illustrative typed tools (finalized in their stage):
 - `request_focus(subjects, fidelity, lease, purpose)`;
 - `request_option_candidates(exposure, expiry_policy, bounds, purpose)`;
 - `get_opportunity`, `upsert_opportunity`, `invalidate_opportunity`; and
+- `get_trade_episode(episode_id)` and `get_broker_observation(subject)`;
+- `record_interpretation`, `propose_recommendation`, `revise_recommendation`, and
+  `recommend_advisory_action` through validated schemas;
+- `request_trader_plan`, `request_acknowledgement`, and `draft_after_trade_report`; and
 - `abstain(scope, missing_or_conflicting_evidence)`.
 
-Every call has policy and execution lifecycle. “Accepted” never means data is already flowing.
+Every call has policy and execution lifecycle. “Accepted” never means data is already flowing,
+that an order changed, or that Markeitect complied. No tool submits, modifies, cancels, replaces,
+or closes an order.
 
 Every proposal includes identity/revision, exposure/direction/horizon, lifecycle, thesis, supporting
 and conflicting evidence citations, missing/stale evidence, trigger status, invalidation/expiry,
 ranked expressions, contract rationale, liquidity/payoff constraints, model scores/versions,
 uncertainty/alternative, follow-up requests, and advisory/no-execution label. Abstention is valid.
+
+Every open-trade response also preserves broker/account environment, trade-episode identity,
+recommendation-link disposition, original plan and invalidation revision, current position/fill
+state, advisory-policy state, prior interventions, trader acknowledgement/non-response, and exact
+unknowns. Sir Loke must distinguish a prompt provisional safety response from a completed analysis.
 
 Audit enough to reconstruct decisions: model/provider/version, prompt template, tool schemas,
 read-model/evidence snapshot, inference parameters, tool calls/results, structured output,
@@ -544,27 +661,34 @@ validation/policy, latency/token/cost/failure. Redact secrets and apply retentio
 
 - Credentials/webhooks remain secret and never enter prompts/events.
 - Typed tools use least authority; budgets are enforced outside the agent.
-- External news/web/model text is untrusted, sourced evidence and cannot grant permissions.
+- Discord messages and external news/web/model text are untrusted input and cannot grant
+  permissions or redefine broker/market truth.
 - No order-routing tool exists.
+- No mutable broker/framework object enters the agent context.
 - Later execution requires separate risk/account/order/approval/kill-switch/reconciliation design.
 - Overrides are authorized, explicit, expiring where appropriate, and audited.
 - Degradation narrows/disables affected conclusions instead of silently lowering standards.
 
 Govern live subscription count, historical pacing, option discovery/Greeks, capability CPU/memory/
-queues/cadence, state cardinality, PostgreSQL latency/growth, agent rate/context/latency/cost, and
-Discord queue volume. Temporary expensive work uses purpose/priority/owner/resource/start/expiry/
-renewal/cancellation focus leases. Exhaustion emits explicit policy/health outcomes.
+queues/cadence, state/trade/conversation cardinality, PostgreSQL latency/growth, agent
+rate/context/latency/cost, broker-observation backlog, and Discord queue volume. Temporary expensive
+work uses purpose/priority/owner/resource/start/expiry/renewal/cancellation focus leases. Exhaustion
+emits explicit policy/health outcomes.
 
 ## Failure And Recovery
 
 Every component specifies provider reconnect, entitlement/resolution failure, stale/late/corrected/
-out-of-order data, incomplete warmup, exceptions/overload, PostgreSQL failure, option/Greek gaps,
-agent timeout/malformed output/tool loop/model outage, Discord failure, and active-work shutdown.
+out-of-order data, incomplete warmup, broker reconciliation gaps/duplicates/conflicts, partial
+fills and account mismatch, exceptions/overload, PostgreSQL failure, option/Greek gaps, agent
+timeout/malformed output/tool loop/model outage, Discord failure/reconnect, and active-work
+shutdown.
 
-Ingestion survives nonessential analyzer/agent/projection failure. Stale state is marked. Required
+Ingestion and broker-state reconciliation survive nonessential analyzer/agent/projection failure.
+Stale state is marked. Required
 durability precedes dependent lifecycle publication. Restart restores only still-valid state and
 expires obsolete leases/opportunities. Demand reconciles after reconnect. Agent failure never
-erases deterministic state. Shutdown is bounded and honest about unfinished work.
+erases deterministic or broker facts. A restored trade episode is not monitored as current until
+broker reconciliation succeeds. Shutdown is bounded and honest about unfinished work.
 
 Across every stage, runtime composition is event-driven rather than startup-sequenced. Actors may
 start and report in any order; readiness is the convergence of independently evidenced component
@@ -577,204 +701,244 @@ framework mutation from another actor's synchronous callback.
 Rotating files remain the diagnostic stream; high-volume observations are summarized by default.
 Structured logs identify run, component, event, subject, correlation, lifecycle, and failure.
 
-Discord is projection, not truth. Separate system degradation, market context/events, option and
-opportunity lifecycle, agent proposals/invalidations/abstentions, and low-priority operational
-detail. Routing, mentions, cooldown, grouping, and severity are configurable. Delivery failure
-does not stop ingestion/analysis.
+Discord is the first conversation surface, not market, broker, policy, or trade truth. Separate
+operator statements, system degradation, market context/events, broker facts, trade episodes,
+option/opportunity lifecycle, Sir Loke proposals/invalidations/abstentions/interventions, reports,
+and low-priority operational detail. Authentication, allowlist, routing, mentions, cooldown,
+grouping, and severity are configurable. Delivery or bot failure does not stop ingestion,
+reconciliation, analysis, or audit.
 
-Health is hierarchical: runtime, provider, persistence, acquisition/feed, capability,
-instrument/contract evidence, options, agent/model, notification, and end-to-end advisory
-readiness. “Connected” is not “ready to advise.”
+Health is hierarchical: runtime, market-data provider, broker observation/reconciliation,
+persistence, acquisition/feed, capability, instrument/contract evidence, options, trade episode,
+policy, agent/model, Discord conversation, and end-to-end advisory readiness. “Connected” is not
+“ready to advise or monitor a trade.”
 
 ## Testing And Acceptance
 
 Offline tests cover schemas, calendars/DST/holidays, demand/policy reconciliation, metric fixtures,
 entity lifecycle, event hysteresis/dedup/order, persistence/restart, option filtering/quote quality,
-opportunity lifecycle, agent structured output/tool policy, failures, and resource bounds.
+opportunity/trade lifecycle, recommendation matching and ambiguity, broker-event
+ordering/duplicates/partial fills, advisory intervention/acknowledgement/cooldown, conversation
+authorization, agent structured output/tool policy, no-order reachability, failures, and resource
+bounds.
 
-Integration covers Nautilus bus delivery, PostgreSQL, dependency execution, event/read-model
-projection, policy/tool lifecycle, decision reconstruction, and Discord delivery separation.
+Integration covers Nautilus bus delivery, native execution reconciliation through a fact-only
+observation bridge, PostgreSQL, dependency execution, event/read-model projection, policy/tool
+lifecycle, decision reconstruction, and Discord conversation/delivery separation.
 
-Manual IB acceptance is run by Markeitect when requested and records session, settings,
-entitlements, contracts, expectation, lifecycle/logs, independent reference, and fidelity gaps.
-Codex does not launch live IB runs without asking.
+Manual IB acceptance is run by Markeitect when requested and records account environment/alias,
+TWS settings and client identity, session, entitlements, contracts, expected market and manual
+order activity, reconciliation/lifecycle/logs, independent reference, and fidelity gaps. The first
+broker-observation acceptance uses paper TWS and must not place or take control of an order. Codex
+does not launch connected IB runs without exact authorization.
 
-Evaluate separately: source/metric correctness, semantic honesty, operator utility, agent use,
-contract executability, and predefined outcome. A win is evidence, not universal validation; a loss
-does not automatically prove the process wrong.
+Evaluate separately: source/metric correctness, broker-observation fidelity, semantic honesty,
+operator utility, behavioral intervention timing/usefulness, agent use, contract executability,
+and predefined outcome. A win is evidence, not universal validation; a loss does not automatically
+prove the process wrong.
 
 ## Delivery Plan
 
 ```text
-Session/calendar ownership
-    -> evidence-health contracts
-    -> historical dependency execution
-    -> baseline metric contracts
-    -> entities and rolling state
-    -> first semantic events
-    -> bounded options-data proof
-    -> cross-instrument state
-    -> richer analytics
-    -> agent read model, policy, and tools
-    -> concurrent advisory opportunities
-    -> evaluation and ML readiness
+Product authority reset
+    -> native IB/TWS observation proof
+    -> trade episode and advisory-policy contracts
+    -> authenticated two-way Discord transport
+    -> minimum honest SPXW/QQQ evidence corridor
+    -> bounded Sir Loke reasoning and read-only tools
+    -> integrated monitoring, governance, and reports
+    -> end-to-end paper-through-TWS acceptance
 ```
 
-### 9A: Session And Evidence Truth
+### Gate 0: Product Authority Reset
 
-Authoritative calendar owner, evidence-health contract, quiet transitions, semantic audit, and
-restart/DST/holiday/stale/degraded behavior.
+Promote the accepted Sir Loke experience into the charter, product definition, current status,
+canonical roadmap, engineering guidance, and documentation index. Remove superseded working
+requirements, council handoffs/reports, and duplicate roadmaps from the active tree after their
+valid content is incorporated.
 
-**Exit:** every downstream value identifies its session and proves evidence usability.
+**Exit:** one product contract, one current-status ledger, and one delivery blueprint govern a
+fresh checkout without contradictory sequencing.
 
-### 9B: Historical Dependency Execution
+### Gate 1: Native IB/TWS Observation Proof
 
-Capability-declared history, policy/resource validation, acquisition pacing/dedup/timeout/cancel,
-transient delivery, explicit readiness, and independent per-measurement resolution contracts.
+Inspect and fixture-test the exact pinned NautilusTrader IB execution-client, live execution-engine,
+reconciliation, cache, external-order, event, and report contracts. Compare candidate TWS client-ID
+and read-only settings without selecting a custom raw IB path prematurely.
 
-**Exit:** capabilities receive exact bounded warmup without provider ownership.
+Then, through a separately authorized bounded paper-account run, observe a controlled set of
+manually entered TWS orders, partial fills, cancel/replace, position changes, manual closure, and
+reconnect/reconciliation. Stop if the API attempts to bind/take control in an unsafe way or if
+required events cannot be identified faithfully.
 
-### 9C: Baseline Metric Contracts And Runtime
+**Exit:** the exact safe native observation envelope is measured, or a documented native gap
+justifies reviewing an alternative. No order action is added.
 
-Approved catalog, registry entries, bounded deterministic implementations, versioned parameters/
-health, native updates, and independent validation.
+### Gate 2: Trade Episode, Recommendation Linkage, Policy, And Audit
 
-**Exit:** trusted reusable measurements run continuously.
+Define immutable typed contracts and pure deterministic owners for:
 
-### 9D: Entities And Rolling State
+- broker observations and reconciliation outcomes;
+- opportunity/recommendation identity and revisions;
+- matched, rejected, ambiguous, and trader-originated execution linkage;
+- trader plan, thesis, trigger, invalidation, horizon, and risk declaration;
+- multi-order and partial-fill trade episodes;
+- advisory intervention, acknowledgement, noncompliance, cooldown, and resolution;
+- conversation statement identity; and
+- after-trade report inputs and historical truth.
 
-Approved identity/revision contracts and bounded projection for objective sessions/references/
-levels; volatility and compression/expansion; horizon-specific direction/trend/rotation;
-moving/anchored references; confirmed swings, deterministic swing legs, per-horizon pivot
-structure, FVGs, and derived zones; and explicitly inferred bar-volume distribution/profile nodes.
-Include expiry/invalidation/roll, compact prior summaries, restart semantics, and typed/versioned
-configuration plus optimization metadata for every variable policy. Observed trade-at-price
-profiles remain separate later evidence.
+Review PostgreSQL schema, transactions, ordering/idempotency, retention, redaction, restoration,
+and reconciliation before durable activation. Prove no order-action contract exists.
 
-**Exit:** stable analytical subjects are shared without duplicated meaning.
+**Exit:** deterministic fixtures can follow recommended and independent trades from observation
+through closure without a model, Discord, provider, or invented provenance.
 
-### 9E: First Semantic Events
+### Gate 3: Authenticated Two-Way Discord Transport
 
-Minimal envelope/taxonomy, explicit transitions/hysteresis, lineage/dedup/expiry/invalidation, bus
-publication, audit, and quiet human projection after acceptance.
+Implement the private bot connection, allowlisted user/channel or direct-message boundary,
+inbound/outbound envelopes, sequence/message identity, ordering, deduplication, bounded queues,
+rate limits, reconnect/resume, delivery outcomes, shutdown, and secret isolation. Preserve the
+existing webhook health projection as a separate optional component where still useful.
 
-**Exit:** useful evidence-linked events run without numerical noise.
+Use deterministic conversation fixtures before any live model. Discord input produces typed
+operator statements and requests; it cannot mutate market/broker truth or invoke an order action.
 
-### 9F: Bounded Options Proof
+**Exit:** Markeitect can conduct a durable private test conversation through the accepted transport
+while failures remain isolated from market and broker paths.
 
-SPXW/SPY/QQQ discovery; SPXW GTH/RTH/Curb; named reference/proxy; bounded strikes/quotes/Greeks;
-quote/premium/candidate quality; resource lifecycle; and paper acceptance.
+### Gate 4: Minimum Honest SPXW/QQQ Evidence Corridor
 
-**Exit:** usable bounded 0DTE expressions can be identified truthfully.
+Finish only the deterministic work required for Sir Loke to recommend or abstain truthfully on the
+first products:
 
-### 9G: Cross-Instrument State
+- the necessary V3 completed-bar/metric replacement and active producer cutover;
+- exact sessions and current evidence health for each evidence/expression instrument;
+- a small accepted semantic-event vocabulary for thesis support, contradiction, and invalidation;
+- bounded SPXW/QQQ expiration, contract, quote, spread, liquidity, Greek, settlement, last-trade,
+  and reference-price evidence; and
+- only the cross-instrument or richer analytical relationships required by a named first decision.
 
-Structural groups, freshness-aligned comparisons, alignment/disagreement/leadership/lag/regime,
-decay, and target-exposure linkage.
+Do not complete every Stage 9D-H aspiration as a prerequisite. Conversely, do not let the model
+substitute for a missing contract, freshness state, option-quality fact, or invalidation rule.
 
-**Exit:** relationships support multiple independent opportunities.
+**Exit:** one or more named first-version decisions can produce an inspectable qualified expression
+or explicit abstention from live admitted evidence.
 
-### 9H: Richer Analytics
+### Gate 5: Bounded Sir Loke Reasoning
 
-Add one approved decision capability at a time beyond the Stage 9D deterministic baseline:
-observed trade-at-price profiles, participation, effort/response, advanced structure/location
-interactions, or option-underlying behavior. Expensive work uses focus leases.
+Implement the compact read model, model/provider boundary, structured output schemas, typed
+read-only tools, citations, abstention, prompt/input isolation, budgets, retries, outage behavior,
+and audit. Add conversation, opportunity, trade-episode, and advisory-policy context without raw
+streams, credentials, arbitrary SQL/Python, unrestricted configuration, mutable broker objects, or
+order methods.
 
-**Exit:** evidence is rich enough for useful theses while truthful and bounded.
+Sir Loke explains deterministic policy and evidence; it does not own their truth. Prove with
+adversarial fixtures that invalid output, prompt injection, stale evidence, missing citations,
+tool loops, and model outages fail safely.
 
-### Mandatory Reliability Gate Before 9I
+**Exit:** the live model can converse, recommend or abstain, analyze a detected independent trade,
+monitor a fixture-backed episode, and explain a firm intervention without gaining infrastructure
+or execution authority.
 
-No live model access or agent-directed runtime intent begins until the current provider and
-runtime recovery debt is closed or explicitly accepted by Markeitect. The gate must prove:
+### Gate 6: Integrated Live Sir Loke
 
-- provider subscription failure is retried or rejected through a bounded, observable lifecycle;
-- connection loss and recovery can move affected evidence through degraded/unavailable and back to
-  ready without restarting unrelated capabilities;
-- queue and publication overflow remain bounded, audited, and recoverable where policy permits;
-- retry, lifecycle, recency-decay, and hysteresis behavior has deterministic offline coverage; and
-- one connected acceptance run reconciles recovery, resource, persistence, and shutdown evidence.
+Join the accepted Discord, market/options evidence, broker-observation, trade-episode, policy,
+read-model, and Sir Loke boundaries. Preserve independent readiness and partial failure: a Discord
+or model failure does not stop broker reconciliation; a broker gap prevents position claims; an
+options gap prevents a qualified contract recommendation; an unrelated capability failure remains
+local.
 
-This gate hardens the evidence path. It does not authorize semantic thresholds, options selection,
-agent behavior, or execution.
+**Exit:** the complete product loop runs locally in a controlled integration environment with
+deterministic fixtures and no order-action reachability.
 
-### 9I: Agent Read Model, Policy, And Tools
+### Gate 7: End-To-End Paper Acceptance
 
-Compact read model, typed intents/tools, policy/budgets, lifecycle audit, citation/abstention,
-model/prompt/tool audit, and deterministic fixtures before live model access.
+Run the exact acceptance story in the product definition through Markeitect's separately authorized
+IB paper account and TWS session. Demonstrate conversation, supported recommendation or abstention,
+recommended-trade matching, independent-trade detection, partial fills and reconciliation,
+material monitoring updates, firm intervention and acknowledgement, closure, cooldown where
+configured, and an after-trade report.
 
-The advisory live agent is named **Sir Loke**. Its governing maxim is:
+**Exit:** the recorded paper envelope is useful and truthful, every required path is reconciled,
+and no order action exists or was attempted. Live-money acceptance remains separate.
 
-> "When you have eliminated the impossible, whatever remains, however improbable, must be the
-> truth." - Sherlock Holmes
+## Reuse Of Existing Stage Work
 
-For Sir Loke, elimination is an auditable process, not rhetoric. Deterministic policy removes
-ineligible actions; evidence quality removes unsupported interpretations; contradictions remain
-visible; and every surviving opportunity cites why it remains possible. An improbable opportunity
-may survive when evidence supports it, but Sir Loke must abstain when elimination leaves ambiguity
-rather than a defensible case.
+Earlier stage labels remain stable references for technical evidence. They no longer impose a
+blanket waterfall in which every item must finish before any Sir Loke experience appears.
 
-Sir Loke does not invoke or inherit authority from the development-time Kite advisor council.
-Kite's council reviews engineering work; it is not a runtime tool, policy governor, evidence owner,
-or implementation of Sir Loke.
+| Existing scope | Current relationship to Sir Loke v1 |
+|---|---|
+| 9A session/evidence truth | Reuse implemented calendar and evidence-health ownership; extend only for the first product envelope. |
+| 9B historical dependencies | Reuse bounded planning/execution; close only reliability gaps required by selected evidence. |
+| 9C baseline measurements | Reuse formulas and evidence; complete the V3 replacement/cutover needed by Gate 4. |
+| 9D entities/rolling state | Reuse accepted contracts/owners; activate only entities required by named first decisions. Broader 9D remains later work. |
+| 9E semantic events | Implement a minimum thesis-support/contradiction/invalidation vocabulary in Gate 4; broader interaction families remain later. |
+| 9F bounded options | Required in Gate 4 for SPXW and QQQ 0DTE; SPY and broader option work are later. |
+| 9G cross-instrument state | Admit only relationships required by named first decisions; no universal relationship catalog. |
+| 9H richer analytics | Pull forward only evidence that materially changes a first-version decision. |
+| 9I agent read model/policy/tools | Split across Gates 2 and 5 and broadened to trade monitoring and mentoring. |
+| 9J advisory opportunities | Reuse plural opportunity/expression semantics; add trader-originated trade episodes and after-trade closure. |
+| 9K evaluation/ML readiness | Full ML/data program remains deferred; v1 still records bounded product outcomes and feedback honestly. |
 
-**Exit:** an agent requests bounded work without controlling infrastructure.
+## Use-Case-Scoped Reliability Gates
 
-### 9J: Concurrent Advisory Opportunities
+The previous blanket gate requiring all listed provider/runtime recovery debt to close before any
+live model access is replaced by dependency-specific gates. This prevents unrelated infrastructure
+work from indefinitely postponing the product, but it does not lower evidence standards.
 
-Plural opportunity/expression state, proposal/revision/invalidation/expiry, evidence-cited output,
-ranking without forced winner, Discord, operator disposition, and no-execution enforcement.
-
-**Exit:** one, several, or no honest 0DTE opportunities reach human judgment.
-
-### 9K: Evaluation And ML Readiness
-
-Outcome/feedback contracts, leakage-safe datasets, baselines, temporal/regime evaluation, shadow
-models, monitoring, and bounded optimization interfaces.
-
-Before any model-training implementation, Markeitect must approve a data strategy defining the
-historical acquisition source, reproducible feature construction, labels and outcome windows,
-as-of cutoffs and revision handling, licensing and retention, dataset identity/versioning, and
-leakage-safe temporal evaluation. The current no-raw-retention and no-replay decisions remain in
-force until that explicit gate changes them; Stage 9K must not quietly turn PostgreSQL into a raw
-market-data warehouse.
-
-**Exit:** models improve named decisions without replacing truth or policy.
+Before a dependency contributes to a Sir Loke recommendation, intervention, or trade report, its
+exact path must prove bounded failure/retry, stale/unavailable transitions, queue/backpressure,
+ordering/idempotency, restart/reconciliation, resource behavior, persistence where required, and
+clean shutdown. The complete end-to-end paper acceptance must exercise recovery for the required
+product paths. Optional or unused capabilities may remain deferred and must not affect readiness.
 
 ## Accepted Decisions
 
-1. Initial expressions are configurable/expandable SPXW, SPY, and QQQ.
-2. No expression product is globally preferred.
-3. Opportunities are plural and identified by target exposure/episode, not source instrument or
+1. Sir Loke is the first visible product: a live two-way private Discord trading companion,
+   mentor, and configurable advisory governor for Markeitect.
+2. First-version expressions are configurable/expandable SPXW and QQQ 0DTE. SPY and other
+   products remain later candidates.
+3. No expression product is globally preferred.
+4. Opportunities are plural and identified by target exposure/episode, not source instrument or
    contract.
-4. NQ leadership may support lagging S&P and distinct QQQ opportunities.
-5. SPXW `$0.10-$2.00` is configurable discovery during eligible sessions, not a trade rule.
-6. Initial parameters may be startup-only but include optimization metadata/future typed mutation.
-7. Reconstructable raw market data is not persisted for replay/backtesting.
-8. PostgreSQL is the operational/semantic audit, not raw storage.
-9. The agent can direct attention/request approved work, but cannot access IB or execute.
+5. Sir Loke observes both recommended and trader-originated trades through an admitted
+   broker-observation path and never invents recommendation linkage or trader intent.
+6. The first connected observation acceptance uses an IB paper account through TWS. Paper/live
+   does not change Sir Loke's behavior, while account environment remains explicit evidence.
+7. V1 governance is firm but advisory: warnings, acknowledgement, noncompliance records, and
+   Sir-Loke recommendation cooldown are permitted; order actions are not.
+8. NQ leadership may support lagging S&P and distinct QQQ opportunities.
+9. SPXW `$0.10-$2.00` is configurable discovery during eligible sessions, not a trade rule.
+10. Initial parameters may be startup-only but include optimization metadata/future typed mutation.
+11. Reconstructable raw market data is not persisted for replay/backtesting.
+12. PostgreSQL is the operational/semantic audit, not raw storage.
+13. Sir Loke can direct attention/request approved work, but cannot connect to IB or execute.
+14. A later trade after a loss qualifies independently and is never framed as account or
+    confidence recovery.
 
 ## Deferred Design Gates
 
-- calendar library/session source;
-- first metric catalog/formulas;
-- level/zone/profile/relationship entity schemas;
-- event names/thresholds/hysteresis;
-- durable prior-session summaries;
-- option cadence/strike rules/provider budget;
-- cross-instrument metrics/decay;
-- first ML target/evaluation;
-- agent provider/model/cadence/context/cost;
-- opportunity ranking/operator feedback; and
-- retention for agent/opportunity/model/notification records.
+- safe TWS client-ID/read-only/external-order/reconciliation settings and observation ownership;
+- broker-observation and trade-episode schemas;
+- exact advisory intervention thresholds, acknowledgements, risk inputs, and cooldown policy;
+- Discord bot transport, intents, allowlist, and conversation retention;
+- minimum active V3 metric/entity/semantic-event set for the first decisions;
+- option cadence/strike/reference/liquidity/Greek/provider budget for SPXW and QQQ;
+- exact cross-instrument evidence required by the first recommendations;
+- agent provider/model/cadence/context/cost, output validation, and outage behavior;
+- opportunity ranking, trader feedback, and after-trade report schema;
+- persistence/retention/redaction/recovery for broker, trade, conversation, and agent records; and
+- first bounded behavioral utility measures.
 
 These are not blanks for code defaults. They require stage review with Markeitect.
 
 ## Immediate Next Batch
 
-Stage 9D is active through connected-accepted Slice 9D.4C. The 2026-08-24 London/ETH run exercised
-the optional runtime projection with actual rolling inputs, valid revisions, periodic staleness
-reconciliation, bounded resources, reconciled operational persistence, and clean shutdown.
-Markeitect explicitly deferred the narrow 9D.3 opening-range developing-to-complete proof until a
-run crosses that configured boundary; it does not block 9D.5 confirmed-swing, per-horizon
-pivot-structure, FVG, and zone projection. The exact implementation boundary remains in
-[`v2-stage-9d-entities-rolling-state-plan.md`](v2-stage-9d-entities-rolling-state-plan.md).
+After the documentation authority reset is merged, the recommended next batch is **Gate 1: native
+IB/TWS observation proof**. It begins with exact installed-contract inspection and disconnected
+fixtures/design. A connected paper probe remains a separate explicitly authorized run.
+
+This blueprint does not itself authorize the implementation, dependency/configuration changes,
+connected TWS session, schema migration, Discord connection, model use, or external message. Each
+batch follows the repository PR and approval process.

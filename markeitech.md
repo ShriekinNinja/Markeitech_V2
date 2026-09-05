@@ -1,32 +1,50 @@
 # Markeitech Project Charter
 
-Markeitech is a live-first market-analysis and decision-support system built by
-Markeitect and Kite for discretionary index trading. Its current purpose is to
-turn reliable underlying-market data into deterministic, inspectable context
-and signals that can inform manual options trades. It is not an HFT system and
-does not currently execute orders.
+Markeitech is a live-first market-intelligence and trading-discipline system built by Markeitect
+for discretionary index trading. Its first product experience is **Sir Loke**, a personal live
+trading companion, mentor, and configurable advisory governor. Markeitech turns reliable market,
+options, and broker-observation evidence into recommendations, trade monitoring, firm challenges,
+and inspectable after-trade reports for manual trading. It is not an HFT system and does not
+currently execute orders.
 
 This charter governs current product and engineering work. Historical source is recoverable
 through Git history but does not define current behavior.
 
 ## Current Product Direction
 
-- ES and SPY are the initial V2 bootstrap instruments, not a permanent universe.
+- The canonical first-version product contract is
+  [`docs/product/sir-loke-v1.md`](docs/product/sir-loke-v1.md). Sir Loke is a live, two-way private
+  Discord bot for Markeitect, running locally. Infrastructure is valuable insofar as it supplies
+  the trustworthy evidence, policy, resilience, and audit required by that user experience.
+- Sir Loke participates before, during, and after a trade. It may recommend qualified trades,
+  observe what Markeitect actually trades, analyze independently entered trades, monitor thesis
+  and risk changes, challenge plan drift or invalidation, request acknowledgement, withhold its own
+  recommendations during a configured cooldown, and publish factual after-trade reports.
+- First-version governance is forceful but advisory. Sir Loke may recommend reducing or closing a
+  position but has no order-submission, modification, cancellation, replacement, or closing tool.
+  Broker-side enforcement or closing authority is a separately approved future execution-and-risk
+  product boundary; it is not a dormant v1 feature.
+- ES and SPY were initial V2 provider-bootstrap instruments; they do not define the first-version
+  trade scope and are not a permanent universe.
   The observation universe, acquisition cadence, enabled analysis capabilities,
   and temporary market focus may change while the system runs.
-- SPXW, SPY, and QQQ 0DTE options form the initial configurable expression universe. No expression
-  instrument is globally preferred. The long-term product goal is a deterministic semantic-event
-  stream, multidimensional rolling market state, options context, and an advisory AI observer that
-  maintains, ranks, and explains multiple concurrent 0DTE opportunities.
-- The future advisory AI observer is named **Sir Loke**. Its governing maxim is Sherlock Holmes's
+- SPXW and QQQ 0DTE options are the first-version trade-expression products. SPY and other
+  expressions remain later candidates. No expression instrument is globally preferred, and the
+  initial scope is not a permanent whitelist. Evidence instruments remain distinct from trade
+  expressions.
+- Sir Loke's governing maxim is Sherlock Holmes's
   principle: "When you have eliminated the impossible, whatever remains, however improbable, must
   be the truth." Sir Loke must eliminate through cited evidence and deterministic policy, preserve
   unresolved uncertainty, and abstain when the remaining case is not sufficiently supported.
+- The first connected trade-observation acceptance uses an Interactive Brokers paper account
+  through Trader Workstation. Sir Loke's analytical and governance behavior is the same for paper
+  and live accounts, but every broker fact and report preserves account identity and environment.
+  Paper acceptance does not authorize or validate a live-money connection.
 - Native provider observations, deterministic facts, semantic events, persistent
-  entities, rolling state, model outputs, AI interpretations, and execution
-  authority remain separate boundaries.
-- Discord provides the first concise human projection. A full UI remains a later
-  concern.
+  entities, rolling state, broker-reported execution facts, trader statements, policy decisions,
+  model outputs, AI interpretations, and execution authority remain separate boundaries.
+- Discord provides the first authenticated conversation surface. The current outbound webhook
+  health projection is useful infrastructure but is not the Sir Loke bot. A full UI remains later.
 - Crypto product work is out of current scope. Provider-neutral support for
   continuous-session instruments may remain where it costs no product focus.
 - Live operation is the only current product path. Replay and backtesting are out
@@ -45,10 +63,12 @@ product-specific configuration, validation, analytics, persistence, signals,
 and operator projections when duplicating those concerns inside Nautilus would
 reduce clarity or correctness. Document meaningful ownership decisions.
 
-The live market-data runtime is centered on a NautilusTrader `LiveNode`.
-Interactive Brokers access remains manual, explicitly confirmed, data-only, and
-read-only. Do not add order routing until a separately reviewed execution and
-risk stage.
+The live runtime is centered on a NautilusTrader `LiveNode`. The implemented Interactive Brokers
+connection remains manual, explicitly confirmed, paper, market-data-only, and read-only. The
+first-version product now requires a separately reviewed broker-observation path for account,
+order, fill, and position facts. Evaluate NautilusTrader's native execution client,
+reconciliation, cache, and events before custom IB access, while exposing no order action to Sir
+Loke. Do not add order routing until a separately reviewed future execution and risk stage.
 
 Maintain these invariants:
 
@@ -64,6 +84,8 @@ Maintain these invariants:
 - no fixed one-active-instrument limit on granular observation
 - analytics independent of console, Discord, WebSocket, and UI transports
 - strategy or presentation failure must not stop ingestion
+- exact broker account/environment identity and honest reconciliation on every trade observation
+- no order-action contract reachable from the v1 agent, Discord, policy, or observation surfaces
 
 ## Configuration And Optimization Principle
 
@@ -108,17 +130,18 @@ Authoritative source data, derived evidence, and inferred evidence must remain
 distinguishable. Never represent inferred order flow as exchange-provided truth
 or fabricate historical delta from histogram data.
 
-Analytics are admitted only through current evidence and architecture review.
-The intended intelligence path is deterministic measurement, typed analytical
-entities, semantic observations and interpretations, multidimensional rolling
-state, options context, narrow ML scores, and an advisory AI observer.
+Analytics are admitted only through current evidence and architecture review. The intended
+intelligence path is deterministic measurement, typed analytical entities, semantic observations
+and interpretations, multidimensional rolling state, options context, bounded broker facts,
+policy state, and Sir Loke's evidence-cited advisory synthesis.
 
-ML may later rank versioned deterministic evidence. AI may synthesize evidence,
-surface contradictions, suggest an options expression with triggers and
-invalidation, and request policy-approved changes to observation focus,
-historical evidence, option snapshots, or analytical capabilities. It acts
-through typed intents and deterministic policy; it may not connect to IB,
-submit orders, invent evidence, or bypass explicit resource and risk controls.
+ML may later rank versioned deterministic evidence. Sir Loke may synthesize evidence, surface
+contradictions, suggest an options expression with triggers and invalidation, monitor admitted
+broker observations, mentor the trader, apply configured advisory interventions, and request
+policy-approved changes to observation focus, historical evidence, option snapshots, or analytical
+capabilities. It acts through typed intents and deterministic policy; it may not connect to IB
+directly, submit or alter orders, invent evidence, rewrite the original thesis, or bypass explicit
+resource and risk controls.
 
 ## Quality And Validation
 

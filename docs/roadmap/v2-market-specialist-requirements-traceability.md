@@ -2,9 +2,11 @@
 
 ## Purpose
 
-This file maps the accepted market-analysis specialist brief to the implementation sequence. It is
-an audit aid, not a substitute for metric and event contracts. A row marked planned has no runtime
-claim behind it yet.
+This historical trace maps the accepted market-analysis specialist brief to its Stage 9
+implementation scopes. It is an audit aid, not the current product sequence or a substitute for
+metric and event contracts. Use the [current-status ledger](../current-status.md) for active
+runtime behavior and the [Sir Loke blueprint](v2-market-events-live-agent-plan.md) for current
+delivery priority.
 
 ## Cross-Cutting Requirements
 
@@ -25,20 +27,20 @@ claim behind it yet.
 
 ## Measurement And Event Families
 
-| Specialist family | First implementation location | Required evidence | Current status |
+| Specialist family | First implementation location | Required evidence | Evidence disposition at 2026-09-05 |
 |---|---|---|---|
-| Quote quality and liquidity | Stage 9A quote metrics | Native bid/ask plus evidence health | Implemented |
-| Completed OHLCV, return, true range | Stage 9C Slices 1-2 | Native/aggregated completed bars and bounded history | Enabled and live-accepted |
-| Session range and location | Stage 9C Slice 3 | Session state plus completed bars | Implemented and locally accepted |
-| Prior-session references and overnight gap | Stage 9C Slice 3, durable summary in Stage 9D | Purpose-specific calendar-window dependencies | Implemented and locally accepted |
-| Opening range and extensions | Stage 9C Slice 4 | Calendar-relative intraday dependency | Implemented and locally accepted |
-| Power-hour evidence | Stage 9C Slice 4, durable summary in Stage 9D | Authoritative close-relative window | Implemented and locally accepted |
+| Quote quality and liquidity | Stage 9A quote metrics | Native bid/ask plus evidence health | Code and historical acceptance exist; disabled in active V3 profile |
+| Completed OHLCV, return, true range | Stage 9C Slices 1-2 | Native/aggregated completed bars and bounded history | Predecessor accepted then disabled; V3 replacement incomplete and inactive |
+| Session range and location | Stage 9C Slice 3 | Session state plus completed bars | Predecessor accepted then disabled; V3 replacement incomplete |
+| Prior-session references and overnight gap | Stage 9C Slice 3, durable summary in Stage 9D | Purpose-specific calendar-window dependencies | Predecessor accepted then disabled; durability remains incomplete |
+| Opening range and extensions | Stage 9C Slice 4 | Calendar-relative intraday dependency | Predecessor accepted then disabled; V3 replacement incomplete |
+| Power-hour evidence | Stage 9C Slice 4, durable summary in Stage 9D | Authoritative close-relative window | Predecessor accepted then disabled; durability remains incomplete |
 | VWAP where volume is meaningful | Stage 9D Group 1 prerequisite/reference state | Intraday price/volume with supported-volume profile | Planned in approved Stage 9D scope |
-| Realized volatility/range | Stage 9C Slice 5 | Purpose-specific completed bars | Numerical inputs implemented for local review |
-| Directional efficiency and compression | Stage 9C Slice 5 inputs; Stage 9D Groups 2-3 state | Bounded returns/ranges plus signed directional prerequisites | Numerical inputs implemented; complete baseline state approved for Stage 9D |
-| Objective session/reference levels and gaps | Stage 9D Group 1 | Purpose-specific session/window evidence | Approved Stage 9D scope |
-| Direction, trend, rotation, volatility, compression, expansion | Stage 9D Groups 2-3 | Versioned multi-horizon numerical evidence | Approved Stage 9D scope |
-| Swings, FVGs, and derived zones | Stage 9D Group 4 | Purpose-specific completed-bar geometry | Approved Stage 9D scope |
+| Realized volatility/range | Stage 9C Slice 5 | Purpose-specific completed bars | Predecessor numerical inputs accepted; active V3 replacement incomplete |
+| Directional efficiency and compression | Stage 9C Slice 5 inputs; Stage 9D Groups 2-3 state | Bounded returns/ranges plus signed directional prerequisites | Pure code/evidence exists; disabled in active V3 profile |
+| Objective session/reference levels and gaps | Stage 9D Group 1 | Purpose-specific session/window evidence | Pure/runtime code and historical evidence exist; disabled in active V3 profile |
+| Direction, trend, rotation, volatility, compression, expansion | Stage 9D Groups 2-3 | Versioned multi-horizon numerical evidence | Partial pure/runtime implementation; disabled in active V3 profile |
+| Swings, FVGs, and derived zones | Stage 9D Group 4 | Purpose-specific completed-bar geometry | Pure/runtime code exists; disabled in active V3 profile |
 | Inferred bar-volume distribution, POC/value area, HVN/LVN | Stage 9D Group 5 | Completed OHLCV where volume is supported | Approved with explicit `INFERRED_FROM_BARS` fidelity |
 | Observed trade-at-price profile nodes | Richer analytics after an approved trade-at-price source | Observed trades at price | Deferred; must remain separate from bar inference |
 | Effort versus price response | Richer analytics | Trades/order flow where available; explicitly named proxies otherwise | Planned |
@@ -46,9 +48,9 @@ claim behind it yet.
 | Options affordability, liquidity, Greeks, expected move | Bounded options-data proof and later options intelligence | Fresh executable option quotes and chain evidence | Planned |
 | SPXW GTH underlying-reference quality | Options/cross-instrument stage | Explicit time-aligned ES or other proxy with fidelity | Planned |
 | Approach/test/accept/reject/hold/fail/target/invalidate | Semantic event and lifecycle stages | Stable entities plus reviewed measurement transitions | Planned |
-| Ranked concurrent 0DTE opportunities | Live advisory agent | Complete evidence graph and policy-authorized option discovery | Planned |
+| Ranked concurrent 0DTE opportunities | Sir Loke | Complete evidence graph and policy-authorized option discovery | Accepted product requirement; unimplemented |
 
-## Slice 2 Gate
+## Historical Stage 9C Slice 2 Gate
 
 Slice 2 may publish only completed-bar foundation metrics. It does not claim session structure,
 levels, trends, order flow, options intelligence, or trading signals. It passes only when:

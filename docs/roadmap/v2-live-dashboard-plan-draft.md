@@ -3,6 +3,10 @@
 **Status:** Draft for Markeitect and Kite review; no architecture, product, dependency, runtime,
 or delivery decision is approved by this document
 
+**Current disposition (2026-09-05):** Deferred beyond
+[`Sir Loke v1`](../product/sir-loke-v1.md). Retained as future visual-inspection design evidence;
+it is not part of the current product sequence and its embedded runtime snapshot may be stale.
+
 **Prepared:** 2026-08-24
 
 **Scope:** A local, read-only, desktop-first operator dashboard for inspecting canonical Markeitech

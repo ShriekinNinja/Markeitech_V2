@@ -1,7 +1,9 @@
 # V2 Interactive Brokers Setup
 
-This guide applies only to the active Markeitech V2 runtime. Retired commands and the former
-active/background instrument model are not part of this workflow.
+This guide applies to the currently implemented Markeitech V2 **market-data** runtime. Retired
+commands and the former active/background instrument model are not part of this workflow. The
+accepted future Sir Loke broker-observation boundary is described separately below; it is not
+implemented or authorized by the current run command.
 
 ## Authoritative References
 
@@ -24,7 +26,10 @@ Markeitech currently uses Interactive Brokers for market data only:
 - explicit connection confirmation token; and
 - no automated test or setup command that connects to IB.
 
-Execution requires a separately reviewed architecture and risk stage.
+The Sir Loke v1 product now requires future read-only observation of broker account, order, fill,
+and position facts, but no such client or actor exists in the current checkout. Observation must
+not be confused with order routing. Any submit, modify, cancel, replace, or close capability
+requires a separately reviewed future execution and risk program and is outside Sir Loke v1.
 
 ## User-Owned Requirements
 
@@ -54,6 +59,11 @@ The repository does not include account credentials or entitlements.
    Markeitech retain absolute Unix-nanosecond timestamps internally. Do not infer API behavior from
    the TWS chart display timezone. Recalibrate with one bounded connected request after a
    consequential TWS/Gateway, Nautilus adapter, or `ibapi` parser change.
+
+This checklist is accepted only for the implemented market-data client. Do not change to client ID
+`0`, enable automatic open-order download/binding, disable read-only mode, or add an execution
+client in an ordinary market-data run. Those settings may affect which manual TWS orders are
+visible or controllable and belong to the separately reviewed observation proof.
 
 Common IB defaults:
 
@@ -148,6 +158,46 @@ Inspect:
 
 Provider observations remain transient. PostgreSQL stores operational intent, status, health,
 request, retry, transition, and outcome evidence rather than raw quotes, trades, or bars.
+
+This run does not observe the paper account's orders, fills, positions, or P&L. A successful
+market-data run is not evidence that Sir Loke can detect a manually entered TWS trade.
+
+## Planned Sir Loke Broker-Observation Proof
+
+The first connected trade-observation acceptance will use Markeitect's Interactive Brokers paper
+account through TWS. Sir Loke's analysis and mentoring behavior is intended to be the same for
+paper and live accounts, while every broker fact retains a stable non-secret account identity or
+alias and an explicit paper/live environment.
+
+The proof must evaluate the exact pinned NautilusTrader capabilities before custom IB access:
+
+- `InteractiveBrokersExecutionClientConfig` and its factory;
+- live execution-engine reconciliation and external-order settings;
+- native cache account/order/position state;
+- typed order and position events/callbacks; and
+- native execution/position reports.
+
+The proof is observation-only. It must establish event coverage and identity for manually entered
+orders, partial fills, cancel/replace, scale changes, manual closure, duplicates, reconnect, and
+reconciliation without submitting an order or silently taking control of a manual TWS order.
+
+Interactive Brokers documents client ID `0` binding for manual TWS orders, which can also make
+orders modifiable through the API. IB documentation has differed on whether “Read-Only API” blocks
+only changes or also limits order information. Therefore no client ID, binding mode, open-order
+download setting, or read-only combination is accepted for this product use until the bounded
+paper proof measures it.
+
+Relevant provider references:
+
+- [TWS API initial setup](https://interactivebrokers.github.io/tws-api/initial_setup.html)
+- [TWS API open orders](https://interactivebrokers.github.io/tws-api/open_orders.html)
+- [TWS API modifying orders](https://interactivebrokers.github.io/tws-api/modifying_orders.html)
+- [Current IBKR API settings](https://ibkrcampus.com/docs/tws-api/protobuf/api-settings-config)
+
+The proof needs separate explicit authorization for its connected run. It must use dedicated local
+configuration outside Git, record the exact TWS instance/account environment/client ID/settings,
+and stop on any unexpected order-control behavior. Passing paper acceptance does not authorize a
+live-money connection.
 
 ## Common Failures
 

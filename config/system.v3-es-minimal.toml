@@ -3,13 +3,13 @@
 # ENABLED SURFACE:
 # - one explicit instrument: ESU6.CME
 # - one acquisition capability: watchlist_last
-# - one direct five-minute historical completed-bar foundation with its five-second live input
-# - one passive visual_debug_capture projection selecting 60 historical and zero live-source bars
-# - mandatory control, calendar, evidence-health, acquisition, and persistence infrastructure
+# - one temporary current-state-gated five-bar historical probe
+# - mandatory control, calendar, evidence-health, historical-planning, acquisition, and persistence
+#   infrastructure
 #
 # DISABLED SURFACE:
-# - quote metrics, session references, analytical windows, rolling calculations, and entity analysis
-# - Discord, telemetry, and probes
+# - the completed-bar foundation, quote/direct/session/window/rolling metrics, and entity analysis
+# - Visual Debug, Discord, runtime-resource telemetry, broker observation, and Sir Loke
 #
 # Values inside disabled sections are schema-required inert placeholders. They are not accepted
 # analytical defaults and must be reviewed before their owning engine is enabled.

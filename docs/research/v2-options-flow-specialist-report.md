@@ -1290,11 +1290,12 @@ publish immutable batches through Nautilus and audit lifecycle after the contrac
 
 - `markeitech.md` — current charter, evidence/configuration/persistence invariants.
 - `docs/README.md` — documentation authority order.
-- `docs/current-status.md` — implemented Stage 9A and active Stage 9B status/boundaries.
+- `docs/current-status.md` — current implemented runtime surface, inactive/replacement work, and
+  validation debt.
+- `docs/product/sir-loke-v1.md` — current first-version product, trade-expression, broker-observation,
+  evidence, and advisory boundaries.
 - `docs/roadmap/v2-market-events-live-agent-plan.md` — product topology, plural opportunity model,
-  options/persistence/event/agent stages.
-- `docs/roadmap/v2-first-market-intelligence-coding-sequence.md` — Stage 9 order and bounded options
-  proof.
+  bounded options evidence, persistence, event, trade, and Sir Loke delivery gates.
 - `docs/market-intelligence-request-catalog.md` — complete request/metric/entity/event vocabulary.
 - `docs/architecture/v2-historical-dependency-execution.md` — Stage 9B transient history,
   deduplication, readiness, and PostgreSQL boundary.

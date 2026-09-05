@@ -160,12 +160,13 @@ governance, data-quality/lineage, market-structure, market-microstructure/order-
 event-driven-architecture, and statistical-learning/optimization advisors to use `gpt-5.6-sol`
 with `xhigh` reasoning for the desired-runtime gap review. The other twelve advisor settings are
 unchanged. The source validator, 20 focused validator tests, generic plugin validation, reinstall,
-and source-to-cache comparison pass. A fresh task exposed all eight exact role settings, completed
-all eight read-only consultations through the approved dependency graph, and produced the
-informative council discovery record at
-[`docs/notes/desired-arch-council-review-report.md`](../notes/desired-arch-council-review-report.md).
-That report is a proposal source, not accepted V2 architecture, a roadmap, implementation approval,
-or general council acceptance.
+and source-to-cache comparison pass. A fresh task exposed all eight exact role settings and
+completed all eight read-only consultations through the approved dependency graph. The resulting
+desired-runtime discovery report was informative, not accepted architecture or implementation
+approval. Its valid product conclusions were consolidated into the
+[Sir Loke v1 product definition](../product/sir-loke-v1.md) and
+[delivery blueprint](../roadmap/v2-market-events-live-agent-plan.md) on 2026-09-05; the superseded
+working report remains available in Git history rather than the active documentation tree.
 
 One ordinary governance selection was observed on older build `...124814`; delegated execution
 failed. Architecture, governance, and security roles returned consultations during the Phase 1

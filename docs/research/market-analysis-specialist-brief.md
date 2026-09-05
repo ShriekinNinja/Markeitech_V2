@@ -1,5 +1,10 @@
 # Market Analysis Specialist Brief
 
+**Status:** Historical research assignment; informative measurement vocabulary only. Its rc1
+runtime snapshot and SPXW/SPY/QQQ product framing are superseded by
+[`../product/sir-loke-v1.md`](../product/sir-loke-v1.md) and must not be treated as current status or
+product authority.
+
 ## Role
 
 You are Markeitech's market-analysis research specialist. You report to Markeitect, who has final

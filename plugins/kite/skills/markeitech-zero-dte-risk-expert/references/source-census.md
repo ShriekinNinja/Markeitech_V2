@@ -11,8 +11,8 @@ for every review.
   permissions.
 - `docs/roadmap/v2-market-events-live-agent-plan.md`: accepted Options Intelligence ownership,
   opportunity/expression separation, bounded options proof, candidate evidence, and advisory limit.
-- `docs/roadmap/v2-first-market-intelligence-coding-sequence.md`: configurable SPXW/SPY/QQQ seed
-  universe, long-option ask comparison, candidate-quality fields, settlement, and reference state.
+- `docs/product/sir-loke-v1.md`: first-version SPXW/QQQ scope, recommendation, trade episode,
+  monitoring, governance, account-observation, and no-execution boundary.
 - `docs/market-intelligence-request-catalog.md`: requested quote, Greek, IV, liquidity, expiry,
   degradation, and event evidence.
 - `docs/research/gamma-exposure-and-0dte-gex-maps.md`: research-only gamma/GEX limitations; it does

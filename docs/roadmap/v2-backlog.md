@@ -4,10 +4,37 @@ This checklist orders unfinished V2 work by operational consequence. It is a dec
 automatic implementation queue: Markeitect approves each batch, and priorities may change when new
 evidence appears.
 
-## Priority 0: Critical Runtime Safety
+The canonical product order is the
+[Sir Loke v1 delivery blueprint](v2-market-events-live-agent-plan.md). This backlog records debt and
+follow-up work; it does not maintain a second product roadmap.
 
-These items can freeze the runtime, corrupt its truth claims, or stop unrelated event-driven work.
-They block Stage 9B.
+## Sir Loke V1 Product Gates
+
+- [ ] Consolidate the accepted Sir Loke v1 product direction, current status, and delivery path;
+      remove superseded working requirements and the duplicate coding sequence from the active
+      documentation tree. Prepared in the current documentation PR; complete only after review and
+      merge.
+- [ ] Prove the native NautilusTrader/IB read-only TWS observation envelope with offline fixtures
+      and one separately authorized paper-account acceptance. No order action.
+- [ ] Define canonical broker observation, recommendation linkage, trade episode, trader plan,
+      advisory intervention, acknowledgement, cooldown, conversation, and report contracts.
+- [ ] Approve the persistence, redaction, retention, restoration, and reconciliation policy for
+      the new durable product records.
+- [ ] Implement an allowlisted private two-way Discord bot transport with bounded failure and
+      reconnection behavior.
+- [ ] Complete the minimum V3 measurement, semantic-event, SPXW/QQQ options, and selected
+      cross-instrument evidence corridor required for a named recommendation or abstention.
+- [ ] Implement the bounded Sir Loke read model, model boundary, read-only tools, citations,
+      structured decisions, abstention, monitoring, mentoring, intervention explanation, and
+      after-trade reporting.
+- [ ] Integrate the four live paths and prove that no Sir Loke/Discord/policy/observation route can
+      reach an order method.
+- [ ] Complete the separately authorized end-to-end IB paper/TWS acceptance story.
+
+## Completed Priority 0: Historical Runtime Safety Gate
+
+These items could freeze the runtime, corrupt its truth claims, or stop unrelated event-driven
+work. They previously blocked Stage 9B and are retained as completed audit history.
 
 - [x] Make operational-persistence admission non-blocking so PostgreSQL latency or a saturated
       bounded queue cannot freeze the Nautilus event loop.
@@ -23,10 +50,11 @@ They block Stage 9B.
       2026-08-17 mega-clean boot stored all 490 accepted records with zero retries, failures,
       rejections, pending records, sequence gaps, or duplicates.
 
-## Priority 1: Reliability Before Unattended Intelligence
+## Priority 1: Reliability Of Used Sir Loke Paths
 
-These items do not block the first deterministic market-intelligence slices, but they must close
-before an unattended advisory agent can be trusted.
+These items are not a blanket prerequisite for every Sir Loke implementation step. Each item must
+close or receive an explicit bounded acceptance before its exact dependency can contribute to a
+live recommendation, intervention, broker observation, or report.
 
 - [ ] Add provider-subscription retry and recovery ownership after an initial acquisition failure;
       retries must be event/timer driven and must not block unrelated streams.
@@ -169,56 +197,17 @@ provider-neutral contract are documented in
 - [ ] Explicitly reject claims of certain dealer positioning, guaranteed pin/support/resistance,
       deterministic hedging flow, or causal market impact from GEX alone.
 
-## Product Sequence
+## Historical Stage Mapping
 
-- [x] **Stage 9A:** session/calendar ownership and evidence-health truth.
-- [x] **Critical hardening gate:** live-accept Priority 0 persistence behavior.
-- [x] **Stage 9B:** historical dependency execution. Live-accepted 2026-08-17 with one shared
-      provider request, two independent consumers/readiness results, continuing unrelated runtime
-      activity, and lifecycle-only PostgreSQL persistence.
-- [x] **Stage 9C:** baseline deterministic metric contracts. Live-accepted 2026-08-19 with shared
-      native quote acquisition, evidence-qualified bounded publication, honest closed-session
-      nulls, exact metric/evidence counter reconciliation, no calculation failures, and complete
-      operational/system-health persistence reconciliation.
-- [x] **Stage 9C session-measurement extension:** complete the accepted baseline with
-      per-measurement resolution dependencies and normalized completed-bar inputs;
-      session/prior-session, overnight/gap, opening-range, power-hour, volatility,
-      directional-efficiency, and compression inputs before entity design. No universal base
-      timeframe or automatic resolution pyramid is permitted. Follow the reviewed plan in
-      [`v2-stage-9c-session-measurements-plan.md`](v2-stage-9c-session-measurements-plan.md).
-      Slices 1-2 are enabled and live-accepted. Slice 3 session references are accepted at
-      `8696acf`, Slice 4 adds opening-range and power-hour measurements, and Slice 5 closes the stage
-      at `116657b` with configuration-owned one-, five-, and fifteen-minute rolling families,
-      bounded recent and phase-matched baselines, and no semantic classifications. Extended RTH
-      acceptance on 2026-08-21 produced 307,296 rolling values with zero calculation failures and
-      reconciled all 32,389 operational persistence writes.
-- [x] **Runtime resource evidence gate:** live-accept process, host, disk, and public Nautilus cache
-      telemetry plus warning/critical/recovery transitions with the Observatory off and cache
-      defaults unchanged. Reconcile PostgreSQL samples/transitions, Discord critical-only ping
-      behavior, and shutdown summaries before changing retention, cache backing, or selecting Redis.
-      Accepted at `248a999` after an Observatory-off connected run persisted all 15 resource
-      samples and one sustained warning transition, delivered all four eligible Discord messages,
-      kept system health `READY` until controlled shutdown, and reconciled all 726 PostgreSQL
-      records without retry, rejection, failure, or pending work. Cache counts and process RSS
-      remained bounded; no cache-policy or Redis change was justified.
-- [ ] **Stage 9D:** session entities, rolling state, and durable summaries. Slices 9D.1 through
-      9D.4C are approved, committed, and connected-accepted. The 2026-08-24 London/ETH run
-      projected 645 metrics into 645 valid revisions, completed 2,560 reconciliation cycles, kept
-      resources bounded, reconciled 2,261 PostgreSQL writes, and shut down cleanly. The narrow 9D.3
-      opening-range boundary transition is explicitly deferred and does not block the 9D.5
-      confirmed-swing, per-horizon pivot-structure, FVG, and zone review gate.
-- [ ] **Stage 9E:** first quiet semantic market events.
-- [ ] **Stage 9F:** bounded 0DTE options-data proof.
-- [ ] **Stage 9G:** cross-instrument relationship state.
-- [ ] **Stage 9H:** richer approved analytics.
-- [ ] **Mandatory reliability gate before 9I:** prove bounded provider-subscription recovery,
-      connection loss/recovery, overflow containment, retry/lifecycle tests, and connected
-      reconciliation before any live model access or agent-directed runtime intent.
-- [ ] **Stage 9I:** Sir Loke agent read model, policy, and typed tools.
-- [ ] **Stage 9J:** concurrent advisory opportunity and expression lifecycle.
-- [ ] **Stage 9K:** evaluation and ML readiness. Approve historical acquisition, reproducible
-      features, labels, as-of/revision semantics, licensing/retention, dataset identity, and
-      leakage-safe temporal evaluation before model-training implementation.
+Stages 9A-9C and runtime-resource hardening preserve completed foundation evidence. Stage 9D and
+V3-03 preserve incomplete deterministic entity/measurement replacement work. Stages 9E-9J map
+into the minimum evidence, read-model, and opportunity portions of the Sir Loke gates. Stage 9K's
+full ML/data program remains later.
+
+These stage labels remain useful technical references but no longer form a second linear product
+queue. Follow the canonical roadmap's
+[reuse table](v2-market-events-live-agent-plan.md#reuse-of-existing-stage-work) and the
+[current-status ledger](../current-status.md) for what is active.
 
 ## Documentation Reliability
 
@@ -226,6 +215,6 @@ provider-neutral contract are documented in
       claims, and canonical Stage 9A-9K numbering. Documentation automation reports drift; it does
       not decide product status or rewrite accepted documents.
 
-The detailed product design remains in
-[`v2-first-market-intelligence-coding-sequence.md`](v2-first-market-intelligence-coding-sequence.md)
-and [`v2-market-events-live-agent-plan.md`](v2-market-events-live-agent-plan.md).
+The canonical product and delivery design remains in
+[`../product/sir-loke-v1.md`](../product/sir-loke-v1.md) and
+[`v2-market-events-live-agent-plan.md`](v2-market-events-live-agent-plan.md).

@@ -1,9 +1,11 @@
 # V3-03 Session Metrics Ownership Split Implementation Plan
 
 **Status:** Planning decisions accepted on 2026-09-01. Slices 1 and 2 are reviewed and merged;
-Slice 3 is the next V3-03 slice and has not started. A separate NautilusTrader rc4 upgrade PR
-precedes it, as requested on 2026-09-02. Each remaining implementation batch and connected run
-still requires its own explicit authorization.
+Slices 3-9 have not started. The separate NautilusTrader rc4 upgrade was merged through PR 17.
+Slice 3 remains the next slice **inside V3-03**, but V3-03 is no longer the automatic next product
+batch after the 2026-09-05 Sir Loke v1 direction reset. Resume only when a Sir Loke evidence need or
+separate Markeitect decision authorizes it. Each implementation batch and connected run still
+requires its own explicit authorization.
 
 **Planning branch:** `v3-03-session-metrics-split-plan`
 
@@ -24,16 +26,16 @@ the two root-migration PRs. The original planning baseline above is historical c
 from which to resume. Current implementation evidence is recorded in
 [`current-status.md`](../current-status.md).
 
-**Prerequisite PR:** the separate NautilusTrader `2.0.0rc3` to `2.0.0rc4` upgrade is implemented
-and offline-verified; its evidence and connected-acceptance limits are recorded in
-[`current-status.md`](../current-status.md). Complete its required CI and Markeitect review/merge
-before resuming Slice 3; it does not expand or reorder the V3-03 slices below.
+**Completed prerequisite:** the separate NautilusTrader `2.0.0rc3` to `2.0.0rc4` upgrade was
+implemented, reviewed, and merged through PR 17. Its evidence and connected-acceptance limits are
+recorded in [`current-status.md`](../current-status.md). The prerequisite no longer blocks Slice 3;
+product priority and fresh slice authorization do.
 
 | Slice | Current state |
 |---|---|
 | 1 — identities, contracts, manifest | Reviewed and merged; implementation `4631df5`. Public v2 contracts remain inactive in tracked runtime profiles. |
 | 2 — completed-bar foundation | Reviewed and merged; final implementation `eb3995b`, stage merge `e8f49e3`. Private actor and state pass disconnected fixtures; no production composition or activation. |
-| 3 — direct completed-bar metrics | **Next V3-03 slice, after the rc4 upgrade PR; not implemented.** Add only the disabled direct-metrics owner and its focused integration/parity fixtures. |
+| 3 — direct completed-bar metrics | **Next slice only if V3-03 is resumed; not implemented.** Add only the disabled direct-metrics owner and its focused integration/parity fixtures. |
 | 4 — calendar-dependent numerical owners | Not started; session references and analytical windows. |
 | 5 — rolling measurements | Not started; includes the accepted predecessor-aware ATR and zero-median corrections. |
 | 6 — passive Visual Debug | Not started; remains mandatory within V3-03, not optional follow-up work. |
@@ -42,8 +44,8 @@ before resuming Slice 3; it does not expand or reorder the V3-03 slices below.
 | 9 — bounded connected acceptance | Not started; each exact run needs separate authorization. |
 
 The agent resuming V3-03 must read the repository entrypoint and required authorities, then
-implement [Slice 3](#slice-3-direct-completed-bar-metrics-owner) only after the rc4 upgrade PR is
-merged and Markeitect authorizes the slice:
+implement [Slice 3](#slice-3-direct-completed-bar-metrics-owner) only after Markeitect authorizes
+the slice and confirms it is the required portion of the current Sir Loke evidence corridor:
 
 - Start from the approved current integration checkpoint on a new slice branch, not an old
   nested-layout worktree. Let Markeitect approve and merge the handoff PR before beginning a

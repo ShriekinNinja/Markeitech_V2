@@ -380,8 +380,8 @@ Markeitech does not support requests to:
 
 - [`research/market-analysis-specialist-brief.md`](research/market-analysis-specialist-brief.md)
 - [`research/semantic-events-ai-options-baseline.md`](research/semantic-events-ai-options-baseline.md)
+- [`product/sir-loke-v1.md`](product/sir-loke-v1.md)
 - [`roadmap/v2-market-events-live-agent-plan.md`](roadmap/v2-market-events-live-agent-plan.md)
-- [`roadmap/v2-first-market-intelligence-coding-sequence.md`](roadmap/v2-first-market-intelligence-coding-sequence.md)
 
 When those documents evolve, this catalog must be reviewed so future implementation does not
 silently narrow the product destination.

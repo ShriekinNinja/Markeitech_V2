@@ -1,23 +1,26 @@
 # Markeitech Documentation
 
-This index separates current authority, implemented architecture, future intent, operations,
-research, working notes, and historical decision records.
+This index separates product authority, current implementation, accepted delivery direction,
+implemented architecture, operations, research, and historical technical records. Superseded
+working requirements and duplicate roadmaps are removed rather than left beside current authority.
 
 ## Authority Order
 
 When documents disagree, use this order:
 
 1. [`markeitech.md`](../markeitech.md) defines current product and engineering invariants.
-2. [`current-status.md`](current-status.md) records implemented behavior, current work, and
+2. [`product/sir-loke-v1.md`](product/sir-loke-v1.md) defines the accepted first useful product.
+3. [`current-status.md`](current-status.md) records implemented behavior, current work, and
    validation debt.
-3. Accepted architecture documents govern their implemented subject boundaries.
-4. The canonical [Stage 9A-9K blueprint](roadmap/v2-market-events-live-agent-plan.md) and accepted
-   stage plans govern future sequence within their approved scope.
-5. The [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md) preserves completed foundation
+4. The canonical [Sir Loke delivery blueprint](roadmap/v2-market-events-live-agent-plan.md) governs
+   the product delivery sequence and maps reusable Stage 9/V3 work into it.
+5. Accepted architecture and stage documents govern their bounded technical subjects; they do not
+   override the product contract or claim that planned behavior is implemented.
+6. The [V2 infrastructure plan](roadmap/v2-infrastructure-plan.md) preserves completed foundation
    gates; it is not the current progress ledger.
-6. Future roadmaps express future intent and may change through review.
-7. Operations documents describe how to run and inspect the system.
-8. Research, notes, and historical decision records are informative, not normative.
+7. Future roadmaps express future intent and may change through review.
+8. Operations documents describe how to run and inspect the system.
+9. Research, notes, drafts, and historical decision records are informative, not normative.
 
 Implementation and tests remain the final evidence when a descriptive document has not yet been
 updated. Correct the document rather than preserving an accidental disagreement.
@@ -25,6 +28,7 @@ updated. Correct the document rather than preserving an accidental disagreement.
 ## Current Guidance
 
 - [Project charter](../markeitech.md)
+- [Sir Loke v1 product definition](product/sir-loke-v1.md)
 - [Current status](current-status.md)
 - [Development guidelines](development-guidelines.md)
 - [Market intelligence request catalog](market-intelligence-request-catalog.md)
@@ -50,8 +54,7 @@ updated. Correct the document rather than preserving an accidental disagreement.
 ## Roadmaps And Plans
 
 - [V2 infrastructure foundation](roadmap/v2-infrastructure-plan.md)
-- [V2 market events and live-agent blueprint](roadmap/v2-market-events-live-agent-plan.md)
-- [First market-intelligence coding sequence](roadmap/v2-first-market-intelligence-coding-sequence.md)
+- [Sir Loke v1 delivery blueprint and reusable market-evidence plan](roadmap/v2-market-events-live-agent-plan.md)
 - [Market-specialist requirements traceability](roadmap/v2-market-specialist-requirements-traceability.md)
 - [Stage 9C session measurements](roadmap/v2-stage-9c-session-measurements-plan.md)
 - [Stage 9D entities and rolling state](roadmap/v2-stage-9d-entities-rolling-state-plan.md)
@@ -60,7 +63,8 @@ updated. Correct the document rather than preserving an accidental disagreement.
 - [V2 static watchlist handoff](roadmap/v2-static-watchlist-handoff.md)
 - [V2 dynamic watchlist](roadmap/v2-dynamic-watchlist-plan.md)
 - [V2 API documentation](roadmap/v2-api-documentation-plan.md)
-- [V2 live dashboard draft](roadmap/v2-live-dashboard-plan-draft.md)
+- [V2 live dashboard draft](roadmap/v2-live-dashboard-plan-draft.md) — deferred projection design,
+  not part of Sir Loke v1
 - [V2 backlog](roadmap/v2-backlog.md)
 - [V2 root promotion and V1 retirement](roadmap/v2-complete-codebase-migration-plan.md)
 
@@ -90,14 +94,13 @@ Research documents preserve sourced ideas, hypotheses, and unresolved questions.
 informative and do not define product behavior until an accepted decision or roadmap item promotes
 a tested result.
 
-## Notes
+## Historical Technical Review Records
 
-- [Desired runtime requirements](notes/desired-arch.md) — informative Markeitect requirements and
-  council input; not accepted architecture or a roadmap.
-- [Desired-runtime council review handoff](notes/desired-arch-council-review-handoff.md) — completed
-  historical process record; not an active instruction.
-- [Desired-runtime council review report](notes/desired-arch-council-review-report.md) — informative
-  discovery record and proposal source.
+Working product requirements, the desired-runtime council handoff/report, and the duplicate first
+market-intelligence sequence were consolidated into the Sir Loke product definition, current
+status, and canonical delivery blueprint on 2026-09-05, then removed from the active tree. Their
+original text remains recoverable through Git history.
+
 - [V3-01 canonical calendar authority review](notes/v3-01-canonical-calendar-authority-review.md)
 - [V3-02 session-state actor role review](notes/v3-02-session-state-actor-role-review.md)
 - [V3-03 session-metrics actor split review](notes/v3-03-session-metrics-actor-split-review.md)
@@ -105,5 +108,7 @@ a tested result.
 - [V3 visual-debug review contract](notes/v3-visual-debug-review-contract.md)
 - [V3 ES visual-debug handoff](notes/v3-es-visual-debug-review-handoff.md)
 
-Historical tracked source removed from the active tree remains recoverable through Git history and
-the annotated migration tags. It is not current documentation authority.
+These V3 records preserve bounded design/review evidence; current status and accepted stage plans
+still determine whether their conclusions remain active. Historical tracked source removed from
+the active tree remains recoverable through Git history and the annotated migration tags. It is
+not current documentation authority.

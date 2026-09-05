@@ -8,9 +8,10 @@ rights to use or distribute the project.
 Read, in order:
 
 1. `markeitech.md`
-2. `docs/current-status.md`
-3. `docs/development-guidelines.md`
-4. the accepted architecture and stage plan relevant to the change
+2. `docs/product/sir-loke-v1.md`
+3. `docs/current-status.md`
+4. `docs/development-guidelines.md`
+5. the accepted architecture and stage plan relevant to the change
 
 Markeitect has final product and trading authority. Architecture and implementation decisions are
 discussed before code changes.

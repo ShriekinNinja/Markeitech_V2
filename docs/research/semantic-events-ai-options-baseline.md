@@ -1,5 +1,11 @@
 # Semantic Events, AI Observer, And Options Intelligence Baseline
 
+**Status:** Historical conceptual research. Its former delivery sequence and “AI observer” product
+framing are superseded by the [Sir Loke v1 product definition](../product/sir-loke-v1.md) and
+[delivery blueprint](../roadmap/v2-market-events-live-agent-plan.md). Retain its vocabulary only as
+informative design input; it is not current product, status, architecture, or implementation
+authority.
+
 ## Purpose
 
 This document consolidates the current design discussion for Kite / Codex.
@@ -14,14 +20,14 @@ This research describes the intended product destination: deterministic market o
 semantic events, events update multidimensional rolling state, options context joins that state,
 and an advisory AI observer produces evidence-based 0DTE suggestions.
 
-It does not change the approved V2 sequence:
+At the time of research, it did not change the then-approved V2 sequence:
 
 1. Stages 1 through 9 establish the functional live runtime core.
 2. Stages 10 and 11 harden observability, tests, and dependency upgrades.
 3. Analytical entities, detectors, semantic events, rolling state, options intelligence, ML, and
    the AI observer follow as separately approved product stages.
 
-Current constraints:
+The durable constraints from that research were:
 
 - replay and backtesting are out of scope until Markeitect explicitly reopens them;
 - raw ticks, quotes, bars, books, and option chains are not durably retained merely for possible

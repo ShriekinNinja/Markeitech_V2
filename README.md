@@ -8,12 +8,16 @@
 
 > "Build only what the evidence can defend; leave the rest configurable." - Kite
 
-Markeitech is a live-first market-intelligence and decision-support system for discretionary
-index trading. V2 runs a read-only NautilusTrader `LiveNode` against Interactive Brokers and is
-building an adaptive, multi-instrument evidence stream for deterministic measurements, durable
-state, semantic market events, options intelligence, and an advisory AI agent.
+Markeitech is a live-first market-intelligence and trading-discipline system for discretionary
+index trading. Its first product is **Sir Loke**, a local private Discord trading companion,
+mentor, and configurable advisory governor backed by deterministic market, options, broker, policy,
+and audit evidence. The current V2 runtime is the read-only NautilusTrader foundation for that
+product.
 
-The runtime does not place orders. Automated execution is intentionally absent.
+Sir Loke v1 will recommend qualified SPXW/QQQ 0DTE trades, observe paper-account trades entered
+through TWS, monitor their thesis and evidence, challenge the trader firmly, and produce after-trade
+reports. That experience is accepted product direction but is not implemented yet. The runtime
+does not place orders; automated execution is intentionally absent.
 
 ## Project Credits
 
@@ -26,22 +30,27 @@ The runtime does not place orders. Automated execution is intentionally absent.
 
 ## Current State
 
-The accepted V2 runtime includes:
+The implemented foundation includes:
 
 - NautilusTrader `2.0.0rc4` with a guarded Interactive Brokers paper-data connection
-  (rc4 is offline-verified; connected acceptance remains pending);
+  (the upgrade is merged and offline-verified; earlier connected evidence does not automatically
+  establish rc4 provider behavior);
 - actor-owned system control, static watchlist, and shared native acquisition;
 - session/calendar ownership and adaptive evidence-health contracts;
 - purpose-specific historical dependency execution;
-- deterministic quote, completed-bar, session, calendar-window, and rolling measurements;
+- substantial deterministic measurement/entity code and historical acceptance evidence, while the
+  active V3 profile keeps those owners disabled during the incomplete V3-03 replacement;
 - PostgreSQL operational audit, schema recovery, and compact evidence recency profiles;
-- Discord system-health projection;
+- optional outbound Discord system-health webhooks, not a two-way Sir Loke bot;
 - passive host/process/cache telemetry and sustained resource-health transitions; and
 - explicit supervision, bounded queues, deduplication, and failure isolation.
 
-V3-03 session metrics is active through merged Slice 2. Connected acceptance debt and the next
-review gate are tracked in [current status](docs/current-status.md). Only explicitly admitted V2
-analytics and trading semantics are active.
+The tracked V3 ES profile currently composes eight calendar, evidence, historical-planning,
+acquisition, probe, and persistence actors. V3-03 Slices 1-2 are merged but inactive; Slices 3-9
+are unimplemented. Broker trade observation, options intelligence, semantic events, Sir Loke,
+the conversational Discord bot, trade episodes, governance, and reports are absent. See
+[current status](docs/current-status.md) for the exact surface and
+[the Sir Loke v1 product definition](docs/product/sir-loke-v1.md) for the destination.
 
 ## Supported Development Environment
 
@@ -150,6 +159,7 @@ gets a new branch. See [CONTRIBUTING](CONTRIBUTING.md) and the
 Start with the [documentation map](docs/README.md), then read:
 
 - [project charter](markeitech.md)
+- [Sir Loke v1 product definition](docs/product/sir-loke-v1.md)
 - [current status](docs/current-status.md)
 - [development guidelines](docs/development-guidelines.md)
 - [developer setup](docs/operations/developer-setup.md)
