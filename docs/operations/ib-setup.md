@@ -119,7 +119,7 @@ fabricating readiness.
 With Docker Desktop running and local files configured:
 
 ```bash
-./scripts/check-env --with-ib
+.venv/bin/markeitech environment check --with-ib
 ```
 
 The doctor checks that the configured TCP endpoint is listening. It does not authenticate, request
@@ -128,8 +128,7 @@ market data, validate entitlements, or start Nautilus.
 Run offline checks before a connected acceptance:
 
 ```bash
-uv run ruff check src tests
-uv run pytest -q tests -m "not postgres"
+.venv/bin/markeitech verify all
 ```
 
 ## Connected Run
@@ -138,7 +137,8 @@ Run the guarded command directly or place it in a local, untracked PyCharm Shell
 
 ```bash
 docker compose --env-file .env -f compose.yaml up -d --wait postgres
-uv run markeitech-system config/system.local.toml \
+.venv/bin/markeitech system run \
+  --config config/system.local.toml \
   --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
 ```
 

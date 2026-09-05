@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-09-05
 
-**Implementation baseline inspected:** `master` at `06a675e`
+**Implementation baseline inspected:** `master` at `295cdb7`
 
 This page is the source of truth for what the active Markeitech checkout implements now. It is
 deliberately a current-state ledger, not an implementation diary. Completed design and acceptance
@@ -22,6 +22,7 @@ None of those future documents proves implementation.
 | First visible product | Sir Loke v1 is accepted product direction but unimplemented |
 | Provider | Interactive Brokers paper connection through TWS/IB Gateway for market data only |
 | Active tracked profile | One-instrument V3 ES operational/historical probe profile |
+| Operator CLI | Unified `.venv/bin/markeitech` command hierarchy is implemented |
 | Trade observation | Unimplemented; no execution client, account/order/fill/position owner, or trade lifecycle |
 | Discord | Outbound webhook health projection exists; inbound conversational bot does not |
 | Agent/model | Unimplemented; no live model, Sir Loke read model, conversation state, or agent tools |
@@ -31,16 +32,20 @@ None of those future documents proves implementation.
 
 ## Current Offline Verification
 
-On 2026-09-05, while preparing the documentation authority reset against the implementation
-baseline above:
+On 2026-09-05, after aligning the Sir Loke documentation consolidation with the unified Python CLI
+merge at `295cdb7`:
 
-- `uv run --locked --offline ruff check src tests scripts/sir-kite-pr.py` passed;
-- the focused V3 profile contract passed `2/2` tests;
-- the full non-PostgreSQL suite passed `649` tests with `2` PostgreSQL-marked tests deselected;
-- every local Markdown link target in current docs/plugin references resolved; and
+- an offline locked environment sync installed the merged CLI without changing the lockfile;
+- `.venv/bin/markeitech verify all` passed Ruff and `700` non-PostgreSQL tests, with `2`
+  PostgreSQL-marked tests deselected;
+- `.venv/bin/markeitech docs check` documented `261/261` selected public objects and matched all
+  `60` committed artifacts;
+- `.venv/bin/markeitech diagrams check` passed the manifest/source/configuration drift census and
+  `.venv/bin/markeitech diagrams test` passed all `31` tests;
+- all `252` local Markdown link targets across `155` tracked Markdown files resolved; and
 - `git diff --check` was clean.
 
-This verifies the offline code baseline and documentation consistency only. It does not establish
+These checks establish offline code and documentation consistency only. They do not establish
 PostgreSQL integration, provider behavior, a connected rc4 run, broker observation, Discord bot,
 model, Sir Loke, options, or live-money acceptance.
 
@@ -96,6 +101,21 @@ behavior.
   predecessor V2 profile.
 - Provider-subscription recovery, full connection-loss recovery, and several pacing/cancellation
   semantics remain documented reliability debt.
+
+### Unified operator CLI
+
+- PR 35 added one Python-owned `.venv/bin/markeitech` hierarchy for explicit system build/run,
+  static API-documentation and diagram operations, repository verification, and environment
+  checks. The legacy `markeitech-system` entry point delegates to the same runtime owner.
+- The command hierarchy owns invocation and verification ergonomics; it does not add product
+  behavior, a generic task runner, environment provisioning, Docker lifecycle, provider
+  connection, persistence mutation, GitHub publication, or connected acceptance.
+- `markeitech verify all` is offline and excludes the conspicuous `verify postgres` path, which
+  requires an explicitly configured disposable local database.
+- Connected system execution still requires the exact confirmation token and remains an
+  operator-authorized action.
+
+See [developer setup](operations/developer-setup.md) for the complete command contract.
 
 ### Calendar, evidence health, and historical acquisition
 

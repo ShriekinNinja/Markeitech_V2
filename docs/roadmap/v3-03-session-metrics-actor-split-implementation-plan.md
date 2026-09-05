@@ -68,8 +68,8 @@ the slice and confirms it is the required portion of the current Sir Loke eviden
   `test_metric_messages_v2.py`, `test_metric_producer_manifest.py`, and message-delivery fixtures
   as applicable. Prove exact predecessor dependence, partial-input degradation and recovery,
   unavailable/warmup outcomes, identity, revisions, series/family isolation, and fixture parity.
-- Run focused tests, `uv run --locked --offline ruff check src tests`,
-  `uv run --locked --offline pytest -q tests -m "not postgres"`, and `git diff --check`.
+- Run focused tests, `.venv/bin/markeitech verify all`, and `git diff --check`. The root command
+  owns the complete Ruff scope, including `scripts/sir-kite-pr.py`, and the non-PostgreSQL suite.
   Apply the existing conditional API-doc and diagram gates when their owned surfaces change.
   Commit and push the scoped implementation and open its PR under the
   [GitHub workflow](../operations/github-workflow.md). Stop for Markeitect's approval and merge;

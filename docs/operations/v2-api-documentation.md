@@ -7,7 +7,7 @@ architecture.
 
 ## Authority And Scope
 
-- `tools/api-docs/schema/public-surface.toml` is the versioned documentation denominator. Version 3
+- `tools/api-docs/schema/public-surface.toml` is the versioned documentation denominator. Version 5
   selects the literal `__all__` exports from `markeitech.system`, `markeitech.acquisition`, and
   `markeitech.intelligence`, plus the explicit operator entry point.
 - `tools/api-docs/schema/attribute-registry.toml` is the only authority for typed custom docstring
@@ -42,22 +42,31 @@ From the repository root:
 
 ```shell
 uv sync --project tools/api-docs --locked
-env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 \
-  PYTHONPATH=tools/api-docs/src TZ=UTC \
-  tools/api-docs/.venv/bin/python -m markeitech_api_docs validate
-env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 \
-  PYTHONPATH=tools/api-docs/src TZ=UTC \
-  tools/api-docs/.venv/bin/python -m markeitech_api_docs check
-env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 \
-  PYTHONPATH=tools/api-docs/src TZ=UTC \
-  tools/api-docs/.venv/bin/python -m markeitech_api_docs generate
+PYTHONPATH="$PWD/src" tools/api-docs/.venv/bin/python -P -m markeitech docs validate
+PYTHONPATH="$PWD/src" tools/api-docs/.venv/bin/python -P -m markeitech docs check
+PYTHONPATH="$PWD/src" tools/api-docs/.venv/bin/python -P -m markeitech docs generate
 ```
+
+This dependency-minimal form runs the unified Python CLI through the already-provisioned docs
+interpreter and does not require or synchronize the root runtime environment. A developer who has
+already run the root `uv sync --locked --dev` may use the shorter equivalent
+`.venv/bin/markeitech docs ...` form. Do not use `uv run` for either path: synchronization and
+package-index access must remain explicit provisioning operations that happen before the CLI.
 
 Do not invoke bare `mkdocs` or `mkdocstrings`. The wrapper fixes all paths, validates the complete
 installed distribution closure against `uv.lock` and enforces configuration allowlists, blocks
 imports/network/subprocesses while analyzing and
 rendering, verifies that inputs did not change, scans for protected data, writes indexes and hashes,
 and promotes only a complete artifact set.
+
+The root CLI dispatches each operation to the exact `tools/api-docs/.venv/bin/python` interpreter
+with absolute source binding, safe-path mode, UTC timezone, deterministic hash seed, unbuffered
+output, bytecode-disabled execution, and a fixed locale. The child receives only those controls and
+the executable `PATH`; caller secrets, runtime configuration, Python startup controls, proxies,
+and cloud or publication credentials are not inherited. The CLI validates that the imported tool
+CLI resolves to this tool's source tree before execution. It never provisions the tool. A missing
+or invalid environment fails non-zero and reports `uv sync --project tools/api-docs --locked` as
+the remediation.
 
 Before entering that constrained analysis/rendering environment, the wrapper runs bounded,
 read-only `git rev-parse` and scoped `git status` queries to bind the artifact to a commit and dirty
@@ -90,10 +99,13 @@ approved.
 Run the focused offline test suite with:
 
 ```shell
-env PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 \
-  PYTHONPATH=tools/api-docs/src TZ=UTC \
-  tools/api-docs/.venv/bin/python -m unittest discover -s tools/api-docs/tests -v
+PYTHONPATH="$PWD/src" tools/api-docs/.venv/bin/python -P -m markeitech docs test
 ```
+
+CI then verifies that this test command did not alter the committed artifact with scoped
+`git diff` and untracked-file checks before upload. That post-test cleanliness gate is deliberately
+kept visible in the workflow; `docs test` does not hide source-control policy inside the test
+runner.
 
 ## Docstring Contract
 

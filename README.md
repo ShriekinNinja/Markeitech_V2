@@ -59,7 +59,7 @@ The supported local path is:
 - macOS;
 - Python 3.13 managed by [uv](https://docs.astral.sh/uv/);
 - Docker Desktop with Docker Compose;
-- PyCharm, with terminal commands documented as the portable fallback;
+- PyCharm as an optional convenience over the authoritative terminal CLI;
 - TWS or IB Gateway connected to the user's own paper account; and
 - the user's own market-data entitlements and Discord webhook.
 
@@ -88,21 +88,21 @@ futures contracts, entitled instruments, and reviewed runtime policy.
 Start Docker Desktop, then run the setup doctor:
 
 ```bash
-./scripts/check-env
+.venv/bin/markeitech environment check
 ```
 
 Run offline verification:
 
 ```bash
-uv run ruff check src tests
-uv run pytest -q tests -m "not postgres"
+.venv/bin/markeitech verify all
 ```
 
 For the normal connected workflow, start Docker Desktop and run:
 
 ```bash
 docker compose --env-file .env -f compose.yaml up -d --wait postgres
-uv run markeitech-system config/system.local.toml \
+.venv/bin/markeitech system run \
+  --config config/system.local.toml \
   --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
 ```
 
@@ -140,7 +140,9 @@ files under `data/`.
 
 The V2 project is rooted directly in the repository; no nested project selector is required. The
 [root-promotion plan](docs/roadmap/v2-complete-codebase-migration-plan.md) records the migration and
-its recovery boundaries. `scripts/check-env` is the active setup doctor.
+its recovery boundaries. Run `.venv/bin/markeitech --help` for the authoritative runtime, static-doc,
+diagram, verification, and environment-check command hierarchy. The retained `markeitech-system`
+entry point is a backward-compatible runtime alias; it delegates to the same behavior owner.
 
 ## Making Changes
 

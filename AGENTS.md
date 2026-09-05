@@ -215,9 +215,10 @@ The V2 API documentation utility is an isolated, static source-analysis tool und
 - Write Google-style docstrings for intentionally public V2 objects. Use annotations as type
   authority; document meaning, units, lineage, side effects, failures, and abstention where they
   matter.
-- Do not run bare `mkdocs` or `mkdocstrings` commands. Provision with the locked tool project and
-  invoke only the first-party `markeitech_api_docs validate` or `generate` wrapper documented in
-  `docs/operations/v2-api-documentation.md`.
+- Do not run bare `mkdocs`, `mkdocstrings`, or the internal `markeitech_api_docs` module. Provision
+  the locked tool project, then invoke only the unified `markeitech docs validate`, `check`,
+  `generate`, or `test` hierarchy documented in `docs/operations/v2-api-documentation.md`. Use the
+  exact isolated-interpreter launch there when the root environment is not provisioned.
 - Generation must stay offline and static. It must not import Markeitech, inspect modules
   dynamically, resolve external inventories, connect services, read runtime configuration or
   secrets, or mutate runtime source.
