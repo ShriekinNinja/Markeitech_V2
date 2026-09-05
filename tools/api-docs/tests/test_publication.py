@@ -67,6 +67,7 @@ class PublicationSafetyTest(unittest.TestCase):
             source.write_text("VALUE = 1\n", encoding="utf-8")
             snapshot = SourceSnapshot(
                 commit="0" * 40,
+                input_signature=sha256_file(source),
                 state="clean",
                 dirty_path_count=0,
                 dirty_state_sha256=None,

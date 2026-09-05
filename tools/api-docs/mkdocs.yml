@@ -2,10 +2,13 @@ site_name: Markeitech V2 API
 site_description: Static, non-authoritative API documentation for Markeitech V2.
 docs_dir: docs
 strict: true
+site_url: https://shriekinninja.github.io/Markeitech_V2/
 
 theme:
-  name: readthedocs
-  highlightjs: false
+  name: material
+  font: false
+  palette:
+    - scheme: slate
 
 nav:
   - Overview: index.md

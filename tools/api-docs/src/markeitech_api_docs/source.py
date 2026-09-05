@@ -23,7 +23,7 @@ from markeitech_api_docs.models import (
 from markeitech_api_docs.registry import sha256_bytes, sha256_file
 
 INDEX_SCHEMA_ID = "markeitech-api-metadata-index"
-INDEX_SCHEMA_VERSION = 1
+INDEX_SCHEMA_VERSION = 2
 MAX_SOURCE_FILES = 1000
 MAX_SOURCE_BYTES = 100 * 1024 * 1024
 
@@ -232,6 +232,26 @@ def documentation_input_paths(repository_root: Path, tool_root: Path) -> tuple[P
     return unique
 
 
+def _build_source_input_signature(
+    files: tuple[Path, ...],
+) -> str:
+    identity = [
+        {
+            "path": path.as_posix(),
+            "size_bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        }
+        for path in files
+    ]
+    return sha256_bytes(
+        json.dumps(
+            tuple(sorted(identity, key=lambda item: str(item["path"]))),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    )
+
+
 def _git_output(repository_root: Path, *args: str) -> str:
     environment = {
         "PATH": os.environ.get("PATH", ""),
@@ -274,8 +294,12 @@ def capture_source_snapshot(repository_root: Path, tool_root: Path) -> SourceSna
         )
         for path in documentation_input_paths(repository_root, tool_root)
     )
+    input_signature = _build_source_input_signature(
+        tuple(repository_root / file.path for file in files)
+    )
     return SourceSnapshot(
         commit=commit,
+        input_signature=input_signature,
         state="dirty" if status_lines else "clean",
         dirty_path_count=len(status_lines),
         dirty_state_sha256=sha256_bytes("\n".join(status_lines).encode())
@@ -286,9 +310,7 @@ def capture_source_snapshot(repository_root: Path, tool_root: Path) -> SourceSna
 
 
 def source_snapshot_signature(snapshot: SourceSnapshot) -> str:
-    return sha256_bytes(
-        json.dumps(snapshot.to_dict(), sort_keys=True, separators=(",", ":")).encode()
-    )
+    return snapshot.input_signature
 
 
 def build_api_index(
@@ -329,7 +351,10 @@ def build_api_index(
             "Relationship metadata is not approved in this registry version.",
             "Generated architecture manifests and diagrams are not implemented by this tool.",
         ],
-        "source_snapshot": snapshot.to_dict(),
+        "source_snapshot": {
+            "input_signature": snapshot.input_signature,
+            "file_count": len(snapshot.files),
+        },
         "source_snapshot_sha256": source_snapshot_signature(snapshot),
         "registries": {
             "public_surface": {

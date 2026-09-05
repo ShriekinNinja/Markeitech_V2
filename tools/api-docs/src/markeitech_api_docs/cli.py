@@ -14,14 +14,21 @@ def _parser() -> argparse.ArgumentParser:
         prog="markeitech-api-docs",
         description="Validate or generate the fixed offline Markeitech V2 API documentation set.",
     )
-    parser.add_argument("command", choices=("validate", "generate"))
+    parser.add_argument("command", choices=("validate", "generate", "check"))
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
-        result = validate() if args.command == "validate" else generate()
+        if args.command == "validate":
+            result = validate()
+        elif args.command == "check":
+            from markeitech_api_docs.build import check
+
+            result = check()
+        else:
+            result = generate()
     except ApiDocsError as exc:
         print(str(exc), file=sys.stderr)
         return 1

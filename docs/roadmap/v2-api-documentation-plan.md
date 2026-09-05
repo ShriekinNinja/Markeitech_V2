@@ -9,7 +9,7 @@ Keep the generator in a separately locked `tools/api-docs` environment. A first-
 fixed paths, strict configuration, source snapshots, leak checks, deterministic rendering, and
 atomic publication. Never import or run Markeitech while building documentation, and do not expose
 a bare MkDocs command as the authoritative workflow. Track sources, configuration, registries,
-tests, and the lockfile; keep generated HTML untracked unless hosting is approved later.
+tests, the lockfile, and the generated, tracked `docs/api` artifact.
 
 Use a small static Griffe extension to strip and parse namespaced custom docstring attributes into
 each object's `extra["markeitech"]` metadata and emit a sanitized machine-readable index alongside
@@ -28,8 +28,8 @@ more useful than dumping every actor callback and private helper.
 | **Sphinx + autodoc + autosummary + Napoleon** | Mature ecosystem; built-in custom Napoleon sections; strong cross-references and multiple outputs | `autodoc` imports modules, which is fragile and unsafe for runtime/provider boundaries; more configuration and reStructuredText concepts |
 | **pdoc** | Smallest setup; fast module-tree documentation | Imports modules; less control over a mixed narrative/API site and strict public-surface governance |
 
-Optional presentation: start with MkDocs' built-in theme for fewer dependencies; add Material only
-if search, navigation, or branding justifies another dependency.
+Presentation now uses Material (`mkdocs-material`) with a fixed dark theme and full offline asset
+strategy (`font: false`) to preserve local rendering behavior and reduce external dependency.
 
 ## Docstring Style Options
 
@@ -69,15 +69,14 @@ side effects, failure/abstention behavior, and `Raises`; they should not repeat 
    `acquisition`, `intelligence`, and the operator CLI.
 3. Add Google docstrings incrementally, starting with exported contracts and configuration/load
    entry points; do not bulk-document private helpers or lifecycle overrides.
-4. Add offline verification: `mkdocs build --strict`, broken-reference checking, deterministic
-   metadata fixtures, invalid/unknown-attribute cases, and Ruff's `pydocstyle` Google convention
-   only after the selected public surface is documented. Consider Griffe API-diff checks later if
-   compatibility becomes a release contract.
+4. Add offline verification: `mkdocs` strict-mode rendering inside the wrapper, deterministic
+  metadata fixtures, invalid/unknown-attribute cases, and `check`-mode committed output drift
+  verification. Consider Griffe API-diff checks later if compatibility becomes a release contract.
 5. Accept the infrastructure when a stable checkout builds without target imports, dynamic
    inspection, network, or connected IB, PostgreSQL, or Discord access; source analysis and
    rendering launch no child processes beyond the wrapper's bounded read-only Git identity
    preflight; denominator drift and missing docstrings are reported honestly; generated HTML is
-   reproducible, atomically published, scanned, and untracked. Complete descriptive coverage
+   reproducible, atomically published, scanned, and tracked. Complete descriptive coverage
    remains incremental documentation debt.
 
 ## Implemented Boundary
@@ -90,7 +89,7 @@ side effects, failure/abstention behavior, and `Raises`; they should not repeat 
   validation patterns, and public/status-only exposure. Registry version 2 approves only the five
   bounded `architecture.component.*` fields used by the class-component page.
 - Outputs: a static site, sanitized metadata index, artifact index, and SHA-256 manifest. Generated
-  output is ignored and non-authoritative.
+  output is tracked and deployed after passing check-mode drift verification.
 - Architecture context: implementation-referenced component facts are migrated once from the
   current system/data-flow TOML into versioned V2 docstring declarations. The documentation build
   reads source declarations only. During the migration interval the existing system-diagram tool

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://shriekinninja.github.io/Markeitech_V2/</loc>
+         <lastmod>1970-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://shriekinninja.github.io/Markeitech_V2/architecture-components/</loc>
+         <lastmod>1970-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://shriekinninja.github.io/Markeitech_V2/api/acquisition/</loc>
+         <lastmod>1970-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://shriekinninja.github.io/Markeitech_V2/api/cli/</loc>
+         <lastmod>1970-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://shriekinninja.github.io/Markeitech_V2/api/intelligence/</loc>
+         <lastmod>1970-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://shriekinninja.github.io/Markeitech_V2/api/system/</loc>
+         <lastmod>1970-01-01</lastmod>
+    </url>
+</urlset>

@@ -38,6 +38,7 @@ TEXT_SUFFIXES = {".css", ".html", ".js", ".json", ".txt", ".xml"}
 DIRECT_VERSIONS = {
     "griffe": "2.2.0",
     "mkdocs": "1.6.1",
+    "mkdocs-material": "9.6.5",
     "mkdocstrings-python": "2.0.5",
 }
 SECRET_PATTERNS = (
@@ -47,9 +48,15 @@ SECRET_PATTERNS = (
 )
 REMOTE_ASSET_PATTERN = re.compile(
     r"<(?:script|link|img|source|iframe|object|audio|video)\b[^>]*"
-    r"(?:src|srcset|href|data)=[\"'](?:https?:)?//",
+    r"(?:src|srcset|href|data)=[\"'](?:https?:)?//[^\"'>\s]+[\"'][^>]*>",
     re.IGNORECASE,
 )
+CANONICAL_LINK_PATTERN = re.compile(
+    r"<link\b[^>]*\brel=[\"']canonical[\"'][^>]*\bhref=[\"']([^\"']+)[\"']",
+    re.IGNORECASE,
+)
+EXPECTED_SITE_URL = "https://shriekinninja.github.io/Markeitech_V2/"
+
 UNSAFE_CSS_PATTERN = re.compile(
     r"@import\b|@font-face\b|url\s*\(|expression\s*\(|"
     r"(?:^|[;{])\s*(?:behavior|-moz-binding)\s*:",
@@ -188,6 +195,7 @@ def _validate_mkdocs_policy(path: Path) -> None:
     if not isinstance(raw, dict) or raw.get("strict") is not True:
         raise ApiDocsError("CONFIG_INVALID: MkDocs strict mode is required")
     allowed_top_level = {
+        "site_url",
         "site_name",
         "site_description",
         "docs_dir",
@@ -200,9 +208,15 @@ def _validate_mkdocs_policy(path: Path) -> None:
     }
     if set(raw) != allowed_top_level or raw.get("docs_dir") != "docs":
         raise ApiDocsError("CONFIG_INVALID: MkDocs top-level policy changed")
+    if raw.get("site_url") != "https://shriekinninja.github.io/Markeitech_V2/":
+        raise ApiDocsError("CONFIG_INVALID: expected documentation site URL changed")
     theme = raw.get("theme")
-    if theme != {"name": "readthedocs", "highlightjs": False}:
-        raise ApiDocsError("CONFIG_INVALID: only the built-in ReadTheDocs theme is approved")
+    if not isinstance(theme, dict) or theme.get("name") != "material":
+        raise ApiDocsError("CONFIG_INVALID: only the Material theme is approved")
+    if theme.get("font") is not False:
+        raise ApiDocsError("CONFIG_INVALID: Material font override policy changed")
+    if theme.get("palette") != [{"scheme": "slate"}]:
+        raise ApiDocsError("CONFIG_INVALID: Material palette policy changed")
     if raw.get("extra_css") != ["stylesheets/markeitech.css"]:
         raise ApiDocsError("CONFIG_INVALID: custom stylesheet allowlist changed")
     markdown_extensions = raw.get("markdown_extensions")
@@ -287,6 +301,32 @@ def _canonical_json(value: object) -> bytes:
     return (json.dumps(value, indent=2, sort_keys=True, ensure_ascii=True) + "\n").encode()
 
 
+def _output_checksum_map(root: Path) -> dict[str, tuple[str, int]]:
+    return {
+        entry["path"]: (entry["sha256"], entry["size_bytes"]) for entry in _hash_entries(root)
+    }
+
+
+def _build_output_summary(root: Path) -> dict[str, object]:
+    entries = _hash_entries(root)
+    sums = "".join(f"{entry['sha256']}  {entry['path']}\n" for entry in entries)
+    return {
+        "artifact_count": len(entries),
+        "artifact_set_sha256": sha256_bytes(sums.encode()),
+        "artifacts": entries,
+    }
+
+
+def _assert_output_match(candidate_root: Path, committed_root: Path) -> None:
+    candidate = _output_checksum_map(candidate_root)
+    committed = _output_checksum_map(committed_root)
+    if candidate.keys() != committed.keys():
+        raise ApiDocsError("OUTPUT_DRIFT: committed documentation output and generated output differ")
+    for path, signature in candidate.items():
+        if committed[path] != signature:
+            raise ApiDocsError("OUTPUT_DRIFT: committed documentation output and generated output differ")
+
+
 def _verify_snapshot_unchanged(
     snapshot: SourceSnapshot,
     repository_root: Path,
@@ -339,7 +379,13 @@ def _scan_output(root: Path, protected_literals: tuple[str, ...], repository_roo
             raise ApiDocsError("OUTPUT_LEAK_DETECTED: custom metadata value escaped")
         if any(pattern.search(value) for pattern in SECRET_PATTERNS):
             raise ApiDocsError("OUTPUT_LEAK_DETECTED: secret-like content detected")
-        if REMOTE_ASSET_PATTERN.search(value):
+        for match in REMOTE_ASSET_PATTERN.finditer(value):
+            token = match.group(0)
+            tag_match = CANONICAL_LINK_PATTERN.search(token)
+            if tag_match is not None:
+                canonical_url = tag_match.group(1)
+                if canonical_url.startswith(EXPECTED_SITE_URL) or canonical_url.startswith("/"):
+                    continue
             raise ApiDocsError("OUTPUT_INVALID: remote auto-fetching asset detected")
         if (
             path.relative_to(root).as_posix() == "stylesheets/markeitech.css"
@@ -375,11 +421,10 @@ def _write_artifact_manifests(
     base_entries = _hash_entries(root, exclude={"artifact-index.json", "SHA256SUMS"})
     artifact_index: dict[str, Any] = {
         "schema_id": "markeitech-api-docs-artifact-index",
-        "schema_version": 1,
+        "schema_version": 2,
         "authority": "generated_projection_only",
         "not_runtime_configuration": True,
-        "source_commit": snapshot.commit,
-        "source_state": snapshot.state,
+        "source_signature": snapshot.input_signature,
         "tool_version": __version__,
         "tool_versions": versions,
         "lock_sha256": sha256_file(paths.tool_root / "uv.lock"),
@@ -447,6 +492,55 @@ def _prepare_docs_tree(
     return destination
 
 
+def _build_complete_output(
+    paths: FixedPaths,
+) -> tuple[ApiIndex, SourceSnapshot, dict[str, str], Path, Path]:
+    index, snapshot, versions = prepare_index(paths)
+    paths.build_root.mkdir(parents=True, exist_ok=True)
+    if paths.build_root.is_symlink():
+        raise ApiDocsError("OUTPUT_PATH_DENIED: build root cannot be a symlink")
+    stage_parent = Path(tempfile.mkdtemp(prefix="stage-", dir=paths.build_root))
+    staged_output = stage_parent / "complete"
+
+    try:
+        staged_output.mkdir()
+        staged_docs = _prepare_docs_tree(stage_parent, paths, index.generated_markdown)
+        with constrained_generation_environment():
+            config = load_config(
+                config_file=str(paths.config),
+                docs_dir=str(staged_docs),
+                site_dir=str(staged_output),
+            )
+            effective_output = Path(config.site_dir).resolve()
+            effective_docs = Path(config.docs_dir).resolve()
+            if (
+                config.strict is not True
+                or effective_output != staged_output.resolve()
+                or effective_docs != staged_docs.resolve()
+            ):
+                raise ApiDocsError("CONFIG_INVALID: effective MkDocs safety settings changed")
+            mkdocs_build(config, dirty=False)
+        _verify_snapshot_unchanged(snapshot, paths.repository_root, paths.tool_root)
+        (staged_output / "metadata-index.json").write_bytes(
+            _canonical_json(index.payload)
+        )
+        (staged_output / "architecture-components-index.json").write_bytes(
+            _canonical_json(index.payload["architecture_components"])
+        )
+        _scan_output(staged_output, index.protected_literals, paths.repository_root)
+        _write_artifact_manifests(
+            staged_output,
+            paths=paths,
+            snapshot=snapshot,
+            versions=versions,
+        )
+        _scan_output(staged_output, index.protected_literals, paths.repository_root)
+        return index, snapshot, versions, stage_parent, staged_output
+    except Exception:
+        _safe_remove(stage_parent, paths)
+        raise
+
+
 def prepare_index(paths: FixedPaths) -> tuple[ApiIndex, SourceSnapshot, dict[str, str]]:
     _validate_fixed_paths(paths)
     _validate_stylesheet(paths.tool_root / "docs" / "stylesheets" / "markeitech.css")
@@ -484,8 +578,10 @@ def validate() -> dict[str, object]:
     index, snapshot, versions = prepare_index(paths)
     surface = index.payload["public_surface"]
     return {
+        "mode": "validate",
         "source_commit": snapshot.commit,
         "source_state": snapshot.state,
+        "source_signature": snapshot.input_signature,
         "selected": surface["selected"],
         "documented": surface["documented"],
         "missing_docstring": surface["missing_docstring"],
@@ -500,56 +596,28 @@ def validate() -> dict[str, object]:
     }
 
 
-def generate() -> dict[str, object]:
+def check() -> dict[str, object]:
     paths = FixedPaths.discover()
+    if not paths.output.exists():
+        raise ApiDocsError("OUTPUT_MISSING: committed documentation output is absent")
     index, snapshot, versions = prepare_index(paths)
-    paths.build_root.mkdir(parents=True, exist_ok=True)
-    if paths.build_root.is_symlink():
-        raise ApiDocsError("OUTPUT_PATH_DENIED: build root cannot be a symlink")
-    stage_parent = Path(tempfile.mkdtemp(prefix="stage-", dir=paths.build_root))
-    staged_output = stage_parent / "complete"
-
+    stage_parent = None
+    staged_output = None
     try:
-        staged_output.mkdir()
-        staged_docs = _prepare_docs_tree(stage_parent, paths, index.generated_markdown)
-        with constrained_generation_environment():
-            config = load_config(
-                config_file=str(paths.config),
-                docs_dir=str(staged_docs),
-                site_dir=str(staged_output),
-            )
-            effective_output = Path(config.site_dir).resolve()
-            effective_docs = Path(config.docs_dir).resolve()
-            if (
-                config.strict is not True
-                or effective_output != staged_output.resolve()
-                or effective_docs != staged_docs.resolve()
-            ):
-                raise ApiDocsError("CONFIG_INVALID: effective MkDocs safety settings changed")
-            mkdocs_build(config, dirty=False)
-        _verify_snapshot_unchanged(snapshot, paths.repository_root, paths.tool_root)
-        (staged_output / "metadata-index.json").write_bytes(_canonical_json(index.payload))
-        (staged_output / "architecture-components-index.json").write_bytes(
-            _canonical_json(index.payload["architecture_components"])
-        )
-        _scan_output(staged_output, index.protected_literals, paths.repository_root)
-        _write_artifact_manifests(
-            staged_output,
-            paths=paths,
-            snapshot=snapshot,
-            versions=versions,
-        )
-        _scan_output(staged_output, index.protected_literals, paths.repository_root)
-        _publish_complete_set(staged_output, paths)
-    except Exception:
-        _safe_remove(stage_parent, paths)
-        raise
-    _safe_remove(stage_parent, paths)
+        _, _, _, stage_parent, staged_output = _build_complete_output(paths)
+        generated = _build_output_summary(staged_output)
+        committed = _build_output_summary(paths.output)
+        _assert_output_match(staged_output, paths.output)
+    finally:
+        if stage_parent is not None:
+            _safe_remove(stage_parent, paths)
 
     return {
+        "mode": "check",
         "output": paths.output.as_posix(),
         "source_commit": snapshot.commit,
         "source_state": snapshot.state,
+        "source_signature": snapshot.input_signature,
         "selected": index.payload["public_surface"]["selected"],
         "documented": index.payload["public_surface"]["documented"],
         "missing_docstring": index.payload["public_surface"]["missing_docstring"],
@@ -560,6 +628,47 @@ def generate() -> dict[str, object]:
         "architecture_responsibilities": index.payload["architecture_components"]["counts"][
             "with_responsibilities"
         ],
-        "artifact_count": len(_collect_files(paths.output)),
-        "artifact_set_sha256": sha256_bytes((paths.output / "SHA256SUMS").read_bytes()),
+        "artifact_count": generated["artifact_count"],
+        "artifact_set_sha256": generated["artifact_set_sha256"],
+        "committed_artifact_count": committed["artifact_count"],
+        "committed_artifact_set_sha256": committed["artifact_set_sha256"],
+        "versions": versions,
+    }
+
+
+def generate() -> dict[str, object]:
+    paths = FixedPaths.discover()
+    index, snapshot, versions = prepare_index(paths)
+    stage_parent = None
+    staged_output = None
+    try:
+        _, _, _, stage_parent, staged_output = _build_complete_output(paths)
+        _publish_complete_set(staged_output, paths)
+    except Exception:
+        if stage_parent is not None:
+            _safe_remove(stage_parent, paths)
+        raise
+    if stage_parent is None:
+        raise ApiDocsError("OUTPUT_PUBLICATION_FAILED: output staging was not created")
+    _safe_remove(stage_parent, paths)
+    output_summary = _build_output_summary(paths.output)
+
+    return {
+        "output": paths.output.as_posix(),
+        "source_commit": snapshot.commit,
+        "source_state": snapshot.state,
+        "source_signature": snapshot.input_signature,
+        "selected": index.payload["public_surface"]["selected"],
+        "documented": index.payload["public_surface"]["documented"],
+        "missing_docstring": index.payload["public_surface"]["missing_docstring"],
+        "metadata_occurrences": index.payload["metadata"]["occurrence_count"],
+        "architecture_components": index.payload["architecture_components"]["counts"][
+            "components"
+        ],
+        "architecture_responsibilities": index.payload["architecture_components"]["counts"][
+            "with_responsibilities"
+        ],
+        "artifact_count": output_summary["artifact_count"],
+        "artifact_set_sha256": output_summary["artifact_set_sha256"],
+        "versions": versions,
     }

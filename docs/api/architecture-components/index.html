@@ -1,0 +1,2412 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Static, non-authoritative API documentation for Markeitech V2.">
+      
+      
+      
+        <link rel="canonical" href="https://shriekinninja.github.io/Markeitech_V2/architecture-components/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../api/system/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.5">
+    
+    
+      
+        <title>Architecture components - Markeitech V2 API</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.8608ea7d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/markeitech.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#architecture-components" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Markeitech V2 API" class="md-header__button md-logo" aria-label="Markeitech V2 API" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Markeitech V2 API
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Architecture components
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Markeitech V2 API" class="md-nav__button md-logo" aria-label="Markeitech V2 API" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Markeitech V2 API
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Architecture components
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Architecture components
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#class-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Class Reference
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.historical_probe.CurrentStateHistoricalDemandProbeActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      CurrentStateHistoricalDemandProbeActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.acquisition.DataAcquisitionActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      DataAcquisitionActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.discord.DiscordHealthActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      DiscordHealthActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.actors.EvidenceHealthActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      EvidenceHealthActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.historical_planner.HistoricalEvidencePlannerActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      HistoricalEvidencePlannerActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.historical_probe.HistoricalDependencyProbeActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      HistoricalDependencyProbeActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.market_state_actor.MarketStateEntityActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      MarketStateEntityActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.market_structure_actor.MarketStructureEntityActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      MarketStructureEntityActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.native_consumer_probe.NativeConsumerProbeActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      NativeConsumerProbeActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.persistence.OperationalPersistenceActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      OperationalPersistenceActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.quote_metric_actor.QuoteQualityMetricsActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      QuoteQualityMetricsActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.resource_health_actor.RuntimeResourceHealthActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      RuntimeResourceHealthActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.resource_actor.RuntimeResourceActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      RuntimeResourceActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.session_metric_actor.SessionMetricsActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      SessionMetricsActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.session_entity_actor.SessionReferenceEntityActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      SessionReferenceEntityActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.actors.SessionStateActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      SessionStateActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.actor.SystemControlActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      SystemControlActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.visual_debug_capture_actor.VisualDebugCaptureActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      VisualDebugCaptureActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.watchlist.WatchlistActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      WatchlistActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.session.CanonicalCalendar" class="md-nav__link">
+    <span class="md-ellipsis">
+      CanonicalCalendar
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    API
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/system/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/acquisition/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Acquisition
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/intelligence/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Intelligence
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/cli/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CLI
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#class-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Class Reference
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.historical_probe.CurrentStateHistoricalDemandProbeActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      CurrentStateHistoricalDemandProbeActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.acquisition.DataAcquisitionActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      DataAcquisitionActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.discord.DiscordHealthActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      DiscordHealthActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.actors.EvidenceHealthActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      EvidenceHealthActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.historical_planner.HistoricalEvidencePlannerActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      HistoricalEvidencePlannerActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.historical_probe.HistoricalDependencyProbeActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      HistoricalDependencyProbeActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.market_state_actor.MarketStateEntityActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      MarketStateEntityActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.market_structure_actor.MarketStructureEntityActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      MarketStructureEntityActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.native_consumer_probe.NativeConsumerProbeActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      NativeConsumerProbeActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.persistence.OperationalPersistenceActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      OperationalPersistenceActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.quote_metric_actor.QuoteQualityMetricsActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      QuoteQualityMetricsActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.resource_health_actor.RuntimeResourceHealthActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      RuntimeResourceHealthActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.resource_actor.RuntimeResourceActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      RuntimeResourceActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.session_metric_actor.SessionMetricsActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      SessionMetricsActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.session_entity_actor.SessionReferenceEntityActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      SessionReferenceEntityActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.actors.SessionStateActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      SessionStateActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.actor.SystemControlActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      SystemControlActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.visual_debug_capture_actor.VisualDebugCaptureActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      VisualDebugCaptureActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.system.watchlist.WatchlistActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      WatchlistActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markeitech.intelligence.session.CanonicalCalendar" class="md-nav__link">
+    <span class="md-ellipsis">
+      CanonicalCalendar
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="architecture-components">Architecture Components<a class="headerlink" href="#architecture-components" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>Generated from validated architecture declarations in V2 class docstrings. 
+This page is not a Python call graph and does not prove runtime calls, delivery, 
+acceptance, ownership, or completeness of the whole system architecture.</p>
+</blockquote>
+<p>These implementation-backed components are documented separately from the supported 
+public API denominator. Incoming/outgoing relationships, contracts, non-Python 
+components, status, and evidence remain deferred to a separately reviewed source schema.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Python class</th>
+<th>Kind</th>
+<th>Boundary</th>
+<th>Responsibilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>actor.current-state-historical-probe</code><br>Current-State Historical Demand Probe</td>
+<td><code>markeitech.system.historical_probe.CurrentStateHistoricalDemandProbeActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.acquisition</code></td>
+<td>Gate one acceptance-only historical demand on reconciled current session state.<br>Observe the correlated plan, readiness, and transient historical batches.<br>Exercise one bounded snapshot retry when explicitly configured.</td>
+</tr>
+<tr>
+<td><code>actor.data-acquisition</code><br>Data Acquisition</td>
+<td><code>markeitech.system.acquisition.DataAcquisitionActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.acquisition</code></td>
+<td>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.<br>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.<br>Publish acquisition lifecycle, historical batches, and consumer readiness.</td>
+</tr>
+<tr>
+<td><code>actor.discord-health</code><br>Discord Health Projection</td>
+<td><code>markeitech.system.discord.DiscordHealthActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.system</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.evidence-health</code><br>Evidence Health</td>
+<td><code>markeitech.intelligence.actors.EvidenceHealthActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.intelligence</code></td>
+<td>Evaluate observation freshness and availability.<br>Consume definition-identified calendar context without owning mcal.<br>Synchronize bounded current state without inferring calendar phase from silence.</td>
+</tr>
+<tr>
+<td><code>actor.historical-planner</code><br>Historical Evidence Planner</td>
+<td><code>markeitech.system.historical_planner.HistoricalEvidencePlannerActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.intelligence</code></td>
+<td>Resolve semantic historical evidence demands into exact UTC request plans.<br>Use immutable canonical-calendar projections for calendar-relative windows.<br>Publish exact plans without calling providers or owning provider pacing.</td>
+</tr>
+<tr>
+<td><code>actor.historical-probe</code><br>Historical Dependency Probe</td>
+<td><code>markeitech.system.historical_probe.HistoricalDependencyProbeActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.acquisition</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.market-state-entities</code><br>Market State Entities</td>
+<td><code>markeitech.intelligence.market_state_actor.MarketStateEntityActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.intelligence</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.market-structure-entities</code><br>Market Structure Entities</td>
+<td><code>markeitech.intelligence.market_structure_actor.MarketStructureEntityActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.intelligence</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.native-consumer-probe</code><br>Native Consumer Probe</td>
+<td><code>markeitech.system.native_consumer_probe.NativeConsumerProbeActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.system</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.operational-persistence</code><br>Operational Persistence</td>
+<td><code>markeitech.system.persistence.OperationalPersistenceActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.system</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.quote-quality</code><br>Quote Quality Metrics</td>
+<td><code>markeitech.intelligence.quote_metric_actor.QuoteQualityMetricsActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.intelligence</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.runtime-resource-health</code><br>Runtime Resource Health</td>
+<td><code>markeitech.system.resource_health_actor.RuntimeResourceHealthActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.system</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.runtime-resources</code><br>Runtime Resources</td>
+<td><code>markeitech.system.resource_actor.RuntimeResourceActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.system</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.session-metrics</code><br>Session Metrics</td>
+<td><code>markeitech.intelligence.session_metric_actor.SessionMetricsActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.intelligence</code></td>
+<td>Converge bounded historical and live bars into completed-bar, session, window, and rolling measurements.<br>Consume immutable calendar projections and transitions without instantiating mcal.<br>Publish live and historical evidence demands for configured metric capabilities.</td>
+</tr>
+<tr>
+<td><code>actor.session-reference-entities</code><br>Session Reference Entities</td>
+<td><code>markeitech.intelligence.session_entity_actor.SessionReferenceEntityActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.intelligence</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.session-state</code><br>Session State</td>
+<td><code>markeitech.intelligence.actors.SessionStateActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.intelligence</code></td>
+<td>Sole runtime owner of active CanonicalCalendar instances.<br>Publish definition-identified calendar transitions and bounded immutable projections.<br>Contain ordinary per-calendar projection construction failures without redefining provider data.</td>
+</tr>
+<tr>
+<td><code>actor.system-control</code><br>System Control</td>
+<td><code>markeitech.system.actor.SystemControlActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.system</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.visual-debug</code><br>Visual Debug Capture</td>
+<td><code>markeitech.intelligence.visual_debug_capture_actor.VisualDebugCaptureActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.intelligence</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>actor.watchlist</code><br>Watchlist</td>
+<td><code>markeitech.system.watchlist.WatchlistActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.acquisition</code></td>
+<td>Not yet declared</td>
+</tr>
+<tr>
+<td><code>component.canonical-calendar</code><br>Canonical Calendar</td>
+<td><code>markeitech.intelligence.session.CanonicalCalendar</code></td>
+<td><code>engine</code></td>
+<td><code>boundary.intelligence</code></td>
+<td>Evaluate one immutable versioned calendar definition from admitted mcal schedule facts and configured product phases.<br>Produce UTC exchange segments, phase windows, trade-date assignments, and bounded projections.<br>Record source-cited corrections and the exact admitted terminal-break normalization outcome.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="class-reference">Class Reference<a class="headerlink" href="#class-reference" title="Permanent link">&para;</a></h2>
+<h3 id="actorcurrent-state-historical-probe-current-state-historical-demand-probe"><code>actor.current-state-historical-probe</code> — Current-State Historical Demand Probe<a class="headerlink" href="#actorcurrent-state-historical-probe-current-state-historical-demand-probe" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.historical_probe.CurrentStateHistoricalDemandProbeActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.historical_probe.CurrentStateHistoricalDemandProbeActor</span>
+
+
+<a href="#markeitech.system.historical_probe.CurrentStateHistoricalDemandProbeActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Exercise current-state delivery before one real historical dependency request.</p>
+<p>This actor is an explicitly enabled acceptance harness. It owns no calendar, provider,
+acquisition, or persistence behavior: it synchronizes through the production session-state
+protocol and publishes one normal symbolic demand only after reconciliation reaches <code>LIVE</code>.</p>
+<section class="markeitech-responsibilities" aria-label="Responsibilities">
+<h4>Responsibilities</h4>
+<ul>
+<li>Gate one acceptance-only historical demand on reconciled current session state.</li>
+<li>Observe the correlated plan, readiness, and transient historical batches.</li>
+<li>Exercise one bounded snapshot retry when explicitly configured.</li>
+</ul>
+</section>
+
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.current-state-historical-probe</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Current-State Historical Demand Probe</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.acquisition</dd>
+<dt><code>architecture.component.responsibilities</code></dt>
+<dd><ul>
+<li>Gate one acceptance-only historical demand on reconciled current session state.</li>
+<li>Observe the correlated plan, readiness, and transient historical batches.</li>
+<li>Exercise one bounded snapshot retry when explicitly configured.</li>
+</ul></dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actordata-acquisition-data-acquisition"><code>actor.data-acquisition</code> — Data Acquisition<a class="headerlink" href="#actordata-acquisition-data-acquisition" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.acquisition.DataAcquisitionActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.acquisition.DataAcquisitionActor</span>
+
+
+<a href="#markeitech.system.acquisition.DataAcquisitionActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Own provider-facing acquisition demand and historical execution.</p>
+<section class="markeitech-responsibilities" aria-label="Responsibilities">
+<h4>Responsibilities</h4>
+<ul>
+<li>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.</li>
+<li>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.</li>
+<li>Publish acquisition lifecycle, historical batches, and consumer readiness.</li>
+</ul>
+</section>
+
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.data-acquisition</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Data Acquisition</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.acquisition</dd>
+<dt><code>architecture.component.responsibilities</code></dt>
+<dd><ul>
+<li>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.</li>
+<li>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.</li>
+<li>Publish acquisition lifecycle, historical batches, and consumer readiness.</li>
+</ul></dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actordiscord-health-discord-health-projection"><code>actor.discord-health</code> — Discord Health Projection<a class="headerlink" href="#actordiscord-health-discord-health-projection" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.discord.DiscordHealthActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.discord.DiscordHealthActor</span>
+
+
+<a href="#markeitech.system.discord.DiscordHealthActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Project optional system-health notifications to Discord.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.discord-health</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Discord Health Projection</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.system</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorevidence-health-evidence-health"><code>actor.evidence-health</code> — Evidence Health<a class="headerlink" href="#actorevidence-health-evidence-health" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.intelligence.actors.EvidenceHealthActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.intelligence.actors.EvidenceHealthActor</span>
+
+
+<a href="#markeitech.intelligence.actors.EvidenceHealthActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Evaluate bounded observation freshness and availability.</p>
+<section class="markeitech-responsibilities" aria-label="Responsibilities">
+<h4>Responsibilities</h4>
+<ul>
+<li>Evaluate observation freshness and availability.</li>
+<li>Consume definition-identified calendar context without owning mcal.</li>
+<li>Synchronize bounded current state without inferring calendar phase from silence.</li>
+</ul>
+</section>
+
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.evidence-health</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Evidence Health</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.intelligence</dd>
+<dt><code>architecture.component.responsibilities</code></dt>
+<dd><ul>
+<li>Evaluate observation freshness and availability.</li>
+<li>Consume definition-identified calendar context without owning mcal.</li>
+<li>Synchronize bounded current state without inferring calendar phase from silence.</li>
+</ul></dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorhistorical-planner-historical-evidence-planner"><code>actor.historical-planner</code> — Historical Evidence Planner<a class="headerlink" href="#actorhistorical-planner-historical-evidence-planner" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.historical_planner.HistoricalEvidencePlannerActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.historical_planner.HistoricalEvidencePlannerActor</span>
+
+
+<a href="#markeitech.system.historical_planner.HistoricalEvidencePlannerActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Resolves semantic evidence demand; it never calls a provider or owns pacing.</p>
+<section class="markeitech-responsibilities" aria-label="Responsibilities">
+<h4>Responsibilities</h4>
+<ul>
+<li>Resolve semantic historical evidence demands into exact UTC request plans.</li>
+<li>Use immutable canonical-calendar projections for calendar-relative windows.</li>
+<li>Publish exact plans without calling providers or owning provider pacing.</li>
+</ul>
+</section>
+
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.historical-planner</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Historical Evidence Planner</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.intelligence</dd>
+<dt><code>architecture.component.responsibilities</code></dt>
+<dd><ul>
+<li>Resolve semantic historical evidence demands into exact UTC request plans.</li>
+<li>Use immutable canonical-calendar projections for calendar-relative windows.</li>
+<li>Publish exact plans without calling providers or owning provider pacing.</li>
+</ul></dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorhistorical-probe-historical-dependency-probe"><code>actor.historical-probe</code> — Historical Dependency Probe<a class="headerlink" href="#actorhistorical-probe-historical-dependency-probe" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.historical_probe.HistoricalDependencyProbeActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.historical_probe.HistoricalDependencyProbeActor</span>
+
+
+<a href="#markeitech.system.historical_probe.HistoricalDependencyProbeActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Config-disabled acceptance consumer for the Stage 9B historical path.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.historical-probe</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Historical Dependency Probe</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.acquisition</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actormarket-state-entities-market-state-entities"><code>actor.market-state-entities</code> — Market State Entities<a class="headerlink" href="#actormarket-state-entities-market-state-entities" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.intelligence.market_state_actor.MarketStateEntityActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.intelligence.market_state_actor.MarketStateEntityActor</span>
+
+
+<a href="#markeitech.intelligence.market_state_actor.MarketStateEntityActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Publishes configured metric-driven market state without deriving source metrics.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.market-state-entities</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Market State Entities</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.intelligence</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actormarket-structure-entities-market-structure-entities"><code>actor.market-structure-entities</code> — Market Structure Entities<a class="headerlink" href="#actormarket-structure-entities-market-structure-entities" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.intelligence.market_structure_actor.MarketStructureEntityActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.intelligence.market_structure_actor.MarketStructureEntityActor</span>
+
+
+<a href="#markeitech.intelligence.market_structure_actor.MarketStructureEntityActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Coordinates reviewed market-structure owners without deriving new semantics.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.market-structure-entities</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Market Structure Entities</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.intelligence</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actornative-consumer-probe-native-consumer-probe"><code>actor.native-consumer-probe</code> — Native Consumer Probe<a class="headerlink" href="#actornative-consumer-probe-native-consumer-probe" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.native_consumer_probe.NativeConsumerProbeActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.native_consumer_probe.NativeConsumerProbeActor</span>
+
+
+<a href="#markeitech.system.native_consumer_probe.NativeConsumerProbeActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Temporary probe for native multi-actor market-data delivery.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.native-consumer-probe</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Native Consumer Probe</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.system</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actoroperational-persistence-operational-persistence"><code>actor.operational-persistence</code> — Operational Persistence<a class="headerlink" href="#actoroperational-persistence-operational-persistence" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.persistence.OperationalPersistenceActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.persistence.OperationalPersistenceActor</span>
+
+
+<a href="#markeitech.system.persistence.OperationalPersistenceActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Admit approved operational facts to bounded persistence delivery.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.operational-persistence</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Operational Persistence</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.system</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorquote-quality-quote-quality-metrics"><code>actor.quote-quality</code> — Quote Quality Metrics<a class="headerlink" href="#actorquote-quality-quote-quality-metrics" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.intelligence.quote_metric_actor.QuoteQualityMetricsActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.intelligence.quote_metric_actor.QuoteQualityMetricsActor</span>
+
+
+<a href="#markeitech.intelligence.quote_metric_actor.QuoteQualityMetricsActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Publishes bounded quote-quality metrics without retaining raw market data.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.quote-quality</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Quote Quality Metrics</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.intelligence</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorruntime-resource-health-runtime-resource-health"><code>actor.runtime-resource-health</code> — Runtime Resource Health<a class="headerlink" href="#actorruntime-resource-health-runtime-resource-health" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.resource_health_actor.RuntimeResourceHealthActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.resource_health_actor.RuntimeResourceHealthActor</span>
+
+
+<a href="#markeitech.system.resource_health_actor.RuntimeResourceHealthActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Evaluate runtime resource health from bounded samples.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.runtime-resource-health</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Runtime Resource Health</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.system</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorruntime-resources-runtime-resources"><code>actor.runtime-resources</code> — Runtime Resources<a class="headerlink" href="#actorruntime-resources-runtime-resources" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.resource_actor.RuntimeResourceActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.resource_actor.RuntimeResourceActor</span>
+
+
+<a href="#markeitech.system.resource_actor.RuntimeResourceActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Observe bounded runtime resource samples.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.runtime-resources</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Runtime Resources</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.system</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorsession-metrics-session-metrics"><code>actor.session-metrics</code> — Session Metrics<a class="headerlink" href="#actorsession-metrics-session-metrics" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.intelligence.session_metric_actor.SessionMetricsActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.intelligence.session_metric_actor.SessionMetricsActor</span>
+
+
+<a href="#markeitech.intelligence.session_metric_actor.SessionMetricsActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Converges bounded historical and live bars into foundation metrics.</p>
+<section class="markeitech-responsibilities" aria-label="Responsibilities">
+<h4>Responsibilities</h4>
+<ul>
+<li>Converge bounded historical and live bars into completed-bar, session, window, and rolling measurements.</li>
+<li>Consume immutable calendar projections and transitions without instantiating mcal.</li>
+<li>Publish live and historical evidence demands for configured metric capabilities.</li>
+</ul>
+</section>
+
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.session-metrics</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Session Metrics</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.intelligence</dd>
+<dt><code>architecture.component.responsibilities</code></dt>
+<dd><ul>
+<li>Converge bounded historical and live bars into completed-bar, session, window, and rolling measurements.</li>
+<li>Consume immutable calendar projections and transitions without instantiating mcal.</li>
+<li>Publish live and historical evidence demands for configured metric capabilities.</li>
+</ul></dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorsession-reference-entities-session-reference-entities"><code>actor.session-reference-entities</code> — Session Reference Entities<a class="headerlink" href="#actorsession-reference-entities-session-reference-entities" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.intelligence.session_entity_actor.SessionReferenceEntityActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.intelligence.session_entity_actor.SessionReferenceEntityActor</span>
+
+
+<a href="#markeitech.intelligence.session_entity_actor.SessionReferenceEntityActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Publishes objective Group 1 entities from typed metric evidence only.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.session-reference-entities</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Session Reference Entities</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.intelligence</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorsession-state-session-state"><code>actor.session-state</code> — Session State<a class="headerlink" href="#actorsession-state-session-state" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.intelligence.actors.SessionStateActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.intelligence.actors.SessionStateActor</span>
+
+
+<a href="#markeitech.intelligence.actors.SessionStateActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Own active canonical-calendar evaluation and bounded snapshot delivery.</p>
+<section class="markeitech-responsibilities" aria-label="Responsibilities">
+<h4>Responsibilities</h4>
+<ul>
+<li>Sole runtime owner of active CanonicalCalendar instances.</li>
+<li>Publish definition-identified calendar transitions and bounded immutable projections.</li>
+<li>Contain ordinary per-calendar projection construction failures without redefining provider data.</li>
+</ul>
+</section>
+
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.session-state</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Session State</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.intelligence</dd>
+<dt><code>architecture.component.responsibilities</code></dt>
+<dd><ul>
+<li>Sole runtime owner of active CanonicalCalendar instances.</li>
+<li>Publish definition-identified calendar transitions and bounded immutable projections.</li>
+<li>Contain ordinary per-calendar projection construction failures without redefining provider data.</li>
+</ul></dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorsystem-control-system-control"><code>actor.system-control</code> — System Control<a class="headerlink" href="#actorsystem-control-system-control" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.actor.SystemControlActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.actor.SystemControlActor</span>
+
+
+<a href="#markeitech.system.actor.SystemControlActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Coordinate system startup and health state.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.system-control</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>System Control</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.system</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorvisual-debug-visual-debug-capture"><code>actor.visual-debug</code> — Visual Debug Capture<a class="headerlink" href="#actorvisual-debug-visual-debug-capture" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.intelligence.visual_debug_capture_actor.VisualDebugCaptureActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.intelligence.visual_debug_capture_actor.VisualDebugCaptureActor</span>
+
+
+<a href="#markeitech.intelligence.visual_debug_capture_actor.VisualDebugCaptureActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Capture passive visual-debug projections.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.visual-debug</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Visual Debug Capture</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.intelligence</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="actorwatchlist-watchlist"><code>actor.watchlist</code> — Watchlist<a class="headerlink" href="#actorwatchlist-watchlist" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.watchlist.WatchlistActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.watchlist.WatchlistActor</span>
+
+
+<a href="#markeitech.system.watchlist.WatchlistActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Bounded owner of latest watchlist observation state.</p>
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.watchlist</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Watchlist</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.acquisition</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="componentcanonical-calendar-canonical-calendar"><code>component.canonical-calendar</code> — Canonical Calendar<a class="headerlink" href="#componentcanonical-calendar-canonical-calendar" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.intelligence.session.CanonicalCalendar" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.intelligence.session.CanonicalCalendar</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#markeitech.intelligence.session.CanonicalCalendar" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Pure source-composed evaluator. SessionStateActor is its only runtime owner.</p>
+<section class="markeitech-responsibilities" aria-label="Responsibilities">
+<h4>Responsibilities</h4>
+<ul>
+<li>Evaluate one immutable versioned calendar definition from admitted mcal schedule facts and configured product phases.</li>
+<li>Produce UTC exchange segments, phase windows, trade-date assignments, and bounded projections.</li>
+<li>Record source-cited corrections and the exact admitted terminal-break normalization outcome.</li>
+</ul>
+</section>
+
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>component.canonical-calendar</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Canonical Calendar</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>engine</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.intelligence</dd>
+<dt><code>architecture.component.responsibilities</code></dt>
+<dd><ul>
+<li>Evaluate one immutable versioned calendar definition from admitted mcal schedule facts and configured product phases.</li>
+<li>Produce UTC exchange segments, phase windows, trade-date assignments, and bounded projections.</li>
+<li>Record source-cited corrections and the exact admitted terminal-break normalization outcome.</li>
+</ul></dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f1b6f286.min.js"></script>
+      
+    
+  </body>
+</html>

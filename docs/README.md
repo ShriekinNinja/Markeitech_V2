@@ -68,6 +68,8 @@ updated. Correct the document rather than preserving an accidental disagreement.
 
 - [Developer setup and machine handoff](operations/developer-setup.md)
 - [Static API documentation](operations/v2-api-documentation.md)
+- [Generated API reference (`docs/api/index.html`)](../docs/api/index.html)
+- [Hosted API reference (GitHub Pages)](https://shriekinninja.github.io/Markeitech_V2/)
 - [GitHub workflow](operations/github-workflow.md)
 - [Runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
 - [Operational PostgreSQL](operations/v2-postgresql.md)
