@@ -32,7 +32,7 @@
     },
     {
       "path": "architecture-components-index.json",
-      "sha256": "7934583bfc9cfd7cb5c6cbe101e0f9c6bc16a7239a1a70af9c2a043942f91343",
+      "sha256": "728900217c5ba824455362c427431031e009f3973c52c3d9afab3ccd02f00a78",
       "size_bytes": 16055
     },
     {
@@ -262,7 +262,7 @@
     },
     {
       "path": "metadata-index.json",
-      "sha256": "de7ffa23d688aa82b097db1126d0a2520e17a2bc22701e31832d72935a176256",
+      "sha256": "7680ede2b402d3b7dc7a3456b8662a45fb521627ceb7604da90a4f9ac19aa475",
       "size_bytes": 141989
     },
     {
@@ -287,8 +287,8 @@
     },
     {
       "path": "stylesheets/markeitech.css",
-      "sha256": "96dbbf3253e9c1733399dfc4f8deed64d4bf088113aac0c4ec838f8d695881e7",
-      "size_bytes": 4740
+      "sha256": "967490f05fc7e50fc900014f97b300ed97fedcc406468432ad75a4cd68332315",
+      "size_bytes": 1362
     }
   ],
   "authority": "generated_projection_only",
@@ -297,7 +297,7 @@
   "not_runtime_configuration": true,
   "schema_id": "markeitech-api-docs-artifact-index",
   "schema_version": 2,
-  "source_signature": "81ae2b7a54e00da81cf83c8db1ba4501f56347aa5e9f3a2ea63e6f306e4bef49",
+  "source_signature": "c7a64b9c70982ec2364ab0215ddbd18eaa92bd8ccc8b6d911c10112a174e62f8",
   "tool_version": "0.1.0",
   "tool_versions": {
     "griffe": "2.2.0",
