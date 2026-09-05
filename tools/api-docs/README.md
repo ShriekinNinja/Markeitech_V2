@@ -18,4 +18,6 @@ Key inputs are:
 
 `docs/api` is the tracked, reviewable build artifact and must be regenerated in a safe batch before
 commit. `tools/api-docs/.build` is disposable and ignored. The generator stages a complete set under
-`.build` and publishes only the validated result to `docs/api`.
+`.build` and publishes only the validated result to `docs/api`. Its committed input identity uses
+repository-relative paths and the supported Python series; the actual interpreter patch remains
+execution provenance in command and CI output.

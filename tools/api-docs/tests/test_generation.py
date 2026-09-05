@@ -3,7 +3,12 @@ from __future__ import annotations
 import json
 import unittest
 
-from markeitech_api_docs.build import FixedPaths, check, generate
+from markeitech_api_docs.build import (
+    FixedPaths,
+    _deterministic_artifact_environment,
+    check,
+    generate,
+)
 from markeitech_api_docs.models import ApiDocsError
 
 
@@ -21,6 +26,13 @@ class GenerationTest(unittest.TestCase):
         self.assertEqual(paths.output, paths.repository_root / "docs" / "api")
         output = paths.output
         index = json.loads((output / "metadata-index.json").read_text(encoding="utf-8"))
+        artifact_index = json.loads(
+            (output / "artifact-index.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(artifact_index["schema_version"], 3)
+        self.assertEqual(artifact_index["python_series"], "3.13")
+        self.assertNotIn("python", artifact_index["tool_versions"])
+        self.assertTrue(first["versions"]["python"].startswith("3.13."))
         self.assertEqual(index["authority"], "non_authoritative_discovery_only")
         self.assertTrue(index["not_runtime_configuration"])
         self.assertEqual(index["public_surface"]["selected"], 261)
@@ -95,6 +107,17 @@ class GenerationTest(unittest.TestCase):
                 check()
         finally:
             index_path.write_text(original, encoding="utf-8")
+
+    def test_python_patch_is_execution_provenance_not_artifact_identity(self) -> None:
+        base = {"mkdocs": "1.6.1", "python": "3.13.3"}
+        newer_patch = {"mkdocs": "1.6.1", "python": "3.13.15"}
+
+        self.assertEqual(
+            _deterministic_artifact_environment(base),
+            _deterministic_artifact_environment(newer_patch),
+        )
+        self.assertEqual(base["python"], "3.13.3")
+        self.assertEqual(newer_patch["python"], "3.13.15")
 
 
 if __name__ == "__main__":

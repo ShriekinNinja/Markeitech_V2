@@ -63,6 +63,12 @@ Before entering that constrained analysis/rendering environment, the wrapper run
 read-only `git rev-parse` and scoped `git status` queries to bind the artifact to a commit and dirty
 input state. Those identity queries are the only intended child processes.
 
+The committed content identity hashes sorted repository-relative input paths, sizes, and SHA-256
+values, so an identical checkout produces identical identity on different machines. The generated
+artifact index records the supported Python `3.13` series and exact locked documentation-package
+versions. The actual Python patch version remains truthful execution provenance in command and CI
+results; it is not part of deterministic committed site bytes.
+
 Generated output is written to `docs/api` and committed as a reviewable tracked artifact after
 regeneration. `tools/api-docs/.build` remains disposable and ignored. The legacy `tools/api-docs/site`
 ignore rule remains temporarily so a stale local projection cannot enter a commit; the generator no
@@ -156,6 +162,13 @@ owner's semantic review.
 - `OUTPUT_LEAK_DETECTED` means protected custom metadata, a repository path, or secret-like content
   reached staged output. Treat it as a failed build and inspect source without publishing artifacts.
 - `OUTPUT_PUBLICATION_FAILED` means promotion failed and the prior complete site was retained.
+- `OUTPUT_DRIFT` means the committed `docs/api` set does not byte-match a fresh constrained build.
+  Regenerate through a scoped review batch; do not bypass or partially ignore the comparison.
+
+GitHub Pages requires one-time maintainer setup under **Settings → Pages → Build and deployment →
+Source: GitHub Actions**. Pull requests verify and upload a review artifact but never deploy. A
+verified `master` push or manual dispatch deploys the exact committed `docs/api` directory. The
+workflow checks again after its tests so a test cannot silently replace the reviewed artifact.
 
 Passing this workflow proves only the bounded static documentation build. It does not prove live
 provider behavior, connected services, persistence, performance, trading behavior, or complete API

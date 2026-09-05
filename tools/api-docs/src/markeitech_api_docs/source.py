@@ -234,14 +234,26 @@ def documentation_input_paths(repository_root: Path, tool_root: Path) -> tuple[P
 
 def _build_source_input_signature(
     files: tuple[Path, ...],
+    repository_root: Path,
 ) -> str:
+    root = repository_root.resolve()
+    relative_files: list[tuple[str, Path]] = []
+    for path in files:
+        resolved = path.resolve()
+        try:
+            relative = resolved.relative_to(root).as_posix()
+        except ValueError as exc:
+            raise ApiDocsError(
+                "PATH_INVALID: documentation input is outside the repository"
+            ) from exc
+        relative_files.append((relative, resolved))
     identity = [
         {
-            "path": path.as_posix(),
+            "path": relative,
             "size_bytes": path.stat().st_size,
             "sha256": sha256_file(path),
         }
-        for path in files
+        for relative, path in relative_files
     ]
     return sha256_bytes(
         json.dumps(
@@ -295,7 +307,8 @@ def capture_source_snapshot(repository_root: Path, tool_root: Path) -> SourceSna
         for path in documentation_input_paths(repository_root, tool_root)
     )
     input_signature = _build_source_input_signature(
-        tuple(repository_root / file.path for file in files)
+        tuple(repository_root / file.path for file in files),
+        repository_root,
     )
     return SourceSnapshot(
         commit=commit,

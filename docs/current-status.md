@@ -225,7 +225,7 @@ behavior.
   a literal string, as required by static architecture reconciliation. Root-promotion validation
   includes the complete locked diagram-tool test, generation, and drift-check boundary.
 - A separate locked API-documentation utility now statically analyzes the curated V2 Python public
-  surface and produces an untracked MkDocs site at `docs/api` plus sanitized metadata and artifact
+  surface and produces a tracked MkDocs site at `docs/api` plus sanitized metadata and artifact
   indexes. Its
   versioned denominator currently selects 260 package exports plus one explicit operator entry
   point, 261 objects in total; all 261 selected objects have source docstrings and none are
@@ -241,8 +241,11 @@ behavior.
   explicit documentation debt rather than being promoted as meaningful responsibilities. The
   API-doc build then reads source declarations only. The existing system-diagram tool still
   consumes the TOML during this migration interval; the future source-to-TOML/diagram exporter is
-  not implemented or accepted yet. The generated local site uses a full-width dark presentation
-  with contained horizontal scrolling for wide tables and signatures.
+  not implemented or accepted yet. The generated site uses a full-width dark presentation with
+  contained horizontal scrolling for wide tables and signatures. GitHub Pages is configured to
+  deploy through the repository workflow; publication is accepted only when the `master`
+  documentation verification and deployment succeed and the hosted artifact matches the committed
+  set.
 - The repository-owned Kite plugin defines a 20-role advisor council for development-time
   engineering consultation, not V2 runtime implementation or Sir Loke behavior. Kite
   `0.1.0+codex.20260829091645` is installed and enabled from the local `markeitech` marketplace;
