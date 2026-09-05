@@ -1,0 +1,2 @@
+# MkDocs Material templates emit whitespace-only lines in generated HTML navigation blocks.
+docs/api/**/*.html whitespace=-trailing-space

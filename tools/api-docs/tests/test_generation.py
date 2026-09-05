@@ -16,12 +16,18 @@ class GenerationTest(unittest.TestCase):
     def test_generation_is_repeatable_and_sanitized(self) -> None:
         paths = FixedPaths.discover()
         source = paths.source_root / "intelligence" / "actors.py"
+        cli_source = paths.repository_root / "src" / "markeitech" / "cli.py"
+        module_source = paths.repository_root / "src" / "markeitech" / "__main__.py"
         source_before = source.read_bytes()
+        cli_source_before = cli_source.read_bytes()
+        module_source_before = module_source.read_bytes()
         first = generate()
         second = generate()
         self.assertEqual(first["artifact_set_sha256"], second["artifact_set_sha256"])
         self.assertEqual(first["selected"], 261)
         self.assertEqual(source.read_bytes(), source_before)
+        self.assertEqual(cli_source.read_bytes(), cli_source_before)
+        self.assertEqual(module_source.read_bytes(), module_source_before)
 
         self.assertEqual(paths.output, paths.repository_root / "docs" / "api")
         output = paths.output
@@ -68,7 +74,21 @@ class GenerationTest(unittest.TestCase):
             "markeitech.intelligence.actors.SessionStateActor",
             public_paths,
         )
+        self.assertIn("markeitech.cli.main", public_paths)
+        self.assertFalse(any(path.startswith("markeitech.cli._") for path in public_paths))
 
+        cli_html = (output / "api" / "cli" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("Command hierarchy", cli_html)
+        self.assertIn("Operations and side effects", cli_html)
+        self.assertIn("Process and authority boundaries", cli_html)
+        self.assertIn('<h2 id="invocation">', cli_html)
+        self.assertIn('<h2 id="public-python-entry-point">', cli_html)
+        self.assertIn('<h3 id="markeitech.cli.main"', cli_html)
+        self.assertGreaterEqual(cli_html.count('href="#invocation"'), 2)
+        self.assertIn("can rewrite tracked", cli_html)
+        self.assertIn("markeitech.cli.main", cli_html)
+        self.assertIn("Route one explicit Markeitech runtime or repository operation", cli_html)
+        self.assertNotIn("markeitech.cli._parser", cli_html)
         for path in output.rglob("*"):
             if path.is_file() and path.suffix in {".css", ".html", ".json", ".txt", ".xml"}:
                 value = path.read_text(encoding="utf-8")

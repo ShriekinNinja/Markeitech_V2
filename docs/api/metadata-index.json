@@ -311,7 +311,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "f1d11a4d5872128eba637d79788cedc3dd692111cbc39d2df1300c906a3a7199"
+    "source_snapshot_sha256": "b43a064f20da591c3c07d42932049c07c79a42f8b59d929eebb71a0ecd5930ae"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -849,7 +849,7 @@
       {
         "alias": false,
         "canonical": "markeitech.cli.main",
-        "definition_line": 364,
+        "definition_line": 374,
         "exposed": "markeitech.cli.main",
         "has_docstring": true,
         "inclusion_reason": "Installed operator command entry point.",
@@ -3227,7 +3227,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 94,
-    "input_signature": "f1d11a4d5872128eba637d79788cedc3dd692111cbc39d2df1300c906a3a7199"
+    "input_signature": "b43a064f20da591c3c07d42932049c07c79a42f8b59d929eebb71a0ecd5930ae"
   },
-  "source_snapshot_sha256": "f1d11a4d5872128eba637d79788cedc3dd692111cbc39d2df1300c906a3a7199"
+  "source_snapshot_sha256": "b43a064f20da591c3c07d42932049c07c79a42f8b59d929eebb71a0ecd5930ae"
 }
