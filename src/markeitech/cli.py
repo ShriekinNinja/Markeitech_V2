@@ -1,3 +1,13 @@
+"""Route the closed Markeitech runtime and repository command surface.
+
+The module delegates runtime construction and execution to ``markeitech.system.cli`` and launches
+documentation, diagram, verification, and environment operations through fixed, validated
+boundaries. Documentation and diagram commands retain their separately locked interpreters;
+connected runtime authority retains the exact Interactive Brokers confirmation gate. The router
+does not provision dependencies, start services implicitly, or execute commands supplied by
+configuration or user-controlled shell text.
+"""
+
 from __future__ import annotations
 
 import argparse
