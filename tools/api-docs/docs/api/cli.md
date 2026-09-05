@@ -4,7 +4,7 @@ The unified Python CLI is the closed command surface for the Markeitech runtime 
 repository tools. It is independent of PyCharm and other IDEs: an IDE launcher may call the same
 entry point, but it does not own a command, argument, environment rule, or safety policy.
 
-### Invocation
+## Invocation
 
 Provision the root environment explicitly with `uv sync --locked --dev`. Routine commands then use
 the already-provisioned entry point:
@@ -24,7 +24,7 @@ Do not put `uv run` in front of routine operations. It may create or synchronize
 environment before the CLI can enforce its offline and tool-isolation checks. Dependency
 provisioning remains a separate, explicit operation.
 
-### Command hierarchy
+## Command hierarchy
 
 ```text
 markeitech
@@ -53,7 +53,7 @@ markeitech
 Use nested help for current arguments and defaults, for example
 `.venv/bin/markeitech system run --help`.
 
-### Operations and side effects
+## Operations and side effects
 
 | Command | Environment | Effect and prerequisites |
 | --- | --- | --- |
@@ -62,7 +62,7 @@ Use nested help for current arguments and defaults, for example
 | `docs validate` | API-doc tool | Validates the static documentation inputs and locked tool environment without generating output. |
 | `docs check` | API-doc tool | Builds a temporary candidate and compares it with the tracked `docs/api` artifact set. |
 | `docs generate` | API-doc tool | Atomically replaces the complete tracked `docs/api` artifact set after all safeguards pass. |
-| `docs test` | API-doc tool | Runs the isolated API-documentation test suite. |
+| `docs test` | API-doc tool | Runs the isolated suite, whose generation tests can rewrite tracked `docs/api`; inspect scoped diffs, untracked files, and worktree status afterward. |
 | `diagrams validate` | Diagram tool | Validates the canonical TOML manifest without generating output. |
 | `diagrams check` | Diagram tool | Validates the manifest plus the supported source/configuration drift census. |
 | `diagrams generate` | Diagram tool | Regenerates the canonical complete diagram package with drift checking. |
@@ -84,7 +84,7 @@ uv sync --project tools/system-diagram --locked
 The CLI diagnoses a missing or invalid tool environment and exits non-zero; it never provisions or
 updates either environment itself.
 
-### Process and authority boundaries
+## Process and authority boundaries
 
 Fixed child processes run from the repository root and return their child exit codes. Interrupts
 are forwarded to the owned process group, and cancellation returns the corresponding
@@ -105,6 +105,6 @@ and
 [system-diagram maintenance procedure](https://github.com/ShriekinNinja/Markeitech_V2/blob/master/tools/system-diagram/docs/maintenance.md)
 for detailed prerequisites, configuration, generation, review, and safety requirements.
 
-### Public Python entry point
+## Public Python entry point
 
-::: markeitech.cli.main
+### ::: markeitech.cli.main
