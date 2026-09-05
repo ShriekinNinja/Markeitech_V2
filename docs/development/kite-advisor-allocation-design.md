@@ -1,8 +1,9 @@
 # Kite Per-Consultation Resource Allocation
 
-**Status:** Source and offline checks pass; two task-driven effective effort allocations are
-verified. Complete acceptance remains blocked by installed-package stability and live cross-model
-evidence; see the [acceptance record](kite-allocation-acceptance.md).
+**Status:** Source/offline checks and bounded final-package acceptance pass. The same unchanged
+advisor executed task-driven Sol/medium and Astra/high allocations, verified through host metadata.
+See the [acceptance record](kite-allocation-acceptance.md) for package stability and the separate
+effective tool-isolation limitation. PR review and merge remain pending.
 
 **Tracking:** [Issue #39](https://github.com/ShriekinNinja/Markeitech_V2/issues/39)
 
@@ -26,8 +27,8 @@ maintained owners; this page records implementation scope and acceptance limits.
 - Council schema 3 contains allocation schema 1 and versioned advisor intent. Advisor defaults
   are profile references, separate from mandatory capability/compatibility constraints.
 - Existing Sol/effort assignments survive as preferences. The spawning agent may choose another
-  eligible allocation for the actual question. The real-model catalog admits Sol and Astra high using current host support and primary model
-  documentation. A synthetic fixture separately proves extensibility without advisor edits.
+  eligible allocation for the actual question. The real-model catalog admits Sol and Astra high
+  using host support and primary model documentation; current-host availability is checked separately. A synthetic fixture separately proves extensibility without advisor edits.
 - Task assessment is recorded judgment. Default resolution, constraint validation, and bounded
   alternatives are deterministic. Complete model/effort pairs prevent accidental inheritance.
 - Full or partial user choices are honored when compatible; invalid choices are not silently
@@ -88,7 +89,8 @@ host version, source/package identity, context, requested pair, and effective se
 exposes them. Unknown effective settings remain explicitly unverified. A successful spawn or a
 child repeating its model name is not effective-setting proof.
 
-Issue #39 remains open for that acceptance. No model-consuming benchmark, quality-parity result,
+The final-package CLI and desktop reruns satisfy that bounded allocation acceptance. Issue #39
+remains open pending PR review and merge. No model-consuming benchmark, quality-parity result,
 latency reduction, or cost saving is claimed. Comparative evaluations need separate authorization
 and predefined thresholds. The allocation contract documents coherent rollback through the normal
 PR, installation, and fresh-task workflow; unrelated user configuration remains untouched.

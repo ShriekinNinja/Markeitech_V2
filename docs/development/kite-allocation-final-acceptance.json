@@ -1,0 +1,545 @@
+{
+  "record_version": 1,
+  "evidence_date_utc": "2026-09-05",
+  "source_revision": "6ad23c70b4d7717bb5ad60dfa15d079a68324bb6",
+  "policy_version": "2026-09-05-v6",
+  "package": {
+    "version": "0.1.0+codex.20260905204949",
+    "files": 116,
+    "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7"
+  },
+  "allocation_acceptance": "PASS_BOUNDED_FINAL_PACKAGE_AND_CROSS_MODEL_EXECUTION",
+  "issue_state": "open pending PR review and merge",
+  "limitations": [
+    "Desktop children inherit workspace-write despite the read-only role default; no file writes occurred. Effective read-only isolation is not accepted.",
+    "No comparative quality, cost, latency, broad council routing, revocation, or runtime-provider claim.",
+    "Earlier cache replacement remains historical evidence with unknown cause; these reruns observed no replacement.",
+    "Policy evidence records the eligibility/admission checkpoint before these live runs; this external ledger records the subsequent effective execution."
+  ],
+  "runs": {
+    "cli": {
+      "session_id": "01a07356-8e5a-7d90-9ca9-daef75c10093",
+      "task_context": "new read-only CLI session",
+      "source_revision_start": "6ad23c70b4d7717bb5ad60dfa15d079a68324bb6",
+      "source_revision_end": "6ad23c70b4d7717bb5ad60dfa15d079a68324bb6",
+      "role_sha256_start": "e0b96b4154727c88e4ebf998188040c410b564bac610f37c2e2a03b03b10cd07",
+      "role_sha256_end": "e0b96b4154727c88e4ebf998188040c410b564bac610f37c2e2a03b03b10cd07",
+      "package_start_check": {
+        "version": "0.1.0+codex.20260905204949",
+        "files": 116,
+        "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7",
+        "installed": {
+          "version": "0.1.0+codex.20260905204949",
+          "files": 116,
+          "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7"
+        },
+        "status": "BYTE_IDENTICAL"
+      },
+      "package_end_check": {
+        "version": "0.1.0+codex.20260905204949",
+        "files": 116,
+        "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7",
+        "installed": {
+          "version": "0.1.0+codex.20260905204949",
+          "files": 116,
+          "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7"
+        },
+        "status": "BYTE_IDENTICAL"
+      },
+      "package_sampling": {
+        "requested_interval_seconds": 2,
+        "samples": 157,
+        "mismatches": 0,
+        "first_at": "2026-09-05T20:50:46.728389+00:00",
+        "last_at": "2026-09-05T20:56:01.266567+00:00",
+        "maximum_observed_interval_seconds": 2.083227,
+        "source_identities": [
+          {
+            "version": "0.1.0+codex.20260905204949",
+            "files": 116,
+            "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7"
+          }
+        ],
+        "installed_identities": [
+          {
+            "version": "0.1.0+codex.20260905204949",
+            "files": 116,
+            "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7"
+          }
+        ],
+        "scope": "Periodic observations, not continuous attestation; desktop sampler covers both child executions. Start/end checks are also recorded by each task."
+      },
+      "consultations": [
+        {
+          "request": {
+            "assessment": {
+              "ambiguity": "low",
+              "complexity": "low",
+              "consequence": "low",
+              "evidence_volume": "low"
+            },
+            "consultation_id": "pr40-final-acceptance-question-a",
+            "dependencies_ready": true,
+            "fork_turns": "none",
+            "history": [],
+            "host": {
+              "evidence": "Current task collaboration.spawn_agent schema inspected directly before allocation. Exact architecture role is exposed. Models exposed: gpt-5.6-sol low medium high xhigh max ultra; gpt-5.6-terra low medium high xhigh max ultra; gpt-5.6-luna low medium high xhigh max; gpt-5.5 low medium high xhigh; gpt-5.4-mini low medium high xhigh. gpt-6-astra is absent. Role TOML parsed in this task and has no model or model_reasoning_effort key.",
+              "fork_modes": [
+                "none",
+                "bounded"
+              ],
+              "models": {
+                "gpt-5.4-mini": {
+                  "capabilities": [
+                    "source_analysis",
+                    "tool_use",
+                    "evidence_reporting"
+                  ],
+                  "context_tokens": null,
+                  "efforts": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh"
+                  ]
+                },
+                "gpt-5.5": {
+                  "capabilities": [
+                    "source_analysis",
+                    "tool_use",
+                    "evidence_reporting"
+                  ],
+                  "context_tokens": null,
+                  "efforts": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh"
+                  ]
+                },
+                "gpt-5.6-luna": {
+                  "capabilities": [
+                    "source_analysis",
+                    "tool_use",
+                    "evidence_reporting"
+                  ],
+                  "context_tokens": null,
+                  "efforts": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh",
+                    "max"
+                  ]
+                },
+                "gpt-5.6-sol": {
+                  "capabilities": [
+                    "source_analysis",
+                    "tool_use",
+                    "evidence_reporting"
+                  ],
+                  "context_tokens": null,
+                  "efforts": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh",
+                    "max",
+                    "ultra"
+                  ]
+                },
+                "gpt-5.6-terra": {
+                  "capabilities": [
+                    "source_analysis",
+                    "tool_use",
+                    "evidence_reporting"
+                  ],
+                  "context_tokens": null,
+                  "efforts": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh",
+                    "max",
+                    "ultra"
+                  ]
+                }
+              },
+              "role": "markeitech_architecture_boundaries_advisor",
+              "role_overrides": {},
+              "snapshot_id": "pr40-rerun-live-spawn-schema-2026-09-05-a"
+            },
+            "kite_active": true,
+            "limits": {
+              "max_attempts": 1
+            },
+            "proposed_choice": {
+              "model": "gpt-5.6-sol",
+              "reasoning_effort": "medium"
+            },
+            "question": "Identify the one tracked owner of concrete model/effort profile mappings and whether the architecture advisor overrides it.",
+            "rationale": "Simple unambiguous current-source ownership lookup for the bounded final PR 40 acceptance rerun; no comparative quality or cost claim.",
+            "required_capabilities": [
+              "source_analysis",
+              "tool_use",
+              "evidence_reporting"
+            ],
+            "required_context_tokens": 0,
+            "role": "markeitech_architecture_boundaries_advisor",
+            "schema_version": 1,
+            "sources_ready": true
+          },
+          "decision": {
+            "assessment": {
+              "ambiguity": "low",
+              "complexity": "low",
+              "consequence": "low",
+              "evidence_volume": "low"
+            },
+            "attempt": 1,
+            "binding": "ad89576c95dfbf4fc27ddc9c39203f90ca41c1e50a2e203f5a70f3c96eaecd38",
+            "consultation_id": "pr40-final-acceptance-question-a",
+            "decision_id": "e1b4db54df00d260ee981fba912d5ea6f230a3687b545966da9ada3a59051c19",
+            "effective": null,
+            "fork_turns": "none",
+            "host_snapshot_id": "pr40-rerun-live-spawn-schema-2026-09-05-a",
+            "intent_version": 1,
+            "kind": "initial",
+            "policy_version": "2026-09-05-v6",
+            "question": "Identify the one tracked owner of concrete model/effort profile mappings and whether the architecture advisor overrides it.",
+            "rationale": "Simple unambiguous current-source ownership lookup for the bounded final PR 40 acceptance rerun; no comparative quality or cost claim.",
+            "requested": {
+              "model": "gpt-5.6-sol",
+              "reasoning_effort": "medium"
+            },
+            "role": "markeitech_architecture_boundaries_advisor",
+            "schema_version": 1,
+            "source": "judgment",
+            "status": "REQUEST_VALIDATED_EXECUTION_UNVERIFIED"
+          },
+          "receipt": {
+            "decision_id": "e1b4db54df00d260ee981fba912d5ea6f230a3687b545966da9ada3a59051c19",
+            "execution_id": "01a07359-1a18-7523-b11c-f746fcde46a0",
+            "effective": {
+              "model": "gpt-5.6-sol",
+              "reasoning_effort": "medium"
+            },
+            "outcome": "completed",
+            "evidence": "Host session 01a07359-1a18-7523-b11c-f746fcde46a0: session_meta line 1 verifies exact role/parent; turn_context line 8 records effective model/effort/sandbox; task_complete line 94. No child self-report is used."
+          },
+          "receipt_status": "EXECUTION_VERIFIED",
+          "host_metadata": {
+            "session_id": "01a07359-1a18-7523-b11c-f746fcde46a0",
+            "parent_session_id": "01a07356-8e5a-7d90-9ca9-daef75c10093",
+            "agent_path": "/root/pr40_question_a",
+            "agent_role": "markeitech_architecture_boundaries_advisor",
+            "cli_version": "0.150.1",
+            "turn_context_line": 8,
+            "sandbox_type": "read-only",
+            "network_access": null,
+            "approval_policy": "on-request",
+            "completion_line": 94,
+            "completed_at": "2026-09-05T20:54:47.534Z"
+          }
+        }
+      ]
+    },
+    "desktop": {
+      "session_id": "01a0735a-d771-7561-bf9b-623dbfe29e6e",
+      "task_context": "new same-directory desktop fork; completed history inherited; current host schema re-inspected; child contexts fork_turns=none",
+      "source_revision_start": "6ad23c70b4d7717bb5ad60dfa15d079a68324bb6",
+      "source_revision_end": "6ad23c70b4d7717bb5ad60dfa15d079a68324bb6",
+      "role_sha256_start": "e0b96b4154727c88e4ebf998188040c410b564bac610f37c2e2a03b03b10cd07",
+      "role_sha256_end": "e0b96b4154727c88e4ebf998188040c410b564bac610f37c2e2a03b03b10cd07",
+      "package_start_check": {
+        "version": "0.1.0+codex.20260905204949",
+        "files": 116,
+        "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7",
+        "installed": {
+          "version": "0.1.0+codex.20260905204949",
+          "files": 116,
+          "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7"
+        },
+        "status": "BYTE_IDENTICAL"
+      },
+      "package_end_check": {
+        "version": "0.1.0+codex.20260905204949",
+        "files": 116,
+        "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7",
+        "installed": {
+          "version": "0.1.0+codex.20260905204949",
+          "files": 116,
+          "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7"
+        },
+        "status": "BYTE_IDENTICAL"
+      },
+      "package_sampling": {
+        "requested_interval_seconds": 2,
+        "samples": 108,
+        "mismatches": 0,
+        "first_at": "2026-09-05T20:56:29.142254+00:00",
+        "last_at": "2026-09-05T21:00:06.385653+00:00",
+        "maximum_observed_interval_seconds": 2.150614,
+        "source_identities": [
+          {
+            "version": "0.1.0+codex.20260905204949",
+            "files": 116,
+            "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7"
+          }
+        ],
+        "installed_identities": [
+          {
+            "version": "0.1.0+codex.20260905204949",
+            "files": 116,
+            "sha256": "3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7"
+          }
+        ],
+        "scope": "Periodic observations, not continuous attestation; desktop sampler covers both child executions. Start/end checks are also recorded by each task."
+      },
+      "consultations": [
+        {
+          "request": {
+            "assessment": {
+              "ambiguity": "low",
+              "complexity": "low",
+              "consequence": "low",
+              "evidence_volume": "low"
+            },
+            "consultation_id": "pr40-final-desktop-a",
+            "dependencies_ready": true,
+            "fork_turns": "none",
+            "history": [],
+            "host": {
+              "evidence": "Current desktop task collaboration.spawn_agent schema directly exposes exact role markeitech_architecture_boundaries_advisor, gpt-5.6-sol medium/high/xhigh, gpt-6-astra high, explicit model/reasoning_effort/fork_turns, and no fixed role override; current role TOML confirms no model or model_reasoning_effort keys. Context capacity is not exposed.",
+              "fork_modes": [
+                "none",
+                "bounded"
+              ],
+              "models": {
+                "gpt-5.6-sol": {
+                  "capabilities": [
+                    "source_analysis",
+                    "tool_use",
+                    "evidence_reporting"
+                  ],
+                  "context_tokens": null,
+                  "efforts": [
+                    "medium",
+                    "high",
+                    "xhigh"
+                  ]
+                },
+                "gpt-6-astra": {
+                  "capabilities": [
+                    "source_analysis",
+                    "tool_use",
+                    "evidence_reporting"
+                  ],
+                  "context_tokens": null,
+                  "efforts": [
+                    "high"
+                  ]
+                }
+              },
+              "role": "markeitech_architecture_boundaries_advisor",
+              "role_overrides": {},
+              "snapshot_id": "desktop-fresh-pr40-final-a-20260905"
+            },
+            "kite_active": true,
+            "limits": {
+              "max_attempts": 1
+            },
+            "proposed_choice": {
+              "model": "gpt-5.6-sol",
+              "reasoning_effort": "medium"
+            },
+            "question": "Which one tracked file owns concrete model and reasoning-effort profile mappings, and does the architecture advisor role definition override it?",
+            "rationale": "Small unambiguous current-source ownership lookup with a direct policy-to-role comparison.",
+            "required_capabilities": [
+              "source_analysis",
+              "tool_use",
+              "evidence_reporting"
+            ],
+            "required_context_tokens": 0,
+            "role": "markeitech_architecture_boundaries_advisor",
+            "schema_version": 1,
+            "sources_ready": true
+          },
+          "decision": {
+            "assessment": {
+              "ambiguity": "low",
+              "complexity": "low",
+              "consequence": "low",
+              "evidence_volume": "low"
+            },
+            "attempt": 1,
+            "binding": "10b352082db528407a744a0a4292a89cb18706905d2c839e97d7fc78d24e576e",
+            "consultation_id": "pr40-final-desktop-a",
+            "decision_id": "123014fed1624a6795f36c5eca6f141feaef9634e4cc5e19818748bc5fcc87b3",
+            "effective": null,
+            "fork_turns": "none",
+            "host_snapshot_id": "desktop-fresh-pr40-final-a-20260905",
+            "intent_version": 1,
+            "kind": "initial",
+            "policy_version": "2026-09-05-v6",
+            "question": "Which one tracked file owns concrete model and reasoning-effort profile mappings, and does the architecture advisor role definition override it?",
+            "rationale": "Small unambiguous current-source ownership lookup with a direct policy-to-role comparison.",
+            "requested": {
+              "model": "gpt-5.6-sol",
+              "reasoning_effort": "medium"
+            },
+            "role": "markeitech_architecture_boundaries_advisor",
+            "schema_version": 1,
+            "source": "judgment",
+            "status": "REQUEST_VALIDATED_EXECUTION_UNVERIFIED"
+          },
+          "receipt": {
+            "decision_id": "123014fed1624a6795f36c5eca6f141feaef9634e4cc5e19818748bc5fcc87b3",
+            "execution_id": "01a0735b-dfbf-7142-824c-d9acf419d8bf",
+            "effective": {
+              "model": "gpt-5.6-sol",
+              "reasoning_effort": "medium"
+            },
+            "outcome": "completed",
+            "evidence": "Host session 01a0735b-dfbf-7142-824c-d9acf419d8bf: session_meta line 1 verifies exact role/parent; turn_context line 8 records effective model/effort/sandbox; task_complete line 94. No child self-report is used."
+          },
+          "receipt_status": "EXECUTION_VERIFIED",
+          "host_metadata": {
+            "session_id": "01a0735b-dfbf-7142-824c-d9acf419d8bf",
+            "parent_session_id": "01a0735a-d771-7561-bf9b-623dbfe29e6e",
+            "agent_path": "/root/pr40_desktop_a",
+            "agent_role": "markeitech_architecture_boundaries_advisor",
+            "cli_version": "0.153.4",
+            "turn_context_line": 8,
+            "sandbox_type": "workspace-write",
+            "network_access": false,
+            "approval_policy": "on-request",
+            "completion_line": 94,
+            "completed_at": "2026-09-05T20:57:34.770Z"
+          }
+        },
+        {
+          "request": {
+            "assessment": {
+              "ambiguity": "high",
+              "complexity": "high",
+              "consequence": "high",
+              "evidence_volume": "high"
+            },
+            "consultation_id": "pr40-final-desktop-b",
+            "dependencies_ready": true,
+            "fork_turns": "none",
+            "history": [],
+            "host": {
+              "evidence": "Current desktop task collaboration.spawn_agent schema directly exposes exact role markeitech_architecture_boundaries_advisor, gpt-5.6-sol medium/high/xhigh, gpt-6-astra high, explicit model/reasoning_effort/fork_turns, and no fixed role override; current role TOML confirms no model or model_reasoning_effort keys. Context capacity is not exposed.",
+              "fork_modes": [
+                "none",
+                "bounded"
+              ],
+              "models": {
+                "gpt-5.6-sol": {
+                  "capabilities": [
+                    "source_analysis",
+                    "tool_use",
+                    "evidence_reporting"
+                  ],
+                  "context_tokens": null,
+                  "efforts": [
+                    "medium",
+                    "high",
+                    "xhigh"
+                  ]
+                },
+                "gpt-6-astra": {
+                  "capabilities": [
+                    "source_analysis",
+                    "tool_use",
+                    "evidence_reporting"
+                  ],
+                  "context_tokens": null,
+                  "efforts": [
+                    "high"
+                  ]
+                }
+              },
+              "role": "markeitech_architecture_boundaries_advisor",
+              "role_overrides": {},
+              "snapshot_id": "desktop-fresh-pr40-final-b-20260905"
+            },
+            "kite_active": true,
+            "limits": {
+              "max_attempts": 1
+            },
+            "proposed_choice": {
+              "model": "gpt-6-astra",
+              "reasoning_effort": "high"
+            },
+            "question": "Reconcile ownership across central policy, resolver, router, exact-role source, installed bundle, loaded task, and host receipts. Identify ownership of identity, preferences, hard eligibility, discretionary choice, effective execution, installed identity, and loaded lifetime. Analyze hypothetical stale fixed defaults after a policy update, equal version labels with differing installed bytes, and an unavailable complete user choice conflicting with primary judgment. For each name the resolving owner, required stop, and insufficient evidence.",
+            "rationale": "Materially complex reconciliation across seven authority and lifecycle layers plus three failure cases; incorrect ownership would invalidate cross-model acceptance.",
+            "required_capabilities": [
+              "source_analysis",
+              "tool_use",
+              "evidence_reporting"
+            ],
+            "required_context_tokens": 0,
+            "role": "markeitech_architecture_boundaries_advisor",
+            "schema_version": 1,
+            "sources_ready": true
+          },
+          "decision": {
+            "assessment": {
+              "ambiguity": "high",
+              "complexity": "high",
+              "consequence": "high",
+              "evidence_volume": "high"
+            },
+            "attempt": 1,
+            "binding": "a689a1fcb276279fc0c3f3de4d6a107f687a144aeb0ecdbceac1433795a15e24",
+            "consultation_id": "pr40-final-desktop-b",
+            "decision_id": "07c166cad9b5de0b9cdec059e74a41eff8cd9b1b3cfcf90bdb85b69dbcf8aa7e",
+            "effective": null,
+            "fork_turns": "none",
+            "host_snapshot_id": "desktop-fresh-pr40-final-b-20260905",
+            "intent_version": 1,
+            "kind": "initial",
+            "policy_version": "2026-09-05-v6",
+            "question": "Reconcile ownership across central policy, resolver, router, exact-role source, installed bundle, loaded task, and host receipts. Identify ownership of identity, preferences, hard eligibility, discretionary choice, effective execution, installed identity, and loaded lifetime. Analyze hypothetical stale fixed defaults after a policy update, equal version labels with differing installed bytes, and an unavailable complete user choice conflicting with primary judgment. For each name the resolving owner, required stop, and insufficient evidence.",
+            "rationale": "Materially complex reconciliation across seven authority and lifecycle layers plus three failure cases; incorrect ownership would invalidate cross-model acceptance.",
+            "requested": {
+              "model": "gpt-6-astra",
+              "reasoning_effort": "high"
+            },
+            "role": "markeitech_architecture_boundaries_advisor",
+            "schema_version": 1,
+            "source": "judgment",
+            "status": "REQUEST_VALIDATED_EXECUTION_UNVERIFIED"
+          },
+          "receipt": {
+            "decision_id": "07c166cad9b5de0b9cdec059e74a41eff8cd9b1b3cfcf90bdb85b69dbcf8aa7e",
+            "execution_id": "01a0735b-f524-71b3-b528-34bc17f80f5c",
+            "effective": {
+              "model": "gpt-6-astra",
+              "reasoning_effort": "high"
+            },
+            "outcome": "completed",
+            "evidence": "Host session 01a0735b-f524-71b3-b528-34bc17f80f5c: session_meta line 1 verifies exact role/parent; turn_context line 8 records effective model/effort/sandbox; task_complete line 64. No child self-report is used."
+          },
+          "receipt_status": "EXECUTION_VERIFIED",
+          "host_metadata": {
+            "session_id": "01a0735b-f524-71b3-b528-34bc17f80f5c",
+            "parent_session_id": "01a0735a-d771-7561-bf9b-623dbfe29e6e",
+            "agent_path": "/root/pr40_desktop_b",
+            "agent_role": "markeitech_architecture_boundaries_advisor",
+            "cli_version": "0.153.4",
+            "turn_context_line": 8,
+            "sandbox_type": "workspace-write",
+            "network_access": false,
+            "approval_policy": "on-request",
+            "completion_line": 64,
+            "completed_at": "2026-09-05T20:57:52.869Z"
+          }
+        }
+      ]
+    }
+  }
+}

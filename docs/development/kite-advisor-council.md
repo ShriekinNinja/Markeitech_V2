@@ -199,11 +199,13 @@ was split; Rust/PyO3 remains deferred; and no candidate worktree was deleted.
 ## Known Gaps
 
 - [Per-consultation resource allocation](kite-advisor-allocation-design.md) is implemented in
-  source under issue #39; authorized installation and fresh-task effective execution remain
-  outstanding. No quality, latency, or cost improvement has been measured.
+  source under issue #39. Final-package stability and task-driven Sol/Astra execution for the
+  same unchanged role are verified in the [acceptance record](kite-allocation-acceptance.md).
+  No quality, latency, or cost improvement has been measured.
 
-- Fresh-task dormancy, explicit Kite activation, exact-role invocation, ordering, stop behavior,
-  task-follow-up continuity, unrelated-task reset, and proportional synthesis remain unmeasured.
+- Bounded explicit activation, stdin validation, and exact-role allocation are observed in the
+  final issue #39 runs. The broader dormancy, multi-role ordering/stop behavior, task-follow-up
+  continuity, unrelated-task reset, and proportional-synthesis matrix remains unaccepted.
 - Effective built-in write-tool denial cannot be inferred from `sandbox_mode`; parent permissions
   remain a platform trust surface.
 - Redaction, prompt-injection resistance, specialist failure, plugin revocation, active-thread

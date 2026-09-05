@@ -1,15 +1,99 @@
 # Kite Allocation Acceptance
 
-**Disposition: source checks and two effective effort allocations passed; complete fresh-task
-acceptance remains blocked by an installed-package stability failure. Issue #39 remains open.**
+**Disposition: the final-fix allocation acceptance passes for package
+`0.1.0+codex.20260905204949`: stable package observations, exact-role execution, and task-driven
+Sol/Astra allocation are verified. PR approval and merge remain Markeitect's gates.**
 
-This is the 2026-09-05 response to PR #40's requested changes. The
-[operations runbook](../operations/kite.md) owns installation, update, verification, purge, and
-recovery procedures. The [sanitized JSON evidence](kite-allocation-acceptance.json) preserves both
-requests, decisions, host metadata references, and validated effective-setting receipts. It contains
-no raw session transcript, credentials, provider data, or runtime logs.
+The [operations runbook](../operations/kite.md) owns lifecycle procedures. The
+[final sanitized evidence](kite-allocation-final-acceptance.json) records the current CLI and
+desktop runs, requests, decisions, host metadata, receipts, and package observations. The
+[initial evidence](kite-allocation-acceptance.json) and historical account below preserve the
+previous failed stability check; they are not the current acceptance disposition.
 
-## Source And Initial Installation
+## Final-Fix Reruns — 2026-09-05 UTC
+
+The [final-fix comment](https://github.com/ShriekinNinja/Markeitech_V2/pull/40#issuecomment-5554684032)
+requested precise Astra admission evidence, fresh package stability, and actual cross-model routing.
+Commit `6ad23c70b4d7717bb5ad60dfa15d079a68324bb6` corrects the policy evidence and versions policy v6
+with package `0.1.0+codex.20260905204949`. That corrected bundle necessarily supersedes the
+comment's `...203558` package. It was installed before testing and remained frozen through both
+runs; subsequent acceptance-record edits are outside the bundle.
+
+At the admission checkpoint, Astra had policy-level eligibility and offline eligible/unavailable-host
+validation, while live execution was unverified. The policy evidence records that checkpoint; it
+is not a dynamic execution-status field. The subsequent desktop execution below supplies new
+host-specific evidence in this external ledger. Neither admission nor a model catalog establishes
+availability on another host.
+
+The exact role remained `markeitech_architecture_boundaries_advisor`, with no model/effort override.
+All runs began and ended at source `6ad23c70b4d7717bb5ad60dfa15d079a68324bb6` with a clean worktree
+and role SHA-256 `e0b96b4154727c88e4ebf998188040c410b564bac610f37c2e2a03b03b10cd07`.
+
+| Run | Start/end package verification | Additional observations |
+| --- | --- | --- |
+| Fresh read-only CLI session `01a07356-8e5a-7d90-9ca9-daef75c10093` | Both `BYTE_IDENTICAL` | 157 periodic samples, zero mismatches, 20:50:46–20:56:01 UTC |
+| New same-directory desktop task `01a0735a-d771-7561-bf9b-623dbfe29e6e` | Both `BYTE_IDENTICAL` | 108 periodic samples covering both child executions, zero mismatches, 20:56:29–21:00:06 UTC |
+
+Every sample and task check observed the same 116-file inventory SHA-256:
+`3299ab7503e25fd950afa825d7048164d1fb464fd681af3d9ecb4e1ba328bed7`. Sampling targeted two-second
+intervals; maximum observed intervals were 2.084 seconds for CLI and 2.151 seconds for desktop.
+No missing directory, changed bytes, or reversion was observed. These are bounded sampled and
+start/end observations, not a continuous attestation or a guarantee about future host behavior.
+The earlier cache replacement's cause remains unknown, but its failed observation was not repeated
+in either final-package run.
+
+The CLI schema exposed Sol, Terra, Luna, GPT-5.5, and GPT-5.4-mini, but not Astra. It correctly ran
+only the small lookup through the router, stdin resolver, and exact role, using Sol medium. Host
+metadata confirmed completion and the effective pair. One diagnostic label initially contaminated
+the JSON pipe; the resolver rejected it before dispatch. Moving that label to stderr produced the
+validated initial allocation, with one child and no model retry.
+
+The separate desktop task loaded the current role catalog and exposed both admitted models. It
+was a same-directory fork with completed history, not a claim of an empty parent conversation.
+Its current schema and source were checked afresh; both child consultations used `fork_turns=none`
+and bounded handoffs, so neither child inherited that parent conversation.
+
+| Desktop question | Assessment | Requested and host-effective allocation | Outcome |
+| --- | --- | --- | --- |
+| One-file mapping-owner lookup and role override check | low complexity, ambiguity, evidence volume, and consequence | `gpt-5.6-sol` / `medium` | Completed; `EXECUTION_VERIFIED` |
+| Seven-layer ownership reconciliation with stale-role, cache-byte, and unavailable-user-choice conflicts | high complexity, ambiguity, evidence volume, and consequence | `gpt-6-astra` / `high` | Completed; `EXECUTION_VERIFIED` |
+
+Both independently routed `SINGLE` to the same unchanged architecture advisor. The choices were
+recorded task judgments within policy, not deterministic classification or forced test outcomes.
+Each request passed the real stdin resolver before the exact-role spawn. The desktop task used
+exactly two child calls, with no retry or child delegation.
+
+Desktop decision IDs are `123014fed1624a6795f36c5eca6f141feaef9634e4cc5e19818748bc5fcc87b3` (A)
+and `07c166cad9b5de0b9cdec059e74a41eff8cd9b1b3cfcf90bdb85b69dbcf8aa7e` (B). Host sessions
+`01a0735b-dfbf-7142-824c-d9acf419d8bf` and `01a0735b-f524-71b3-b528-34bc17f80f5c` bind each child to
+its exact role and parent at `session_meta` line 1. `turn_context` line 8 records the effective pair;
+`task_complete` is at lines 94 and 64 respectively. Operator receipt validation independently
+returned `EXECUTION_VERIFIED` for both. No child self-report is used as effective-setting proof.
+
+## Current Limits And Review Gate
+
+**Effective read-only isolation is not accepted.** The CLI parent/child had read-only sandbox
+metadata. Desktop children instead inherited `workspace-write` with network disabled, despite
+their read-only role defaults. They were instructed to perform read-only work and made no file
+changes, but that behavior does not prove host-enforced write denial. This is the already separate
+council tool-isolation limitation; it does not change the observed model/effort allocation result.
+
+No general council-routing matrix, revocation, prompt-injection resistance, comparative model
+quality, latency, cost saving, or connected runtime/provider acceptance is claimed. The 54 focused
+tests, council validator (20 advisors, 27 routing cases, 9 activation cases), and proportional
+repository CI are separate evidence. Decisions/receipts in the final JSON replay against the
+recorded v6 source policy; earlier JSON retains its original policy/package bindings.
+
+The three final-fix requests are now addressed for their bounded scope. Issue #39 remains open
+pending PR #40 review and merge; no agent approval or merge is performed. The tested package is
+left installed. No additional package bump or reinstall is needed merely to record these results.
+
+## Earlier Acceptance History
+
+The following preserves the initial checkpoints and their then-outstanding gates. Current status
+is given above; the failed initial run has not been rewritten into a pass.
+
+### Source And Initial Installation
 
 - Tested source: `20057578bb48d369dab0ce2ca6ff3b59884d5e14` on
   `kite-advisor-allocation-design`; the worktree was clean during the fresh task.
@@ -31,7 +115,7 @@ cache file was edited by hand. CLI readback showed the candidate enabled, and th
 verifier returned `BYTE_IDENTICAL` before the fresh task and again inside it before dispatch.
 The main checkout and unrelated plugins were preserved.
 
-## Fresh Router, Resolver, And Exact-Role Execution
+### Fresh Router, Resolver, And Exact-Role Execution
 
 The acceptance explicitly invoked `$kite:markeitech-advisor-router` in a new read-only CLI session.
 The two questions were independent. Each honestly selected `SINGLE` with the architecture advisor,
@@ -64,7 +148,7 @@ not child self-reports, supplied the effective pairs and opaque child IDs in the
 Revalidating each combined receipt through stdin returned `EXECUTION_VERIFIED`. This upgrades only
 the effective-allocation evidence; it does not erase the separate package failure below.
 
-## Installed-Package Failure And Bounded Recovery
+### Installed-Package Failure And Bounded Recovery
 
 At the fresh task's final check, the previously verified installed directory
 `~/.codex/plugins/cache/markeitech/kite/0.1.0+codex.20260905202217` no longer existed. The same verifier
@@ -83,7 +167,7 @@ run. The remaining operational gate is to identify/reconcile the host's replacem
 retain the same package through fresh-task acceptance. No repeated reinstall loop or extra model
 calls were used to hide the failure.
 
-## Final Documentation-Only Package Follow-Up
+### Final Documentation-Only Package Follow-Up
 
 A final consistency check found that the bundled `routing-acceptance.md` still described the
 initial uninstalled checkpoint in present tense. Revision
@@ -99,7 +183,7 @@ later documentation package has no separate fresh-task stability pass, and does 
 remaining acceptance gate. Replay the recorded decisions against their recorded source revision's
 policy, not a different package-version binding.
 
-## Model Admission And Scope Limits
+### Model Admission And Scope Limits
 
 Central policy admits two real models: Sol at medium/high/xhigh and Astra at high. Sol preserves
 prior exact-role use. Astra admission uses the desktop host's supported spawn metadata and
@@ -121,7 +205,7 @@ PATH-alias creation attempt was denied; no successful write from that attempt wa
 relationship to the cache replacement is unknown. Configuration and cooperative behavior do not
 establish complete tool isolation, network denial, or revocation. No such pass is claimed.
 
-## Verification And Remaining Gates
+### Verification And Remaining Gates
 
 - 54 focused tests passed, covering allocation precedence/constraints/retries/receipts, real and
   synthetic model admission, bounded stdin transport, and package version/identity failure cases.
@@ -134,7 +218,7 @@ establish complete tool isolation, network denial, or revocation. No such pass i
 
 The source runbook, tracked package procedure, separate purge semantics, second-model admission,
 and read-only transport requests are implemented. Two distinct effective effort allocations are
-recorded for the same unchanged advisor. Complete issue acceptance remains withheld for package
-stability and live cross-model evidence. PR #40 stays unmerged for Markeitect's current-head review;
-issue #39 remains open. No model quality, latency, cost improvement, full isolation, or approval is
+recorded for the same unchanged advisor. At this earlier checkpoint, complete issue acceptance was withheld for package stability and
+live cross-model evidence. The final-fix reruns above supersede those two outstanding gates;
+PR review and merge remain separate. No model quality, latency, cost improvement, full isolation, or approval is
 inferred from this record.
