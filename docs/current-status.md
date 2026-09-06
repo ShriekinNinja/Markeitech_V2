@@ -1,8 +1,8 @@
 # Current Status
 
-**Last reviewed:** 2026-09-05
+**Last reviewed:** 2026-09-06
 
-**Implementation baseline inspected:** `master` at `295cdb7`
+**Implementation baseline inspected:** `master` at `ba7088a`
 
 This page is the source of truth for what the active Markeitech checkout implements now. It is
 deliberately a current-state ledger, not an implementation diary. Completed design and acceptance
@@ -28,7 +28,7 @@ None of those future documents proves implementation.
 | Agent/model | Unimplemented; no live model, Sir Loke read model, conversation state, or agent tools |
 | Execution | Absent; no submit, modify, bind-for-control, cancel, replace, exercise, or close path |
 | Persistence | PostgreSQL operational audit and compact evidence-recency profiles; no raw market-data store |
-| Current implementation focus | Gate 1 offline native IB/TWS broker-observation safety decision; each code/connected batch still needs focused approval |
+| Current implementation focus | Gate 1 paper-observation proof after Gate 1A's offline characterization; connection still needs separate explicit approval |
 
 ## Current Offline Verification
 
@@ -50,6 +50,19 @@ unified Python CLI merge at `295cdb7`:
 These checks establish offline code and documentation consistency only. They do not establish
 PostgreSQL integration, provider behavior, a connected rc4 run, broker observation, Discord bot,
 model, Sir Loke, options, or live-money acceptance.
+
+Gate 1A subsequently added a focused offline characterization for the pinned native IB execution
+path. Its bounded subprocess constructs the genuine client with connection `client_id=1`, a
+synthetic explicit account, empty provider loads, and logging bypassed without invoking lifecycle
+or report methods. The same seam confirms the pinned client-`0` modulo-1000 constructor rejection.
+Tests also verify the exact dependency and installed `RECORD` integrity evidence, measured config
+defaults, adversarial construction-only guards, and the current data-only production composition.
+See the [Gate 1A evidence reference](reference/ib-observation-gate1.md) for exact artifacts,
+commands, source inventory, evidence limits, and verification results.
+
+This evidence proves compiled construction and inspected source only. It does not prove native
+startup/wire behavior, network-egress isolation, no-binding/no-order-action behavior, manual TWS
+event coverage under the user-reported Master `1` setting, or connected paper acceptance.
 
 ## Operating Posture
 
@@ -221,8 +234,11 @@ fact retains account identity and environment.
 
 NautilusTrader `2.0.0rc4` exposes an Interactive Brokers execution client, live execution-engine
 reconciliation, cache access to accounts/orders/positions, typed strategy callbacks, and native
-reports. Markeitech has not configured or accepted those facilities. Exact delivery of manually
-entered TWS orders under a safe client-ID and read-only configuration remains unknown.
+reports. Gate 1A verifies that the installed native factory and `LiveNode` construct with
+connection client `1`; it also inventories startup, report, reconciliation, recovery, and
+disconnect source. Markeitech has not configured or accepted those facilities in production.
+Exact delivery of manually entered TWS orders under a safe client-ID, separately configured Master
+ID, and read-only TWS setting remains unknown.
 
 No connected order-observation probe has run. No order has been placed, modified, bound for
 control, canceled, replaced, exercised, or closed by Markeitech. The first observation design must
@@ -230,7 +246,8 @@ inspect every exact startup/open-order/binding call and prove the native path be
 custom IB access; it must expose no order action to Sir Loke.
 
 See the [Sir Loke v1 product definition](product/sir-loke-v1.md#broker-observation) and
-[IB setup boundary](operations/ib-setup.md).
+[IB setup boundary](operations/ib-setup.md). The exact offline result and conditional paper
+protocol are in the [Gate 1A evidence reference](reference/ib-observation-gate1.md).
 
 ## Connected Acceptance Envelope
 

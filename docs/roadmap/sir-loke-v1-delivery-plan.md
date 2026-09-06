@@ -23,11 +23,11 @@ modifies, binds for control, cancels, replaces, exercises, or closes a broker or
 
 ## Immediate Next Action
 
-The next development batch is **Gate 1: Native IB/TWS Observation Proof**. Before any connected
-run, inspect the exact pinned NautilusTrader execution-client construction and every startup
-request which could download, associate, bind, modify, cancel, or resubmit an order. Produce an
-offline safety decision and a bounded paper-account probe plan. The connected probe itself needs
-separate explicit authorization.
+Gate 1A's [offline native IB characterization](../reference/ib-observation-gate1.md) verifies
+client-`1` compiled construction and inventories the pinned startup, request, report,
+reconciliation, recovery, and disconnect source without invoking lifecycle behavior. The next
+Gate 1 work is resolving its named source/report-fidelity concerns and obtaining separate explicit
+authorization for the bounded paper-account probe. Construction is not connected safety proof.
 
 No trade episode, Discord bot, model, or agent implementation should start until Gate 1 proves a
 safe observation foundation or Markeitect approves a different broker-observation boundary.
@@ -116,6 +116,20 @@ does not complete any later product gate.
 
 **Question:** Can the pinned NautilusTrader/IB path observe manually entered TWS paper orders,
 fills, positions, changes, and closures without granting Markeitech order control?
+
+### Gate 1A: offline characterization
+
+Gate 1A is complete within its offline scope. It verifies the installed client-`1` constructor,
+scopes the client-`0` rejection to the pinned modulo-1000 constraint, locks relevant configuration
+and artifact identity, preserves data-only production composition, and records the named source
+inventory and conditional paper protocol in the
+[Gate 1A evidence reference](../reference/ib-observation-gate1.md).
+
+Gate 1A did not run native startup, connect to IB/TWS, prove network isolation or runtime
+no-control behavior, inspect the user-reported Master `1` setting, or demonstrate manual-order,
+fill, position, change, closure, reconnect, or reconciliation coverage. Those remain Gate 1
+acceptance work and require a separately authorized paper probe after the recorded concerns are
+resolved.
 
 ### Offline safety decision
 
