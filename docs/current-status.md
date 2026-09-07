@@ -72,12 +72,18 @@ runs and no provider is configured. Native source separately contains typed exec
 conversion/dispatch; order/position dispatch and manual TWS delivery remain unmeasured, as do
 complete identity/recovery and no-action/no-binding behavior.
 
-The earlier custom-native-bridge and patched-artifact recommendation is withdrawn. The
-[Gate 1 evidence record](reference/ib-observation-gate1.md#native-strategy-continuation-measured-scope-and-remaining-gaps)
-owns the corrected assessment, preserved source concerns, and exact remaining acceptance gates.
-Prior security, lineage and capture findings retain their bounded scope and must be assessed
-against the selected native path. No observation harness, native patch, dependency change, or
-connected proof has been delivered. Production remains data-only; PR #46 remains draft.
+The earlier custom-native-bridge and patched-artifact recommendation is withdrawn. The requested
+[`OrderListenerStrategy` and native IB composition](../tools/gate1/order_listener.py) are now
+implemented as an isolated diagnostic under `tools/gate1`. It receives aggregate order/position
+callbacks, copies bounded immutable scalar observations, and reports rejected/overflowed rows.
+Its build-only command constructs the genuine IB execution client and registers the listener using
+synthetic inputs, without starting or connecting the node. Production remains data-only.
+
+The [tool guide](../tools/gate1/README.md) describes the component and offline command. The
+[Gate 1 evidence record](reference/ib-observation-gate1.md#implemented-order-listener-and-native-ib-composition)
+records tested scope and the remaining runtime audit, identity/fidelity, capture and connected
+acceptance gates. No dependency or native patch was added; no connected runner or paper proof has
+been delivered. PR #46 remains draft.
 
 ## Operating Posture
 

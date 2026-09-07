@@ -30,7 +30,9 @@ execution-event/configuration path. The earlier raw-report assessment omitted th
 its custom native ingress/patch recommendation is withdrawn. Evaluate actual routing, external
 orders, faithful observation, recovery and audit against the
 [corrected native decision](../reference/ib-observation-gate1.md#corrected-decision-before-harness-implementation).
-Existing callback exports and offline registration prove neither dispatch nor manual TWS delivery.
+The [native listener and IB build-only composition](../../tools/gate1/README.md) are implemented
+outside production startup. Synthetic callback tests and offline construction prove neither
+native execution-event dispatch nor manual TWS delivery.
 
 Carry offline preparation, separately authorized paper testing, scoped fixes, and acceptance
 through that same PR. Do not create additional numbered preparation stages. Gate 1 completes

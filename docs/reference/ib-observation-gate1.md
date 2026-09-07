@@ -1,7 +1,7 @@
 # Gate 1 Native IB Observation Evidence
 
-**Status:** Offline construction and native signal forwarding verified for the exact evidence
-below; native execution-event dispatch and connected acceptance remain unverified
+**Status:** Native order-listener component and build-only IB composition implemented offline;
+synthetic projection/construction and signal forwarding verified. Connected acceptance remains open.
 
 **Current correction:** Python `Strategy` order/position callbacks are available in installed rc4.
 The earlier raw-report investigation did not evaluate that separate path and did not establish a
@@ -455,7 +455,50 @@ across the three changed Markdown documents resolved, and `git diff --check` pas
 verify the characterized Python surface and repository consistency, not compiled report delivery,
 provider coverage, security isolation, a working observation harness, or Gate 1 acceptance.
 
+## Implemented Order Listener And Native IB Composition
+
+Markeitect subsequently explicitly requested an actual order-listener actor/Strategy in this PR.
+That authorizes the component and offline native composition; it does not authorize a TWS run.
+The audit gap below is a connected-acceptance gate, not a prohibition on implementing or building
+the listener offline.
+
+[`tools/gate1/order_listener.py`](../../tools/gate1/order_listener.py) now contains:
+
+- `OrderListenerStrategy`, with aggregate order and position callbacks and no order commands;
+- frozen scalar observations with native field names, local sequence/receipt time, separate absent
+  and null fields, explicit unverified environment/broker origin, and engine-position provenance;
+- exact account/instrument checks, bounded record/field sizes, and visible rejection/overflow;
+- `InteractiveBrokersExecutionClientConfig`, the genuine native factory, execution engine and node
+  composition, with the Strategy registered for explicitly configured instrument claims; and
+- a synthetic build-only command with no lifecycle, provider request, real capture or run option.
+
+The [tool guide](../../tools/gate1/README.md) documents use and limitations. The native execution
+client is now present in actual implementation code, rather than only the earlier construction
+test. Normal `src/markeitech` startup remains data-only.
+
+The dedicated [listener tests](../../tests/system/test_gate1_order_listener.py) use genuine native
+order/fill/position event objects with synthetic values. They directly exercise callback projection
+for acceptance, updates, cancellation, fills/corrections and opened/changed/closed positions;
+they do not claim to drive the native execution-event dispatcher. Tests preserve quantity units,
+missing commissions, immutable snapshots after native Position mutation, repeated occurrences,
+identity rejection, overflow and sanitized failure output. A subprocess builds the genuine native
+IB client plus listener and verifies that the node/listener remain stopped and the listener is
+ready. No provider contract loading occurs.
+
+Native and security delta reviews identified and resolved two concrete issues: the updated-order
+quantity unit flag is copied, and unknown CLI arguments are rejected without echoing their values.
+The correction projection excludes free-text reason/info. The same exact-role advisors were reused;
+no new advisor slots, dependency changes or control infrastructure were introduced.
+
+**Offline validation:** 32 dedicated listener tests; 66 focused Gate 1 tests including the existing
+native-surface and Gate 1A files. The tool and tests pass Ruff. Full verification results are
+reported on the published PR head. Native request/audit execution, contract resolution, manual-TWS
+delivery, real capture and recovery remain unmeasured. Keep the PR draft until acceptance completes.
+
 ## Native Strategy Continuation: Measured Scope And Remaining Gaps
+
+This section records the preceding forwarding-only batch; the implemented listener above supersedes
+its implementation status. Its measured limits and source findings remain applicable.
 
 On 2026-09-07, continuation from `ea4296e016315b41f0e215d821cdd8cf22eaa893` preserved the four
 incoming uncommitted edits, including both approved native-first rule additions. The smallest
