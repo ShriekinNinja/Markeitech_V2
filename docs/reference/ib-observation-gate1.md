@@ -299,3 +299,149 @@ Gate 1A ends at offline characterization. Before production broker observation c
 activated, Markeitect must review this evidence and separately authorize the bounded paper probe
 after the source concerns and outbound-audit method are resolved. Full Gate 1 remains open until
 that connected evidence is accepted.
+
+## Gate 1 Completion Work: Native Ingress Decision
+
+PR #44 merged at `72e324b7fff5b4a1816bc529d2e8f8eab84918d7`. The remaining work is tracked in
+[issue #45](https://github.com/ShriekinNinja/Markeitech_V2/issues/45) as one Gate 1 completion PR,
+including offline preparation, separately authorized paper testing, fixes, and acceptance. There
+are no additional numbered preparation stages. This section records a decision needed before an
+executable observation harness can be selected; it does not mark Gate 1 complete.
+
+### Installed Python Surface
+
+On 2026-09-07, isolated introspection of the existing CPython `3.13.3` / Nautilus `2.0.0rc4`
+environment verified the following named surfaces without constructing or starting a node:
+
+| Surface | Verified installed limitation |
+|---|---|
+| `DataActor` | No `msgbus`, `on_report`, `on_order_status_report`, `on_fill_report`, `on_position_status_report`, or `on_order_event` member. |
+| `LiveNode` | No `msgbus`, `execution_engine`, `get_execution_client`, `generate_mass_status`, or `add_stream_processor` member. |
+| `LiveNodeBuilder` | No `add_stream_processor` member. |
+| `InteractiveBrokersExecutionClientFactory` | No public Python `create` method. Native builder construction remains available. |
+| IB Python adapter module | Does not export `InteractiveBrokersExecutionClient`. |
+| Python execution module | Does not export `ExecutionEngine` for a native reconciliation reproduction. |
+
+The version-bound regression is
+[`test_gate1_native_observation_surface.py`](../../tests/system/test_gate1_native_observation_surface.py).
+It checks these exact interfaces. It does not prove that every alternative native integration is
+impossible, and it must be reviewed if the dependency changes.
+
+### Native Source Limits
+
+The following findings are **INSPECTED SOURCE**, not measured connected delivery failures. Source
+references are fixed to rc4 commit `a0400251110653b6d8ae6a9b5b89c4543fa85a2d`:
+
+1. The Python message-bus callable handler accepts only `PyMessage`. A native Rust report passed
+   to that handler takes its non-`PyMessage` error branch instead of invoking the Python callback.
+   See [`common/src/python/msgbus.rs:285-335`](https://github.com/nautechsystems/nautilus_trader/blob/a0400251110653b6d8ae6a9b5b89c4543fa85a2d/crates/common/src/python/msgbus.rs#L285).
+   The file was retrieved directly at that commit and matched the inspected archive, SHA-256
+   `4f74602e8ef23ab1be4765f4f53826092a6266da3556840cfebea8aa465130be`.
+   Native report topics therefore do not by themselves establish a Python observation ingress.
+   Publishing a report from Python is not a reproduction of this limitation: that path wraps the
+   Python object in `PyMessage`, changing the dispatch path being tested.
+2. The IB live order-status handler returns without emitting an observation when the incoming API
+   order ID is absent from its `venue_order_id_map`. The `OpenOrder` path likewise has no generic
+   observation fallback when the normalized order reference is empty and no map entry exists.
+   See [`core_updates.rs:284-370`](https://github.com/nautechsystems/nautilus_trader/blob/a0400251110653b6d8ae6a9b5b89c4543fa85a2d/crates/adapters/interactive_brokers/src/execution/core_updates.rs#L284)
+   and [the unknown-order return](https://github.com/nautechsystems/nautilus_trader/blob/a0400251110653b6d8ae6a9b5b89c4543fa85a2d/crates/adapters/interactive_brokers/src/execution/core_updates.rs#L479).
+   The file hash is recorded in the original source inventory above. This makes untracked manual
+   order coverage a separate problem from transporting an already-created report to Python.
+3. The inspected order-status report implementation requests open orders; `open_only=False` adds
+   position-based synthetic residual reports. It does not request the provider's completed-order
+   roster. The existing fill-account normalization and commission-pairing concerns also remain
+   unresolved. A report-bus extension alone would not close these adapter-fidelity questions.
+
+**Inference:** a plain Python callback harness using those inspected rc4 interfaces is not a
+supported completion path for Gate 1. The evidence does not reject native client 1 construction,
+all native integration approaches, or the provider's non-binding snapshot capability.
+
+### Provider And Documentation Limits
+
+Official IB sources refreshed on 2026-09-07 continue to distinguish
+[Master visibility from client-0 manual TWS behavior](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/client-id-0-and-the-master-client-id).
+The [all-open-orders request](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/requesting-currently-active-orders/all-submitted-orders)
+is a snapshot, not a subscription. No continuing manual TWS lifecycle guarantee for Master 1 was
+established. `reqCompletedOrders(apiOnly=False)` is documented to include TWS orders in the
+[completed-order request](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/retrieving-completed-orders/requesting-completed-orders);
+that provider capability is not evidence that the pinned adapter exposes it.
+
+IB's execution-history descriptions differ: the
+[request page](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/execution-details/request-execution-details)
+says current day since midnight, the
+[introduction](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/execution-details/introduction)
+describes a TWS Trade Log setting permitting up to seven days while limiting Gateway to the
+current day, and the
+[callback page](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/execution-details/receive-execution-details)
+says the last 24 hours. Exact build/settings/filter and time-boundary evidence must govern any
+recovery claim; no cross-midnight recovery guarantee is accepted.
+
+The nightly guide/API roots were refreshed on 2026-09-07. The current
+[live API page](https://nautechsystems.github.io/nautilus_docs/python-api-nightly/live.html)
+describes an `add_stream_processor` interface absent from installed rc4. It is comparison
+evidence, not authority to call that interface on the current pin. That method processes external
+ingress; its existence would not by itself establish raw native report delivery. A candidate
+version or native extension needs its own source, artifact, adapter, and acceptance review.
+
+### Native Alignment Decision Matrix
+
+| Requirement | Native candidate | Installed-version evidence | Adapter/provider evidence | Semantic fit | Proposed owner | Decision | Rejection or extension rationale | Acceptance evidence |
+|---|---|---|---|---|---|---|---|---|
+| Construct one native connection | IB config/factory and node builder | Existing rc4 client-1 construction passes | Provider behavior unmeasured | Fits construction only | Nautilus | `USE_NATIVE` for construction | No replacement justified | Existing Gate 1A tests |
+| Receive native reports in Python | Raw reconciliation topics and Python bus handler | Handler accepts only `PyMessage`; no named direct public ingress | Adapter raw reports include synthetic rows | Missing current Python bridge | Native report boundary, placement undecided | `DEFER` | Python-originated publish is a different path | Source inspection and installed-surface tests only |
+| Observe untracked manual order updates | Native IB passive update stream | Unmapped status and blank-reference/unmapped open-order paths suppress output | Master-1 manual delivery unverified | Incomplete for named source cases | Native adapter | `DEFER` | A report bridge cannot recover events not emitted | Source inspection; paper coverage absent |
+| Preserve fills and terminal recovery | Native fill/order/position reports | Account-filter mismatch; commission-gated output; no completed-order roster request | Provider history bounds require verification | Unresolved fidelity | Native adapter and future fact admission | `DEFER` | Positions/synthetic reports cannot reconstruct missing broker history | No connected acceptance |
+| Prove no prohibited attempts | Native transport writes and observable lifecycle | No adequate Python interception seam established | TWS log receipt alone has bounded coverage | Audit boundary undecided | Required security consultation | `UNKNOWN` | Exact-role consultation could not launch | No accepted audit mechanism or run |
+
+### Concrete Decision Before Harness Implementation
+
+The smallest architectural candidate remains a repository-only proof harness outside `src/`,
+with a narrow immutable observation boundary and unchanged ordinary data-only startup. Selecting
+its native ingress and exact observation/audit contract remains open.
+
+The next decision is whether to authorize a bounded native compatibility investigation covering:
+
+- a supported typed Rust-to-Python report ingress, or an explicitly reviewed native proof host;
+- observation of untracked manual order status/open-order callbacks without claiming or binding
+  orders for control;
+- fill account normalization, commission completeness, terminal-order coverage, and report origin;
+- exact request-audit coverage, failure handling, and downstream capability isolation; and
+- the smallest dependency/native-source change, if one is required, with its maintenance and
+  verification cost made explicit before adoption.
+
+These are candidate requirements, not an approved patch, upgrade, Rust host, raw IB replacement,
+polling fallback, or new product schema. The current evidence does not justify choosing between
+them. Keep this work on the issue #45 PR when the decision is resolved.
+
+The architecture, IB-provider, and Nautilus consultations ran read-only. The required security
+consultation could not launch because the host reported `agent thread limit reached`; no audit
+design was accepted or substituted by the primary agent. Detailed lineage and capture/retention
+consultations remain pending the native/audit boundary. A fresh task must restore the exact-role
+coverage before those affected decisions or any real capture. This is an execution limitation of
+the consultation, not proof that the security role is absent from the installed plugin.
+
+No native lifecycle, broker connection, fake TWS server, raw data capture, production execution
+wiring, dependency change, or persistence change occurred in this follow-up. Gate 1 remains open.
+
+### Follow-up Offline Verification
+
+Using the same pre-existing Python `3.13.3` / Nautilus `2.0.0rc4` environment without installing or
+synchronizing dependencies:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+  <verified-python> -B -m pytest -p no:cacheprovider -q \
+  tests/system/test_gate1_native_observation_surface.py \
+  tests/system/test_gate1a_native_ib_offline.py \
+  tests/system/test_node.py::test_maps_provider_boundary_to_installed_ib_config \
+  tests/system/test_v3_es_minimal_config.py
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+  <verified-python> -B -m markeitech verify all
+git diff --check
+```
+
+Focused result: `33 passed`, including the existing dependency/installed-`RECORD` integrity check.
+Full offline verification: Ruff passed; `730 passed, 2 deselected`. All `27` relative link paths
+across the three changed Markdown documents resolved, and `git diff --check` passed. These results
+verify the characterized Python surface and repository consistency, not compiled report delivery,
+provider coverage, security isolation, a working observation harness, or Gate 1 acceptance.

@@ -1,8 +1,8 @@
 # Current Status
 
-**Last reviewed:** 2026-09-06
+**Last reviewed:** 2026-09-07
 
-**Implementation baseline inspected:** `master` at `ba7088a`
+**Implementation baseline inspected:** `master` at `72e324b`
 
 This page is the source of truth for what the active Markeitech checkout implements now. It is
 deliberately a current-state ledger, not an implementation diary. Completed design and acceptance
@@ -28,7 +28,7 @@ None of those future documents proves implementation.
 | Agent/model | Unimplemented; no live model, Sir Loke read model, conversation state, or agent tools |
 | Execution | Absent; no submit, modify, bind-for-control, cancel, replace, exercise, or close path |
 | Persistence | PostgreSQL operational audit and compact evidence-recency profiles; no raw market-data store |
-| Current implementation focus | Gate 1 paper-observation proof after Gate 1A's offline characterization; connection still needs separate explicit approval |
+| Current implementation focus | Complete Gate 1 under issue #45; native report ingress and untracked-order coverage need a decision before selecting the paper harness |
 
 ## Current Offline Verification
 
@@ -63,6 +63,14 @@ commands, source inventory, evidence limits, and verification results.
 This evidence proves compiled construction and inspected source only. It does not prove native
 startup/wire behavior, network-egress isolation, no-binding/no-order-action behavior, manual TWS
 event coverage under the user-reported Master `1` setting, or connected paper acceptance.
+
+Gate 1 completion work subsequently verified missing named Python report-ingress interfaces in
+installed rc4. Pinned source inspection also identified Python message-bus rejection of native
+non-`PyMessage` reports and suppression of some untracked-order updates inside the IB adapter.
+These are separate ingress and delivery concerns. The exact findings, executable interface
+characterization, source identities, and pending native/audit decision are recorded in the
+[Gate 1 decision section](reference/ib-observation-gate1.md#gate-1-completion-work-native-ingress-decision).
+No observation harness, native patch, dependency change, or connected proof has been delivered.
 
 ## Operating Posture
 

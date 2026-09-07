@@ -23,11 +23,15 @@ modifies, binds for control, cancels, replaces, exercises, or closes a broker or
 
 ## Immediate Next Action
 
-Gate 1A's [offline native IB characterization](../reference/ib-observation-gate1.md) verifies
-client-`1` compiled construction and inventories the pinned startup, request, report,
-reconciliation, recovery, and disconnect source without invoking lifecycle behavior. The next
-Gate 1 work is resolving its named source/report-fidelity concerns and obtaining separate explicit
-authorization for the bounded paper-account probe. Construction is not connected safety proof.
+Complete **Gate 1** through [issue #45](https://github.com/ShriekinNinja/Markeitech_V2/issues/45) and
+one coherent follow-up PR. Gate 1A's merged offline characterization established client-`1`
+construction and a source inventory. The follow-up has identified additional native Python
+report-ingress and untracked-order delivery concerns; resolve the
+[native ingress and audit decision](../reference/ib-observation-gate1.md#gate-1-completion-work-native-ingress-decision)
+before selecting an executable harness. Carry offline preparation, separately authorized paper
+testing, scoped fixes, and acceptance through that same PR. Do not create additional numbered
+preparation stages. Gate 1 completes only after its required evidence is accepted; construction,
+a prepared harness, or a successful connection alone is insufficient.
 
 No trade episode, Discord bot, model, or agent implementation should start until Gate 1 proves a
 safe observation foundation or Markeitect approves a different broker-observation boundary.
