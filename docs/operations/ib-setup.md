@@ -58,7 +58,10 @@ The repository does not include account credentials or entitlements.
 4. Allow localhost connections.
 5. Note the configured socket port.
 6. Ensure the selected client ID is not already in use.
-7. Set “Send instrument-specific attributes for dual-mode API client” to **instrument timezone**
+7. Treat the connection client ID and TWS **Master API Client ID** as separate settings. Gate 1A
+   characterizes connection client `1`; Markeitect reports Master `1`, but that TWS setting has not
+   been inspected. Master `1` does not give connection `1` the special behavior of client `0`.
+8. Set “Send instrument-specific attributes for dual-mode API client” to **instrument timezone**
    for pinned Nautilus `2.0.0rc4`. The [rc4 Cargo lockfile](https://github.com/nautechsystems/nautilus_trader/blob/v2.0.0rc4/Cargo.lock)
    retains Rust `ibapi 3.3.0`, whose rejection of IB's valid dashed UTC `HistoricalDataEnd`
    metadata was established under rc3. The upgrade does not close this debt; rc4 connected
@@ -188,14 +191,26 @@ The proof is observation-only. It must establish event coverage and identity for
 orders, partial fills, cancel/replace, scale changes, manual closure, duplicates, reconnect, and
 reconciliation without submitting an order or silently taking control of a manual TWS order.
 
-Before connection, inspect the exact pinned Nautilus startup call graph and request methods.
-Official IBKR documentation distinguishes several materially different paths: `reqOpenOrders`
-binds existing orders for that client, `reqAutoOpenOrders(True)` is restricted to client ID `0`
-and binds future manual TWS orders, while `reqAllOpenOrders` returns orders without binding them.
-Binding makes a manual order modifiable/cancelable by the API and can cancel/resubmit a working
-exchange order, potentially changing queue priority. The TWS API read-only setting prevents API
-modifications; it is not by itself evidence that the surrounding client startup avoids binding or
-that the required manual-order events are visible.
+The [Gate 1A evidence reference](../reference/ib-observation-gate1.md) records the exact pinned
+construction, configuration, startup, request, report, reconciliation, recovery, and disconnect
+source inventory. Client `1` constructs offline; client `0` is rejected by the pinned constructor's
+modulo-1000 order-ID partition. No lifecycle or connected behavior was exercised.
+
+Official IBKR documentation distinguishes several materially different paths. `reqOpenOrders`
+returns orders placed by the same API client; when client `0` invokes it, existing manual TWS
+orders are also bound for API control. `reqAutoOpenOrders(True)` is restricted to client `0` and
+associates future manual TWS orders. `reqAllOpenOrders` is a one-time download of current open
+orders in associated accounts and does not start a future-order subscription. Automatic download
+is therefore not synonymous with automatic binding. Binding makes a manual order
+modifiable/cancelable by the API and can cancel/resubmit a working exchange order, potentially
+changing queue priority.
+
+The inspected rc4 startup calls its `all_open_orders()` request while establishing an order-ID
+baseline even though the public `fetch_all_open_orders` default is `False`; the field is logged but
+was not found controlling the inspected execution paths. Treat that as an unresolved pinned-source
+inconsistency. The TWS API read-only setting prevents API modifications; it is not by itself
+evidence that the surrounding client startup avoids all control effects or that the required
+manual-order events are visible.
 
 Therefore no client ID, binding mode, open-order request, reconciliation setting, or read-only
 combination is accepted for this product until the offline safety review identifies every exact
@@ -206,6 +221,8 @@ immediate stop condition.
 Relevant provider references:
 
 - [TWS API settings](https://www.interactivebrokers.com/docs/tws-api/doc/tws-settings/introduction)
+- [API client orders and client-0 binding](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/requesting-currently-active-orders/api-clients-orders)
+- [All submitted orders snapshot](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/requesting-currently-active-orders/all-submitted-orders)
 - [Manual TWS orders and client ID 0](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/requesting-currently-active-orders/manually-submitted-tws-orders)
 - [Order binding notification](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/requesting-currently-active-orders/order-binding-notification)
 - [Modifying orders and queue-priority warning](https://www.interactivebrokers.com/docs/tws-api/doc/orders/modifying-orders)
