@@ -399,7 +399,7 @@ The smallest architectural candidate remains a repository-only proof harness out
 with a narrow immutable observation boundary and unchanged ordinary data-only startup. Selecting
 its native ingress and exact observation/audit contract remains open.
 
-The next decision is whether to authorize a bounded native compatibility investigation covering:
+The next work is a bounded native compatibility proposal covering:
 
 - a supported typed Rust-to-Python report ingress, or an explicitly reviewed native proof host;
 - observation of untracked manual order status/open-order callbacks without claiming or binding
@@ -409,9 +409,10 @@ The next decision is whether to authorize a bounded native compatibility investi
 - the smallest dependency/native-source change, if one is required, with its maintenance and
   verification cost made explicit before adoption.
 
-These are candidate requirements, not an approved patch, upgrade, Rust host, raw IB replacement,
-polling fallback, or new product schema. The current evidence does not justify choosing between
-them. Keep this work on the issue #45 PR when the decision is resolved.
+Read-only investigation remains within issue #45. These are candidate requirements, not an
+approved patch, upgrade, Rust host, raw IB replacement, polling fallback, or new product schema.
+The current evidence does not justify choosing between them. Present the concrete native change
+and its consequences for Markeitect's decision before adopting it. Keep the work on this PR.
 
 The architecture, IB-provider, and Nautilus consultations ran read-only. The required security
 consultation could not launch because the host reported `agent thread limit reached`; no audit
