@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "plan_id": "synthetic-plan",
+  "selected": [
+    {
+      "consultation_id": "fixture-owner-lookup",
+      "role": "markeitech_architecture_boundaries_advisor",
+      "question": "Locate the declared owner in the supplied source fixture.",
+      "after": [],
+      "state": "pending",
+      "evidence": null
+    }
+  ],
+  "host": {
+    "snapshot_id": "before-launch",
+    "task_id": "synthetic-task",
+    "evidence": "synthetic complete inventory and tool schema",
+    "thread_limit": 4,
+    "limit_scope": "including_primary",
+    "primary_threads": 1,
+    "inventory_complete": true,
+    "close_supported": false,
+    "threads": []
+  }
+}

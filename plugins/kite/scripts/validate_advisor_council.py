@@ -151,6 +151,10 @@ def validate_repo(root: Path) -> list[str]:
         "project_config": root / ".codex" / "config.toml",
         "router_skill": router_root / "SKILL.md",
         "router_interface": router_root / "agents" / "openai.yaml",
+        "dispatch_contract": references / "advisor-dispatch.md",
+        "dispatch_policy": references / "dispatch-policy.toml",
+        "dispatch_example": references / "dispatch-plan.example.json",
+        "dispatch_validator": plugin_root / "scripts" / "resolve_advisor_dispatch.py",
         "agents_md": root / "AGENTS.md",
     }
     for label, path in required_paths.items():

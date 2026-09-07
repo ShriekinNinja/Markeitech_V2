@@ -98,6 +98,41 @@ uninstall only Kite and add it again. Never repair by copying files into the ins
 
 ## Fresh-Task Acceptance
 
+### Advisor capacity and dispatch
+
+The [dispatch contract](../../plugins/kite/skills/markeitech-advisor-router/references/advisor-dispatch.md)
+owns the complete-plan preflight, host inventory, close/release evidence, serialized admission,
+and bounded confirmed-refusal recovery. Its policy is separate from model-execution retries.
+Run the offline fixture checks without installing or invoking advisors:
+
+```bash
+python3 -B plugins/kite/scripts/resolve_advisor_dispatch.py plan \
+  --record plugins/kite/skills/markeitech-advisor-router/references/dispatch-plan.example.json
+python3 -B -m unittest discover -s plugins/kite/tests -p 'test_resolve_advisor_dispatch.py'
+```
+
+The example is synthetic. In a real task, inspect the actual limit/counting scope, inventory,
+and callable lifecycle tools. Completed threads count until their release is observed. If no
+close tool exists and the remaining plan exceeds free slots, Kite reports `PLAN_CAPACITY_BLOCKED`
+before consuming available slots. Serial consultations do not fix retained-thread exhaustion.
+Keep pending questions, dependency consequences, and completed findings in the continuation record.
+
+Current [OpenAI configuration documentation](https://learn.chatgpt.com/docs/config-file/config-reference)
+names `agents.max_concurrent_threads_per_session` (legacy alias `agents.max_threads`) for open
+spawned threads excluding the primary. A session may expose a different counting convention;
+record its actual contract. Configuration text is not proof of the effective desktop limit.
+Changing host settings requires an authorized, separate operation and observed capacity afterward.
+Never silently edit global Codex configuration or treat an interrupt as verified thread release.
+
+For issue #47's source scope, offline validation establishes only the supplied-record policy.
+After an authorized installation, fresh-task acceptance must observe actual router preflight and
+dispatch. Claim closure only when an exposed close tool and observed release support it. On a
+host without closure, verify the early block and accurate continuation instead. Model-consuming
+acceptance probes and host configuration changes are separately authorized; do not exhaust slots
+deliberately just to reproduce a known failure.
+
+### Allocation and exact-role execution
+
 Start a new task rooted in the same reviewed checkout after installation and role changes. Official
 [plugin guidance](https://learn.chatgpt.com/docs/plugins) also requires a new chat or CLI session to
 load newly installed skills. For a bounded read-only CLI check, use `codex exec -C "$PWD" -s read-only`
@@ -172,6 +207,8 @@ records are retained and are outside the capability-purge scope.
 | Missing/malformed custom role | Check that task cwd is the reviewed project and role TOML parses; fix source through its PR, then start a new task. Do not substitute a generic agent. |
 | Fixed overrides in the live role | The task or checkout is stale; load the matching role source in a fresh task. Do not declare an allocation pass. |
 | Resolver reports blocked | Preserve the sanitized reason and stop that consultation; correct evidence/requirements through the normal workflow. Do not invent host capacity or silently switch models. |
+| Agent thread limit reached | Reconcile whether a child exists, preserve the admission/outcome and a fresh inventory, then follow bounded dispatch recovery. A known capacity change is required before redispatch. No automatic fresh-task or settings workaround. |
+| Completed advisors still occupy slots | Preserve their findings; use only an exposed close operation on task-owned threads with no planned follow-up, then verify release. Without that operation, preflight the plan against retained-thread capacity. |
 | Candidate cache disappears or an older version returns | Preserve initial/final identities and check registration again. One repair reinstall can restore current bytes, but stop installed-behavior acceptance until host replacement behavior is resolved; do not loop reinstalls or edit cache files. |
 | Installation partially fails | Inspect CLI listing and the recorded cache path before retrying; never assume a failed response means no mutation occurred. |
 

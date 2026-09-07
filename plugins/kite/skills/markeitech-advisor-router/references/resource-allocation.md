@@ -4,6 +4,9 @@ Primary Kite owns each selected advisor's model and effort choice. The canonical
 eligibility evidence, constraints, and retry bounds are in `council-policy.toml`; the advisor entry
 owns required capabilities and profile references. Custom-role files carry no execution override.
 Selection of advisors and dependency ordering remain governed by the existing routing contract.
+The separate [dispatch contract](advisor-dispatch.md) owns open-thread capacity and confirmed
+pre-launch refusal recovery. Preflight the complete selected plan before allocating/spawning its
+remaining consultations. Allocation success alone never authorizes a spawn.
 
 ## Before Every Spawn
 
@@ -35,14 +38,18 @@ Selection of advisors and dependency ordering remain governed by the existing ro
 
    When the root checkout is unavailable, invoke the same script from the matching installed
    plugin and use its adjacent policy. Never execute a mismatched script/policy package.
-5. On success, save the returned decision in the existing consultation record. Call the exact
+5. On success, save the returned decision in the existing consultation record. Obtain
+   `DISPATCH_READY` from the dispatch helper with a refreshed host inventory, then call the exact
    `decision.role` with `model=decision.requested.model`,
    `reasoning_effort=decision.requested.reasoning_effort`, and
    `fork_turns=decision.fork_turns`. Supply a bounded handoff with authority paths, question,
    source references, upstream dispositions, output requirements, stop gates, and decision ID.
    All three execution/context fields are explicit; no implicit inheritance or generic-role
    substitution is allowed. Full-history forks cannot carry overrides on this host.
-6. Capture the child execution ID, outcome, and host-reported effective pair when observable.
+6. Record the dispatch outcome before the next launch. If no child was created, retain the
+   dispatch evidence; do not invent a child execution ID or an allocation receipt. A confirmed
+   capacity rejection follows the dispatch policy. An ambiguous result requires reconciliation.
+   For a created child, capture its execution ID, outcome, and host-reported effective pair when observable.
    Otherwise use `effective: null`. Validate the receipt using:
 
    ```bash
@@ -103,7 +110,9 @@ be dispatched as an actual consultation.
 ## Attempts And Stop Behavior
 
 Policy controls maximum attempts, fallbacks, escalations, and ordered alternative profiles. The
-request may reduce the attempt cap, never increase it. The initial policy permits no retry.
+request may reduce the attempt cap, never increase it. The initial policy permits no model-execution
+retry. Confirmed no-child capacity refusals have their separate bounded dispatch history; never
+reclassify a started execution as a dispatch refusal to evade this budget.
 For an explicitly authorized retry policy, preserve the original consultation ID, constraints,
 and prior decision/receipt entries in `history`; both fallback and escalation consume the same
 aggregate attempt budget. Full or partial user choices prohibit substitution unless the user also

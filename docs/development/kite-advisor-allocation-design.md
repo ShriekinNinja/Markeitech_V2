@@ -14,6 +14,15 @@ custom-role files omit both execution overrides while retaining their names, ins
 read-only defaults, and MCP restrictions. This change concerns development-time consultation;
 it does not implement Sir Loke or change runtime/provider behavior.
 
+Issue [#47](https://github.com/ShriekinNinja/Markeitech_V2/issues/47) adds a separate
+[capacity/dispatch contract](../../plugins/kite/skills/markeitech-advisor-router/references/advisor-dispatch.md)
+and offline validator. The router preflights the selected plan before allocation and requires
+dispatch admission before each spawn. Completed-but-open threads consume capacity. A confirmed
+no-child capacity refusal has a bounded same-decision redispatch allowance after observed capacity
+change; it does not consume or reset a model-execution attempt. Source tests validate these rules;
+installation, real slot release, and fresh-host behavior are not established by them. The existing
+dated allocation acceptance below does not cover this later dispatch addition.
+
 ## Ownership And Implementation
 
 The canonical [allocation contract](../../plugins/kite/skills/markeitech-advisor-router/references/resource-allocation.md)
@@ -34,7 +43,7 @@ maintained owners; this page records implementation scope and acceptance limits.
 - Full or partial user choices are honored when compatible; invalid choices are not silently
   replaced. Missing capabilities, unknown required context capacity, locked host roles, and
   incompatible fork modes stop the affected consultation.
-- The initial policy allows one attempt, no automatic retry, and no escalation. Future authorized
+- The initial model-execution policy allows one attempt, no automatic retry, and no escalation. Future authorized
   profiles use shared attempt budgets, stable consultation identity/history, and explicit alternatives.
 - Receipts distinguish requested/effective settings and verified, unverified, failed, or unknown
   outcomes. The helper is an offline validator, not a host execution or authentication boundary.
