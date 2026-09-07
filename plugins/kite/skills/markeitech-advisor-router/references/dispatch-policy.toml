@@ -1,0 +1,7 @@
+# Development-time dispatch policy; does not change host settings or model attempt budgets.
+schema_version = 1
+policy_version = "2026-09-07-v1"
+# Unit: additional spawn calls per unchanged allocation after confirmed no-child capacity refusal.
+# Scope: one consultation/allocation decision. Allowed envelope: 0..3. Not optimization-enabled.
+# Mutable only through reviewed policy changes; preserve history and revalidate on version change.
+max_capacity_retries = 1

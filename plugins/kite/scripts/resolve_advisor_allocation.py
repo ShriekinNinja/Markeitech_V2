@@ -190,8 +190,8 @@ def validate_policy(policy: dict) -> None:
     require(len(roles) == len(set(roles)), "DUPLICATE_ROLE")
 
 
-def check_receipt(decision: dict, receipt: dict) -> dict:
-    """Bind effective execution evidence to a validated request; unknown is not a pass."""
+def validate_decision(decision: dict) -> None:
+    """Validate a supplied allocation decision without inventing an execution receipt."""
     table(
         decision,
         {
@@ -245,6 +245,11 @@ def check_receipt(decision: dict, receipt: dict) -> dict:
     ):
         text(decision[key])
     pair(decision["requested"])
+
+
+def check_receipt(decision: dict, receipt: dict) -> dict:
+    """Bind effective execution evidence to a validated request; unknown is not a pass."""
+    validate_decision(decision)
     table(receipt, {"decision_id", "execution_id", "effective", "outcome", "evidence"})
     require(receipt["decision_id"] == decision["decision_id"], "RECEIPT_MISMATCH")
     text(receipt["execution_id"])

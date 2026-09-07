@@ -47,18 +47,26 @@ For substantive Markeitech work after explicit Kite activation:
    their evidence relationship fits the scoped question; add or override an edge only for an exact
    recorded evidence dependency. Reject cycles. Stable role name breaks ties between genuinely
    independent consultations; it does not create semantic precedence.
-7. Before each selected role is spawned, follow [resource allocation](references/resource-allocation.md).
+7. Before consuming slots, preflight the entire selected plan through
+   [advisor dispatch](references/advisor-dispatch.md). Refresh the live thread inventory and
+   actual close-tool availability before every launch. Completed does not mean closed. Preserve
+   required roles and dependency edges; an impossible plan needs an explicit capacity disposition,
+   not partial launches presented as a complete council. Keep independent authorized work moving.
+8. Before each selected role is spawned, follow [resource allocation](references/resource-allocation.md).
    Primary Kite chooses the model and reasoning effort for that question within council policy;
    run the allocation resolver and pass both validated fields explicitly with a supported context
    mode. This instruction authorizes per-spawn choices within that policy after explicit Kite
    activation. A failed resolver or fixed host role override stops the affected consultation.
+   Then run dispatch admission with that allocation decision. Only `DISPATCH_READY` admits one
+   serialized spawn; record its outcome before admitting another. Capacity refusal is handled
+   through the bounded dispatch history, not by inventing a model execution or resetting budgets.
    For ordinary routing, delegate through each exact project custom-agent role. Do not run its
    specialist skill directly in primary Kite when a custom role exists. A specialist remains
    available when Markeitect explicitly invokes its `$kite:` skill; that explicit path is not
    evidence that ordinary router selection works. Advisors never delegate.
-8. Preserve every evidence label, `UNKNOWN`, rejection, conflict, `REQUIRED_HANDOFF`, and stop gate.
+9. Preserve every evidence label, `UNKNOWN`, rejection, conflict, `REQUIRED_HANDOFF`, and stop gate.
    A downstream advisor cannot upgrade an upstream disposition.
-9. Synthesize as primary Kite. Keep successful or unnecessary routing silent unless a material
+10. Synthesize as primary Kite. Keep successful or unnecessary routing silent unless a material
    specialist result changes the recommendation, exposes risk, or provides useful evidence.
 
 Use this compact internal route result:
@@ -73,6 +81,7 @@ Selected:
     downstream: <what may change>
 Dependencies: <selected-role edges only>
 Missing: <material uncovered domain only>
+Dispatch: <plan ID, fresh host evidence, capacity disposition, pending IDs, retained result refs>
 ```
 
 ## Cross-Cutting Gates

@@ -1,6 +1,6 @@
 schema_version = 3
-policy_version = "2026-09-05-v6"
-plugin_version = "0.1.0+codex.20260905204949"
+policy_version = "2026-09-07-v7"
+plugin_version = "0.1.0+codex.20260907134000"
 router_skill = "markeitech-advisor-router"
 
 # Allocation mappings live only here. Prior use is continuity evidence, not quality parity.

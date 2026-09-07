@@ -208,6 +208,15 @@ Enabling the webhook actor cannot turn it into Sir Loke.
   generates tracked `docs/api` output. Its GitHub Pages workflow is current at this baseline.
 - Neither documentation tool imports the runtime, connects services, or proves live behavior.
 
+### Development collaboration tooling
+
+The development-time Kite router now has an offline advisor-capacity preflight and dispatch
+validator, tracked in [issue #47](https://github.com/ShriekinNinja/Markeitech_V2/issues/47).
+It checks complete selected plans, retained open threads, dependency readiness, and bounded
+confirmed-refusal recovery while preserving model-execution budgets. See the
+[operations guide](operations/kite.md#advisor-capacity-and-dispatch). Source validation does not
+establish installed-host behavior, release actual agent slots, or change Sir Loke/Gate 1 readiness.
+
 ## Sir Loke V1 Gap
 
 The product direction is accepted; the implementation is not present.
