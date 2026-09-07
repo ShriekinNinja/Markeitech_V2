@@ -70,6 +70,11 @@ non-`PyMessage` reports and suppression of some untracked-order updates inside t
 These are separate ingress and delivery concerns. The exact findings, executable interface
 characterization, source identities, and pending native/audit decision are recorded in the
 [Gate 1 decision section](reference/ib-observation-gate1.md#gate-1-completion-work-native-ingress-decision).
+The continuation records restored security, lineage and capture consultations and a
+[concrete proposal for decision](reference/ib-observation-gate1.md#gate-1-continuation-concrete-proposal-for-decision):
+an isolated native proof artifact, typed observation ingress, and audit of both prohibited
+attempts and compiled writes. Its native changes, capture policy and exact paper run remain
+unapproved; source inspection and advisor recommendations are not acceptance evidence.
 No observation harness, native patch, dependency change, or connected proof has been delivered.
 
 ## Operating Posture

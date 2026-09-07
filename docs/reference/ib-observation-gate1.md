@@ -411,14 +411,16 @@ The next work is a bounded native compatibility proposal covering:
 
 Read-only investigation remains within issue #45. These are candidate requirements, not an
 approved patch, upgrade, Rust host, raw IB replacement, polling fallback, or new product schema.
-The current evidence does not justify choosing between them. Present the concrete native change
+The evidence at the initial PR head did not justify choosing between them. Present the concrete native change
 and its consequences for Markeitect's decision before adopting it. Keep the work on this PR.
 
-The architecture, IB-provider, and Nautilus consultations ran read-only. The required security
-consultation could not launch because the host reported `agent thread limit reached`; no audit
-design was accepted or substituted by the primary agent. Detailed lineage and capture/retention
-consultations remain pending the native/audit boundary. A fresh task must restore the exact-role
-coverage before those affected decisions or any real capture. This is an execution limitation of
+The architecture, IB-provider, and Nautilus consultations ran read-only. At the initial PR head,
+the required security consultation could not launch because the host reported
+`agent thread limit reached`; no audit design was accepted or substituted by the primary agent.
+Detailed lineage and capture/retention consultations were then pending the native/audit boundary.
+A fresh task needed to restore exact-role coverage before those affected decisions or any real
+capture. The continuation below records that
+restoration and the resulting proposal. The earlier failure was an execution limitation of
 the consultation, not proof that the security role is absent from the installed plugin.
 
 No native lifecycle, broker connection, fake TWS server, raw data capture, production execution
@@ -446,3 +448,315 @@ Full offline verification: Ruff passed; `730 passed, 2 deselected`. All `27` rel
 across the three changed Markdown documents resolved, and `git diff --check` passed. These results
 verify the characterized Python surface and repository consistency, not compiled report delivery,
 provider coverage, security isolation, a working observation harness, or Gate 1 acceptance.
+
+## Gate 1 Continuation: Concrete Proposal For Decision
+
+**Disposition: proposed, not adopted; Gate 1 remains incomplete.** This continuation starts from
+the remotely reverified draft PR #46 head `3736f09ea6b13e0f8052f846b08974b00ad5cd93` and master
+`72e324b7fff5b4a1816bc529d2e8f8eab84918d7`, on 2026-09-07. It extends the same issue and PR.
+There is still no observation harness, patched native artifact, or accepted paper run.
+
+### Recommended Decisions
+
+| Decision requiring Markeitect | Recommendation and bounded implementation effect | Alternative and consequence |
+|---|---|---|
+| Native dependency correction | Authorize an isolated proof artifact based on exact Nautilus rc4 commit `a0400251110653b6d8ae6a9b5b89c4543fa85a2d` and checksum-verified `ibapi 3.3.0`, with the narrow adapter, observation-egress, and audit changes below. Keep the ordinary runtime pin and environment unchanged. | A broad version upgrade has no verified candidate closing all these gaps. Waiting for upstream fixes is viable but leaves Gate 1 blocked. |
+| Proof-harness ownership and ingress | Authorize a repository-only harness under a dedicated tool directory outside `src/`, with the native owner in a dedicated proof process, one native IB connection, and a private typed Rust-to-Python observation ingress before reconciliation. Its consumer receives immutable copied facts and evidence-health records. | A Rust-only proof host avoids the Python ingress problem, but still needs manual-callback, fidelity, and audit corrections, and would not validate Python delivery. A second raw IB client or polling substitute changes the provider boundary and is not recommended on this evidence. |
+| Compiled audit boundary | Authorize audit-first action-entry rejection plus an audited, default-deny native write boundary covering ordinary messages, handshake, StartApi, reconnect, and subscription cleanup. Retain causal links between lifecycle intent, request, and write outcome. | A Python wrapper, existing recorder, TWS logs, or a wire interposer alone cannot establish no prohibited attempts rejected before transmission. An OS/process boundary may add containment but is not established by the current tests. |
+
+Approval of these decisions would authorize offline native implementation and synthetic
+verification on this PR. It would not authorize a dependency change in ordinary production,
+upstream publication, a new repository, production activation, account access, real capture, or
+an IB/TWS run. The patched build needs an independently pinned source/patch/lock identity, compiler
+and feature inventory, build instructions, artifact hash and import-origin verification. A local
+version label alone is insufficient. Keep the delta reviewable here; do not silently edit an
+installed wheel or reuse an unidentifiable local build. The cost is maintaining and rebuilding a
+small native patch until an upstream version passes the same contract tests. Distribution also
+needs review of the applicable source-license obligations.
+
+The proof owner is not the production broker-observation component. Runtime topology, product
+schemas, persistence, and downstream Sir Loke integration remain their existing approval gates.
+
+### Native Change Specification
+
+| Existing source limitation | Proposed correction | Required proof before a paper package |
+|---|---|---|
+| Python callable handler accepts only `PyMessage`; installed node/actor surfaces lack direct native report ingress | Add a narrow typed native observation ingress and copied immutable Python records. Avoid a generic arbitrary-object bus conversion or exposing the execution engine/client. | Drive the real Rust-originated egress through the compiled binding into Python. Verify identity, ordering, bounds, callback failure, shutdown, and absence of mutable handles. Python-originated publish is not a substitute. |
+| Unmapped status, blank-reference open-order callbacks and unmapped executions are discarded by execution bookkeeping | Emit observation evidence before those bookkeeping filters, without assigning a strategy/client-order ID, populating control mappings, claiming, or binding an order. Preserve unmatched status/execution as unresolved evidence until provider identity can establish a join. | Synthetic native callbacks exercise blank refs, unknown IDs, status-before-openOrder, terminal updates, unmatched fills, multiple accounts, duplicates, and conflicts. No fabricated full order report when account/contract identity is absent. |
+| Native report transformations lose raw identity and origin | Carry source metadata alongside native report projections before parsing/reconciliation: separate API order ID, permanent ID, source client, execution ID, contract ID, callback/request origin and missingness. Preserve synthetic residual orders, inferred reconciliation, flat responses, and cache projections as distinct classes. | Direct observations can never be manufactured by accepting a synthetic report. Native reports remain useful comparison evidence; mutable cache objects never cross the ingress. |
+| Fill history uses the full Nautilus account string | Normalize the request account using the same `raw_ib_account_code` rule as order/position paths, retaining both identities privately in provenance. | Assert the encoded filter for prefixed and raw synthetic accounts, returned-account validation and mismatches. Provider failure on the unpatched filter remains unmeasured. |
+| Commission pairing suppresses execution evidence | Preserve the execution independently with explicit commission-missing state; emit a later linked commission revision. Do not turn missing commission into zero or invent a complete `FillReport` merely to satisfy its constructor. | Missing/late/duplicate/conflicting commissions, execution corrections, bounded pending state, request end and timeout all preserve the execution and expose incompleteness. |
+| `open_only=False` produces synthetic residuals, not completed-order history | Add a bounded native completed-order request with `apiOnly=False` for startup/recovery comparison alongside open orders, executions, and positions. Keep its origin/end marker and provider horizon explicit. | Verify the encoded request, terminal rows/end marker, missing history and join ambiguity. A completed roster does not recover every intermediate modification or prove ongoing manual TWS callbacks. |
+| Native receive paths silently skip broadcast lag | Surface loss before the lossy seam, including the outer subscription poller, and invalidate affected evidence intervals. Audit must not use the same silently lossy queue. | Inject lag, overflow, late delivery, truncation and consumer failure at the native boundary. Downstream contiguous sequence numbers alone cannot prove upstream completeness. |
+| Typed snapshot terminators can collapse into generic end-of-stream | Preserve the original terminator and request identity before that decoder/subscription transformation. An ended iterator is not sufficient evidence of the expected provider end marker. | Correct, wrong, missing, duplicate and late terminators; distinguish request termination from completeness of the desired provider population. |
+| Transport reconnection does not prove subscription restoration or history recovery | Explicitly fence each connection epoch, expose its gap, restore only reviewed observation requests, and reconcile bounded snapshots. Admit current state separately from historical continuity. | Bound attempts, time, queues and cancellation; stale epochs cannot fill a new epoch silently. Unrecoverable intra-gap changes remain unknown. Exact mechanics require review against the chosen patch. |
+
+Forwarding callbacks fixes adapter suppression only. Whether TWS delivers all required manual
+callbacks to connection client 1 with Master 1 remains a provider acceptance question. If the
+paper evidence cannot establish that coverage without binding, stop and return the limitation to
+Markeitect; do not widen client privileges, introduce polling, or weaken Gate 1 criteria.
+
+### Additional Source Evidence And Audit Coverage
+
+The published [ibapi 3.3.0 crate](https://crates.io/crates/ibapi/3.3.0) was downloaded for source
+inspection only. Its archive SHA-256 is
+`fc5651f11bacdf138a1a910dc075c21e425912ff767e7f3e237b9fe14d9f3f76`, matching the inspected Cargo lock.
+The previously recorded transport source also matches the published crate. No source was built,
+installed, or connected. Additional Nautilus files were retrieved at the exact rc4 commit and
+matched the inspected source archive:
+
+| Exact source path | SHA-256 |
+|---|---|
+| Nautilus `crates/adapters/interactive_brokers/src/execution/account.rs` | `2d9b488c67819d8c575184e96684ddb28066cbcac434a27eb81436705065c324` |
+| Nautilus `crates/adapters/interactive_brokers/src/providers/instruments.rs` | `bec7480c13dd51502c10ee01e285ada65ff18bbe5b96c9a54baaaad7554e15b0` |
+| Nautilus `crates/adapters/interactive_brokers/src/common/shared_client.rs` | `7c02c98bd39a7a3eba42c36deb72d450c66d8dc0983eb31129d02e51dbf6944c` |
+| ibapi `src/connection/async.rs` | `81cd8690bcd3d3c5593efbfafc7e146083726cc20989fda3145c5c3b4e0e04a0` |
+| ibapi `src/transport/async/io.rs` | `81c0bcffdfc01cbe6855614c84cc270c5b89d140e59555e7837dcbc2a2cb91e7` |
+| ibapi `src/subscriptions/async.rs` | `3497221f888592652b3e13d1a9b22d8ebeaeaa216b048a9f4a9d38c5119e9fe0` |
+| ibapi `src/messages.rs` | `a3f74b91beedf1ccfd6aa4a67199205f3af04b9e7ab751a7fd03793813024884` |
+
+The following are inspected-source findings and proposed controls, not executed audit guarantees:
+
+- Nautilus `execution/core.rs` action entry points include `submit_order`, `submit_order_list`,
+  `modify_order`, `cancel_order`, `cancel_all_orders` and `batch_cancel_orders`. Audit/reject at
+  entry, before readiness, cache lookup or target validation. Otherwise an attempted action may
+  disappear before encoding. Reachable direct ibapi action methods need the same treatment.
+  An allowed observation request used as a prelude to modification has a prohibited parent intent.
+- ibapi `transport/async.rs:688-769` routes all six inspected message-bus send/cancel variants to
+  `AsyncConnection::write_message`. This is not a universal sink: `connection/async.rs:209-252`
+  sends handshake directly to `socket.write_all`, and StartApi through `write_raw`; reconnect
+  repeats connection establishment. The inspected production async sink is
+  `AsyncTcpSocket::write_all` in `transport/async/io.rs:68-71`. The implementation must cover both
+  typed intent and every actual write, with explicit handshake/protobuf protocol states.
+- `subscriptions/async.rs:421-475` encodes cancellation and may spawn an asynchronous send on
+  Drop. Audit the cleanup intent before encoding and keep supervision/audit alive until all owned
+  cleanup tasks finish or the observer transport is closed. The inner subscription's local map
+  cleanup is not the outer subscription's provider cancellation.
+- Both `transport/async.rs:140-176` and `subscriptions/async.rs`'s `poll_next` can skip lag errors.
+  Patch loss visibility before claiming a complete observation interval.
+- `transport/async/io.rs:58` allocates the advertised incoming frame length without a bound at
+  that inspected seam. Bound the frame before allocation and the decoder/queues before admission.
+- The built-in recorder is controlled by `IBAPI_RECORDING_DIR`; logging/recording can contain raw
+  requests, responses, account configuration and PnL. Recorder errors that only warn do not meet
+  audit-failure requirements. Scrub inherited recording/debug configuration, disable uncontrolled
+  raw logging, and test native diagnostics as well as final record serialization.
+
+Audit records must distinguish attempted, policy-denied, encoded, write-attempted, write-completed,
+write-failed/partial, provider-rejected and unknown outcomes. A socket write is not provider
+acceptance. Any prohibited action attempt fails the run even if denied locally or by TWS.
+Failure to record, sequence loss, buffer exhaustion or an unrecognized protocol message makes the
+evidence invalid and closes observer egress; no further broker request is justified as cleanup.
+Correlate records by run, process/connection epoch, client, lifecycle intent, request and sequence.
+TWS logs and the operator's manual action ledger corroborate observer traffic; they do not replace
+the native attempt audit. Hashes detect changes to identified artifacts, not malicious tampering
+by a process able to rewrite the evidence; effective isolation needs its own validation.
+
+### Proposed Request Inventory And Remaining Closure
+
+This is the named candidate inventory for review, not an executable allowlist or connection
+authorization. Numeric values below are the `ibapi 3.3.0` outgoing enum identities; protocol framing
+and protobuf encoding must be validated against the approved TWS/API version, not guessed from a
+leading byte. Defaults do not confer authority to send a request.
+
+| Lifecycle/capability | Named candidate request | Required bound/disposition |
+|---|---|---|
+| Establish and reconnect | Raw handshake; `StartApi` (71) | Exact endpoint/client, protocol state and connection epoch. Audit both raw paths; initial account/next-ID replies are responses, not invented outgoing requests. |
+| Native order-ID bootstrap | `RequestIds` (8) | Existing startup requirement only; obtaining an ID grants no order action. |
+| Startup/open-order reports | `RequestAllOpenOrders` (16) | Explicit non-binding snapshot purpose. `fetch_all_open_orders=False` is not used as a safety control; do not substitute `RequestOpenOrders`. |
+| Instrument initialization and report contract resolution | `RequestContractData` (9), conditionally `CancelContractData` (106) | Explicit contracts and bounded lookups; prohibit broad chain expansion, wildcard discovery and disk-cache writes in the proof profile. Reconcile actual drop behavior/server support in compiled tests. |
+| Account initialization/query | `RequestAccountSummary` (62), `CancelAccountSummary` (63) | Native group is `All`, followed by local filtering; all accessible-account acquisition needs explicit scope. Preserve end/error state. |
+| Initial/current positions and reports | `RequestPositions` (61), `CancelPositions` (64) | Accessible-account scope precedes filtering. Cancellation releases an observation subscription, never a broker order. |
+| Native PnL startup | `RequestPnL` (92), `CancelPnL` (93) | Existing startup behavior, account-scoped. Decide explicit admission or a reviewed proof-only suppression; do not silently allow extra capture. |
+| Executions/recovery | `RequestExecutions` (7) | Normalized account, exact filters and verified history horizon. Execution completion and commission completion remain distinct. |
+| Proposed completed-order recovery | `RequestCompletedOrders` (99) | New adapter request, `apiOnly=False`, bounded invocation and explicit completion/horizon. No claim that it is already called by rc4. |
+| Passive update receiver | No outgoing subscription in inspected `order_update_stream()` | Local receiver registration does not establish TWS delivery; preserve callback gaps and unsupported cases. |
+| Reconciliation, retry, disconnect and Drop | Only the individually admitted requests above, with approved causal purpose | Reconciliation origins remain explicit; scheduled recovery/cleanup may not outlive the audit or authorized run. |
+
+Default-deny everything else. Explicitly prohibit `PlaceOrder` (3), `CancelOrder` (4),
+`RequestGlobalCancel` (58), `ExerciseOptions` (21), `RequestAutoOpenOrders` (15), and
+`RequestOpenOrders` (5) in this candidate, as well as native modify/replace/close/what-if paths,
+binding, automatic association, and compensating order cleanup. Client 0 remains outside the
+candidate. Broad FA/settings changes, market data, options-chain requests, scanners and arbitrary
+callbacks/configuration are not admitted incidentally.
+
+The selected executable composition still needs a transitive inventory from configuration through
+native call sites, encoders, background tasks, protocol framing and the write sink. In particular,
+provider loading/cache behavior, automatic reconnection callbacks, concurrent report requests and
+subscription lifetimes must match the eventual patch. Unknown paths must fail closed; the table
+cannot be treated as proof that the unmodified adapter only sends these requests. Complete this
+closure after the native decision and before presenting an exact connected run package.
+
+### Proposed Resource And Failure Envelope
+
+The following are proposed startup-only proof limits, not measured performance or approved run
+configuration. They make the native implementation decision reviewable; compiled synthetic tests
+must verify their enforcement. Any later paper package states its exact values and configuration
+digest, and changes require review rather than silent tuning.
+
+| Parameter | Proposed initial maximum | On breach |
+|---|---|---|
+| Whole proof run | 30 minutes | Revoke new work and end the observer interval. |
+| Connection or individual snapshot | 30 seconds each | Mark that operation incomplete; no empty-success promotion. |
+| Recovery | One reconnect attempt within 60 seconds | Close the gap as unrecovered and stop the proof. Replace native implicit backoff if it cannot obey this bound. |
+| Shutdown after revocation | 10 seconds | Terminate the owned proof process; no compensating broker action. |
+| Incoming frame | 1 MiB before allocation | Reject the frame, invalidate evidence, and close transport. |
+| Each observation/audit queue | 4,096 records and 16 MiB, whichever fills first | Latch evidence loss/revocation; never discard silently or block indefinitely. |
+
+Audit and observation bounds must include pending commissions, unmatched identities, concurrent
+snapshots, output serialization and task ownership, not only the final Python queue. The run
+package must also bound private capture bytes and expiry after the capture decision. Native
+background callbacks may not reconnect or write after revocation. The fact consumer cannot
+request arbitrary actions or retain native connection references. The proof's effective network,
+filesystem and process permissions still need verification on the actual host; same-user process
+separation alone is not a sandbox guarantee.
+
+### Evidence Lineage And Completeness Requirements
+
+The lineage consultation supports preparing the following contract and returns **STOP** for
+claims of complete manual lifecycle, gap-free delivery, closure or recovery on current evidence.
+This is a proof-envelope proposal, not an accepted trade-episode or persistence schema.
+
+| Evidence dimension | Required preservation/admission rule |
+|---|---|
+| Run and source | Repository/native artifact/configuration/schema identity; provider, independently verified paper environment and account alias; connection client and separately verified Master setting; process, connection and request epochs. |
+| Raw identity before normalization | Privately preserve account code, conId and contract fields, API order ID, permanent ID, source client ID, execution ID, order reference and their presence/validity. A normalized `PERM-...` identifier cannot replace the separate source fields. Arbitrary reference text stays inside the protected boundary. |
+| Quantities and state | Preserve raw status, side, quantity, fill/remaining quantity, prices, position and commission fields with units/currency and parse validity. Keep missing commission distinct from zero. A position change or flat synthetic report cannot identify a particular closing fill. |
+| Clocks | Preserve provider timestamp text/format/timezone where supplied, parsed UTC and parse outcome, local receive UTC and monotonic time/sequence. Local report timestamps are not provider event times. Ambiguous provider time remains unresolved. |
+| Snapshot coverage | Exact request kind/filter/account scope/time horizon; begin, typed provider end marker, error/timeout and counts. OpenOrderEnd, execution end, PositionEnd and completed-order end are distinct. No end marker or an unrelated marker cannot establish an empty complete snapshot. |
+| Evidence origin | Distinguish passive callback, requested provider row, parser projection, residual synthetic order, synthetic flat response, inferred reconciliation and cache state. Never deduplicate source evidence with a synthetic object as if they were the same fact. |
+| Missingness and loss | Preserve lag/drop/decode/mapping failures and pending/unmatched records, including losses before Python ingress. Loss invalidates the affected interval even when the final queue has no visible gap. |
+| Identity joins and revisions | Account/client/connection-scoped API IDs; preserve permanent/execution identities separately. Record duplicate occurrences, conflicting values and correction candidates without overwriting evidence or assuming an execution-ID suffix defines correction semantics. Keep one-to-many or ambiguous joins explicit. |
+| Recovery and closure | Fence old epochs; keep reconnect overlap, missing intervals and snapshot horizons. Current position recovery does not reconstruct missed modifications, fills or trader intent. Closure requires the admitted order/fill/position evidence for its named scope, not absence from an open-order list. |
+
+Synthetic native fixtures must include blank/normalized-colliding references, unmapped callbacks,
+status-before-openOrder, cross-account/client ID collisions, missing/late/conflicting commissions,
+correction-like execution IDs, source/synthetic collisions, wrong/missing/late snapshot terminators,
+zero rows with and without a valid terminator, more than the native 1,024-message broadcast capacity,
+reconnect overlap and unrecoverable gaps, ambiguous clocks, and unresolved one-to-many joins.
+Record failures explicitly rather than repairing them with provider or trader assumptions.
+No schema validator or fixture suite can establish delivery of manual TWS callbacks in a real run.
+The exact provider scope/uniqueness of identifiers, execution-correction targeting, callback and
+terminator guarantees, and history/timezone boundaries remain required IB-provider handoffs before
+those semantic conclusions. Until supplied, preserve candidate joins and correction-like IDs as
+unresolved. Unknown status/side/type/time-in-force values and timestamp parse assumptions must also
+survive before native parser defaults can make them appear observed.
+
+### Capture, Retention And Publication Requirements
+
+The exact-role licensing/provenance consultation returns **`REQUIRED_HANDOFF` for real capture**.
+Public synthetic preparation can proceed. The account's contracting entity, accepted agreements,
+paper-user relationship, accessible-account roster and applicable subscriptions/terms were not
+inspected. Public terms and software licenses do not establish account-specific rights. The
+advisor requires a private rights/qualified-legal-review disposition before the first real
+capture, including incidental market data, retention and any real-derived publication. This
+remains a pre-capture gate; private account documents are not needed for the present proposal.
+
+| Evidence class | Proposed handling; requires approval before real use |
+|---|---|
+| Public source/patch identities, field definitions, request names, synthetic fixtures and offline results | Suitable for this PR, preserving relevant software notices. Never populate fixtures from real captured rows. |
+| Native callback and audit evidence | Local private capture only after its exact source, fields, account scope, purpose, recipients, byte cap and expiry are approved. Preserve required identifiers privately; expose aliases through the reviewed projection. |
+| TWS logs, screenshots and wire traces | Exceptional corroboration only where needed for the acceptance claim. They may contain other accounts or market data; an order-observation purpose does not make the whole artifact safe. Disable optional market-data logging. |
+| Real-derived hashes, counts, timestamps, sanitized manifests and verdicts | Keep private until the rights disposition permits an exact public subset. Redaction, hashing and pseudonymization do not establish redistribution rights. |
+
+The capture proposal must identify the IB entity/account owner and authorized operator, all
+accounts exposed to the username, relevant agreement versions, subscriptions and market-data
+classification where applicable, TWS/API build/settings, source and filter inventory, local
+processors/recipients, and retention/deletion responsibilities. Every accessible account must
+be covered by the approved purpose or collection must be narrowed through a reviewed mechanism;
+filtering after collection does not close this gate. No real evidence enters Git, Codex/model
+prompts, Discord, cloud sync, telemetry or support uploads under the current authorization.
+
+For retention review, the advisor proposes raw corroboration lasting at most 24 hours after
+operator review and a private sanitized provenance/verdict lasting at most 90 days or until
+superseded, whichever comes first. These are conditional ceilings, not selected policy or
+permission to collect/delete: exact agreements and audit duties may require different limits.
+The capture package must have an absolute expiry so an unfinished review cannot retain evidence
+indefinitely. No retention interval or byte cap is approved by this record.
+
+Preserve the distinction between software and data rights: Nautilus's
+[exact-tag LGPL license](https://github.com/nautechsystems/nautilus_trader/blob/v2.0.0rc4/LICENSE)
+and [ibapi's MIT license](https://github.com/wboayue/rust-ibapi/blob/v3.3.0/LICENSE) govern the
+native source/distribution. They grant no IB account or exchange-data rights. The
+[IB API software terms](https://interactivebrokers.github.io/) require an applicability review
+if covered official API Code is included; do not assume the independent Rust implementation has
+the same license. [IB logging documentation](https://www.interactivebrokers.com/docs/tws-api/doc/troubleshooting-support/log-files/introduction)
+describes operational logging, not public reuse rights or an approved retention policy.
+
+### Offline Implementation And Exact-Run Gates
+
+After approval of the native decisions, implement and verify the proposed scope on this same
+draft PR. Minimum compiled synthetic verification includes:
+
+- every reachable prohibited action at entry, including disconnected, malformed, missing-cache,
+  target-validation and encode/version-rejection cases; each is audited with zero transport writes;
+- all ordinary bus send variants and direct handshake/StartApi/reconnect writes, unknown or
+  mismatched protobuf frames, bounded decoding, failed/partial writes and concurrent serialization;
+- explicit subscription cancellation, Drop, clone ownership, startup failure, timeout, panic and
+  shutdown races, with no late unaudited write or reconnect after revocation;
+- audit sink failure, bounded-queue exhaustion, sequence gaps and process interruption; loss
+  invalidates the result rather than producing a successful empty ledger;
+- native callbacks through the actual compiled observation ingress, including suppressed manual
+  cases, missing fields, commissions, synthetic origins, stale epochs and mutation attempts; and
+- synthetic private/free-text markers through native debug/error/panic and serializer paths, with
+  no raw values or executable handles escaping.
+
+Use in-memory native seams for deterministic cases; no connected broker or fake TWS server is
+authorized by this proposal. Run the existing composition/artifact guards and ordinary offline
+verification as well. The proof artifact requires its own integrity expectations without changing
+the root rc4 characterization into a false pass for a patched wheel.
+
+Only then present the exact connected package: reviewed repository/patch/binary hashes, fixed
+configuration and limits, full reachable request inventory, actual host restrictions, TWS/API
+build and settings, privately verified paper/access scope, approved capture fields/expiry, native
+audit/consumer startup and shutdown sequence, explicit recovery procedure, and operator action
+ledger. Markeitect performs the preexisting/new manual order, partial/full fill, change,
+cancel/replace, scale-in/out and closure scenarios. Controlled duplicates/late arrivals have
+synthetic evidence; unobserved real races remain unaccepted. Do not send prohibited requests to
+TWS merely to test that TWS rejects them.
+
+Abort on wrong account/settings/scope, unknown or prohibited intent/frame, binding/control change,
+audit loss, invalid lineage, unbounded recovery or expiry. Revoke observer work and close its
+transport; Markeitect handles outstanding paper orders. The final acceptance record must separate
+what arrived from what the provider could have omitted, and recovered current state from missing
+historical transitions. Keep Gate 1 and issue #45 open until Markeitect accepts all required
+evidence; keep PR #46 draft until implementation and acceptance are complete.
+
+### Consultation Continuation And Verification
+
+The initial architecture, IB-provider and Nautilus findings above were reused against the
+unchanged starting head and exact dependency identities, as requested. This continuation restored
+the exact security, data-quality/lineage and vendor-data licensing/provenance roles. All three
+ran read-only; their conditional recommendations and capture/acceptance handoffs remain gates.
+No advisor granted architecture, dependency, legal, provider or release approval.
+
+Before dispatch, the task's agent tree contained only the primary. The host declared four slots;
+the three remaining slots were reserved for these consultations. No close-agent operation was
+exposed, and completed advisors remained visible. No capacity was inferred from completion,
+archival, or interruption, and no unrelated task was closed. This is task-tree capacity evidence,
+not a claim of a global host census.
+
+Route mode was `MULTI`: security owned compiled attempt/write controls; lineage owned source
+identity/completeness; licensing owned conditional real-capture and public-evidence rights.
+Security and lineage proceeded independently from the reused native findings. Licensing's
+initial public/synthetic scope check ran independently because it admitted no real use; final
+capture synthesis incorporates both roles' broader-account and loss findings. This scoped
+dependency choice does not waive either role before real-capture advice.
+
+| Exact role | Validated requested allocation | Allocation decision ID |
+|---|---|---|
+| `markeitech_security_tool_boundary_advisor` | `gpt-6-astra`, `high` | `0da94d78d525dbe5beae0641b8638c48bb1e579a9853fb1a2c56e95163329123` |
+| `markeitech_data_quality_lineage_advisor` | `gpt-5.6-sol`, `xhigh` | `e5d84b312e9ec19c6351fe186bfcd6a7f66fefe85b57a783e365b90ea5cca7ec` |
+| `markeitech_vendor_data_licensing_provenance_advisor` | `gpt-5.6-sol`, `high` | `ed90cda78943608fd45b1275599226550bd938b5bf63fd7c04ae4762006eeeed` |
+
+The source/installed Kite packages matched. Resolver requests and completion receipts were
+validated under policy `2026-09-05-v6`. Host-effective model/effort metadata was absent, so receipt
+status remains `EXECUTION_UNVERIFIED`; this does not negate the returned consultation, establish
+allocation effectiveness, or prove effective read-only tool isolation.
+
+The existing focused command above passed **33 tests**. `markeitech verify all` passed Ruff and
+**730 tests, 2 deselected**, using pre-existing CPython 3.13.3/Nautilus rc4 without sync or install.
+The three changed documents' **29 relative link targets** resolve, and `git diff --check` passes.
+The continuation changes only those documents; earlier characterization tests are preserved.
+No native lifecycle, fake server, IB/TWS/account access, real capture, broker action, database,
+Discord or model runtime was run. CI must be read for the published PR head; local checks are
+offline evidence only.

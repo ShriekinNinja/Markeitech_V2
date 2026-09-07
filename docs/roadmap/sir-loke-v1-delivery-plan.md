@@ -33,6 +33,11 @@ testing, scoped fixes, and acceptance through that same PR. Do not create additi
 preparation stages. Gate 1 completes only after its required evidence is accepted; construction,
 a prepared harness, or a successful connection alone is insufficient.
 
+The [concrete native proposal](../reference/ib-observation-gate1.md#gate-1-continuation-concrete-proposal-for-decision)
+now identifies the proof-only dependency correction, immutable observation ingress, compiled
+request audit, lineage and capture requirements for Markeitect's decision. Adopt none of those
+proposed native/architecture changes or real-capture policies before their approval.
+
 No trade episode, Discord bot, model, or agent implementation should start until Gate 1 proves a
 safe observation foundation or Markeitect approves a different broker-observation boundary.
 
