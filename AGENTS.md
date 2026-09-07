@@ -171,6 +171,12 @@ change.
   recovery is bounded, observable, and continuously retried where policy permits.
 - Use NautilusTrader native contracts and bus semantics where they fit; keep one owner for every
   provider subscription and canonical stream.
+- Before recommending a custom integration or dependency change, evaluate the framework's
+  documented native path against the required behavior. An absent method on one interface does
+  not establish that the framework lacks the capability. Prefer a minimal offline example where
+  feasible, and identify the exact unmet requirement with reproducible failure or precise source
+  evidence before proposing a workaround. The primary agent must verify that advisor evidence,
+  including reused consultations, covers the current requirement and supports the recommendation.
 - Preserve evidence fidelity, lineage, UTC internal time, explicit contract identity, bounded
   resources, typed contracts, and durable operational audit.
 - Analytics, signals, thresholds, and instrument-selection assumptions require explicit current

@@ -47,6 +47,28 @@ For each candidate, verify the installed distribution rather than relying on mem
 
 Compiled symbols may require public stubs, API docs, focused construction probes, or existing tests when introspection is incomplete.
 
+### Demonstrate The Relevant Path Before Rejecting It
+
+Where feasible, use the smallest offline example exercising the documented native path in the
+installed version. Record its command, result, and evidence limit. Calling an overridden Python
+callback directly proves neither native dispatch nor adapter delivery; an absent method on one
+class does not rule out another native interface. If an executable demonstration needs unavailable
+facilities or a separately authorized connection, state that limit and use precise source evidence
+for only the claims it supports. Never connect or add dependencies merely to complete this gate.
+
+Before recommending a workaround, identify the exact requirement the native candidate cannot
+satisfy, the installed version, and a reproducible failure or precise source location showing the
+gap. Distinguish **not investigated**, **unavailable**, and **available but unsuitable**. Missing
+investigation is not a native rejection.
+
+When reusing an earlier consultation, verify that it covers the current requirement, relevant
+native alternatives, version, and configuration. The advisor must assess the example or source
+evidence; primary Kite must verify that the returned evidence supports the proposed conclusion.
+
+For example, checking `DataActor` and raw message-bus reports does not rule out `Strategy` execution
+callbacks. Evaluate the strategy event path separately, including routing and external-order
+semantics, before concluding that Python needs a custom execution-event bridge.
+
 ## 4. Separate Adapter Delivery
 
 A core type or method does not prove the Interactive Brokers adapter supplies it. Verify:

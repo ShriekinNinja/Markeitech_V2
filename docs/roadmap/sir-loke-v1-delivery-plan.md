@@ -25,18 +25,19 @@ modifies, binds for control, cancels, replaces, exercises, or closes a broker or
 
 Complete **Gate 1** through [issue #45](https://github.com/ShriekinNinja/Markeitech_V2/issues/45) and
 one coherent follow-up PR. Gate 1A's merged offline characterization established client-`1`
-construction and a source inventory. The follow-up has identified additional native Python
-report-ingress and untracked-order delivery concerns; resolve the
-[native ingress and audit decision](../reference/ib-observation-gate1.md#gate-1-completion-work-native-ingress-decision)
-before selecting an executable harness. Carry offline preparation, separately authorized paper
-testing, scoped fixes, and acceptance through that same PR. Do not create additional numbered
-preparation stages. Gate 1 completes only after its required evidence is accepted; construction,
-a prepared harness, or a successful connection alone is insufficient.
+construction and a source inventory. Continue on draft PR #46 with the installed native Strategy
+execution-event/configuration path. The earlier raw-report assessment omitted that alternative;
+its custom native ingress/patch recommendation is withdrawn. Evaluate actual routing, external
+orders, faithful observation, recovery and audit against the
+[corrected native decision](../reference/ib-observation-gate1.md#corrected-decision-before-harness-implementation).
+Existing callback exports and offline registration prove neither dispatch nor manual TWS delivery.
 
-The [concrete native proposal](../reference/ib-observation-gate1.md#gate-1-continuation-concrete-proposal-for-decision)
-now identifies the proof-only dependency correction, immutable observation ingress, compiled
-request audit, lineage and capture requirements for Markeitect's decision. Adopt none of those
-proposed native/architecture changes or real-capture policies before their approval.
+Carry offline preparation, separately authorized paper testing, scoped fixes, and acceptance
+through that same PR. Do not create additional numbered preparation stages. Gate 1 completes
+only after its required evidence is accepted; construction, a prepared harness, or a successful
+connection alone is insufficient. Demonstrated gaps requiring native/dependency/architecture
+changes need a concrete decision before adoption. Capture policy and each exact connected run
+retain their separate approval gates.
 
 No trade episode, Discord bot, model, or agent implementation should start until Gate 1 proves a
 safe observation foundation or Markeitect approves a different broker-observation boundary.

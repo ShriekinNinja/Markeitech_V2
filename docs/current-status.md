@@ -28,7 +28,7 @@ None of those future documents proves implementation.
 | Agent/model | Unimplemented; no live model, Sir Loke read model, conversation state, or agent tools |
 | Execution | Absent; no submit, modify, bind-for-control, cancel, replace, exercise, or close path |
 | Persistence | PostgreSQL operational audit and compact evidence-recency profiles; no raw market-data store |
-| Current implementation focus | Complete Gate 1 under issue #45; native report ingress and untracked-order coverage need a decision before selecting the paper harness |
+| Current implementation focus | Complete Gate 1 under issue #45 and draft PR #46; evaluate native Strategy event routing, manual-order fidelity and audit before a paper harness |
 
 ## Current Offline Verification
 
@@ -64,18 +64,20 @@ This evidence proves compiled construction and inspected source only. It does no
 startup/wire behavior, network-egress isolation, no-binding/no-order-action behavior, manual TWS
 event coverage under the user-reported Master `1` setting, or connected paper acceptance.
 
-Gate 1 completion work subsequently verified missing named Python report-ingress interfaces in
-installed rc4. Pinned source inspection also identified Python message-bus rejection of native
-non-`PyMessage` reports and suppression of some untracked-order updates inside the IB adapter.
-These are separate ingress and delivery concerns. The exact findings, executable interface
-characterization, source identities, and pending native/audit decision are recorded in the
-[Gate 1 decision section](reference/ib-observation-gate1.md#gate-1-completion-work-native-ingress-decision).
-The continuation records restored security, lineage and capture consultations and a
-[concrete proposal for decision](reference/ib-observation-gate1.md#gate-1-continuation-concrete-proposal-for-decision):
-an isolated native proof artifact, typed observation ingress, and audit of both prohibited
-attempts and compiled writes. Its native changes, capture policy and exact paper run remain
-unapproved; source inspection and advisor recommendations are not acceptance evidence.
-No observation harness, native patch, dependency change, or connected proof has been delivered.
+Gate 1 completion work characterized limits on named raw-report interfaces, then corrected an
+overgeneralization: installed rc4 also exposes native Python `Strategy` order/position callbacks.
+The Strategy subclass registers offline with `LiveNode`, and a new executable fixture verifies
+native Strategy-to-DataActor signal forwarding using a synthetic immutable string. The node never
+runs and no provider is configured. Native source separately contains typed execution-event
+conversion/dispatch; order/position dispatch and manual TWS delivery remain unmeasured, as do
+complete identity/recovery and no-action/no-binding behavior.
+
+The earlier custom-native-bridge and patched-artifact recommendation is withdrawn. The
+[Gate 1 evidence record](reference/ib-observation-gate1.md#native-strategy-continuation-measured-scope-and-remaining-gaps)
+owns the corrected assessment, preserved source concerns, and exact remaining acceptance gates.
+Prior security, lineage and capture findings retain their bounded scope and must be assessed
+against the selected native path. No observation harness, native patch, dependency change, or
+connected proof has been delivered. Production remains data-only; PR #46 remains draft.
 
 ## Operating Posture
 

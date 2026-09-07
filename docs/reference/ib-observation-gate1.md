@@ -1,7 +1,12 @@
-# Gate 1A Native IB Observation Characterization
+# Gate 1 Native IB Observation Evidence
 
-**Status:** Offline construction and source characterization complete for the exact evidence below;
-native lifecycle and connected acceptance not run
+**Status:** Offline construction and native signal forwarding verified for the exact evidence
+below; native execution-event dispatch and connected acceptance remain unverified
+
+**Current correction:** Python `Strategy` order/position callbacks are available in installed rc4.
+The earlier raw-report investigation did not evaluate that separate path and did not establish a
+need for a custom native bridge. The native-patch recommendation is withdrawn. See the
+[corrected native decision](#corrected-decision-before-harness-implementation) for the current scope and remaining evidence.
 
 **Repository baseline:** `ba7088a6302430a9b1acd8c55938536078a47bd1`
 
@@ -305,16 +310,17 @@ that connected evidence is accepted.
 PR #44 merged at `72e324b7fff5b4a1816bc529d2e8f8eab84918d7`. The remaining work is tracked in
 [issue #45](https://github.com/ShriekinNinja/Markeitech_V2/issues/45) as one Gate 1 completion PR,
 including offline preparation, separately authorized paper testing, fixes, and acceptance. There
-are no additional numbered preparation stages. This section records a decision needed before an
-executable observation harness can be selected; it does not mark Gate 1 complete.
+are no additional numbered preparation stages. The original raw-report investigation below is
+bounded evidence, corrected by the Strategy findings; it does not mark Gate 1 complete.
 
 ### Installed Python Surface
 
 On 2026-09-07, isolated introspection of the existing CPython `3.13.3` / Nautilus `2.0.0rc4`
 environment verified the following named surfaces without constructing or starting a node:
 
-| Surface | Verified installed limitation |
+| Surface | Verified installed contract |
 |---|---|
+| `Strategy` | Has aggregate and specific order/position callbacks, and `publish_signal`. `LiveNode.add_strategy` registers a Python subclass offline. Native dispatch and manual TWS delivery are not exercised by this construction proof. |
 | `DataActor` | No `msgbus`, `on_report`, `on_order_status_report`, `on_fill_report`, `on_position_status_report`, or `on_order_event` member. |
 | `LiveNode` | No `msgbus`, `execution_engine`, `get_execution_client`, `generate_mass_status`, or `add_stream_processor` member. |
 | `LiveNodeBuilder` | No `add_stream_processor` member. |
@@ -326,6 +332,15 @@ The version-bound regression is
 [`test_gate1_native_observation_surface.py`](../../tests/system/test_gate1_native_observation_surface.py).
 It checks these exact interfaces. It does not prove that every alternative native integration is
 impossible, and it must be reviewed if the dependency changes.
+
+The [nightly events guide](https://nautilustrader.io/docs/nightly/concepts/events/) directs Python
+execution-event consumers to Strategy callbacks, with signals for actor consumers. Installed rc4
+exports those callbacks. Exact rc4
+[`strategy.rs:439`](https://github.com/nautechsystems/nautilus_trader/blob/a0400251110653b6d8ae6a9b5b89c4543fa85a2d/crates/trading/src/python/strategy.rs#L439)
+converts native order events to Python objects before calling `on_order_event`; the same file's
+specific fill and position dispatchers also convert native values. This is a separate mechanism
+from the generic `PyMessage` handler below. Source presence establishes the implementation path,
+not measured end-to-end delivery on the installed wheel.
 
 ### Native Source Limits
 
@@ -352,9 +367,10 @@ references are fixed to rc4 commit `a0400251110653b6d8ae6a9b5b89c4543fa85a2d`:
    roster. The existing fill-account normalization and commission-pairing concerns also remain
    unresolved. A report-bus extension alone would not close these adapter-fidelity questions.
 
-**Inference:** a plain Python callback harness using those inspected rc4 interfaces is not a
-supported completion path for Gate 1. The evidence does not reject native client 1 construction,
-all native integration approaches, or the provider's non-binding snapshot capability.
+**Correction:** the generic report-handler limitation cannot reject Python observation generally.
+Strategy event dispatch was omitted from the earlier assessment. Whether the required manual TWS
+events reach a suitable Strategy configuration remains unverified. The adapter findings above
+remain source-level concerns; they do not establish that every native configuration fails.
 
 ### Provider And Documentation Limits
 
@@ -388,31 +404,21 @@ version or native extension needs its own source, artifact, adapter, and accepta
 | Requirement | Native candidate | Installed-version evidence | Adapter/provider evidence | Semantic fit | Proposed owner | Decision | Rejection or extension rationale | Acceptance evidence |
 |---|---|---|---|---|---|---|---|---|
 | Construct one native connection | IB config/factory and node builder | Existing rc4 client-1 construction passes | Provider behavior unmeasured | Fits construction only | Nautilus | `USE_NATIVE` for construction | No replacement justified | Existing Gate 1A tests |
-| Receive native reports in Python | Raw reconciliation topics and Python bus handler | Handler accepts only `PyMessage`; no named direct public ingress | Adapter raw reports include synthetic rows | Missing current Python bridge | Native report boundary, placement undecided | `DEFER` | Python-originated publish is a different path | Source inspection and installed-surface tests only |
+| Receive raw native reports through a generic Python handler | Raw reconciliation topics and Python bus handler | Handler accepts only `PyMessage` | Adapter raw reports include synthetic rows | Limited to this handler | Native report boundary, placement undecided | `DEFER` | Does not reject Strategy event callbacks | Source inspection and installed-surface tests only |
+| Receive execution events in Python | Strategy callbacks and native registration | Callbacks exist; subclass registers offline; rc4 source converts native events | Manual TWS delivery not measured | Relevant alternative; requirement coverage unverified | Native Strategy; product boundary undecided | `UNKNOWN` | No custom bridge justified by the earlier omitted-candidate review | Positive interface/registration tests; dispatch proof pending |
 | Observe untracked manual order updates | Native IB passive update stream | Unmapped status and blank-reference/unmapped open-order paths suppress output | Master-1 manual delivery unverified | Incomplete for named source cases | Native adapter | `DEFER` | A report bridge cannot recover events not emitted | Source inspection; paper coverage absent |
 | Preserve fills and terminal recovery | Native fill/order/position reports | Account-filter mismatch; commission-gated output; no completed-order roster request | Provider history bounds require verification | Unresolved fidelity | Native adapter and future fact admission | `DEFER` | Positions/synthetic reports cannot reconstruct missing broker history | No connected acceptance |
-| Prove no prohibited attempts | Native transport writes and observable lifecycle | No adequate Python interception seam established | TWS log receipt alone has bounded coverage | Audit boundary undecided | Required security consultation | `UNKNOWN` | Exact-role consultation could not launch | No accepted audit mechanism or run |
+| Prove no prohibited attempts | Native transport writes and observable lifecycle | No adequate Python interception seam established | TWS log receipt alone has bounded coverage | Audit boundary undecided | Native lifecycle and observation boundary | `UNKNOWN` | Security review completed for the earlier proposal; Strategy callbacks do not establish an audit | No accepted audit mechanism or run |
 
-### Concrete Decision Before Harness Implementation
+### Corrected Decision Before Harness Implementation
 
-The smallest architectural candidate remains a repository-only proof harness outside `src/`,
-with a narrow immutable observation boundary and unchanged ordinary data-only startup. Selecting
-its native ingress and exact observation/audit contract remains open.
-
-The next work is a bounded native compatibility proposal covering:
-
-- a supported typed Rust-to-Python report ingress, or an explicitly reviewed native proof host;
-- observation of untracked manual order status/open-order callbacks without claiming or binding
-  orders for control;
-- fill account normalization, commission completeness, terminal-order coverage, and report origin;
-- exact request-audit coverage, failure handling, and downstream capability isolation; and
-- the smallest dependency/native-source change, if one is required, with its maintenance and
-  verification cost made explicit before adoption.
-
-Read-only investigation remains within issue #45. These are candidate requirements, not an
-approved patch, upgrade, Rust host, raw IB replacement, polling fallback, or new product schema.
-The evidence at the initial PR head did not justify choosing between them. Present the concrete native change
-and its consequences for Markeitect's decision before adopting it. Keep the work on this PR.
+Evaluate the existing Strategy event path before any native bridge, fork, or dependency proposal.
+The proof remains outside ordinary production startup and uses the existing dependency. A minimal
+offline registration example is implemented in the characterization tests; it is not a connected
+observation harness or a dispatch test. Resolve actual event routing and the required observation
+boundary with exact-role review before selecting runtime configuration. See the
+[corrected native decision](#corrected-decision-before-harness-implementation). Any remaining native limitation needs its own
+precise evidence; it does not automatically activate the withdrawn patch specification.
 
 The architecture, IB-provider, and Nautilus consultations ran read-only. At the initial PR head,
 the required security consultation could not launch because the host reported
@@ -420,7 +426,7 @@ the required security consultation could not launch because the host reported
 Detailed lineage and capture/retention consultations were then pending the native/audit boundary.
 A fresh task needed to restore exact-role coverage before those affected decisions or any real
 capture. The continuation below records that
-restoration and the resulting proposal. The earlier failure was an execution limitation of
+restoration and the later correction to the resulting proposal. The earlier failure was an execution limitation of
 the consultation, not proof that the security role is absent from the installed plugin.
 
 No native lifecycle, broker connection, fake TWS server, raw data capture, production execution
@@ -449,52 +455,163 @@ across the three changed Markdown documents resolved, and `git diff --check` pas
 verify the characterized Python surface and repository consistency, not compiled report delivery,
 provider coverage, security isolation, a working observation harness, or Gate 1 acceptance.
 
-## Gate 1 Continuation: Concrete Proposal For Decision
+## Native Strategy Continuation: Measured Scope And Remaining Gaps
 
-**Disposition: proposed, not adopted; Gate 1 remains incomplete.** This continuation starts from
-the remotely reverified draft PR #46 head `3736f09ea6b13e0f8052f846b08974b00ad5cd93` and master
-`72e324b7fff5b4a1816bc529d2e8f8eab84918d7`, on 2026-09-07. It extends the same issue and PR.
-There is still no observation harness, patched native artifact, or accepted paper run.
+On 2026-09-07, continuation from `ea4296e016315b41f0e215d821cdd8cf22eaa893` preserved the four
+incoming uncommitted edits, including both approved native-first rule additions. The smallest
+supported implementation in this batch is the executable offline native-forwarding example in
+[`test_gate1_native_observation_surface.py`](../../tests/system/test_gate1_native_observation_surface.py),
+not an IB observation harness. No provider or production component was added.
 
-### Recommended Decisions
+### Measured Native Forwarding
 
-| Decision requiring Markeitect | Recommendation and bounded implementation effect | Alternative and consequence |
-|---|---|---|
-| Native dependency correction | Authorize an isolated proof artifact based on exact Nautilus rc4 commit `a0400251110653b6d8ae6a9b5b89c4543fa85a2d` and checksum-verified `ibapi 3.3.0`, with the narrow adapter, observation-egress, and audit changes below. Keep the ordinary runtime pin and environment unchanged. | A broad version upgrade has no verified candidate closing all these gaps. Waiting for upstream fixes is viable but leaves Gate 1 blocked. |
-| Proof-harness ownership and ingress | Authorize a repository-only harness under a dedicated tool directory outside `src/`, with the native owner in a dedicated proof process, one native IB connection, and a private typed Rust-to-Python observation ingress before reconciliation. Its consumer receives immutable copied facts and evidence-health records. | A Rust-only proof host avoids the Python ingress problem, but still needs manual-callback, fidelity, and audit corrections, and would not validate Python delivery. A second raw IB client or polling substitute changes the provider boundary and is not recommended on this evidence. |
-| Compiled audit boundary | Authorize audit-first action-entry rejection plus an audited, default-deny native write boundary covering ordinary messages, handshake, StartApi, reconnect, and subscription cleanup. Retain causal links between lifecycle intent, request, and write outcome. | A Python wrapper, existing recorder, TWS logs, or a wire interposer alone cannot establish no prohibited attempts rejected before transmission. An OS/process boundary may add containment but is not established by the current tests. |
+`test_gate1_strategy_signal_reaches_actor_through_native_dispatch` constructs a node with no
+provider, registers a Strategy and DataActor, subscribes the actor after registration, and starts
+only those two components. A synthetic immutable string passes through
+`Strategy.publish_signal` to the actor's native-dispatched `on_signal`; the test checks the copied
+value and timestamp, stops both components, and verifies that the node never ran. Neither order
+nor position callback is invoked. The subprocess is bounded to 15 seconds.
 
-Approval of these decisions would authorize offline native implementation and synthetic
-verification on this PR. It would not authorize a dependency change in ordinary production,
-upstream publication, a new repository, production activation, account access, real capture, or
-an IB/TWS run. The patched build needs an independently pinned source/patch/lock identity, compiler
-and feature inventory, build instructions, artifact hash and import-origin verification. A local
-version label alone is insufficient. Keep the delta reviewable here; do not silently edit an
-installed wheel or reuse an unidentifiable local build. The cost is maintaining and rebuilding a
-small native patch until an upstream version passes the same contract tests. Distribution also
-needs review of the applicable source-license obligations.
+Explicit no-op `on_start`/`on_stop` hooks and subscribing outside `on_start` permit this direct
+component-lifecycle fixture on the installed wheel. The advisor measured borrow errors in other
+direct-start arrangements. This does not establish failure or success of node-managed startup.
+The test is a forwarding demonstration, not a capability sandbox or an attempt-audit mechanism.
 
-The proof owner is not the production broker-observation component. Runtime topology, product
-schemas, persistence, and downstream Sir Loke integration remain their existing approval gates.
+The exact rc4 source separately establishes typed execution routing:
 
-### Native Change Specification
+- [`trader.rs:461`](https://github.com/nautechsystems/nautilus_trader/blob/a0400251110653b6d8ae6a9b5b89c4543fa85a2d/crates/system/src/trader.rs#L461)
+  installs strategy-specific order and position subscriptions using typed native handlers.
+- [`strategy.rs:439`](https://github.com/nautechsystems/nautilus_trader/blob/a0400251110653b6d8ae6a9b5b89c4543fa85a2d/crates/trading/src/python/strategy.rs#L439)
+  converts native order values for Python callbacks. Native handlers require a running Strategy;
+  position lifecycle callbacks exclude `PositionAdjusted` and describe engine-derived state.
+- [`msgbus.rs:695`](https://github.com/nautechsystems/nautilus_trader/blob/a0400251110653b6d8ae6a9b5b89c4543fa85a2d/crates/common/src/python/msgbus.rs#L695)
+  wraps generic Python publication in `PyMessage`. It is not a public typed execution-event
+  injection seam. Directly calling a Python callback would not close the missing dispatch proof.
 
-| Existing source limitation | Proposed correction | Required proof before a paper package |
-|---|---|---|
-| Python callable handler accepts only `PyMessage`; installed node/actor surfaces lack direct native report ingress | Add a narrow typed native observation ingress and copied immutable Python records. Avoid a generic arbitrary-object bus conversion or exposing the execution engine/client. | Drive the real Rust-originated egress through the compiled binding into Python. Verify identity, ordering, bounds, callback failure, shutdown, and absence of mutable handles. Python-originated publish is not a substitute. |
-| Unmapped status, blank-reference open-order callbacks and unmapped executions are discarded by execution bookkeeping | Emit observation evidence before those bookkeeping filters, without assigning a strategy/client-order ID, populating control mappings, claiming, or binding an order. Preserve unmatched status/execution as unresolved evidence until provider identity can establish a join. | Synthetic native callbacks exercise blank refs, unknown IDs, status-before-openOrder, terminal updates, unmatched fills, multiple accounts, duplicates, and conflicts. No fabricated full order report when account/contract identity is absent. |
-| Native report transformations lose raw identity and origin | Carry source metadata alongside native report projections before parsing/reconciliation: separate API order ID, permanent ID, source client, execution ID, contract ID, callback/request origin and missingness. Preserve synthetic residual orders, inferred reconciliation, flat responses, and cache projections as distinct classes. | Direct observations can never be manufactured by accepting a synthetic report. Native reports remain useful comparison evidence; mutable cache objects never cross the ingress. |
-| Fill history uses the full Nautilus account string | Normalize the request account using the same `raw_ib_account_code` rule as order/position paths, retaining both identities privately in provenance. | Assert the encoded filter for prefixed and raw synthetic accounts, returned-account validation and mismatches. Provider failure on the unpatched filter remains unmeasured. |
-| Commission pairing suppresses execution evidence | Preserve the execution independently with explicit commission-missing state; emit a later linked commission revision. Do not turn missing commission into zero or invent a complete `FillReport` merely to satisfy its constructor. | Missing/late/duplicate/conflicting commissions, execution corrections, bounded pending state, request end and timeout all preserve the execution and expose incompleteness. |
-| `open_only=False` produces synthetic residuals, not completed-order history | Add a bounded native completed-order request with `apiOnly=False` for startup/recovery comparison alongside open orders, executions, and positions. Keep its origin/end marker and provider horizon explicit. | Verify the encoded request, terminal rows/end marker, missing history and join ambiguity. A completed roster does not recover every intermediate modification or prove ongoing manual TWS callbacks. |
-| Native receive paths silently skip broadcast lag | Surface loss before the lossy seam, including the outer subscription poller, and invalidate affected evidence intervals. Audit must not use the same silently lossy queue. | Inject lag, overflow, late delivery, truncation and consumer failure at the native boundary. Downstream contiguous sequence numbers alone cannot prove upstream completeness. |
-| Typed snapshot terminators can collapse into generic end-of-stream | Preserve the original terminator and request identity before that decoder/subscription transformation. An ended iterator is not sufficient evidence of the expected provider end marker. | Correct, wrong, missing, duplicate and late terminators; distinguish request termination from completeness of the desired provider population. |
-| Transport reconnection does not prove subscription restoration or history recovery | Explicitly fence each connection epoch, expose its gap, restore only reviewed observation requests, and reconcile bounded snapshots. Admit current state separately from historical continuity. | Bound attempts, time, queues and cancellation; stale epochs cannot fill a new epoch silently. Unrecoverable intra-gap changes remain unknown. Exact mechanics require review against the chosen patch. |
+The [nightly events guide](https://nautilustrader.io/docs/nightly/concepts/events/) was freshly
+retrieved and agrees on Strategy callbacks and actor signals. Installed wheel behavior governs
+the measured example; changing nightly documentation is not an exact artifact test.
 
-Forwarding callbacks fixes adapter suppression only. Whether TWS delivers all required manual
-callbacks to connection client 1 with Master 1 remains a provider acceptance question. If the
-paper evidence cannot establish that coverage without binding, stop and return the limitation to
-Markeitect; do not widen client privileges, introduce polling, or weaken Gate 1 criteria.
+### Native Candidate And Explicit Dispositions
+
+Use native Strategy/event facilities as the candidate; no custom execution-event bridge is
+justified. Exact-instrument external claims and engine reconciliation are candidates for later
+configuration review, not selected paper settings. Internal claims assign framework ownership;
+they are distinct from IB binding and do not prove the complete lifecycle free of broker actions.
+
+| Requirement or concern | Current evidence and disposition for the Strategy path |
+|---|---|
+| Native Python execution ingress | Callbacks, registration and typed native source are available. Installed order/position dispatch remains **UNMEASURED**; only signal forwarding is **MEASURED**. |
+| External-order routing | Source supports instrument-specific claims. In `manager.rs:4909`, a claim selects the strategy; `4932` then filters non-synthetic external orders whenever `filter_unclaimed_external=True`, without checking that claim. Do not use this flag as a proven claimed-only filter or account-scope control. |
+| Blank-reference/unmapped manual updates | Adapter bookkeeping can suppress these before Strategy dispatch. Claims downstream do not establish recovery of those callbacks. **UNRESOLVED** for required manual lifecycle coverage. |
+| Fill account identity | Fill requests use the full Nautilus account string while order/position reporting normalizes it. **SOURCE CONCERN**, provider effect unmeasured; no complete-fill claim. |
+| Commission-dependent fills | Missing paired commissions can suppress fill reports. **UNRESOLVED**; neither zero commission nor an empty result proves completeness. |
+| Reconciliation origin | Residual orders, inferred fills and flat reports remain synthetic/derived even when delivered to a claimed Strategy. Position lifecycle callbacks are engine state, not raw broker position reports. |
+| Terminal history and recovery | Open orders/current positions do not reconstruct every missed change or closing fill. Receive loss, reconnect epochs and history horizons remain **UNACCEPTED**. |
+| Immutable downstream facts | Scalar native forwarding is demonstrated. A complete bounded observation projection preserving required raw identities/origins has **NOT BEEN IMPLEMENTED**; discarded upstream fields cannot be recreated by a serializer. |
+| No prohibited attempts and complete writes | Disabled management flags leave execution APIs reachable on Strategy/native internals. No adequate compiled attempt/write audit has been established. **BLOCKS CONNECTED HARNESS ACCEPTANCE** independently of signal forwarding. |
+| Provider delivery and capture | No IB/TWS run or real capture. Prior capture/rights and exact-run approval gates remain applicable before any real evidence acquisition. |
+
+The external-claim filter finding is source-bound to the recorded manager hash
+`68cdce4ae8e854f21443a431d18441bfc4d9798bf228b2185abc78fcb2dafade`, independently checked again
+by the advisor. It is not a measured rejection of every native configuration. The source extract
+has no Git metadata; matching inspected file hashes does not prove whole-build reproducibility.
+
+### Exact Audit Blocker And Next Decision
+
+The security consultation accepts the new fixture's bounded offline scope and returns
+**`REQUIRED_HANDOFF`** for an executable connected candidate. Primary Kite independently inspected
+these decisive source cases:
+
+- [`strategy/mod.rs:158`](https://github.com/nautechsystems/nautilus_trader/blob/a0400251110653b6d8ae6a9b5b89c4543fa85a2d/crates/trading/src/strategy/mod.rs#L158)
+  rejects an invalid submission state before generating an event. The upstream regression
+  [`test_submit_order_rejects_non_initialized_without_events`](https://github.com/nautechsystems/nautilus_trader/blob/a0400251110653b6d8ae6a9b5b89c4543fa85a2d/crates/trading/src/strategy/mod.rs#L3529)
+  asserts that no event was emitted. This Rust test was inspected, not executed here.
+- The existing IB core readiness/cache checks and ibapi pre-encode validation can likewise reject
+  before a transmitted frame. A callback, command-only log or wire trace cannot observe every
+  such attempt, including direct base-method/internal native calls outside a Python override.
+- ibapi's [`recorder.rs:59`](https://github.com/wboayue/rust-ibapi/blob/v3.3.0/src/transport/recorder.rs#L59)
+  warns on recording failure without failing the caller. Its records are not a fail-closed audit.
+  Handshake/StartApi and asynchronous Drop writes remain the separate paths identified below.
+
+The smallest sufficient logical control boundary needs **both** an audit before every reachable
+prohibited action can reject or encode, and a correlated fail-closed audit of every native write
+through startup, operation, reconnect and shutdown. No inspected public rc4 configuration or
+callback supplies both. This is a precise missing facility, not a rejection of Strategy event
+observation or a recommendation to restore the former bridge/patch proposal.
+
+The next consequential decision is a bounded **audit-facility feasibility/change scope** for
+those two control points. Any proposed implementation must identify its exact entry points,
+coverage, audit-loss behavior, artifact/build changes and maintenance cost before adoption. Keep
+native Strategy as the observation candidate. No fork, dependency upgrade, proxy, new bridge or
+broad patch has been selected or shown sufficient. Deferring the connected harness pending a
+sufficient facility is the supported alternative; relaxing issue #45 is not implicit authority.
+Manual-event fidelity and capture/recovery gates remain independent even if audit is solved.
+
+### Advisor Capacity And Evidence
+
+The installed router/dispatch policy `2026-09-07-v7` was used with its matching installed scripts;
+those files matched the current `master` checkout. The PR's older plugin source was not upgraded
+incidentally. Both approved native-first rule edits remain exactly as handed off; the source-only
+skill supplement was supplied explicitly to the Nautilus advisor without claiming cache refresh.
+
+The full selected plan was preflighted before launch: host capacity was four including the
+primary, inventory initially contained only the primary, and no close operation was callable.
+Two required roles fit the three free slots. Native consultation preceded security because the
+latter needed its concrete candidate. Fresh inventory and `DISPATCH_READY` preceded each
+serialized launch; the completed native advisor still occupied a slot for the security launch.
+No capacity refusal, retry, role substitution or unrelated task closure occurred.
+
+| Exact role | Owned question | Requested allocation | Decision ID |
+|---|---|---|---|
+| `markeitech_nautilus_advisor` | Installed Strategy routing and smallest public offline demonstration | `gpt-6-astra`, `high` | `8797b032944f0bade934c18130106e27e6aecc2ba8921f48810b400089abc900` |
+| `markeitech_security_tool_boundary_advisor` | Actual candidate capability exposure and sufficient native attempt/write audit | `gpt-6-astra`, `high` | `9d36adf151d2240c58647ad5562cfe0b3cb7efc33b10c0545e0b1761d6d42a41` |
+
+Both exact roles returned, and completion receipts validated with `EXECUTION_UNVERIFIED` because
+host-effective model/effort metadata was unavailable. That label concerns allocation metadata;
+it neither invalidates inspected evidence nor establishes effective tool isolation. Primary Kite
+independently ran the forwarding fixture and checked the decisive routing/audit source findings.
+
+The advisor could not retrieve the nightly live API page; primary subsequently retrieved it via
+verified-TLS curl (SHA-256 `196901c0dd1cd7316933fc60c2b70118e8f6c665ed3ade1f6406e44ec3065a4f`).
+The linked reconciliation guide was unavailable through the documentation tool. No connected
+reconciliation configuration is selected from incomplete documentation or from nightly defaults.
+
+### Continuation Verification
+
+Using the pre-existing CPython 3.13.3 / Nautilus rc4 environment without installation or sync:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+  <verified-python> -B -m pytest -p no:cacheprovider -q \
+  tests/system/test_gate1_native_observation_surface.py
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+  PYTEST_ADDOPTS='-p no:cacheprovider' <verified-python> -B -m markeitech verify all
+python3 -B plugins/kite/scripts/validate_advisor_council.py
+python3 -B -m unittest discover -s plugins/kite/tests -q
+git diff --check
+```
+
+Results: **11 surface tests passed**; full verification passed Ruff and **734 tests, 2 deselected**;
+Kite council validation passed and **54 plugin tests passed**. Ruff used a temporary cache because
+the existing PR worktree is outside the task's default writable root. No dependency, production
+configuration, persistence, IDE state, node/provider lifecycle, IB/TWS connection, or real capture
+changed. The two PostgreSQL tests remain CI-owned acceptance. Read CI for the published head.
+
+## Prior Proposal: Withdrawn, Evidence Retained
+
+The continuation at PR head `ea4296e016315b41f0e215d821cdd8cf22eaa893` prematurely
+recommended a patched rc4 proof artifact and custom native ingress. That recommendation is
+**withdrawn**: it omitted the separate native Strategy execution-event path. No patch, dependency
+change, Rust host, or new observation architecture was approved or implemented. The latest
+[PR #46 handoff](https://github.com/ShriekinNinja/Markeitech_V2/pull/46#issuecomment-5572003557)
+supersedes the old PR description and implementation proposal.
+
+The old patch specification, proposed resource limits, and patch-dependent implementation sequence
+remain recoverable at that Git revision. They are removed from current recommendations. The
+source findings and bounded security, lineage, and capture consultations below remain evidence
+for evaluating the actual native candidate; they do not make every former proposed control or
+source change mandatory. Each applicable gap needs an explicit disposition before a paper run.
 
 ### Additional Source Evidence And Audit Coverage
 
@@ -526,14 +643,14 @@ The following are inspected-source findings and proposed controls, not executed 
   `AsyncConnection::write_message`. This is not a universal sink: `connection/async.rs:209-252`
   sends handshake directly to `socket.write_all`, and StartApi through `write_raw`; reconnect
   repeats connection establishment. The inspected production async sink is
-  `AsyncTcpSocket::write_all` in `transport/async/io.rs:68-71`. The implementation must cover both
+  `AsyncTcpSocket::write_all` in `transport/async/io.rs:68-71`. A candidate audit must cover both
   typed intent and every actual write, with explicit handshake/protobuf protocol states.
 - `subscriptions/async.rs:421-475` encodes cancellation and may spawn an asynchronous send on
   Drop. Audit the cleanup intent before encoding and keep supervision/audit alive until all owned
   cleanup tasks finish or the observer transport is closed. The inner subscription's local map
   cleanup is not the outer subscription's provider cancellation.
 - Both `transport/async.rs:140-176` and `subscriptions/async.rs`'s `poll_next` can skip lag errors.
-  Patch loss visibility before claiming a complete observation interval.
+  Complete-interval claims require loss visibility at those seams; no patch is selected here.
 - `transport/async/io.rs:58` allocates the advertised incoming frame length without a bound at
   that inspected seam. Bound the frame before allocation and the decoder/queues before admission.
 - The built-in recorder is controlled by `IBAPI_RECORDING_DIR`; logging/recording can contain raw
@@ -582,33 +699,9 @@ callbacks/configuration are not admitted incidentally.
 The selected executable composition still needs a transitive inventory from configuration through
 native call sites, encoders, background tasks, protocol framing and the write sink. In particular,
 provider loading/cache behavior, automatic reconnection callbacks, concurrent report requests and
-subscription lifetimes must match the eventual patch. Unknown paths must fail closed; the table
+subscription lifetimes must match the selected native configuration. Unknown paths must fail closed; the table
 cannot be treated as proof that the unmodified adapter only sends these requests. Complete this
-closure after the native decision and before presenting an exact connected run package.
-
-### Proposed Resource And Failure Envelope
-
-The following are proposed startup-only proof limits, not measured performance or approved run
-configuration. They make the native implementation decision reviewable; compiled synthetic tests
-must verify their enforcement. Any later paper package states its exact values and configuration
-digest, and changes require review rather than silent tuning.
-
-| Parameter | Proposed initial maximum | On breach |
-|---|---|---|
-| Whole proof run | 30 minutes | Revoke new work and end the observer interval. |
-| Connection or individual snapshot | 30 seconds each | Mark that operation incomplete; no empty-success promotion. |
-| Recovery | One reconnect attempt within 60 seconds | Close the gap as unrecovered and stop the proof. Replace native implicit backoff if it cannot obey this bound. |
-| Shutdown after revocation | 10 seconds | Terminate the owned proof process; no compensating broker action. |
-| Incoming frame | 1 MiB before allocation | Reject the frame, invalidate evidence, and close transport. |
-| Each observation/audit queue | 4,096 records and 16 MiB, whichever fills first | Latch evidence loss/revocation; never discard silently or block indefinitely. |
-
-Audit and observation bounds must include pending commissions, unmatched identities, concurrent
-snapshots, output serialization and task ownership, not only the final Python queue. The run
-package must also bound private capture bytes and expiry after the capture decision. Native
-background callbacks may not reconnect or write after revocation. The fact consumer cannot
-request arbitrary actions or retain native connection references. The proof's effective network,
-filesystem and process permissions still need verification on the actual host; same-user process
-separation alone is not a sandbox guarantee.
+closure for the selected path and before presenting an exact connected run package.
 
 ### Evidence Lineage And Completeness Requirements
 
@@ -682,46 +775,26 @@ if covered official API Code is included; do not assume the independent Rust imp
 the same license. [IB logging documentation](https://www.interactivebrokers.com/docs/tws-api/doc/troubleshooting-support/log-files/introduction)
 describes operational logging, not public reuse rights or an approved retention policy.
 
-### Offline Implementation And Exact-Run Gates
+### Remaining Exact-Run Gate
 
-After approval of the native decisions, implement and verify the proposed scope on this same
-draft PR. Minimum compiled synthetic verification includes:
+Complete feasible offline evaluation of the selected native configuration and component before
+preparing a connected package. Any demonstrated need for a dependency, native, provider-owner,
+or architecture change still requires Markeitect's concrete decision. The former patch proposal
+is not that decision, and an unavailable audit seam does not by itself select a broad patch.
 
-- every reachable prohibited action at entry, including disconnected, malformed, missing-cache,
-  target-validation and encode/version-rejection cases; each is audited with zero transport writes;
-- all ordinary bus send variants and direct handshake/StartApi/reconnect writes, unknown or
-  mismatched protobuf frames, bounded decoding, failed/partial writes and concurrent serialization;
-- explicit subscription cancellation, Drop, clone ownership, startup failure, timeout, panic and
-  shutdown races, with no late unaudited write or reconnect after revocation;
-- audit sink failure, bounded-queue exhaustion, sequence gaps and process interruption; loss
-  invalidates the result rather than producing a successful empty ledger;
-- native callbacks through the actual compiled observation ingress, including suppressed manual
-  cases, missing fields, commissions, synthetic origins, stale epochs and mutation attempts; and
-- synthetic private/free-text markers through native debug/error/panic and serializer paths, with
-  no raw values or executable handles escaping.
+A run package must identify the reviewed repository and binary, configuration, complete lifecycle
+request inventory, actual audit mechanism, TWS/API settings, independently verified paper and
+accessible-account scope, private capture handling, time/resource limits, manual scenarios,
+recovery and abort procedure. It must demonstrate audit of prohibited attempts as well as sends,
+including startup, recovery and shutdown. An unknown or missing prerequisite is a blocker, not an
+empty approved value. Do not issue prohibited requests to TWS to test rejection.
 
-Use in-memory native seams for deterministic cases; no connected broker or fake TWS server is
-authorized by this proposal. Run the existing composition/artifact guards and ordinary offline
-verification as well. The proof artifact requires its own integrity expectations without changing
-the root rc4 characterization into a false pass for a patched wheel.
+Markeitect performs every paper-order mutation. Required manual lifecycle, identity, fidelity,
+no-action/no-binding and recovery evidence remain issue #45's acceptance criteria. Gate 1 stays
+open and PR #46 stays draft until that evidence is accepted. No IB/TWS run or real capture is
+authorized by offline implementation or verification.
 
-Only then present the exact connected package: reviewed repository/patch/binary hashes, fixed
-configuration and limits, full reachable request inventory, actual host restrictions, TWS/API
-build and settings, privately verified paper/access scope, approved capture fields/expiry, native
-audit/consumer startup and shutdown sequence, explicit recovery procedure, and operator action
-ledger. Markeitect performs the preexisting/new manual order, partial/full fill, change,
-cancel/replace, scale-in/out and closure scenarios. Controlled duplicates/late arrivals have
-synthetic evidence; unobserved real races remain unaccepted. Do not send prohibited requests to
-TWS merely to test that TWS rejects them.
-
-Abort on wrong account/settings/scope, unknown or prohibited intent/frame, binding/control change,
-audit loss, invalid lineage, unbounded recovery or expiry. Revoke observer work and close its
-transport; Markeitect handles outstanding paper orders. The final acceptance record must separate
-what arrived from what the provider could have omitted, and recovered current state from missing
-historical transitions. Keep Gate 1 and issue #45 open until Markeitect accepts all required
-evidence; keep PR #46 draft until implementation and acceptance are complete.
-
-### Consultation Continuation And Verification
+### Historical Consultation Continuation And Verification
 
 The initial architecture, IB-provider and Nautilus findings above were reused against the
 unchanged starting head and exact dependency identities, as requested. This continuation restored
