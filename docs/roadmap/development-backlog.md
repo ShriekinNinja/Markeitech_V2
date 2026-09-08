@@ -6,29 +6,19 @@ The ordered V1 path is [`sir-loke-v1-delivery-plan.md`](sir-loke-v1-delivery-pla
 implementation ledger is [`../current-status.md`](../current-status.md). Completed stage history
 is recoverable through Git and merged pull requests; it is intentionally absent here.
 
-## Sir Loke V1 Gates
+## Sir Loke V1 Tasks
 
-- **Gate 1 — broker observation:** complete the pinned Nautilus/IB offline safety decision, inspect
-  every startup/open-order/binding path, approve a bounded paper probe, and prove manual TWS event
-  coverage without order control.
-- **Gate 2 — deterministic product truth:** approve and implement recommendation, attribution,
-  trade-episode, intervention, acknowledgement, report, and audit contracts.
-- **Gate 3 — Discord bot transport:** approve and implement private authentication, allowlisting,
-  inbound/outbound ordering, deduplication, retry, reconnect, rate-limit, queue, secret, and
-  shutdown behavior.
-- **Gate 4 — minimum options corridor:** approve the minimum honest SPXW/QQQ 0DTE option and
-  cross-instrument evidence needed for a recommendation or defensible abstention.
-- **Gate 5 — bounded reasoning:** approve model/provider identity, budgets, tools, structured
-  output, citation validation, redaction, audit, degradation, and abstention behavior.
-- **Gate 6 — integration:** join broker observation, market/options evidence, policy, reasoning,
-  audit, and Discord without collapsing their independent health.
-- **Gate 7 — acceptance:** pass the separate qualified-recommendation, insufficient-evidence
-  abstention, and independent-trade scenarios in deterministic fixtures and an authorized TWS
-  paper run.
+Use the [delivery plan](sir-loke-v1-delivery-plan.md) as the single task/dependency list. SL-01 is
+next: real private Discord/model conversation over current runtime state. Do not recreate the old
+Gate 1–7 subsystem sequence here. Broker safety blocks broker-aware work only. Each implementation
+task ends with Markeitect alone performing and reviewing its live run; CI is preparation for that
+review. This backlog contains remaining constraints and optional work, not another prerequisite
+program that must finish before Sir Loke can speak.
 
 ## Reliability Of Used Paths
 
-Close these debts before the affected component becomes a V1 dependency:
+Close or explicitly bound the debt that affects the current task's exposed behavior. Do not
+turn this inventory into a mandatory suite for every task or claim unexercised recovery accepted:
 
 - initial subscription failure recovery and controlled provider disconnect/resubscription;
 - historical-request correlation beyond one lane, cancellation fencing, timeout/retry, duplicate,
@@ -48,19 +38,14 @@ Passing offline suites or a single connected session does not close a wider reli
 
 ## V3 Deterministic Evidence Cutover
 
-- Finish the inactive completed-bar foundation replacement and its producer-manifest/composition
-  proof.
-- Close projection correlation and actual routing identity.
-- Prove atomic publication/state behavior and historical/live semantic equivalence.
-- Add adversarial duplicate-route, lifecycle, correction/conflict, and source-lineage tests.
-- Admit replacement metric owners only after completed-bar acceptance.
-- Reintroduce entity analysis and any dependent semantic capability only after the replacement
-  owners are accepted in the active profile.
-- Keep Visual Debug passive and non-gating; it may return only when the reviewed capability and
-  fixture inventory is current.
+Resume only the measurement capability needed by a named Sir Loke task, such as SL-15. Its brief
+must identify required formulas, canonical producer, integration, and live acceptance. Preserve
+identity, lineage, correctness, and single-writer constraints. Do not re-enable faulty legacy
+owners or require unrelated numerical families, full retirement, or Visual Debug to finish first.
 
-The detailed replacement contract remains in
-[`../reference/session-metrics-replacement-plan.md`](../reference/session-metrics-replacement-plan.md).
+The [replacement reference](../reference/session-metrics-replacement-plan.md) retains detailed
+contracts and known defects. Its original disabled-owner sequence is superseded for product
+delivery by the live task plan; necessary contract changes still need explicit review.
 
 ## Dynamic Watchlist Decision
 

@@ -105,6 +105,27 @@ stable-channel documentation, or the current custom implementation for the requi
 Invoking an advisor never grants permission to edit, commit, connect services, mutate data, or
 perform another restricted action.
 
+## Delivery And Live Acceptance
+
+- Follow `docs/roadmap/sir-loke-v1-delivery-plan.md`: one observable Sir Loke behavior per
+  reviewable implementation task, including its runnable integration. Dormant actors and offline
+  proofs alone do not complete a product task.
+- Define the outcome, exact scope/exclusions, dependencies, unresolved decisions, focused checks,
+  and Markeitect's live scenario in a short task brief. Do not expand it into generic architecture,
+  optimization, tooling, or unrelated hardening without a concrete blocker and scoped decision.
+- Use existing tests and add checks for changed behavior and named failure risks. Run required CI;
+  broaden local verification only for changed boundaries, failures, or unresolved risks. Do not
+  add redundant proof suites or repeat accepted evidence whose inputs and behavior have not changed.
+- Every Sir Loke implementation task ends in a live run performed and reviewed only by Markeitect.
+  Agents deliver exact-head start/stop commands, setup, bounded steps, expected results, stop
+  conditions, and a sanitized result location. Agents do not perform that run or claim his verdict.
+- Deliver the PR as `ready for Markeitect live test`. It becomes `accepted by Markeitect` only
+  after he runs and reviews it. Fixes stay on the same PR and require renewed review/live checks
+  of affected behavior. Dependent work waits for acceptance and merge unless he explicitly says
+  otherwise. Unexercised conditions remain unaccepted; CI or merge alone does not close them.
+- Documentation-only maintenance needs document review, not an artificial connected run. This
+  exception does not permit splitting runtime work into offline-only tasks to evade live feedback.
+
 ## Working Boundaries
 
 - Explain the intended batch and meaningful tradeoffs before editing.
@@ -147,8 +168,10 @@ perform another restricted action.
   approval, but never overrides a newer explicit task restriction.
 - Do not run connected IB, Discord, database-destructive, or execution paths unless Markeitect
   explicitly authorizes that exact run. Offline tests are allowed when relevant.
-- Markeitect normally owns connected acceptance runs. Do not consume time, market-data capacity,
-  paid credits, or external quotas with redundant probes when logs or deterministic tests suffice.
+- Markeitect exclusively performs and reviews Sir Loke task live acceptance, including IB/TWS,
+  Discord, and live model calls. An implementation request or prepared run command is not permission
+  for an agent to run it. Analyze supplied results only when asked; do not consume external capacity
+  with redundant probes.
 - Never commit secrets, local configuration, `.idea/`, vendor exports, raw market data, runtime
   logs, database dumps, or licensed data.
 - Do not reintroduce retired source, product semantics, or historical authority without a
@@ -177,8 +200,9 @@ change.
   V2 authority and may not be inherited implicitly from retired implementations.
 - No trade-expression instrument is globally preferred. Preserve multiple concurrent
   opportunities and keep evidence instruments distinct from options expressions.
-- Anything reasonably variable must be typed, bounded, versioned configuration and ready for
-  policy-controlled optimization. Do not hide tunable behavior in constants.
+- Anything reasonably variable must be typed, bounded, versioned configuration with explicit
+  defaults. Implement only the current task's required mutability; defer optimization machinery
+  until an approved task needs it. Do not hide tunable behavior in constants.
 - Replay and backtesting remain out of scope until Markeitect explicitly reopens them.
 
 ## Evidence And Communication
@@ -249,9 +273,11 @@ The V2 API documentation utility is an isolated, static source-analysis tool und
 
 ## Completion Standard
 
-A batch is not complete until its implementation and documentation agree, focused verification
-passes, broader verification is proportional to risk, `git diff --check` is clean, and untested or
-deferred acceptance is stated honestly. Before presenting work for review:
+A batch is ready for review when implementation and documentation agree, focused verification
+passes, broader verification is proportional to risk, `git diff --check` is clean, and remaining
+acceptance is stated honestly. A Sir Loke implementation task is complete only after Markeitect's
+live run and acceptance; report `ready for Markeitect live test` at the agent handoff. Before
+presenting work for review:
 
 1. inspect the final diff and worktree for accidental files, secrets, data, or unrelated churn;
 2. verify local configuration and IDE state were not overwritten;

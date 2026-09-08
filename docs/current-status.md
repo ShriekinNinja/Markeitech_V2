@@ -1,8 +1,8 @@
 # Current Status
 
-**Last reviewed:** 2026-09-06
+**Last reviewed:** 2026-09-08 (delivery plan; runtime capabilities remain unchanged)
 
-**Implementation baseline inspected:** `master` at `ba7088a`
+**Implementation baseline inspected:** `master` at `241b73e`
 
 This page is the source of truth for what the active Markeitech checkout implements now. It is
 deliberately a current-state ledger, not an implementation diary. Completed design and acceptance
@@ -28,7 +28,7 @@ None of those future documents proves implementation.
 | Agent/model | Unimplemented; no live model, Sir Loke read model, conversation state, or agent tools |
 | Execution | Absent; no submit, modify, bind-for-control, cancel, replace, exercise, or close path |
 | Persistence | PostgreSQL operational audit and compact evidence-recency profiles; no raw market-data store |
-| Current implementation focus | Gate 1 paper-observation proof after Gate 1A's offline characterization; connection still needs separate explicit approval |
+| Next delivery task | SL-01: real private Discord/model conversation over current runtime state; implementation and Markeitect-owned live acceptance pending |
 
 ## Current Offline Verification
 
@@ -298,24 +298,16 @@ be generalized across accounts, products, sessions, provider conditions, or live
 
 ## Next Product Sequence
 
-After this documentation authority reset is reviewed and merged, the accepted high-level path is:
+The 2026-09-08 decision replaces subsystem-wide serial gates with small, runnable Sir Loke tasks.
+Start with SL-01: actual private Discord conversation and model replies grounded in current runtime
+capability/readiness state. Extend current observations, broker awareness, declared trade plans,
+monitoring, options evidence, recommendations, and reporting through their named dependencies.
+Broker-observation proof remains necessary for broker-aware behavior but no longer blocks the bot.
 
-1. prove the native IB/TWS read-only observation boundary offline and through one separately
-   authorized paper-account probe;
-2. define canonical trade-episode, recommendation-linkage, advisory-policy, and audit contracts;
-3. implement an authenticated, failure-isolated two-way Discord bot transport;
-4. complete the minimum honest market/options evidence corridor for SPXW and QQQ 0DTE;
-5. implement Sir Loke's bounded read model, reasoning, recommendations, abstention, monitoring,
-   mentoring, and reports;
-6. integrate the paths without adding an order-action surface; and
-7. run the complete paper-through-TWS acceptance story.
-
-This sequence establishes direction, not blanket implementation approval. Each consequential
-architecture, configuration, schema, dependency, connected run, and implementation batch still
-uses its focused review and PR.
-
-The detailed gates and reuse mapping are maintained in the
-[Sir Loke V1 delivery plan](roadmap/sir-loke-v1-delivery-plan.md).
+The [delivery plan](roadmap/sir-loke-v1-delivery-plan.md) owns the task list, brief, and live handoff.
+Every implementation task ends with Markeitect alone running the live test and reviewing results.
+Agent work stops at `ready for Markeitect live test`; tests, CI, and merge do not imply acceptance.
+The current planning change activates no actor, provider, model, bot, metric, or broker observer.
 
 ## Historical Detail
 

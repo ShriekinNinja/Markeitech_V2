@@ -23,7 +23,11 @@ deterministic advisory policy -------------------------------------------------+
 
 The four live paths—market/options evidence, broker observation, Sir Loke reasoning/policy, and
 Discord conversation—are independently healthy or degraded. One global connected state cannot
-stand in for their readiness.
+stand in for their readiness. They are delivered incrementally through the task plan: conversation
+may operate over current admitted runtime state while broker, options, and other capabilities are
+explicitly unavailable. The ownership table below is not a requirement to implement every owner
+before that first conversation. Each live behavior still requires its own bounded audit and
+applicable authority checks.
 
 ## Ownership
 
@@ -134,9 +138,9 @@ methods from downstream consumers.
 
 Manual TWS visibility is not assumed. Client ID `0`, `reqOpenOrders`, and `reqAutoOpenOrders` may
 bind manual orders for API control; binding a working exchange order can cancel/resubmit it and
-affect queue priority. Gate 1 therefore inspects the exact startup calls, request methods,
-configuration defaults, and native reconciliation behavior before any connection. The connected
-paper probe stops on any unexpected binding, control, resubmission, or order action.
+affect queue priority. The broker safety gate therefore inspects the exact startup calls, request
+methods, configuration defaults, and native reconciliation behavior before any connection. The
+connected paper probe stops on any unexpected binding, control, resubmission, or order action.
 
 ## Trade Episode And Recommendation Linkage
 
@@ -200,7 +204,9 @@ lifecycle, decision snapshots, delivery results, and reports.
 
 Credentials, raw market streams, unrestricted prompts, mutable broker objects, and secrets never
 enter the read model or audit. Exact schemas, transaction boundaries, retention, redaction,
-recovery, and deletion policy remain Gate 2 decisions.
+recovery, and deletion policy require approval in the first task that writes the corresponding
+records. The minimal conversation audit belongs in SL-01; it does not depend on implementing the
+full later trade-episode, policy, or report schemas.
 
 ## Structural Stop Gates
 

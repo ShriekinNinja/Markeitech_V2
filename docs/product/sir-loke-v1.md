@@ -32,6 +32,20 @@ decision—not merely when it calculates another indicator or sends another heal
 Profit or one successful trade is useful outcome evidence but is not sufficient product
 validation.
 
+## Incremental Delivery
+
+The 2026-09-08 delivery decision keeps this full product outcome and release acceptance intact.
+Implement it through small runnable Sir Loke tasks, starting with real private Discord/model
+conversation grounded in actual available runtime state. An early task may truthfully report
+broker observation, recommendations, or monitoring unavailable while their own tasks remain open.
+Broker safety proof gates broker-aware behavior, not independent conversation. Do not claim such
+an increment is the complete V1 release or fabricate evidence to make it look complete.
+
+Each implementation task ends with a live run that Markeitect alone performs and reviews. The
+agent supplies the runnable PR head, exact commands, scenario, expected results, and result
+location, and leaves the task ready for his test. The
+[delivery plan](../roadmap/sir-loke-v1-delivery-plan.md) owns task dependencies and acceptance state.
+
 ## First-Version Scope
 
 ### User experience

@@ -56,6 +56,18 @@ signal derived from NQ, ES, SPX, volatility, or equity context may later inform
 an option contract without treating that option as the source of the underlying
 market thesis. Any future linkage must be explicit, versioned, and inspectable.
 
+## Incremental Product Delivery
+
+Deliver Sir Loke through the small live tasks in the
+[delivery plan](docs/roadmap/sir-loke-v1-delivery-plan.md). Start with a real private Discord/model
+conversation using actual available runtime state, then extend the working companion. Broker
+observation gates broker-aware features; it does not block independent conversation or market
+context. Intermediate capabilities must state their limits and do not replace full V1 acceptance.
+Each implementation task includes runnable integration and ends with Markeitect alone performing
+the live test and reviewing its results. Agents prepare a concise exact-head run handoff and
+focused verification, then wait for his verdict. Architecture and testing serve that named task;
+unrelated generalization and tooling are deferred. The no-execution and evidence rules still apply.
+
 ## Engineering Invariants
 
 Use NautilusTrader extensively where its semantics fit. Markeitech may own
@@ -108,10 +120,13 @@ parameter must define:
 - version and effective time so every result can identify the parameters which produced it; and
 - safe rejection, expiry, rollback, and audit behavior where runtime changes are allowed.
 
-Design optimization-ready interfaces even when the first implementation reads startup
-configuration only. Models and agents may propose or apply changes only through typed,
-policy-checked intents within authorized envelopes and resource budgets. They may not mutate
-arbitrary configuration, rewrite history, bypass validation, or silently change live behavior.
+Implement the parameter behavior needed by the current live task. Startup-only configuration
+needs explicit defaults, validation, scope, units, and version identity; it does not require an
+optimization engine, generic intent framework, or runtime-change lifecycle in advance. Add dynamic
+mutability or optimization only when an approved task needs it, retaining the applicable metadata
+above. Models and agents may propose or apply those changes only through typed, policy-checked
+intents within authorized envelopes and resource budgets. They may not mutate arbitrary
+configuration, rewrite history, bypass validation, or silently change live behavior.
 
 This principle does not make system truth negotiable. Schema integrity, type safety, evidence
 honesty, source identity, authorization boundaries, audit requirements, and the prohibition on

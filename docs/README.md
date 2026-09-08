@@ -11,9 +11,9 @@ When sources disagree, use this order and stop for Markeitect's decision on a ma
 1. [`../markeitech.md`](../markeitech.md) — durable product and engineering charter.
 2. [`product/sir-loke-v1.md`](product/sir-loke-v1.md) — first useful product outcome.
 3. [`current-status.md`](current-status.md) — what is implemented and accepted now.
-4. [`roadmap/sir-loke-v1-delivery-plan.md`](roadmap/sir-loke-v1-delivery-plan.md) — ordered future
-   gates; [Gate 1](roadmap/sir-loke-v1-delivery-plan.md#gate-1-native-ibtws-observation-proof) is the
-   next product batch.
+4. [`roadmap/sir-loke-v1-delivery-plan.md`](roadmap/sir-loke-v1-delivery-plan.md) — small runnable
+   tasks, each ending in Markeitect's live test and review;
+   [SL-01](roadmap/sir-loke-v1-delivery-plan.md#sl-01--talk-to-sir-loke-in-private-discord) is next.
 5. [`development-guidelines.md`](development-guidelines.md) — implementation and review rules.
 6. The smallest accepted architecture or operations document governing the exact subject.
 
