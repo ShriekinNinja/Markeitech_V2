@@ -2,8 +2,8 @@
 
 **Direction approved:** 2026-09-08 — build analytical competence through small live increments;
 guardian behavior follows demonstrated trading value.
-**Implementation:** No task below is claimed implemented or live-accepted by this planning change.
-**Next task:** SL-01. This plan does not authorize implementation of every listed task.
+**Implementation:** SL-01 code is delivered for Markeitect's connected test; it is not live-accepted.
+**Next task:** SL-01 live review. SL-02 waits for SL-01 acceptance and merge.
 
 The [product definition](../product/sir-loke-v1.md) remains the full V1 release contract.
 The [current status](../current-status.md) owns implementation evidence, and the
@@ -135,6 +135,9 @@ cover difficult races but never count as a live market event. Report the remaini
 of extending a run without a bound or claiming a pass. Agents do not perform connected runs.
 
 ## SL-01 — Talk To Sir Loke In Private Discord
+
+**Delivery state:** implemented with a dedicated no-IB launch profile; ready for Markeitect live
+test under the [SL-01 runbook](../operations/sir-loke-sl01-live-test.md). This is not acceptance.
 
 **Depends on:** no broker-observation task.
 **Outcome:** ask “What can you see right now?” and receive a real model-generated answer grounded

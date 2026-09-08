@@ -1,11 +1,11 @@
 """Route the closed Markeitech runtime and repository command surface.
 
-The module delegates runtime construction and execution to ``markeitech.system.cli`` and launches
-documentation, diagram, verification, and environment operations through fixed, validated
-boundaries. Documentation and diagram commands retain their separately locked interpreters;
-connected runtime authority retains the exact Interactive Brokers confirmation gate. The router
-does not provision dependencies, start services implicitly, or execute commands supplied by
-configuration or user-controlled shell text.
+The module delegates runtime construction and execution to ``markeitech.system.cli``, launches the
+bounded Sir Loke profile in a fixed child environment, and launches documentation, diagram,
+verification, and environment operations through validated boundaries. Documentation and diagram
+commands retain their separately locked interpreters; connected runtime authority retains exact
+Interactive Brokers and Sir Loke confirmation gates. The router does not provision dependencies,
+start services implicitly, or execute commands supplied by configuration or shell text.
 """
 
 from __future__ import annotations
@@ -21,8 +21,11 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from dotenv import dotenv_values
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _TERMINATION_GRACE_SECONDS = 2.0
+SIR_LOKE_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_DISCORD_OPENAI_AND_POSTGRESQL"
 _IMPORT_ORIGIN_PROBE = """
 import importlib
 import pathlib
@@ -105,6 +108,33 @@ def _parser() -> argparse.ArgumentParser:
     )
     run.set_defaults(handler=_system_run)
 
+    sir_loke = areas.add_parser("sir-loke", help="Run a bounded Sir Loke product profile.")
+    sir_loke_operations = sir_loke.add_subparsers(dest="operation", required=True)
+    sir_loke_run = sir_loke_operations.add_parser(
+        "run",
+        help="Run the connected private SL-01 Discord bot after exact confirmation.",
+    )
+    sir_loke_run.add_argument(
+        "--config",
+        type=Path,
+        default=Path("config/sir-loke.sl01.local.toml"),
+        help="Path to the separate Sir Loke SL-01 TOML configuration.",
+    )
+    sir_loke_run.add_argument(
+        "--env-file",
+        type=Path,
+        default=Path(".env"),
+        help="Environment file read only for the three admitted secret variables.",
+    )
+    sir_loke_run.add_argument(
+        "--connect",
+        required=True,
+        metavar="CONFIRMATION",
+        type=_sir_loke_confirmation,
+        help=f"Must exactly confirm {SIR_LOKE_CONFIRMATION}.",
+    )
+    sir_loke_run.set_defaults(handler=_sir_loke_run)
+
     docs = areas.add_parser("docs", help="Operate the isolated static API documentation tool.")
     docs_operations = docs.add_subparsers(dest="operation", required=True)
     for operation in ("validate", "check", "generate", "test"):
@@ -169,6 +199,12 @@ def _connection_confirmation(value: str) -> str:
     return value
 
 
+def _sir_loke_confirmation(value: str) -> str:
+    if value != SIR_LOKE_CONFIRMATION:
+        raise argparse.ArgumentTypeError(f"must exactly equal {SIR_LOKE_CONFIRMATION}")
+    return value
+
+
 def _system_arguments(args: argparse.Namespace) -> list[str]:
     arguments: list[str] = []
     if hasattr(args, "config"):
@@ -191,6 +227,62 @@ def _system_run(args: argparse.Namespace) -> int:
     if args.keep_awake:
         arguments.append("--keep-awake")
     return system_main(arguments)
+
+
+def _sir_loke_environment(env_file: Path) -> dict[str, str]:
+    from markeitech.sir_loke.config import (
+        DISCORD_TOKEN_ENV,
+        OPENAI_API_KEY_ENV,
+        POSTGRES_DSN_ENV,
+    )
+
+    file_values = dotenv_values(env_file, interpolate=False) if env_file.is_file() else {}
+    environment = {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONPATH": str(PROJECT_ROOT / "src"),
+        "PYTHONSAFEPATH": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONUTF8": "1",
+        "TZ": "UTC",
+    }
+    for name in (DISCORD_TOKEN_ENV, OPENAI_API_KEY_ENV, POSTGRES_DSN_ENV):
+        value = os.environ.get(name) or file_values.get(name)
+        if value:
+            environment[name] = value
+    return environment
+
+
+def _sir_loke_run(args: argparse.Namespace) -> int:
+    environment = _sir_loke_environment(args.env_file)
+    module = "markeitech.sir_loke.cli"
+    cli_path = PROJECT_ROOT / "src/markeitech/sir_loke/cli.py"
+    probe = _run_process(
+        [
+            sys.executable,
+            "-P",
+            "-c",
+            _IMPORT_ORIGIN_PROBE,
+            module,
+            str(cli_path),
+        ],
+        environment=environment,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        report_launch_error=False,
+    )
+    if probe != 0:
+        print("ERROR: Sir Loke runtime environment is missing or invalid.", file=sys.stderr)
+        return 1
+    return _run_process(
+        [sys.executable, "-P", "-m", module, str(args.config)],
+        environment=environment,
+    )
 
 
 def _tool_environment(tool: _IsolatedTool) -> dict[str, str]:

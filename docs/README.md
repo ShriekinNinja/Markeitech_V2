@@ -12,8 +12,8 @@ When sources disagree, use this order and stop for Markeitect's decision on a ma
 2. [`product/sir-loke-v1.md`](product/sir-loke-v1.md) — first useful product outcome.
 3. [`current-status.md`](current-status.md) — what is implemented and accepted now.
 4. [`roadmap/sir-loke-v1-delivery-plan.md`](roadmap/sir-loke-v1-delivery-plan.md) — small runnable
-   tasks, each ending in Markeitect's live test and review;
-   [SL-01](roadmap/sir-loke-v1-delivery-plan.md#sl-01--talk-to-sir-loke-in-private-discord) is next.
+   tasks, each ending in Markeitect's live test and review; SL-01 is implemented and awaits that
+   connected review before SL-02 begins.
 5. [`development-guidelines.md`](development-guidelines.md) — implementation and review rules.
 6. The smallest accepted architecture or operations document governing the exact subject.
 
@@ -59,6 +59,7 @@ generated review artifacts now live with the isolated tool under
 - [PostgreSQL](operations/v2-postgresql.md)
 - [Runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
 - [Discord health webhook](operations/discord-health-webhook.md)
+- [Sir Loke SL-01 live test](operations/sir-loke-sl01-live-test.md)
 - [Visual evidence review](operations/visual-evidence-review.md)
 - [V2 API documentation](operations/v2-api-documentation.md)
 

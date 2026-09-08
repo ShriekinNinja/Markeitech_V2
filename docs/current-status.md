@@ -1,8 +1,8 @@
 # Current Status
 
-**Last reviewed:** 2026-09-08 (delivery plan; runtime capabilities remain unchanged)
+**Last reviewed:** 2026-09-08 (SL-01 implementation; connected acceptance pending)
 
-**Implementation baseline inspected:** `master` at `241b73e`
+**Implementation baseline inspected:** current SL-01 delivery branch based on `master` at `77b4526`
 
 This page is the source of truth for what the active Markeitech checkout implements now. It is
 deliberately a current-state ledger, not an implementation diary. Completed design and acceptance
@@ -19,16 +19,16 @@ None of those future documents proves implementation.
 | Area | Current state |
 |---|---|
 | Product runtime | Active V2 source at repository root, built on NautilusTrader `2.0.0rc4` |
-| First visible product | Sir Loke v1 is accepted product direction but unimplemented |
+| First visible product | SL-01 private capability conversation is implemented; live acceptance and broader Sir Loke v1 remain pending |
 | Provider | Interactive Brokers connection through TWS/IB Gateway for market data only |
 | Active tracked profile | One-instrument V3 ES operational/historical probe profile |
 | Operator CLI | Unified `.venv/bin/markeitech` command hierarchy is implemented |
 | Trade observation | Unimplemented; no execution client, account/order/fill/position owner, or trade lifecycle |
-| Discord | Outbound webhook health projection exists; inbound conversational bot does not |
-| Agent/model | Unimplemented; no live model, Sir Loke read model, conversation state, or agent tools |
+| Discord | Outbound health webhook plus a separate exact-identity SL-01 inbound DM bot; connected bot acceptance pending |
+| Agent/model | SL-01 implements a no-tool structured claim selector, immutable readiness snapshot, bounded context, and deterministic renderer; connected model acceptance pending |
 | Execution | Absent; no submit, modify, bind-for-control, cancel, replace, exercise, or close path |
-| Persistence | PostgreSQL operational audit and compact evidence-recency profiles; no raw market-data store |
-| Next delivery task | SL-01: real private Discord/model conversation over current runtime state; implementation and Markeitect-owned live acceptance pending |
+| Persistence | PostgreSQL operational audit, compact evidence-recency profiles, and bounded SL-01 conversation events; no raw market-data store |
+| Next delivery task | Markeitect's SL-01 connected live test and review; SL-02 waits for acceptance and merge |
 
 ## Current Offline Verification
 
@@ -50,6 +50,19 @@ unified Python CLI merge at `295cdb7`:
 These checks establish offline code and documentation consistency only. They do not establish
 PostgreSQL integration, provider behavior, a connected rc4 run, broker observation, Discord bot,
 model, Sir Loke, or options acceptance.
+
+On the 2026-09-08 SL-01 delivery branch:
+
+- `.venv/bin/markeitech verify all` passed Ruff and `744` non-PostgreSQL tests, with `3`
+  PostgreSQL-marked tests deselected;
+- `.venv/bin/markeitech docs check` matched all `60` tracked artifacts and
+  `.venv/bin/markeitech docs test` passed `37` isolated documentation tests; and
+- `.venv/bin/markeitech diagrams check` passed the manifest/source/configuration drift census.
+
+The new PostgreSQL migration has a disposable-database integration test, but it was not run
+locally because no disposable test DSN was admitted for this batch. CI remains required. No
+Discord, OpenAI, PostgreSQL live profile, IB, TWS, broker, market-data, or execution path was run by
+the implementing agent. These results do not establish SL-01 connected acceptance.
 
 Gate 1A subsequently added a focused offline characterization for the pinned native IB execution
 path. Its bounded subprocess constructs the genuine client with connection `client_id=1`, a
@@ -174,15 +187,16 @@ for inactive owners do not make them current live outputs.
 
 ### Persistence and operational health
 
-- PostgreSQL owns runtime runs, system-health events, generic operational events, and compact
-  evidence-recency profiles.
+- PostgreSQL owns runtime runs, system-health events, generic operational events, compact
+  evidence-recency profiles, and bounded SL-01 conversation audit events.
 - Schema preflight, idempotent repair, bounded non-blocking admission, batched writes, retry, and
   shutdown reconciliation exist within their recorded acceptance envelope.
 - Runtime-resource samples and state transitions exist behind optional configuration; they are
   disabled in the active V3 profile.
 - Raw provider observations, historical responses, numerical metric streams, option chains,
-  broker order/fill payloads, conversations, and trade episodes are not currently persisted as
-  canonical product data.
+  broker order/fill payloads, and trade episodes are not currently persisted as canonical product
+  data. SL-01 retains sanitized conversation content for seven days and structural audit metadata
+  for 30 days; that audit is not canonical market or trade state.
 
 ### Existing Discord projection
 
@@ -197,6 +211,20 @@ messages. It has bounded delivery work and failure isolation, but it does not:
 - provide Sir Loke recommendations, mentoring, trade monitoring, or reports.
 
 Enabling the webhook actor cannot turn it into Sir Loke.
+
+### Sir Loke SL-01 process
+
+SL-01 is a separate Python-owned process. It connects to the Discord Gateway for exactly one
+configured bot/user/DM tuple, constructs a fresh configuration/readiness snapshot per admitted
+turn, asks `gpt-5.6-luna` for a strict claim-selection plan with no tools, and renders only
+code-admitted factual claims. It requires PostgreSQL audit before paid dispatch. Its bounded
+session context, rate/cost limits, secret rejection, output validation, and seven-day content /
+30-day metadata retention are implemented but not connected-accepted.
+
+The SL-01 process deliberately does not construct `LiveNode`, register an IB client, observe market
+or broker data, calculate analytics, assess or monitor trades, or expose execution. Its selected
+system TOML is a configuration-only read model. See the
+[operator-owned live test](operations/sir-loke-sl01-live-test.md).
 
 ### Documentation tooling
 
@@ -219,12 +247,13 @@ establish installed-host behavior, release actual agent slots, or change Sir Lok
 
 ## Sir Loke V1 Gap
 
-The product direction is accepted; the implementation is not present.
+The full product remains unimplemented. SL-01 supplies only the first bounded conversational
+surface and awaits connected acceptance.
 
 | Required first-version capability | Current evidence | Status |
 |---|---|---|
-| Live private two-way Discord conversation | Outbound webhooks only | **Absent** |
-| Model-backed Sir Loke reasoning | No model provider, invocation, structured output, or read model | **Absent** |
+| Live private two-way Discord conversation | Exact application/user/DM allowlist and text reply transport implemented; not connected-tested | **Implemented / unaccepted** |
+| Model-backed Sir Loke reasoning | `gpt-5.6-luna` structured claim selection over a fresh readiness snapshot; no tools; not connected-tested | **Implemented / unaccepted** |
 | Evidence-cited recommendations and abstention | Deterministic foundations exist; no recommendation owner | **Absent** |
 | SPXW and QQQ 0DTE contract discovery/quality | Future design intent only | **Absent** |
 | Broker account/order/fill/position observation | IB data client only | **Absent** |
@@ -283,23 +312,23 @@ only the behavior exercised for its actual account, products, data, and provider
   retirement, or connected acceptance.
 - Manual TWS order visibility, external-order claiming/binding, and read-only API behavior require
   a bounded observation-only connected proof.
-- Canonical trade episode, recommendation linkage, intervention, conversation, and report schemas
-  are undecided.
+- Canonical trade episode, recommendation linkage, intervention, and report schemas are undecided;
+  SL-01 conversation/audit schemas do not define those future product contracts.
 - Minimum sufficient SPXW/QQQ option, liquidity, expiration, settlement, and reference evidence is
   unimplemented.
-- Agent provider/model, cost, context, output validation, prompt/security, and outage behavior are
-  undecided.
-- Discord bot authentication, intents, allowlist, reconnection, rate limits, and secret boundary
-  are undecided.
-- Persistence admission, retention, redaction, recovery, and audit reconstruction for broker,
-  conversation, agent, and trade records require explicit schema review.
+- SL-01 fixes its model, cost, context, output validation, prompt/security, Discord identity,
+  intent, allowlist, rate-limit, secret, audit, and retention choices. Connected behavior is
+  unaccepted and later capabilities require their own decisions.
+- Persistence admission and reconstruction for future broker, trade, recommendation, intervention,
+  and report records remain undecided; the SL-01 audit admits conversation events only.
 - No order-execution work may begin under the Sir Loke v1 authority.
 
 ## Next Product Sequence
 
 The 2026-09-08 decision replaces subsystem-wide serial gates with small, runnable Sir Loke tasks.
-Start with SL-01: actual private Discord conversation and model replies grounded in current runtime
-capability/readiness state. SL-02 adds current observations; IN-01 is the first analytical task.
+Complete Markeitect's connected SL-01 review: actual private Discord conversation and model replies
+grounded in the selected profile's capability/readiness state. SL-02 adds current observations only
+after SL-01 is accepted and merged; IN-01 is the first analytical task.
 Intelligence development then has priority: session/structure context, movement character, level
 interactions, multiple horizons/markets, evidence memory, and competing scenarios, refined through
 live feedback. These are planned capabilities, not claims of active implementation. Agents propose

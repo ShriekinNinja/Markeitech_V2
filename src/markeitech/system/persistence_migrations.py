@@ -109,6 +109,42 @@ MIGRATIONS = (
                 ON evidence_recency_profiles (updated_at_ns);
         """,
     ),
+    Migration(
+        version=4,
+        name="sir_loke_audit_events",
+        sql="""
+            CREATE TABLE IF NOT EXISTS sir_loke_audit_events (
+                audit_event_id UUID PRIMARY KEY,
+                run_id UUID NOT NULL REFERENCES runtime_runs(run_id),
+                conversation_id UUID NOT NULL,
+                turn_id UUID NOT NULL,
+                invocation_id UUID,
+                phase TEXT NOT NULL,
+                content_json JSONB,
+                metadata_json JSONB NOT NULL,
+                occurred_at_ns BIGINT NOT NULL,
+                recorded_at_ns BIGINT NOT NULL,
+                content_expires_at_ns BIGINT NOT NULL,
+                metadata_expires_at_ns BIGINT NOT NULL,
+                schema_version INTEGER NOT NULL,
+                UNIQUE (turn_id, phase),
+                CHECK (metadata_expires_at_ns >= content_expires_at_ns),
+                CHECK (phase IN (
+                    'REQUEST_ADMITTED', 'REQUEST_REJECTED', 'REQUEST_LIMITED',
+                    'MODEL_COMPLETED', 'MODEL_FAILED', 'REPLY_DELIVERED',
+                    'REPLY_DELIVERY_FAILED'
+                ))
+            );
+
+            CREATE INDEX IF NOT EXISTS sir_loke_audit_events_conversation_time_idx
+                ON sir_loke_audit_events (conversation_id, occurred_at_ns);
+            CREATE INDEX IF NOT EXISTS sir_loke_audit_events_expiry_idx
+                ON sir_loke_audit_events (metadata_expires_at_ns);
+            CREATE INDEX IF NOT EXISTS sir_loke_audit_events_invocation_idx
+                ON sir_loke_audit_events (invocation_id)
+                WHERE invocation_id IS NOT NULL;
+        """,
+    ),
 )
 
 REQUIRED_SCHEMA_COLUMNS = {
@@ -173,6 +209,23 @@ REQUIRED_SCHEMA_COLUMNS = {
             "unavailable_after_ms",
             "source_run_id",
             "updated_at_ns",
+            "schema_version",
+        },
+    ),
+    "sir_loke_audit_events": frozenset(
+        {
+            "audit_event_id",
+            "run_id",
+            "conversation_id",
+            "turn_id",
+            "invocation_id",
+            "phase",
+            "content_json",
+            "metadata_json",
+            "occurred_at_ns",
+            "recorded_at_ns",
+            "content_expires_at_ns",
+            "metadata_expires_at_ns",
             "schema_version",
         },
     ),

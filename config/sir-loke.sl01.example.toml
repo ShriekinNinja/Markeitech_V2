@@ -1,0 +1,41 @@
+# Copy this file to the ignored config/sir-loke.sl01.local.toml and replace only the three
+# Discord snowflakes. Secrets remain in .env and are admitted by exact environment-variable name.
+schema_version = 1
+profile_id = "SL-01"
+system_config = "system.v3-es-minimal.toml"
+log_path = "../data/logs/sir-loke-sl01.log"
+
+[discord]
+application_id = 111111111111111111
+user_id = 222222222222222222
+dm_channel_id = 333333333333333333
+maximum_recent_message_ids = 64
+
+[model]
+name = "gpt-5.6-luna"
+reasoning_effort = "low"
+timeout_seconds = 20
+max_output_tokens = 512
+input_price_per_million_usd = 0.20
+output_price_per_million_usd = 1.20
+
+[limits]
+snapshot_max_age_seconds = 5
+maximum_capabilities = 16
+maximum_claims = 64
+maximum_input_characters = 2000
+maximum_total_input_tokens = 4096
+maximum_reply_characters = 1900
+maximum_calls_per_session = 3
+maximum_calls_per_day = 50
+idle_timeout_seconds = 600
+absolute_timeout_seconds = 900
+maximum_call_cost_usd = 0.0015
+maximum_session_cost_usd = 0.0045
+maximum_daily_cost_usd = 0.075
+
+[audit]
+connect_timeout_seconds = 5
+prune_interval_seconds = 3600
+content_retention_days = 7
+metadata_retention_days = 30
