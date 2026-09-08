@@ -23,9 +23,9 @@ that outcome. See the product's [analytical standard](../product/sir-loke-v1.md#
 | 1 | SL-01, then SL-02 | Talk to the real bot about actual current observations |
 | 2 | IN-01 first; then IN-02 through IN-08 and newly justified intelligence tasks | Increasingly capable, continuous market understanding |
 | 3 | SL-15, SL-13, SL-14, SL-16, according to their dependencies | Evidence-backed setups, expression suitability, and useful trade assessments |
-| 4 | SL-04 through SL-08, and SL-07 recovery, when broker awareness becomes the current need | Facts about actual paper trades and the trader's plan |
+| 4 | SL-04 through SL-08, and SL-07 recovery, when broker awareness becomes the current need | Facts about actual trades and the trader's plan |
 | 5 | Analytical trust decision, then SL-09 through SL-12 and SL-17 | Informed monitoring, challenge, and reporting grounded in accepted intelligence |
-| 6 | SL-18 | Complete paper product acceptance |
+| 6 | SL-18 | Complete connected product acceptance |
 
 SL-03 is available when conversation recovery blocks useful live observation; basic failure
 isolation is part of every affected task. A broker fact notification remains factual observation;
@@ -74,6 +74,13 @@ shows a proposed capability is unavailable, report that blocker and a concrete a
 fake a live result. Changing data sources, formulas, policy, or retention still requires approval
 for that task, not speculative approval of every future capability.
 
+## Account Selection
+
+Markeitect selects the broker account/session. Account mode does not affect tasks, analytical
+behavior, admission schemas, or acceptance criteria. Keep actual account identity, data quality,
+and permissions explicit. In this plan, “live test” means a connected run performed and reviewed
+by Markeitect; it does not prescribe a broker account category. No agent runs it or trades for him.
+
 ## Delivery Rules
 
 - Deliver one observable Sir Loke behavior per task and one coherent PR. Include the minimum
@@ -112,7 +119,7 @@ Do not write a second architecture document merely to begin a task.
 Every implementation PR must provide a runnable handoff containing:
 
 1. Exact commit SHA, setup requirements, local configuration changes for Markeitect to make, and
-   which services, paper account, instruments, session, and model budget the test uses.
+   which services, account, instruments, session, and model budget the test uses.
 2. Copy-paste Python-owned start and stop commands, checked against the implemented CLI; never
    invent a future command or require Markeitect to assemble a launch script.
 3. A short numbered scenario with the messages/actions Markeitect performs, observable expected
@@ -125,7 +132,7 @@ Every implementation PR must provide a runnable handoff containing:
 
 If required market conditions do not occur, the scenario remains not exercised. Fixtures may
 cover difficult races but never count as a live market event. Report the remaining case instead
-of extending a run without a bound or claiming a pass. No plan entry grants live-money access.
+of extending a run without a bound or claiming a pass. Agents do not perform connected runs.
 
 ## SL-01 — Talk To Sir Loke In Private Discord
 
@@ -162,7 +169,7 @@ if replies are contextual and factual and the missing capability is named withou
 through the read model for one explicitly configured evidence instrument. Reuse acquisition and
 health owners; do not activate the unfinished measurement replacement just for a status reply.
 **Focused checks:** snapshot identity and stale/missing data admission.
-**Markeitect live test:** with paper market data, ask for the latest available observation, compare
+**Markeitect live test:** with connected market data, ask for the latest available observation, compare
 it with the same timestamped runtime record, then stop the feed and ask again. A stale observation
 must be identified as stale; missing data must not become a current price or trading signal.
 
@@ -274,26 +281,26 @@ conversation; keep market ingestion independent. Basic timeouts/isolation alread
 model-unavailable case. Observe continuing ingestion, honest degradation, and recovery without a
 burst of duplicate replies. Use reversible local controls specified by the implementation.
 
-## SL-04 — Resolve Native Broker Observation In Paper
+## SL-04 — Resolve Native Broker Observation Through TWS
 
 **Depends on:** existing Gate 1A evidence; independent of SL-01–03.
 **Implement:** a bounded runnable observation probe and outbound-request audit for the pinned native
 candidate. Resolve only the source/settings/report concerns needed for its approved test, using the
 [broker safety gate](#broker-safety-gate). No production broker owner is activated by this task.
 **Focused checks:** permitted request boundary, account identity, and sanitized probe output.
-**Markeitect live test:** execute the approved probe against preexisting and new manual paper
+**Markeitect live test:** execute the approved probe against preexisting and new manual
 orders. Compare TWS facts with captured observations and outbound requests. No binding or order
 action is allowed. Missing manual visibility is a finding, not permission to add a second client.
 A bounded negative result closes the investigation only when Markeitect accepts it; SL-05 remains
 blocked until he approves a viable alternative and its own live proof.
 
-## SL-05 — Sir Loke Notices A Manual Paper Order
+## SL-05 — Sir Loke Notices A Manual Order
 
 **Depends on:** SL-01 and a positive, accepted SL-04 result.
 **Implement:** the narrow sanitized broker observer, approved audit, and a proactive Discord
-notification for a new manual order, including paper account and exact contract identity.
+notification for a new manual order, including account and exact contract identity.
 **Focused checks:** identity, duplicate event suppression, and no mutable broker object downstream.
-**Markeitect live test:** place one manual paper order in the admitted scope. Sir Loke reports the
+**Markeitect live test:** place one manual order in the admitted scope. Sir Loke reports the
 order once and distinguishes an order from a fill or position. Compare the displayed facts with TWS.
 
 ## SL-06a — Follow Manual Order Changes
@@ -302,7 +309,7 @@ order once and distinguishes an order from a fill or position. Compare the displ
 **Implement:** notifications and audit for manual amendments, cancellation, and replacement,
 including preserved original/replacement identity and explicit late/conflicting state.
 **Focused checks:** duplicate/late updates and canceled-versus-replaced identity.
-**Markeitect live test:** amend and cancel/replace an unfilled paper order using TWS. Compare each
+**Markeitect live test:** amend and cancel/replace an unfilled order using TWS. Compare each
 notification with the manual action; Sir Loke must never report an unfilled order as a position.
 
 ## SL-06b — Track Fills, Position Changes, And Closure
@@ -311,7 +318,7 @@ notification with the manual action; Sir Loke must never report an unfilled orde
 **Implement:** reconcile fills to position quantity for the admitted scope, including partial
 fills, scaling, and manual closure. Preserve order/fill/account identities and unknown state.
 **Focused checks:** partials, duplicate/late fills, quantity accounting, and closure.
-**Markeitect live test:** fill, scale, and close one paper position manually and compare reported
+**Markeitect live test:** fill, scale, and close one position manually and compare reported
 quantities with TWS. Unobserved partial fills remain an explicit unaccepted case; the next task
 may depend only on the scope Markeitect accepted, with the missing case retained for SL-18.
 
@@ -321,7 +328,7 @@ may depend only on the scope Markeitect accepted, with the missing case retained
 **Implement:** bounded reconciliation with explicit recovered-versus-live provenance; prevent
 recovered events from producing duplicate entry/closure claims. Recheck every recovery request.
 **Focused checks:** omission, duplicate reconciliation, and no-control behavior during recovery.
-**Markeitect live test:** disconnect the observer around one manual paper state change, reconnect,
+**Markeitect live test:** disconnect the observer around one manual state change, reconnect,
 and compare the recovered state with TWS. Sir Loke must identify the gap and recovered facts.
 
 ## SL-08 — Record The Trader's Thesis
@@ -330,7 +337,7 @@ and compare the recovered state with TWS. Sir Loke must identify the gap and rec
 **Implement:** one trader-originated episode with a declared thesis, horizon, risk declaration,
 and invalidation; ask for unknown fields and append revisions with approved durable audit.
 **Focused checks:** original-versus-revised history and separation of trader statements/broker facts.
-**Markeitect live test:** enter a paper trade without a recommendation, give Sir Loke a plan, revise
+**Markeitect live test:** enter a trade without a recommendation, give Sir Loke a plan, revise
 one field, restart, and ask what changed. He must preserve both versions and invent no entry thesis.
 
 ## SL-09 — Explain And Monitor A Thesis Invalidation
@@ -342,7 +349,7 @@ what materially changed, and the justified advisory response. A price threshold 
 a threshold reminder by itself does not establish analytical supervision. Missing/stale evidence
 suspends the affected judgment and must be stated.
 **Focused checks:** condition boundary, freshness, and one intervention per transition.
-**Markeitect live test:** observe a bounded paper-test thesis transition and inspect why the
+**Markeitect live test:** observe a bounded thesis-transition test and inspect why the
 assessment changed, its evidence, and the timely proposed response. Generic “are you sure?” prompts
 or repetition of the declared stop do not pass. If no relevant transition occurs, do not pass.
 
@@ -372,7 +379,7 @@ recommendation; this task alone cannot claim that full behavior live-accepted.
 **Implement:** one report from the admitted episode, preserving plan revisions, broker facts,
 interventions, responses, and known outcome. Missing fees or outcomes remain unknown.
 **Focused checks:** report reconstruction and duplicate closure/report delivery.
-**Markeitect live test:** close a monitored paper trade and compare the report with TWS and the
+**Markeitect live test:** close a monitored trade and compare the report with TWS and the
 conversation. Restart and retrieve the same factual history without rewriting the original thesis.
 
 ## SL-13 — Inspect One SPXW 0DTE Candidate
@@ -424,18 +431,18 @@ no forced trade or changed threshold to manufacture either. Record benefit, miss
 confidence, not just whether the fields were populated. The analytical trust decision below uses
 these prospective observations; it is a separate Markeitect verdict, not automatic on task completion.
 
-## SL-17 — Link And Monitor A Recommended Paper Trade
+## SL-17 — Link And Monitor A Recommended Trade
 
 **Depends on:** SL-07, SL-11, and SL-16.
 **Implement:** explicit supported/ambiguous/rejected recommendation-to-trade linkage; preserve
 independent trades, revise/invalidate recommendations when evidence changes, and apply accepted
 monitoring and cooldown to linked episodes. Keep simultaneous opportunities/trades distinct.
 **Focused checks:** attribution ambiguity, immutable original thesis, expiry, and cooldown admission.
-**Markeitect live test:** manually enter an admitted recommended paper trade and check linkage and
+**Markeitect live test:** manually enter an admitted recommended trade and check linkage and
 subsequent evidence changes; query again during cooldown. Compare with a separate unlinked trade.
 If the required live recommendation/condition is absent, leave that scenario not exercised.
 
-## SL-18 — Complete The Sir Loke V1 Paper Story
+## SL-18 — Complete The Sir Loke V1 Connected Story
 
 **Depends on:** SL-03, SL-07, SL-12, and SL-17, including outstanding live cases from those tasks.
 **Implement:** only integration defects found in the existing paths; no new subsystem or wholesale
@@ -478,10 +485,10 @@ prerequisite for Discord or model implementation. Gate 1A remains completed only
 [recorded offline scope](../reference/ib-observation-gate1.md). Do not repeat unchanged construction
 proofs or infer manual-event visibility from them.
 
-The existing [conditional paper protocol](../reference/ib-observation-gate1.md#conditional-gate-1-paper-protocol)
+The existing [conditional observation protocol](../reference/ib-observation-gate1.md#conditional-gate-1-observation-protocol)
 and [IB setup boundary](../operations/ib-setup.md) remain mandatory for broker observation.
 Resolve named startup/report/account concerns and audit actual outbound requests before the probe.
-Markeitect verifies paper account, TWS settings, client identity, allowed requests, and exact scope,
+Markeitect verifies the selected account, TWS settings, client identity, allowed requests, and exact scope,
 performs every manual order action, starts/stops the observer, and reviews the evidence.
 Unexpected binding, submission, modification, cancellation, replacement, exercise, wrong account,
 or loss of the no-control audit stops the run. A negative result does not authorize a workaround.

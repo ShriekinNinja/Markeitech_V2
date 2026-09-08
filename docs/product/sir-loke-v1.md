@@ -182,7 +182,7 @@ Every episode preserves:
 - later evidence, interpretations, recommendations, interventions, and trader responses without
   silently replacing earlier records;
 - partial, conflicting, duplicated, late, reconciled, and unknown broker state explicitly; and
-- paper/live account environment on every admitted broker fact and derived episode record.
+- exact account identity on every admitted broker fact and derived episode record.
 
 A later opportunity must qualify independently. Sir Loke may help restore composure after a loss,
 but it must never frame a new trade as a way to win back money, repair confidence, or complete a
@@ -239,25 +239,16 @@ future existence does not place an order-action contract or dormant tool in v1.
 
 ## Broker Observation
 
-### First acceptance environment
+### Trader-Selected Account
 
-The first connected acceptance uses an **Interactive Brokers paper account through TWS**.
+Markeitect selects the Interactive Brokers account and TWS session. Sir Loke applies one analytical,
+recommendation, monitoring, governance, and acceptance process without classifying account mode.
+No account-mode field, separate release gate, or mode-specific behavior is required.
 
-Sir Loke applies the same analytical standards, mentoring behavior, firmness policy, and evidence
-requirements to paper and live accounts. Paper mode does not make the analysis casual; live mode
-does not manufacture certainty.
-
-Account environment remains mandatory evidence. Broker facts must carry a non-secret stable
-account identity or alias and an explicit `paper` or `live` environment so that:
-
-- different accounts cannot be joined accidentally;
-- paper outcomes cannot be reported as live performance;
-- connection to the wrong TWS instance becomes visible;
-- reconnect and reconciliation remain attributable; and
-- later live enablement has an explicit acceptance envelope.
-
-A successful paper run does not silently authorize or validate a live-account connection. The
-product behavior may be environment-neutral, but connected acceptance is environment-specific.
+Every broker fact retains its non-secret stable account identity or alias, source, contract, and
+observation time. This prevents accidental joins across accounts and makes reconnect/reconciliation
+attributable. Eligibility depends on actual available evidence and permissions. The trader owns
+account selection; Markeitech remains advisory and receives no order-action authority.
 
 ### Read-only product boundary
 
@@ -277,7 +268,7 @@ observation. The observation boundary therefore requires defense in depth:
 - a sanitized typed broker-observation output containing facts, not mutable broker handles;
 - static and adversarial tests proving agent and transport surfaces cannot reach order methods;
 - explicit TWS/API settings and client identity;
-- paper-first connected acceptance; and
+- Markeitect-owned connected acceptance; and
 - audit of every admitted broker event, reconciliation, omission, conflict, and failure.
 
 Exact visibility of manually entered TWS orders under a safe client-ID and read-only configuration
@@ -337,7 +328,7 @@ The product requires four independently observable and failure-isolated live pat
 1. **Market and options evidence:** freshness-qualified facts sufficient to recommend or abstain on
    the approved first expressions.
 2. **Broker observation:** timely account/order/fill/position/closure facts from the accepted
-   paper-through-TWS path.
+   TWS observation path.
 3. **Sir Loke reasoning and policy:** compact read model, conversation state, bounded typed tools
    with explicit side-effect classes, citations, abstention, intervention, and audit.
 4. **Discord conversation:** authenticated inbound dialogue and bounded outbound replies/proactive
@@ -350,22 +341,22 @@ the required path is unusable.
 ## End-To-End Acceptance
 
 The first usable release requires Markeitect's analytical trust decision as well as deterministic
-fixtures and his connected paper evidence demonstrating all of the following:
+fixtures and his connected evidence demonstrating all of the following:
 
 1. Sir Loke enters the private Discord context and reports the actual readiness of market,
    options, broker-observation, agent, Discord, and audit dependencies.
 2. Markeitect can ask for current context and receives an evidence-qualified response.
 3. In a qualified-evidence scenario, Sir Loke proactively publishes one genuinely supported SPXW
-   or QQQ 0DTE recommendation. A corresponding manually entered TWS paper trade is detected and
+   or QQQ 0DTE recommendation. A corresponding manually entered TWS trade is detected and
    linked only when its identity supports the link.
 4. In a separate insufficient/conflicting-evidence scenario, Sir Loke names the limitation and
    abstains without inventing a recommendation or recommendation linkage.
-5. In a separate independent-trade scenario, a trader-originated TWS paper trade is detected,
+5. In a separate independent-trade scenario, a trader-originated TWS trade is detected,
    acknowledged, analyzed, and monitored without an invented earlier recommendation or thesis.
 6. A system which always abstains fails the qualified-evidence scenario; a system which always
    recommends fails the insufficient-evidence scenario.
 7. Partial fills, scale changes, cancel/replace behavior, manual closure, duplicate delivery, and
-   reconnect/reconciliation preserve the correct trade episode and account environment.
+   reconnect/reconciliation preserve the correct trade episode and account identity.
 8. A controlled material contradiction or invalidation produces the configured firm warning and
    acknowledgement behavior within its configured timing envelope.
 9. Sir Loke preserves the original thesis and later revisions, and it records the trader's
@@ -376,7 +367,7 @@ fixtures and his connected paper evidence demonstrating all of the following:
     order, and no such action is attempted during acceptance.
 12. A failure of Discord, the model, an optional analysis, or one instrument remains contained and
     does not corrupt broker state, market truth, unrelated capabilities, or durable audit.
-13. The acceptance record states its exact account environment, contracts, sessions, configuration,
+13. The acceptance record states its exact account identity, contracts, sessions, configuration,
     versions, timestamps, evidence gaps, and unsupported generalizations.
 
 ## Explicitly Deferred
@@ -388,8 +379,7 @@ fixtures and his connected paper evidence demonstrating all of the following:
 - unconstrained dynamic instrument or capability expansion;
 - model training or autonomous optimization;
 - permanent support for every instrument, session, strategy, or trading style;
-- raw market-data or full-chain retention merely for hypothetical future use; and
-- any claim that v1 is validated for a live-money account.
+- raw market-data or full-chain retention merely for hypothetical future use.
 
 ## Decisions Still Requiring Focused Approval
 

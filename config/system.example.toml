@@ -5,7 +5,7 @@
 schema_version = 23
 
 [runtime]
-name = "MARKEITECH-V2-PAPER-001"
+name = "MARKEITECH-V2-001"
 trader_id = "MARKEITECH-001"
 environment = "live"
 

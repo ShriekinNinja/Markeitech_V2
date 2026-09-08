@@ -37,10 +37,10 @@ through Git history but does not define current behavior.
   principle: "When you have eliminated the impossible, whatever remains, however improbable, must
   be the truth." Sir Loke must eliminate through cited evidence and deterministic policy, preserve
   unresolved uncertainty, and abstain when the remaining case is not sufficiently supported.
-- The first connected trade-observation acceptance uses an Interactive Brokers paper account
-  through Trader Workstation. Sir Loke's analytical and governance behavior is the same for paper
-  and live accounts, but every broker fact and report preserves account identity and environment.
-  Paper acceptance does not authorize or validate a live-money connection.
+- Markeitect selects the broker account and TWS session. Account mode does not change Sir Loke's
+  analysis, capabilities, governance, or acceptance process. Do not introduce account-mode flags,
+  schema discriminators, or separate approval gates. Preserve actual account identity and
+  observed broker facts so records from different accounts cannot be mixed.
 - Native provider observations, deterministic facts, semantic events, persistent
   entities, rolling state, broker-reported execution facts, trader statements, policy decisions,
   model outputs, AI interpretations, and execution authority remain separate boundaries.
@@ -80,7 +80,7 @@ and operator projections when duplicating those concerns inside Nautilus would
 reduce clarity or correctness. Document meaningful ownership decisions.
 
 The live runtime is centered on a NautilusTrader `LiveNode`. The implemented Interactive Brokers
-connection remains manual, explicitly confirmed, paper, market-data-only, and read-only. The
+connection remains manual, explicitly confirmed, market-data-only, and read-only. The
 first-version product now requires a separately reviewed broker-observation path for account,
 order, fill, and position facts. Evaluate NautilusTrader's native execution client,
 reconciliation, cache, and events before custom IB access, while exposing no order action to Sir
@@ -100,7 +100,7 @@ Maintain these invariants:
 - no fixed one-active-instrument limit on granular observation
 - analytics independent of console, Discord, WebSocket, and UI transports
 - strategy or presentation failure must not stop ingestion
-- exact broker account/environment identity and honest reconciliation on every trade observation
+- exact broker account identity and honest reconciliation on every trade observation
 - no order-action contract reachable from the v1 agent, Discord, policy, or observation surfaces
 
 ## Configuration And Optimization Principle

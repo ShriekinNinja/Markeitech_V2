@@ -25,7 +25,7 @@ and [order modification](https://www.interactivebrokers.com/docs/tws-api/doc/ord
 
 Markeitech currently uses Interactive Brokers for market data only:
 
-- paper account;
+- trader-selected account;
 - read-only socket API;
 - no execution client configuration;
 - no order-routing actor;
@@ -42,7 +42,7 @@ requires a separately reviewed future execution and risk program and is outside 
 
 Every machine/user supplies:
 
-- its own IB paper account;
+- its own selected IB account;
 - TWS or IB Gateway;
 - market-data subscriptions and permissions;
 - local API port and client ID; and
@@ -52,7 +52,7 @@ The repository does not include account credentials or entitlements.
 
 ## TWS Or Gateway Checklist
 
-1. Log into paper trading.
+1. Log into the broker account/session selected by the trader.
 2. Enable ActiveX and socket clients.
 3. Enable read-only API mode.
 4. Allow localhost connections.
@@ -75,14 +75,8 @@ This checklist is accepted only for the implemented market-data client. Do not c
 client in an ordinary market-data run. Those settings may affect which manual TWS orders are
 visible or controllable and belong to the separately reviewed observation proof.
 
-Common IB defaults:
-
-| Application | Paper | Live |
-| --- | ---: | ---: |
-| TWS | `7497` | `7496` |
-| IB Gateway | `4002` | `4001` |
-
-A custom port is valid when TWS/Gateway and `config/system.local.toml` agree.
+Use the socket port configured in the actual TWS/Gateway session and set the same value in
+`config/system.local.toml`. The example port is a connection setting, not account classification.
 
 ## Local Configuration
 
@@ -169,15 +163,14 @@ Inspect:
 Provider observations remain transient. PostgreSQL stores operational intent, status, health,
 request, retry, transition, and outcome evidence rather than raw quotes, trades, or bars.
 
-This run does not observe the paper account's orders, fills, positions, or P&L. A successful
+This run does not observe the account's orders, fills, positions, or P&L. A successful
 market-data run is not evidence that Sir Loke can detect a manually entered TWS trade.
 
 ## Planned Sir Loke Broker-Observation Proof
 
-The first connected trade-observation acceptance will use Markeitect's Interactive Brokers paper
-account through TWS. Sir Loke's analysis and mentoring behavior is intended to be the same for
-paper and live accounts, while every broker fact retains a stable non-secret account identity or
-alias and an explicit paper/live environment.
+Markeitect selects the Interactive Brokers account and TWS session for connected acceptance.
+Sir Loke uses one analysis and mentoring workflow. Broker facts retain a stable non-secret account
+identity or alias; account-mode classification is not required by the product or test protocol.
 
 The proof must evaluate the exact pinned NautilusTrader capabilities before custom IB access:
 
@@ -214,7 +207,7 @@ manual-order events are visible.
 
 Therefore no client ID, binding mode, open-order request, reconciliation setting, or read-only
 combination is accepted for this product until the offline safety review identifies every exact
-call and the bounded paper proof measures the chosen configuration. An unexpected bind,
+call and the bounded connected proof measures the chosen configuration. An unexpected bind,
 resubmission, modification, cancellation, replacement, exercise, or order submission is an
 immediate stop condition.
 
@@ -228,9 +221,8 @@ Relevant provider references:
 - [Modifying orders and queue-priority warning](https://www.interactivebrokers.com/docs/tws-api/doc/orders/modifying-orders)
 
 The proof needs separate explicit authorization for its connected run. It must use dedicated local
-configuration outside Git, record the exact TWS instance/account environment/client ID/settings,
-and stop on any unexpected order-control behavior. Passing paper acceptance does not authorize a
-live-money connection.
+configuration outside Git, record the exact TWS instance/account identity/client ID/settings,
+and stop on any unexpected order-control behavior. Markeitect performs and reviews the run.
 
 ## Common Failures
 

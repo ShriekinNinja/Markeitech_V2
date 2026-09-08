@@ -207,8 +207,8 @@ Source: [IBKR tick-by-tick request limits](https://www.interactivebrokers.com/do
 Selecting the exchange feeds is not sufficient. Verify all of the following before subscription
 or connected acceptance:
 
-1. The account is an opened, funded `IBKR PRO` account. Demo accounts cannot subscribe to API
-   market data.
+1. Confirm in Client Portal that the account/username has the subscription rights required for
+   the intended API data. Verify actual permissions instead of using an account-mode label.
 2. The account holds the applicable minimum equity plus subscription costs. IBKR currently states
    USD 500 for ordinary individual and organizational accounts, with different published minimums
    for certain account categories.
@@ -217,10 +217,8 @@ or connected acceptance:
 4. `Market Data API Acknowledgement` is enabled and signed in Client Portal. IBKR states that API
    requests may otherwise return market-data-not-subscribed errors.
 5. Entitlements belong to the exact username used by TWS or IB Gateway.
-6. The exact live username explicitly shares its subscriptions with the exact paper username used
-   by Markeitech, where that facility is used.
-7. The same shared entitlement is not expected to serve competing live and paper sessions
-   simultaneously.
+6. Confirm any subscription-sharing arrangement applies to the exact username used by Markeitech.
+7. Check the provider's simultaneous-session limits for that entitlement and the actual consumers.
 8. Every additional username is budgeted separately because market-data subscriptions are
    generally username-bound.
 9. The subscriber's professional or non-professional exchange classification is confirmed. This
@@ -274,7 +272,7 @@ Before treating this subscription plan as purchase-ready, record and verify:
 
 - the IBKR contracting affiliate and account legal type;
 - professional or non-professional subscriber status and questionnaire effective date;
-- exact live and paper usernames and their sharing arrangement;
+- exact accessing usernames and any subscription-sharing arrangement;
 - each service, device, person, and process which will access the data;
 - the product name exactly as displayed in Client Portal;
 - whether the product is ordered under TWS, Alternative Display, or Non-Display/API;
@@ -292,7 +290,7 @@ The following require documented vendor authorization or qualified legal review:
   treatment is unclear;
 - sending raw observations, quotes, charts, market-derived values, or reversible derivatives to
   Discord, an external AI provider, another person, or another service;
-- multiple usernames, accounts, devices, or concurrent live/paper consumers;
+- multiple usernames, accounts, devices, or concurrent data consumers;
 - redistribution or external commercial use; or
 - inability to produce the current API supplement and relevant exchange-specific terms.
 
@@ -328,7 +326,7 @@ Record for each result:
 
 - account affiliate and residence;
 - professional or non-professional status;
-- exact username and paper-sharing state;
+- exact accessing username and applicable subscription-sharing arrangement;
 - exact subscription name returned by IBKR;
 - TWS/display versus non-display/API category;
 - monthly fee, tax, and waiver conditions;
@@ -373,7 +371,7 @@ Only after this authenticated check should the final account-specific purchase l
 - The account's exact professional or non-professional classification.
 - The exact packages offered to the Israel-based account and contracting affiliate.
 - Whether the two U.S. bundles are available despite the public regional-documentation conflict.
-- The current username's subscriptions, API acknowledgement, and live-to-paper sharing state.
+- The current username's subscriptions, API acknowledgement, and any subscription-sharing arrangement.
 - Exact VIX plan coverage.
 - Account-specific prices, waivers, taxes, trading permissions, and market-data-line allowance.
 - Pinned NautilusTrader adapter delivery for every planned option field, chain request, or depth

@@ -31,7 +31,7 @@ Gate 1A supports continuing evaluation of the native adapter; it does not suppor
 | Native network egress isolation | **NOT ESTABLISHED** |
 | Runtime no-binding/no-order-action behavior | **NOT ESTABLISHED** |
 | Manual TWS lifecycle coverage with user-reported Master `1` | **UNVERIFIED** |
-| Connected paper probe | **NOT AUTHORIZED BY GATE 1A** |
+| Connected observation probe | **NOT AUTHORIZED BY GATE 1A** |
 
 Construction proves that the installed Python/Rust boundary accepts the configuration and creates
 a `LiveNode`. It does not prove what the compiled adapter would send after `start`, `run`,
@@ -102,8 +102,8 @@ Installed rc4 produced these defaults:
 | `account_id` | `None` | The factory otherwise uses its native fallback; production must supply explicit identity |
 | `fetch_all_open_orders` | `False` | Does not suppress the separately inspected startup `all_open_orders()` call |
 | `track_option_exercise_from_position_update` | `False` | Disables that optional position-update path only |
-| `host` | `127.0.0.1` | A default address is not a connection or paper/live proof |
-| `port` | `4002` | A port does not establish account environment |
+| `host` | `127.0.0.1` | A default address does not identify the connected account |
+| `port` | `4002` | A port does not establish account identity |
 | `connection_timeout` | `300` seconds | Runtime behavior was not exercised |
 | `request_timeout` | `60` seconds | Runtime behavior was not exercised |
 
@@ -208,8 +208,7 @@ The public rc4 report signatures and tagged parser establish the following struc
   ID, or a provider event timestamp for the order-status snapshot.
 - `FillReport` preserves account, instrument, venue order identity, IB execution ID as trade ID,
   side, last quantity/price, commission, parsed execution event time, and receive/init time. The
-  current parser sets no venue position ID and cannot establish the trader's thesis or paper/live
-  environment by itself.
+  current parser sets no venue position ID and cannot establish the trader's thesis by itself.
 - `PositionStatusReport` preserves account, instrument, side, quantity, optional average open
   price, and report times. The inspected IB path sets no venue position ID. A position report does
   not identify the contributing broker orders/fills.
@@ -217,11 +216,11 @@ The public rc4 report signatures and tagged parser establish the following struc
 Provider-originated rows, parser projections, residual-position synthetic order reports, flat
 position responses, execution-manager adjustments, inferred reconciliation fills/orders, and
 cache state are distinct evidence classes. A future broker-observation owner must preserve at
-least account alias and verified environment, source/client identity, contract/instrument,
+least verified account identity/alias, source/client identity, contract/instrument,
 provider order/permanent/execution identifiers when available, direction and quantities, event
 versus receive time, report/snapshot boundary, revision, reconciliation origin, and
 missing/duplicate/conflict state. It must never fill missing broker identity from an imagined
-trade or infer paper/live from port, prefix, `Environment.SANDBOX`, or `Environment.LIVE`.
+trade or replace account identity with a port, naming convention, or framework runtime environment.
 
 Exact production placement, sanitized schema, persistence, retention, and downstream access are
 not decided here. The accepted requirement remains one narrow owner publishing immutable
@@ -258,20 +257,20 @@ Focused result: `26 passed`. Complete offline result: Ruff passed, then `723 pas
 The changed-document link check and `git diff --check` also passed. No PostgreSQL, IB/TWS, Discord,
 model, fake server, or other connected path was run.
 
-## Conditional Gate 1 Paper Protocol
+## Conditional Gate 1 Observation Protocol
 
 This protocol is design only. It is not executable code and does not authorize connection.
 
-Before a paper run, separately approve the exact startup/recovery/disconnect behavior and an
+Before a connected run, separately approve the exact startup/recovery/disconnect behavior and an
 actual outbound-request audit method. Resolve the `fetch_all_open_orders` inconsistency and the
 fill-filter account-normalization concern, decide how synthetic/reconciliation state will be
 admitted, and complete the required provenance/retention review for any captured facts.
 
-Record the exact repository and native artifact, TWS build/API version, verified paper account and
+Record the exact repository and native artifact, TWS build/API version, verified selected account,
 accessible-account scope, non-secret account alias, connection client `1`, separately inspected
 Master `1`, read-only API setting, automatic-download/association settings, contract/session
 identity, UTC clock relationship, configuration digest, and audit completeness. Neither a port nor
-Master status proves account environment or manual coverage.
+Master status proves account identity or manual coverage.
 
 With Markeitect performing every broker mutation manually, compare one preexisting manual TWS
 order with a new post-connect manual order. Exercise only the approved manual changes, partial and
@@ -285,17 +284,18 @@ cancellation, global cancellation, replacement, exercise, close, client-0 bindin
 automatic manual-order association, and compensating order cleanup. A rejected prohibited request
 still fails the no-attempt requirement.
 
-Abort on a wrong/live account, unapproved setting or request, attributable binding/control change,
-resubmission, modification, cancellation, audit loss, synthetic state represented as observation,
-or unbounded recovery. Disconnect the observer without altering orders; Markeitect handles any
-remaining paper orders manually.
+Abort on an account other than the one selected by Markeitect, unapproved setting or request,
+attributable binding/control change, resubmission, modification, cancellation, audit loss,
+synthetic state represented as observation, or unbounded recovery. Disconnect the observer without altering orders; Markeitect handles any
+remaining orders manually.
 
-Even a successful session would prove only its recorded paper scope. It would not authorize live
-money, implement Sir Loke, complete full Gate 1 automatically, or create order authority.
+A successful session establishes only the observation behavior exercised for the selected
+account and configuration. It does not implement Sir Loke, complete all broker-observation work,
+or create order authority.
 
 ## Remaining Gate
 
 Gate 1A ends at offline characterization. Before production broker observation can be designed or
-activated, Markeitect must review this evidence and separately authorize the bounded paper probe
-after the source concerns and outbound-audit method are resolved. Full Gate 1 remains open until
+activated, Markeitect must review this evidence and separately authorize the bounded observation
+probe after the source concerns and outbound-audit method are resolved. Full Gate 1 remains open until
 that connected evidence is accepted.

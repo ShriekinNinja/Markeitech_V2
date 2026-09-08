@@ -12,8 +12,9 @@ does not describe every price band. Qualification proves identity, not entitleme
 
 ## Entitlements, Modes, And Resource Families
 
-Identify username, account mode, subscription/API permission, and paper-data sharing. Confirm the
-returned mode per request: live, frozen, delayed, and delayed-frozen are distinct. Delayed
+Identify the selected account, accessing username, subscription/API permission, and any subscription
+sharing. Confirm the returned data mode per request: live, frozen, delayed, and delayed-frozen
+are distinct. Delayed
 availability is not uniform and does not cover every tick request.
 
 Track market-data lines separately from message rate, historical pacing, historical concurrency,

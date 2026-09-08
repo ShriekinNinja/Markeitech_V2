@@ -42,7 +42,7 @@ Live acceptance status: `not run` / `run and passed` / `run with findings` / `no
 
 - Task ID and exact test head:
 - State: <!-- ready for Markeitect live test / changes requested / accepted by Markeitect -->
-- Setup, services, paper account/instruments, and bounded model budget:
+- Setup, services, account/instruments, and bounded model budget:
 - Copy-paste Python start/stop commands:
 - Market question and expected added insight: <!-- Intelligence/assessment tasks; otherwise not applicable. -->
 - Bounded manual steps, expected results, and stop conditions:

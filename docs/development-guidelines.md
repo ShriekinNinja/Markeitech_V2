@@ -73,8 +73,9 @@ Broker account, order, fill, and position observation is distinct from market-da
 Evaluate NautilusTrader's native IB execution client, live reconciliation, cache, event, and report
 contracts before custom provider access. If native execution facilities are used to observe, place
 a narrow fact-only boundary in front of Sir Loke and expose no mutable order object or order action.
-The account environment, account alias/identity, broker/source identity, reconciliation origin,
-and exact order/fill/position identities must remain visible.
+The account alias/identity, broker/source identity, reconciliation origin, and exact order, fill,
+and position identities must remain visible. The trader selects the account; account mode does not
+change product behavior, add a schema field, or create a separate acceptance workflow.
 
 Only one component may own a subscription or canonical stream. Native IB access
 is allowed only for a capability Nautilus does not expose and must share the

@@ -20,7 +20,7 @@ None of those future documents proves implementation.
 |---|---|
 | Product runtime | Active V2 source at repository root, built on NautilusTrader `2.0.0rc4` |
 | First visible product | Sir Loke v1 is accepted product direction but unimplemented |
-| Provider | Interactive Brokers paper connection through TWS/IB Gateway for market data only |
+| Provider | Interactive Brokers connection through TWS/IB Gateway for market data only |
 | Active tracked profile | One-instrument V3 ES operational/historical probe profile |
 | Operator CLI | Unified `.venv/bin/markeitech` command hierarchy is implemented |
 | Trade observation | Unimplemented; no execution client, account/order/fill/position owner, or trade lifecycle |
@@ -49,7 +49,7 @@ unified Python CLI merge at `295cdb7`:
 
 These checks establish offline code and documentation consistency only. They do not establish
 PostgreSQL integration, provider behavior, a connected rc4 run, broker observation, Discord bot,
-model, Sir Loke, options, or live-money acceptance.
+model, Sir Loke, or options acceptance.
 
 Gate 1A subsequently added a focused offline characterization for the pinned native IB execution
 path. Its bounded subprocess constructs the genuine client with connection `client_id=1`, a
@@ -62,7 +62,7 @@ commands, source inventory, evidence limits, and verification results.
 
 This evidence proves compiled construction and inspected source only. It does not prove native
 startup/wire behavior, network-egress isolation, no-binding/no-order-action behavior, manual TWS
-event coverage under the user-reported Master `1` setting, or connected paper acceptance.
+event coverage under the user-reported Master `1` setting, or connected acceptance.
 
 ## Operating Posture
 
@@ -237,9 +237,9 @@ The product direction is accepted; the implementation is not present.
 
 ## Broker Observation Status
 
-The first planned connected acceptance uses an Interactive Brokers paper account through TWS.
-Sir Loke's behavior is intended to be the same for paper and live observations, while every broker
-fact retains account identity and environment.
+The trader selects the broker account and TWS session. The product has one analysis and acceptance
+workflow without account-mode classification. Broker facts retain actual account identity; this
+policy change does not implement broker observation or establish new connected acceptance.
 
 NautilusTrader `2.0.0rc4` exposes an Interactive Brokers execution client, live execution-engine
 reconciliation, cache access to accounts/orders/positions, typed strategy callbacks, and native
@@ -255,14 +255,14 @@ inspect every exact startup/open-order/binding call and prove the native path be
 custom IB access; it must expose no order action to Sir Loke.
 
 See the [Sir Loke v1 product definition](product/sir-loke-v1.md#broker-observation) and
-[IB setup boundary](operations/ib-setup.md). The exact offline result and conditional paper
+[IB setup boundary](operations/ib-setup.md). The exact offline result and conditional observation
 protocol are in the [Gate 1A evidence reference](reference/ib-observation-gate1.md).
 
 ## Connected Acceptance Envelope
 
 Recorded connected acceptance is useful but narrow:
 
-- Earlier V2 profiles established bounded IB paper market-data subscription, historical request,
+- Earlier V2 profiles established bounded IB market-data subscription, historical request,
   multi-consumer delivery, operational persistence, Discord webhook, resource, measurement, and
   selected entity-projection behavior under the exact recorded sessions and configurations.
 - V3-01 accepted the canonical `cme_equity` calendar path for one tracked ES profile and one
@@ -271,11 +271,10 @@ Recorded connected acceptance is useful but narrow:
 - Existing connected evidence predates the rc4 upgrade unless a record explicitly says otherwise;
   the rc4 upgrade itself was offline-verified.
 - No connected acceptance establishes SPXW/QQQ options acquisition, a Discord bot, a live model,
-  Sir Loke advice, account observation, manual TWS trade detection, trade monitoring, or live-money
-  behavior.
+  Sir Loke advice, account observation, manual TWS trade detection, or trade monitoring.
 
-A connected process start is not end-to-end Sir Loke readiness. Passing one paper session cannot
-be generalized across accounts, products, sessions, provider conditions, or live money.
+A connected process start is not end-to-end Sir Loke readiness. A recorded session establishes
+only the behavior exercised for its actual account, products, data, and provider conditions.
 
 ## Current Validation Debt And Stop Gates
 
@@ -283,7 +282,7 @@ be generalized across accounts, products, sessions, provider conditions, or live
 - The V3 completed-bar and metric replacement has not reached composition, cold cutover, legacy
   retirement, or connected acceptance.
 - Manual TWS order visibility, external-order claiming/binding, and read-only API behavior require
-  a bounded observation-only paper proof.
+  a bounded observation-only connected proof.
 - Canonical trade episode, recommendation linkage, intervention, conversation, and report schemas
   are undecided.
 - Minimum sufficient SPXW/QQQ option, liquidity, expiration, settlement, and reference evidence is

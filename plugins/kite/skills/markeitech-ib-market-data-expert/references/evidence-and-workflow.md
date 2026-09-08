@@ -20,7 +20,7 @@ Connected evidence is admissible only with applicable metadata:
 
 - run ID and UTC observation time;
 - TWS/IB Gateway, TWS API, Nautilus, and adapter versions/configuration;
-- paper/live mode and non-secret username/entitlement context;
+- selected account identity and non-secret username/entitlement context;
 - exact `conId`, symbol, security type, exchange/primary exchange, currency, expiry, trading class,
   multiplier, and local symbol;
 - request/method ID, fields or `whatToShow`, bounds/duration, bar size, RTH policy, market-data

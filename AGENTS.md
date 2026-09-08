@@ -200,6 +200,9 @@ change.
 - V2 is live-first, event-driven, read-only, and advisory. It does not place orders.
 - Sir Loke v1 may observe admitted broker account/order/fill/position facts but receives no submit,
   modify, cancel, replace, or close capability. Observation and execution authority remain separate.
+- Account mode is not a product, schema, or acceptance discriminator. Markeitect selects the broker
+  account/session; use the same analysis and task workflow. Preserve account identity and actual
+  data/permissions, and do not infer account mode from ports, prefixes, or runtime environment.
 - Independent actors and unrelated capabilities must continue operating through partial failure;
   recovery is bounded, observable, and continuously retried where policy permits.
 - Use NautilusTrader native contracts and bus semantics where they fit; keep one owner for every
