@@ -21,8 +21,6 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from dotenv import dotenv_values
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _TERMINATION_GRACE_SECONDS = 2.0
 SIR_LOKE_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_DISCORD_OPENAI_AND_POSTGRESQL"
@@ -230,6 +228,8 @@ def _system_run(args: argparse.Namespace) -> int:
 
 
 def _sir_loke_environment(env_file: Path) -> dict[str, str]:
+    from dotenv import dotenv_values
+
     from markeitech.sir_loke.config import (
         DISCORD_TOKEN_ENV,
         OPENAI_API_KEY_ENV,
