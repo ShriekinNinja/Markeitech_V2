@@ -9,11 +9,34 @@ is recoverable through Git and merged pull requests; it is intentionally absent 
 ## Sir Loke V1 Tasks
 
 Use the [delivery plan](sir-loke-v1-delivery-plan.md) as the single task/dependency list. SL-01 is
-next: real private Discord/model conversation over current runtime state. Do not recreate the old
+next: real private Discord/model conversation over current runtime state. SL-02 then IN-01 follow;
+intelligence development has priority before guardian behavior. Do not recreate the old
 Gate 1–7 subsystem sequence here. Broker safety blocks broker-aware work only. Each implementation
 task ends with Markeitect alone performing and reviewing its live run; CI is preparation for that
 review. This backlog contains remaining constraints and optional work, not another prerequisite
 program that must finish before Sir Loke can speak.
+
+## Intelligence Discovery Candidates
+
+The plan's IN-01 through IN-08 are initial live tasks, not the final intelligence specification.
+After each review, agents recommend a specific next question/capability from observed blind spots.
+Promote a candidate only with an available source/method, bounded implementation, and a live result
+Markeitect can judge. Candidates include:
+
+| Possible blind spot | Candidate improvement to investigate when it matters |
+|---|---|
+| Price moves without clear participation context | Valid volume/quote/trade-pressure analysis; explicitly distinguish observed and inferred flow |
+| Important related markets are not being watched | Add one relevant instrument/comparison at a time, then expand accepted simultaneous coverage |
+| One indicator/context view misses a change | Add a specific session, volatility, structural, or participation measurement tied to that miss |
+| A developing setup is forgotten or attention is misplaced | Improve scenario memory, opportunity tracking, or bounded evidence/focus requests |
+| A thesis is sound but the expression is poor | Compare a bounded set of eligible SPXW/QQQ contracts and explain the tradeoffs |
+| Material external context is absent | Investigate an approved event/context source, its freshness, permitted use, and clear effect on the assessment |
+| Interpretation repeatedly misleads or alerts too late | Revise or retire the rule using prospective live outcomes, preserving failures in the review |
+
+This list does not approve a feed, inference, trading rule, dependency, or retention policy. It is
+not a prerequisite checklist. Agents own turning a relevant candidate into the next small task;
+Markeitect owns product choices and live usefulness review. Sophisticated-sounding explanations
+and a greater indicator count do not establish trading competence.
 
 ## Reliability Of Used Paths
 
@@ -38,7 +61,7 @@ Passing offline suites or a single connected session does not close a wider reli
 
 ## V3 Deterministic Evidence Cutover
 
-Resume only the measurement capability needed by a named Sir Loke task, such as SL-15. Its brief
+Resume only the measurement capability needed by a named Sir Loke task, starting with IN-01. Its brief
 must identify required formulas, canonical producer, integration, and live acceptance. Preserve
 identity, lineage, correctness, and single-writer constraints. Do not re-enable faulty legacy
 owners or require unrelated numerical families, full retirement, or Visual Debug to finish first.
@@ -92,8 +115,9 @@ from the runtime event loop. The stable passive review contract is
 
 ## Later Product And Research Tracks
 
-- richer market-structure, order-flow, cross-instrument, options, and volatility capabilities;
-- measured opportunity utility and calibration;
+- additional intelligence methods/sources promoted through the current live development loop;
+- broader quantitative calibration beyond the compact prospective usefulness review already
+  required by the active tasks;
 - ML only after an approved leakage-safe data/label/evaluation/rollback strategy;
 - policy-controlled optimization only for explicitly dynamic, bounded, versioned parameters;
 - additional products, expiries, accounts, users, hosted operation, and interfaces; and

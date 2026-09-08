@@ -300,9 +300,16 @@ be generalized across accounts, products, sessions, provider conditions, or live
 
 The 2026-09-08 decision replaces subsystem-wide serial gates with small, runnable Sir Loke tasks.
 Start with SL-01: actual private Discord conversation and model replies grounded in current runtime
-capability/readiness state. Extend current observations, broker awareness, declared trade plans,
-monitoring, options evidence, recommendations, and reporting through their named dependencies.
-Broker-observation proof remains necessary for broker-aware behavior but no longer blocks the bot.
+capability/readiness state. SL-02 adds current observations; IN-01 is the first analytical task.
+Intelligence development then has priority: session/structure context, movement character, level
+interactions, multiple horizons/markets, evidence memory, and competing scenarios, refined through
+live feedback. These are planned capabilities, not claims of active implementation. Agents propose
+new tasks for material blind spots; the intelligence set is not assumed complete.
+
+Setups and options/trade assessments follow their actual evidence dependencies. Guardian behavior
+requires Markeitect's explicit acceptance of analytical value; a bot or broker connection alone
+does not qualify it. Broker proof remains necessary for broker-aware behavior but does not block
+independent intelligence work. No analytical trust decision has been accepted by this replan.
 
 The [delivery plan](roadmap/sir-loke-v1-delivery-plan.md) owns the task list, brief, and live handoff.
 Every implementation task ends with Markeitect alone running the live test and reviewing results.

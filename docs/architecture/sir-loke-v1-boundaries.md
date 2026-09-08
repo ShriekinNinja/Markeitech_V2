@@ -26,8 +26,10 @@ Discord conversation—are independently healthy or degraded. One global connect
 stand in for their readiness. They are delivered incrementally through the task plan: conversation
 may operate over current admitted runtime state while broker, options, and other capabilities are
 explicitly unavailable. The ownership table below is not a requirement to implement every owner
-before that first conversation. Each live behavior still requires its own bounded audit and
-applicable authority checks.
+before that first conversation. The live read model grows through the plan's intelligence tasks:
+admitted measurements and events, bounded chronological context, and explicitly labeled competing
+interpretations. An interpretation never becomes a canonical fact through model repetition.
+Each live behavior still requires its own bounded audit and applicable authority checks.
 
 ## Ownership
 
@@ -167,8 +169,12 @@ ask Markeitect for the missing thesis without delaying an urgent fact-based warn
 
 ## Advisory Governance
 
-Firmness is deterministic policy state, not tone. The first vocabulary supports observation,
-concern, warning, urgent invalidation, acknowledgement required, noncompliance recorded,
+Guardian behavior requires Markeitect's prior analytical trust decision for the intended use.
+Market/trade insight and a specific evidence-based reason must support intervention; factual
+broker visibility or repeated caution is insufficient. This is a product acceptance prerequisite,
+not a new component or authority to execute. Firmness is deterministic policy state, not tone.
+The first vocabulary supports observation, concern, warning, urgent invalidation, acknowledgement
+required, noncompliance recorded,
 Sir-Loke recommendation cooldown, and resolution. Exact triggers, risk inputs, time bounds,
 acknowledgement rules, recovery, and cooldown are versioned configuration requiring focused
 approval.

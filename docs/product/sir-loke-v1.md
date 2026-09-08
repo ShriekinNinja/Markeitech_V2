@@ -17,9 +17,15 @@ technical subjects.
 
 ## Product Outcome
 
-Markeitech addresses the mental part of discretionary day trading: fear, greed, FOMO, revenge
-trading, attachment to an earlier bias, fighting a trend, bag-holding, and reluctance to admit
-that a thesis has failed.
+Markeitech develops trading intelligence that can extend and ultimately surpass Markeitect's
+unaided market assessment. The intended advantage is continuous attention across markets and
+horizons, systematic computation and comparison, memory of evolving evidence, and simultaneous
+tracking of competing opportunities and explanations. These are product ambitions to demonstrate,
+not capabilities established by a fluent model response or an implementation checklist.
+
+That analytical competence is the basis for helping with fear, greed, FOMO, revenge trading,
+attachment to a bias, fighting a trend, bag-holding, and failure to recognize invalidation. Sir Loke
+must contribute informed judgment before claiming a guardian role in Markeitect's trading.
 
 **Sir Loke is the product's first visible experience.** He is a live trading companion, mentor,
 and configurable advisory governor backed by Markeitech's deterministic evidence system. The
@@ -32,11 +38,38 @@ decision—not merely when it calculates another indicator or sends another heal
 Profit or one successful trade is useful outcome evidence but is not sufficient product
 validation.
 
+## Analytical Competence Before Guardianship
+
+A useful Sir Loke should notice material evidence Markeitect may miss, compare contexts he cannot
+watch simultaneously, remember what was believed before new information arrived, and challenge a
+thesis with specific supporting and opposing facts. He must revise his own interpretation and
+recognize when an opportunity has disappeared. The intended advantage grows through live use;
+it is not defined by a fixed list of indicators or by reproducing Markeitect's existing rules.
+
+Development therefore proceeds from a working conversational bot to stronger analytical
+observation and prospective trade assessment, then to accepted guardian behavior. Agents own the
+proposal, research, and task decomposition of the next useful capability. Markeitect supplies
+judgment and live feedback, not a complete analytical implementation specification. Relevant new
+methods and sources can enter through small reviewed tasks as blind spots become apparent.
+
+Before enabling guardian judgments, Markeitect must explicitly accept their analytical basis for
+the intended scope using prospective live observations and assessments. Review what Sir Loke added,
+what he missed or got wrong, how timely he was, and how much unnecessary interruption he caused.
+Include unsuccessful assessments and missed situations; successful anecdotes, factual reminders,
+correct formulas, and repetitive acknowledgement prompts do not establish useful trading judgment.
+A bounded acceptance is not proof of universal superiority or authorization to execute orders.
+
+The delivery plan's [intelligence loop](../roadmap/sir-loke-v1-delivery-plan.md#intelligence-development-loop)
+and [analytical trust decision](../roadmap/sir-loke-v1-delivery-plan.md#analytical-trust-decision)
+define the incremental work and Markeitect-owned verdict. The existing complete V1 acceptance
+below still applies, now with demonstrated analytical usefulness required for the guardian role.
+
 ## Incremental Delivery
 
-The 2026-09-08 delivery decision keeps this full product outcome and release acceptance intact.
-Implement it through small runnable Sir Loke tasks, starting with real private Discord/model
-conversation grounded in actual available runtime state. An early task may truthfully report
+The 2026-09-08 delivery decision retains the full V1 experience and requires analytical usefulness
+before guardianship. Implement it through small runnable Sir Loke tasks, starting with real
+private Discord/model conversation grounded in actual available runtime state, then improving
+that state into strong analytical observation. An early task may truthfully report
 broker observation, recommendations, or monitoring unavailable while their own tasks remain open.
 Broker safety proof gates broker-aware behavior, not independent conversation. Do not claim such
 an increment is the complete V1 release or fabricate evidence to make it look complete.
@@ -157,7 +190,10 @@ recovery sequence.
 
 ## Governance And Firmness
 
-First-version governance is forceful but advisory. Firmness is an explicit deterministic policy
+First-version governance is forceful but advisory and follows acceptance of Sir Loke's analytical
+competence for the intended use. An intervention must explain the material evidence or policy
+condition, its significance for the thesis/risk, and the justified advisory response. A generic
+“are you sure?” prompt is not a guardian capability. Firmness is an explicit deterministic policy
 state, not merely an aggressive tone generated by the model.
 
 The first policy vocabulary must be able to represent at least:
@@ -313,8 +349,8 @@ the required path is unusable.
 
 ## End-To-End Acceptance
 
-The first usable release is accepted only when deterministic fixtures and separately authorized
-connected paper evidence demonstrate all of the following:
+The first usable release requires Markeitect's analytical trust decision as well as deterministic
+fixtures and his connected paper evidence demonstrating all of the following:
 
 1. Sir Loke enters the private Discord context and reports the actual readiness of market,
    options, broker-observation, agent, Discord, and audit dependencies.

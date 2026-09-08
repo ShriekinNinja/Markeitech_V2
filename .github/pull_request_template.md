@@ -44,9 +44,11 @@ Live acceptance status: `not run` / `run and passed` / `run with findings` / `no
 - State: <!-- ready for Markeitect live test / changes requested / accepted by Markeitect -->
 - Setup, services, paper account/instruments, and bounded model budget:
 - Copy-paste Python start/stop commands:
+- Market question and expected added insight: <!-- Intelligence/assessment tasks; otherwise not applicable. -->
 - Bounded manual steps, expected results, and stop conditions:
 - Sanitized result location or identified Discord messages:
 - Markeitect verdict and tested head: <!-- Leave blank until he supplies the result. -->
+- Analytical usefulness: <!-- His review of timely insight, misses/errors, and noise; no agent-awarded verdict. -->
 - Unexercised cases and affected-behavior retest after fixes:
 
 ## Operations and data

@@ -1,11 +1,12 @@
 # Markeitech Project Charter
 
-Markeitech is a live-first market-intelligence and trading-discipline system built by Markeitect
-for discretionary index trading. Its first product experience is **Sir Loke**, a personal live
-trading companion, mentor, and configurable advisory governor. Markeitech turns reliable market,
-options, and broker-observation evidence into recommendations, trade monitoring, firm challenges,
-and inspectable after-trade reports for manual trading. It is not an HFT system and does not
-currently execute orders.
+Markeitech is a live-first market-intelligence system built by Markeitect for discretionary index
+trading. Its first product experience is **Sir Loke**, a live analytical trading companion whose
+ambition is to surpass Markeitect's unaided judgment through sustained observation, computation,
+memory, and simultaneous scenario coverage. Recommendations and eventual advisory guardianship
+must be earned through demonstrated analytical value. Markeitech develops reliable market,
+options, and broker evidence into assessments, recommendations, trade monitoring, informed
+challenges, and inspectable after-trade reports. It is not an HFT system and does not execute orders.
 
 This charter governs current product and engineering work. Historical source is recoverable
 through Git history but does not define current behavior.
@@ -60,9 +61,12 @@ market thesis. Any future linkage must be explicit, versioned, and inspectable.
 
 Deliver Sir Loke through the small live tasks in the
 [delivery plan](docs/roadmap/sir-loke-v1-delivery-plan.md). Start with a real private Discord/model
-conversation using actual available runtime state, then extend the working companion. Broker
-observation gates broker-aware features; it does not block independent conversation or market
-context. Intermediate capabilities must state their limits and do not replace full V1 acceptance.
+conversation using actual available runtime state, then prioritize making that state analytically
+useful. Agents propose and implement small intelligence improvements from live observations and
+Markeitect's review; the complete capability set is not presumed known. Broker observation gates
+broker-aware features, while guardian interventions require Markeitect's explicit acceptance of
+Sir Loke's analytical value for the intended use. Intermediate capabilities state their limits
+and do not replace full V1 acceptance.
 Each implementation task includes runnable integration and ends with Markeitect alone performing
 the live test and reviewing its results. Agents prepare a concise exact-head run handoff and
 focused verification, then wait for his verdict. Architecture and testing serve that named task;

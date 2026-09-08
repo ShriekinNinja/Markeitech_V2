@@ -1,6 +1,7 @@
 # Sir Loke V1 Delivery Plan
 
-**Direction approved:** 2026-09-08 — deliver Sir Loke through small, reviewable live increments.
+**Direction approved:** 2026-09-08 — build analytical competence through small live increments;
+guardian behavior follows demonstrated trading value.
 **Implementation:** No task below is claimed implemented or live-accepted by this planning change.
 **Next task:** SL-01. This plan does not authorize implementation of every listed task.
 
@@ -8,6 +9,70 @@ The [product definition](../product/sir-loke-v1.md) remains the full V1 release 
 The [current status](../current-status.md) owns implementation evidence, and the
 [Sir Loke boundaries](../architecture/sir-loke-v1-boundaries.md) own component and tool authority.
 A conversational increment is useful progress toward that product; it is not full V1 acceptance.
+
+## Product Progression And Next Task
+
+Build a trading intelligence companion with greater sustained observation, computation, memory,
+and simultaneous scenario coverage than one operator can maintain. The bot is the first working
+surface. Strong analytical observation, useful trade assessment, and earned guardian behavior
+are the development direction. A current-price narrator or repeated confirmation prompt is not
+that outcome. See the product's [analytical standard](../product/sir-loke-v1.md#analytical-competence-before-guardianship).
+
+| Priority | Work | Result Markeitect evaluates live |
+|---|---|---|
+| 1 | SL-01, then SL-02 | Talk to the real bot about actual current observations |
+| 2 | IN-01 first; then IN-02 through IN-08 and newly justified intelligence tasks | Increasingly capable, continuous market understanding |
+| 3 | SL-15, SL-13, SL-14, SL-16, according to their dependencies | Evidence-backed setups, expression suitability, and useful trade assessments |
+| 4 | SL-04 through SL-08, and SL-07 recovery, when broker awareness becomes the current need | Facts about actual paper trades and the trader's plan |
+| 5 | Analytical trust decision, then SL-09 through SL-12 and SL-17 | Informed monitoring, challenge, and reporting grounded in accepted intelligence |
+| 6 | SL-18 | Complete paper product acceptance |
+
+SL-03 is available when conversation recovery blocks useful live observation; basic failure
+isolation is part of every affected task. A broker fact notification remains factual observation;
+it does not qualify Sir Loke to judge a trade. Broker work does not displace intelligence by default.
+
+For “implement the next task,” inspect accepted results and the selected next task from the last
+review. The initial queue is SL-01, SL-02, IN-01, then IN-02. After each intelligence run, the agent
+recommends the next concrete capability or assessment task from observed gaps and available inputs;
+Markeitect decides on material priority changes. If no selection is recorded, propose the next
+eligible IN card in listed order with a specific reason. Research belongs inside that task.
+
+The table establishes focus, not a requirement to finish an entire intelligence catalogue. Once
+a setup's required evidence is accepted, SL-15 and the relevant options/assessment tasks may run;
+intelligence development continues afterward. The catalogue is deliberately open-ended. Task
+numbers preserve identity, not a global serial dependency. Agents must not jump from SL-03 to
+broker/acknowledgement work merely because the old SL numbers appear sequential.
+
+## Intelligence Development Loop
+
+IN-01 through IN-08 are concrete starting capabilities, not a claim that the complete intelligence
+set is known or that these calculations establish an edge. The backlog must evolve with live use.
+
+1. **Choose a market question.** Use Markeitect's latest review, a missed observation, a misleading
+   explanation, or a named limitation. The agent proposes the capability and its expected added
+   value; do not ask Markeitect to design an indicator list or supply the implementation recipe.
+2. **Resolve only that task's uncertainty.** Inspect reusable code and source availability; research
+   the relevant native/provider contract or analytical method when needed. Propose exact inputs,
+   definitions, settings, interpretation limits, and a runnable scope in the short brief. An
+   indicator or new feed needs a named question it will answer. There is no general research gate.
+3. **Build and expose it in Sir Loke.** Include the calculation, current state/change detection,
+   explanation, and minimal audit needed by the chosen behavior. Facts and deterministic transitions
+   remain code-owned; interpretations and alternative hypotheses remain labeled. A candidate
+   interpretation can be evaluated live without being admitted as trade advice.
+4. **Markeitect runs and judges it.** In addition to factual correctness, he judges whether the
+   observation was useful, timely, redundant, misleading, or missing something material. Agents
+   provide a short before/after example, not a test-count claim. No result is marked useful for him.
+5. **Select the next improvement.** With results he supplies, the agent proposes one concrete task:
+   add a missing capability, improve an existing one, investigate a misleading conclusion, or retire
+   a noisy one. Record the chosen task and dependency in the plan/issue. New intelligence work is
+   normal product development, not automatically deferred until the guardian is complete.
+
+For each selected new task, use `IN-09` onward with a specific question/title, exact implementation
+scope, dependencies, named checks, and Markeitect's live scenario. Do not create a generic “develop
+intelligence” issue or an offline-only research task with no consuming live behavior. If evidence
+shows a proposed capability is unavailable, report that blocker and a concrete alternative; do not
+fake a live result. Changing data sources, formulas, policy, or retention still requires approval
+for that task, not speculative approval of every future capability.
 
 ## Delivery Rules
 
@@ -101,6 +166,104 @@ health owners; do not activate the unfinished measurement replacement just for a
 it with the same timestamped runtime record, then stop the feed and ask again. A stale observation
 must be identified as stale; missing data must not become a current price or trading signal.
 
+## IN-01 — Put Price In Its Session Context
+
+**Depends on:** SL-02.
+**Question:** Where are we trading relative to this session and the last completed session?
+**Implement:** current-session open/high/low, previous-session high/low/close, and price location
+relative to those references for one evidence instrument. The brief proposes exact session and
+history coverage. Reuse `session_references.py` calculations where valid and integrate only the
+required completed-bar/reference path; full V3 owner replacement is not a prerequisite.
+**Focused checks:** session boundary, incomplete history, and exact reference/source identity.
+**Markeitect live test:** ask “Where are we in today's session?” Compare the cited levels with the
+same-session chart and ask again after a range change. Sir Loke must explain the changed location,
+not list numbers without context. Review whether the reference map helps orient the trading day.
+
+## IN-02 — Describe The Developing Price Structure
+
+**Depends on:** IN-01.
+**Question:** What structural progression is actually established, and what is still forming?
+**Implement:** confirmed swings and their relationships on one chosen timeframe, using reviewed
+confirmation rules. Reuse valid `market_structure_entities.py` logic; keep developing observations
+separate from confirmed structure and preserve when confirmation became knowable.
+**Focused checks:** confirmation delay, equal pivots, gaps, and chronological availability.
+**Markeitect live test:** ask for the latest structural progression and its counterevidence. Review
+marked levels/times against the chart as it develops; a later pivot must not rewrite earlier advice.
+Judge whether the explanation identifies something material beyond the latest price direction.
+
+## IN-03 — Distinguish Directional Progress From Range Expansion
+
+**Depends on:** IN-01.
+**Question:** Is price making sustained directional progress, rotating, or simply moving farther?
+**Implement:** one bounded range/volatility comparison and one directional-progress measurement;
+propose formulas, lookbacks, and a compatible baseline in the brief. Reuse valid rolling logic,
+fixing relevant known defects only. Keep measurements distinct from provisional regime labels.
+**Focused checks:** predecessor dependence, baseline sufficiency, units, and missing data.
+**Markeitect live test:** ask what changed in movement character during a bounded live window.
+Compare the cited changes with the same bars and assess usefulness; do not equate larger bars with
+trend strength or publish a regime conclusion when the selected evidence does not establish it.
+
+## IN-04 — Follow One Interaction With An Important Level
+
+**Depends on:** IN-01 and IN-02.
+**Question:** What happened after price reached a session or structural reference?
+**Implement:** a time-ordered account of approach, crossing, and subsequent behavior at one
+identified level. Propose a single bounded hold/reclaim/failure interpretation rule; distinguish
+observed crossings from that interpretation. Continue watching the same event rather than emit a
+new unrelated narrative on every update.
+**Focused checks:** event identity, transition timing, expiry, and repeated-touch handling.
+**Markeitect live test:** select a nearby admitted level before interaction, watch its live sequence,
+and compare Sir Loke's updates with it. Judge whether the updates notice a meaningful change in time.
+An interaction that never occurs remains not exercised; it is not manufactured by moving the level.
+
+## IN-05 — Compare Two Timeframes Without Collapsing Them
+
+**Depends on:** IN-02 and IN-03.
+**Question:** Is the short-term move consistent with, or opposed to, the broader structure?
+**Implement:** compare the existing analysis on two explicitly chosen horizons for the same
+instrument. Preserve each horizon's confirmation time and uncertainty; add only the second series
+and comparisons needed. No single directional score may conceal disagreement.
+**Focused checks:** alignment, incomplete coarser bars, and independent warmup.
+**Markeitect live test:** ask how the near-term move fits the broader context, then ask what would
+change that assessment. Check both cited horizons and judge whether the distinction improves it.
+
+## IN-06 — Watch Two Related Markets Together
+
+**Depends on:** IN-03 and IN-05.
+**Question:** Does a second relevant market support or contradict the observed move?
+**Implement:** one explicitly selected evidence-instrument pair, matched observation horizons, and
+one reviewed comparison of relative movement or structure. Approve feeds and comparison units;
+use existing acquisition ownership. A relationship is evidence of agreement/divergence, not proof
+of leadership, causation, or an automatic trading signal.
+**Focused checks:** time/session alignment, unequal units, and one stale leg.
+**Markeitect live test:** ask what the second market adds while both are observed continuously.
+Compare each side and a subsequent update. Judge whether Sir Loke catches relevant disagreement
+that would require switching attention manually; mark the limits of the sampled pair/session.
+
+## IN-07 — Remember How The Session's Assessment Changed
+
+**Depends on:** IN-04 and IN-05.
+**Question:** What changed since the earlier assessment, and which earlier assumption stopped fitting?
+**Implement:** a bounded chronological account of admitted observations, analytical events, and
+Sir Loke's hypotheses/revisions. Approve the minimal semantic audit and retention needed; raw-feed
+storage and backtesting remain out of scope. Distinguish “we expected” from “we observed.”
+**Focused checks:** as-of ordering, immutable original assessment, revision references, and recovery.
+**Markeitect live test:** ask for an assessment, revisit it after new live evidence, then restart
+and ask what changed. Review the original and revised explanations; hindsight must remain visible.
+
+## IN-08 — Track Competing Scenarios And Surface Material Changes
+
+**Depends on:** IN-04, IN-06, and IN-07.
+**Question:** Which explanations still fit, what contradicts each, and what should we watch next?
+**Implement:** two simultaneous, evidence-cited market hypotheses with named confirmation,
+contradiction, and expiry conditions. Add one bounded proactive update on a material transition,
+with an explanation of what changed and why it matters. Preserve unresolved alternatives and
+independent opportunities. The brief defines significance and alert limits; no order advice yet.
+**Focused checks:** contradictory evidence, separate scenario identity, stale inputs, and alert churn.
+**Markeitect live test:** record both scenarios before the outcome, continue a bounded live session,
+and inspect updates and expiries. Judge incremental insight, timeliness, missed evidence, and noise.
+Persuasive hindsight or a stream of generic caution does not pass the usefulness review.
+
 ## SL-03 — Keep Conversation Failures Contained
 
 **Depends on:** SL-02.
@@ -170,15 +333,18 @@ and invalidation; ask for unknown fields and append revisions with approved dura
 **Markeitect live test:** enter a paper trade without a recommendation, give Sir Loke a plan, revise
 one field, restart, and ask what changed. He must preserve both versions and invent no entry thesis.
 
-## SL-09 — Monitor One Declared Invalidation
+## SL-09 — Explain And Monitor A Thesis Invalidation
 
-**Depends on:** SL-02 and SL-08.
-**Implement:** one approved, typed price condition supplied in the trader's plan; deterministic
-comparison using an admitted current observation, with missing/stale evidence suspending judgment.
-This is monitoring of a declared plan, not an autonomous entry strategy or complete options risk.
+**Depends on:** SL-02, SL-08, SL-16, and Markeitect's analytical trust decision.
+**Implement:** monitor one approved thesis-invalidation condition from the accepted setup/analysis
+against the trader's declared plan and current evidence. Explain supporting and opposing evidence,
+what materially changed, and the justified advisory response. A price threshold may be one input;
+a threshold reminder by itself does not establish analytical supervision. Missing/stale evidence
+suspends the affected judgment and must be stated.
 **Focused checks:** condition boundary, freshness, and one intervention per transition.
-**Markeitect live test:** declare a bounded paper-test condition, observe its live transition, and
-verify the warning cites the plan and triggering observation. If no transition occurs, do not pass.
+**Markeitect live test:** observe a bounded paper-test thesis transition and inspect why the
+assessment changed, its evidence, and the timely proposed response. Generic “are you sure?” prompts
+or repetition of the declared stop do not pass. If no relevant transition occurs, do not pass.
 
 ## SL-10 — Request And Record Acknowledgement
 
@@ -228,21 +394,20 @@ accepted candidate path. Preserve SPXW/QQQ separation without a globally preferr
 **Markeitect live test:** inspect one exact QQQ contract and compare with TWS; query SPXW again and
 verify neither product inherits the other's terms. Missing entitlements remain a task blocker.
 
-## SL-15 — Explain One Approved Deterministic Setup
+## SL-15 — Develop One Evidence-Backed Setup Assessment
 
-**Depends on:** SL-02; independent of broker tasks.
-**Implement:** one explicitly selected setup's necessary measurements and deterministic qualifying,
-conflicting, and invalidation evidence, shown by Sir Loke. Reuse existing calculations where valid;
-only the required measurement integration enters scope, with one canonical producer.
-**Decision before coding:** Markeitect selects the setup; the brief names its exact instruments,
-inputs, formula/indicator, parameters, warmup, trigger, and invalidation. This selection is still
-open. Do not treat “build market intelligence” as a task or invent a trading rule. If multiple
-missing calculations are required, create one named live task per calculation before this task.
-The [V3 reference](../reference/session-metrics-replacement-plan.md) supplies reuse constraints,
-not a requirement to finish every dormant owner or Visual Debug before this behavior can run.
-**Focused checks:** formula/threshold, warmup, missing/conflicting data, and input identity.
-**Markeitect live test:** ask why the setup is qualified, contradicted, or unavailable; compare
-its inputs and decision with the approved rule during live operation. Unseen states stay unaccepted.
+**Depends on:** IN-04 and the specific accepted intelligence needed by the selected setup.
+IN-08 is required when the setup uses competing scenarios; unrelated IN cards do not block it.
+**Implement:** qualifying, conflicting, trigger, invalidation, and expiry evidence for one concrete
+setup, exposed through Sir Loke. The agent proposes that setup from available evidence and the
+observed analytical gaps, explains its limitations, and owns the technical decomposition.
+Markeitect decides on the proposal; he is not expected to design the strategy or indicator list.
+Any missing analytical capability becomes a named IN task with its own live output and review.
+Selection of a setup is permission to evaluate that definition, not a claim of trading edge.
+**Focused checks:** rule boundaries, prospective evidence availability, and honest non-qualification.
+**Markeitect live test:** review a setup assessment before the outcome and compare its trigger,
+counterevidence, and invalidation with subsequent events. Include unsuccessful and non-qualifying
+cases in the bounded review; record what Sir Loke added and where his assessment was wrong or late.
 
 ## SL-16 — Recommend Or Abstain On A Qualified Expression
 
@@ -252,9 +417,12 @@ versioned evidence, conflicts, entry condition, invalidation, expiry, and approv
 or a named abstention. Support distinct opportunity identities; no fabricated facts or model-only
 eligibility. Approve the minimum evidence/risk contract before exposing recommendations.
 **Focused checks:** qualified and insufficient/conflicting cases, expiry, and plural candidates.
-**Markeitect live test:** ask for an assessment during the bounded session and compare it with the
-rule and contract evidence. A real qualified recommendation and a separate honest abstention are
-both required for full acceptance; no forced trade or changed threshold to manufacture either.
+**Markeitect live test:** record the assessment before its outcome, compare it with Markeitect's
+contemporaneous judgment when he chooses to record one, and review subsequent evidence. A real
+qualified recommendation and a separate honest abstention are both required for full acceptance;
+no forced trade or changed threshold to manufacture either. Record benefit, misses, and false
+confidence, not just whether the fields were populated. The analytical trust decision below uses
+these prospective observations; it is a separate Markeitect verdict, not automatic on task completion.
 
 ## SL-17 — Link And Monitor A Recommended Paper Trade
 
@@ -281,6 +449,28 @@ acknowledgement/cooldown, concurrent opportunities, restart, failure isolation, 
 Reuse accepted evidence for the same head/behavior where still applicable; test integration changes
 and missing cases. Markeitect alone decides whether the complete V1 product is accepted.
 
+## Analytical Trust Decision
+
+Before SL-09 through SL-11 guardian behavior, Markeitect must explicitly accept that Sir Loke's
+live analytical/trade assessments add enough value to justify supervising his decisions in a
+named scope. This is a product-usefulness decision from actual runs, not another offline proof
+program. Conversation delivery, a correct indicator, account visibility, or a firm tone cannot
+satisfy it. Factual broker notifications may work before it; guardian judgments may not.
+
+From the intelligence tasks onward, preserve a small prospective review record: what Sir Loke
+said before the outcome, its cited evidence and horizon, what later happened, what he missed or
+misread, and Markeitect's judgment of its incremental value. Compare useful discoveries,
+contradictions caught, timeliness, simultaneous coverage, uncertainty, and needless interruptions.
+Include failures and quiet/missed cases as well as successes; avoid selecting only convincing
+examples. Agree the bounded live review window and useful criteria in the task brief, then let
+Markeitect judge the results. Do not fabricate a universal score or a statistical superiority claim.
+
+The ambition is to surpass Markeitect's unaided trading judgment through capabilities that one
+human cannot sustain simultaneously. That ambition must be earned in live use. If the evidence
+is insufficient, continue the intelligence loop with a concrete improvement task; do not substitute
+acknowledgement and cooldown machinery for missing analytical competence. Acceptance is scoped
+and can be withdrawn if live behavior stops supporting it. No execution authority follows from it.
+
 ## Broker Safety Gate
 
 The former Gate 1 is now a dependency of SL-04 through SL-07 and broker-dependent behavior, not a blanket
@@ -299,8 +489,11 @@ or loss of the no-control audit stops the run. A negative result does not author
 ## Scope Of This Replan
 
 This sequence supersedes the former Gate 1–7 ordering and its prohibition on early bot/model
-implementation. It changes delivery dependencies, not the full Sir Loke product, provider ownership,
-no-execution rule, raw-data retention policy, or evidence standards. No broker, market, options,
-model, Discord, or persistence behavior becomes implemented or accepted by changing this document.
-Optional GEX, vendor flow, UI, optimization, and unrelated tooling remain in the
-[development backlog](development-backlog.md) until a named product task needs them.
+implementation. It retains the full Sir Loke experience and requires demonstrated analytical
+usefulness before guardian behavior. Provider ownership, the no-execution rule, raw-data retention
+policy, and evidence standards remain intact. No broker, market, options, model, Discord, or
+persistence behavior becomes implemented or accepted by changing this document.
+Additional intelligence methods and sources remain in the
+[development backlog](development-backlog.md) as candidates to promote through the intelligence
+loop, not capabilities deferred until after guardianship. UI, optimization, and unrelated tooling
+still require a concrete product need. No particular indicator list is the definition of intelligence.

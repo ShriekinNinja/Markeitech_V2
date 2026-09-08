@@ -108,8 +108,18 @@ perform another restricted action.
 ## Delivery And Live Acceptance
 
 - Follow `docs/roadmap/sir-loke-v1-delivery-plan.md`: one observable Sir Loke behavior per
-  reviewable implementation task, including its runnable integration. Dormant actors and offline
-  proofs alone do not complete a product task.
+  reviewable implementation task, including its runnable integration. After the first real bot
+  and current observations, prioritize stronger analytical observation and useful trade assessment.
+  Guardian behavior follows Markeitect's acceptance of that analytical value. Dormant actors,
+  offline proofs, price narration, and generic confirmation prompts do not establish it.
+- Own the intellectual work: propose the next useful analytical capability, inspect/research its
+  evidence and reusable implementation, and break it into a concrete live task. Do not ask
+  Markeitect to supply the indicator list or technical recipe. Use his live review to propose
+  additions, revisions, or retirement of capabilities. The intelligence backlog is open-ended;
+  do not defer it until after the guardian or require every possible capability before useful work.
+- For each intelligence task, state the market question, expected added insight, and a live
+  usefulness comparison alongside correctness checks. Markeitect judges timeliness, misses,
+  misleading conclusions, noise, and incremental value. Agents must not award that verdict.
 - Define the outcome, exact scope/exclusions, dependencies, unresolved decisions, focused checks,
   and Markeitect's live scenario in a short task brief. Do not expand it into generic architecture,
   optimization, tooling, or unrelated hardening without a concrete blocker and scoped decision.

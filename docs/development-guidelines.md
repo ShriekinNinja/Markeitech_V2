@@ -17,10 +17,12 @@ may inform an options decision without becoming the traded product. Options
 require distinct chain, expiry, strike, liquidity, and Greek semantics.
 
 The [Sir Loke delivery plan](roadmap/sir-loke-v1-delivery-plan.md) owns priority and dependencies.
-Start with an actual private Discord/model conversation over the existing runtime state, then
-extend that working companion through small reviewable tasks. Broker-observation safety gates
-broker-aware features, not independent conversation or market context. Existing foundation is
-reusable; disabled or unverified capabilities remain unavailable until their tasks are accepted.
+Start with an actual private Discord/model conversation over existing runtime state, then make
+that state analytically useful through the IN tasks and live feedback. Observation, computation,
+market/context comparisons, chronological memory, and competing scenarios develop the intended
+advantage over one operator's unaided attention. Guardian behavior follows Markeitect's explicit
+acceptance of useful analytical/trade assessments. Broker safety gates broker-aware features only.
+Existing foundation is reusable; disabled or unverified capabilities are not already available.
 
 Each implementation task must deliver one observable behavior and end with a live run performed
 and reviewed only by Markeitect. Provide the exact PR head, Python-owned start/stop commands,
@@ -94,6 +96,15 @@ analysis. They must remain observable and lower the confidence or fidelity of
 tick-sensitive aggression evidence.
 
 ## Analytics And Intelligence
+
+Agents propose the analytical capabilities and small tasks needed to answer the next material
+market question. Inspect existing code, investigate source/method uncertainty inside that task,
+and recommend concrete definitions/settings for approval. Markeitect is not expected to supply an
+indicator list or design the strategy. The capability set grows from live usefulness and blind
+spots; more indicators are not inherently progress. Each live review should assess what Sir Loke
+noticed, explained, missed, contradicted, or revised in time, as well as factual correctness.
+Store only the approved compact semantic/audit record needed for this current use. This is live
+product evaluation, not permission for raw-data retention, replay, backtesting, or model training.
 
 Analytics must be deterministic and transport-neutral. Console, Discord, a
 future gateway, and a future UI consume projections; they do not calculate
