@@ -72,6 +72,17 @@ _RESULT_TIMER = "operational-persistence-results"
 _READY_ALERT = "operational-persistence-ready"
 _READY_DELAY_NS = 1_000_000
 _STOP = object()
+_SIR_LOKE_AUDIT_PHASES = frozenset(
+    {
+        "REQUEST_ADMITTED",
+        "REQUEST_REJECTED",
+        "REQUEST_LIMITED",
+        "MODEL_COMPLETED",
+        "MODEL_FAILED",
+        "REPLY_DELIVERED",
+        "REPLY_DELIVERY_FAILED",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,6 +190,40 @@ class StoredOperationalEvent:
     ts_event_ns: int
     ts_init_ns: int
     schema_version: int
+
+
+@dataclass(frozen=True, slots=True)
+class SirLokeAuditEventRecord:
+    audit_event_id: UUID
+    run_id: UUID
+    conversation_id: UUID
+    turn_id: UUID
+    invocation_id: UUID | None
+    phase: str
+    content: Mapping[str, object] | None
+    metadata: Mapping[str, object]
+    occurred_at_ns: int
+    content_expires_at_ns: int
+    metadata_expires_at_ns: int
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.phase, str) or not self.phase.strip():
+            raise ValueError("phase must be a non-empty string")
+        object.__setattr__(self, "phase", self.phase.strip())
+        if self.phase not in _SIR_LOKE_AUDIT_PHASES:
+            raise ValueError(f"unsupported Sir Loke audit phase: {self.phase}")
+        if self.content is not None:
+            object.__setattr__(self, "content", MappingProxyType(dict(self.content)))
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+        if self.occurred_at_ns < 0:
+            raise ValueError("occurred_at_ns must be non-negative")
+        if self.content_expires_at_ns < self.occurred_at_ns:
+            raise ValueError("content expiry cannot precede occurrence")
+        if self.metadata_expires_at_ns < self.content_expires_at_ns:
+            raise ValueError("metadata expiry cannot precede content expiry")
+        if self.schema_version <= 0:
+            raise ValueError("schema_version must be positive")
 
 
 type PersistedRecord = HealthEventRecord | OperationalEventRecord
@@ -304,6 +349,107 @@ class OperationalStore:
                     self._write_health_event(cursor, record, recorded_at_ns)
                 else:
                     self._write_operational_event(cursor, record, recorded_at_ns)
+
+    def write_sir_loke_audit_event(self, record: SirLokeAuditEventRecord) -> None:
+        recorded_at_ns = time_ns()
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO sir_loke_audit_events (
+                    audit_event_id, run_id, conversation_id, turn_id, invocation_id,
+                    phase, content_json, metadata_json, occurred_at_ns, recorded_at_ns,
+                    content_expires_at_ns, metadata_expires_at_ns, schema_version
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (turn_id, phase) DO NOTHING
+                """,
+                (
+                    record.audit_event_id,
+                    record.run_id,
+                    record.conversation_id,
+                    record.turn_id,
+                    record.invocation_id,
+                    record.phase,
+                    Jsonb(dict(record.content)) if record.content is not None else None,
+                    Jsonb(dict(record.metadata)),
+                    record.occurred_at_ns,
+                    recorded_at_ns,
+                    record.content_expires_at_ns,
+                    record.metadata_expires_at_ns,
+                    record.schema_version,
+                ),
+            )
+            if cursor.rowcount == 1:
+                return
+            cursor.execute(
+                """
+                SELECT audit_event_id, run_id, conversation_id, invocation_id,
+                       content_json, metadata_json, occurred_at_ns,
+                       content_expires_at_ns, metadata_expires_at_ns, schema_version
+                FROM sir_loke_audit_events
+                WHERE turn_id = %s AND phase = %s
+                """,
+                (record.turn_id, record.phase),
+            )
+            existing = cursor.fetchone()
+            expected = (
+                record.audit_event_id,
+                record.run_id,
+                record.conversation_id,
+                record.invocation_id,
+                dict(record.content) if record.content is not None else None,
+                dict(record.metadata),
+                record.occurred_at_ns,
+                record.content_expires_at_ns,
+                record.metadata_expires_at_ns,
+                record.schema_version,
+            )
+            if existing != expected:
+                raise RuntimeError(
+                    f"Sir Loke audit identity collision: {record.turn_id}/{record.phase}"
+                )
+
+    def prune_sir_loke_audit(self, *, now_ns: int | None = None) -> tuple[int, int]:
+        boundary_ns = time_ns() if now_ns is None else now_ns
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE sir_loke_audit_events
+                SET content_json = NULL
+                WHERE content_json IS NOT NULL AND content_expires_at_ns <= %s
+                """,
+                (boundary_ns,),
+            )
+            redacted = cursor.rowcount
+            cursor.execute(
+                """
+                DELETE FROM sir_loke_audit_events
+                WHERE metadata_expires_at_ns <= %s
+                """,
+                (boundary_ns,),
+            )
+            deleted = cursor.rowcount
+        return redacted, deleted
+
+    def load_sir_loke_budget_usage(self, since_ns: int) -> tuple[int, float]:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT COUNT(*),
+                       COALESCE(
+                           SUM(
+                               (metadata_json ->> 'estimated_maximum_cost_usd')
+                               ::DOUBLE PRECISION
+                           ),
+                           0.0
+                       )
+                FROM sir_loke_audit_events
+                WHERE phase = 'REQUEST_ADMITTED' AND occurred_at_ns >= %s
+                """,
+                (since_ns,),
+            ).fetchone()
+        if row is None:
+            raise RuntimeError("Sir Loke budget query returned no row")
+        return int(row[0]), float(row[1])
 
     @staticmethod
     def _write_health_event(

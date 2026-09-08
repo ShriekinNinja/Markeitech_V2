@@ -138,16 +138,16 @@
       },
       {
         "boundary": "boundary.system",
-        "definition_line": 749,
+        "definition_line": 895,
         "id": "actor.operational-persistence",
         "implementation_ref": "src/markeitech/system/persistence.py:OperationalPersistenceActor",
         "kind": "markeitech_actor",
         "label": "Operational Persistence",
         "object_path": "markeitech.system.persistence.OperationalPersistenceActor",
-        "record_sha256": "daf77506dd9e6471cee46eb0198e0ffe847cb1d690cf64bbd32d62b30359af03",
+        "record_sha256": "9c16ae96cf36f38262f6cf1ce4e53679e0cb81e85f23b6c77222a92ef4ae62eb",
         "responsibilities": [],
         "source": "src/markeitech/system/persistence.py",
-        "source_sha256": "dd18d798090a59007d881eb8432d9cc0b9acf8083298bc65d138894a446b3f6a"
+        "source_sha256": "8a8570acf4574e924f67515f569de2b82ec41e48443f5440e9a115893017d19c"
       },
       {
         "boundary": "boundary.intelligence",
@@ -311,7 +311,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "b43a064f20da591c3c07d42932049c07c79a42f8b59d929eebb71a0ecd5930ae"
+    "source_snapshot_sha256": "68ac28a85b7cf2a589f5fc40b96c288c9f7e0d6fc344c56a0e13916a20f8489f"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -849,7 +849,7 @@
       {
         "alias": false,
         "canonical": "markeitech.cli.main",
-        "definition_line": 374,
+        "definition_line": 466,
         "exposed": "markeitech.cli.main",
         "has_docstring": true,
         "inclusion_reason": "Installed operator command entry point.",
@@ -3226,8 +3226,8 @@
   "schema_id": "markeitech-api-metadata-index",
   "schema_version": 2,
   "source_snapshot": {
-    "file_count": 94,
-    "input_signature": "b43a064f20da591c3c07d42932049c07c79a42f8b59d929eebb71a0ecd5930ae"
+    "file_count": 103,
+    "input_signature": "68ac28a85b7cf2a589f5fc40b96c288c9f7e0d6fc344c56a0e13916a20f8489f"
   },
-  "source_snapshot_sha256": "b43a064f20da591c3c07d42932049c07c79a42f8b59d929eebb71a0ecd5930ae"
+  "source_snapshot_sha256": "68ac28a85b7cf2a589f5fc40b96c288c9f7e0d6fc344c56a0e13916a20f8489f"
 }

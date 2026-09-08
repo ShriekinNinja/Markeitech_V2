@@ -21,6 +21,8 @@ from markeitech import cli
         ["system", "--help"],
         ["system", "build", "--help"],
         ["system", "run", "--help"],
+        ["sir-loke", "--help"],
+        ["sir-loke", "run", "--help"],
         ["docs", "--help"],
         ["diagrams", "--help"],
         ["verify", "--help"],
@@ -44,6 +46,7 @@ def test_help_is_available_at_every_command_level(
     [
         ["unknown"],
         ["system", "unknown"],
+        ["sir-loke", "unknown"],
         ["docs", "unknown"],
         ["diagrams", "unknown"],
         ["verify", "unknown"],
@@ -188,6 +191,86 @@ def test_system_run_forwards_owned_arguments(monkeypatch: pytest.MonkeyPatch) ->
             "I_UNDERSTAND_THIS_CONNECTS_TO_IB",
             "--keep-awake",
         ]
+    )
+
+
+def test_sir_loke_environment_admits_only_named_secrets(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "MARKEITECH_SIR_LOKE_DISCORD_BOT_TOKEN=discord-test\n"
+        "MARKEITECH_SIR_LOKE_OPENAI_API_KEY=openai-test\n"
+        "MARKEITECH_POSTGRES_DSN=postgres-test\n"
+        "MARKEITECH_IB_PASSWORD=must-not-pass\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("UNRELATED_SECRET", "must-not-pass")
+
+    environment = cli._sir_loke_environment(env_file)
+
+    assert environment["MARKEITECH_SIR_LOKE_DISCORD_BOT_TOKEN"] == "discord-test"
+    assert environment["MARKEITECH_SIR_LOKE_OPENAI_API_KEY"] == "openai-test"
+    assert environment["MARKEITECH_POSTGRES_DSN"] == "postgres-test"
+    assert "MARKEITECH_IB_PASSWORD" not in environment
+    assert "UNRELATED_SECRET" not in environment
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["sir-loke", "run"],
+        ["sir-loke", "run", "--connect", "wrong"],
+    ],
+)
+def test_sir_loke_run_requires_exact_connection_confirmation(
+    arguments: list[str],
+) -> None:
+    with pytest.raises(SystemExit) as exc:
+        cli.main(arguments)
+
+    assert exc.value.code == 2
+
+
+def test_sir_loke_run_uses_fixed_python_child_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[list[str], dict[str, object]]] = []
+    results = iter((0, 7))
+
+    def run_process(command: list[str], **values: object) -> int:
+        calls.append((command, values))
+        return next(results)
+
+    monkeypatch.setattr(cli, "_run_process", run_process)
+    monkeypatch.setattr(cli, "_sir_loke_environment", lambda _path: {"SAFE": "1"})
+
+    result = cli.main(
+        [
+            "sir-loke",
+            "run",
+            "--config",
+            "config/sir-loke.sl01.local.toml",
+            "--env-file",
+            ".env",
+            "--connect",
+            cli.SIR_LOKE_CONFIRMATION,
+        ]
+    )
+
+    assert result == 7
+    assert calls[0][0][0:2] == [sys.executable, "-P"]
+    assert calls[0][1]["environment"] == {"SAFE": "1"}
+    assert calls[1] == (
+        [
+            sys.executable,
+            "-P",
+            "-m",
+            "markeitech.sir_loke.cli",
+            "config/sir-loke.sl01.local.toml",
+        ],
+        {"environment": {"SAFE": "1"}},
     )
 
 

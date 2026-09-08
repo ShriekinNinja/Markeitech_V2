@@ -1,6 +1,7 @@
 # Sir Loke V1 Boundaries
 
-**Status:** Accepted future product architecture; not implemented
+**Status:** Accepted product architecture. SL-01 implements only the private capability-readiness
+conversation boundary and awaits connected acceptance; the remaining V1 topology is future work.
 
 The canonical user experience is defined in
 [`../product/sir-loke-v1.md`](../product/sir-loke-v1.md). This document owns the corresponding

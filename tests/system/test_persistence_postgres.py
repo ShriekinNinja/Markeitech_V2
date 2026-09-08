@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from time import time_ns
 from uuid import uuid4
 
 import pytest
@@ -10,6 +11,7 @@ from markeitech.system.persistence import (
     HealthEventRecord,
     OperationalEventRecord,
     OperationalStore,
+    SirLokeAuditEventRecord,
 )
 
 TEST_DSN_ENV = "MARKEITECH_TEST_POSTGRES_DSN"
@@ -132,6 +134,57 @@ def test_postgres_migrations_restart_reads_and_duplicate_event_write() -> None:
     restarted_store.close_run(run_id, "STOPPED", "integration test completed")
     closed_run = restarted_store.load_run(run_id)
     assert closed_run is not None and closed_run.terminal_state == "STOPPED"
+
+
+@pytest.mark.postgres
+@pytest.mark.skipif(not os.getenv(TEST_DSN_ENV), reason=f"{TEST_DSN_ENV} is not configured")
+def test_sir_loke_audit_is_idempotent_budgeted_and_retained() -> None:
+    store = OperationalStore(os.environ[TEST_DSN_ENV], connect_timeout_seconds=3)
+    store.initialize()
+    run_id = store.start_run("SIR-LOKE-POSTGRES-TEST")
+    turn_id = uuid4()
+    occurred_at_ns = time_ns()
+    record = SirLokeAuditEventRecord(
+        audit_event_id=uuid4(),
+        run_id=run_id,
+        conversation_id=uuid4(),
+        turn_id=turn_id,
+        invocation_id=uuid4(),
+        phase="REQUEST_ADMITTED",
+        content={"input": "What can you see?"},
+        metadata={"estimated_maximum_cost_usd": 0.0014},
+        occurred_at_ns=occurred_at_ns,
+        content_expires_at_ns=occurred_at_ns + 1,
+        metadata_expires_at_ns=occurred_at_ns + 2,
+    )
+
+    store.write_sir_loke_audit_event(record)
+    store.write_sir_loke_audit_event(record)
+    assert store.load_sir_loke_budget_usage(occurred_at_ns) == (
+        1,
+        pytest.approx(0.0014),
+    )
+    with pytest.raises(RuntimeError, match="identity collision"):
+        store.write_sir_loke_audit_event(
+            SirLokeAuditEventRecord(
+                audit_event_id=uuid4(),
+                run_id=run_id,
+                conversation_id=record.conversation_id,
+                turn_id=turn_id,
+                invocation_id=record.invocation_id,
+                phase="REQUEST_ADMITTED",
+                content={"input": "different"},
+                metadata={"estimated_maximum_cost_usd": 0.0014},
+                occurred_at_ns=occurred_at_ns,
+                content_expires_at_ns=occurred_at_ns + 1,
+                metadata_expires_at_ns=occurred_at_ns + 2,
+            )
+        )
+    redacted, _ = store.prune_sir_loke_audit(now_ns=occurred_at_ns + 1)
+    _, deleted = store.prune_sir_loke_audit(now_ns=occurred_at_ns + 2)
+    assert redacted >= 1
+    assert deleted >= 1
+    store.close_run(run_id, "STOPPED", "test complete")
 
 
 @pytest.mark.postgres
