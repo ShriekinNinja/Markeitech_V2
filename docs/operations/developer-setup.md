@@ -27,7 +27,7 @@ authority; transfer the required local items explicitly as described below.
 - PyCharm
 - `uv`
 - Python 3.13
-- TWS or IB Gateway configured for a user-owned paper account
+- TWS or IB Gateway configured for the user-selected account
 - user-owned market-data entitlements
 - user-owned Discord webhook
 
@@ -209,16 +209,10 @@ Do not replace explicit futures with continuous futures without a separate archi
 
 ## 3. Configure TWS Or IB Gateway
 
-Use paper trading and enable socket clients in read-only mode. Set the API port in the local system
-configuration to the actual TWS/Gateway port. Common defaults are:
-
-- paper TWS: `7497`
-- paper IB Gateway: `4002`
-- live TWS: `7496`
-- live IB Gateway: `4001`
-
-Markeitech's tracked example currently reflects the project's paper Gateway-style port. A custom
-TWS port is valid when TWS and `system.local.toml` agree.
+Log into the account/session selected by the trader and enable socket clients in read-only mode.
+Set the API port in local system configuration to the port actually configured in TWS/Gateway.
+The tracked example's `4002` value is only an example endpoint; replace it with the selected
+session's port when needed. Product behavior and acceptance do not depend on account mode.
 
 Configure TWS or IB Gateway to send instrument-specific API attributes in **instrument timezone**
 for the pinned Nautilus `2.0.0rc4` runtime. Its Rust `ibapi 3.3.0` dependency is unchanged; the
@@ -393,7 +387,7 @@ docker compose --env-file .env -f compose.yaml logs postgres
 
 ### IB cannot connect
 
-Confirm TWS/Gateway is logged into paper trading, socket clients are enabled, read-only API is on,
+Confirm TWS/Gateway is logged into the selected account, socket clients are enabled, read-only API is on,
 the configured host/port match, the client ID is unused, and the API is allowed from localhost.
 
 ### Instruments do not become ready

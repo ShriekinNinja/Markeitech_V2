@@ -93,6 +93,21 @@ not itself authorize external publication, implementation, approval, or merge.
    work waits for its prerequisite PR to merge unless Markeitect explicitly approves another
    arrangement. Branch/worktree deletion still requires separate approval.
 
+## Sir Loke Task Live Acceptance
+
+For the [Sir Loke delivery tasks](../roadmap/sir-loke-v1-delivery-plan.md), an implementation PR
+ends in `ready for Markeitect live test`. Supply the exact head, local setup, copy-paste Python
+start/stop commands, bounded scenario, expected results, stop conditions, and sanitized result
+location. Markeitect alone performs the live run and reviews its results before accepting the task
+and approving/merging the tested head. Agents may analyze results supplied for that purpose, but
+never substitute their verdict for his. CI, merge, and a published runbook do not close live
+acceptance. A new head requires renewed review and live checks of the affected behavior.
+
+Do not start dependent work before live acceptance and merge unless Markeitect explicitly changes
+that dependency. Keep fixes on the same PR. An unobserved market condition is `not exercised`, not
+passed. Keep its live acceptance open and do not use `Closes` for an issue with outstanding required
+scenarios. Documentation-only work, including the plan itself, needs review rather than a live run.
+
 ## PR Review Record
 
 Use `.github/pull_request_template.md`. Every PR must state:

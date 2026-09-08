@@ -16,20 +16,26 @@ the trade. Underlyings, indexes, futures, volatility, sectors, and other context
 may inform an options decision without becoming the traded product. Options
 require distinct chain, expiry, strike, liquidity, and Greek semantics.
 
-The current priority order is:
+The [Sir Loke delivery plan](roadmap/sir-loke-v1-delivery-plan.md) owns priority and dependencies.
+Start with an actual private Discord/model conversation over existing runtime state, then make
+that state analytically useful through the IN tasks and live feedback. Observation, computation,
+market/context comparisons, chronological memory, and competing scenarios develop the intended
+advantage over one operator's unaided attention. Guardian behavior follows Markeitect's explicit
+acceptance of useful analytical/trade assessments. Broker safety gates broker-aware features only.
+Existing foundation is reusable; disabled or unverified capabilities are not already available.
 
-1. prove safe read-only observation of Markeitect's paper-account TWS trades;
-2. define the canonical trade episode, recommendation linkage, advisory policy, and audit;
-3. provide an authenticated, failure-isolated two-way Discord bot;
-4. complete the minimum honest SPXW/QQQ evidence needed for recommendation or abstention;
-5. deliver Sir Loke's live recommendation, monitoring, mentoring, governance, and reporting loop;
-6. harden and extend deterministic intelligence according to demonstrated product needs;
-7. add a dashboard or broader user experience only when it supports an approved need; and
-8. consider execution only through a separately approved future risk and execution program.
+Each implementation task must deliver one observable behavior and end with a live run performed
+and reviewed only by Markeitect. Provide the exact PR head, Python-owned start/stop commands,
+minimal setup, bounded actions, expected results, stop conditions, and sanitized result location.
+Report `ready for Markeitect live test`; wait for his verdict before claiming acceptance. Keep
+fixes on the same PR and dependent work behind live acceptance and merge. A documentation-only
+change needs document review and does not justify an artificial connected run.
 
-Existing calendar, acquisition, evidence-health, persistence, measurement, and entity work remains
-reusable foundation. This priority change does not declare inactive or unverified capabilities
-live, and it does not authorize a language model to substitute for missing evidence.
+Write a short task brief, not a general architecture program. Include just the contracts,
+configuration, audit, integration, and failure handling needed by the task. Add tests for actual
+changed behavior and concrete risks, reuse fixtures, and run required CI. Broaden local checks
+only when the change or findings justify them. A test-count target, generic proof harness, dormant
+owner, optimization framework, or unrelated tooling improvement is not a product outcome.
 
 Replay and backtesting are outside current scope until Markeitect explicitly
 reopens them. Do not add storage or abstractions for that hypothetical path.
@@ -67,8 +73,9 @@ Broker account, order, fill, and position observation is distinct from market-da
 Evaluate NautilusTrader's native IB execution client, live reconciliation, cache, event, and report
 contracts before custom provider access. If native execution facilities are used to observe, place
 a narrow fact-only boundary in front of Sir Loke and expose no mutable order object or order action.
-The account environment, account alias/identity, broker/source identity, reconciliation origin,
-and exact order/fill/position identities must remain visible.
+The account alias/identity, broker/source identity, reconciliation origin, and exact order, fill,
+and position identities must remain visible. The trader selects the account; account mode does not
+change product behavior, add a schema field, or create a separate acceptance workflow.
 
 Only one component may own a subscription or canonical stream. Native IB access
 is allowed only for a capability Nautilus does not expose and must share the
@@ -90,6 +97,15 @@ analysis. They must remain observable and lower the confidence or fidelity of
 tick-sensitive aggression evidence.
 
 ## Analytics And Intelligence
+
+Agents propose the analytical capabilities and small tasks needed to answer the next material
+market question. Inspect existing code, investigate source/method uncertainty inside that task,
+and recommend concrete definitions/settings for approval. Markeitect is not expected to supply an
+indicator list or design the strategy. The capability set grows from live usefulness and blind
+spots; more indicators are not inherently progress. Each live review should assess what Sir Loke
+noticed, explained, missed, contradicted, or revised in time, as well as factual correctness.
+Store only the approved compact semantic/audit record needed for this current use. This is live
+product evaluation, not permission for raw-data retention, replay, backtesting, or model training.
 
 Analytics must be deterministic and transport-neutral. Console, Discord, a
 future gateway, and a future UI consume projections; they do not calculate
@@ -135,9 +151,10 @@ Do not hide a tunable market or operational decision in implementation code. Var
 windows, weights, instruments, sessions, budgets, limits, cadences, and selection rules must be
 typed, scoped, validated, versioned configuration with explicit defaults and units.
 
-Every optimization-eligible parameter must declare its authorized range, mutability boundary,
-source, effective time, and audit behavior. Runtime adjustment must use a typed, policy-checked
-intent with expiry and rollback semantics; models do not receive arbitrary configuration access.
+Startup-only parameters do not require optimization or runtime-adjustment machinery. When an
+approved task adds those behaviors, declare the authorized range, mutability boundary, source,
+effective time, and audit behavior. Runtime adjustment must use a typed, policy-checked intent
+with expiry and rollback semantics; models do not receive arbitrary configuration access.
 
 Keep true invariants in code: evidence honesty, schema and type integrity, source identity,
 authorization, audit, and execution prohibitions. The authoritative full rule is the

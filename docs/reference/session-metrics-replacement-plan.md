@@ -7,6 +7,16 @@ batch after the 2026-09-05 Sir Loke v1 direction reset. Resume only when a Sir L
 separate Markeitect decision authorizes it. Each implementation batch and connected run still
 requires its own explicit authorization.
 
+**Delivery precedence (2026-09-08):** The
+[Sir Loke live task plan](../roadmap/sir-loke-v1-delivery-plan.md) supersedes this reference's
+whole-program delivery order for product work. Do not automatically resume the next disabled
+owner or require all nine slices before a named Sir Loke behavior. Scope only the required
+measurement path in its task brief, including runnable integration and Markeitect's live test.
+The identity, one-writer, correctness, and no-dual-publication constraints below remain applicable;
+this delivery change does not authorize re-enabling faulty legacy actors. Any necessary change to
+an accepted cutover contract must be explicit in that task's reviewed brief. Unused owner families,
+full legacy retirement, and Visual Debug do not gate an independent Sir Loke task.
+
 **Planning branch:** `v3-03-session-metrics-split-plan`
 
 **Planning baseline:** `d417b55` (`Merge API docs metadata rendering`), which includes the

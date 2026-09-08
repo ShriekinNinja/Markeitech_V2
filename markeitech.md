@@ -1,11 +1,12 @@
 # Markeitech Project Charter
 
-Markeitech is a live-first market-intelligence and trading-discipline system built by Markeitect
-for discretionary index trading. Its first product experience is **Sir Loke**, a personal live
-trading companion, mentor, and configurable advisory governor. Markeitech turns reliable market,
-options, and broker-observation evidence into recommendations, trade monitoring, firm challenges,
-and inspectable after-trade reports for manual trading. It is not an HFT system and does not
-currently execute orders.
+Markeitech is a live-first market-intelligence system built by Markeitect for discretionary index
+trading. Its first product experience is **Sir Loke**, a live analytical trading companion whose
+ambition is to surpass Markeitect's unaided judgment through sustained observation, computation,
+memory, and simultaneous scenario coverage. Recommendations and eventual advisory guardianship
+must be earned through demonstrated analytical value. Markeitech develops reliable market,
+options, and broker evidence into assessments, recommendations, trade monitoring, informed
+challenges, and inspectable after-trade reports. It is not an HFT system and does not execute orders.
 
 This charter governs current product and engineering work. Historical source is recoverable
 through Git history but does not define current behavior.
@@ -36,10 +37,10 @@ through Git history but does not define current behavior.
   principle: "When you have eliminated the impossible, whatever remains, however improbable, must
   be the truth." Sir Loke must eliminate through cited evidence and deterministic policy, preserve
   unresolved uncertainty, and abstain when the remaining case is not sufficiently supported.
-- The first connected trade-observation acceptance uses an Interactive Brokers paper account
-  through Trader Workstation. Sir Loke's analytical and governance behavior is the same for paper
-  and live accounts, but every broker fact and report preserves account identity and environment.
-  Paper acceptance does not authorize or validate a live-money connection.
+- Markeitect selects the broker account and TWS session. Account mode does not change Sir Loke's
+  analysis, capabilities, governance, or acceptance process. Do not introduce account-mode flags,
+  schema discriminators, or separate approval gates. Preserve actual account identity and
+  observed broker facts so records from different accounts cannot be mixed.
 - Native provider observations, deterministic facts, semantic events, persistent
   entities, rolling state, broker-reported execution facts, trader statements, policy decisions,
   model outputs, AI interpretations, and execution authority remain separate boundaries.
@@ -56,6 +57,21 @@ signal derived from NQ, ES, SPX, volatility, or equity context may later inform
 an option contract without treating that option as the source of the underlying
 market thesis. Any future linkage must be explicit, versioned, and inspectable.
 
+## Incremental Product Delivery
+
+Deliver Sir Loke through the small live tasks in the
+[delivery plan](docs/roadmap/sir-loke-v1-delivery-plan.md). Start with a real private Discord/model
+conversation using actual available runtime state, then prioritize making that state analytically
+useful. Agents propose and implement small intelligence improvements from live observations and
+Markeitect's review; the complete capability set is not presumed known. Broker observation gates
+broker-aware features, while guardian interventions require Markeitect's explicit acceptance of
+Sir Loke's analytical value for the intended use. Intermediate capabilities state their limits
+and do not replace full V1 acceptance.
+Each implementation task includes runnable integration and ends with Markeitect alone performing
+the live test and reviewing its results. Agents prepare a concise exact-head run handoff and
+focused verification, then wait for his verdict. Architecture and testing serve that named task;
+unrelated generalization and tooling are deferred. The no-execution and evidence rules still apply.
+
 ## Engineering Invariants
 
 Use NautilusTrader extensively where its semantics fit. Markeitech may own
@@ -64,7 +80,7 @@ and operator projections when duplicating those concerns inside Nautilus would
 reduce clarity or correctness. Document meaningful ownership decisions.
 
 The live runtime is centered on a NautilusTrader `LiveNode`. The implemented Interactive Brokers
-connection remains manual, explicitly confirmed, paper, market-data-only, and read-only. The
+connection remains manual, explicitly confirmed, market-data-only, and read-only. The
 first-version product now requires a separately reviewed broker-observation path for account,
 order, fill, and position facts. Evaluate NautilusTrader's native execution client,
 reconciliation, cache, and events before custom IB access, while exposing no order action to Sir
@@ -84,7 +100,7 @@ Maintain these invariants:
 - no fixed one-active-instrument limit on granular observation
 - analytics independent of console, Discord, WebSocket, and UI transports
 - strategy or presentation failure must not stop ingestion
-- exact broker account/environment identity and honest reconciliation on every trade observation
+- exact broker account identity and honest reconciliation on every trade observation
 - no order-action contract reachable from the v1 agent, Discord, policy, or observation surfaces
 
 ## Configuration And Optimization Principle
@@ -108,10 +124,13 @@ parameter must define:
 - version and effective time so every result can identify the parameters which produced it; and
 - safe rejection, expiry, rollback, and audit behavior where runtime changes are allowed.
 
-Design optimization-ready interfaces even when the first implementation reads startup
-configuration only. Models and agents may propose or apply changes only through typed,
-policy-checked intents within authorized envelopes and resource budgets. They may not mutate
-arbitrary configuration, rewrite history, bypass validation, or silently change live behavior.
+Implement the parameter behavior needed by the current live task. Startup-only configuration
+needs explicit defaults, validation, scope, units, and version identity; it does not require an
+optimization engine, generic intent framework, or runtime-change lifecycle in advance. Add dynamic
+mutability or optimization only when an approved task needs it, retaining the applicable metadata
+above. Models and agents may propose or apply those changes only through typed, policy-checked
+intents within authorized envelopes and resource budgets. They may not mutate arbitrary
+configuration, rewrite history, bypass validation, or silently change live behavior.
 
 This principle does not make system truth negotiable. Schema integrity, type safety, evidence
 honesty, source identity, authorization boundaries, audit requirements, and the prohibition on

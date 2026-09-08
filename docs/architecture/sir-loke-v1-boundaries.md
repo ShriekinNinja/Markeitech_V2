@@ -23,7 +23,13 @@ deterministic advisory policy -------------------------------------------------+
 
 The four live paths—market/options evidence, broker observation, Sir Loke reasoning/policy, and
 Discord conversation—are independently healthy or degraded. One global connected state cannot
-stand in for their readiness.
+stand in for their readiness. They are delivered incrementally through the task plan: conversation
+may operate over current admitted runtime state while broker, options, and other capabilities are
+explicitly unavailable. The ownership table below is not a requirement to implement every owner
+before that first conversation. The live read model grows through the plan's intelligence tasks:
+admitted measurements and events, bounded chronological context, and explicitly labeled competing
+interpretations. An interpretation never becomes a canonical fact through model repetition.
+Each live behavior still requires its own bounded audit and applicable authority checks.
 
 ## Ownership
 
@@ -87,7 +93,7 @@ lifecycle results.
 Every executable request identifies, where applicable:
 
 - stable request, schema, requester, authority, purpose, and consumer identity;
-- instrument, exact contract, venue, account/environment, session, trade date, horizon,
+- instrument, exact contract, venue, account identity, session, trade date, horizon,
   resolution, or UTC bounds;
 - source/provider and required evidence fidelity;
 - requested cadence, depth, maximum observations, and option/strike bounds;
@@ -122,9 +128,9 @@ lifecycle, or broker observation.
 
 ## Broker Observation Boundary
 
-The first accepted environment is Markeitect's IB paper account through TWS. Every admitted fact
-retains a stable non-secret account identity or alias, explicit `paper` or `live` environment,
-broker/source identity, contract, order/fill/position identity, event and receive timestamps,
+Markeitect chooses the IB account and TWS session. Account mode is not a required field or a
+behavioral/acceptance branch. Every admitted fact retains a stable non-secret account identity or
+alias, broker/source identity, contract, order/fill/position identity, event and receive timestamps,
 revision, reconciliation origin, and partial/duplicate/conflict state.
 
 NautilusTrader's native execution/reconciliation facilities are evaluated first because they may
@@ -134,9 +140,9 @@ methods from downstream consumers.
 
 Manual TWS visibility is not assumed. Client ID `0`, `reqOpenOrders`, and `reqAutoOpenOrders` may
 bind manual orders for API control; binding a working exchange order can cancel/resubmit it and
-affect queue priority. Gate 1 therefore inspects the exact startup calls, request methods,
-configuration defaults, and native reconciliation behavior before any connection. The connected
-paper probe stops on any unexpected binding, control, resubmission, or order action.
+affect queue priority. The broker safety gate therefore inspects the exact startup calls, request
+methods, configuration defaults, and native reconciliation behavior before any connection. The
+connected observation probe stops on any unexpected binding, control, resubmission, or order action.
 
 ## Trade Episode And Recommendation Linkage
 
@@ -163,8 +169,12 @@ ask Markeitect for the missing thesis without delaying an urgent fact-based warn
 
 ## Advisory Governance
 
-Firmness is deterministic policy state, not tone. The first vocabulary supports observation,
-concern, warning, urgent invalidation, acknowledgement required, noncompliance recorded,
+Guardian behavior requires Markeitect's prior analytical trust decision for the intended use.
+Market/trade insight and a specific evidence-based reason must support intervention; factual
+broker visibility or repeated caution is insufficient. This is a product acceptance prerequisite,
+not a new component or authority to execute. Firmness is deterministic policy state, not tone.
+The first vocabulary supports observation, concern, warning, urgent invalidation, acknowledgement
+required, noncompliance recorded,
 Sir-Loke recommendation cooldown, and resolution. Exact triggers, risk inputs, time bounds,
 acknowledgement rules, recovery, and cooldown are versioned configuration requiring focused
 approval.
@@ -200,7 +210,9 @@ lifecycle, decision snapshots, delivery results, and reports.
 
 Credentials, raw market streams, unrestricted prompts, mutable broker objects, and secrets never
 enter the read model or audit. Exact schemas, transaction boundaries, retention, redaction,
-recovery, and deletion policy remain Gate 2 decisions.
+recovery, and deletion policy require approval in the first task that writes the corresponding
+records. The minimal conversation audit belongs in SL-01; it does not depend on implementing the
+full later trade-episode, policy, or report schemas.
 
 ## Structural Stop Gates
 
@@ -209,7 +221,7 @@ Stop the implementation batch if it would:
 - give Sir Loke or Discord access to an order action or mutable broker object;
 - create a second provider subscription owner, calendar owner, trade owner, or policy owner;
 - use prose/model output as canonical evidence or policy state;
-- collapse paper/live account identity or recommendation/trader provenance;
+- collapse distinct account identities or recommendation/trader provenance;
 - treat accepted work as completed evidence;
 - make optional GEX/options-flow/model evidence mandatory without approval;
 - persist raw provider observations for hypothetical replay/backtesting; or

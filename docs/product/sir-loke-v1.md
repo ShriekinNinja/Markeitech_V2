@@ -17,9 +17,15 @@ technical subjects.
 
 ## Product Outcome
 
-Markeitech addresses the mental part of discretionary day trading: fear, greed, FOMO, revenge
-trading, attachment to an earlier bias, fighting a trend, bag-holding, and reluctance to admit
-that a thesis has failed.
+Markeitech develops trading intelligence that can extend and ultimately surpass Markeitect's
+unaided market assessment. The intended advantage is continuous attention across markets and
+horizons, systematic computation and comparison, memory of evolving evidence, and simultaneous
+tracking of competing opportunities and explanations. These are product ambitions to demonstrate,
+not capabilities established by a fluent model response or an implementation checklist.
+
+That analytical competence is the basis for helping with fear, greed, FOMO, revenge trading,
+attachment to a bias, fighting a trend, bag-holding, and failure to recognize invalidation. Sir Loke
+must contribute informed judgment before claiming a guardian role in Markeitect's trading.
 
 **Sir Loke is the product's first visible experience.** He is a live trading companion, mentor,
 and configurable advisory governor backed by Markeitech's deterministic evidence system. The
@@ -31,6 +37,47 @@ The first version succeeds when it helps Markeitect make and maintain a delibera
 decision—not merely when it calculates another indicator or sends another health notification.
 Profit or one successful trade is useful outcome evidence but is not sufficient product
 validation.
+
+## Analytical Competence Before Guardianship
+
+A useful Sir Loke should notice material evidence Markeitect may miss, compare contexts he cannot
+watch simultaneously, remember what was believed before new information arrived, and challenge a
+thesis with specific supporting and opposing facts. He must revise his own interpretation and
+recognize when an opportunity has disappeared. The intended advantage grows through live use;
+it is not defined by a fixed list of indicators or by reproducing Markeitect's existing rules.
+
+Development therefore proceeds from a working conversational bot to stronger analytical
+observation and prospective trade assessment, then to accepted guardian behavior. Agents own the
+proposal, research, and task decomposition of the next useful capability. Markeitect supplies
+judgment and live feedback, not a complete analytical implementation specification. Relevant new
+methods and sources can enter through small reviewed tasks as blind spots become apparent.
+
+Before enabling guardian judgments, Markeitect must explicitly accept their analytical basis for
+the intended scope using prospective live observations and assessments. Review what Sir Loke added,
+what he missed or got wrong, how timely he was, and how much unnecessary interruption he caused.
+Include unsuccessful assessments and missed situations; successful anecdotes, factual reminders,
+correct formulas, and repetitive acknowledgement prompts do not establish useful trading judgment.
+A bounded acceptance is not proof of universal superiority or authorization to execute orders.
+
+The delivery plan's [intelligence loop](../roadmap/sir-loke-v1-delivery-plan.md#intelligence-development-loop)
+and [analytical trust decision](../roadmap/sir-loke-v1-delivery-plan.md#analytical-trust-decision)
+define the incremental work and Markeitect-owned verdict. The existing complete V1 acceptance
+below still applies, now with demonstrated analytical usefulness required for the guardian role.
+
+## Incremental Delivery
+
+The 2026-09-08 delivery decision retains the full V1 experience and requires analytical usefulness
+before guardianship. Implement it through small runnable Sir Loke tasks, starting with real
+private Discord/model conversation grounded in actual available runtime state, then improving
+that state into strong analytical observation. An early task may truthfully report
+broker observation, recommendations, or monitoring unavailable while their own tasks remain open.
+Broker safety proof gates broker-aware behavior, not independent conversation. Do not claim such
+an increment is the complete V1 release or fabricate evidence to make it look complete.
+
+Each implementation task ends with a live run that Markeitect alone performs and reviews. The
+agent supplies the runnable PR head, exact commands, scenario, expected results, and result
+location, and leaves the task ready for his test. The
+[delivery plan](../roadmap/sir-loke-v1-delivery-plan.md) owns task dependencies and acceptance state.
 
 ## First-Version Scope
 
@@ -135,7 +182,7 @@ Every episode preserves:
 - later evidence, interpretations, recommendations, interventions, and trader responses without
   silently replacing earlier records;
 - partial, conflicting, duplicated, late, reconciled, and unknown broker state explicitly; and
-- paper/live account environment on every admitted broker fact and derived episode record.
+- exact account identity on every admitted broker fact and derived episode record.
 
 A later opportunity must qualify independently. Sir Loke may help restore composure after a loss,
 but it must never frame a new trade as a way to win back money, repair confidence, or complete a
@@ -143,7 +190,10 @@ recovery sequence.
 
 ## Governance And Firmness
 
-First-version governance is forceful but advisory. Firmness is an explicit deterministic policy
+First-version governance is forceful but advisory and follows acceptance of Sir Loke's analytical
+competence for the intended use. An intervention must explain the material evidence or policy
+condition, its significance for the thesis/risk, and the justified advisory response. A generic
+“are you sure?” prompt is not a guardian capability. Firmness is an explicit deterministic policy
 state, not merely an aggressive tone generated by the model.
 
 The first policy vocabulary must be able to represent at least:
@@ -189,25 +239,16 @@ future existence does not place an order-action contract or dormant tool in v1.
 
 ## Broker Observation
 
-### First acceptance environment
+### Trader-Selected Account
 
-The first connected acceptance uses an **Interactive Brokers paper account through TWS**.
+Markeitect selects the Interactive Brokers account and TWS session. Sir Loke applies one analytical,
+recommendation, monitoring, governance, and acceptance process without classifying account mode.
+No account-mode field, separate release gate, or mode-specific behavior is required.
 
-Sir Loke applies the same analytical standards, mentoring behavior, firmness policy, and evidence
-requirements to paper and live accounts. Paper mode does not make the analysis casual; live mode
-does not manufacture certainty.
-
-Account environment remains mandatory evidence. Broker facts must carry a non-secret stable
-account identity or alias and an explicit `paper` or `live` environment so that:
-
-- different accounts cannot be joined accidentally;
-- paper outcomes cannot be reported as live performance;
-- connection to the wrong TWS instance becomes visible;
-- reconnect and reconciliation remain attributable; and
-- later live enablement has an explicit acceptance envelope.
-
-A successful paper run does not silently authorize or validate a live-account connection. The
-product behavior may be environment-neutral, but connected acceptance is environment-specific.
+Every broker fact retains its non-secret stable account identity or alias, source, contract, and
+observation time. This prevents accidental joins across accounts and makes reconnect/reconciliation
+attributable. Eligibility depends on actual available evidence and permissions. The trader owns
+account selection; Markeitech remains advisory and receives no order-action authority.
 
 ### Read-only product boundary
 
@@ -227,7 +268,7 @@ observation. The observation boundary therefore requires defense in depth:
 - a sanitized typed broker-observation output containing facts, not mutable broker handles;
 - static and adversarial tests proving agent and transport surfaces cannot reach order methods;
 - explicit TWS/API settings and client identity;
-- paper-first connected acceptance; and
+- Markeitect-owned connected acceptance; and
 - audit of every admitted broker event, reconciliation, omission, conflict, and failure.
 
 Exact visibility of manually entered TWS orders under a safe client-ID and read-only configuration
@@ -287,7 +328,7 @@ The product requires four independently observable and failure-isolated live pat
 1. **Market and options evidence:** freshness-qualified facts sufficient to recommend or abstain on
    the approved first expressions.
 2. **Broker observation:** timely account/order/fill/position/closure facts from the accepted
-   paper-through-TWS path.
+   TWS observation path.
 3. **Sir Loke reasoning and policy:** compact read model, conversation state, bounded typed tools
    with explicit side-effect classes, citations, abstention, intervention, and audit.
 4. **Discord conversation:** authenticated inbound dialogue and bounded outbound replies/proactive
@@ -299,23 +340,23 @@ the required path is unusable.
 
 ## End-To-End Acceptance
 
-The first usable release is accepted only when deterministic fixtures and separately authorized
-connected paper evidence demonstrate all of the following:
+The first usable release requires Markeitect's analytical trust decision as well as deterministic
+fixtures and his connected evidence demonstrating all of the following:
 
 1. Sir Loke enters the private Discord context and reports the actual readiness of market,
    options, broker-observation, agent, Discord, and audit dependencies.
 2. Markeitect can ask for current context and receives an evidence-qualified response.
 3. In a qualified-evidence scenario, Sir Loke proactively publishes one genuinely supported SPXW
-   or QQQ 0DTE recommendation. A corresponding manually entered TWS paper trade is detected and
+   or QQQ 0DTE recommendation. A corresponding manually entered TWS trade is detected and
    linked only when its identity supports the link.
 4. In a separate insufficient/conflicting-evidence scenario, Sir Loke names the limitation and
    abstains without inventing a recommendation or recommendation linkage.
-5. In a separate independent-trade scenario, a trader-originated TWS paper trade is detected,
+5. In a separate independent-trade scenario, a trader-originated TWS trade is detected,
    acknowledged, analyzed, and monitored without an invented earlier recommendation or thesis.
 6. A system which always abstains fails the qualified-evidence scenario; a system which always
    recommends fails the insufficient-evidence scenario.
 7. Partial fills, scale changes, cancel/replace behavior, manual closure, duplicate delivery, and
-   reconnect/reconciliation preserve the correct trade episode and account environment.
+   reconnect/reconciliation preserve the correct trade episode and account identity.
 8. A controlled material contradiction or invalidation produces the configured firm warning and
    acknowledgement behavior within its configured timing envelope.
 9. Sir Loke preserves the original thesis and later revisions, and it records the trader's
@@ -326,7 +367,7 @@ connected paper evidence demonstrate all of the following:
     order, and no such action is attempted during acceptance.
 12. A failure of Discord, the model, an optional analysis, or one instrument remains contained and
     does not corrupt broker state, market truth, unrelated capabilities, or durable audit.
-13. The acceptance record states its exact account environment, contracts, sessions, configuration,
+13. The acceptance record states its exact account identity, contracts, sessions, configuration,
     versions, timestamps, evidence gaps, and unsupported generalizations.
 
 ## Explicitly Deferred
@@ -338,8 +379,7 @@ connected paper evidence demonstrate all of the following:
 - unconstrained dynamic instrument or capability expansion;
 - model training or autonomous optimization;
 - permanent support for every instrument, session, strategy, or trading style;
-- raw market-data or full-chain retention merely for hypothetical future use; and
-- any claim that v1 is validated for a live-money account.
+- raw market-data or full-chain retention merely for hypothetical future use.
 
 ## Decisions Still Requiring Focused Approval
 

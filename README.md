@@ -14,7 +14,7 @@ mentor, and configurable advisory governor backed by deterministic market, optio
 and audit evidence. The current V2 runtime is the read-only NautilusTrader foundation for that
 product.
 
-Sir Loke v1 will recommend qualified SPXW/QQQ 0DTE trades, observe paper-account trades entered
+Sir Loke v1 will recommend qualified SPXW/QQQ 0DTE trades, observe trades entered
 through TWS, monitor their thesis and evidence, challenge the trader firmly, and produce after-trade
 reports. That experience is accepted product direction but is not implemented yet. The runtime
 does not place orders; automated execution is intentionally absent.
@@ -32,7 +32,7 @@ does not place orders; automated execution is intentionally absent.
 
 The implemented foundation includes:
 
-- NautilusTrader `2.0.0rc4` with a guarded Interactive Brokers paper-data connection
+- NautilusTrader `2.0.0rc4` with a guarded Interactive Brokers market-data connection
   (the upgrade is merged and offline-verified; earlier connected evidence does not automatically
   establish rc4 provider behavior);
 - actor-owned system control, static watchlist, and shared native acquisition;
@@ -60,7 +60,7 @@ The supported local path is:
 - Python 3.13 managed by [uv](https://docs.astral.sh/uv/);
 - Docker Desktop with Docker Compose;
 - PyCharm as an optional convenience over the authoritative terminal CLI;
-- TWS or IB Gateway connected to the user's own paper account; and
+- TWS or IB Gateway connected to the user's chosen account; and
 - the user's own market-data entitlements and Discord webhook.
 
 Node.js is not part of the current runtime setup.
