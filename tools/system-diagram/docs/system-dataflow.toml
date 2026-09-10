@@ -6,13 +6,13 @@ description = "Offline reviewed representation of current, conditional, external
 scope = "Repository architecture documentation only; never runtime configuration or live state."
 authority = "architecture_representation_only"
 not_runtime_configuration = true
-checkout_commit = "a382f2e0636cdb3148b451e3e0e8239a684438e5"
+checkout_commit = "af25f09ae80403b0f5421157cfc54cc85a8e5d6c"
 owner = "Markeitect"
 review_status = "proposed"
-architecture_effective_at = "2026-08-31"
+architecture_effective_at = "2026-09-10"
 generator_contract_version = 1
 default_profile = "profile.example"
-limitations = ["Static source and configuration checks cannot prove connected runtime behavior.", "Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.", "Generated artifacts are documentation projections and must never be edited or treated as authority.", "Markeitech is read-only and advisory; no current order submission or execution exists."]
+limitations = ["Static source and configuration checks cannot prove connected runtime behavior.", "Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.", "Generated artifacts are documentation projections and must never be edited or treated as authority.", "An optional native execution-client connection is implemented but disabled in tracked profiles; no application order commands exist."]
 
 [[evidence]]
 id = "evidence.current-status"
@@ -44,15 +44,15 @@ id = "evidence.node"
 evidence_class = "source"
 source_path = "src/markeitech/system/node.py"
 source_symbol = "build_system_node"
-observed_at = "2026-08-30"
-proves = ["LiveNode and native engine boundary", "IB data-client registration"]
+observed_at = "2026-09-10"
+proves = ["LiveNode and native engine boundary", "IB data-client registration", "conditional IB execution-client and risk configuration"]
 limitations = ["Static construction does not prove a successful provider connection."]
 
 [[evidence]]
 id = "evidence.profile"
 evidence_class = "configuration"
 source_path = "config/system.example.toml"
-observed_at = "2026-08-30"
+observed_at = "2026-09-10"
 proves = ["named active-profile enablement", "configuration conditions"]
 limitations = ["Requested realtime mode does not prove received realtime data."]
 
@@ -159,8 +159,8 @@ limitations = ["Accepted architecture does not prove current composition or runt
 [[profiles]]
 id = "profile.example"
 config_path = "config/system.example.toml"
-config_schema_version = 26
-content_sha256 = "62c28f21b559443baa201b6e6d4432d082d1c33ad6213220fb327e8c4fc0ef7a"
+config_schema_version = 27
+content_sha256 = "124f99e44f74dea5d3a442f0436d8d3d6864cf565690910a943dbf3be33a0fd9"
 status = "tracked_active_review_profile"
 limitations = ["Represents the named tracked profile, not all available capabilities or a connected runtime observation."]
 evidence = ["evidence.profile"]
@@ -176,8 +176,8 @@ limitations = ["Connected boot and host measurement require Markeitect live acce
 [[profiles]]
 id = "profile.operational"
 config_path = "config/system.operational.toml"
-config_schema_version = 26
-content_sha256 = "f58c1f50722b5bfd653f6b5c6457c82bed816b735fe6d83038167fcbf25da628"
+config_schema_version = 27
+content_sha256 = "35787d99e8e87a5b189c735232c913d3bf503f41f074c2792ae1e9d14561540f"
 status = "tracked_operational_review_profile"
 limitations = ["Zero instrument loads and demands; IB, Discord and persistence remain configured.", "Not live-accepted; no runtime instrument addition."]
 evidence = ["evidence.operational-boot"]
@@ -612,7 +612,7 @@ label = "Nautilus LiveNode"
 kind = "framework"
 logical_area = "system and infrastructure"
 boundary = "boundary.nautilus"
-responsibilities = ["Own native engines, actor composition, lifecycle, and data-client registration."]
+responsibilities = ["Own native engines, actor composition, lifecycle, data-client registration, and optional execution-client registration with native risk configuration."]
 semantic_owner = "component.live-node"
 mutation_owner = "none_current"
 transport_owner = "none_current"
@@ -690,7 +690,7 @@ label = "Interactive Brokers / TWS / Gateway"
 kind = "provider"
 logical_area = "data acquisition"
 boundary = "boundary.providers"
-responsibilities = ["External market-data capability boundary."]
+responsibilities = ["External market-data and optional native execution-connectivity boundary."]
 semantic_owner = "provider.interactive-brokers"
 mutation_owner = "none_current"
 transport_owner = "none_current"
@@ -3351,3 +3351,27 @@ required = true
 style = "style.edge.data"
 evidence = ["evidence.dashboard-operation"]
 limitations = ["Queue admission is not confirmed external delivery.", "Disabled Discord does not receive notifications."]
+
+[[capabilities]]
+id = "capability.live-node.ib-execution-example"
+component = "component.live-node"
+label = "Optional IB execution client and native risk configuration"
+implementation_state = "implemented"
+composition_policy = "conditional"
+configuration_path = "ib_execution.enabled"
+profile = "profile.example"
+enablement = "disabled"
+evidence = ["evidence.node", "evidence.profile"]
+limitations = ["No strategy or application order-command interface is registered.", "Native startup, account delivery, reconciliation, and shutdown have not been tested while connected."]
+
+[[capabilities]]
+id = "capability.live-node.ib-execution-operational"
+component = "component.live-node"
+label = "Optional IB execution client and native risk configuration"
+implementation_state = "implemented"
+composition_policy = "conditional"
+configuration_path = "ib_execution.enabled"
+profile = "profile.operational"
+enablement = "disabled"
+evidence = ["evidence.node", "evidence.profile"]
+limitations = ["No strategy or application order-command interface is registered.", "Native startup, account delivery, reconciliation, and shutdown have not been tested while connected."]

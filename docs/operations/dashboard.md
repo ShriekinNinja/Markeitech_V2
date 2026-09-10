@@ -30,10 +30,10 @@ available. A disabled watchlist produces an empty dashboard.
 
 ## Configuration and migration
 
-The system configuration schema is **26**. Dashboard policy is version **1**. Copy the commented
+The system configuration schema is **27**. Dashboard policy is version **1**. Copy the commented
 `[dashboard]` section from `config/system.example.toml` into your existing ignored local profile,
-preserving its machine/provider settings. For a schema-25 profile the only required migration is
-setting `schema_version = 26`; the section is optional and omission disables the dashboard.
+preserving its machine/provider settings. For schema-25/26 profiles, add `[ib_execution]` and `[risk_engine]` from the tracked example
+and set `schema_version = 27`. The dashboard section is optional; omission disables it.
 For older profiles, first follow [developer setup](developer-setup.md). Local files are never
 migrated automatically.
 

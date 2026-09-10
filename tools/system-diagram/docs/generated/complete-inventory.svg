@@ -11,8 +11,8 @@
 <polygon fill="#0b1118" stroke="none" points="-25.2,25.2 -25.2,-1333.71 3143.2,-1333.71 3143.2,25.2 -25.2,25.2"/>
 <text xml:space="preserve" text-anchor="start" x="10" y="-1284.51" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="20.00" fill="#f2f6fa">Complete Component and Capability Inventory</text>
 <text xml:space="preserve" text-anchor="start" x="10" y="-1268.06" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#ffc1bb">OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION</text>
-<text xml:space="preserve" text-anchor="start" x="10" y="-1253.26" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#c7d2dd">PROFILE: profile.example · REVIEW: PROPOSED · MANIFEST SCHEMA: 1 · COMPONENTS: 28 · CAPABILITIES: 5 · FLOWS: 0</text>
-<text xml:space="preserve" text-anchor="start" x="10" y="-1238.76" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: a382f2e0636cdb3148b451e3e0e8239a684438e5</text>
+<text xml:space="preserve" text-anchor="start" x="10" y="-1253.26" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#c7d2dd">PROFILE: profile.example · REVIEW: PROPOSED · MANIFEST SCHEMA: 1 · COMPONENTS: 28 · CAPABILITIES: 7 · FLOWS: 0</text>
+<text xml:space="preserve" text-anchor="start" x="10" y="-1238.76" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: af25f09ae80403b0f5421157cfc54cc85a8e5d6c</text>
 <polygon fill="#164c3e" stroke="none" points="18,-1206.76 18,-1224.51 107.65,-1224.51 107.65,-1206.76 18,-1206.76"/>
 <polygon fill="none" stroke="#78a9f5" points="18,-1206.76 18,-1224.51 107.65,-1224.51 107.65,-1206.76 18,-1206.76"/>
 <text xml:space="preserve" text-anchor="start" x="40.7" y="-1212.96" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#eef5ff">ENABLED</text>

@@ -11,8 +11,8 @@
 <polygon fill="#0b1118" stroke="none" points="-25.2,25.2 -25.2,-2136.95 2835.88,-2136.95 2835.88,25.2 -25.2,25.2"/>
 <text xml:space="preserve" text-anchor="start" x="10" y="-2087.75" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="20.00" fill="#f2f6fa">Current Example Runtime Topology</text>
 <text xml:space="preserve" text-anchor="start" x="10" y="-2071.3" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#ffc1bb">OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION</text>
-<text xml:space="preserve" text-anchor="start" x="10" y="-2056.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#c7d2dd">PROFILE: profile.example · REVIEW: PROPOSED · MANIFEST SCHEMA: 1 · COMPONENTS: 25 · CAPABILITIES: 5 · FLOWS: 38</text>
-<text xml:space="preserve" text-anchor="start" x="10" y="-2042" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: a382f2e0636cdb3148b451e3e0e8239a684438e5</text>
+<text xml:space="preserve" text-anchor="start" x="10" y="-2056.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#c7d2dd">PROFILE: profile.example · REVIEW: PROPOSED · MANIFEST SCHEMA: 1 · COMPONENTS: 25 · CAPABILITIES: 7 · FLOWS: 38</text>
+<text xml:space="preserve" text-anchor="start" x="10" y="-2042" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: af25f09ae80403b0f5421157cfc54cc85a8e5d6c</text>
 <polygon fill="#164c3e" stroke="none" points="18,-2010 18,-2027.75 70.25,-2027.75 70.25,-2010 18,-2010"/>
 <polygon fill="none" stroke="#78a9f5" points="18,-2010 18,-2027.75 70.25,-2027.75 70.25,-2010 18,-2010"/>
 <text xml:space="preserve" text-anchor="start" x="22" y="-2016.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#eef5ff">ENABLED</text>

@@ -9,8 +9,9 @@ native lifecycle and connected acceptance not run
 
 This reference records the bounded Gate 1A evidence for evaluating NautilusTrader's native
 Interactive Brokers execution path as a possible future source of broker observations. It is not
-a production design or an activation record. Markeitech still composes only the IB data client and
-has no broker-observation owner, execution client, trade lifecycle, or order-action path.
+a production design or an activation record. At that baseline Markeitech composed only the IB data client. The later optional execution-client
+connection POC supersedes that composition restriction; see
+[current status](../current-status.md). The historical construction evidence below is unchanged.
 
 The candidate API connection is `client_id=1`. Markeitect reports that TWS has Master API Client
 ID `1`; that user-owned setting was not inspected. The connection ID and the TWS Master setting
@@ -26,7 +27,7 @@ Gate 1A supports continuing evaluation of the native adapter; it does not suppor
 | Native client-1 compiled construction | **VERIFIED OFFLINE** on the recorded macOS arm64 wheel |
 | Native client-0 construction | **REJECTED BY PINNED CONSTRUCTOR**, specifically because `0` is a multiple of 1000 |
 | Named source inventory | **INSPECTED** for the files and regions listed below |
-| Current production composition | **VERIFIED DATA-ONLY** by an AST-based regression guard |
+| Recorded production composition | **VERIFIED DATA-ONLY AT THE RECORDED BASELINE**; later superseded by optional native-client registration |
 | Native startup or lifecycle | **NOT RUN** |
 | Native network egress isolation | **NOT ESTABLISHED** |
 | Runtime no-binding/no-order-action behavior | **NOT ESTABLISHED** |

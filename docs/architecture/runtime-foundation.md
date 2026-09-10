@@ -12,9 +12,9 @@ the original decision chronology.
 
 Markeitech is one local, event-driven NautilusTrader `LiveNode` with code-owned actor composition,
 native market-data delivery, bounded background workers for blocking side effects, and PostgreSQL
-operational audit. The runtime is advisory and currently market-data-only. It has no broker
-account/order/fill/position observer, conversational Discord bot, model, Sir Loke component, or
-order-action path.
+operational audit. The tracked profiles register market data only by default. An optional native
+IB execution client can be enabled for a connection POC; it adds no application broker observer,
+strategy, or order-command interface. Connected execution-client behavior remains unaccepted.
 
 The foundation follows five rules:
 
@@ -35,6 +35,15 @@ The foundation follows five rules:
 select approved optional components and their configuration, but it cannot name arbitrary Python
 imports or construct a plugin graph. `node.py` builds the Nautilus clients and registers the
 validated plan; it does not redefine component ownership.
+
+System schema 27 adds `[ib_execution]` (`enabled`, `client_id`, `account_id`) and
+`[risk_engine]` (`bypass`). Both tracked profiles disable execution. Enabling it requires an
+explicit account and a distinct API client ID. The client shares `[ib]` endpoint, timeouts, and
+instrument-provider settings. The node registers `InteractiveBrokersExecutionClientFactory` as
+`IB_EXECUTION` and applies `LiveRiskEngineConfig` only when enabled; all other native settings
+retain their installed defaults. The existing node lifecycle connects and shuts down the client.
+Native startup may request account/execution state; this is not an application observation model
+or an order-entry feature. No actor, database schema, persistence owner, or recovery policy is added.
 
 The active V3 ES profile is intentionally narrow. Its exact actor roster is maintained in
 [`current-status.md`](../current-status.md#active-tracked-v3-profile). Other implemented actors and
