@@ -17,8 +17,8 @@
     },
     {
       "path": "api/intelligence/index.html",
-      "sha256": "3389cdc5a4a1c2a6397a0dff8a88a974f28fd1a0241f2d0910497910fa5b8632",
-      "size_bytes": 245206
+      "sha256": "b5200b032b76032e716b633f3684b4b9099aab7a568660334ca6ce1a219bad31",
+      "size_bytes": 80083
     },
     {
       "path": "api/system/index.html",
@@ -27,13 +27,13 @@
     },
     {
       "path": "architecture-components/index.html",
-      "sha256": "3630a943de4297f7b591efe78aaf1dddcf9f7c034e16b2acc05bda2b5a9aff10",
-      "size_bytes": 64902
+      "sha256": "14337a57df0fce71204590285c93be1c22cee79da5b0a7b51209da60a3bf6620",
+      "size_bytes": 42463
     },
     {
       "path": "architecture-components-index.json",
-      "sha256": "c82fadff64acb7a18870a9ba95cdd8524879a4395519b9ea8d7057b793786b29",
-      "size_bytes": 16055
+      "sha256": "944019242f8a74e01d7cb0d0531770e0217215303506432a169d3bd2824f0cec",
+      "size_bytes": 9335
     },
     {
       "path": "assets/_mkdocstrings.css",
@@ -262,18 +262,18 @@
     },
     {
       "path": "metadata-index.json",
-      "sha256": "559641c02e44c9d94fd7328a7777a0cc4c3d8bc6c6f24d30d5035cdc8c7fb7c5",
-      "size_bytes": 141969
+      "sha256": "62104817b1a300b09cdc193c4ed91113c191a3c1272668c93fedebbc24a0b833",
+      "size_bytes": 56248
     },
     {
       "path": "objects.inv",
-      "sha256": "0491d57c993e80e4d88893e55389abd046537a304fa9d4892391a89eb7cd1221",
-      "size_bytes": 5846
+      "sha256": "188ac557544a478dd04f3ed4ed9c5ef5f27507d18a1e57b8a6f56741051f9a55",
+      "size_bytes": 2644
     },
     {
       "path": "search/search_index.json",
-      "sha256": "1667bddeef97af35534cbbd5cfd9b009652ccb41cacf661c4003de17a99a2a38",
-      "size_bytes": 138232
+      "sha256": "ead53be5624e8c6e4da1b3fbe94a9fca9d66be76ba8cef5a485d0731af5f826c",
+      "size_bytes": 67749
     },
     {
       "path": "sitemap.xml",
@@ -298,7 +298,7 @@
   "python_series": "3.13",
   "schema_id": "markeitech-api-docs-artifact-index",
   "schema_version": 3,
-  "source_signature": "ded26ecfdef7a2fb988ed9bc1fa4f0bd35c5d9a0a5a6449d6e25630dbc7c2e28",
+  "source_signature": "7491bb48e56fe2046dbe59514afcbb114212e7a6944fbfe15e8b7057c2f7061c",
   "tool_version": "0.1.0",
   "tool_versions": {
     "griffe": "2.2.0",
