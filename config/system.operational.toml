@@ -4,7 +4,7 @@
 # INACTIVE marks disabled capabilities; IDLE marks settings with no work in this empty profile.
 # Customize host/port/client ID and resource thresholds in an ignored local copy.
 # Live acceptance belongs to Markeitect; this profile does not prove connectivity or data fitness.
-schema_version = 26
+schema_version = 27
 
 # BOOTSTRAP: node and SystemControlActor identity (actor 1 has no separate settings).
 [runtime]
@@ -13,6 +13,15 @@ trader_id = "MARKEITECH-001"
 environment = "live"
 
 # BOOTSTRAP: native node logging.
+[ib_execution]
+# Optional native execution-client connection; uses the shared [ib] endpoint/provider settings.
+enabled = false
+client_id = 42
+account_id = "" # Set an explicit account in your ignored local config before enabling.
+
+[risk_engine]
+bypass = false
+
 [logging]
 directory = "../data/logs"
 file_name = "markeitech-operational.log"

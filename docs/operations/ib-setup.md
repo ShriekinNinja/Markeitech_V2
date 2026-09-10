@@ -163,8 +163,40 @@ Inspect:
 Provider observations remain transient. PostgreSQL stores operational intent, status, health,
 request, retry, transition, and outcome evidence rather than raw quotes, trades, or bars.
 
-This run does not observe the account's orders, fills, positions, or P&L. A successful
-market-data run is not evidence that Sir Loke can detect a manually entered TWS trade.
+With execution disabled, this run does not observe the account's orders, fills, positions, or P&L.
+A successful market-data run is not evidence that Sir Loke can detect a manually entered TWS trade.
+
+## Optional Native Execution-Client Connection POC
+
+System schema 27 adds these required sections to both tracked templates:
+
+```toml
+[ib_execution]
+enabled = false
+client_id = 42
+account_id = ""
+
+[risk_engine]
+bypass = false
+```
+
+To migrate an existing ignored local configuration, change its `schema_version` to `27` and add
+these sections. Preserve all existing local settings. To test the connection, set the actual
+account, select an unused execution client ID distinct from `[ib].client_id`, and set
+`ib_execution.enabled = true`. Endpoint, timeouts, and instrument-provider settings come from
+`[ib]`; other native execution and risk settings retain their defaults. No strategy is added.
+
+Markeitect runs the existing connected system command above at the reviewed PR head. Check native
+logs for execution-client startup and the selected account, then stop with `Ctrl+C` and check
+shutdown. A listening socket or offline node construction is not connected acceptance. Stop on
+an account mismatch, unexpected order action, or repeated startup failure. Keep account-bearing
+logs local and share only sanitized startup/shutdown results. Setting the flag back to false and
+restarting omits the client; shutdown does not imply cancellation of broker orders.
+
+This POC's explicitly enabled connection is separate from the data-only setup checklist and the
+historical observation proof below. No TWS setting is changed by the application. Native startup
+may request account/order/fill/position state. The application sends no order commands and adds
+no broker-state projection or persistence. Connected startup and shutdown remain untested.
 
 ## Planned Sir Loke Broker-Observation Proof
 

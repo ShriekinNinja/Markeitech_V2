@@ -39,6 +39,26 @@ class InteractiveBrokersConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class InteractiveBrokersExecutionConfig:
+    """Select optional native IB execution connectivity for one explicit account.
+
+    Connection and instrument-provider settings are shared with ``ib``. Enabling
+    this client does not add an application order-submission interface.
+    """
+
+    enabled: bool
+    client_id: int
+    account_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class RiskEngineConfig:
+    """Configure native risk-check bypass; other native settings retain their defaults."""
+
+    bypass: bool
+
+
+@dataclass(frozen=True, slots=True)
 class WatchlistMemberConfig:
     instrument_id: str
     calendar_id: str
@@ -294,6 +314,8 @@ class SystemConfig:
     schema_version: int
     runtime: RuntimeConfig
     ib: InteractiveBrokersConfig
+    ib_execution: InteractiveBrokersExecutionConfig
+    risk_engine: RiskEngineConfig
     logging: LoggingConfig
     discord: DiscordConfig
     runtime_resources: RuntimeResourcesConfig
@@ -331,13 +353,15 @@ def load_system_config(path: str | Path) -> SystemConfig:
     with config_path.open("rb") as file:
         raw = tomllib.load(file)
 
-    if raw.get("schema_version") != 26:
-        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 26")
+    if raw.get("schema_version") != 27:
+        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 27")
 
     root_keys = {
         "schema_version",
         "runtime",
         "ib",
+        "ib_execution",
+        "risk_engine",
         "logging",
         "discord",
         "runtime_resources",
@@ -355,6 +379,10 @@ def load_system_config(path: str | Path) -> SystemConfig:
 
     runtime = _load_runtime(raw["runtime"])
     ib = _load_ib(raw["ib"])
+    ib_execution = _load_ib_execution(raw["ib_execution"])
+    risk_engine = _load_risk_engine(raw["risk_engine"])
+    if ib_execution.enabled and ib_execution.client_id == ib.client_id:
+        raise ValueError("ib_execution.client_id must differ from ib.client_id when enabled")
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
     runtime_resources = _load_runtime_resources(raw["runtime_resources"])
@@ -399,6 +427,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
         schema_version=raw["schema_version"],
         runtime=runtime,
         ib=ib,
+        ib_execution=ib_execution,
+        risk_engine=risk_engine,
         logging=logging,
         discord=discord,
         runtime_resources=runtime_resources,
@@ -422,6 +452,30 @@ def _load_runtime(raw: Any) -> RuntimeConfig:
         trader_id=_non_empty_string(values["trader_id"], "runtime.trader_id"),
         environment=environment,
     )
+
+
+def _load_ib_execution(raw: Any) -> InteractiveBrokersExecutionConfig:
+    values = _mapping(raw, "ib_execution")
+    _require_keys(values, {"enabled", "client_id", "account_id"}, "ib_execution")
+    enabled = _bool(values["enabled"], "ib_execution.enabled")
+    client_id = _positive_int(values["client_id"], "ib_execution.client_id")
+    if client_id > 2_147_483_647 or client_id % 1000 == 0:
+        raise ValueError(
+            "ib_execution.client_id must fit a signed 32-bit integer and not be a multiple of 1000",
+        )
+    account_id = values["account_id"]
+    if not isinstance(account_id, str):
+        raise ValueError("ib_execution.account_id must be a string")
+    account_id = account_id.strip()
+    if enabled and not account_id:
+        raise ValueError("ib_execution.account_id must be nonempty when enabled")
+    return InteractiveBrokersExecutionConfig(enabled, client_id, account_id)
+
+
+def _load_risk_engine(raw: Any) -> RiskEngineConfig:
+    values = _mapping(raw, "risk_engine")
+    _require_keys(values, {"bypass"}, "risk_engine")
+    return RiskEngineConfig(bypass=_bool(values["bypass"], "risk_engine.bypass"))
 
 
 def _load_ib(raw: Any) -> InteractiveBrokersConfig:

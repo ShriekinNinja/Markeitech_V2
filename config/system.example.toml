@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored .env.
 
-schema_version = 26
+schema_version = 27
 
 [runtime]
 name = "MARKEITECH-V2-001"
@@ -22,6 +22,15 @@ ignore_quote_tick_size_updates = false
 handle_revised_bars = false
 connection_timeout_seconds = 30
 request_timeout_seconds = 30
+
+[ib_execution]
+# Optional native execution-client connection; uses the shared [ib] endpoint/provider settings.
+enabled = false
+client_id = 42
+account_id = "" # Set an explicit account in your ignored local config before enabling.
+
+[risk_engine]
+bypass = false
 
 [logging]
 directory = "../data/logs"

@@ -1,8 +1,8 @@
 # Current Status
 
-**Last reviewed:** 2026-09-08 (delivery plan; runtime capabilities remain unchanged)
+**Last reviewed:** 2026-09-10 (optional native IB execution-client connection POC)
 
-**Implementation baseline inspected:** `master` at `241b73e`
+**Implementation baseline inspected:** `af25f09` plus the execution-client connection POC
 
 This page is the source of truth for what the active Markeitech checkout implements now. It is
 deliberately a current-state ledger, not an implementation diary. Completed design and acceptance
@@ -20,13 +20,13 @@ None of those future documents proves implementation.
 |---|---|
 | Product runtime | Active V2 source at repository root, built on NautilusTrader `2.0.0rc4` |
 | First visible product | Sir Loke v1 is accepted product direction but unimplemented |
-| Provider | Interactive Brokers connection through TWS/IB Gateway for market data only |
+| Provider | IB market-data client plus an optional native IB execution client; execution connectivity is not yet live-tested |
 | Active tracked profile | Zero-instrument operational profile; optional one-instrument V3 ES profile |
 | Operator CLI | Unified `.venv/bin/markeitech` command hierarchy is implemented |
-| Trade observation | Unimplemented; no execution client, account/order/fill/position owner, or trade lifecycle |
+| Trade observation | No application account/order/fill/position owner or trade lifecycle; optional native client startup may acquire broker state |
 | Discord | Outbound webhook health projection exists; inbound conversational bot does not |
 | Agent/model | Unimplemented; no live model, Sir Loke read model, conversation state, or agent tools |
-| Execution | Absent; no submit, modify, bind-for-control, cancel, replace, exercise, or close path |
+| Execution | Native client registration is implemented behind `ib_execution.enabled` (default false); no application order-command path |
 | Persistence | PostgreSQL operational audit and compact evidence-recency profiles; no raw market-data store |
 | Next delivery task | SL-01: real private Discord/model conversation over current runtime state; implementation and Markeitect-owned live acceptance pending |
 
@@ -56,7 +56,9 @@ path. Its bounded subprocess constructs the genuine client with connection `clie
 synthetic explicit account, empty provider loads, and logging bypassed without invoking lifecycle
 or report methods. The same seam confirms the pinned client-`0` modulo-1000 constructor rejection.
 Tests also verify the exact dependency and installed `RECORD` integrity evidence, measured config
-defaults, adversarial construction-only guards, and the current data-only production composition.
+defaults and adversarial construction-only guards. The original data-only composition restriction
+is superseded by the optional-client POC; current node tests cover both enablement paths and the
+source guard continues to reject application order-command wiring.
 See the [Gate 1A evidence reference](reference/ib-observation-gate1.md) for exact artifacts,
 commands, source inventory, evidence limits, and verification results.
 
@@ -68,8 +70,9 @@ event coverage under the user-reported Master `1` setting, or connected acceptan
 
 - Markeitech is live-first, event-driven, local, advisory, and currently read-only.
 - Markeitect is the only first-version user and retains every trading and product decision.
-- The implemented IB client is a NautilusTrader data client. It does not expose broker account,
-  order, fill, or position state to Markeitech.
+- The data client remains always registered. `ib_execution.enabled` optionally adds a native
+  execution client and `LiveRiskEngineConfig`, sharing the IB endpoint and instrument settings.
+  There is no application broker-state consumer or order-command interface.
 - Connected runs remain manually and explicitly authorized. Automated tests do not connect to IB,
   Discord, or another live provider.
 - PostgreSQL stores approved operational facts, not raw quotes, trades, bars, option chains, or
@@ -117,11 +120,12 @@ contracts remain.
 The API registry selects 98 public objects; the diagram source census recognizes eleven actor
 registrations. Offline checks do not establish connected acceptance.
 
-System configuration is now schema 26. Remove the complete `[acquisition]` and
+System configuration is now schema 27. Add `[ib_execution]` and `[risk_engine]` from the
+tracked example when migrating an existing local profile. Remove the complete `[acquisition]` and
 `[historical.probe]`, `[visual_debug_capture]`, `[metrics.session_measurements]`, and
 `[metrics.entity_analysis]` sections, plus the entire `[metrics]` tree (including
 `[metrics.quote_quality]`), from older local profiles, then set
-`schema_version = 26`;
+`schema_version = 27`;
 retain `[historical]`, which still configures the production acquisition owner. Local files are
 not migrated automatically. See [developer setup](operations/developer-setup.md).
 

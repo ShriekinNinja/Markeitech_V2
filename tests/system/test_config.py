@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 26
+schema_version = 27
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -27,6 +27,15 @@ ignore_quote_tick_size_updates = false
 handle_revised_bars = false
 connection_timeout_seconds = 30
 request_timeout_seconds = 30
+
+[ib_execution]
+# Optional native execution-client connection; uses the shared [ib] endpoint/provider settings.
+enabled = false
+client_id = 42
+account_id = "" # Set an explicit account in your ignored local config before enabling.
+
+[risk_engine]
+bypass = false
 
 [logging]
 directory = "../data/logs"
@@ -253,7 +262,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert len(cme_equity.definition_digest) == 64
     assert config.evidence_health.policies[0].fresh_for_ms == 2000
     assert config.evidence_health.consumer_retry_interval_ms == 1000
-    assert config.schema_version == 26
+    assert config.schema_version == 27
     assert config.instrument_ids == ("ESU6.CME",)
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
@@ -265,6 +274,66 @@ def test_rejects_unknown_configuration(tmp_path: Path) -> None:
     path.write_text(VALID_CONFIG.replace("environment =", "legacy_option = true\nenvironment ="))
 
     with pytest.raises(ValueError, match="runtime has unknown keys: legacy_option"):
+        load_system_config(path)
+
+
+def test_execution_is_disabled_with_no_account_by_default(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG)
+    config = load_system_config(path)
+    assert config.ib_execution.enabled is False
+    assert config.ib_execution.account_id == ""
+    assert config.ib_execution.client_id == 42
+    assert config.risk_engine.bypass is False
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement", "message"),
+    [
+        ("client_id = 42", "client_id = 0", "ib_execution.client_id"),
+        ("client_id = 42", "client_id = -1", "ib_execution.client_id"),
+        ("client_id = 42", "client_id = true", "ib_execution.client_id"),
+        ("client_id = 42", "client_id = 1000", "ib_execution.client_id"),
+        ("client_id = 42", "client_id = 2147483648", "ib_execution.client_id"),
+        ('account_id = ""', "account_id = 123", "ib_execution.account_id"),
+        ("enabled = false", 'enabled = "false"', "ib_execution.enabled"),
+        ("bypass = false", 'bypass = "false"', "risk_engine.bypass"),
+        ("client_id = 42", "client_id = 42\nextra = true", "ib_execution has unknown keys"),
+        ("bypass = false", "bypass = false\nextra = true", "risk_engine has unknown keys"),
+    ],
+)
+def test_rejects_invalid_execution_configuration(
+    tmp_path: Path,
+    original: str,
+    replacement: str,
+    message: str,
+) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace(original, replacement, 1))
+    with pytest.raises(ValueError, match=message):
+        load_system_config(path)
+
+
+@pytest.mark.parametrize("account", ["", "   "])
+def test_enabled_execution_requires_account(tmp_path: Path, account: str) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace("enabled = false", "enabled = true", 1).replace(
+            'account_id = ""', f'account_id = "{account}"', 1
+        ),
+    )
+    with pytest.raises(ValueError, match="ib_execution.account_id must be nonempty"):
+        load_system_config(path)
+
+
+def test_enabled_execution_requires_distinct_client_id(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace("enabled = false", "enabled = true", 1)
+        .replace('account_id = ""', 'account_id = "TEST-ACCOUNT"', 1)
+        .replace("client_id = 42", "client_id = 20", 1),
+    )
+    with pytest.raises(ValueError, match="ib_execution.client_id must differ"):
         load_system_config(path)
 
 
@@ -280,10 +349,10 @@ def test_rejects_retired_root_sections(tmp_path: Path, section: str) -> None:
         load_system_config(path)
 
 
-@pytest.mark.parametrize("version", [22, 23, 24, 25])
+@pytest.mark.parametrize("version", [22, 23, 24, 25, 26])
 def test_rejects_older_system_schema(tmp_path: Path, version: int) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("schema_version = 26", f"schema_version = {version}", 1))
+    path.write_text(VALID_CONFIG.replace("schema_version = 27", f"schema_version = {version}", 1))
 
     with pytest.raises(ValueError, match=f"unsupported schema_version: {version}"):
         load_system_config(path)

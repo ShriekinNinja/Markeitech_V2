@@ -3,6 +3,8 @@ from __future__ import annotations
 from nautilus_trader.adapters.interactive_brokers import (
     InteractiveBrokersDataClientConfig,
     InteractiveBrokersDataClientFactory,
+    InteractiveBrokersExecutionClientConfig,
+    InteractiveBrokersExecutionClientFactory,
     InteractiveBrokersInstrumentProviderConfig,
     MarketDataType,
     SymbologyMethod,
@@ -13,7 +15,7 @@ from nautilus_trader.common import (
     LoggerConfig,
     LogLevel,
 )
-from nautilus_trader.live import LiveNode
+from nautilus_trader.live import LiveNode, LiveRiskEngineConfig
 from nautilus_trader.model import InstrumentId, TraderId
 
 from markeitech.system.composition import StartupPrerequisites, build_actor_plan
@@ -37,13 +39,18 @@ _ENVIRONMENTS = {
 }
 
 
-def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataClientConfig:
+def _build_ib_instrument_provider_config(
+    config: SystemConfig,
+) -> InteractiveBrokersInstrumentProviderConfig:
     instrument_ids = [InstrumentId.from_str(value) for value in config.instrument_ids]
-    provider_config = InteractiveBrokersInstrumentProviderConfig(
+    return InteractiveBrokersInstrumentProviderConfig(
         symbology_method=_SYMBOLOGY_METHODS[config.ib.symbology_method],
         load_ids=set(instrument_ids),
         convert_exchange_to_mic_venue=config.ib.convert_exchange_to_mic_venue,
     )
+
+
+def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataClientConfig:
     return InteractiveBrokersDataClientConfig(
         host=config.ib.host,
         port=config.ib.port,
@@ -55,16 +62,59 @@ def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataC
         request_timeout=config.ib.request_timeout_seconds,
         handle_revised_bars=config.ib.handle_revised_bars,
         batch_quotes=config.ib.batch_quotes,
-        instrument_provider=provider_config,
+        instrument_provider=_build_ib_instrument_provider_config(config),
     )
+
+
+def build_ib_execution_client_config(
+    config: SystemConfig,
+) -> InteractiveBrokersExecutionClientConfig:
+    """Map validated account/client selection and shared IB settings without connecting.
+
+    Args:
+        config: System configuration with an explicit execution account identity.
+
+    Returns:
+        Native execution configuration with untouched defaults for other settings.
+
+    Raises:
+        ValueError: If the execution account is empty or client IDs conflict.
+    """
+
+    if not config.ib_execution.account_id:
+        raise ValueError("ib_execution.account_id must be nonempty to construct the client")
+    if config.ib_execution.client_id == config.ib.client_id:
+        raise ValueError("ib_execution.client_id must differ from ib.client_id")
+    return InteractiveBrokersExecutionClientConfig(
+        host=config.ib.host,
+        port=config.ib.port,
+        client_id=config.ib_execution.client_id,
+        account_id=config.ib_execution.account_id,
+        connection_timeout=config.ib.connection_timeout_seconds,
+        request_timeout=config.ib.request_timeout_seconds,
+        instrument_provider=_build_ib_instrument_provider_config(config),
+    )
+
+
+def build_live_risk_engine_config(config: SystemConfig) -> LiveRiskEngineConfig:
+    """Map risk bypass to native configuration without starting any runtime component.
+
+    Args:
+        config: Validated system configuration.
+
+    Returns:
+        Native risk configuration; unexposed fields keep installed-version defaults.
+    """
+
+    return LiveRiskEngineConfig(bypass=config.risk_engine.bypass)
 
 
 def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites) -> LiveNode:
     """Construct the configured Nautilus live node without starting it.
 
     The function creates the configured log directory, registers the IB data
-    client, and composes validated actors. It does not connect to IB or run the
-    node lifecycle.
+    client, optionally registers the native IB execution client and risk settings,
+    and composes validated actors. It does not connect to IB or run the node lifecycle.
 
     Args:
         config: Validated V2 system configuration.
@@ -81,7 +131,7 @@ def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites)
     config.logging.directory.mkdir(parents=True, exist_ok=True)
     data_config = build_ib_data_client_config(config)
 
-    node = (
+    builder = (
         LiveNode.builder(
             config.runtime.name,
             TraderId.from_str(config.runtime.trader_id),
@@ -100,8 +150,16 @@ def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites)
             ),
         )
         .add_data_client(None, InteractiveBrokersDataClientFactory(), data_config)
-        .build()
     )
+    if config.ib_execution.enabled:
+        builder = builder.with_risk_engine_config(
+            build_live_risk_engine_config(config)
+        ).add_exec_client(
+            "IB_EXECUTION",
+            InteractiveBrokersExecutionClientFactory(),
+            build_ib_execution_client_config(config),
+        )
+    node = builder.build()
     plan = build_actor_plan(config, prerequisites)
     if config.dashboard.enabled:
         # Explicit composition keeps provider operations inside acquisition while

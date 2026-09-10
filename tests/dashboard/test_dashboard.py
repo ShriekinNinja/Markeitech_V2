@@ -130,7 +130,7 @@ def test_dashboard_composition_is_optional_and_configuration_driven() -> None:
         item for item in build_actor_plan(enabled, prerequisites) if item.key == "dashboard"
     )
     assert dashboard.config.config["dashboard"] == asdict(enabled.dashboard)
-    assert config.schema_version == 26
+    assert config.schema_version == 27
     with pytest.raises(ValueError, match="maximum_instruments"):
         build_actor_plan(
             replace(enabled, dashboard=DashboardConfig(enabled=True, maximum_instruments=1)),
