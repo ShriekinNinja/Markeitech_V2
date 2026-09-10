@@ -103,6 +103,17 @@ The profile contains disabled configuration sections retained for schema compati
 history. Values in disabled sections are not active analytical defaults or accepted product
 behavior.
 
+## Connected Operational Boot Profile
+
+`config/system.operational.toml` adds a schema-24 zero-instrument baseline with nine operational
+actors: System Control, Session State, Evidence Health, Historical Evidence Planner, Data
+Acquisition, Discord Health, Runtime Resources, Runtime Resource Health, and Operational
+Persistence. IB remains configured; the watchlist, probes, analytics, and visual capture are
+excluded. Schema-23 profiles remain supported. This is **ready for Markeitect live test**, not
+connected-accepted. See the [operational boot runbook](operations/operational-boot.md) for exact
+commands, independent readiness evidence, effects, stop conditions, and remaining limitations.
+No runtime instrument addition or Sir Loke behavior is supplied by this profile.
+
 ## Implemented Foundation
 
 ### Runtime and provider boundary

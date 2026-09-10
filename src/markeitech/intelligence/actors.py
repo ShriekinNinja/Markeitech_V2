@@ -1144,6 +1144,12 @@ class EvidenceHealthActor(DataActor):
             now_ns=self.clock.timestamp_ns(),
         )
         self._session_state = update.state
+        if self._session_state.phase is not previous_phase:
+            self.log.info(
+                "EVIDENCE_SESSION_STATE_SYNC"
+                f" | phase={self._session_state.phase.value}"
+                f" | calendars={len(self._calendar_expectations)}",
+            )
         self._install_session_states(update.installed_calendar_ids)
         if self._session_state.phase is SessionStateDeliveryPhase.CONFLICT:
             self._cancel_session_state_alert()

@@ -451,6 +451,7 @@ def build_actor_plan(
                         "ping_critical_resource_alerts": (
                             config.discord.ping_critical_resource_alerts
                         ),
+                        "empty_universe": not config.instrument_ids,
                         "webhook_env": SYSTEM_HEALTH_WEBHOOK_ENV,
                         "operational_events_webhook_env": OPERATIONAL_EVENTS_WEBHOOK_ENV,
                     },
@@ -1100,6 +1101,10 @@ def build_actor_plan(
                     },
                 ),
             ),
+        ],
+    )
+    if config.watchlist.enabled:
+        registrations.append(
             ActorRegistration(
                 key="watchlist",
                 actor_id="WATCHLIST",
@@ -1121,38 +1126,39 @@ def build_actor_plan(
                     },
                 ),
             ),
-            ActorRegistration(
-                key="data_acquisition",
-                actor_id="DATA-ACQUISITION",
-                config=ImportableActorConfig(
-                    actor_path="markeitech.system.acquisition:DataAcquisitionActor",
-                    config_path="markeitech.system.acquisition:DataAcquisitionActorConfig",
-                    config={
-                        "actor_id": "DATA-ACQUISITION",
-                        "instrument_ids": instrument_ids,
-                        "historical": {
-                            "maximum_plan_requests": config.historical.maximum_plan_requests,
-                            "maximum_observations_per_request": (
-                                config.historical.maximum_observations_per_request
-                            ),
-                            "maximum_total_observations": (
-                                config.historical.maximum_total_observations
-                            ),
-                            "maximum_outstanding_requests": (
-                                config.historical.maximum_outstanding_requests
-                            ),
-                            "maximum_in_flight_requests": (
-                                config.historical.maximum_in_flight_requests
-                            ),
-                            "timeout_seconds": config.historical.timeout_seconds,
-                            "maximum_attempts": config.historical.maximum_attempts,
-                            "retry_backoff_ms": config.historical.retry_backoff_ms,
-                            "poll_interval_ms": config.historical.poll_interval_ms,
-                        },
+        )
+    registrations.append(
+        ActorRegistration(
+            key="data_acquisition",
+            actor_id="DATA-ACQUISITION",
+            config=ImportableActorConfig(
+                actor_path="markeitech.system.acquisition:DataAcquisitionActor",
+                config_path="markeitech.system.acquisition:DataAcquisitionActorConfig",
+                config={
+                    "actor_id": "DATA-ACQUISITION",
+                    "instrument_ids": instrument_ids,
+                    "historical": {
+                        "maximum_plan_requests": config.historical.maximum_plan_requests,
+                        "maximum_observations_per_request": (
+                            config.historical.maximum_observations_per_request
+                        ),
+                        "maximum_total_observations": (
+                            config.historical.maximum_total_observations
+                        ),
+                        "maximum_outstanding_requests": (
+                            config.historical.maximum_outstanding_requests
+                        ),
+                        "maximum_in_flight_requests": (
+                            config.historical.maximum_in_flight_requests
+                        ),
+                        "timeout_seconds": config.historical.timeout_seconds,
+                        "maximum_attempts": config.historical.maximum_attempts,
+                        "retry_backoff_ms": config.historical.retry_backoff_ms,
+                        "poll_interval_ms": config.historical.poll_interval_ms,
                     },
-                ),
+                },
             ),
-        ],
+        ),
     )
     if config.historical.probe.enabled:
         probe = config.historical.probe

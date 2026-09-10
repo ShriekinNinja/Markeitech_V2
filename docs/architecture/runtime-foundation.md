@@ -46,13 +46,20 @@ Composition invariants are:
 - one `SystemControlActor` owns global system-health transitions;
 - one `DataAcquisitionActor` owns provider-facing demand and request lifetime;
 - one `OperationalPersistenceActor` owns operational writes while the node is running;
-- one `WatchlistActor` owns the effective configured observation membership used by the current
-  profile;
+- one `WatchlistActor`, when enabled, owns the configured observation membership; a disabled
+  empty watchlist omits this actor while retaining the operational acquisition infrastructure;
 - optional projections, probes, resource actors, and intelligence actors are included only when
   their validated configuration enables them;
 - duplicate actor IDs and missing mandatory prerequisites fail before provider connection; and
 - dynamic actor loading/removal and a generic dependency-injection or plugin system are not part
   of the current runtime.
+
+The [zero-instrument operational profile](../operations/operational-boot.md) retains IB and all nine
+operational actors, including Discord and resource monitoring. Acquisition accepts zero expected
+instruments and performs no provider work or historical polling. Empty startup readiness requires
+its matching status and persistence readiness; it does not prove provider connectivity, calendar
+synchronization, webhook delivery, resource health, or market evidence. Those conditions are
+verified independently. Configuration identity and source semantics remain startup-only.
 
 ## Messaging And State Transfer
 
