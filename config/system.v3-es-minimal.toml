@@ -3,19 +3,16 @@
 # ENABLED SURFACE:
 # - one explicit instrument: ESU6.CME
 # - one acquisition capability: watchlist_last
-# - one temporary current-state-gated five-bar historical probe
 # - mandatory control, calendar, evidence-health, historical-planning, acquisition, and persistence
 #   infrastructure
 #
 # DISABLED SURFACE:
-# - the completed-bar foundation, quote/direct/session/window/rolling metrics, and entity analysis
-# - Visual Debug, Discord, runtime-resource telemetry, broker observation, and Sir Loke
+# - Discord, runtime-resource telemetry, broker observation, and Sir Loke
 #
-# Values inside disabled sections are schema-required inert placeholders. They are not accepted
-# analytical defaults and must be reviewed before their owning engine is enabled.
+# Review disabled capabilities and their settings before enabling them.
 # Never place secrets in this file; local secrets belong in the ignored .env.
 
-schema_version = 23
+schema_version = 25
 
 [runtime]
 name = "MARKEITECH-V3-ES-PROGRESSIVE-001"
@@ -62,35 +59,6 @@ enabled = false
 request_timeout_seconds = 5
 queue_capacity = 32
 ping_critical_resource_alerts = true
-
-# V3 PASSIVE CONNECTED VISUAL TEST — DISABLED WITH SESSION METRICS:
-# The retained values describe the historical accepted debug profile only. The observer remains
-# disabled until a separately reviewed completed-bar and metric producer replaces the faulty
-# SessionMetricsActor. Existing artifacts remain historical evidence and are not current runtime
-# output. The UTC-stamped identity below is an operator label, not a configuration-file digest.
-[visual_debug_capture]
-enabled = false
-configuration_identity = "v3-es-5m-historical-60-review-v1-20260828T110307Z"
-instrument_id = "ESU6.CME"
-analytical_profile_id = "cme_equity_primary"
-analytical_profile_version = 1
-bar_specification = "5-MINUTE-LAST-EXTERNAL"
-parameter_version = 2
-output_directory = "../data/visual-debug-captures"
-capture_policy_version = 3
-# Projection targets only. They select canonical records which the normal runtime already
-# produced; they never add, suppress, align, resize, or retime a historical or live request.
-# Set either target to zero for a historical-only or live-only artifact. Both cannot be zero.
-target_historical_bars = 60
-target_live_bars = 0
-quiet_period_ms = 2000
-completion_deadline_ms = 900000
-output_drain_timeout_ms = 30000
-# Renderer-only geometry. It cannot change the canonical capture payload.
-candle_pane_height_px = 720
-volume_pane_height_px = 130
-metric_pane_height_px = 110
-pane_gap_px = 18
 
 [runtime_resources]
 enabled = false
@@ -162,15 +130,6 @@ shutdown_timeout_seconds = 10
 write_max_attempts = 3
 write_retry_backoff_ms = 100
 
-# V3 REMOVAL / TEST-TOOL RELOCATION CANDIDATE — NOT YET AUTHORIZED FOR DELETION:
-# The native-consumer probe is a completed multi-consumer diagnostic, not the acquisition owner.
-# It accepts quote/trade feeds only, while this profile supplies a bar feed; enabling it here would
-# fail actor construction and the loader does not detect that incompatibility. Keep it disabled.
-# Preserve its historical proof and tests before removing it from the production configuration.
-[acquisition]
-native_consumer_probe_enabled = false
-native_consumer_probe_unsubscribe_after_seconds = 15
-
 # V3 REVIEW DEBT — HISTORICAL PROVIDER ACQUISITION IS DISABLED AFTER CALIBRATION:
 # - The 2026-08-27 ES sanity run published global READY after instrument-definition and
 #   persistence readiness but before the bar stream became ACTIVE or produced its first live
@@ -221,25 +180,6 @@ timeout_seconds = 30
 maximum_attempts = 1
 retry_backoff_ms = 500
 poll_interval_ms = 100
-
-# V3-02 TEMPORARY CONNECTED ACCEPTANCE HARNESS — CURRENTLY ENABLED:
-# This one-shot probe deliberately omits snapshot attempt 1, synchronizes through the
-# production SessionStateActor protocol, then publishes one five-bar symbolic historical demand
-# through the normal planner/acquisition owners. It owns no provider API, persistence, analytical
-# output, or production capability. Keep it available for bounded V3-02 live checks until a
-# separately reviewed change disables or removes it; one successful run does not establish general
-# parity.
-[historical.probe]
-enabled = true
-mode = "current_state_gated"
-omit_initial_snapshot_request = true
-actor_ids = ["CURRENT-STATE-HISTORICAL-PROBE"]
-instrument_id = "ESU6.CME"
-selector = "1-MINUTE-LAST-EXTERNAL"
-window = "recent_completed"
-minimum_observations = 5
-maximum_observations = 5
-priority = 10
 
 # SessionStateActor is the sole runtime owner of the selected canonical calendar. The dedicated
 # catalog is loaded and validated atomically; consumers receive typed current transitions or
@@ -297,159 +237,6 @@ max_unavailable_ms = 60000
 
 # Disabled metric engines retain complete typed placeholder schemas because the current loader
 # validates their structure even when composition omits their actors.
-[metrics.quote_quality]
-enabled = false
-required_watchlist_capability = "top_of_book"
-parameter_version = 1
-minimum_update_interval_ms = 250
-maximum_output_age_ms = 15000
-demand_retry_interval_ms = 1000
-evidence_snapshot_retry_interval_ms = 1000
-priority = 50
-
-[metrics.session_measurements]
-enabled = false
-required_watchlist_capability = "watchlist_last"
-parameter_version = 2
-# Reviewed completed-bar foundation identity for the 60-bar five-minute historical-only test.
-# This exact UTC instant records preparation of the activation configuration. The current actor
-# stores but does not enforce or publish it on MetricValue, which remains recorded debt.
-parameter_source = "v3-es-5m-completed-bar-foundation"
-parameter_effective_from = "2026-08-28T11:03:07Z"
-conflict_policy = "reject_conflict"
-maximum_active_sessions = 1
-demand_retry_interval_ms = 1000
-evidence_snapshot_retry_interval_ms = 1000
-priority = 40
-
-[metrics.session_measurements.completed_bars]
-live_selector = "5-SECOND-LAST-EXTERNAL"
-historical_selector = "5-MINUTE-LAST-EXTERNAL"
-historical_window = "recent_completed"
-minimum_historical_observations = 2
-maximum_historical_observations = 60
-calculation_interval_seconds = 300
-minimum_interval_seconds = 300
-maximum_interval_seconds = 300
-interval_step_seconds = 300
-interval_dynamic = false
-aggregation_boundary_policy = "utc_fixed_intraday"
-timestamp_policy = "interval_end"
-revision_policy = "reject_revision"
-# Provisionally retained at 1000 because the loader couples this bound to the still-disabled
-# rolling placeholder. This is not accepted analytical retention policy. Likewise, output age is
-# currently resource metadata rather than an actor-enforced expiry policy.
-maximum_retained_observations = 1000
-maximum_output_age_ms = 120000
-
-[metrics.session_measurements.rolling_measurements]
-enabled = false
-minimum_coverage_ratio = 0.9
-minimum_coverage_ratio_floor = 0.7
-minimum_coverage_ratio_ceiling = 1.0
-minimum_coverage_ratio_step = 0.05
-minimum_coverage_ratio_dynamic = true
-maximum_retained_observations = 1000
-maximum_output_age_ms = 120000
-
-[metrics.session_measurements.rolling_measurements.baseline]
-eligible_reference_health = ["READY"]
-eligible_reference_fidelities = ["REPORTED", "DERIVED"]
-recent_reference_count = 8
-recent_reference_count_minimum = 8
-recent_reference_count_maximum = 64
-recent_reference_count_step = 1
-recent_reference_count_dynamic = true
-minimum_recent_references = 8
-phase_reference_count = 5
-phase_reference_count_minimum = 5
-phase_reference_count_maximum = 30
-phase_reference_count_step = 1
-phase_reference_count_dynamic = true
-minimum_phase_references = 5
-
-# Schema-required inert rolling placeholder. The parent engine is disabled; this period and its
-# bounds are not accepted and must be replaced or approved before rolling measurements are enabled.
-[[metrics.session_measurements.rolling_measurements.families]]
-family_id = "fast_placeholder"
-source_selector = "5-MINUTE-LAST-EXTERNAL"
-input_selector = "5-MINUTE-LAST-EXTERNAL"
-input_interval_seconds = 300
-aggregation_policy = "identity"
-selected_context_candidate_id = "context_placeholder_10m"
-
-[[metrics.session_measurements.rolling_measurements.families.candidates]]
-candidate_id = "context_placeholder_10m"
-purpose = "context"
-duration_seconds = 600
-minimum_duration_seconds = 600
-maximum_duration_seconds = 3600
-duration_step_seconds = 300
-dynamic = true
-active = true
-
-[metrics.session_measurements.session_references]
-enabled = false
-historical_selector = "15-MINUTE-LAST-EXTERNAL"
-active_window = "session_to_date"
-previous_window = "previous_sessions"
-overnight_window = "current_overnight"
-minimum_historical_observations = 1
-maximum_historical_observations = 4
-vwap_price_basis = "typical"
-vwap_price_basis_dynamic = true
-minimum_coverage_ratio = 0.8
-minimum_coverage_ratio_floor = 0.5
-minimum_coverage_ratio_ceiling = 1.0
-minimum_coverage_ratio_step = 0.05
-minimum_coverage_ratio_dynamic = true
-maximum_retained_sessions = 1
-maximum_output_age_ms = 120000
-
-[metrics.session_measurements.session_windows]
-enabled = false
-price_basis = "typical"
-price_basis_dynamic = true
-minimum_coverage_ratio = 0.8
-minimum_coverage_ratio_floor = 0.5
-minimum_coverage_ratio_ceiling = 1.0
-minimum_coverage_ratio_step = 0.05
-minimum_coverage_ratio_dynamic = true
-maximum_retained_sessions = 1
-maximum_output_age_ms = 120000
-
-[[metrics.session_measurements.profiles]]
-profile_id = "cme_equity_primary"
-version = 1
-calendar_id = "cme_equity"
-primary_phase = "GLOBEX"
-overnight_enabled = false
-overnight_phase = "GLOBEX"
-volume_supported = true
-windows = []
-
-[[metrics.session_measurements.profile_bindings]]
-profile_id = "cme_equity_primary"
-instrument_ids = ["ESU6.CME"]
-
-[metrics.entity_analysis]
-enabled = false
-required_watchlist_capability = "watchlist_last"
-catalog_version = 2
-parameter_source = "v3-disabled-placeholder"
-parameter_effective_from = "2026-08-27T00:00:00Z"
-maximum_entities_global = 1000
-maximum_entities_per_instrument = 1000
-maximum_entities_per_instrument_type = 250
-completed_session_retention = 1
-completed_session_maximum_age_days = 14
-maximum_input_age_ms = 120000
-maximum_metric_values = 1000
-market_state_reconciliation_interval_ms = 1000
-minimum_snapshot_interval_ms = 1000
-maximum_publications_per_cycle = 100
-definitions = []
-
 [watchlist]
 enabled = true
 consumer_retry_interval_ms = 1000

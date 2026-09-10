@@ -5,18 +5,18 @@ from dataclasses import dataclass
 from markeitech.intelligence.metric_messages import MetricFidelity, MetricHealth
 
 LEGACY_METRIC_VALUE_TYPE_NAME = "markeitech.metric.value"
-"""Temporary private v1 wire identity retained until the atomic v2 cutover."""
+"""Private v1 wire identity retained for compatibility validation."""
 
 type LegacyMetricScalarValue = str | int | float | object | bool
 
 
 @dataclass(frozen=True, slots=True)
 class LegacyMetricValue:
-    """Temporary private representation of the active v1 metric-value wire.
+    """Private representation of the historical v1 metric-value wire.
 
-    This compatibility contract intentionally preserves the existing runtime
-    payload and validation behavior. It must not be exported from the public
-    intelligence package or used for the future v2 canonical wire.
+    This compatibility contract preserves historical payload validation and
+    explicit migration checks. No current actor publishes this wire. It must not be
+    exported from the public intelligence package or used for the future v2 canonical wire.
     """
 
     metric_id: str

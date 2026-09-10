@@ -63,12 +63,10 @@ Passing offline suites or a single connected session does not close a wider reli
 
 Resume only the measurement capability needed by a named Sir Loke task, starting with IN-01. Its brief
 must identify required formulas, canonical producer, integration, and live acceptance. Preserve
-identity, lineage, correctness, and single-writer constraints. Do not re-enable faulty legacy
-owners or require unrelated numerical families, full retirement, or Visual Debug to finish first.
-
-The [replacement reference](../reference/session-metrics-replacement-plan.md) retains detailed
-contracts and known defects. Its original disabled-owner sequence is superseded for product
-delivery by the live task plan; necessary contract changes still need explicit review.
+identity, lineage, correctness, and single-writer constraints. The former session-metrics and
+entity implementations and replacement plan have been removed. Shared contracts remain; new
+analytical production requires implementation, integration, and live review under the delivery
+plan. Historical details are available in Git.
 
 ## Dynamic Watchlist Decision
 
@@ -110,8 +108,8 @@ The earlier GEX research is recoverable through Git history and remains informat
 A full live dashboard remains deferred. If reopened, begin with a fresh user/job decision and use
 only canonical projections. The UI must not create market truth, broker truth, policy, or agent
 state; must expose identity, freshness, fidelity, gaps, and provenance; and must remain isolated
-from the runtime event loop. The stable passive review contract is
-[`../operations/visual-evidence-review.md`](../operations/visual-evidence-review.md).
+from the runtime event loop. The former Visual Debug implementation and its runbook have been
+removed; any future visualization requires a new scoped review.
 
 ## Later Product And Research Tracks
 

@@ -16,7 +16,6 @@ census.
 | `AGENTS.md` | Repository authority | Approval, advisor, evidence, side-effect, and completion gates | Does not define detector formulas |
 | `markeitech.md` | Durable authority | Evidence boundaries, configuration ownership, live-first/read-only posture | Does not prove implementation |
 | `docs/current-status.md` | Current implementation authority | Exact implemented Stage 9D slices and acceptance debt | Historical sections can be superseded by its current snapshot |
-| `docs/reference/session-metrics-replacement-plan.md` | Accepted bounded implementation reference | Detailed entity migration/cutover and market-structure contracts | Initial values are not permanent calibration |
 | `docs/architecture/deterministic-evidence-contracts.md` | Accepted architecture | Completed-bar prerequisites, health/fidelity, parameter lineage | Numerical measurement is not interpretation |
 | `docs/roadmap/development-backlog.md` | Future-work authority | Preserves unresolved richer market-structure and evidence gates | Backlog rows are not runtime claims |
 | Git history for the superseded market-analysis brief | Historical research | Earlier metric/entity/event questions | Informative, not current product semantics |

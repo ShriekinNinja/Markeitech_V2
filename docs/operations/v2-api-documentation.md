@@ -92,8 +92,8 @@ Architecture-component declarations are rendered separately from the curated pub
 denominator. The generator discovers them through the closed custom-attribute registry and
 validates their approved identity fields. Relationship, contract, ownership, status, evidence, and
 limitation attributes are deferred. Static declarations do not prove runtime calls or delivery.
-The current class-component census contains 20 declarations. Seven carry substantive
-responsibilities; the other 13 are displayed as incomplete rather than inheriting generic TOML
+The current class-component census contains 11 declarations. Five carry substantive
+responsibilities; the other 6 are displayed as incomplete rather than inheriting generic TOML
 placeholders.
 
 The site uses one tracked local stylesheet for an always-dark, full-width layout. Wide tables and

@@ -24,7 +24,7 @@ class GenerationTest(unittest.TestCase):
         first = generate()
         second = generate()
         self.assertEqual(first["artifact_set_sha256"], second["artifact_set_sha256"])
-        self.assertEqual(first["selected"], 261)
+        self.assertEqual(first["selected"], 98)
         self.assertEqual(source.read_bytes(), source_before)
         self.assertEqual(cli_source.read_bytes(), cli_source_before)
         self.assertEqual(module_source.read_bytes(), module_source_before)
@@ -41,12 +41,12 @@ class GenerationTest(unittest.TestCase):
         self.assertTrue(first["versions"]["python"].startswith("3.13."))
         self.assertEqual(index["authority"], "non_authoritative_discovery_only")
         self.assertTrue(index["not_runtime_configuration"])
-        self.assertEqual(index["public_surface"]["selected"], 261)
+        self.assertEqual(index["public_surface"]["selected"], 98)
         self.assertEqual(index["metadata"]["occurrence_count"], 0)
-        self.assertEqual(index["architecture_components"]["counts"]["components"], 20)
+        self.assertEqual(index["architecture_components"]["counts"]["components"], 11)
         self.assertEqual(
             index["architecture_components"]["counts"]["with_responsibilities"],
-            7,
+            5,
         )
         architecture = json.loads(
             (output / "architecture-components-index.json").read_text(encoding="utf-8")

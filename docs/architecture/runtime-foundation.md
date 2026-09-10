@@ -48,7 +48,7 @@ Composition invariants are:
 - one `OperationalPersistenceActor` owns operational writes while the node is running;
 - one `WatchlistActor`, when enabled, owns the configured observation membership; a disabled
   empty watchlist omits this actor while retaining the operational acquisition infrastructure;
-- optional projections, probes, resource actors, and intelligence actors are included only when
+- optional projections, resource actors, and intelligence actors are included only when
   their validated configuration enables them;
 - duplicate actor IDs and missing mandatory prerequisites fail before provider connection; and
 - dynamic actor loading/removal and a generic dependency-injection or plugin system are not part
@@ -175,13 +175,12 @@ migration requires separate approval and a recovery plan.
 
 ## External Projections
 
-Console, Discord webhooks, visual capture, a future Discord bot, and a future UI are projections.
+Console, Discord webhooks, a future Discord bot, and a future UI are projections.
 They render canonical state and delivery outcomes; they do not calculate or mutate market,
 broker, policy, or trade truth.
 
 The current [`DiscordHealthActor`](../operations/discord-health-webhook.md) is an optional outbound
-webhook projection. It is not Sir Loke. Visual evidence capture is a passive, non-gating review
-projection governed by [`visual-evidence-review.md`](../operations/visual-evidence-review.md).
+webhook projection. It is not Sir Loke. The former Visual Debug capture path has been removed.
 
 Projection failure must remain bounded and must not stop provider ingestion, deterministic
 analysis, broker reconciliation when later added, or required durable audit.

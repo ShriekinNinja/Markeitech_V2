@@ -35,7 +35,6 @@ class CensusPolicy:
         "src/markeitech/acquisition/historical_messages.py",
         "src/markeitech/intelligence/messages.py",
         "src/markeitech/intelligence/metrics.py",
-        "src/markeitech/intelligence/completed_bars.py",
         "src/markeitech/intelligence/entities.py",
     )
 

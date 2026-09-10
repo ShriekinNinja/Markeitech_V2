@@ -146,11 +146,17 @@ test -e config/system.local.toml || \
 
 Both destination files are ignored by Git.
 
-The current loader accepts only system schema **23**. Existing older local profiles require a
-deliberate comparison with `config/system.example.toml`; changing only the version number is not a
-migration. Preserve reviewed machine settings without overwriting an existing local file. Schema
-24 belongs to the later V3-03 configuration/composition slice and is not supported by the current
-loader.
+The current loader accepts only system schema **25**. To migrate a schema-23/24 local profile:
+
+1. Remove the complete `[acquisition]` section, which contained only native-consumer diagnostic settings.
+2. Remove the complete `[historical.probe]` section; keep `[historical]` and its production limits.
+3. Remove `[visual_debug_capture]` if present; the capture actor and renderer have been removed.
+4. Remove the entire `[metrics]` tree, including quote quality, session measurements, entity analysis, and all child tables.
+5. Set `schema_version = 25` and compare the result with the corresponding tracked profile.
+
+Preserve machine-specific IB settings, paths, thresholds, and secret environment references.
+Local files are not migrated automatically. For profiles older than schema 23, also apply the
+calendar and current-state changes below; a version-number edit alone is insufficient.
 
 For pre-calendar-cutover profiles, remove the retired `[visual_acceptance]` and
 `[live_evidence_review]` sections and replace inline `[[sessions.calendars]]` definitions with the
@@ -163,24 +169,22 @@ these local actor-delivery controls are independent of IB historical polling and
 retries. The referenced catalog path is resolved relative to the system
 TOML and must exist; the tracked catalog is `config/market-calendars.toml`. Set `calendar_ids`
 to the exact catalog definitions this profile needs; unused entries are validated but are not
-instantiated. Analytical profiles and windows must use the configured product-phase names, such
-as `GLOBEX` for the CME/CBOT equity definitions. Concrete instrument-to-calendar bindings belong
+instantiated. Concrete instrument-to-calendar bindings belong
 only to `[[watchlist.members]]`; rolling a futures contract does not require editing the calendar
 catalog. The CME/CBOT definitions also expose overlapping `ASIA`, `LONDON`, and `NEW_YORK` phases.
 Those phase clocks describe market regions and do not create analytical windows by themselves.
 
 Include the complete `[sessions.current_state_delivery]` section from the current example:
 versioned response timeout, attempts/backoff/elapsed bounds, per-calendar and total transition
-buffers, and boundary-delivery grace. Also compare the current historical-probe shape. Keep
-`[metrics.session_measurements]`, its dependent Entity Analysis, and `[visual_debug_capture]`
-disabled as in the tracked profiles; archived pre-V3 enablements are not current runtime authority.
+buffers, and boundary-delivery grace. Remove the entire `[metrics]` tree; its quote-quality,
+session-measurement, and entity-analysis actors and configuration have been removed.
 
 The loader rejects older schemas, dead visual sections, inline definitions or overrides,
 unavailable provider columns, invalid phase timezones, incomplete source/correction identity,
 obsolete catalog-owned instrument mappings, and projection requests which exceed configured
 bounds. Do not overwrite
 the rest of an existing machine-local profile; compare it with `system.example.toml` and preserve
-its reviewed IB, instrument, analytical-profile, persistence, and metric settings.
+its reviewed IB, instrument, and persistence settings.
 
 ### Environment file
 
@@ -198,7 +202,7 @@ its values into issues, pull requests, logs, or documentation.
 Review `config/system.local.toml` before connecting:
 
 1. `[ib].host`, `[ib].port`, and `[ib].client_id`
-2. current explicit futures contracts in historical probes, profile bindings, and watchlist members
+2. current explicit futures contracts in profile bindings and watchlist members
 3. instruments covered by the current user's IB market-data entitlements
 4. active `calendar_ids`, calendar/profile assignments, and the dedicated
    `market-calendars.toml` catalog identity

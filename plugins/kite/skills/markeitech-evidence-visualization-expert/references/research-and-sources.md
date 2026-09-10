@@ -14,7 +14,7 @@ product or dependency approval. Refresh versioned or drift-prone sources before 
 | `docs/README.md` | Documentation authority order and navigation | Drafts and historical records do not override accepted V2 authority |
 | `docs/roadmap/sir-loke-v1-delivery-plan.md` | Accepted future Sir Loke sequence and evidence boundaries | Roadmap intent is not implementation proof |
 | `docs/architecture/deterministic-evidence-contracts.md` | Accepted entity/state identity, lifecycle, health, and fidelity | Numerical fixtures are not trading calibration |
-| `docs/operations/visual-evidence-review.md` and `docs/roadmap/development-backlog.md` | Stable passive review contract and deferred dashboard status | No architecture, dependency, transport, runtime, or dashboard delivery choice is implied |
+| `docs/roadmap/development-backlog.md` | Deferred visualization status after Visual Debug removal | No architecture, dependency, transport, runtime, or dashboard delivery choice is implied |
 | Current source, tests, fixtures, and rendered artifacts | Executable evidence for actual payloads and presentation behavior | Inspect per task; a symbol or screenshot alone is not semantic proof |
 
 ## Primary Standards And Technical Sources

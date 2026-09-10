@@ -4,23 +4,6 @@
   "components": [
     {
       "boundary": "boundary.acquisition",
-      "definition_line": 220,
-      "id": "actor.current-state-historical-probe",
-      "implementation_ref": "src/markeitech/system/historical_probe.py:CurrentStateHistoricalDemandProbeActor",
-      "kind": "markeitech_actor",
-      "label": "Current-State Historical Demand Probe",
-      "object_path": "markeitech.system.historical_probe.CurrentStateHistoricalDemandProbeActor",
-      "record_sha256": "ce5fa0bc0404374a2d4f2d26f98ac0d92885f79cf25ddfa3bdf3b1d39bf1002d",
-      "responsibilities": [
-        "Gate one acceptance-only historical demand on reconciled current session state.",
-        "Observe the correlated plan, readiness, and transient historical batches.",
-        "Exercise one bounded snapshot retry when explicitly configured."
-      ],
-      "source": "src/markeitech/system/historical_probe.py",
-      "source_sha256": "4f2a481f667b731bdae540723c5ad962bbf6d0204b41ebc25296755a600c6d75"
-    },
-    {
-      "boundary": "boundary.acquisition",
       "definition_line": 125,
       "id": "actor.data-acquisition",
       "implementation_ref": "src/markeitech/system/acquisition.py:DataAcquisitionActor",
@@ -84,58 +67,6 @@
       "source_sha256": "6454cee2a892ebd1a2c675a7c4ad45463fe2a2d942a1427b9c8f59be65940bad"
     },
     {
-      "boundary": "boundary.acquisition",
-      "definition_line": 68,
-      "id": "actor.historical-probe",
-      "implementation_ref": "src/markeitech/system/historical_probe.py:HistoricalDependencyProbeActor",
-      "kind": "markeitech_actor",
-      "label": "Historical Dependency Probe",
-      "object_path": "markeitech.system.historical_probe.HistoricalDependencyProbeActor",
-      "record_sha256": "d46073733ccacb475550afdc9e6d52c3a796aa0bd906ceff47757af353467880",
-      "responsibilities": [],
-      "source": "src/markeitech/system/historical_probe.py",
-      "source_sha256": "4f2a481f667b731bdae540723c5ad962bbf6d0204b41ebc25296755a600c6d75"
-    },
-    {
-      "boundary": "boundary.intelligence",
-      "definition_line": 78,
-      "id": "actor.market-state-entities",
-      "implementation_ref": "src/markeitech/intelligence/market_state_actor.py:MarketStateEntityActor",
-      "kind": "markeitech_actor",
-      "label": "Market State Entities",
-      "object_path": "markeitech.intelligence.market_state_actor.MarketStateEntityActor",
-      "record_sha256": "0d88d790c54a47745aed3fc103e7f4554a936bf6a0a4229164ea39af08f65ad3",
-      "responsibilities": [],
-      "source": "src/markeitech/intelligence/market_state_actor.py",
-      "source_sha256": "bfeb0bedc7346d0ba78cb8a708b85ccfd2e8e1215fd469b3150dc19c1e887a50"
-    },
-    {
-      "boundary": "boundary.intelligence",
-      "definition_line": 69,
-      "id": "actor.market-structure-entities",
-      "implementation_ref": "src/markeitech/intelligence/market_structure_actor.py:MarketStructureEntityActor",
-      "kind": "markeitech_actor",
-      "label": "Market Structure Entities",
-      "object_path": "markeitech.intelligence.market_structure_actor.MarketStructureEntityActor",
-      "record_sha256": "8f80a23f6ab8a511cd3b362c733ae4d47b409fbbf03bae7c14b4fb8cea38ac07",
-      "responsibilities": [],
-      "source": "src/markeitech/intelligence/market_structure_actor.py",
-      "source_sha256": "824ce1ea020c9247c8da0b13a3a50b27870f69e40dc8cf9f4f6a9ee2452a1b6a"
-    },
-    {
-      "boundary": "boundary.system",
-      "definition_line": 30,
-      "id": "actor.native-consumer-probe",
-      "implementation_ref": "src/markeitech/system/native_consumer_probe.py:NativeConsumerProbeActor",
-      "kind": "markeitech_actor",
-      "label": "Native Consumer Probe",
-      "object_path": "markeitech.system.native_consumer_probe.NativeConsumerProbeActor",
-      "record_sha256": "1c47c53641f79ff4bebb787061d02e172ed206cae6c83fe591a63265e64e7a51",
-      "responsibilities": [],
-      "source": "src/markeitech/system/native_consumer_probe.py",
-      "source_sha256": "6a7b194952ab13e56572314f73c0cf672ddcb48a4ca028588d475275b4e33216"
-    },
-    {
       "boundary": "boundary.system",
       "definition_line": 749,
       "id": "actor.operational-persistence",
@@ -147,19 +78,6 @@
       "responsibilities": [],
       "source": "src/markeitech/system/persistence.py",
       "source_sha256": "dd18d798090a59007d881eb8432d9cc0b9acf8083298bc65d138894a446b3f6a"
-    },
-    {
-      "boundary": "boundary.intelligence",
-      "definition_line": 60,
-      "id": "actor.quote-quality",
-      "implementation_ref": "src/markeitech/intelligence/quote_metric_actor.py:QuoteQualityMetricsActor",
-      "kind": "markeitech_actor",
-      "label": "Quote Quality Metrics",
-      "object_path": "markeitech.intelligence.quote_metric_actor.QuoteQualityMetricsActor",
-      "record_sha256": "fc301fccc915ccf29ce018d6fe4b4857ee6c29079bba2f9059dda4eca014a017",
-      "responsibilities": [],
-      "source": "src/markeitech/intelligence/quote_metric_actor.py",
-      "source_sha256": "4139c7f9f262eac4de52981c8f0b34f33f269276cf54f448acbf5f5c4390e3cc"
     },
     {
       "boundary": "boundary.system",
@@ -186,36 +104,6 @@
       "responsibilities": [],
       "source": "src/markeitech/system/resource_actor.py",
       "source_sha256": "0c1f9de601ccc02bcd2d8c5d2a182c745eef1271c9fafae4bf206178f10c6607"
-    },
-    {
-      "boundary": "boundary.intelligence",
-      "definition_line": 221,
-      "id": "actor.session-metrics",
-      "implementation_ref": "src/markeitech/intelligence/session_metric_actor.py:SessionMetricsActor",
-      "kind": "markeitech_actor",
-      "label": "Session Metrics",
-      "object_path": "markeitech.intelligence.session_metric_actor.SessionMetricsActor",
-      "record_sha256": "4cbc83f774b8fafddd0a337cc11f5909bbd43f3fff9eb48ab24514ecbb7d4660",
-      "responsibilities": [
-        "Converge bounded historical and live bars into completed-bar, session, window, and rolling measurements.",
-        "Consume immutable calendar projections and transitions without instantiating mcal.",
-        "Publish live and historical evidence demands for configured metric capabilities."
-      ],
-      "source": "src/markeitech/intelligence/session_metric_actor.py",
-      "source_sha256": "99abd097e3b926d9684343986cd82b09e75e68be41ddf4390ebb1c684d3fd075"
-    },
-    {
-      "boundary": "boundary.intelligence",
-      "definition_line": 68,
-      "id": "actor.session-reference-entities",
-      "implementation_ref": "src/markeitech/intelligence/session_entity_actor.py:SessionReferenceEntityActor",
-      "kind": "markeitech_actor",
-      "label": "Session Reference Entities",
-      "object_path": "markeitech.intelligence.session_entity_actor.SessionReferenceEntityActor",
-      "record_sha256": "dc1961a757fa612f7178e7021df08024161a587c127fc6e9f8db0ac83f77d6db",
-      "responsibilities": [],
-      "source": "src/markeitech/intelligence/session_entity_actor.py",
-      "source_sha256": "9fc7ed2327a9ebfdfed1fc3f206d4f3542dbf1aa88b8b912a3a9866a09202a72"
     },
     {
       "boundary": "boundary.intelligence",
@@ -246,19 +134,6 @@
       "responsibilities": [],
       "source": "src/markeitech/system/actor.py",
       "source_sha256": "3d48690643ce513f3ed00e56daa7465ebb8eb16056b4a039a2c934586b57b8ff"
-    },
-    {
-      "boundary": "boundary.intelligence",
-      "definition_line": 198,
-      "id": "actor.visual-debug",
-      "implementation_ref": "src/markeitech/intelligence/visual_debug_capture_actor.py:VisualDebugCaptureActor",
-      "kind": "markeitech_actor",
-      "label": "Visual Debug Capture",
-      "object_path": "markeitech.intelligence.visual_debug_capture_actor.VisualDebugCaptureActor",
-      "record_sha256": "7a54bfa946cca351b58db79f400668ce3bbfdbcfc20524063cc23d55da2f51c0",
-      "responsibilities": [],
-      "source": "src/markeitech/intelligence/visual_debug_capture_actor.py",
-      "source_sha256": "f93356de132e019bfef2fdfea120685ac12835d283134936c10e96e625fb5981"
     },
     {
       "boundary": "boundary.acquisition",
@@ -292,9 +167,9 @@
     }
   ],
   "counts": {
-    "components": 20,
-    "with_responsibilities": 7,
-    "without_responsibilities": 13
+    "components": 11,
+    "with_responsibilities": 5,
+    "without_responsibilities": 6
   },
   "evidence_class": "author_declared_source_architecture",
   "limitations": [
@@ -310,5 +185,5 @@
   },
   "schema_id": "markeitech-architecture-class-components",
   "schema_version": 1,
-  "source_snapshot_sha256": "ded26ecfdef7a2fb988ed9bc1fa4f0bd35c5d9a0a5a6449d6e25630dbc7c2e28"
+  "source_snapshot_sha256": "7491bb48e56fe2046dbe59514afcbb114212e7a6944fbfe15e8b7057c2f7061c"
 }

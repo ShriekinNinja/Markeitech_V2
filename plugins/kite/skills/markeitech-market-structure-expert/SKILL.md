@@ -18,7 +18,6 @@ Before a substantive recommendation, design, or review:
    `docs/development-guidelines.md`, `docs/README.md`, and the accepted documents governing the
    requested stage.
 2. For Stage 9D market structure, read
-   `docs/reference/session-metrics-replacement-plan.md`,
    `docs/architecture/deterministic-evidence-contracts.md`, and
    `docs/roadmap/development-backlog.md`.
 3. Read tracked market research and Markeitect examples relevant to the question. Treat research
