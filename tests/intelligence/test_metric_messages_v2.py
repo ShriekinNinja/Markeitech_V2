@@ -16,13 +16,9 @@ from markeitech.intelligence import (
     MetricValue,
     MetricValueKind,
 )
+from markeitech.intelligence._legacy_metric_value import LegacyMetricValue
 from markeitech.intelligence.metrics import _migrate_legacy_metric_value
-from markeitech.intelligence.quote_metrics import (
-    QuoteMetricCatalogPolicy,
-    QuoteMetricInput,
-    calculate_quote_metrics,
-    quote_metric_definitions,
-)
+from tests.intelligence.test_metrics import _definition
 
 SECOND_NS = 1_000_000_000
 RUN_EPOCH = UUID("11111111-1111-1111-1111-111111111111")
@@ -30,7 +26,7 @@ PARAMETER_EPOCH = UUID("22222222-2222-2222-2222-222222222222")
 CONFIGURATION_EPOCH = UUID("33333333-3333-3333-3333-333333333333")
 
 
-def _subject(metric_id: str = "quote.midpoint") -> MetricSubjectIdentity:
+def _subject(metric_id: str = "fixture.metric") -> MetricSubjectIdentity:
     return MetricSubjectIdentity(
         metric_id=metric_id,
         metric_version=1,
@@ -41,7 +37,7 @@ def _subject(metric_id: str = "quote.midpoint") -> MetricSubjectIdentity:
         configuration_digest="a" * 64,
         instrument_id="ESU6.CME",
         output_schema_version=2,
-        canonical_producer_id="QUOTE-QUALITY-METRICS",
+        canonical_producer_id="FIXTURE-METRICS",
     )
 
 
@@ -235,7 +231,7 @@ def test_metric_scalar_kinds_reject_float_bool_as_integer_and_overlong_text() ->
 
 def test_metric_registry_validates_v2_kind_even_when_value_is_null() -> None:
     registry = MetricRegistry(
-        quote_metric_definitions(QuoteMetricCatalogPolicy(250, 15_000, 50)),
+        (replace(_definition("fixture.metric"), unit="price", parameters=()),),
     )
     value = _value(
         kind=MetricValueKind.TEXT,
@@ -269,28 +265,11 @@ def test_revision_chain_requires_contiguous_previous_revision() -> None:
         replace(_value(), previous_revision=1)
 
 
-def test_legacy_quote_calculation_migrates_purely_without_changing_active_wire() -> None:
+def test_legacy_metric_migration_preserves_value_and_unit() -> None:
     registry = MetricRegistry(
-        quote_metric_definitions(QuoteMetricCatalogPolicy(250, 15_000, 50)),
+        (replace(_definition("fixture.metric"), unit="price", parameters=()),),
     )
-    legacy = calculate_quote_metrics(
-        QuoteMetricInput(
-            instrument_id="ESU6.CME",
-            bid=Decimal("100"),
-            ask=Decimal("101"),
-            observed_ts_ns=2 * SECOND_NS,
-            received_ts_ns=2 * SECOND_NS + 1,
-            session_id=None,
-            evidence_state="HEALTHY",
-            evidence_ref="quote:1",
-        ),
-        registry=registry,
-        parameter_version=1,
-        calculated_ts_ns=2 * SECOND_NS + 2,
-        published_ts_ns=2 * SECOND_NS + 3,
-        source="QUOTE-QUALITY-METRICS",
-        revision=1,
-    )
+    legacy = (_legacy_value(),)
 
     migrated = tuple(
         _migrate_legacy_metric_value(
@@ -319,27 +298,12 @@ def test_public_metric_value_is_v2_and_private_legacy_contract_is_not_exported()
 
 
 def test_legacy_reason_migration_requires_explicit_typed_mapping() -> None:
-    registry = MetricRegistry(
-        quote_metric_definitions(QuoteMetricCatalogPolicy(250, 15_000, 50)),
+    legacy = replace(
+        _legacy_value(),
+        value=None,
+        health=MetricHealth.UNAVAILABLE,
+        missing_reasons=("missing input", "evidence unavailable"),
     )
-    legacy = calculate_quote_metrics(
-        QuoteMetricInput(
-            instrument_id="ESU6.CME",
-            bid=None,
-            ask=None,
-            observed_ts_ns=2 * SECOND_NS,
-            received_ts_ns=2 * SECOND_NS + 1,
-            session_id=None,
-            evidence_state="UNAVAILABLE",
-            evidence_ref="quote:missing",
-        ),
-        registry=registry,
-        parameter_version=1,
-        calculated_ts_ns=2 * SECOND_NS + 2,
-        published_ts_ns=2 * SECOND_NS + 3,
-        source="QUOTE-QUALITY-METRICS",
-        revision=1,
-    )[0]
 
     with pytest.raises(ValueError, match="every legacy reason"):
         _migrate_legacy_metric_value(
@@ -350,3 +314,26 @@ def test_legacy_reason_migration_requires_explicit_typed_mapping() -> None:
             previous_revision=None,
             reason_codes=(MetricReasonCode.EVIDENCE_UNAVAILABLE,),
         )
+
+
+def _legacy_value() -> LegacyMetricValue:
+    return LegacyMetricValue(
+        metric_id="fixture.metric",
+        metric_version=1,
+        parameter_version=1,
+        instrument_id="ESU6.CME",
+        session_id=None,
+        value=Decimal("100.5"),
+        unit="price",
+        effective_ts_ns=2 * SECOND_NS,
+        observed_ts_ns=2 * SECOND_NS,
+        received_ts_ns=2 * SECOND_NS + 1,
+        calculated_ts_ns=2 * SECOND_NS + 2,
+        published_ts_ns=2 * SECOND_NS + 3,
+        health=MetricHealth.READY,
+        fidelity=MetricFidelity.DERIVED,
+        source="FIXTURE-METRICS",
+        evidence_refs=("fixture:1",),
+        missing_reasons=(),
+        revision=1,
+    )

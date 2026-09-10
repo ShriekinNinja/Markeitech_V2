@@ -1,6 +1,6 @@
 schema_version = 1
 registry_id = "markeitech-v2-public-api"
-registry_version = 5
+registry_version = 7
 selection_policy = "literal-package-all-plus-explicit"
 
 [[packages]]
@@ -18,8 +18,8 @@ expected_exports_sha256 = "68e84da572a58ce59ada54f731ce5f0613b7df26e1d6427422b51
 [[packages]]
 module = "markeitech.intelligence"
 source = "src/markeitech/intelligence/__init__.py"
-expected_export_count = 210
-expected_exports_sha256 = "d22add142a9a113acf034b49868d58b0f6dc77c16f9b4d4ec1272fc065dba658"
+expected_export_count = 47
+expected_exports_sha256 = "fbc95588f534b24cc71694a1d3a68c2eaafbf82763e072bce8f9d4563737f370"
 
 [[explicit]]
 exposed = "markeitech.cli.main"

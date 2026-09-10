@@ -1,15 +1,24 @@
 # Connected operational boot: nine operational actors, no watchlist or instruments.
-# IB, PostgreSQL, Discord webhooks, calendars and resource monitoring remain enabled.
-# Disabled numerical sections retain typed schema values; no analytics are composed.
+# Bootstrap settings come first; active actor settings follow composition/startup order.
+# TOML order is for reading only; it does not control startup or guarantee readiness order.
+# INACTIVE marks disabled capabilities; IDLE marks settings with no work in this empty profile.
 # Customize host/port/client ID and resource thresholds in an ignored local copy.
 # Live acceptance belongs to Markeitect; this profile does not prove connectivity or data fitness.
-schema_version = 24
+schema_version = 25
 
+# BOOTSTRAP: node and SystemControlActor identity (actor 1 has no separate settings).
 [runtime]
 name = "MARKEITECH-OPERATIONAL-001"
 trader_id = "MARKEITECH-001"
 environment = "live"
 
+# BOOTSTRAP: native node logging.
+[logging]
+directory = "../data/logs"
+file_name = "markeitech-operational.log"
+
+# BOOTSTRAP: IB data-client connection.
+# IDLE: market-data subscription and bar options have no instrument work in this profile.
 [ib]
 host = "127.0.0.1"
 port = 4002
@@ -24,116 +33,7 @@ handle_revised_bars = false
 connection_timeout_seconds = 30
 request_timeout_seconds = 30
 
-[logging]
-directory = "../data/logs"
-file_name = "markeitech-operational.log"
-
-[discord]
-enabled = true
-request_timeout_seconds = 5
-queue_capacity = 32
-ping_critical_resource_alerts = false
-
-[visual_debug_capture]
-enabled = false
-configuration_identity = "disabled"
-instrument_id = ""
-analytical_profile_id = "not-configured"
-analytical_profile_version = 1
-bar_specification = "5-MINUTE-LAST-EXTERNAL"
-parameter_version = 2
-output_directory = "../data/visual-debug-captures"
-capture_policy_version = 3
-target_historical_bars = 60
-target_live_bars = 0
-quiet_period_ms = 2000
-completion_deadline_ms = 900000
-output_drain_timeout_ms = 30000
-candle_pane_height_px = 720
-volume_pane_height_px = 130
-metric_pane_height_px = 110
-pane_gap_px = 18
-
-[runtime_resources]
-enabled = true
-sample_interval_ms = 10000
-log_every_samples = 1
-include_cache_counts = true
-disk_path = "/"
-
-[runtime_resources.health]
-enabled = true
-threshold_version = "operational-boot-v1"
-warning_consecutive_samples = 6
-critical_consecutive_samples = 3
-recovery_consecutive_samples = 6
-notification_cooldown_ms = 900000
-rss_growth_window_samples = 90
-stale_warning_ms = 30000
-stale_critical_ms = 120000
-
-[runtime_resources.health.warning]
-host_memory_available_percent = 15.0
-host_cpu_percent = 90.0
-host_swap_percent = 50.0
-disk_free_bytes = 16106127360
-disk_free_percent = 10.0
-process_rss_bytes = 4294967296
-process_rss_growth_bytes = 536870912
-process_cpu_percent = 400.0
-thread_count = 100
-open_fd_ratio = 0.70
-
-[runtime_resources.health.critical]
-host_memory_available_percent = 8.0
-host_cpu_percent = 98.0
-host_swap_percent = 80.0
-disk_free_bytes = 5368709120
-disk_free_percent = 2.0
-process_rss_bytes = 8589934592
-process_rss_growth_bytes = 1073741824
-process_cpu_percent = 800.0
-thread_count = 250
-open_fd_ratio = 0.90
-
-[persistence]
-dsn_env = "MARKEITECH_POSTGRES_DSN"
-connect_timeout_seconds = 5
-queue_capacity = 512
-critical_queue_reserve = 32
-write_batch_size = 64
-result_poll_interval_ms = 250
-shutdown_timeout_seconds = 10
-write_max_attempts = 3
-write_retry_backoff_ms = 100
-
-[acquisition]
-native_consumer_probe_enabled = false
-native_consumer_probe_unsubscribe_after_seconds = 15
-
-[historical]
-maximum_plan_requests = 1
-maximum_observations_per_request = 60
-maximum_total_observations = 60
-maximum_outstanding_requests = 1
-maximum_in_flight_requests = 1
-timeout_seconds = 30
-maximum_attempts = 1
-retry_backoff_ms = 500
-poll_interval_ms = 100
-
-[historical.probe]
-enabled = false
-mode = "current_state_gated"
-omit_initial_snapshot_request = true
-actor_ids = ["CURRENT-STATE-HISTORICAL-PROBE"]
-instrument_id = ""
-selector = "1-MINUTE-LAST-EXTERNAL"
-window = "recent_completed"
-minimum_observations = 5
-maximum_observations = 5
-priority = 10
-
+# ACTOR 2: SessionStateActor - canonical calendar state and current-state delivery.
 [sessions]
 evaluation_interval_ms = 1000
 projection_lookback_days = 120
@@ -143,12 +43,14 @@ maximum_calendars_per_request = 8
 calendar_catalog = "market-calendars.toml"
 calendar_ids = ["cme_equity"]
 
+# IDLE: projection-request retries are unused until a consumer needs calendar projections.
 [sessions.projection_retry]
 response_timeout_ms = 5000
 maximum_attempts = 3
 retry_backoff_ms = 1000
 maximum_elapsed_ms = 60000
 
+# ACTIVE: snapshot/reconciliation delivery used by operational calendar consumers at startup.
 [sessions.current_state_delivery]
 policy_version = 1
 response_timeout_ms = 5000
@@ -159,12 +61,16 @@ maximum_buffered_transitions_per_calendar = 8
 maximum_total_buffered_transitions = 32
 boundary_delivery_grace_ms = 2000
 
+# ACTOR 3: EvidenceHealthActor - calendar synchronization remains active.
+# IDLE: feed evaluation and recency checkpoints have no configured instruments.
 [evidence_health]
 evaluation_interval_ms = 1000
 consumer_retry_interval_ms = 1000
 provider_id = "IB"
 profile_checkpoint_samples = 25
 
+# INACTIVE: retained bar-health policy; no bar feeds exist in the empty watchlist.
+# Adaptive settings below are also disabled by adaptive = false.
 [[evidence_health.policies]]
 feed_kind = "bars"
 selector = "5-SECOND-LAST-EXTERNAL"
@@ -184,138 +90,85 @@ max_stale_ms = 20000
 min_unavailable_ms = 20000
 max_unavailable_ms = 60000
 
-[metrics.quote_quality]
-enabled = false
-required_watchlist_capability = "top_of_book"
-parameter_version = 1
-minimum_update_interval_ms = 250
-maximum_output_age_ms = 15000
-demand_retry_interval_ms = 1000
-evidence_snapshot_retry_interval_ms = 1000
-priority = 50
+# ACTOR 4: DiscordHealthActor - outbound operational and health webhooks.
+[discord]
+enabled = true
+request_timeout_seconds = 5
+queue_capacity = 32
+# INACTIVE: critical resource alerts do not ping Discord mentions.
+ping_critical_resource_alerts = false
 
-[metrics.session_measurements]
-enabled = false
-profiles = []
-profile_bindings = []
-required_watchlist_capability = "watchlist_last"
-parameter_version = 2
-parameter_source = "disabled"
-parameter_effective_from = "2026-08-28T11:03:07Z"
-conflict_policy = "reject_conflict"
-maximum_active_sessions = 1
-demand_retry_interval_ms = 1000
-evidence_snapshot_retry_interval_ms = 1000
-priority = 40
+# ACTORS 5-6: HistoricalEvidencePlannerActor and DataAcquisitionActor.
+# IDLE: request limits are retained, but no history or instrument requests run with zero demand.
+[historical]
+maximum_plan_requests = 1
+maximum_observations_per_request = 60
+maximum_total_observations = 60
+maximum_outstanding_requests = 1
+maximum_in_flight_requests = 1
+timeout_seconds = 30
+maximum_attempts = 1
+retry_backoff_ms = 500
+poll_interval_ms = 100
 
-[metrics.session_measurements.completed_bars]
-live_selector = "5-SECOND-LAST-EXTERNAL"
-historical_selector = "5-MINUTE-LAST-EXTERNAL"
-historical_window = "recent_completed"
-minimum_historical_observations = 2
-maximum_historical_observations = 60
-calculation_interval_seconds = 300
-minimum_interval_seconds = 300
-maximum_interval_seconds = 300
-interval_step_seconds = 300
-interval_dynamic = false
-aggregation_boundary_policy = "utc_fixed_intraday"
-timestamp_policy = "interval_end"
-revision_policy = "reject_revision"
-maximum_retained_observations = 1000
-maximum_output_age_ms = 120000
+# ACTOR 7: RuntimeResourceActor - process, host, disk, and cache measurements.
+[runtime_resources]
+enabled = true
+sample_interval_ms = 10000
+log_every_samples = 1
+include_cache_counts = true
+disk_path = "/"
 
-[metrics.session_measurements.rolling_measurements]
-enabled = false
-minimum_coverage_ratio = 0.9
-minimum_coverage_ratio_floor = 0.7
-minimum_coverage_ratio_ceiling = 1.0
-minimum_coverage_ratio_step = 0.05
-minimum_coverage_ratio_dynamic = true
-maximum_retained_observations = 1000
-maximum_output_age_ms = 120000
+# ACTOR 8: RuntimeResourceHealthActor - resource thresholds, recovery, and telemetry staleness.
+[runtime_resources.health]
+enabled = true
+threshold_version = "operational-boot-v1"
+warning_consecutive_samples = 6
+critical_consecutive_samples = 3
+recovery_consecutive_samples = 6
+notification_cooldown_ms = 900000
+rss_growth_window_samples = 90
+stale_warning_ms = 30000
+stale_critical_ms = 120000
 
-[metrics.session_measurements.rolling_measurements.baseline]
-eligible_reference_health = ["READY"]
-eligible_reference_fidelities = ["REPORTED", "DERIVED"]
-recent_reference_count = 8
-recent_reference_count_minimum = 8
-recent_reference_count_maximum = 64
-recent_reference_count_step = 1
-recent_reference_count_dynamic = true
-minimum_recent_references = 8
-phase_reference_count = 5
-phase_reference_count_minimum = 5
-phase_reference_count_maximum = 30
-phase_reference_count_step = 1
-phase_reference_count_dynamic = true
-minimum_phase_references = 5
+# ACTIVE: warning thresholds evaluated by RuntimeResourceHealthActor.
+[runtime_resources.health.warning]
+host_memory_available_percent = 15.0
+host_cpu_percent = 90.0
+host_swap_percent = 50.0
+disk_free_bytes = 16106127360
+disk_free_percent = 10.0
+process_rss_bytes = 4294967296
+process_rss_growth_bytes = 536870912
+process_cpu_percent = 400.0
+thread_count = 100
+open_fd_ratio = 0.70
 
-[[metrics.session_measurements.rolling_measurements.families]]
-family_id = "fast_placeholder"
-source_selector = "5-MINUTE-LAST-EXTERNAL"
-input_selector = "5-MINUTE-LAST-EXTERNAL"
-input_interval_seconds = 300
-aggregation_policy = "identity"
-selected_context_candidate_id = "context_placeholder_10m"
+# ACTIVE: critical thresholds evaluated by RuntimeResourceHealthActor.
+[runtime_resources.health.critical]
+host_memory_available_percent = 8.0
+host_cpu_percent = 98.0
+host_swap_percent = 80.0
+disk_free_bytes = 5368709120
+disk_free_percent = 2.0
+process_rss_bytes = 8589934592
+process_rss_growth_bytes = 1073741824
+process_cpu_percent = 800.0
+thread_count = 250
+open_fd_ratio = 0.90
 
-[[metrics.session_measurements.rolling_measurements.families.candidates]]
-candidate_id = "context_placeholder_10m"
-purpose = "context"
-duration_seconds = 600
-minimum_duration_seconds = 600
-maximum_duration_seconds = 3600
-duration_step_seconds = 300
-dynamic = true
-active = true
-
-[metrics.session_measurements.session_references]
-enabled = false
-historical_selector = "15-MINUTE-LAST-EXTERNAL"
-active_window = "session_to_date"
-previous_window = "previous_sessions"
-overnight_window = "current_overnight"
-minimum_historical_observations = 1
-maximum_historical_observations = 4
-vwap_price_basis = "typical"
-vwap_price_basis_dynamic = true
-minimum_coverage_ratio = 0.8
-minimum_coverage_ratio_floor = 0.5
-minimum_coverage_ratio_ceiling = 1.0
-minimum_coverage_ratio_step = 0.05
-minimum_coverage_ratio_dynamic = true
-maximum_retained_sessions = 1
-maximum_output_age_ms = 120000
-
-[metrics.session_measurements.session_windows]
-enabled = false
-price_basis = "typical"
-price_basis_dynamic = true
-minimum_coverage_ratio = 0.8
-minimum_coverage_ratio_floor = 0.5
-minimum_coverage_ratio_ceiling = 1.0
-minimum_coverage_ratio_step = 0.05
-minimum_coverage_ratio_dynamic = true
-maximum_retained_sessions = 1
-maximum_output_age_ms = 120000
-
-[metrics.entity_analysis]
-enabled = false
-required_watchlist_capability = "watchlist_last"
-catalog_version = 2
-parameter_source = "disabled"
-parameter_effective_from = "2026-08-27T00:00:00Z"
-maximum_entities_global = 1000
-maximum_entities_per_instrument = 1000
-maximum_entities_per_instrument_type = 250
-completed_session_retention = 1
-completed_session_maximum_age_days = 14
-maximum_input_age_ms = 120000
-maximum_metric_values = 1000
-market_state_reconciliation_interval_ms = 1000
-minimum_snapshot_interval_ms = 1000
-maximum_publications_per_cycle = 100
-definitions = []
+# ACTOR 9: OperationalPersistenceActor - bounded operational audit delivery.
+# Its database is also initialized by the CLI before node construction.
+[persistence]
+dsn_env = "MARKEITECH_POSTGRES_DSN"
+connect_timeout_seconds = 5
+queue_capacity = 512
+critical_queue_reserve = 32
+write_batch_size = 64
+result_poll_interval_ms = 250
+shutdown_timeout_seconds = 10
+write_max_attempts = 3
+write_retry_backoff_ms = 100
 
 [watchlist]
 enabled = false

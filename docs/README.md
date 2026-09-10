@@ -41,8 +41,6 @@ generated review artifacts now live with the isolated tool under
 
 ## Detailed Reference And Development Collaboration
 
-- [Session-metrics replacement plan](reference/session-metrics-replacement-plan.md) — detailed
-  active V3 replacement work; not proof that disabled owners are available.
 - [Kite advisor council](development/kite-advisor-council.md) — development-time consultation,
   separate from Sir Loke runtime behavior.
 - [Kite resource allocation](development/kite-advisor-allocation-design.md) — per-consultation
@@ -60,7 +58,6 @@ generated review artifacts now live with the isolated tool under
 - [PostgreSQL](operations/v2-postgresql.md)
 - [Runtime resource telemetry](operations/v2-runtime-resource-telemetry.md)
 - [Discord health webhook](operations/discord-health-webhook.md)
-- [Visual evidence review](operations/visual-evidence-review.md)
 - [V2 API documentation](operations/v2-api-documentation.md)
 
 ## Generated API Documentation

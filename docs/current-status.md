@@ -21,7 +21,7 @@ None of those future documents proves implementation.
 | Product runtime | Active V2 source at repository root, built on NautilusTrader `2.0.0rc4` |
 | First visible product | Sir Loke v1 is accepted product direction but unimplemented |
 | Provider | Interactive Brokers connection through TWS/IB Gateway for market data only |
-| Active tracked profile | One-instrument V3 ES operational/historical probe profile |
+| Active tracked profile | Zero-instrument operational profile; optional one-instrument V3 ES profile |
 | Operator CLI | Unified `.venv/bin/markeitech` command hierarchy is implemented |
 | Trade observation | Unimplemented; no execution client, account/order/fill/position owner, or trade lifecycle |
 | Discord | Outbound webhook health projection exists; inbound conversational bot does not |
@@ -91,11 +91,10 @@ profile used by the most recent V3 acceptance work. Its actor plan contains exac
 4. `HistoricalEvidencePlannerActor`;
 5. `WatchlistActor`;
 6. `DataAcquisitionActor`;
-7. the temporary `CurrentStateHistoricalProbeActor`; and
-8. `OperationalPersistenceActor`.
+7. `OperationalPersistenceActor`.
 
 The profile is limited to `ESU6.CME`, the `cme_equity` calendar, a `watchlist_last` bar capability,
-and a temporary five-observation current-state-gated historical probe. It does not compose a
+and no diagnostic demand producer. It does not compose a
 completed-bar foundation, metric owner, entity owner, semantic event detector, options owner,
 Discord actor, runtime-resource actor, broker-observation owner, trade lifecycle, or Sir Loke.
 
@@ -105,14 +104,37 @@ behavior.
 
 ## Connected Operational Boot Profile
 
-`config/system.operational.toml` adds a schema-24 zero-instrument baseline with nine operational
+`config/system.operational.toml` uses a schema-25 zero-instrument baseline with nine operational
 actors: System Control, Session State, Evidence Health, Historical Evidence Planner, Data
 Acquisition, Discord Health, Runtime Resources, Runtime Resource Health, and Operational
 Persistence. IB remains configured; the watchlist, probes, analytics, and visual capture are
-excluded. Schema-23 profiles remain supported. This is **ready for Markeitect live test**, not
-connected-accepted. See the [operational boot runbook](operations/operational-boot.md) for exact
+excluded. Older schema-23/24 profiles must be migrated before loading. This is **ready for
+Markeitect live test**, not connected-accepted. See the [operational boot runbook](operations/operational-boot.md) for exact
 commands, independent readiness evidence, effects, stop conditions, and remaining limitations.
 No runtime instrument addition or Sir Loke behavior is supplied by this profile.
+
+## Diagnostic And Inactive Actor Removal
+
+The three runtime diagnostic actors and the private completed-bar foundation implementation are
+removed, including their composition, requester admission, configuration, and dedicated tests.
+Visual Debug capture, its writer/renderer, configuration, and dedicated tests are also removed.
+SessionMetricsActor and its dependent session-reference, market-state, and market-structure
+actors are removed, together with their dedicated calculations, configuration, tests, and
+replacement plan. QuoteQualityMetricsActor, its midpoint/spread calculations, and its
+configuration and dedicated tests are also removed. The current runtime has ten actor classes;
+the operational profile still composes nine. Independent canonical bar/metric and entity
+contracts remain.
+
+The API registry selects 98 public objects; the diagram source census recognizes ten actor
+registrations. Offline checks do not establish connected acceptance.
+
+System configuration is now schema 25. Remove the complete `[acquisition]` and
+`[historical.probe]`, `[visual_debug_capture]`, `[metrics.session_measurements]`, and
+`[metrics.entity_analysis]` sections, plus the entire `[metrics]` tree (including
+`[metrics.quote_quality]`), from older local profiles, then set
+`schema_version = 25`;
+retain `[historical]`, which still configures the production acquisition owner. Local files are
+not migrated automatically. See [developer setup](operations/developer-setup.md).
 
 ## Implemented Foundation
 
@@ -160,28 +182,13 @@ See [session and evidence health](architecture/session-evidence-health.md) and
 
 ### Measurements, entities, and V3 replacement work
 
-Substantial deterministic measurement and entity code exists, but active and historical surfaces
-must not be conflated:
+The retained implementation includes generic metric/entity contracts and the independent V3-03 Slice 1 completed-bar/metric identities, validation, admission, and
+producer-manifest contracts. These contracts do not provide a composed canonical bar or entity
+producer. Quote, session, window, rolling, and market-structure calculations and their actors have been
+removed. Earlier implementation and connected evidence remain available through Git history.
 
-- Earlier Stage 9C profiles implemented and connected-tested completed-bar, session-reference,
-  analytical-window, and rolling numerical measurements.
-- Earlier Stage 9D work implemented pure entity/state contracts and owners for session references,
-  volatility state, confirmed swings, pivot relationships, FVGs, and derived zones. Some optional
-  actor paths received bounded connected acceptance.
-- V3-02 disabled the combined `SessionMetricsActor`, dependent Entity Analysis, and Visual Debug
-  in both tracked runtime profiles because those responsibilities require replacement and an
-  atomic wire cutover.
-- V3-03 Slice 1 is merged at `4631df5` and supplies inactive v2 completed-bar/metric contracts,
-  validation, admission, and producer-manifest foundations.
-- V3-03 Slice 2 is merged through `e8f49e3` and supplies a private disabled multi-series
-  completed-bar foundation plus deterministic fixtures. It is not composed or connected-accepted.
-- V3-03 Slices 3–9 are unimplemented. The separate rc4 prerequisite is already merged, so the old
-  “awaiting rc4 PR” resume text is stale. Any resumed V3-03 work needs a newly approved batch and
-  must be reconciled with the accepted Sir Loke v1 delivery priority.
-
-The detailed replacement boundary remains in the
-[session-metrics replacement plan](reference/session-metrics-replacement-plan.md). Passing tests
-for inactive owners do not make them current live outputs.
+Any future analytical capability needs a newly reviewed implementation tied to a named Sir Loke
+task. Passing contract tests does not establish active market outputs or connected acceptance.
 
 ### Persistence and operational health
 
@@ -290,8 +297,8 @@ only the behavior exercised for its actual account, products, data, and provider
 ## Current Validation Debt And Stop Gates
 
 - Provider subscription failure and connection-loss recovery are not accepted end to end.
-- The V3 completed-bar and metric replacement has not reached composition, cold cutover, legacy
-  retirement, or connected acceptance.
+- Canonical completed-bar and analytical metric/entity production needs a newly reviewed
+  implementation and connected acceptance.
 - Manual TWS order visibility, external-order claiming/binding, and read-only API behavior require
   a bounded observation-only connected proof.
 - Canonical trade episode, recommendation linkage, intervention, conversation, and report schemas
@@ -330,8 +337,7 @@ The current planning change activates no actor, provider, model, bot, metric, or
 
 The active tree intentionally does not retain completed stage logs as competing authority. Stable
 decisions are consolidated in the five architecture documents linked from
-[`README.md`](README.md). The one detailed active cutover reference is the
-[session-metrics replacement plan](reference/session-metrics-replacement-plan.md). Use Git,
+[`README.md`](README.md). Use Git,
 migration tags, and merged pull requests for exact implementation chronology, former research,
 review handoffs, and superseded plans.
 

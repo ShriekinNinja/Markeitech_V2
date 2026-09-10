@@ -18,12 +18,16 @@ and a restart; this task does not introduce a dynamic universe controller.
 
 ## Configuration And Contracts
 
-The new profile uses system schema 24. Schema 23 profiles remain loadable. `watchlist.enabled`
-defaults to true for existing profiles; a disabled watchlist must have `members = []`. Enabling the
-watchlist requires at least one member. Empty profiles reject enabled instrument-dependent probes
-and analytical engines. Disabled session measurements permit empty profiles and bindings, and a
-disabled historical probe no longer requires a watchlist instrument. Disabled numerical blocks
-still carry the existing typed schemas; their values are inert and do not enable analysis.
+The profile uses system schema 25. For older local profiles, remove the complete `[acquisition]`
+and `[historical.probe]` sections, plus `[visual_debug_capture]`,
+the entire `[metrics]` tree (including quote quality, session measurements, and entity analysis) if
+present, and update
+`schema_version` to 25. Keep `[historical]` and its
+production request limits. The loader rejects older schemas and retired sections.
+
+`watchlist.enabled` defaults to true; a disabled watchlist must have `members = []`. Enabling the
+watchlist requires at least one member. Metric-producing actors and their configuration have
+been removed.
 
 The acquisition-status payload retains its version-1 shape and now accepts an empty expected set.
 Its readiness means that the configured instrument-definition work is complete, including explicitly
@@ -57,7 +61,7 @@ cp -n config/system.operational.toml config/system.operational.local.toml
 Review that copy before running. Set the correct TWS/IB Gateway host, port, and a free nonzero client
 ID. The template uses `127.0.0.1:4002`, client `20`; these values do not select or identify an account
 mode. Keep TWS API read-only enabled. Keep `watchlist.enabled = false`, `members = []`, the nine-actor
-roster, and the probes/analytics disabled. Review the resource thresholds for this machine.
+roster, and analytics disabled. Review the resource thresholds for this machine.
 
 Have PostgreSQL running using the existing [PostgreSQL operations](v2-postgresql.md). The existing
 ignored `.env` must supply:

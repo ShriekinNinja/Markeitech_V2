@@ -6,10 +6,6 @@ from uuid import uuid4
 
 import pytest
 
-from markeitech.intelligence.visual_debug_capture_actor import (
-    VisualDebugCaptureActor,
-    VisualDebugCaptureActorConfig,
-)
 from markeitech.system.composition import (
     StartupPrerequisites,
     build_actor_plan,
@@ -33,28 +29,6 @@ def _config():  # noqa: ANN202
     return load_system_config(root / "config/system.example.toml")
 
 
-def _with_session_metrics_enabled(config):  # noqa: ANN001, ANN202
-    return replace(
-        config,
-        metrics=replace(
-            config.metrics,
-            session_measurements=replace(
-                config.metrics.session_measurements,
-                enabled=True,
-            ),
-        ),
-    )
-
-
-def _session_metrics_enabled_source() -> str:
-    root = Path(__file__).parents[2]
-    return (root / "config/system.example.toml").read_text().replace(
-        "[metrics.session_measurements]\nenabled = false",
-        "[metrics.session_measurements]\nenabled = true",
-        1,
-    )
-
-
 def _prerequisites(ready: bool = True) -> StartupPrerequisites:
     return StartupPrerequisites(
         run_id=uuid4(),
@@ -70,7 +44,6 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "session_state",
         "evidence_health",
         "discord_health",
-        "quote_quality_metrics",
         "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
@@ -95,8 +68,9 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "boundary_delivery_grace_ms": 2000,
     }
     evidence_health = next(item for item in plan if item.key == "evidence_health")
-    assert evidence_health.config.config["current_state_delivery"] == (
-        session_state.config.config["current_state_delivery"]
+    assert (
+        evidence_health.config.config["current_state_delivery"]
+        == (session_state.config.config["current_state_delivery"])
     )
     assert {
         item["calendar_id"] for item in evidence_health.config.config["calendar_expectations"]
@@ -126,11 +100,13 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "cbot_equity",
         "cme_energy",
     }
-    assert planner.config.config["current_state_delivery"] == (
-        session_state.config.config["current_state_delivery"]
+    assert (
+        planner.config.config["current_state_delivery"]
+        == (session_state.config.config["current_state_delivery"])
     )
-    assert planner.config.config["calendar_expectations"] == (
-        evidence_health.config.config["calendar_expectations"]
+    assert (
+        planner.config.config["calendar_expectations"]
+        == (evidence_health.config.config["calendar_expectations"])
     )
     watchlist = next(item for item in plan if item.key == "watchlist")
     assert watchlist.config.config["consumer_retry_interval_ms"] == 1000
@@ -176,14 +152,6 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
     ]
     evidence = next(item for item in plan if item.key == "evidence_health")
     assert evidence.config.config["consumer_retry_interval_ms"] == 1000
-    quote_metrics = next(item for item in plan if item.key == "quote_quality_metrics")
-    assert quote_metrics.config.config["instrument_ids"] == [
-        instrument_id
-        for instrument_id in _config().instrument_ids
-        if instrument_id not in {"^SPX.CBOE", "^VIX.CBOE"}
-    ]
-    assert quote_metrics.config.config["minimum_update_interval_ms"] == 250
-    assert quote_metrics.config.config["parameter_version"] == 1
     resources = next(item for item in plan if item.key == "runtime_resources")
     assert resources.config.config == {
         "actor_id": "RUNTIME-RESOURCES",
@@ -212,7 +180,6 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "system_control",
         "session_state",
         "evidence_health",
-        "quote_quality_metrics",
         "historical_evidence_planner",
         "watchlist",
         "data_acquisition",
@@ -233,344 +200,6 @@ def test_actor_plan_omits_disabled_runtime_resource_telemetry() -> None:
 
     assert "runtime_resources" not in {registration.key for registration in plan}
     assert "runtime_resource_health" not in {registration.key for registration in plan}
-
-
-def test_actor_plan_adds_visual_debug_capture_before_session_metrics() -> None:
-    config = _with_session_metrics_enabled(_config())
-    config = replace(
-        config,
-        watchlist=replace(config.watchlist, members=(config.watchlist.members[0],)),
-        visual_debug_capture=replace(
-            config.visual_debug_capture,
-            enabled=True,
-            configuration_identity="test-v3-completed-bar-review",
-        ),
-    )
-
-    plan = build_actor_plan(config, _prerequisites())
-
-    keys = [registration.key for registration in plan]
-    assert keys.index("visual_debug_capture") < keys.index("session_metrics")
-    capture = next(item for item in plan if item.key == "visual_debug_capture")
-    assert capture.actor_id == "VISUAL-DEBUG-CAPTURE"
-    assert capture.config.config["target_historical_bars"] == 5
-    assert capture.config.config["target_live_bars"] == 5
-    assert capture.config.config["bar_specification"] == "1-MINUTE-LAST-EXTERNAL"
-    actor_config = VisualDebugCaptureActorConfig(**capture.config.config)
-    actor = VisualDebugCaptureActor(actor_config)
-    assert str(actor.actor_id) == "VISUAL-DEBUG-CAPTURE"
-
-
-def test_actor_plan_omits_disabled_native_consumer_probe() -> None:
-    config = _config()
-    config = replace(
-        config,
-        acquisition=replace(config.acquisition, native_consumer_probe_enabled=False),
-    )
-
-    plan = build_actor_plan(config, _prerequisites())
-
-    assert "native_consumer_probe" not in {registration.key for registration in plan}
-
-
-def test_actor_plan_adds_enabled_historical_dependency_probe() -> None:
-    config = _config()
-    config = replace(
-        config,
-        historical=replace(
-            config.historical,
-            probe=replace(config.historical.probe, enabled=True),
-        ),
-    )
-
-    plan = build_actor_plan(config, _prerequisites())
-
-    probes = [item for item in plan if item.key.startswith("historical_dependency_probe:")]
-    session_state = next(item for item in plan if item.key == "session_state")
-    assert [probe.actor_id for probe in probes] == [
-        "HISTORICAL-PROBE-A",
-        "HISTORICAL-PROBE-B",
-    ]
-    assert probes[0].config.config == {
-        "actor_id": "HISTORICAL-PROBE-A",
-        "instrument_id": "ESU6.CME",
-        "selector": "1-MINUTE-LAST-EXTERNAL",
-        "window": "recent_completed",
-        "minimum_observations": 5,
-        "maximum_observations": 10,
-        "priority": 10,
-    }
-    assert session_state.config.config["allowed_current_state_requesters"] == [
-        "EVIDENCE-HEALTH",
-        "HISTORICAL-EVIDENCE-PLANNER",
-    ]
-
-
-def test_actor_plan_adds_one_enabled_current_state_historical_probe() -> None:
-    config = _config()
-    config = replace(
-        config,
-        historical=replace(
-            config.historical,
-            probe=replace(
-                config.historical.probe,
-                enabled=True,
-                mode="current_state_gated",
-                omit_initial_snapshot_request=True,
-                actor_ids=("CURRENT-STATE-HISTORICAL-PROBE",),
-            ),
-        ),
-    )
-
-    prerequisites = _prerequisites()
-    plan = build_actor_plan(config, prerequisites)
-
-    probe = next(item for item in plan if item.key == "current_state_historical_probe")
-    session_state = next(item for item in plan if item.key == "session_state")
-    assert probe.actor_id == "CURRENT-STATE-HISTORICAL-PROBE"
-    assert probe.config.config["source_epoch"] == str(prerequisites.run_id)
-    assert probe.config.config["omit_initial_snapshot_request"] is True
-    assert probe.config.config["calendar_expectations"]
-    assert session_state.config.config["allowed_current_state_requesters"] == [
-        "EVIDENCE-HEALTH",
-        "HISTORICAL-EVIDENCE-PLANNER",
-        "CURRENT-STATE-HISTORICAL-PROBE",
-    ]
-    assert not any(item.key.startswith("historical_dependency_probe:") for item in plan)
-
-
-def test_actor_plan_adds_enabled_native_consumer_probe() -> None:
-    config = _config()
-    config = replace(
-        config,
-        acquisition=replace(config.acquisition, native_consumer_probe_enabled=True),
-    )
-
-    plan = build_actor_plan(config, _prerequisites())
-
-    probe = next(item for item in plan if item.key == "native_consumer_probe")
-    assert len(probe.config.config["feeds"]) == 34
-    assert probe.config.config["feeds"][0] == {
-        "instrument_id": "ESU6.CME",
-        "calendar_id": "cme_equity",
-        "kind": "quotes",
-        "selector": "default",
-    }
-    assert probe.config.config["unsubscribe_after_seconds"] == 15
-
-
-def test_actor_plan_adds_enabled_session_metrics_with_explicit_profiles() -> None:
-    config = _with_session_metrics_enabled(_config())
-
-    plan = build_actor_plan(config, _prerequisites())
-
-    actor = next(item for item in plan if item.key == "session_metrics")
-    assert actor.actor_id == "SESSION-METRICS"
-    assert actor.config.config["instrument_ids"] == list(config.instrument_ids)
-    assert actor.config.config["profile_bindings"]["ESU6.CME"] == "cme_equity_primary"
-    assert actor.config.config["profile_bindings"]["^SPX.CBOE"] == "us_index_primary"
-    assert actor.config.config["profiles"][0]["overnight_enabled"] is False
-    assert "visual_snapshot_enabled" not in actor.config.config
-    assert "visual_snapshot_maximum_intervals" not in actor.config.config
-    assert actor.config.config["completed_bars"] == {
-        "live_selector": "5-SECOND-LAST-EXTERNAL",
-        "historical_selector": "1-MINUTE-LAST-EXTERNAL",
-        "historical_window": "recent_completed",
-        "minimum_historical_observations": 2,
-        "maximum_historical_observations": 720,
-        "calculation_interval_seconds": 60,
-        "minimum_interval_seconds": 5,
-        "maximum_interval_seconds": 3600,
-        "interval_step_seconds": 5,
-        "interval_dynamic": True,
-        "aggregation_boundary_policy": "utc_fixed_intraday",
-        "timestamp_policy": "interval_start",
-        "revision_policy": "reject_revision",
-        "maximum_retained_observations": 8000,
-        "maximum_output_age_ms": 120000,
-    }
-    assert actor.config.config["session_references"] == {
-        "enabled": True,
-        "historical_selector": "15-MINUTE-LAST-EXTERNAL",
-        "active_window": "session_to_date",
-        "previous_window": "previous_sessions",
-        "overnight_window": "current_overnight",
-        "minimum_historical_observations": 1,
-        "maximum_historical_observations": 100,
-        "vwap_price_basis": "typical",
-        "vwap_price_basis_dynamic": True,
-        "minimum_coverage_ratio": 0.8,
-        "minimum_coverage_ratio_floor": 0.5,
-        "minimum_coverage_ratio_ceiling": 1.0,
-        "minimum_coverage_ratio_step": 0.05,
-        "minimum_coverage_ratio_dynamic": True,
-        "maximum_retained_sessions": 4,
-        "maximum_output_age_ms": 120000,
-    }
-    assert actor.config.config["session_windows"] == {
-        "enabled": True,
-        "price_basis": "typical",
-        "price_basis_dynamic": True,
-        "minimum_coverage_ratio": 0.8,
-        "minimum_coverage_ratio_floor": 0.5,
-        "minimum_coverage_ratio_ceiling": 1.0,
-        "minimum_coverage_ratio_step": 0.05,
-        "minimum_coverage_ratio_dynamic": True,
-        "maximum_retained_sessions": 4,
-        "maximum_output_age_ms": 120000,
-    }
-    rolling = actor.config.config["rolling_measurements"]
-    assert rolling["baseline"]["recent_reference_count"] == 20
-    assert rolling["baseline"]["eligible_reference_health"] == ["READY"]
-    assert [family["family_id"] for family in rolling["families"]] == [
-        "fast",
-        "tactical",
-        "structural_intraday",
-    ]
-    assert rolling["families"][0]["selected_context_candidate_id"] == "context_45m"
-    assert actor.config.config["profiles"][0]["windows"] == [
-        {
-            "window_id": "opening_range_fast",
-            "purpose": "opening_range",
-            "anchor_phase": "GLOBEX",
-            "anchor_boundary": "start",
-            "offset_seconds": 0,
-            "duration_seconds": 300,
-            "minimum_duration_seconds": 60,
-            "maximum_duration_seconds": 1800,
-            "duration_step_seconds": 60,
-            "dynamic": True,
-            "historical_selector": "1-MINUTE-LAST-EXTERNAL",
-            "minimum_historical_observations": 1,
-            "maximum_historical_observations": 5,
-        },
-        {
-            "window_id": "opening_range_slow",
-            "purpose": "opening_range",
-            "anchor_phase": "GLOBEX",
-            "anchor_boundary": "start",
-            "offset_seconds": 0,
-            "duration_seconds": 900,
-            "minimum_duration_seconds": 300,
-            "maximum_duration_seconds": 3600,
-            "duration_step_seconds": 300,
-            "dynamic": True,
-            "historical_selector": "1-MINUTE-LAST-EXTERNAL",
-            "minimum_historical_observations": 1,
-            "maximum_historical_observations": 15,
-        },
-        {
-            "window_id": "power_hour",
-            "purpose": "power_hour",
-            "anchor_phase": "GLOBEX",
-            "anchor_boundary": "end",
-            "offset_seconds": -3600,
-            "duration_seconds": 3600,
-            "minimum_duration_seconds": 1800,
-            "maximum_duration_seconds": 7200,
-            "duration_step_seconds": 300,
-            "dynamic": True,
-            "historical_selector": "15-MINUTE-LAST-EXTERNAL",
-            "minimum_historical_observations": 1,
-            "maximum_historical_observations": 4,
-        },
-    ]
-
-
-def test_actor_plan_adds_enabled_session_reference_entity_owner(tmp_path: Path) -> None:
-    source = _session_metrics_enabled_source()
-    definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
-    path = tmp_path / "system.toml"
-    path.write_text(
-        source.replace(
-            "[metrics.entity_analysis]\nenabled = false",
-            "[metrics.entity_analysis]\nenabled = true",
-        ).replace("definitions = []", definitions),
-    )
-    config = load_system_config(path)
-
-    plan = build_actor_plan(config, _prerequisites())
-
-    actor = next(item for item in plan if item.key == "session_reference_entities")
-    assert actor.actor_id == "SESSION-REFERENCE-ENTITIES"
-    assert len(actor.config.config["instrument_profiles"]) == len(config.instrument_ids)
-    assert {definition["entity_type"] for definition in actor.config.config["definitions"]} == {
-        "analytical_session",
-        "previous_session_reference",
-        "opening_range",
-        "gap",
-        "objective_level.previous_session_high",
-        "objective_level.previous_session_low",
-        "objective_level.opening_range_high",
-        "objective_level.opening_range_low",
-    }
-    assert actor.config.config["maximum_publications_per_cycle"] == 500
-
-
-def test_actor_plan_adds_only_runtime_bound_market_state_definitions(tmp_path: Path) -> None:
-    source = _session_metrics_enabled_source()
-    definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
-    path = tmp_path / "system.toml"
-    path.write_text(
-        source.replace(
-            "[metrics.entity_analysis]\nenabled = false",
-            "[metrics.entity_analysis]\nenabled = true",
-        ).replace("definitions = []", definitions),
-    )
-    config = load_system_config(path)
-
-    plan = build_actor_plan(config, _prerequisites())
-
-    actor = next(item for item in plan if item.key == "market_state_entities")
-    assert actor.actor_id == "MARKET-STATE-ENTITIES"
-    assert actor.config.config["maximum_metric_values"] == 20000
-    assert actor.config.config["reconciliation_interval_ms"] == 1000
-    assert [item["definition_id"] for item in actor.config.config["definitions"]] == [
-        "volatility-state-v1",
-    ]
-    definition = actor.config.config["definitions"][0]
-    assert definition["market_state"]["parameter_set_id"] == ("volatility-percentile-fixture")
-    assert definition["market_state"]["policies"][0]["measure_role"] == ("normalized_volatility")
-
-
-def test_actor_plan_rejects_market_state_metric_without_runtime_producer(tmp_path: Path) -> None:
-    source = _session_metrics_enabled_source()
-    definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
-    definitions = definitions.replace(
-        "rolling.fast.context_45m.range_percentile_recent",
-        "rolling.fast.missing_candidate.range_percentile_recent",
-    )
-    path = tmp_path / "system.toml"
-    path.write_text(
-        source.replace(
-            "[metrics.entity_analysis]\nenabled = false",
-            "[metrics.entity_analysis]\nenabled = true",
-        ).replace("definitions = []", definitions),
-    )
-    config = load_system_config(path)
-
-    with pytest.raises(ValueError, match="require unavailable runtime metrics"):
-        build_actor_plan(config, _prerequisites())
-
-
-def test_actor_plan_rejects_entity_metric_without_configured_producer(tmp_path: Path) -> None:
-    source = _session_metrics_enabled_source()
-    definitions = (Path(__file__).with_name("entity-analysis-definitions.toml")).read_text()
-    definitions = definitions.replace(
-        "opening_range.cme_equity_primary.opening_range_fast.high",
-        "opening_range.cme_equity_primary.missing_window.high",
-    )
-    path = tmp_path / "system.toml"
-    path.write_text(
-        source.replace(
-            "[metrics.entity_analysis]\nenabled = false",
-            "[metrics.entity_analysis]\nenabled = true",
-        ).replace("definitions = []", definitions),
-    )
-    config = load_system_config(path)
-
-    with pytest.raises(ValueError, match="require unavailable metrics"):
-        build_actor_plan(config, _prerequisites())
 
 
 def test_actor_plan_rejects_missing_required_preflight() -> None:

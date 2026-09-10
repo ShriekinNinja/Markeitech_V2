@@ -5,10 +5,10 @@
 
 This document consolidates the stable measurement, completed-bar, entity, state, history, and
 evidence-fidelity rules formerly spread across completed Stage 9 plans and architecture notes. It
-does not declare every implemented class active. In particular, the active V3 profile keeps the
-legacy combined session-measurement and dependent entity surfaces disabled while the replacement
-described in [`session-metrics-replacement-plan.md`](../reference/session-metrics-replacement-plan.md)
-remains incomplete.
+does not declare every contract implemented or active. The session-measurement and dependent
+entity actors and their dedicated calculations have been removed, as have the quote-quality
+actor and calculations. Shared evidence contracts remain. Reintroducing analytical production requires a newly reviewed
+task and current implementation evidence.
 
 ## Evidence Chain
 
@@ -253,21 +253,14 @@ Restored state retains its original effective/finalization/source identity and r
 stale/degraded until catch-up covers the offline interval. Incompatible schema, definition,
 formula, or parameter versions are audited and ignored; they are never coerced into current truth.
 
-## Current Replacement Boundary
+## Current Implementation Boundary
 
-Earlier Stage 9C/9D profiles supplied bounded connected evidence for these families, but the active
-V3 profiles deliberately disabled the combined measurement owner, dependent Entity Analysis, and
-Visual Debug during an ownership cutover. V3-03 Slices 1 and 2 provide inactive v2 identities,
-validation, producer-manifest foundations, and a disabled completed-bar owner. Slices 3–9 remain
-unimplemented.
+The runtime has no metric-producing actors. Shared completed-bar, metric, and entity
+contracts remain independently testable, but do not supply canonical bar or entity producers.
+The session, window, rolling, session-reference, market-state, and market-structure implementations
+and their replacement plan have been removed. Historical code and acceptance evidence remain in
+Git; they do not establish current runtime outputs.
 
-Therefore:
-
-- accepted formulas and contracts are reusable evidence, not active output claims;
-- dormant legacy source is migration evidence, not canonical runtime authority;
-- a test-passing inactive owner is not connected or product-ready;
-- only one cold-cutover composition may publish each canonical series/metric subject; and
-- resuming V3-03 requires a fresh authorized slice tied to a named Sir Loke evidence need.
-
-The full resume instructions and unresolved cutover mechanics remain in the
-[`session-metrics replacement plan`](../reference/session-metrics-replacement-plan.md).
+The formula and identity rules above constrain future implementations. A new producer needs a
+reviewed task tied to a named Sir Loke evidence need, one canonical owner for each series/subject,
+and Markeitect's live acceptance.

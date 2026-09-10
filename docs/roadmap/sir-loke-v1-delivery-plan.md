@@ -179,8 +179,8 @@ must be identified as stale; missing data must not become a current price or tra
 **Question:** Where are we trading relative to this session and the last completed session?
 **Implement:** current-session open/high/low, previous-session high/low/close, and price location
 relative to those references for one evidence instrument. The brief proposes exact session and
-history coverage. Reuse `session_references.py` calculations where valid and integrate only the
-required completed-bar/reference path; full V3 owner replacement is not a prerequisite.
+history coverage. Implement and integrate the required completed-bar/reference path; the former
+session-reference calculations have been removed and are available only in Git history.
 **Focused checks:** session boundary, incomplete history, and exact reference/source identity.
 **Markeitect live test:** ask “Where are we in today's session?” Compare the cited levels with the
 same-session chart and ask again after a range change. Sir Loke must explain the changed location,
@@ -191,8 +191,9 @@ not list numbers without context. Review whether the reference map helps orient 
 **Depends on:** IN-01.
 **Question:** What structural progression is actually established, and what is still forming?
 **Implement:** confirmed swings and their relationships on one chosen timeframe, using reviewed
-confirmation rules. Reuse valid `market_structure_entities.py` logic; keep developing observations
-separate from confirmed structure and preserve when confirmation became knowable.
+confirmation rules. The former market-structure implementation is available only in Git history.
+Keep developing observations separate from confirmed structure and preserve when confirmation
+became knowable.
 **Focused checks:** confirmation delay, equal pivots, gaps, and chronological availability.
 **Markeitect live test:** ask for the latest structural progression and its counterevidence. Review
 marked levels/times against the chart as it develops; a later pivot must not rewrite earlier advice.

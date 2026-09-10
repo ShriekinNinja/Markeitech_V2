@@ -47,9 +47,6 @@ def test_operational_profile_has_exact_roster_and_empty_native_provider_loads() 
     config = load_system_config(PROFILE)
     assert config.instrument_ids == ()
     assert not config.watchlist.enabled
-    assert config.historical.probe.instrument_id == ""
-    assert config.visual_debug_capture.instrument_id == ""
-    assert config.metrics.session_measurements.profile_bindings == ()
     plan = build_actor_plan(config, StartupPrerequisites(uuid4(), True))
     assert [item.key for item in plan] == ROSTER
     assert build_ib_data_client_config(config).instrument_provider.load_ids == set()
@@ -59,22 +56,6 @@ def test_operational_profile_has_exact_roster_and_empty_native_provider_loads() 
     ("old", "new", "error"),
     [
         ("[watchlist]\nenabled = false", "[watchlist]\nenabled = true", "non-empty"),
-        ("[historical.probe]\nenabled = false", "[historical.probe]\nenabled = true", "watchlist"),
-        (
-            "native_consumer_probe_enabled = false",
-            "native_consumer_probe_enabled = true",
-            "instruments",
-        ),
-        (
-            "[metrics.quote_quality]\nenabled = false",
-            "[metrics.quote_quality]\nenabled = true",
-            "selects no",
-        ),
-        (
-            "[metrics.session_measurements]\nenabled = false",
-            "[metrics.session_measurements]\nenabled = true",
-            "non-empty",
-        ),
     ],
 )
 def test_empty_profile_rejects_instrument_consumers(tmp_path, old, new, error) -> None:
