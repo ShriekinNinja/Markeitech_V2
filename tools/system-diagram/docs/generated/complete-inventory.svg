@@ -281,16 +281,16 @@
 <g id="actor.watchlist" class="node">
 <title>actor.watchlist</title>
 <g id="a_actor.watchlist"><a xlink:title="actor.watchlist">
-<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M1569.01,-1328.93C1569.01,-1328.93 1310.99,-1328.93 1310.99,-1328.93 1304.99,-1328.93 1298.99,-1322.93 1298.99,-1316.93 1298.99,-1316.93 1298.99,-1256.97 1298.99,-1256.97 1298.99,-1250.97 1304.99,-1244.97 1310.99,-1244.97 1310.99,-1244.97 1569.01,-1244.97 1569.01,-1244.97 1575.01,-1244.97 1581.01,-1250.97 1581.01,-1256.97 1581.01,-1256.97 1581.01,-1316.93 1581.01,-1316.93 1581.01,-1322.93 1575.01,-1328.93 1569.01,-1328.93"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="1307.62,-1298.7 1307.62,-1298.7 1440.12,-1298.7 1440.12,-1298.7 1307.62,-1298.7"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="1440.12,-1298.7 1440.12,-1298.7 1572.38,-1298.7 1572.38,-1298.7 1440.12,-1298.7"/>
-<text xml:space="preserve" text-anchor="start" x="1310.62" y="-1306.55" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Watchlist</text>
-<polygon fill="#164c3e" stroke="none" points="1443.12,-1301.7 1443.12,-1319.45 1569.38,-1319.45 1569.38,-1301.7 1443.12,-1301.7"/>
-<polygon fill="none" stroke="#43d9ae" points="1443.12,-1301.7 1443.12,-1319.45 1569.38,-1319.45 1569.38,-1301.7 1443.12,-1301.7"/>
-<text xml:space="preserve" text-anchor="start" x="1484.12" y="-1307.9" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
-<text xml:space="preserve" text-anchor="start" x="1310.62" y="-1288.2" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.watchlist</text>
-<text xml:space="preserve" text-anchor="start" x="1310.62" y="-1272.45" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: ALWAYS</text>
-<text xml:space="preserve" text-anchor="start" x="1310.62" y="-1256.7" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 12</text>
+<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M1581.76,-1328.93C1581.76,-1328.93 1298.24,-1328.93 1298.24,-1328.93 1292.24,-1328.93 1286.24,-1322.93 1286.24,-1316.93 1286.24,-1316.93 1286.24,-1256.97 1286.24,-1256.97 1286.24,-1250.97 1292.24,-1244.97 1298.24,-1244.97 1298.24,-1244.97 1581.76,-1244.97 1581.76,-1244.97 1587.76,-1244.97 1593.76,-1250.97 1593.76,-1256.97 1593.76,-1256.97 1593.76,-1316.93 1593.76,-1316.93 1593.76,-1322.93 1587.76,-1328.93 1581.76,-1328.93"/>
+<polygon fill="#43d9ae" stroke="#43d9ae" points="1294.88,-1298.7 1294.88,-1298.7 1440.12,-1298.7 1440.12,-1298.7 1294.88,-1298.7"/>
+<polygon fill="#43d9ae" stroke="#43d9ae" points="1440.12,-1298.7 1440.12,-1298.7 1585.12,-1298.7 1585.12,-1298.7 1440.12,-1298.7"/>
+<text xml:space="preserve" text-anchor="start" x="1297.88" y="-1306.55" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Watchlist</text>
+<polygon fill="#164c3e" stroke="none" points="1443.12,-1301.7 1443.12,-1319.45 1582.12,-1319.45 1582.12,-1301.7 1443.12,-1301.7"/>
+<polygon fill="none" stroke="#43d9ae" points="1443.12,-1301.7 1443.12,-1319.45 1582.12,-1319.45 1582.12,-1301.7 1443.12,-1301.7"/>
+<text xml:space="preserve" text-anchor="start" x="1490.5" y="-1307.9" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
+<text xml:space="preserve" text-anchor="start" x="1297.88" y="-1288.2" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.watchlist</text>
+<text xml:space="preserve" text-anchor="start" x="1297.88" y="-1272.45" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="start" x="1297.88" y="-1256.7" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 12</text>
 </a>
 </g>
 </g>
