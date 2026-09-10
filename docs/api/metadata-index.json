@@ -4,34 +4,54 @@
     "authority": "source_documentation_component_declarations",
     "components": [
       {
+        "boundary": "boundary.system",
+        "definition_line": 41,
+        "id": "actor.dashboard",
+        "implementation_ref": "src/markeitech/dashboard/actor.py:DashboardActor",
+        "kind": "markeitech_actor",
+        "label": "Dashboard",
+        "object_path": "markeitech.dashboard.actor.DashboardActor",
+        "record_sha256": "37acf15bd7be3ea521128dc89a4ab2b548e0cd780ca46b18aa95ccc8367b2aad",
+        "responsibilities": [
+          "Request configured display feeds through acquisition and receive native callbacks.",
+          "Retain bounded transient display state and own local web-server startup and shutdown.",
+          "Announce the accepting dashboard address for operational Discord projection."
+        ],
+        "source": "src/markeitech/dashboard/actor.py",
+        "source_sha256": "ba197c85fd0a874af44d231fec8de40807ff07902f2f1be48c76bb9e4e53d656"
+      },
+      {
         "boundary": "boundary.acquisition",
-        "definition_line": 125,
+        "definition_line": 126,
         "id": "actor.data-acquisition",
         "implementation_ref": "src/markeitech/system/acquisition.py:DataAcquisitionActor",
         "kind": "markeitech_actor",
         "label": "Data Acquisition",
         "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
-        "record_sha256": "a21b2c47c71e56f2f7040d6caf0c329284a84046e03652a0f88b6445cc3fdf80",
+        "record_sha256": "183b0f392c60c9f021be42318e6605a53b3c49b3ab40a266a2f29469f723a073",
         "responsibilities": [
           "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
           "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
-          "Publish acquisition lifecycle, historical batches, and consumer readiness."
+          "Publish acquisition lifecycle, historical batches, and consumer readiness.",
+          "Admit dashboard display demand and execute its native callback attachment and release."
         ],
         "source": "src/markeitech/system/acquisition.py",
-        "source_sha256": "7e13fb6a34ed941452db86bd75345875ad8d9fa94f7f9b5a2dae9ec443e23f84"
+        "source_sha256": "2a5f9176acafe5636bd8e2e8f7aa1bb983d245570b8d060f31cee860185f5176"
       },
       {
         "boundary": "boundary.system",
-        "definition_line": 329,
+        "definition_line": 330,
         "id": "actor.discord-health",
         "implementation_ref": "src/markeitech/system/discord.py:DiscordHealthActor",
         "kind": "markeitech_actor",
         "label": "Discord Health Projection",
         "object_path": "markeitech.system.discord.DiscordHealthActor",
-        "record_sha256": "610d760aad1bcdf1b5f62c431909e16e629c13fdbb055044738ca81676b50e3c",
-        "responsibilities": [],
+        "record_sha256": "905c45bc3e13cd536fbb69eddc6a68396cded58728cab3661254e3a8868c2d51",
+        "responsibilities": [
+          "Project system health, resource health, operational readiness and dashboard availability through the configured Discord delivery workers."
+        ],
         "source": "src/markeitech/system/discord.py",
-        "source_sha256": "c3a6824409dd66b600090a40af68f1d43eba1f402997a9d3035e047631ca270d"
+        "source_sha256": "8eae75fe8b6a6951441c271574029fe9f45fd20610e533cf137978f385929c7c"
       },
       {
         "boundary": "boundary.intelligence",
@@ -138,16 +158,16 @@
       },
       {
         "boundary": "boundary.acquisition",
-        "definition_line": 251,
+        "definition_line": 252,
         "id": "actor.watchlist",
         "implementation_ref": "src/markeitech/system/watchlist.py:WatchlistActor",
         "kind": "markeitech_actor",
         "label": "Watchlist",
         "object_path": "markeitech.system.watchlist.WatchlistActor",
-        "record_sha256": "ae50e45fb3afb9050c6311a9720c84c2dc5347cb76ce4528f6656ef155b9fbf0",
+        "record_sha256": "3c1021862a1d8244fb21ad17aa11dad00e1613cdd3effca7461f5af3785b2c47",
         "responsibilities": [],
         "source": "src/markeitech/system/watchlist.py",
-        "source_sha256": "2a25bb33e55fe0592015ed17d35cc0de81ac9074dc1baac71ee359e9954e7658"
+        "source_sha256": "25cc6f4ca04f328e8fdfd2d32fc473ad83583f51b2a1d03da2a16346f6ad0d63"
       },
       {
         "boundary": "boundary.intelligence",
@@ -168,9 +188,9 @@
       }
     ],
     "counts": {
-      "components": 11,
-      "with_responsibilities": 5,
-      "without_responsibilities": 6
+      "components": 12,
+      "with_responsibilities": 7,
+      "without_responsibilities": 5
     },
     "evidence_class": "author_declared_source_architecture",
     "limitations": [
@@ -186,7 +206,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "7491bb48e56fe2046dbe59514afcbb114212e7a6944fbfe15e8b7057c2f7061c"
+    "source_snapshot_sha256": "d6724842530b8305f045a0683164ddeb55cd11a819e1119fcf384ea6bb90bba6"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -229,7 +249,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.demand.AcquisitionLifecycleState",
-        "definition_line": 58,
+        "definition_line": 59,
         "exposed": "markeitech.acquisition.AcquisitionLifecycleState",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -240,7 +260,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.demand.CapabilityDeclaration",
-        "definition_line": 192,
+        "definition_line": 193,
         "exposed": "markeitech.acquisition.CapabilityDeclaration",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -251,7 +271,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.demand.CapabilityFeedRequirement",
-        "definition_line": 111,
+        "definition_line": 112,
         "exposed": "markeitech.acquisition.CapabilityFeedRequirement",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -262,7 +282,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.demand.CapabilityHistoricalRequirement",
-        "definition_line": 142,
+        "definition_line": 143,
         "exposed": "markeitech.acquisition.CapabilityHistoricalRequirement",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -273,7 +293,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.demand.DemandConflictError",
-        "definition_line": 277,
+        "definition_line": 278,
         "exposed": "markeitech.acquisition.DemandConflictError",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -284,7 +304,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.demand.DemandOwner",
-        "definition_line": 72,
+        "definition_line": 73,
         "exposed": "markeitech.acquisition.DemandOwner",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -306,7 +326,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.demand.DemandReconciler",
-        "definition_line": 281,
+        "definition_line": 282,
         "exposed": "markeitech.acquisition.DemandReconciler",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -328,7 +348,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.demand.FeedRequirement",
-        "definition_line": 85,
+        "definition_line": 86,
         "exposed": "markeitech.acquisition.FeedRequirement",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -680,7 +700,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.demand.ObservationDemand",
-        "definition_line": 228,
+        "definition_line": 229,
         "exposed": "markeitech.acquisition.ObservationDemand",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -691,7 +711,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.demand.ProviderDemand",
-        "definition_line": 267,
+        "definition_line": 268,
         "exposed": "markeitech.acquisition.ProviderDemand",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -724,7 +744,7 @@
       {
         "alias": false,
         "canonical": "markeitech.cli.main",
-        "definition_line": 374,
+        "definition_line": 377,
         "exposed": "markeitech.cli.main",
         "has_docstring": true,
         "inclusion_reason": "Installed operator command entry point.",
@@ -1252,7 +1272,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.SystemConfig",
-        "definition_line": 288,
+        "definition_line": 290,
         "exposed": "markeitech.system.SystemConfig",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1274,7 +1294,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.load_system_config",
-        "definition_line": 309,
+        "definition_line": 312,
         "exposed": "markeitech.system.load_system_config",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1308,8 +1328,8 @@
   "schema_id": "markeitech-api-metadata-index",
   "schema_version": 2,
   "source_snapshot": {
-    "file_count": 68,
-    "input_signature": "7491bb48e56fe2046dbe59514afcbb114212e7a6944fbfe15e8b7057c2f7061c"
+    "file_count": 74,
+    "input_signature": "d6724842530b8305f045a0683164ddeb55cd11a819e1119fcf384ea6bb90bba6"
   },
-  "source_snapshot_sha256": "7491bb48e56fe2046dbe59514afcbb114212e7a6944fbfe15e8b7057c2f7061c"
+  "source_snapshot_sha256": "d6724842530b8305f045a0683164ddeb55cd11a819e1119fcf384ea6bb90bba6"
 }

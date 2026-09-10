@@ -5,9 +5,9 @@
 Show calendar state, historical planning, and evidence-health capabilities.
 
 - View ID: `view.metrics-entities-intelligence`
-- Profile: `profile.v3-es-minimal`
+- Profile: `profile.example`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `b2c5bf41d00e43dea47369e569cd4f326ea758af`
+- Checkout evidence: `a382f2e0636cdb3148b451e3e0e8239a684438e5`
 - Review status: `proposed`
 
 ## Components

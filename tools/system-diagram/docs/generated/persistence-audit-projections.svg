@@ -11,22 +11,19 @@
 <polygon fill="#0b1118" stroke="none" points="-25.2,25.2 -25.2,-720.95 2322.35,-720.95 2322.35,25.2 -25.2,25.2"/>
 <text xml:space="preserve" text-anchor="start" x="10" y="-671.75" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="20.00" fill="#f2f6fa">Persistence, Operational Audit, and External Projections</text>
 <text xml:space="preserve" text-anchor="start" x="10" y="-655.3" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#ffc1bb">OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION</text>
-<text xml:space="preserve" text-anchor="start" x="10" y="-640.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#c7d2dd">PROFILE: profile.v3&#45;es&#45;minimal · REVIEW: PROPOSED · MANIFEST SCHEMA: 1 · COMPONENTS: 11 · CAPABILITIES: 1 · FLOWS: 13</text>
-<text xml:space="preserve" text-anchor="start" x="10" y="-626" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: b2c5bf41d00e43dea47369e569cd4f326ea758af</text>
+<text xml:space="preserve" text-anchor="start" x="10" y="-640.5" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#c7d2dd">PROFILE: profile.example · REVIEW: PROPOSED · MANIFEST SCHEMA: 1 · COMPONENTS: 11 · CAPABILITIES: 1 · FLOWS: 13</text>
+<text xml:space="preserve" text-anchor="start" x="10" y="-626" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: a382f2e0636cdb3148b451e3e0e8239a684438e5</text>
 <polygon fill="#164c3e" stroke="none" points="18,-594 18,-611.75 70.25,-611.75 70.25,-594 18,-594"/>
 <polygon fill="none" stroke="#78a9f5" points="18,-594 18,-611.75 70.25,-611.75 70.25,-594 18,-594"/>
 <text xml:space="preserve" text-anchor="start" x="22" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#eef5ff">ENABLED</text>
-<polygon fill="#5b4316" stroke="none" points="78.25,-594 78.25,-611.75 132.75,-611.75 132.75,-594 78.25,-594"/>
-<polygon fill="none" stroke="#e2b75c" points="78.25,-594 78.25,-611.75 132.75,-611.75 132.75,-594 78.25,-594"/>
-<text xml:space="preserve" text-anchor="start" x="82.25" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
-<polygon fill="#5a3419" stroke="none" points="140.75,-594 140.75,-611.75 197.5,-611.75 197.5,-594 140.75,-594"/>
-<polygon fill="none" stroke="#f0a45d" points="140.75,-594 140.75,-611.75 197.5,-611.75 197.5,-594 140.75,-594"/>
-<text xml:space="preserve" text-anchor="start" x="144.75" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff4e8">EXTERNAL</text>
-<text xml:space="preserve" text-anchor="start" x="205.5" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#b9ddf0">DATA · SOLID/DASHED</text>
-<text xml:space="preserve" text-anchor="start" x="311.75" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#a5e3cd">PERSIST · SOLID</text>
-<text xml:space="preserve" text-anchor="start" x="391.75" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#e8dfaf">PROJECT · DOTTED</text>
-<text xml:space="preserve" text-anchor="start" x="486" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ffc1bb">FAILURE/RELEASE · DASHED</text>
-<text xml:space="preserve" text-anchor="start" x="623" y="-600.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">R = REQUIRED · O = OPTIONAL</text>
+<polygon fill="#5a3419" stroke="none" points="78.25,-594 78.25,-611.75 135,-611.75 135,-594 78.25,-594"/>
+<polygon fill="none" stroke="#f0a45d" points="78.25,-594 78.25,-611.75 135,-611.75 135,-594 78.25,-594"/>
+<text xml:space="preserve" text-anchor="start" x="82.25" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff4e8">EXTERNAL</text>
+<text xml:space="preserve" text-anchor="start" x="143" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#b9ddf0">DATA · SOLID/DASHED</text>
+<text xml:space="preserve" text-anchor="start" x="249.25" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#a5e3cd">PERSIST · SOLID</text>
+<text xml:space="preserve" text-anchor="start" x="329.25" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#e8dfaf">PROJECT · DOTTED</text>
+<text xml:space="preserve" text-anchor="start" x="423.5" y="-600.2" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ffc1bb">FAILURE/RELEASE · DASHED</text>
+<text xml:space="preserve" text-anchor="start" x="560.5" y="-600.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">R = REQUIRED · O = OPTIONAL</text>
 <g id="boundary.persistence" class="cluster">
 <title>cluster_Operational persistence</title>
 <path fill="#111a24" stroke="#6fd0ac" d="M1997.12,-98C1997.12,-98 2277.15,-98 2277.15,-98 2283.15,-98 2289.15,-104 2289.15,-110 2289.15,-110 2289.15,-257 2289.15,-257 2289.15,-263 2283.15,-269 2277.15,-269 2277.15,-269 1997.12,-269 1997.12,-269 1991.12,-269 1985.12,-263 1985.12,-257 1985.12,-257 1985.12,-110 1985.12,-110 1985.12,-104 1991.12,-98 1997.12,-98"/>
@@ -244,16 +241,16 @@
 <g id="actor.discord&#45;health" class="node">
 <title>actor.discord&#45;health</title>
 <g id="a_actor.discord&#45;health"><a xlink:title="actor.discord&#45;health">
-<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="818.81,-483.98 511.28,-483.98 511.28,-400.02 818.81,-400.02 818.81,-483.98"/>
-<polygon fill="#e2b75c" stroke="#e2b75c" points="519.92,-453.75 519.92,-453.75 710.92,-453.75 710.92,-453.75 519.92,-453.75"/>
-<polygon fill="#e2b75c" stroke="#e2b75c" points="710.92,-453.75 710.92,-453.75 810.17,-453.75 810.17,-453.75 710.92,-453.75"/>
-<text xml:space="preserve" text-anchor="start" x="522.92" y="-461.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Discord Health Projection</text>
-<polygon fill="#5b4316" stroke="none" points="713.92,-456.75 713.92,-474.5 807.17,-474.5 807.17,-456.75 713.92,-456.75"/>
-<polygon fill="none" stroke="#e2b75c" points="713.92,-456.75 713.92,-474.5 807.17,-474.5 807.17,-456.75 713.92,-456.75"/>
-<text xml:space="preserve" text-anchor="start" x="737.29" y="-462.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M806.81,-483.98C806.81,-483.98 523.28,-483.98 523.28,-483.98 517.28,-483.98 511.28,-477.98 511.28,-471.98 511.28,-471.98 511.28,-412.02 511.28,-412.02 511.28,-406.02 517.28,-400.02 523.28,-400.02 523.28,-400.02 806.81,-400.02 806.81,-400.02 812.81,-400.02 818.81,-406.02 818.81,-412.02 818.81,-412.02 818.81,-471.98 818.81,-471.98 818.81,-477.98 812.81,-483.98 806.81,-483.98"/>
+<polygon fill="#43d9ae" stroke="#43d9ae" points="519.92,-453.75 519.92,-453.75 712.04,-453.75 712.04,-453.75 519.92,-453.75"/>
+<polygon fill="#43d9ae" stroke="#43d9ae" points="712.04,-453.75 712.04,-453.75 810.17,-453.75 810.17,-453.75 712.04,-453.75"/>
+<text xml:space="preserve" text-anchor="start" x="522.92" y="-461.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Discord Health Projection</text>
+<polygon fill="#164c3e" stroke="none" points="715.04,-456.75 715.04,-474.5 807.17,-474.5 807.17,-456.75 715.04,-456.75"/>
+<polygon fill="none" stroke="#43d9ae" points="715.04,-456.75 715.04,-474.5 807.17,-474.5 807.17,-456.75 715.04,-456.75"/>
+<text xml:space="preserve" text-anchor="start" x="738.98" y="-462.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
 <text xml:space="preserve" text-anchor="start" x="522.92" y="-443.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.discord&#45;health</text>
-<text xml:space="preserve" text-anchor="start" x="522.92" y="-427.5" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="start" x="522.92" y="-411.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER 4</text>
+<text xml:space="preserve" text-anchor="start" x="522.92" y="-427.5" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="start" x="522.92" y="-411.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 4</text>
 </a>
 </g>
 </g>
@@ -295,18 +292,18 @@
 <g id="queue.discord" class="node">
 <title>queue.discord</title>
 <g id="a_queue.discord"><a xlink:title="queue.discord">
-<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="1321.09,-234.98 998.56,-234.98 998.56,-230.98 994.56,-230.98 994.56,-226.98 998.56,-226.98 998.56,-159.02 994.56,-159.02 994.56,-155.02 998.56,-155.02 998.56,-151.02 1321.09,-151.02 1321.09,-234.98"/>
-<polyline fill="none" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="998.56,-230.98 1002.56,-230.98 1002.56,-226.98 998.56,-226.98"/>
-<polyline fill="none" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="998.56,-159.02 1002.56,-159.02 1002.56,-155.02 998.56,-155.02"/>
-<polygon fill="#e2b75c" stroke="#e2b75c" points="1007.2,-204.75 1007.2,-204.75 1200.07,-204.75 1200.07,-204.75 1007.2,-204.75"/>
-<polygon fill="#e2b75c" stroke="#e2b75c" points="1200.07,-204.75 1200.07,-204.75 1312.45,-204.75 1312.45,-204.75 1200.07,-204.75"/>
-<text xml:space="preserve" text-anchor="start" x="1010.2" y="-212.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Discord Delivery Queue</text>
-<polygon fill="#5b4316" stroke="none" points="1203.07,-207.75 1203.07,-225.5 1309.45,-225.5 1309.45,-207.75 1203.07,-207.75"/>
-<polygon fill="none" stroke="#e2b75c" points="1203.07,-207.75 1203.07,-225.5 1309.45,-225.5 1309.45,-207.75 1203.07,-207.75"/>
-<text xml:space="preserve" text-anchor="start" x="1233.01" y="-213.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<polygon fill="#17243a" stroke="#78a9f5" stroke-width="1.5" points="1321.09,-234.98 998.56,-234.98 998.56,-230.98 994.56,-230.98 994.56,-226.98 998.56,-226.98 998.56,-159.02 994.56,-159.02 994.56,-155.02 998.56,-155.02 998.56,-151.02 1321.09,-151.02 1321.09,-234.98"/>
+<polyline fill="none" stroke="#78a9f5" stroke-width="1.5" points="998.56,-230.98 1002.56,-230.98 1002.56,-226.98 998.56,-226.98"/>
+<polyline fill="none" stroke="#78a9f5" stroke-width="1.5" points="998.56,-159.02 1002.56,-159.02 1002.56,-155.02 998.56,-155.02"/>
+<polygon fill="#78a9f5" stroke="#78a9f5" points="1007.2,-204.75 1007.2,-204.75 1201.2,-204.75 1201.2,-204.75 1007.2,-204.75"/>
+<polygon fill="#78a9f5" stroke="#78a9f5" points="1201.2,-204.75 1201.2,-204.75 1312.45,-204.75 1312.45,-204.75 1201.2,-204.75"/>
+<text xml:space="preserve" text-anchor="start" x="1010.2" y="-212.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#eef5ff">Discord Delivery Queue</text>
+<polygon fill="#164c3e" stroke="none" points="1204.2,-207.75 1204.2,-225.5 1309.45,-225.5 1309.45,-207.75 1204.2,-207.75"/>
+<polygon fill="none" stroke="#78a9f5" points="1204.2,-207.75 1204.2,-225.5 1309.45,-225.5 1309.45,-207.75 1204.2,-207.75"/>
+<text xml:space="preserve" text-anchor="start" x="1234.7" y="-213.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#eef5ff">ENABLED</text>
 <text xml:space="preserve" text-anchor="start" x="1010.2" y="-194.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">queue.discord</text>
-<text xml:space="preserve" text-anchor="start" x="1010.2" y="-178.5" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="start" x="1010.2" y="-162.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER NOT APPLICABLE</text>
+<text xml:space="preserve" text-anchor="start" x="1010.2" y="-178.5" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#eef5ff">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="start" x="1010.2" y="-162.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#eef5ff">PROFILE: ENABLED · ORDER NOT APPLICABLE</text>
 </a>
 </g>
 </g>
@@ -333,18 +330,18 @@
 <g id="worker.discord" class="node">
 <title>worker.discord</title>
 <g id="a_worker.discord"><a xlink:title="worker.discord">
-<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="1823.37,-234.98 1500.84,-234.98 1500.84,-230.98 1496.84,-230.98 1496.84,-226.98 1500.84,-226.98 1500.84,-159.02 1496.84,-159.02 1496.84,-155.02 1500.84,-155.02 1500.84,-151.02 1823.37,-151.02 1823.37,-234.98"/>
-<polyline fill="none" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="1500.84,-230.98 1504.84,-230.98 1504.84,-226.98 1500.84,-226.98"/>
-<polyline fill="none" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="1500.84,-159.02 1504.84,-159.02 1504.84,-155.02 1500.84,-155.02"/>
-<polygon fill="#e2b75c" stroke="#e2b75c" points="1509.48,-204.75 1509.48,-204.75 1704.23,-204.75 1704.23,-204.75 1509.48,-204.75"/>
-<polygon fill="#e2b75c" stroke="#e2b75c" points="1704.23,-204.75 1704.23,-204.75 1814.73,-204.75 1814.73,-204.75 1704.23,-204.75"/>
-<text xml:space="preserve" text-anchor="start" x="1512.48" y="-212.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Discord Delivery Worker</text>
-<polygon fill="#5b4316" stroke="none" points="1707.23,-207.75 1707.23,-225.5 1811.73,-225.5 1811.73,-207.75 1707.23,-207.75"/>
-<polygon fill="none" stroke="#e2b75c" points="1707.23,-207.75 1707.23,-225.5 1811.73,-225.5 1811.73,-207.75 1707.23,-207.75"/>
-<text xml:space="preserve" text-anchor="start" x="1736.23" y="-213.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<polygon fill="#17243a" stroke="#78a9f5" stroke-width="1.5" points="1823.37,-234.98 1500.84,-234.98 1500.84,-230.98 1496.84,-230.98 1496.84,-226.98 1500.84,-226.98 1500.84,-159.02 1496.84,-159.02 1496.84,-155.02 1500.84,-155.02 1500.84,-151.02 1823.37,-151.02 1823.37,-234.98"/>
+<polyline fill="none" stroke="#78a9f5" stroke-width="1.5" points="1500.84,-230.98 1504.84,-230.98 1504.84,-226.98 1500.84,-226.98"/>
+<polyline fill="none" stroke="#78a9f5" stroke-width="1.5" points="1500.84,-159.02 1504.84,-159.02 1504.84,-155.02 1500.84,-155.02"/>
+<polygon fill="#78a9f5" stroke="#78a9f5" points="1509.48,-204.75 1509.48,-204.75 1705.35,-204.75 1705.35,-204.75 1509.48,-204.75"/>
+<polygon fill="#78a9f5" stroke="#78a9f5" points="1705.35,-204.75 1705.35,-204.75 1814.73,-204.75 1814.73,-204.75 1705.35,-204.75"/>
+<text xml:space="preserve" text-anchor="start" x="1512.48" y="-212.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#eef5ff">Discord Delivery Worker</text>
+<polygon fill="#164c3e" stroke="none" points="1708.35,-207.75 1708.35,-225.5 1811.73,-225.5 1811.73,-207.75 1708.35,-207.75"/>
+<polygon fill="none" stroke="#78a9f5" points="1708.35,-207.75 1708.35,-225.5 1811.73,-225.5 1811.73,-207.75 1708.35,-207.75"/>
+<text xml:space="preserve" text-anchor="start" x="1737.92" y="-213.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#eef5ff">ENABLED</text>
 <text xml:space="preserve" text-anchor="start" x="1512.48" y="-194.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">worker.discord</text>
-<text xml:space="preserve" text-anchor="start" x="1512.48" y="-178.5" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="start" x="1512.48" y="-162.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER NOT APPLICABLE</text>
+<text xml:space="preserve" text-anchor="start" x="1512.48" y="-178.5" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#eef5ff">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="start" x="1512.48" y="-162.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#eef5ff">PROFILE: ENABLED · ORDER NOT APPLICABLE</text>
 </a>
 </g>
 </g>
