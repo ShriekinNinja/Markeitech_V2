@@ -723,14 +723,14 @@ components, status, and evidence remain deferred to a separately reviewed source
 <td><code>markeitech.dashboard.actor.DashboardActor</code></td>
 <td><code>markeitech_actor</code></td>
 <td><code>boundary.system</code></td>
-<td>Request configured display feeds through acquisition and receive native callbacks.<br>Retain bounded transient display state and own local web-server startup and shutdown.<br>Announce the accepting dashboard address for operational Discord projection.</td>
+<td>Request configured display feeds through acquisition and receive native callbacks.<br>Retain bounded transient display state and own local web-server startup and shutdown.<br>Request history through the historical planner and project acquisition minute candles.<br>Announce the accepting dashboard address for operational Discord projection.</td>
 </tr>
 <tr>
 <td><code>actor.data-acquisition</code><br>Data Acquisition</td>
 <td><code>markeitech.system.acquisition.DataAcquisitionActor</code></td>
 <td><code>markeitech_actor</code></td>
 <td><code>boundary.acquisition</code></td>
-<td>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.<br>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.<br>Publish acquisition lifecycle, historical batches, and consumer readiness.<br>Admit dashboard display demand and execute its native callback attachment and release.</td>
+<td>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.<br>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.<br>Publish acquisition lifecycle, historical batches, and consumer readiness.<br>Admit dashboard display demand and execute its native callback attachment and release.<br>Derive bounded UTC minute candles from source-time five-second inputs for display.</td>
 </tr>
 <tr>
 <td><code>actor.discord-health</code><br>Discord Health Projection</td>
@@ -833,6 +833,7 @@ DataAcquisitionActor. This actor never calls native subscription methods.</p>
 <ul>
 <li>Request configured display feeds through acquisition and receive native callbacks.</li>
 <li>Retain bounded transient display state and own local web-server startup and shutdown.</li>
+<li>Request history through the historical planner and project acquisition minute candles.</li>
 <li>Announce the accepting dashboard address for operational Discord projection.</li>
 </ul>
 </section>
@@ -852,6 +853,7 @@ DataAcquisitionActor. This actor never calls native subscription methods.</p>
 <dd><ul>
 <li>Request configured display feeds through acquisition and receive native callbacks.</li>
 <li>Retain bounded transient display state and own local web-server startup and shutdown.</li>
+<li>Request history through the historical planner and project acquisition minute candles.</li>
 <li>Announce the accepting dashboard address for operational Discord projection.</li>
 </ul></dd>
 </dl>
@@ -912,6 +914,7 @@ DataAcquisitionActor. This actor never calls native subscription methods.</p>
 <li>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.</li>
 <li>Publish acquisition lifecycle, historical batches, and consumer readiness.</li>
 <li>Admit dashboard display demand and execute its native callback attachment and release.</li>
+<li>Derive bounded UTC minute candles from source-time five-second inputs for display.</li>
 </ul>
 </section>
 
@@ -932,6 +935,7 @@ DataAcquisitionActor. This actor never calls native subscription methods.</p>
 <li>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.</li>
 <li>Publish acquisition lifecycle, historical batches, and consumer readiness.</li>
 <li>Admit dashboard display demand and execute its native callback attachment and release.</li>
+<li>Derive bounded UTC minute candles from source-time five-second inputs for display.</li>
 </ul></dd>
 </dl>
 </section>
@@ -965,7 +969,7 @@ DataAcquisitionActor. This actor never calls native subscription methods.</p>
 
 
 <a href="#markeitech.system.acquisition.DataAcquisitionActor.bind_dashboard_consumer" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">bind_dashboard_consumer</span><span class="p">(</span><span class="n">consumer</span><span class="p">:</span> <span class="n">DataActor</span><span class="p">,</span> <span class="n">allowed_feeds</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">retry_interval_ms</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">bind_dashboard_consumer</span><span class="p">(</span><span class="n">consumer</span><span class="p">:</span> <span class="n">DataActor</span><span class="p">,</span> <span class="n">allowed_feeds</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">retry_interval_ms</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">candle_capacity</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">

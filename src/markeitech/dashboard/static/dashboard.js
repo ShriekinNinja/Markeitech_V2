@@ -14,7 +14,7 @@
     layout: {background:{type:"solid",color:"#111111"},textColor:"#a9a9a9",fontFamily:"-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",fontSize:11,attributionLogo:true},
     grid: {vertLines:{color:"#252525",style:2},horzLines:{color:"#252525",style:2}},
     rightPriceScale: {borderColor:"#3b3b3b",scaleMargins:{top:0.1,bottom:0.1}},
-    timeScale: {borderColor:"#3b3b3b",timeVisible:true,secondsVisible:true,rightOffset:6,barSpacing:8},
+    timeScale: {borderColor:"#3b3b3b",timeVisible:true,secondsVisible:false,rightOffset:6,barSpacing:8},
     crosshair: {vertLine:{color:"#827656",labelBackgroundColor:"#615238"},horzLine:{color:"#827656",labelBackgroundColor:"#615238"}},
     localization: {locale:"en-US",timeFormatter:utc}
   });
@@ -34,7 +34,7 @@
   $("chart").addEventListener("pointerdown",()=>follow(false));
   $("chart").addEventListener("wheel",()=>follow(false),{passive:true});
   function legend(bar) {
-    $("ohlc").textContent=bar?`O ${price(bar.open)}    H ${price(bar.high)}    L ${price(bar.low)}    C ${price(bar.close)}`:"Waiting for completed provider candles";
+    $("ohlc").textContent=bar?`O ${price(bar.open)}    H ${price(bar.high)}    L ${price(bar.low)}    C ${price(bar.close)}`:"Waiting for minute candles";
   }
   chart.subscribeCrosshairMove(param => legend(param.seriesData.get(series) || candles.at(-1)));
   function renderRows() {
@@ -76,6 +76,8 @@
   setInterval(ages,1000);
   function render(view, reset) {
     selected=view.selected; rows=view.instruments;renderRows();
+    $("timeframe-label").textContent=view.timeframe || "5s";
+    chart.applyOptions({timeScale:{secondsVisible:!view.timeframe}});
     const row=rows.find(r=>r.instrument_id===selected);
     const symbol=selected?rootSymbol(selected):"—";
     $("symbol").textContent=symbol;$("instrument-name").textContent=names[symbol] || "Market instrument";
@@ -85,10 +87,15 @@
     if(reset) {
       candles=view.candles;series.setData(candles.map(chartBar));chart.timeScale().fitContent();follow(true);
     } else {
-      for(const bar of view.candles){if(!candles.length || bar.time>candles.at(-1).time){candles.push(bar);series.update(chartBar(bar));}}
-      const before=candles.length;
-      candles=candles.filter(bar=>view.window_start==null || bar.time>=view.window_start).slice(-view.maximum_candles);
-      if(before!==candles.length){const range=chart.timeScale().getVisibleLogicalRange();series.setData(candles.map(chartBar));if(!following && range)chart.timeScale().setVisibleLogicalRange({from:range.from-(before-candles.length),to:range.to-(before-candles.length)});}
+      const before=candles, range=chart.timeScale().getVisibleLogicalRange();
+      const merged=new Map(candles.map(bar=>[bar.time,bar]));
+      for(const bar of view.candles)merged.set(bar.time,bar);
+      candles=[...merged.values()].filter(bar=>view.window_start==null || bar.time>=view.window_start).sort((a,b)=>a.time-b.time).slice(-view.maximum_candles);
+      if(view.candles.length || candles.length!==before.length){
+        series.setData(candles.map(chartBar));
+        const shift=before.length&&candles.length?candles.filter(bar=>bar.time<before[0].time).length-before.filter(bar=>bar.time<candles[0].time).length:0;
+        if(!following && range)chart.timeScale().setVisibleLogicalRange({from:range.from+shift,to:range.to+shift});
+      }
       if(following)chart.timeScale().scrollToRealTime();
     }
     if(candles.length){
@@ -100,9 +107,12 @@
     $("chart-empty").hidden=candles.length>0;
     const configured=row?.capabilities.includes("watchlist_last");
     $("chart-empty").querySelector("h3").textContent=!selected?"No instrument selected":configured?"Waiting for candles":"Bar feed not configured";
-    $("chart-empty").querySelector("p").textContent=configured?"The chart fills as five-second provider bars arrive.":"Select a watchlist instrument with a bar feed.";
+    $("chart-empty").querySelector("p").textContent=configured?"Minute candles update with each five-second bar.":"Select a watchlist instrument with a bar feed.";
     $("source").textContent=`IB · Requested ${view.requested_market_data_type} · Received mode unknown · UTC`;
-    $("window-status").textContent=`${candles.length} candles · Current runtime session`;
+    const incomplete=candles.filter(bar=>bar.status==="INCOMPLETE").length;
+    const phase=candles.at(-1)?.status?.toLowerCase() || "waiting";
+    const history=(row?.feed_states.history || "waiting").toLowerCase();
+    $("window-status").textContent=`${candles.length} candles · ${phase} · History ${history}${incomplete?` · ${incomplete} incomplete`:""}`;
     if(view.preview){$("source").textContent="OFFLINE PREVIEW · Synthetic data · UTC";setConnected(true,"Offline preview");}
     legend(candles.at(-1));ages();
   }

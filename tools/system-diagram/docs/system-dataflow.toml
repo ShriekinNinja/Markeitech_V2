@@ -159,8 +159,8 @@ limitations = ["Accepted architecture does not prove current composition or runt
 [[profiles]]
 id = "profile.example"
 config_path = "config/system.example.toml"
-config_schema_version = 26
-content_sha256 = "62c28f21b559443baa201b6e6d4432d082d1c33ad6213220fb327e8c4fc0ef7a"
+config_schema_version = 27
+content_sha256 = "340937eec9a68a83aed9a8834d77448dcf2927a8ce5f06419b4627e9999b17be"
 status = "tracked_active_review_profile"
 limitations = ["Represents the named tracked profile, not all available capabilities or a connected runtime observation."]
 evidence = ["evidence.profile"]
@@ -176,8 +176,8 @@ limitations = ["Connected boot and host measurement require Markeitect live acce
 [[profiles]]
 id = "profile.operational"
 config_path = "config/system.operational.toml"
-config_schema_version = 26
-content_sha256 = "f58c1f50722b5bfd653f6b5c6457c82bed816b735fe6d83038167fcbf25da628"
+config_schema_version = 27
+content_sha256 = "516f624fdf1484b3a3fa686f6ed9c3d8ee951056daa213324dc804c7a6496e9b"
 status = "tracked_operational_review_profile"
 limitations = ["Zero instrument loads and demands; IB, Discord and persistence remain configured.", "Not live-accepted; no runtime instrument addition."]
 evidence = ["evidence.operational-boot"]
@@ -494,7 +494,7 @@ implementation_ref = "src/markeitech/system/acquisition.py:DataAcquisitionActor"
 composition_key = "data_acquisition"
 composition_order = 7
 actor_id = "DATA-ACQUISITION"
-responsibilities = ["Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.", "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.", "Publish acquisition lifecycle, historical batches, and consumer readiness.", "Admit dashboard display demand and execute its native callback attachment and release."]
+responsibilities = ["Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.", "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.", "Publish acquisition lifecycle, historical batches, and consumer readiness.", "Admit dashboard display demand and execute its native callback attachment and release.", "Derive bounded UTC minute candles from source-time five-second inputs for display."]
 semantic_owner = "actor.data-acquisition"
 mutation_owner = "none_current"
 transport_owner = "none_current"
@@ -1279,7 +1279,7 @@ transport_kind = "nautilus_signal"
 type_name = "markeitech.historical.dependency_demand"
 schema_version_kind = "explicit contract identity or framework-native type"
 canonical_owner = "actor.historical-planner"
-producers = []
+producers = ["actor.dashboard"]
 consumers = ["actor.historical-planner"]
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
@@ -1325,7 +1325,7 @@ type_name = "markeitech.historical.execution"
 schema_version_kind = "explicit contract identity or framework-native type"
 canonical_owner = "actor.data-acquisition"
 producers = ["actor.data-acquisition"]
-consumers = []
+consumers = ["actor.dashboard"]
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
 join_key = []
@@ -2688,7 +2688,7 @@ include_temporal_status = ["current"]
 include_implementation_state = ["implemented", "external"]
 include_profile_enablement = ["enabled", "not_applicable"]
 explicit_components = ["component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "actor.system-control", "actor.session-state", "actor.evidence-health", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "operator.markeitect", "actor.discord-health", "queue.discord", "worker.discord", "projection.discord", "actor.runtime-resources", "actor.runtime-resource-health", "actor.dashboard", "worker.dashboard-server", "projection.dashboard-ui"]
-explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-status-system", "edge.acquisition-stream-health", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-state-request-planner", "edge.calendar-state-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-planner", "edge.calendar-transition-persistence", "edge.historical-plan-acquisition", "edge.native-historical-request", "edge.historical-provider-response", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure", "edge.dashboard-demand", "edge.dashboard-membership-request", "edge.dashboard-membership", "edge.dashboard-lifecycle", "edge.dashboard-native-attachment", "edge.dashboard-bars", "edge.dashboard-quotes", "edge.dashboard-mailbox", "edge.dashboard-http", "edge.dashboard-ready-discord"]
+explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-status-system", "edge.acquisition-stream-health", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-state-request-planner", "edge.calendar-state-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-planner", "edge.calendar-transition-persistence", "edge.historical-plan-acquisition", "edge.native-historical-request", "edge.historical-provider-response", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure", "edge.dashboard-demand", "edge.dashboard-membership-request", "edge.dashboard-membership", "edge.dashboard-lifecycle", "edge.dashboard-native-attachment", "edge.dashboard-bars", "edge.dashboard-quotes", "edge.dashboard-mailbox", "edge.dashboard-http", "edge.dashboard-ready-discord", "edge.dashboard-history-demand", "edge.dashboard-history-lifecycle", "edge.dashboard-minute-candles"]
 direction = "left_to_right"
 layout_engine = "dot"
 routing = "spline"
@@ -2932,7 +2932,7 @@ label = "Dashboard"
 kind = "markeitech_actor"
 logical_area = "system and infrastructure"
 boundary = "boundary.system"
-responsibilities = ["Request configured display feeds through acquisition and receive native callbacks.", "Retain bounded transient display state and own local web-server startup and shutdown.", "Announce the accepting dashboard address for operational Discord projection."]
+responsibilities = ["Request configured display feeds through acquisition and receive native callbacks.", "Retain bounded transient display state and own local web-server startup and shutdown.", "Request history through the historical planner and project acquisition minute candles.", "Announce the accepting dashboard address for operational Discord projection."]
 semantic_owner = "actor.dashboard"
 mutation_owner = "none_current"
 transport_owner = "none_current"
@@ -2951,7 +2951,7 @@ cardinality = "one when composed"
 style = "style.component.current"
 profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.dashboard", "evidence.dashboard-operation"]
-limitations = ["Provider-connected delivery is unaccepted.", "Transient completed bars only; no backfill, persistence or derived market truth."]
+limitations = ["Provider-connected delivery is unaccepted.", "Transient minute projections with native history; no raw-data persistence. Full production acceptance remains pending."]
 implementation_ref = "src/markeitech/dashboard/actor.py:DashboardActor"
 actor_id = "DASHBOARD"
 composition_key = "dashboard"
@@ -2982,7 +2982,7 @@ cardinality = "one when composed"
 style = "style.component.current"
 profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.dashboard-server", "evidence.dashboard-operation"]
-limitations = ["Provider-connected delivery is unaccepted.", "Transient completed bars only; no backfill, persistence or derived market truth."]
+limitations = ["Provider-connected delivery is unaccepted.", "Transient minute projections with native history; no raw-data persistence. Full production acceptance remains pending."]
 implementation_ref = "src/markeitech/dashboard/server.py:DashboardServer"
 
 [[components]]
@@ -3010,14 +3010,14 @@ cardinality = "one when composed"
 style = "style.component.current"
 profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.dashboard-ui", "evidence.dashboard-operation"]
-limitations = ["Provider-connected delivery is unaccepted.", "Transient completed bars only; no backfill, persistence or derived market truth."]
+limitations = ["Provider-connected delivery is unaccepted.", "Transient minute projections with native history; no raw-data persistence. Full production acceptance remains pending."]
 
 [[contracts]]
 id = "contract.dashboard-demand"
 label = "Dashboard demand"
 transport_kind = "nautilus_signal"
 type_name = "markeitech.dashboard.demand"
-schema_version_kind = "dashboard policy 1 and snapshot schema 1; native methods are pinned rc4"
+schema_version_kind = "dashboard policy 2 and snapshot schema 2; native methods are pinned rc4"
 canonical_owner = "actor.data-acquisition"
 producers = ["actor.dashboard"]
 consumers = ["actor.data-acquisition"]
@@ -3039,7 +3039,7 @@ id = "contract.dashboard-membership-request"
 label = "Watchlist membership request"
 transport_kind = "nautilus_signal"
 type_name = "markeitech.watchlist.membership.request"
-schema_version_kind = "dashboard policy 1 and snapshot schema 1; native methods are pinned rc4"
+schema_version_kind = "dashboard policy 2 and snapshot schema 2; native methods are pinned rc4"
 canonical_owner = "actor.watchlist"
 producers = ["actor.dashboard"]
 consumers = ["actor.watchlist"]
@@ -3061,7 +3061,7 @@ id = "contract.dashboard-native-attachment"
 label = "Acquisition-owned dashboard native attachment"
 transport_kind = "method_call"
 type_name = "NautilusSubscriptionPort.subscribe/unsubscribe"
-schema_version_kind = "dashboard policy 1 and snapshot schema 1; native methods are pinned rc4"
+schema_version_kind = "dashboard policy 2 and snapshot schema 2; native methods are pinned rc4"
 canonical_owner = "actor.data-acquisition"
 producers = ["actor.data-acquisition"]
 consumers = ["actor.dashboard"]
@@ -3082,8 +3082,8 @@ limitations = ["No provider acknowledgement or continuous delivery proof."]
 id = "contract.dashboard-projection"
 label = "Detached dashboard snapshot"
 transport_kind = "thread_queue"
-type_name = "DashboardState.snapshot.v1"
-schema_version_kind = "dashboard policy 1 and snapshot schema 1; native methods are pinned rc4"
+type_name = "DashboardState.snapshot.v2"
+schema_version_kind = "dashboard policy 2 and snapshot schema 2; native methods are pinned rc4"
 canonical_owner = "actor.dashboard"
 producers = ["actor.dashboard"]
 consumers = ["worker.dashboard-server"]
@@ -3105,7 +3105,7 @@ id = "contract.dashboard-http"
 label = "Dashboard snapshot and SSE"
 transport_kind = "external_http"
 type_name = "GET /api/snapshot and /api/events"
-schema_version_kind = "dashboard policy 1 and snapshot schema 1; native methods are pinned rc4"
+schema_version_kind = "dashboard policy 2 and snapshot schema 2; native methods are pinned rc4"
 canonical_owner = "actor.dashboard"
 producers = ["worker.dashboard-server"]
 consumers = ["projection.dashboard-ui"]
@@ -3351,3 +3351,86 @@ required = true
 style = "style.edge.data"
 evidence = ["evidence.dashboard-operation"]
 limitations = ["Queue admission is not confirmed external delivery.", "Disabled Discord does not receive notifications."]
+
+[[edges]]
+id = "edge.dashboard-history-demand"
+source = "actor.dashboard"
+target = "actor.historical-planner"
+category = "command"
+contract = "contract.historical-demand"
+transport = "nautilus_signal"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.signal-local"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+
+[[edges]]
+id = "edge.dashboard-history-lifecycle"
+source = "actor.data-acquisition"
+target = "actor.dashboard"
+category = "event"
+contract = "contract.historical-execution"
+transport = "nautilus_signal"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.signal-local"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+
+[[evidence]]
+id = "evidence.minute-candles"
+evidence_class = "source"
+source_path = "src/markeitech/acquisition/minute_candles.py"
+source_symbol = "_MinuteCandleBook"
+observed_at = "2026-09-10"
+proves = ["Acquisition-owned source-time minute projection and explicit constituent coverage"]
+limitations = ["Only the bounded ES 1m diagnostic was measured; full production and session acceptance remain pending."]
+
+[[contracts]]
+id = "contract.minute-candles"
+label = "Acquisition minute candle projection"
+transport_kind = "nautilus_custom_data"
+type_name = "markeitech.acquisition.minute_candles.v1"
+python_symbol = "MinuteCandleUpdate"
+schema_version_kind = "versioned transport identity"
+canonical_owner = "actor.data-acquisition"
+producers = ["actor.data-acquisition"]
+consumers = ["actor.dashboard"]
+parent_contracts = ["contract.native-bar"]
+identity_fields = ["instrument_id", "selector", "schema_version", "candles.ts_event_ns"]
+join_key = ["instrument_id", "candles.ts_event_ns"]
+expected_cardinality = "bounded per-member snapshot on changed source or historical batch"
+event_clock = "UTC source close timestamps; minute labels use opening timestamps"
+availability_clock = "local publication ts_init"
+clock_unit = "UTC nanoseconds"
+source_classes = ["verified_source"]
+reconciliation_policy = "Twelve unique 5s inputs establish COMPLETE; live wins over historical overlap with conflicts counted; missing constituents stay explicit."
+retention = "transient bounded minute buckets only; no raw-data archive"
+evidence = ["evidence.minute-candles", "evidence.dashboard-operation"]
+limitations = ["Mutable derived projection, not an IB minute stream; higher and session timeframes are deferred."]
+
+
+[[edges]]
+id = "edge.dashboard-minute-candles"
+source = "actor.data-acquisition"
+target = "actor.dashboard"
+category = "event"
+contract = "contract.minute-candles"
+transport = "nautilus_custom_data"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.custom-data-local"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]

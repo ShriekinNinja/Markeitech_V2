@@ -122,6 +122,7 @@ def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites)
                 for cap in member.capabilities
             },
             config.dashboard.acquisition_retry_interval_ms,
+            config.dashboard.candles_per_instrument,
         )
         for registration in plan:
             if registration.key == "data_acquisition":

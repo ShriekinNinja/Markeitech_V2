@@ -7,15 +7,16 @@ from dataclasses import dataclass, fields
 class DashboardConfig:
     """Bound startup-only dashboard resources; durations are seconds or milliseconds.
 
-    Policy version 1 exposes only loopback HTTP. History is transient per instrument,
+    Policy version 2 exposes only loopback HTTP. History is transient per instrument,
     and the projection interval limits browser publication, not provider cadence.
     """
 
-    policy_version: int = 1
+    policy_version: int = 2
     enabled: bool = False
     port: int = 8765
     maximum_instruments: int = 64
     candles_per_instrument: int = 720
+    initial_history_minutes: int = 20
     publish_interval_ms: int = 250
     acquisition_retry_interval_ms: int = 1000
     maximum_clients: int = 4
@@ -25,10 +26,11 @@ class DashboardConfig:
         if type(self.enabled) is not bool:
             raise ValueError("dashboard.enabled must be a boolean")
         bounds = {
-            "policy_version": (1, 1),
+            "policy_version": (2, 2),
             "port": (1024, 65535),
             "maximum_instruments": (1, 256),
             "candles_per_instrument": (2, 5000),
+            "initial_history_minutes": (1, 120),
             "publish_interval_ms": (100, 5000),
             "acquisition_retry_interval_ms": (100, 10000),
             "maximum_clients": (1, 16),

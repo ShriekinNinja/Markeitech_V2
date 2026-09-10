@@ -5,38 +5,40 @@
     "components": [
       {
         "boundary": "boundary.system",
-        "definition_line": 41,
+        "definition_line": 48,
         "id": "actor.dashboard",
         "implementation_ref": "src/markeitech/dashboard/actor.py:DashboardActor",
         "kind": "markeitech_actor",
         "label": "Dashboard",
         "object_path": "markeitech.dashboard.actor.DashboardActor",
-        "record_sha256": "37acf15bd7be3ea521128dc89a4ab2b548e0cd780ca46b18aa95ccc8367b2aad",
+        "record_sha256": "0baca0aa8cbb22e77722dfc6cbbc70d4f71018e3baefec232289db697f27e894",
         "responsibilities": [
           "Request configured display feeds through acquisition and receive native callbacks.",
           "Retain bounded transient display state and own local web-server startup and shutdown.",
+          "Request history through the historical planner and project acquisition minute candles.",
           "Announce the accepting dashboard address for operational Discord projection."
         ],
         "source": "src/markeitech/dashboard/actor.py",
-        "source_sha256": "ba197c85fd0a874af44d231fec8de40807ff07902f2f1be48c76bb9e4e53d656"
+        "source_sha256": "05b38da5275e6dbd66dd46c55ede9d9bdadde70e45c71cf52176d9b3a11fb9f8"
       },
       {
         "boundary": "boundary.acquisition",
-        "definition_line": 126,
+        "definition_line": 127,
         "id": "actor.data-acquisition",
         "implementation_ref": "src/markeitech/system/acquisition.py:DataAcquisitionActor",
         "kind": "markeitech_actor",
         "label": "Data Acquisition",
         "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
-        "record_sha256": "183b0f392c60c9f021be42318e6605a53b3c49b3ab40a266a2f29469f723a073",
+        "record_sha256": "d424bff32c4b61c892d9543687c807cf4f38da0c904027894ceac81d22ace777",
         "responsibilities": [
           "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
           "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
           "Publish acquisition lifecycle, historical batches, and consumer readiness.",
-          "Admit dashboard display demand and execute its native callback attachment and release."
+          "Admit dashboard display demand and execute its native callback attachment and release.",
+          "Derive bounded UTC minute candles from source-time five-second inputs for display."
         ],
         "source": "src/markeitech/system/acquisition.py",
-        "source_sha256": "2a5f9176acafe5636bd8e2e8f7aa1bb983d245570b8d060f31cee860185f5176"
+        "source_sha256": "dd371b92256c5c8259807671cc8581721e74280c3e31207acf80091ae6f5a2a1"
       },
       {
         "boundary": "boundary.system",
@@ -206,7 +208,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "d6724842530b8305f045a0683164ddeb55cd11a819e1119fcf384ea6bb90bba6"
+    "source_snapshot_sha256": "946622cdac6affd64badd59d841c436aad9d5a6e492502c0741c471e448209bb"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1272,7 +1274,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.SystemConfig",
-        "definition_line": 290,
+        "definition_line": 286,
         "exposed": "markeitech.system.SystemConfig",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1294,7 +1296,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.load_system_config",
-        "definition_line": 312,
+        "definition_line": 308,
         "exposed": "markeitech.system.load_system_config",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1328,8 +1330,8 @@
   "schema_id": "markeitech-api-metadata-index",
   "schema_version": 2,
   "source_snapshot": {
-    "file_count": 74,
-    "input_signature": "d6724842530b8305f045a0683164ddeb55cd11a819e1119fcf384ea6bb90bba6"
+    "file_count": 75,
+    "input_signature": "946622cdac6affd64badd59d841c436aad9d5a6e492502c0741c471e448209bb"
   },
-  "source_snapshot_sha256": "d6724842530b8305f045a0683164ddeb55cd11a819e1119fcf384ea6bb90bba6"
+  "source_snapshot_sha256": "946622cdac6affd64badd59d841c436aad9d5a6e492502c0741c471e448209bb"
 }

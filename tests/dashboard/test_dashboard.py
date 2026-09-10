@@ -26,6 +26,7 @@ from markeitech.acquisition import (
     FeedRequirement,
     ObservationDemand,
 )
+from markeitech.acquisition.minute_candles import _MinuteCandleBook
 from markeitech.dashboard.actor import DashboardActor, DashboardActorConfig
 from markeitech.dashboard.config import DashboardConfig
 from markeitech.dashboard.messages import (
@@ -74,6 +75,7 @@ def state(capacity: int = 2) -> DashboardState:
 
 def test_native_values_keep_identity_precision_timestamps_and_bounded_immutable_candles() -> None:
     display = state()
+    book = _MinuteCandleBook({ID}, 2)
     ts = 1_800_000_000_000_000_000
     display.observe_quote(
         QuoteTick(
@@ -86,9 +88,12 @@ def test_native_values_keep_identity_precision_timestamps_and_bounded_immutable_
             ts + 10,
         )
     )
-    for offset in (0, 5, 10):
-        display.observe_bar(bar(ts + offset * 1_000_000_000))
-    display.observe_bar(bar(ts + 10_000_000_000, "100.75"))
+    for offset in (0, 60, 120):
+        source = bar(ts + offset * 1_000_000_000)
+        display.observe_bar(source)
+        book.observe(source)
+        display.observe_candles(book.snapshot(ID, source.ts_init))
+    display.observe_bar(bar(ts + 120_000_000_000, "100.75"))
     display.observe_bar(bar(ts))
     snapshot = display.snapshot()
     assert len(snapshot["candles"][ID]) == 2
@@ -109,7 +114,7 @@ def test_native_values_keep_identity_precision_timestamps_and_bounded_immutable_
         ("candles_per_instrument", 0),
         ("maximum_clients", 17),
         ("publish_interval_ms", 1),
-        ("policy_version", 2),
+        ("policy_version", 1),
         ("maximum_instruments", 257),
         ("shutdown_timeout_seconds", 0),
     ],
@@ -130,7 +135,7 @@ def test_dashboard_composition_is_optional_and_configuration_driven() -> None:
         item for item in build_actor_plan(enabled, prerequisites) if item.key == "dashboard"
     )
     assert dashboard.config.config["dashboard"] == asdict(enabled.dashboard)
-    assert config.schema_version == 26
+    assert config.schema_version == 27
     with pytest.raises(ValueError, match="maximum_instruments"):
         build_actor_plan(
             replace(enabled, dashboard=DashboardConfig(enabled=True, maximum_instruments=1)),
@@ -140,7 +145,11 @@ def test_dashboard_composition_is_optional_and_configuration_driven() -> None:
 
 def test_http_projection_selects_only_enabled_instruments_and_rejects_foreign_origins() -> None:
     display = state()
-    display.observe_bar(bar(1_800_000_000_000_000_000))
+    source = bar(1_800_000_000_000_000_000)
+    display.observe_bar(source)
+    book = _MinuteCandleBook({ID}, 2)
+    book.observe(source)
+    display.observe_candles(book.snapshot(ID, source.ts_init))
     server = DashboardServer(display.config, display.snapshot())
     with TestClient(server.app, base_url="http://127.0.0.1:8765") as client:
         response = client.get("/api/snapshot", params={"instrument_id": ID})
@@ -390,6 +399,7 @@ def test_discord_deduplicates_dashboard_ready_and_rejects_untrusted_address() ->
 def test_stream_conflates_updates_bounds_clients_and_resets_on_reconnect() -> None:
     async def run() -> None:
         display = state()
+        book = _MinuteCandleBook({ID}, 2)
         config = replace(
             display.config, port=free_port(), maximum_clients=1, publish_interval_ms=100
         )
@@ -417,19 +427,23 @@ def test_stream_conflates_updates_bounds_clients_and_resets_on_reconnect() -> No
                     first = await next_update(lines)
                     assert first["reset"] and first["candles"] == []
                     assert (await client.get("/api/events")).status_code == 503
-                    for offset in (0, 5, 10):
-                        display.observe_bar(bar(1_800_000_000_000_000_000 + offset * 1_000_000_000))
+                    for offset in (0, 60, 120):
+                        source = bar(1_800_000_000_000_000_000 + offset * 1_000_000_000)
+                        book.observe(source)
+                        display.observe_candles(book.snapshot(ID, source.ts_init))
                         server.publish(display.snapshot())
                     assert server._mailbox.qsize() == 1
                     update = await next_update(lines)
                     assert not update["reset"]
                     assert len(update["candles"]) == 2
-                    assert update["window_start"] == 1_800_000_005
-                    display.observe_bar(bar(1_800_000_015_000_000_000))
+                    assert update["window_start"] == 1_800_000_000
+                    source = bar(1_800_000_180_000_000_000)
+                    book.observe(source)
+                    display.observe_candles(book.snapshot(ID, source.ts_init))
                     server.publish(display.snapshot())
                     update = await next_update(lines)
                     assert len(update["candles"]) == 1
-                    assert update["window_start"] == 1_800_000_010
+                    assert update["window_start"] == 1_800_000_060
                 for _attempt in range(50):
                     if server._clients == 0:
                         break
@@ -468,7 +482,7 @@ def test_native_acquisition_timer_attaches_other_actor_callbacks_without_nested_
         acquisition = _OfflineAcquisition(
             DataAcquisitionActorConfig(instrument_ids=[], historical=asdict(config.historical))
         )
-        acquisition.bind_dashboard_consumer(dashboard, {(ID, "bars"), (ID, "quotes")}, 100)
+        acquisition.bind_dashboard_consumer(dashboard, {(ID, "bars"), (ID, "quotes")}, 100, 720)
         requests = [DashboardDemand(ID, kind) for kind in ("bars", "quotes")]
         acquisition._dashboard_desired = {item.demand_id: item for item in requests}
         node = (

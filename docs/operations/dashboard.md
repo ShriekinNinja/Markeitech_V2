@@ -1,7 +1,11 @@
 # Dashboard POC — Local Review
 
-The observable outcome is an enabled-watchlist sidebar with latest quotes and completed
-five-second candles, and one chart selected from that sidebar. The interface uses neutral dark
+For the subsequent timeframe investigation, see the
+[native backfill live check](dashboard-native-backfill.md). It records the native timer failure, the acquisition-owned source-time extension,
+and subsequent live verification of the one-minute dashboard.
+
+The observable outcome is an enabled-watchlist sidebar with latest quotes and one-minute candles
+that update from each five-second source bar, and one chart selected from that sidebar. The interface uses neutral dark
 grays, gold accents, white up candles, and red down candles. This is a display projection;
 connected acceptance remains Markeitect's run and review.
 
@@ -14,7 +18,8 @@ connected acceptance remains Markeitect's run and review.
   detached snapshots from the actor thread. It serves local HTTP snapshots and Server-Sent Events
   (SSE), with a bounded number of browser connections. New snapshots replace unconsumed snapshots.
 - `DashboardUI` is the locally served HTML/CSS/JavaScript interface using the bundled
-  TradingView Lightweight Charts 5.2.1 asset. Selection changes the browser projection only.
+  TradingView Lightweight Charts 5.2.1 asset. Selection changes the browser projection only. Minute changes and older backfill are merged
+  through SSE without changing the selected instrument; fit/follow and reload retain history.
 
 Every dashboard market-data request and release goes through `DataAcquisitionActor`. Composition
 binds a native subscription port for the dashboard to acquisition before startup. Acquisition
@@ -30,20 +35,22 @@ available. A disabled watchlist produces an empty dashboard.
 
 ## Configuration and migration
 
-The system configuration schema is **26**. Dashboard policy is version **1**. Copy the commented
+The system configuration schema is **27**. Dashboard policy is version **2**. Copy the commented
 `[dashboard]` section from `config/system.example.toml` into your existing ignored local profile,
-preserving its machine/provider settings. For a schema-25 profile the only required migration is
-setting `schema_version = 26`; the section is optional and omission disables the dashboard.
+preserving its machine/provider settings. For schema-25/26 profiles set `schema_version = 27`. If `[dashboard]` already exists,
+set its `policy_version = 2`; `initial_history_minutes` defaults to 20. The section remains
+optional and omission disables the dashboard. Preserve machine-specific connection settings.
 For older profiles, first follow [developer setup](developer-setup.md). Local files are never
 migrated automatically.
 
 | Setting | Default | Valid range / meaning |
 | --- | --- | --- |
-| `policy_version` | `1` | Exactly `1` |
+| `policy_version` | `2` | Exactly `2` |
 | `enabled` | `false` | Boolean; compose dashboard on startup |
 | `port` | `8765` | 1024–65535; host fixed to `127.0.0.1` |
 | `maximum_instruments` | `64` | 1–256; reject an enabled watchlist beyond this limit |
-| `candles_per_instrument` | `720` | 2–5000; transient completed bars per instrument |
+| `candles_per_instrument` | `720` | 2–5000; transient minute candles including the forming candle per instrument |
+| `initial_history_minutes` | `20` | 1–120 elapsed minutes, capped by candle capacity; one extra minute of source input covers partial boundaries |
 | `publish_interval_ms` | `250` | 100–5000; browser projection cadence |
 | `acquisition_retry_interval_ms` | `1000` | 100–10000; membership and attachment retry cadence |
 | `maximum_clients` | `4` | 1–16; concurrent SSE clients |
@@ -51,7 +58,13 @@ migrated automatically.
 
 The tracked example and operational profiles explicitly enable the dashboard; omission uses the
 disabled default. All settings are startup-only, typed and bounded; unknown dashboard fields are rejected.
-`--dashboard` enables the dashboard for that invocation without rewriting the TOML. No npm
+`--dashboard` enables the dashboard for that invocation without rewriting the TOML. The loader validates the initial history count against per-request, total-observation and
+queue budgets in `[historical]`. Every admitted bar-enabled member requests recent history
+on membership readiness; a new live bar is not required to start backfill. A one-time two-minute history tail at the first live bar covers the subscription
+handshake; initial and tail requests each retain their bounds and acknowledgements.
+Resource validation includes both requests per bar-enabled member. Requests are
+acknowledged by the existing executor and use its configured timeout/retry policy.
+No npm
 installation or frontend build is required. Provision Python dependencies with `uv sync --locked`.
 
 ## Dashboard-ready Discord notification
@@ -82,13 +95,13 @@ Open `http://127.0.0.1:8765`. The banner says **OFFLINE PREVIEW** and all observ
 This fixture uses a real provider-free LiveNode and DashboardActor/server lifecycle, and directly
 invokes native-object callbacks to exercise display behavior. It does not prove native provider
 delivery or entitlement. Select instruments, search the sidebar, pan/zoom, toggle follow-live,
-reload, and observe new candles every five seconds. Ctrl-C stops the preview and releases port 8765.
+reload, and observe the forming minute update every five seconds. Ctrl-C stops the preview and releases port 8765.
 Stop this preview before starting the connected system on the same port.
 
 ## Markeitect's connected scenario
 
 Review the dashboard PR on `watchlist-review`. The existing IB/Discord/persistence prerequisites
-and explicit connection confirmation apply. Use your reviewed schema-26 local configuration:
+and explicit connection confirmation apply. Use your reviewed schema-27 local configuration:
 
 ```bash
 .venv/bin/markeitech system build --config config/system.local.toml --dashboard
@@ -98,11 +111,12 @@ and explicit connection confirmation apply. Use your reviewed schema-26 local co
 The first command constructs but does not connect the node. The second is **Markeitect-run only**.
 The server starts when DashboardActor starts. Open the configured loopback port and confirm all
 enabled members appear. Confirm exactly one operational Discord message contains the same
-configured dashboard address; refreshing/selecting instruments must not repeat it. During a session with data, compare bid/ask and five-second close against
-the source, select another member, confirm incoming completed candles, reload and confirm bounded
-in-process history remains. Missing bid/ask capability must say not configured. Source timestamps
+configured dashboard address; refreshing/selecting instruments must not repeat it. During a session with data, compare bid/ask and five-second last against
+the source. Confirm the 1m label, initial backfill, changes within one candle every five seconds,
+and a new candle after a minute boundary. Select another member and reload; confirm bounded
+in-process history remains. Missing source constituents must remain labeled incomplete. Missing bid/ask capability must say not configured. Source timestamps
 and age must remain visible when a feed stops. Ctrl-C the system; confirm the page disconnects and
-the listening port closes. Restarting begins with empty candle history.
+the listening port closes. Restarting begins empty and requests a fresh bounded backfill; it does not restore a raw-data archive.
 
 Stop for mismatched instrument identity, apparent fabricated continuity, incorrect values,
 unbounded resources, or a surviving server after system shutdown. Record a sanitized verdict in
@@ -111,12 +125,19 @@ raw market-data exports. Offline tests and visual inspection do not award connec
 
 ## Evidence and limits
 
-The chart retains provider bar event timestamps and decimal OHLCV strings in its API. JavaScript
-converts prices only for rendering. The displayed "last" is explicitly the five-second bar close,
-not a trade-tick claim. Bid/ask timestamps are independent. Received realtime/delayed mode is unknown;
-the configured requested mode is labeled separately. Duplicate/older completed bars are rejected
-and counted; no revision reconciliation, aggregation, gap filling, historical backfill, or durable
-market-data storage is introduced. The browser receives conflated projections, not every quote.
+The chart receives acquisition-owned derived minute snapshots with decimal OHLCV strings,
+source counts, status, and exact close timestamps. Chart labels use the minute opening time in
+UTC. A forming candle updates on source arrivals, not a wall-clock timer. COMPLETE requires all
+twelve unique five-second inputs. INCOMPLETE means the source has passed the close with missing
+inputs; no synthetic candles or volumes fill gaps. The current source age remains visible.
+
+The displayed last remains the five-second close; history can populate it before live delivery.
+Bid/ask timestamps are independent. Requested and received market-data modes remain distinct.
+Historical overlap never replaces an observed live value; conflicts and rejected source counts
+are retained in the API. Later history can repair an incomplete derived candle, and SSE delivers
+same-time changes and older inserts. The browser merges, sorts and trims these projections while
+preserving the visible range when follow-live is off. It does not calculate OHLCV. There is no
+provider revision policy change or durable raw market-data storage.
 
 Server failures remain local and are logged; port conflicts require correcting configuration and
 restarting the system. Dashboard membership is immutable for a run. Chart state is capped, but
@@ -139,8 +160,8 @@ not that mismatched cached page.
 | Native market data | `subscribe_quotes`, `subscribe_bars`, `unsubscribe_*`, `on_quote`, `on_bar` | Native methods both register callbacks and issue commands. Acquisition executes these on behalf of the composed consumer after admission. No second provider owner. |
 | Message bus | `publish_signal`, `subscribe_signal`; Python MessageBus constructor and `subscribe_any` | Use native signals for typed serialized demand/membership. Do not construct another MessageBus: the Python constructor registers a thread-local bus, and generic handlers are not native typed handlers. |
 | Cache / state | Native cache and normalized QuoteTick/Bar identity | Acquisition keeps instrument readiness. Bounded presentation history is explicitly transient; no new canonical market state. |
-| Aggregation / indicators | Native bar aggregation and indicator facilities | Not needed: consume existing external five-second bars unchanged. |
-| Historical requests / catalog | Existing native historical acquisition owner | Defer backfill/catalog; POC begins collecting at startup. |
+| Aggregation / indicators | Native composite time bars and partial-state surfaces | The rc4 timer failed the measured IB close-boundary case and exposes no Python partial builder. Acquisition owns the narrow source-time minute extension; see the detailed native gate. |
+| Historical requests / catalog | Existing native historical planner/executor and request_bars | Reuse for bounded initial five-second history; no catalog/archive. |
 | Persistence | Existing operational persistence actor | No new schema or persisted market observations. |
 | External projection | No native HTTP browser presentation surface | Approved FastAPI + SSE worker and Lightweight Charts UI; loopback only, local assets. |
 
@@ -149,7 +170,7 @@ behavior are offline checks. Provider subscription deduplication, connected call
 entitlements, received mode, session continuity, and shutdown under actual provider load remain
 outside that evidence.
 
-## Local verification record
+## Original POC verification record
 
 The offline V2 suite passes **530 tests**, with two PostgreSQL tests excluded from the offline
 command. The dashboard's 19 checks cover bounded state/configuration, native attachment/release,
@@ -168,3 +189,39 @@ instruments and reports `connected=false`. PostgreSQL integration is exercised b
 
 The two upstream Starlette/httpx/AnyIO deprecation warnings remain dependency debt. Connected
 IB/Discord acceptance remains Markeitect's run using the procedure above.
+
+## One-minute live verification
+
+The implementation uses the same production planner, acquisition executor, candle helper,
+dashboard and HTTP/SSE path in `tests/dashboard/live_minute.py`. Its diagnostic startup skips
+durable audit and calendar synchronization and supplies reviewed ES membership; this is not
+full-system startup acceptance. With explicit authorization it uses client 21 and port 8766
+alongside the running system. The first successful run fetched 252 source bars, observed 15
+same-candle HTTP changes and two live minute closes. All 22 complete historical/live minute
+comparisons matched their twelve source inputs. Browser inspection confirmed forming updates,
+fit/follow, reload retention and no console errors. The probe and HTTP listener stopped cleanly.
+
+Only one-minute ES delivery was measured. The other requested timeframes, backward-loading pages,
+and datetime selectors remain the next increment. Session-aligned 4h/daily bars require their
+separate boundary contract; this UTC-minute helper does not silently define them.
+
+The final startup-tail run fetched 252 initial plus 24 tail observations, received 22 live
+inputs, and exposed 21 same-candle HTTP changes over 108.11 seconds. Both live minute closes
+and all 22 complete historical/live candles matched their twelve constituents. Its sanitized
+result is `data/review/live-minute-dashboard-final.json`. A prior membership-only run correctly
+marked a missing startup input incomplete; the tail request supplies real history for that gap.
+A subsequent source-counter fix separates native duplicate detection from the derived latest-price
+projection; focused checks cover that callback ordering. The chart arithmetic and history path
+were unchanged by that counter fix.
+
+For local review, stop your currently running system with Ctrl-C in its terminal, then run:
+
+```bash
+.venv/bin/markeitech system run --config config/system.example.toml --dashboard --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB
+```
+
+Use the current uncommitted `dashboard-native-backfill-check` checkout. Open port 8765 and verify
+all enabled members, history status, forming updates and minute boundaries. Stop with Ctrl-C.
+The existing production process was left running throughout development; only the isolated
+client-21/port-8766 diagnostics were started and stopped by the agent. This is ready for Markeitect's
+full-system local review; no commit, push or PR was made.

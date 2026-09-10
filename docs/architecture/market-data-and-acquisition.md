@@ -225,5 +225,17 @@ uses stable projection demand IDs, and defers native consumer attachment/release
 Native observations arrive on DashboardActor's own callbacks. Watchlist supplies membership and
 answers `markeitech.watchlist.membership.request` after its existing startup audit is ready; it
 does not relay raw data to the dashboard. Shared watchlist acquisition claims survive dashboard
-release. The POC displays unchanged external five-second bars, without historical backfill,
-aggregation or persistence. See [dashboard operation](../operations/dashboard.md).
+release. Five-second source callbacks still supply the latest price. The dashboard submits
+recent-completed history demands to `HistoricalEvidencePlannerActor`; the existing acquisition
+executor issues native requests and retains pacing, validation, timeout and retry ownership.
+Acquisition merges returned five-second history with its live inputs in a bounded minute-candle
+helper and publishes `markeitech.acquisition.minute_candles.v1` native CustomData. DashboardActor
+only projects those derived candles; the HTTP worker and browser never aggregate observations.
+
+UTC minute constituents have close timestamps in `(minute start, minute end]`; a delayed boundary
+input belongs to the minute it closes. All twelve unique inputs are needed for COMPLETE, and
+missing constituents remain explicitly INCOMPLETE when the source passes their close. Historical
+and live overlap is counted once, with live values preferred and conflicts counted. This is a
+mutable derived projection over immutable provider bars, not a provider minute stream or a new
+analytical canonical bar. There is no raw-data persistence. Higher/session timeframes are deferred.
+See [dashboard operation](../operations/dashboard.md) and the [native gate and live evidence](../operations/dashboard-native-backfill.md).

@@ -128,7 +128,7 @@ class DashboardServer:
             async def stream():  # noqa: ANN202
                 sequence = -1
                 previous_selected = None
-                last_time = None
+                previous_candles = {}
                 try:
                     while not self.stopping.is_set() and not await request.is_disconnected():
                         view = self._view(instrument_id)
@@ -137,12 +137,13 @@ class DashboardServer:
                             candles = view["candles"]
                             view["reset"] = reset
                             view["window_start"] = candles[0]["time"] if candles else None
-                            if not reset and last_time is not None:
+                            if not reset:
                                 view["candles"] = [
-                                    bar for bar in candles if bar["time"] > last_time
+                                    bar
+                                    for bar in candles
+                                    if previous_candles.get(bar["time"]) != bar
                                 ]
-                            if candles:
-                                last_time = candles[-1]["time"]
+                            previous_candles = {bar["time"]: bar for bar in candles}
                             sequence, previous_selected = view["sequence"], view["selected"]
                             payload = json.dumps(view, separators=(",", ":"))
                             yield f"event: update\ndata: {payload}\n\n"

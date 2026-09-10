@@ -34,6 +34,7 @@ class CensusPolicy:
         "src/markeitech/dashboard/messages.py",
         "src/markeitech/system/resource_contracts.py",
         "src/markeitech/acquisition/historical_messages.py",
+        "src/markeitech/acquisition/minute_candles.py",
         "src/markeitech/intelligence/messages.py",
         "src/markeitech/intelligence/metrics.py",
         "src/markeitech/intelligence/entities.py",

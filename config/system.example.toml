@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored .env.
 
-schema_version = 26
+schema_version = 27
 
 [runtime]
 name = "MARKEITECH-V2-001"
@@ -37,11 +37,12 @@ ping_critical_resource_alerts = true
 # Local browser dashboard. All settings are startup-only; restart to apply changes.
 # Policy version identifies this bounded display contract; no raw data is persisted.
 [dashboard]
-policy_version = 1 # Only 1 is supported.
+policy_version = 2 # One-minute candles from five-second sources; only 2 is supported.
 enabled = true # Set true to start/stop the dashboard with the system.
 port = 8765 # TCP port, 1024..65535; binds to 127.0.0.1 only.
 maximum_instruments = 64 # 1..256; must cover every enabled watchlist member.
-candles_per_instrument = 720 # 2..5000 completed 5s bars, held in memory per member.
+candles_per_instrument = 720 # 2..5000 minute candles, including the forming candle, per member.
+initial_history_minutes = 90 # 1..120 elapsed minutes, capped by candle capacity; IB availability applies.
 publish_interval_ms = 250 # 100..5000 ms; browser projection cadence, not data cadence.
 acquisition_retry_interval_ms = 1000 # 100..10000 ms; membership/attachment retry cadence.
 maximum_clients = 4 # 1..16 concurrent browser SSE streams.
