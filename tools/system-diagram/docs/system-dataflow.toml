@@ -11,7 +11,7 @@ owner = "Markeitect"
 review_status = "proposed"
 architecture_effective_at = "2026-08-31"
 generator_contract_version = 1
-default_profile = "profile.v3-es-minimal"
+default_profile = "profile.example"
 limitations = ["Static source and configuration checks cannot prove connected runtime behavior.", "Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.", "Generated artifacts are documentation projections and must never be edited or treated as authority.", "Markeitech is read-only and advisory; no current order submission or execution exists."]
 
 [[evidence]]
@@ -51,7 +51,7 @@ limitations = ["Static construction does not prove a successful provider connect
 [[evidence]]
 id = "evidence.profile"
 evidence_class = "configuration"
-source_path = "config/system.v3-es-minimal.toml"
+source_path = "config/system.example.toml"
 observed_at = "2026-08-30"
 proves = ["named active-profile enablement", "configuration conditions"]
 limitations = ["Requested realtime mode does not prove received realtime data."]
@@ -146,7 +146,7 @@ source_path = "src/markeitech/system/discord.py"
 source_symbol = "DiscordHealthActor"
 observed_at = "2026-08-30"
 proves = ["optional queued Discord projection"]
-limitations = ["Disabled in the active profile."]
+limitations = ["Configured enablement does not prove external delivery."]
 
 [[evidence]]
 id = "evidence.roadmap"
@@ -157,10 +157,10 @@ proves = ["deterministic evidence and future semantic-layer boundaries"]
 limitations = ["Accepted architecture does not prove current composition or runtime behavior."]
 
 [[profiles]]
-id = "profile.v3-es-minimal"
-config_path = "config/system.v3-es-minimal.toml"
-config_schema_version = 25
-content_sha256 = "e49cfb35129a0fd028be2e7e5172ddb754a62b37fc3dc62511eea5bd8e5541f8"
+id = "profile.example"
+config_path = "config/system.example.toml"
+config_schema_version = 26
+content_sha256 = "62c28f21b559443baa201b6e6d4432d082d1c33ad6213220fb327e8c4fc0ef7a"
 status = "tracked_active_review_profile"
 limitations = ["Represents the named tracked profile, not all available capabilities or a connected runtime observation."]
 evidence = ["evidence.profile"]
@@ -170,14 +170,14 @@ id = "evidence.operational-boot"
 evidence_class = "configuration"
 source_path = "config/system.operational.toml"
 observed_at = "2026-09-10"
-proves = ["Nine operational actors with an explicitly disabled empty watchlist"]
+proves = ["Ten operational actors including the local dashboard with an explicitly disabled empty watchlist"]
 limitations = ["Connected boot and host measurement require Markeitect live acceptance."]
 
 [[profiles]]
 id = "profile.operational"
 config_path = "config/system.operational.toml"
-config_schema_version = 25
-content_sha256 = "d43bb8995bbdafd213295ea3a2449cf0d67fd990396e7621e63953232730e0ab"
+config_schema_version = 26
+content_sha256 = "f58c1f50722b5bfd653f6b5c6457c82bed816b735fe6d83038167fcbf25da628"
 status = "tracked_operational_review_profile"
 limitations = ["Zero instrument loads and demands; IB, Discord and persistence remain configured.", "Not live-accepted; no runtime instrument addition."]
 evidence = ["evidence.operational-boot"]
@@ -301,7 +301,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.composition"]
 limitations = []
 
@@ -331,7 +331,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.composition", "evidence.calendar-contracts", "evidence.canonical-calendar"]
 limitations = ["Global system READY does not currently assert calendar-projection readiness."]
 
@@ -358,7 +358,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Pure evaluator owned inside SessionStateActor; ordinary per-calendar projection failures are converted to typed response failures."
 cardinality = "one per active configured calendar ID, owned by SessionStateActor"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.canonical-calendar"]
 limitations = ["mcal authors admitted exchange-schedule facts; Markeitech-defined product phases remain separate configured semantics."]
 
@@ -388,7 +388,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.composition", "evidence.calendar-contracts"]
 limitations = ["Calendar projection delivery is local and transient; no replay guarantee is claimed."]
 
@@ -402,7 +402,7 @@ implementation_ref = "src/markeitech/system/discord.py:DiscordHealthActor"
 composition_key = "discord_health"
 composition_order = 4
 actor_id = "DISCORD-HEALTH"
-responsibilities = ["Discord Health Projection responsibilities and lifecycle"]
+responsibilities = ["Project system health, resource health, operational readiness and dashboard availability through the configured Discord delivery workers."]
 semantic_owner = "actor.discord-health"
 mutation_owner = "none_current"
 transport_owner = "none_current"
@@ -419,7 +419,7 @@ configuration_path = "discord.enabled"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.disabled"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "disabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.discord"]
 limitations = []
 
@@ -449,7 +449,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Demand rejection, calendar-window deferral, and bounded projection-delivery failure remain local to the planner actor."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.composition", "evidence.historical-planner", "evidence.calendar-contracts"]
 limitations = ["Recent-completed count windows use completed interval boundaries; they do not guarantee a requested number of traded observations across closures or provider gaps."]
 
@@ -480,7 +480,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "disabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "disabled" }]
 evidence = ["evidence.composition"]
 limitations = []
 
@@ -494,7 +494,7 @@ implementation_ref = "src/markeitech/system/acquisition.py:DataAcquisitionActor"
 composition_key = "data_acquisition"
 composition_order = 7
 actor_id = "DATA-ACQUISITION"
-responsibilities = ["Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.", "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.", "Publish acquisition lifecycle, historical batches, and consumer readiness."]
+responsibilities = ["Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.", "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.", "Publish acquisition lifecycle, historical batches, and consumer readiness.", "Admit dashboard display demand and execute its native callback attachment and release."]
 semantic_owner = "actor.data-acquisition"
 mutation_owner = "none_current"
 transport_owner = "none_current"
@@ -510,7 +510,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.composition", "evidence.historical-contracts"]
 limitations = ["The verified local historical port has one active lane and no provider cancellation mapping."]
 
@@ -541,7 +541,7 @@ configuration_path = "runtime_resources.enabled"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.disabled"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "disabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.composition"]
 limitations = []
 
@@ -572,7 +572,7 @@ configuration_path = "runtime_resources.health.enabled"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.disabled"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "disabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.resource-contracts"]
 limitations = ["Effective composition also depends on runtime_resources.enabled."]
 
@@ -602,7 +602,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.persistence"]
 limitations = ["Application-level persistence readiness is implemented; current-status prose still contains a conflicting historical statement."]
 
@@ -628,7 +628,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.node"]
 limitations = []
 
@@ -654,7 +654,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.node"]
 limitations = []
 
@@ -680,7 +680,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.node"]
 limitations = ["Cache contents are not architecture evidence."]
 
@@ -706,7 +706,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.external"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
 evidence = ["evidence.node"]
 limitations = ["Exact IB contract qualification, entitlement, returned data mode, request methods, callbacks, and cancellation mapping remain unknown."]
 
@@ -732,7 +732,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.persistence"]
 limitations = []
 
@@ -758,7 +758,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
 evidence = ["evidence.persistence"]
 limitations = []
 
@@ -784,7 +784,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.external"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
 evidence = ["evidence.persistence"]
 limitations = ["Database-internal schema, transaction, index, privilege, recovery, and deployment topology are intentionally unknown in this diagram."]
 
@@ -810,7 +810,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "disabled" }, { profile = "profile.operational", enablement = "disabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "disabled" }]
 evidence = ["evidence.discord"]
 limitations = []
 
@@ -836,7 +836,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "disabled" }, { profile = "profile.operational", enablement = "disabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "disabled" }]
 evidence = ["evidence.discord"]
 limitations = []
 
@@ -862,7 +862,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.external"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
 evidence = ["evidence.discord"]
 limitations = []
 
@@ -888,7 +888,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.external"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
 evidence = ["evidence.current-status"]
 limitations = []
 
@@ -914,7 +914,7 @@ evidence_certainty = "recommendation"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.future"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
 evidence = ["evidence.roadmap"]
 limitations = ["Not implemented or composed."]
 
@@ -940,7 +940,7 @@ evidence_certainty = "recommendation"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.future"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
 evidence = ["evidence.roadmap"]
 limitations = ["Not implemented or composed."]
 
@@ -966,7 +966,7 @@ evidence_certainty = "recommendation"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.future"
-profile_states = [{ profile = "profile.v3-es-minimal", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
 evidence = ["evidence.roadmap"]
 limitations = ["Kite advisors are development-time collaborators and are unrelated to Sir Loke runtime behavior."]
 
@@ -977,7 +977,7 @@ label = "Watchlist last-price bar acquisition"
 implementation_state = "implemented"
 composition_policy = "conditional"
 configuration_path = "watchlist.members[].capabilities contains watchlist_last"
-profile = "profile.v3-es-minimal"
+profile = "profile.example"
 enablement = "enabled"
 evidence = ["evidence.profile"]
 limitations = ["Exact provider method and entitlement remain unknown."]
@@ -989,7 +989,7 @@ label = "Bounded analytical historical bar requests"
 implementation_state = "implemented"
 composition_policy = "conditional"
 configuration_path = "historical plus consumer AnalyticalDemand"
-profile = "profile.v3-es-minimal"
+profile = "profile.example"
 enablement = "enabled"
 evidence = ["evidence.historical-contracts"]
 limitations = ["Enabled by declared consumer demand, not by a single Boolean flag."]
@@ -1001,7 +1001,7 @@ label = "Queued Discord health notifications"
 implementation_state = "implemented"
 composition_policy = "conditional"
 configuration_path = "discord.enabled"
-profile = "profile.v3-es-minimal"
+profile = "profile.example"
 enablement = "disabled"
 evidence = ["evidence.discord"]
 limitations = []
@@ -1013,7 +1013,7 @@ label = "Runtime resource telemetry"
 implementation_state = "implemented"
 composition_policy = "conditional"
 configuration_path = "runtime_resources.enabled"
-profile = "profile.v3-es-minimal"
+profile = "profile.example"
 enablement = "disabled"
 evidence = ["evidence.resource-contracts"]
 limitations = []
@@ -1025,7 +1025,7 @@ label = "Runtime resource health classification"
 implementation_state = "implemented"
 composition_policy = "conditional"
 configuration_path = "runtime_resources.enabled and runtime_resources.health.enabled"
-profile = "profile.v3-es-minimal"
+profile = "profile.example"
 enablement = "disabled"
 evidence = ["evidence.resource-contracts"]
 limitations = []
@@ -1170,7 +1170,7 @@ type_name = "markeitech.acquisition.stream"
 schema_version_kind = "explicit contract identity or framework-native type"
 canonical_owner = "actor.data-acquisition"
 producers = ["actor.data-acquisition"]
-consumers = ["actor.evidence-health"]
+consumers = ["actor.evidence-health", "actor.dashboard"]
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
 join_key = []
@@ -1236,7 +1236,7 @@ type_name = "markeitech.watchlist.membership"
 schema_version_kind = "explicit contract identity or framework-native type"
 canonical_owner = "actor.watchlist"
 producers = ["actor.watchlist"]
-consumers = ["actor.operational-persistence", "actor.discord-health"]
+consumers = ["actor.operational-persistence", "actor.discord-health", "actor.dashboard"]
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
 join_key = []
@@ -1726,7 +1726,7 @@ type_name = "nautilus.model.data.Bar"
 schema_version_kind = "explicit contract identity or framework-native type"
 canonical_owner = "component.data-engine"
 producers = ["provider.interactive-brokers", "component.data-engine"]
-consumers = ["actor.data-acquisition"]
+consumers = ["actor.data-acquisition", "actor.dashboard"]
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
 join_key = []
@@ -2679,16 +2679,16 @@ label = "Failure or release path"
 
 [[views]]
 id = "view.current-runtime"
-label = "Current V3 ES Runtime Topology"
+label = "Current Example Runtime Topology"
 kind = "current_runtime"
-purpose = "Profile-specific implemented and enabled topology for the tracked V3 ES review profile."
-profile = "profile.v3-es-minimal"
+purpose = "Profile-specific implemented and enabled topology for the tracked seven-instrument dashboard review profile."
+profile = "profile.example"
 explicit_tombstones = []
 include_temporal_status = ["current"]
 include_implementation_state = ["implemented", "external"]
 include_profile_enablement = ["enabled", "not_applicable"]
-explicit_components = ["component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "actor.system-control", "actor.session-state", "actor.evidence-health", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "operator.markeitect"]
-explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-status-system", "edge.acquisition-stream-health", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-state-request-planner", "edge.calendar-state-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-planner", "edge.calendar-transition-persistence", "edge.historical-plan-acquisition", "edge.native-historical-request", "edge.historical-provider-response", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure"]
+explicit_components = ["component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "actor.system-control", "actor.session-state", "actor.evidence-health", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.operational-persistence", "queue.persistence", "worker.persistence", "store.postgres", "operator.markeitect", "actor.discord-health", "queue.discord", "worker.discord", "projection.discord", "actor.runtime-resources", "actor.runtime-resource-health", "actor.dashboard", "worker.dashboard-server", "projection.dashboard-ui"]
+explicit_edges = ["edge.ib-native-bars", "edge.acquisition-subscribe", "edge.data-engine-live-callback", "edge.watchlist-demand", "edge.watchlist-status-request", "edge.acquisition-status-watchlist", "edge.acquisition-status-system", "edge.acquisition-stream-health", "edge.calendar-request-health", "edge.calendar-response-health", "edge.calendar-request-planner", "edge.calendar-response-planner", "edge.calendar-state-request-planner", "edge.calendar-state-response-planner", "edge.calendar-transition-health", "edge.calendar-transition-planner", "edge.calendar-transition-persistence", "edge.historical-plan-acquisition", "edge.native-historical-request", "edge.historical-provider-response", "edge.persistence-ready-request", "edge.persistence-ready-response", "edge.system-health-persistence", "edge.persistence-queue", "edge.queue-worker", "edge.worker-postgres", "edge.worker-result", "edge.persistence-failure", "edge.dashboard-demand", "edge.dashboard-membership-request", "edge.dashboard-membership", "edge.dashboard-lifecycle", "edge.dashboard-native-attachment", "edge.dashboard-bars", "edge.dashboard-quotes", "edge.dashboard-mailbox", "edge.dashboard-http", "edge.dashboard-ready-discord"]
 direction = "left_to_right"
 layout_engine = "dot"
 routing = "spline"
@@ -2697,7 +2697,7 @@ formats = ["svg", "png", "dot", "md"]
 theme = "style.theme"
 accessibility_companion_required = true
 no_execution_banner = true
-max_nodes = 20
+max_nodes = 25
 max_edges = 44
 max_cluster_depth = 2
 target_width_px = 4600
@@ -2711,12 +2711,12 @@ id = "view.complete-inventory"
 label = "Complete Component and Capability Inventory"
 kind = "complete_inventory"
 purpose = "Show implemented, conditional, disabled, external, and future components without implying runtime flow."
-profile = "profile.v3-es-minimal"
+profile = "profile.example"
 explicit_tombstones = ["tombstone.visual-acceptance-actor", "tombstone.live-evidence-review-actor", "tombstone.legacy-session-state-contract", "tombstone.direct-historical-demand-edge", "tombstone.historical-release-edge"]
 include_temporal_status = ["current", "historical", "future"]
 include_implementation_state = ["implemented", "external", "removed", "rejected", "future"]
 include_profile_enablement = ["enabled", "disabled", "not_applicable", "unknown"]
-explicit_components = ["actor.system-control", "actor.session-state", "actor.evidence-health", "actor.discord-health", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.runtime-resources", "actor.runtime-resource-health", "actor.operational-persistence", "component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "queue.persistence", "worker.persistence", "store.postgres", "queue.discord", "worker.discord", "projection.discord", "operator.markeitect", "future.semantic-events", "future.opportunities", "future.sir-loke"]
+explicit_components = ["actor.system-control", "actor.session-state", "actor.evidence-health", "actor.discord-health", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.runtime-resources", "actor.runtime-resource-health", "actor.operational-persistence", "component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "queue.persistence", "worker.persistence", "store.postgres", "queue.discord", "worker.discord", "projection.discord", "operator.markeitect", "future.semantic-events", "future.opportunities", "future.sir-loke", "actor.dashboard", "worker.dashboard-server", "projection.dashboard-ui"]
 explicit_edges = []
 direction = "top_to_bottom"
 layout_engine = "dot"
@@ -2742,7 +2742,7 @@ id = "view.provider-canonical-data"
 label = "Provider to Canonical Data Flow"
 kind = "provider_to_canonical_data"
 purpose = "Show provider capability, native Nautilus boundary, acquisition ownership, historical planning, live delivery, and evidence health."
-profile = "profile.v3-es-minimal"
+profile = "profile.example"
 explicit_tombstones = []
 include_temporal_status = ["current"]
 include_implementation_state = ["implemented", "external"]
@@ -2772,7 +2772,7 @@ id = "view.metrics-entities-intelligence"
 label = "Calendars and Evidence Health"
 kind = "metrics_entities_intelligence"
 purpose = "Show calendar state, historical planning, and evidence-health capabilities."
-profile = "profile.v3-es-minimal"
+profile = "profile.example"
 explicit_tombstones = []
 include_temporal_status = ["current"]
 include_implementation_state = ["implemented"]
@@ -2802,7 +2802,7 @@ id = "view.persistence-audit-projections"
 label = "Persistence, Operational Audit, and External Projections"
 kind = "persistence_audit_projections"
 purpose = "Separate bounded operational persistence from optional notifications and diagnostic projections."
-profile = "profile.v3-es-minimal"
+profile = "profile.example"
 explicit_tombstones = []
 include_temporal_status = ["current"]
 include_implementation_state = ["implemented", "external"]
@@ -2885,3 +2885,469 @@ evidence = ["evidence.current-status", "evidence.persistence"]
 required_decision = "Represent the implemented application-level request/response handshake and retain this visible limitation until current-status wording is reconciled."
 status = "accepted_diagram_treatment_pending_document_reconciliation"
 limitations = ["Does not establish PostgreSQL internal readiness, durability, restore acceptance, or connected-run success."]
+
+[[evidence]]
+id = "evidence.dashboard"
+evidence_class = "source"
+source_path = "src/markeitech/dashboard/actor.py"
+observed_at = "2026-09-10"
+proves = ["Dashboard POC implementation and bounded local contracts"]
+limitations = ["Connected acceptance pending."]
+
+[[evidence]]
+id = "evidence.dashboard-server"
+evidence_class = "source"
+source_path = "src/markeitech/dashboard/server.py"
+observed_at = "2026-09-10"
+proves = ["Dashboard POC implementation and bounded local contracts"]
+limitations = ["Connected acceptance pending."]
+
+[[evidence]]
+id = "evidence.dashboard-ui"
+evidence_class = "source"
+source_path = "src/markeitech/dashboard/static/dashboard.js"
+observed_at = "2026-09-10"
+proves = ["Dashboard POC implementation and bounded local contracts"]
+limitations = ["Connected acceptance pending."]
+
+[[evidence]]
+id = "evidence.dashboard-contracts"
+evidence_class = "source"
+source_path = "src/markeitech/dashboard/messages.py"
+observed_at = "2026-09-10"
+proves = ["Dashboard POC implementation and bounded local contracts"]
+limitations = ["Connected acceptance pending."]
+
+[[evidence]]
+id = "evidence.dashboard-operation"
+evidence_class = "tracked_authority"
+source_path = "docs/operations/dashboard.md"
+observed_at = "2026-09-10"
+proves = ["Dashboard POC implementation and bounded local contracts"]
+limitations = ["Connected acceptance pending."]
+
+[[components]]
+id = "actor.dashboard"
+label = "Dashboard"
+kind = "markeitech_actor"
+logical_area = "system and infrastructure"
+boundary = "boundary.system"
+responsibilities = ["Request configured display feeds through acquisition and receive native callbacks.", "Retain bounded transient display state and own local web-server startup and shutdown.", "Announce the accepting dashboard address for operational Discord projection."]
+semantic_owner = "actor.dashboard"
+mutation_owner = "none_current"
+transport_owner = "none_current"
+persistence_owner = "none_current"
+recovery_owner = "actor.dashboard"
+projection_owner = "actor.dashboard"
+policy_owner = "operator.markeitect"
+implementation_state = "implemented"
+composition_policy = "conditional"
+configuration_path = "dashboard.enabled"
+temporal_status = "current"
+acceptance_state = "unaccepted"
+evidence_certainty = "verified_source"
+failure_isolation = "Worker/socket failure remains local; actor stop closes SSE and joins the worker within its configured deadline."
+cardinality = "one when composed"
+style = "style.component.current"
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+evidence = ["evidence.dashboard", "evidence.dashboard-operation"]
+limitations = ["Provider-connected delivery is unaccepted.", "Transient completed bars only; no backfill, persistence or derived market truth."]
+implementation_ref = "src/markeitech/dashboard/actor.py:DashboardActor"
+actor_id = "DASHBOARD"
+composition_key = "dashboard"
+composition_order = 11
+
+[[components]]
+id = "worker.dashboard-server"
+label = "Dashboard Server"
+kind = "worker"
+logical_area = "system and infrastructure"
+boundary = "boundary.workers"
+responsibilities = ["Serve loopback HTTP snapshots and bounded SSE clients from detached projections.", "Conflate snapshots through a one-item mailbox and stop with the owning actor."]
+semantic_owner = "actor.dashboard"
+mutation_owner = "none_current"
+transport_owner = "none_current"
+persistence_owner = "none_current"
+recovery_owner = "actor.dashboard"
+projection_owner = "actor.dashboard"
+policy_owner = "operator.markeitect"
+implementation_state = "implemented"
+composition_policy = "conditional"
+configuration_path = "dashboard.enabled"
+temporal_status = "current"
+acceptance_state = "unaccepted"
+evidence_certainty = "verified_source"
+failure_isolation = "Worker/socket failure remains local; actor stop closes SSE and joins the worker within its configured deadline."
+cardinality = "one when composed"
+style = "style.component.current"
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+evidence = ["evidence.dashboard-server", "evidence.dashboard-operation"]
+limitations = ["Provider-connected delivery is unaccepted.", "Transient completed bars only; no backfill, persistence or derived market truth."]
+implementation_ref = "src/markeitech/dashboard/server.py:DashboardServer"
+
+[[components]]
+id = "projection.dashboard-ui"
+label = "Dashboard UI"
+kind = "projection"
+logical_area = "system and infrastructure"
+boundary = "boundary.projections"
+responsibilities = ["Render enabled watchlist membership and latest data with one selected candle chart."]
+semantic_owner = "actor.dashboard"
+mutation_owner = "none_current"
+transport_owner = "none_current"
+persistence_owner = "none_current"
+recovery_owner = "actor.dashboard"
+projection_owner = "actor.dashboard"
+policy_owner = "operator.markeitect"
+implementation_state = "implemented"
+composition_policy = "conditional"
+configuration_path = "dashboard.enabled"
+temporal_status = "current"
+acceptance_state = "unaccepted"
+evidence_certainty = "verified_source"
+failure_isolation = "Worker/socket failure remains local; actor stop closes SSE and joins the worker within its configured deadline."
+cardinality = "one when composed"
+style = "style.component.current"
+profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+evidence = ["evidence.dashboard-ui", "evidence.dashboard-operation"]
+limitations = ["Provider-connected delivery is unaccepted.", "Transient completed bars only; no backfill, persistence or derived market truth."]
+
+[[contracts]]
+id = "contract.dashboard-demand"
+label = "Dashboard demand"
+transport_kind = "nautilus_signal"
+type_name = "markeitech.dashboard.demand"
+schema_version_kind = "dashboard policy 1 and snapshot schema 1; native methods are pinned rc4"
+canonical_owner = "actor.data-acquisition"
+producers = ["actor.dashboard"]
+consumers = ["actor.data-acquisition"]
+parent_contracts = []
+identity_fields = ["instrument_id", "feed_kind or selected instrument", "sequence and server epoch for browser projections"]
+join_key = []
+expected_cardinality = "contract-specific and configuration-bounded"
+event_clock = "Native ts_event preserved where observations are present"
+availability_clock = "Native ts_init preserved where observations are present"
+clock_unit = "UTC nanoseconds where the contract carries instants"
+source_classes = ["verified_source"]
+reconciliation_policy = "Idempotent demand IDs; immutable completed bars; latest detached snapshot replaces queued predecessor."
+retention = "bounded transient memory only"
+evidence = ["evidence.dashboard-contracts", "evidence.dashboard", "evidence.dashboard-server"]
+limitations = ["No provider acknowledgement or continuous delivery proof."]
+
+[[contracts]]
+id = "contract.dashboard-membership-request"
+label = "Watchlist membership request"
+transport_kind = "nautilus_signal"
+type_name = "markeitech.watchlist.membership.request"
+schema_version_kind = "dashboard policy 1 and snapshot schema 1; native methods are pinned rc4"
+canonical_owner = "actor.watchlist"
+producers = ["actor.dashboard"]
+consumers = ["actor.watchlist"]
+parent_contracts = []
+identity_fields = ["instrument_id", "feed_kind or selected instrument", "sequence and server epoch for browser projections"]
+join_key = []
+expected_cardinality = "contract-specific and configuration-bounded"
+event_clock = "Native ts_event preserved where observations are present"
+availability_clock = "Native ts_init preserved where observations are present"
+clock_unit = "UTC nanoseconds where the contract carries instants"
+source_classes = ["verified_source"]
+reconciliation_policy = "Idempotent demand IDs; immutable completed bars; latest detached snapshot replaces queued predecessor."
+retention = "bounded transient memory only"
+evidence = ["evidence.dashboard-contracts", "evidence.dashboard", "evidence.dashboard-server"]
+limitations = ["No provider acknowledgement or continuous delivery proof."]
+
+[[contracts]]
+id = "contract.dashboard-native-attachment"
+label = "Acquisition-owned dashboard native attachment"
+transport_kind = "method_call"
+type_name = "NautilusSubscriptionPort.subscribe/unsubscribe"
+schema_version_kind = "dashboard policy 1 and snapshot schema 1; native methods are pinned rc4"
+canonical_owner = "actor.data-acquisition"
+producers = ["actor.data-acquisition"]
+consumers = ["actor.dashboard"]
+parent_contracts = []
+identity_fields = ["instrument_id", "feed_kind or selected instrument", "sequence and server epoch for browser projections"]
+join_key = []
+expected_cardinality = "contract-specific and configuration-bounded"
+event_clock = "Native ts_event preserved where observations are present"
+availability_clock = "Native ts_init preserved where observations are present"
+clock_unit = "UTC nanoseconds where the contract carries instants"
+source_classes = ["verified_source"]
+reconciliation_policy = "Idempotent demand IDs; immutable completed bars; latest detached snapshot replaces queued predecessor."
+retention = "bounded transient memory only"
+evidence = ["evidence.dashboard-contracts", "evidence.dashboard", "evidence.dashboard-server"]
+limitations = ["No provider acknowledgement or continuous delivery proof."]
+
+[[contracts]]
+id = "contract.dashboard-projection"
+label = "Detached dashboard snapshot"
+transport_kind = "thread_queue"
+type_name = "DashboardState.snapshot.v1"
+schema_version_kind = "dashboard policy 1 and snapshot schema 1; native methods are pinned rc4"
+canonical_owner = "actor.dashboard"
+producers = ["actor.dashboard"]
+consumers = ["worker.dashboard-server"]
+parent_contracts = []
+identity_fields = ["instrument_id", "feed_kind or selected instrument", "sequence and server epoch for browser projections"]
+join_key = []
+expected_cardinality = "contract-specific and configuration-bounded"
+event_clock = "Native ts_event preserved where observations are present"
+availability_clock = "Native ts_init preserved where observations are present"
+clock_unit = "UTC nanoseconds where the contract carries instants"
+source_classes = ["verified_source"]
+reconciliation_policy = "Idempotent demand IDs; immutable completed bars; latest detached snapshot replaces queued predecessor."
+retention = "bounded transient memory only"
+evidence = ["evidence.dashboard-contracts", "evidence.dashboard", "evidence.dashboard-server"]
+limitations = ["No provider acknowledgement or continuous delivery proof."]
+
+[[contracts]]
+id = "contract.dashboard-http"
+label = "Dashboard snapshot and SSE"
+transport_kind = "external_http"
+type_name = "GET /api/snapshot and /api/events"
+schema_version_kind = "dashboard policy 1 and snapshot schema 1; native methods are pinned rc4"
+canonical_owner = "actor.dashboard"
+producers = ["worker.dashboard-server"]
+consumers = ["projection.dashboard-ui"]
+parent_contracts = []
+identity_fields = ["instrument_id", "feed_kind or selected instrument", "sequence and server epoch for browser projections"]
+join_key = []
+expected_cardinality = "contract-specific and configuration-bounded"
+event_clock = "Native ts_event preserved where observations are present"
+availability_clock = "Native ts_init preserved where observations are present"
+clock_unit = "UTC nanoseconds where the contract carries instants"
+source_classes = ["verified_source"]
+reconciliation_policy = "Idempotent demand IDs; immutable completed bars; latest detached snapshot replaces queued predecessor."
+retention = "bounded transient memory only"
+evidence = ["evidence.dashboard-contracts", "evidence.dashboard", "evidence.dashboard-server"]
+limitations = ["No provider acknowledgement or continuous delivery proof."]
+
+[[delivery_claims]]
+id = "delivery.dashboard-mailbox"
+scope = "Capacity-one detached snapshot mailbox"
+transport = "thread_queue"
+guarantee = "unknown"
+replay = "Reconnect sends current bounded snapshot; no raw-event replay."
+acknowledgement_milestone = "Local projection offer only; browser consumption is not acknowledged."
+ordering_scope = "Actor sequence per server epoch"
+cross_producer_ordering = "single actor producer"
+duplicate_possible = true
+evidence = ["evidence.dashboard-server"]
+limitations = ["Intermediate projections may be conflated."]
+
+[[delivery_claims]]
+id = "delivery.dashboard-http"
+scope = "Loopback HTTP snapshot plus bounded SSE stream"
+transport = "external_http"
+guarantee = "unknown"
+replay = "Reconnect sends current bounded snapshot; no raw-event replay."
+acknowledgement_milestone = "Local projection offer only; browser consumption is not acknowledged."
+ordering_scope = "Actor sequence per server epoch"
+cross_producer_ordering = "single actor producer"
+duplicate_possible = true
+evidence = ["evidence.dashboard-server"]
+limitations = ["Intermediate projections may be conflated."]
+
+[[edges]]
+id = "edge.dashboard-demand"
+source = "actor.dashboard"
+target = "actor.data-acquisition"
+category = "command"
+contract = "contract.dashboard-demand"
+transport = "nautilus_signal"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.signal-local"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+[[edges]]
+id = "edge.dashboard-membership-request"
+source = "actor.dashboard"
+target = "actor.watchlist"
+category = "query"
+contract = "contract.dashboard-membership-request"
+transport = "nautilus_signal"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.signal-local"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+[[edges]]
+id = "edge.dashboard-membership"
+source = "actor.watchlist"
+target = "actor.dashboard"
+category = "response"
+contract = "contract.watchlist-membership"
+transport = "nautilus_signal"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.signal-local"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+[[edges]]
+id = "edge.dashboard-lifecycle"
+source = "actor.data-acquisition"
+target = "actor.dashboard"
+category = "event"
+contract = "contract.acquisition-stream"
+transport = "nautilus_signal"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.signal-local"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+[[edges]]
+id = "edge.dashboard-native-attachment"
+source = "actor.data-acquisition"
+target = "actor.dashboard"
+category = "subscription_command"
+contract = "contract.dashboard-native-attachment"
+transport = "method_call"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_sync"
+delivery_claim = "delivery.method-command"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+[[edges]]
+id = "edge.dashboard-bars"
+source = "component.data-engine"
+target = "actor.dashboard"
+category = "native_observation"
+contract = "contract.native-bar"
+transport = "nautilus_native_data"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.native-provider-unknown"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+[[edges]]
+id = "edge.dashboard-quotes"
+source = "component.data-engine"
+target = "actor.dashboard"
+category = "native_observation"
+contract = "contract.native-quote"
+transport = "nautilus_native_data"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.native-provider-unknown"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+[[edges]]
+id = "edge.dashboard-mailbox"
+source = "actor.dashboard"
+target = "worker.dashboard-server"
+category = "projection"
+contract = "contract.dashboard-projection"
+transport = "thread_queue"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.dashboard-mailbox"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+[[edges]]
+id = "edge.dashboard-http"
+source = "worker.dashboard-server"
+target = "projection.dashboard-ui"
+category = "projection"
+contract = "contract.dashboard-http"
+transport = "external_http"
+correlation = "Instrument and feed identity; server epoch and actor sequence for browser projections"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.dashboard-http"
+authority_direction = "Acquisition owns market-data operations; dashboard is a projection only."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["No connected-provider acceptance."]
+
+[[contracts]]
+id = "contract.native-quote"
+label = "Nautilus native quote"
+transport_kind = "nautilus_native_data"
+type_name = "nautilus.model.QuoteTick"
+schema_version_kind = "explicit contract identity or framework-native type"
+canonical_owner = "component.data-engine"
+producers = ["provider.interactive-brokers", "component.data-engine"]
+consumers = ["actor.dashboard", "actor.watchlist", "actor.data-acquisition"]
+parent_contracts = []
+identity_fields = ["contract identity", "source identity", "instrument where applicable"]
+join_key = []
+expected_cardinality = "contract-specific and configuration-bounded"
+event_clock = "provider start time translated by installed adapter"
+availability_clock = "local receipt or publication time where represented"
+clock_unit = "UTC nanoseconds where the contract carries instants"
+source_classes = ["verified_source"]
+reconciliation_policy = "contract owner preserves duplicates, conflicts, revisions, and unknowns according to source contract"
+retention = "transient unless explicitly persisted as an operational fact"
+evidence = ["evidence.node"]
+limitations = ["Provider request method, exact contract qualification, entitlement, returned mode, and adapter mapping are unknown."]
+
+[[contracts]]
+id = "contract.dashboard-ready"
+label = "Dashboard HTTP ready"
+transport_kind = "nautilus_signal"
+type_name = "markeitech.dashboard.ready"
+schema_version_kind = "DashboardReadyEvent schema 1"
+canonical_owner = "actor.dashboard"
+producers = ["actor.dashboard"]
+consumers = ["actor.discord-health"]
+parent_contracts = []
+identity_fields = ["source", "server_epoch", "port"]
+join_key = []
+expected_cardinality = "contract-specific and configuration-bounded"
+event_clock = "Native signal publication after Uvicorn startup completes"
+availability_clock = "Actor projection timer after worker readiness event"
+clock_unit = "UTC nanoseconds where the contract carries instants"
+source_classes = ["verified_source"]
+reconciliation_policy = "One event per accepting server instance; Discord suppresses duplicate server epochs."
+retention = "bounded transient memory only"
+evidence = ["evidence.dashboard-contracts", "evidence.dashboard", "evidence.dashboard-server"]
+limitations = ["HTTP availability does not assert market-data readiness.", "Loopback address is for the system host.", "Existing bounded Discord delivery can fail; failure is logged."]
+
+[[edges]]
+id = "edge.dashboard-ready-discord"
+source = "actor.dashboard"
+target = "actor.discord-health"
+category = "event"
+contract = "contract.dashboard-ready"
+transport = "nautilus_signal"
+correlation = "server_epoch"
+sync_semantics = "verified_async"
+delivery_claim = "delivery.signal-local"
+authority_direction = "Dashboard declares HTTP availability; Discord projects its address to the operational webhook."
+required = true
+style = "style.edge.data"
+evidence = ["evidence.dashboard-operation"]
+limitations = ["Queue admission is not confirmed external delivery.", "Disabled Discord does not receive notifications."]

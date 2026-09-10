@@ -31,6 +31,7 @@ class CensusPolicy:
     composition_path: str = "src/markeitech/system/composition.py"
     contract_paths: tuple[str, ...] = (
         "src/markeitech/system/messages.py",
+        "src/markeitech/dashboard/messages.py",
         "src/markeitech/system/resource_contracts.py",
         "src/markeitech/acquisition/historical_messages.py",
         "src/markeitech/intelligence/messages.py",

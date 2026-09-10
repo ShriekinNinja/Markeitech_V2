@@ -147,6 +147,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _add_system_paths(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--dashboard", action="store_true", help="Enable the local dashboard.")
     parser.add_argument(
         "--config",
         type=Path,
@@ -175,6 +176,8 @@ def _system_arguments(args: argparse.Namespace) -> list[str]:
         arguments.append(str(args.config))
     if hasattr(args, "env_file"):
         arguments.extend(["--env-file", str(args.env_file)])
+    if args.dashboard:
+        arguments.append("--dashboard")
     return arguments
 
 

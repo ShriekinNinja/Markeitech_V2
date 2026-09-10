@@ -34,11 +34,12 @@ Subscribe in phases:
 5. Prefer the direct-feed list as the planning baseline. Use an IBKR bundle only if it appears for
    the exact account and its account-visible terms cover Markeitech's API/non-display use.
 
-## Phase 1: Exact Current V3 ES Runtime
+## Phase 1: Historical ES-Only Planning Baseline
 
-The tracked V3 profile currently enables one explicit instrument, `ESU6.CME`, and one acquisition
-capability, `watchlist_last`. It also makes bounded historical-bar requests. See
-[`config/system.v3-es-minimal.toml`](../../config/system.v3-es-minimal.toml).
+The former ES-only review profile used `ESU6.CME`, `watchlist_last`, and bounded historical-bar
+requests. That profile has been removed. The current
+[`example configuration`](../../config/system.example.toml) enables seven instruments; this ES-only
+entitlement baseline does not cover that full watchlist.
 
 | IBKR subscription | Coverage | Markeitech requirement | Published non-professional price |
 | --- | --- | --- | ---: |

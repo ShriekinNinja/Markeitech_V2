@@ -50,6 +50,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "runtime_resources",
         "runtime_resource_health",
         "operational_persistence",
+        "dashboard",
     ]
     assert len({registration.actor_id for registration in plan}) == len(plan)
     session_state = next(item for item in plan if item.key == "session_state")
@@ -116,8 +117,6 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
             "calendar_id": (
                 "cme_equity"
                 if instrument_id in {"ESU6.CME", "NQU6.CME"}
-                else "cbot_equity"
-                if instrument_id == "YMU6.CBOT"
                 else "cme_energy"
                 if instrument_id == "CLV6.NYMEX"
                 else "us_equities"
@@ -132,22 +131,11 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         for instrument_id in [
             "ESU6.CME",
             "NQU6.CME",
-            "YMU6.CBOT",
             "CLV6.NYMEX",
             "SPY.ARCA",
             "QQQ.NASDAQ",
             "^SPX.CBOE",
             "^VIX.CBOE",
-            "NVDA.NASDAQ",
-            "AAPL.NASDAQ",
-            "GOOGL.NASDAQ",
-            "MSFT.NASDAQ",
-            "AMZN.NASDAQ",
-            "TSM.NYSE",
-            "AVGO.NASDAQ",
-            "SPCX.NASDAQ",
-            "META.NASDAQ",
-            "TSLA.NASDAQ",
         ]
     ]
     evidence = next(item for item in plan if item.key == "evidence_health")
@@ -186,6 +174,7 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "runtime_resources",
         "runtime_resource_health",
         "operational_persistence",
+        "dashboard",
     ]
 
 

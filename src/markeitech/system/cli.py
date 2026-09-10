@@ -4,6 +4,7 @@ import argparse
 import os
 import subprocess
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 from uuid import uuid4
 
@@ -63,10 +64,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="Keep macOS awake for the lifetime of this process.",
     )
+    parser.add_argument("--dashboard", action="store_true", help="Enable the local dashboard.")
     args = parser.parse_args(argv)
 
     load_dotenv(args.env_file, override=False)
     config = load_system_config(args.config)
+    if args.dashboard:
+        config = replace(config, dashboard=replace(config.dashboard, enabled=True))
     if args.connect is None:
         build_system_node(
             config,

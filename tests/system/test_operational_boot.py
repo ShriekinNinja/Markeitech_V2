@@ -40,6 +40,7 @@ ROSTER = [
     "runtime_resources",
     "runtime_resource_health",
     "operational_persistence",
+    "dashboard",
 ]
 
 
@@ -143,7 +144,8 @@ def test_nine_operational_actors_boot_and_stop_offline(monkeypatch) -> None:
     )
     config = load_system_config(PROFILE)
     config = replace(
-        config, runtime_resources=replace(config.runtime_resources, sample_interval_ms=50)
+        config, runtime_resources=replace(config.runtime_resources, sample_interval_ms=50),
+        dashboard=replace(config.dashboard, enabled=False),
     )
     plan = build_actor_plan(config, StartupPrerequisites(uuid4(), True))
     node = (

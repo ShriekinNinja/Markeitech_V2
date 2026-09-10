@@ -122,7 +122,7 @@ limitations = ["Fixture tombstone only"]
 
     def test_rejects_local_profile_path(self) -> None:
         text = FIXTURE.read_text().replace(
-            'config_path = "config/system.v3-es-minimal.toml"',
+            'config_path = "config/system.example.toml"',
             'config_path = "config/system.local.toml"',
         )
         error = self._error_for(text)

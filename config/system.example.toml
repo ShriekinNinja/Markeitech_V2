@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored .env.
 
-schema_version = 25
+schema_version = 26
 
 [runtime]
 name = "MARKEITECH-V2-001"
@@ -32,6 +32,20 @@ enabled = true
 request_timeout_seconds = 5
 queue_capacity = 32
 ping_critical_resource_alerts = true
+
+
+# Local browser dashboard. All settings are startup-only; restart to apply changes.
+# Policy version identifies this bounded display contract; no raw data is persisted.
+[dashboard]
+policy_version = 1 # Only 1 is supported.
+enabled = true # Set true to start/stop the dashboard with the system.
+port = 8765 # TCP port, 1024..65535; binds to 127.0.0.1 only.
+maximum_instruments = 64 # 1..256; must cover every enabled watchlist member.
+candles_per_instrument = 720 # 2..5000 completed 5s bars, held in memory per member.
+publish_interval_ms = 250 # 100..5000 ms; browser projection cadence, not data cadence.
+acquisition_retry_interval_ms = 1000 # 100..10000 ms; membership/attachment retry cadence.
+maximum_clients = 4 # 1..16 concurrent browser SSE streams.
+shutdown_timeout_seconds = 5 # 1..30 seconds to drain/close the web-server worker.
 
 [runtime_resources]
 enabled = true
@@ -183,12 +197,6 @@ owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
-instrument_id = "YMU6.CBOT"
-calendar_id = "cbot_equity"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
-
-[[watchlist.members]]
 instrument_id = "CLV6.NYMEX"
 calendar_id = "cme_energy"
 owner_ids = ["config:system"]
@@ -217,63 +225,3 @@ instrument_id = "^VIX.CBOE"
 calendar_id = "us_equities"
 owner_ids = ["config:system"]
 capabilities = ["watchlist_last"]
-
-[[watchlist.members]]
-instrument_id = "NVDA.NASDAQ"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
-
-[[watchlist.members]]
-instrument_id = "AAPL.NASDAQ"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
-
-[[watchlist.members]]
-instrument_id = "GOOGL.NASDAQ"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
-
-[[watchlist.members]]
-instrument_id = "MSFT.NASDAQ"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
-
-[[watchlist.members]]
-instrument_id = "AMZN.NASDAQ"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
-
-[[watchlist.members]]
-instrument_id = "TSM.NYSE"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
-
-[[watchlist.members]]
-instrument_id = "AVGO.NASDAQ"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
-
-[[watchlist.members]]
-instrument_id = "SPCX.NASDAQ"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
-
-[[watchlist.members]]
-instrument_id = "META.NASDAQ"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
-
-[[watchlist.members]]
-instrument_id = "TSLA.NASDAQ"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]

@@ -80,35 +80,24 @@ event coverage under the user-reported Master `1` setting, or connected acceptan
 - Retired source is recoverable through Git history and migration tags but is not current
   authority.
 
-## Active Tracked V3 Profile
+## Tracked Dashboard Review Profile
 
-[`config/system.v3-es-minimal.toml`](../config/system.v3-es-minimal.toml) is the narrow progressive
-profile used by the most recent V3 acceptance work. Its actor plan contains exactly:
+[`config/system.example.toml`](../config/system.example.toml) enables seven explicit watchlist
+instruments and the optional local dashboard. Its eleven actors are System Control, Session State,
+Evidence Health, Discord Health, Historical Evidence Planner, Watchlist, Data Acquisition, Runtime
+Resources, Runtime Resource Health, Operational Persistence, and Dashboard.
 
-1. `SystemControlActor`;
-2. `SessionStateActor`;
-3. `EvidenceHealthActor`;
-4. `HistoricalEvidencePlannerActor`;
-5. `WatchlistActor`;
-6. `DataAcquisitionActor`;
-7. `OperationalPersistenceActor`.
-
-The profile is limited to `ESU6.CME`, the `cme_equity` calendar, a `watchlist_last` bar capability,
-and no diagnostic demand producer. It does not compose a
-completed-bar foundation, metric owner, entity owner, semantic event detector, options owner,
-Discord actor, runtime-resource actor, broker-observation owner, trade lifecycle, or Sir Loke.
-
-The profile contains disabled configuration sections retained for schema compatibility and review
-history. Values in disabled sections are not active analytical defaults or accepted product
-behavior.
+The former `system.v3-es-minimal.toml` review profile has been removed. Single-calendar offline
+delivery tests derive a bounded ES fixture from the current template. The dashboard is a transient
+display of native observations; it adds no analytical owner, execution capability, or Sir Loke behavior.
 
 ## Connected Operational Boot Profile
 
-`config/system.operational.toml` uses a schema-25 zero-instrument baseline with nine operational
+`config/system.operational.toml` uses a schema-26 zero-instrument baseline with ten operational
 actors: System Control, Session State, Evidence Health, Historical Evidence Planner, Data
 Acquisition, Discord Health, Runtime Resources, Runtime Resource Health, and Operational
-Persistence. IB remains configured; the watchlist, probes, analytics, and visual capture are
-excluded. Older schema-23/24 profiles must be migrated before loading. This is **ready for
+Persistence, and Dashboard. IB remains configured; the watchlist, probes, analytics, and visual capture are
+excluded. Older schema-23/24/25 profiles must be migrated before loading. This is **ready for
 Markeitect live test**, not connected-accepted. See the [operational boot runbook](operations/operational-boot.md) for exact
 commands, independent readiness evidence, effects, stop conditions, and remaining limitations.
 No runtime instrument addition or Sir Loke behavior is supplied by this profile.
@@ -121,20 +110,32 @@ Visual Debug capture, its writer/renderer, configuration, and dedicated tests ar
 SessionMetricsActor and its dependent session-reference, market-state, and market-structure
 actors are removed, together with their dedicated calculations, configuration, tests, and
 replacement plan. QuoteQualityMetricsActor, its midpoint/spread calculations, and its
-configuration and dedicated tests are also removed. The current runtime has ten actor classes;
+configuration and dedicated tests are also removed. The current runtime has eleven actor classes;
 the operational profile still composes nine. Independent canonical bar/metric and entity
 contracts remain.
 
-The API registry selects 98 public objects; the diagram source census recognizes ten actor
+The API registry selects 98 public objects; the diagram source census recognizes eleven actor
 registrations. Offline checks do not establish connected acceptance.
 
-System configuration is now schema 25. Remove the complete `[acquisition]` and
+System configuration is now schema 26. Remove the complete `[acquisition]` and
 `[historical.probe]`, `[visual_debug_capture]`, `[metrics.session_measurements]`, and
 `[metrics.entity_analysis]` sections, plus the entire `[metrics]` tree (including
 `[metrics.quote_quality]`), from older local profiles, then set
-`schema_version = 25`;
+`schema_version = 26`;
 retain `[historical]`, which still configures the production acquisition owner. Local files are
 not migrated automatically. See [developer setup](operations/developer-setup.md).
+
+## Dashboard POC (Local Review)
+
+The optional `DashboardActor`, actor-owned `DashboardServer`, and `DashboardUI` display enabled
+watchlist membership, latest configured quotes and five-second closes, and one selected native
+candlestick series. Dashboard demand and native callback attachment/release are owned by
+`DataAcquisitionActor`. HTTP/SSE is loopback-only, history is bounded and transient, and the server
+starts/stops with its actor. An accepting HTTP listener publishes a one-time ready event; the
+existing Discord operational worker sends its loopback address through the operational-events
+webhook. System schema 26 adds optional versioned `[dashboard]` configuration;
+omission disables it. See [dashboard setup and acceptance](operations/dashboard.md). The POC is
+uncommitted for local review; provider-connected acceptance is pending.
 
 ## Implemented Foundation
 

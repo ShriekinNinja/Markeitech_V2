@@ -216,3 +216,14 @@ The current connected evidence is bounded to the sessions and profiles recorded 
 - no model-authored formula, selector, provider parameter, or resource limit; and
 - no order submission, modification, bind-for-control, cancellation, replacement, exercise, or
   close authority.
+
+## Dashboard consumer
+
+The optional dashboard submits version-1 `DashboardDemand` values via the native signal
+`markeitech.dashboard.demand`. `DataAcquisitionActor` accepts only configured instrument/feed pairs,
+uses stable projection demand IDs, and defers native consumer attachment/release to its timer.
+Native observations arrive on DashboardActor's own callbacks. Watchlist supplies membership and
+answers `markeitech.watchlist.membership.request` after its existing startup audit is ready; it
+does not relay raw data to the dashboard. Shared watchlist acquisition claims survive dashboard
+release. The POC displays unchanged external five-second bars, without historical backfill,
+aggregation or persistence. See [dashboard operation](../operations/dashboard.md).

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Markeitech · Market dashboard</title>
+  <link rel="stylesheet" href="/static/dashboard.css">
+  <script src="/static/vendor/lightweight-charts-5.2.1.js" defer></script>
+  <script src="/static/dashboard.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">MARKEITECH</div>
+    <div class="connection"><i id="connection-dot"></i><span id="connection">Connecting…</span></div>
+    <time id="clock">UTC</time>
+  </header>
+  <div class="workspace">
+    <aside class="sidebar" aria-label="Instrument watchlist">
+      <div class="sidebar-heading"><h1>Watchlist</h1></div>
+      <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="search" type="search" placeholder="Search instruments" aria-label="Search instruments"></label>
+      <nav id="watchlist" aria-label="Select chart instrument"></nav>
+      <p id="empty-watchlist" class="empty-list">Waiting for the system watchlist…</p>
+      <div class="sidebar-footer"><span>All enabled instruments</span><span>Latest prices are 5s bar closes</span></div>
+    </aside>
+    <main>
+      <section class="instrument-header" aria-label="Selected instrument">
+        <div class="instrument-title"><h2 id="symbol">—</h2><div><div id="instrument-name">Select an instrument</div><div id="instrument-id" class="secondary">Exact contract · venue</div></div></div>
+        <div class="values">
+          <div class="value"><span>LAST</span><strong id="last">—</strong></div>
+          <div class="value"><span>BID</span><strong id="bid">—</strong><small id="quote-age">Awaiting quote</small></div>
+          <div class="value"><span>ASK</span><strong id="ask">—</strong></div>
+          <div class="value updated"><span>BAR UPDATED</span><strong id="bar-time">—</strong><small id="bar-age">Awaiting bar</small></div>
+          <div class="source-label">5s bar close</div>
+        </div>
+      </section>
+      <section class="chart-panel" aria-label="Five-second candlestick chart">
+        <div class="chart-toolbar"><span class="chart-type">▥ &nbsp; Candles</span><span class="timeframe">5s</span><button id="follow" class="gold-button" aria-pressed="true"><i></i>Follow live</button><button id="fit" class="icon-button" aria-label="Fit available candles" title="Fit available candles">⛶</button></div>
+        <div id="ohlc" class="ohlc" aria-live="off">Waiting for completed provider candles</div>
+        <div class="chart-body"><div id="chart" role="img" aria-label="Selected instrument OHLC candles in UTC. White candles rise; red candles fall."></div><div id="chart-empty"><span class="empty-icon">▥</span><h3>Waiting for candles</h3><p>The chart fills as five-second provider bars arrive.</p></div></div>
+      </section>
+      <footer class="chart-footer"><span id="source">IB · Five-second provider candles · UTC</span><span id="window-status">Current runtime session</span></footer>
+    </main>
+  </div>
+</body>
+</html>

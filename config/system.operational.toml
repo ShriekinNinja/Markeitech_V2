@@ -4,7 +4,7 @@
 # INACTIVE marks disabled capabilities; IDLE marks settings with no work in this empty profile.
 # Customize host/port/client ID and resource thresholds in an ignored local copy.
 # Live acceptance belongs to Markeitect; this profile does not prove connectivity or data fitness.
-schema_version = 25
+schema_version = 26
 
 # BOOTSTRAP: node and SystemControlActor identity (actor 1 has no separate settings).
 [runtime]
@@ -174,3 +174,8 @@ write_retry_backoff_ms = 100
 enabled = false
 consumer_retry_interval_ms = 1000
 members = []
+
+# Local dashboard uses validated defaults and displays an empty watchlist in this profile.
+[dashboard]
+policy_version = 1
+enabled = true
