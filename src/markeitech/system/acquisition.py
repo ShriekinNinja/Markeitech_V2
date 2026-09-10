@@ -58,8 +58,6 @@ _HISTORICAL_TIMER = "historical-execution"
 class InstrumentDefinitionTracker:
     def __init__(self, instrument_ids: list[str] | tuple[str, ...]) -> None:
         expected = {InstrumentId.from_str(value) for value in instrument_ids}
-        if not expected:
-            raise ValueError("instrument acquisition requires at least one instrument")
         if len(expected) != len(instrument_ids):
             raise ValueError("instrument acquisition does not allow duplicate instruments")
         self._expected = frozenset(expected)
@@ -94,7 +92,11 @@ class InstrumentDefinitionTracker:
         return AcquisitionStatusEvent(
             state=INSTRUMENTS_READY if complete else INSTRUMENTS_RESOLVING,
             reason=(
-                "configured instrument definitions are available"
+                (
+                    "no instruments configured; acquisition is idle"
+                    if not self._expected
+                    else "configured instrument definitions are available"
+                )
                 if complete
                 else "resolving configured instrument definitions"
             ),
@@ -199,11 +201,12 @@ class DataAcquisitionActor(DataActor):
             self._instrument_requests += 1
         self._publish_status()
         self._start_pending_demands_if_ready()
-        self.clock.set_timer_ns(
-            _HISTORICAL_TIMER,
-            self._historical_poll_interval_ns,
-            callback=self._advance_historical,
-        )
+        if self._tracker.expected:
+            self.clock.set_timer_ns(
+                _HISTORICAL_TIMER,
+                self._historical_poll_interval_ns,
+                callback=self._advance_historical,
+            )
 
     def on_instrument(self, instrument) -> None:  # noqa: ANN001
         if not self._startup_released:

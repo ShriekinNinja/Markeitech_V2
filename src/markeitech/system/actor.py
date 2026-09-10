@@ -57,6 +57,7 @@ class SystemControlActor(DataActor):
         super().__init__(config)
         self._expected = {InstrumentId.from_str(value) for value in config.instrument_ids}
         self._available: set[InstrumentId] = set()
+        self._acquisition_ready = False
         self._health = SystemHealthStateMachine()
         self._evaluation_started = False
         self._persistence_preflight_ready = config.operational_persistence_ready
@@ -180,6 +181,7 @@ class SystemControlActor(DataActor):
             f"ACQUISITION_STATUS_ACCEPTED | state={status.state}"
             f" | available={len(self._available)}/{len(self._expected)}",
         )
+        self._acquisition_ready = status.state == INSTRUMENTS_READY
         if not self._evaluation_started:
             self._begin_evaluation(None)
         if status.state == INSTRUMENTS_READY:
@@ -212,13 +214,18 @@ class SystemControlActor(DataActor):
         if (
             not self._evaluation_started
             or not self._persistence_ready
+            or (not self._expected and not self._acquisition_ready)
             or self._available != self._expected
             or self._unresolved_component_failure
         ):
             return
         self._publish_transition(
             SystemHealthState.READY,
-            reason="configured instrument definitions are available",
+            reason=(
+                "no instruments configured; operational acquisition is idle"
+                if not self._expected
+                else "configured instrument definitions are available"
+            ),
             evidence=self._instrument_evidence(),
         )
 

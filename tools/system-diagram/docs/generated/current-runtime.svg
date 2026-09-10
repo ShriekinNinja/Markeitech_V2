@@ -119,8 +119,8 @@
 <g id="edge.acquisition&#45;status&#45;watchlist" class="edge">
 <title>actor.data&#45;acquisition&#45;&gt;actor.watchlist</title>
 <g id="a_edge.acquisition&#45;status&#45;watchlist"><a xlink:title="edge.acquisition&#45;status&#45;watchlist">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M720.4,-449C747.43,-449 775.85,-449 803.18,-449"/>
-<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="811.13,-449 803.13,-452.6 809.2,-449.35 803.13,-449.35 803.13,-449 803.13,-448.65 809.2,-448.65 803.13,-445.4 811.13,-449"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M720.4,-449C743.24,-449 767.07,-449 790.4,-449"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="798.29,-449 790.29,-452.6 796.37,-449.35 790.29,-449.35 790.29,-449 790.29,-448.65 796.37,-448.65 790.29,-445.4 798.29,-449"/>
 </a>
 </g>
 </g>
@@ -166,7 +166,7 @@
 <g id="edge.watchlist&#45;demand" class="edge">
 <title>actor.watchlist&#45;&gt;actor.data&#45;acquisition</title>
 <g id="a_edge.watchlist&#45;demand"><a xlink:title="edge.watchlist&#45;demand">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M813.2,-449C786.17,-449 757.75,-449 730.42,-449"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M800.37,-449C777.21,-449 753.34,-449 730.25,-449"/>
 <polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="722.47,-449 730.47,-445.4 724.4,-448.65 730.47,-448.65 730.47,-449 730.47,-449.35 724.4,-449.35 730.47,-452.6 722.47,-449"/>
 </a>
 </g>
@@ -175,7 +175,7 @@
 <g id="edge.watchlist&#45;status&#45;request" class="edge">
 <title>actor.watchlist&#45;&gt;actor.data&#45;acquisition</title>
 <g id="a_edge.watchlist&#45;status&#45;request"><a xlink:title="edge.watchlist&#45;status&#45;request">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M813.2,-449C786.17,-449 757.75,-449 730.42,-449"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M800.37,-449C777.21,-449 753.34,-449 730.25,-449"/>
 <polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="722.47,-449 730.47,-445.4 724.4,-448.65 730.47,-448.65 730.47,-449 730.47,-449.35 724.4,-449.35 730.47,-452.6 722.47,-449"/>
 </a>
 </g>
@@ -456,16 +456,16 @@
 <g id="actor.watchlist" class="node">
 <title>actor.watchlist</title>
 <g id="a_actor.watchlist"><a xlink:title="actor.watchlist">
-<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M1083.84,-490.98C1083.84,-490.98 825.81,-490.98 825.81,-490.98 819.81,-490.98 813.81,-484.98 813.81,-478.98 813.81,-478.98 813.81,-419.02 813.81,-419.02 813.81,-413.02 819.81,-407.02 825.81,-407.02 825.81,-407.02 1083.84,-407.02 1083.84,-407.02 1089.84,-407.02 1095.84,-413.02 1095.84,-419.02 1095.84,-419.02 1095.84,-478.98 1095.84,-478.98 1095.84,-484.98 1089.84,-490.98 1083.84,-490.98"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="822.45,-460.75 822.45,-460.75 954.95,-460.75 954.95,-460.75 822.45,-460.75"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="954.95,-460.75 954.95,-460.75 1087.2,-460.75 1087.2,-460.75 954.95,-460.75"/>
-<text xml:space="preserve" text-anchor="start" x="825.45" y="-468.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Watchlist</text>
-<polygon fill="#164c3e" stroke="none" points="957.95,-463.75 957.95,-481.5 1084.2,-481.5 1084.2,-463.75 957.95,-463.75"/>
-<polygon fill="none" stroke="#43d9ae" points="957.95,-463.75 957.95,-481.5 1084.2,-481.5 1084.2,-463.75 957.95,-463.75"/>
-<text xml:space="preserve" text-anchor="start" x="998.95" y="-469.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
-<text xml:space="preserve" text-anchor="start" x="825.45" y="-450.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.watchlist</text>
-<text xml:space="preserve" text-anchor="start" x="825.45" y="-434.5" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: ALWAYS</text>
-<text xml:space="preserve" text-anchor="start" x="825.45" y="-418.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 12</text>
+<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M1096.59,-490.98C1096.59,-490.98 813.06,-490.98 813.06,-490.98 807.06,-490.98 801.06,-484.98 801.06,-478.98 801.06,-478.98 801.06,-419.02 801.06,-419.02 801.06,-413.02 807.06,-407.02 813.06,-407.02 813.06,-407.02 1096.59,-407.02 1096.59,-407.02 1102.59,-407.02 1108.59,-413.02 1108.59,-419.02 1108.59,-419.02 1108.59,-478.98 1108.59,-478.98 1108.59,-484.98 1102.59,-490.98 1096.59,-490.98"/>
+<polygon fill="#43d9ae" stroke="#43d9ae" points="809.7,-460.75 809.7,-460.75 954.95,-460.75 954.95,-460.75 809.7,-460.75"/>
+<polygon fill="#43d9ae" stroke="#43d9ae" points="954.95,-460.75 954.95,-460.75 1099.95,-460.75 1099.95,-460.75 954.95,-460.75"/>
+<text xml:space="preserve" text-anchor="start" x="812.7" y="-468.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Watchlist</text>
+<polygon fill="#164c3e" stroke="none" points="957.95,-463.75 957.95,-481.5 1096.95,-481.5 1096.95,-463.75 957.95,-463.75"/>
+<polygon fill="none" stroke="#43d9ae" points="957.95,-463.75 957.95,-481.5 1096.95,-481.5 1096.95,-463.75 957.95,-463.75"/>
+<text xml:space="preserve" text-anchor="start" x="1005.33" y="-469.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
+<text xml:space="preserve" text-anchor="start" x="812.7" y="-450.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.watchlist</text>
+<text xml:space="preserve" text-anchor="start" x="812.7" y="-434.5" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
+<text xml:space="preserve" text-anchor="start" x="812.7" y="-418.75" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 12</text>
 </a>
 </g>
 </g>

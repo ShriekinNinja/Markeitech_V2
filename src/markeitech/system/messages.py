@@ -618,7 +618,7 @@ class AcquisitionStatusEvent:
         expected = _normalize_instrument_ids(
             self.expected_instrument_ids,
             "expected_instrument_ids",
-            require_values=True,
+            require_values=False,
         )
         available = _normalize_instrument_ids(
             self.available_instrument_ids,

@@ -127,7 +127,9 @@ class GenerationTests(unittest.TestCase):
         report = validate_source_census(manifest, repository_root=REPOSITORY_ROOT)
 
         self.assertEqual(len(report.actor_registrations), 19)
-        self.assertEqual(report.checked_profiles, ("profile.v3-es-minimal",))
+        self.assertEqual(
+            report.checked_profiles, ("profile.operational", "profile.v3-es-minimal")
+        )
         self.assertGreaterEqual(len(report.contract_constants), 20)
 
     def test_view_selection_uses_only_explicit_edges(self) -> None:

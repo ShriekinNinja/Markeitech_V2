@@ -51,6 +51,7 @@ generated review artifacts now live with the isolated tool under
 ## Operations
 
 - [Developer setup](operations/developer-setup.md)
+- [Connected operational boot with zero instruments](operations/operational-boot.md)
 - [Kite installation and operations](operations/kite.md)
 - [GitHub workflow](operations/github-workflow.md)
 - [Interactive Brokers setup and broker-observation gate](operations/ib-setup.md)

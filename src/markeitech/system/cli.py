@@ -104,6 +104,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         ),
     )
     store.start_run(config.runtime.name, run_id)
+    print(
+        f"SYSTEM_RUN_START | run_id={run_id} | runtime={config.runtime.name}"
+        f" | instruments={len(config.instrument_ids)}",
+        flush=True,
+    )
     caffeinate = _start_caffeinate() if args.keep_awake else None
     try:
         node.run()

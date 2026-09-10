@@ -51,8 +51,8 @@ def test_tracker_owns_definition_request_deduplication_and_readiness() -> None:
     assert status.available_instrument_ids == ("ESU6.CME", "SPY.ARCA")
 
 
-@pytest.mark.parametrize("instrument_ids", [[], ["ESU6.CME", "ESU6.CME"]])
-def test_tracker_rejects_empty_or_duplicate_configuration(
+@pytest.mark.parametrize("instrument_ids", [["ESU6.CME", "ESU6.CME"]])
+def test_tracker_rejects_duplicate_configuration(
     instrument_ids: list[str],
 ) -> None:
     with pytest.raises(ValueError):

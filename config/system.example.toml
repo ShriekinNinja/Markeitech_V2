@@ -689,6 +689,7 @@ maximum_publications_per_cycle = 500
 definitions = []
 
 [watchlist]
+enabled = true
 consumer_retry_interval_ms = 1000
 
 [[watchlist.members]]

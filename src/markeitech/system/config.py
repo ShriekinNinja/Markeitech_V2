@@ -83,6 +83,7 @@ class WatchlistMemberConfig:
 class WatchlistConfig:
     consumer_retry_interval_ms: int
     members: tuple[WatchlistMemberConfig, ...]
+    enabled: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -762,7 +763,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         root_keys,
         "root",
     )
-    if raw["schema_version"] != 23:
+    if raw["schema_version"] not in {23, 24}:
         raise ValueError(f"unsupported schema_version: {raw['schema_version']!r}")
 
     runtime = _load_runtime(raw["runtime"])
@@ -775,7 +776,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
             {
                 "enabled": False,
                 "configuration_identity": "not-configured",
-                "instrument_id": "ESU6.CME",
+                "instrument_id": "" if raw["schema_version"] == 24 else "ESU6.CME",
                 "analytical_profile_id": "cme_equity_primary",
                 "analytical_profile_version": 1,
                 "bar_specification": "1-MINUTE-LAST-EXTERNAL",
@@ -1131,8 +1132,10 @@ def _load_visual_debug_capture(
             values["configuration_identity"],
             "visual_debug_capture.configuration_identity",
         ),
-        instrument_id=_non_empty_string(
-            values["instrument_id"], "visual_debug_capture.instrument_id"
+        instrument_id=(
+            _non_empty_string(values["instrument_id"], "visual_debug_capture.instrument_id")
+            if values["enabled"] or values["instrument_id"] != ""
+            else ""
         ),
         analytical_profile_id=_non_empty_string(
             values["analytical_profile_id"],
@@ -1427,10 +1430,16 @@ def _load_persistence(raw: Any) -> PersistenceConfig:
 
 def _load_watchlist(raw: Any) -> WatchlistConfig:
     values = _mapping(raw, "watchlist")
-    _require_keys(values, {"consumer_retry_interval_ms", "members"}, "watchlist")
+    keys = {"consumer_retry_interval_ms", "members"}
+    if "enabled" in values:
+        keys.add("enabled")
+    _require_keys(values, keys, "watchlist")
+    enabled = _bool(values.get("enabled", True), "watchlist.enabled")
     members_raw = values["members"]
-    if not isinstance(members_raw, list) or not members_raw:
-        raise ValueError("watchlist.members must be a non-empty array")
+    if not isinstance(members_raw, list) or (enabled and not members_raw):
+        raise ValueError("enabled watchlist.members must be a non-empty array")
+    if not enabled and members_raw:
+        raise ValueError("disabled watchlist must have no members")
     members: list[WatchlistMemberConfig] = []
     seen_instruments: set[str] = set()
     for index, item in enumerate(members_raw):
@@ -1474,6 +1483,7 @@ def _load_watchlist(raw: Any) -> WatchlistConfig:
             "watchlist.consumer_retry_interval_ms",
         ),
         members=tuple(members),
+        enabled=enabled,
     )
 
 
@@ -3437,7 +3447,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
             "reference count",
         )
     profiles_raw = values["profiles"]
-    if not isinstance(profiles_raw, list) or not profiles_raw:
+    if not isinstance(profiles_raw, list) or (values["enabled"] and not profiles_raw):
         raise ValueError("metrics.session_measurements.profiles must be a non-empty array")
     profiles = tuple(
         _load_analytical_profile(item, index) for index, item in enumerate(profiles_raw)
@@ -3446,7 +3456,7 @@ def _load_session_measurements(raw: Any) -> SessionMeasurementsConfig:
     if len(profile_ids) != len(set(profile_ids)):
         raise ValueError("metrics.session_measurements profile IDs must be unique")
     bindings_raw = values["profile_bindings"]
-    if not isinstance(bindings_raw, list) or not bindings_raw:
+    if not isinstance(bindings_raw, list) or (values["enabled"] and not bindings_raw):
         raise ValueError("metrics.session_measurements.profile_bindings must be a non-empty array")
     bindings = tuple(
         _load_analytical_profile_binding(item, index) for index, item in enumerate(bindings_raw)
@@ -4122,6 +4132,8 @@ def _load_acquisition(
         },
         "acquisition",
     )
+    if values["native_consumer_probe_enabled"] and not _watchlist.members:
+        raise ValueError("native consumer probe requires watchlist instruments")
     return AcquisitionConfig(
         native_consumer_probe_enabled=_bool(
             values["native_consumer_probe_enabled"],
@@ -4222,11 +4234,13 @@ def _load_historical(raw: Any, watchlist: WatchlistConfig) -> HistoricalConfig:
     priority = _non_negative_int(probe_values["priority"], "historical.probe.priority")
     if priority > 100:
         raise ValueError("historical.probe.priority must be from 0 through 100")
-    instrument_id = _non_empty_string(
-        probe_values["instrument_id"],
-        "historical.probe.instrument_id",
-    )
-    if instrument_id not in {member.instrument_id for member in watchlist.members}:
+    probe_enabled = _bool(probe_values["enabled"], "historical.probe.enabled")
+    instrument_id = probe_values["instrument_id"]
+    if not isinstance(instrument_id, str):
+        raise ValueError("historical.probe.instrument_id must be a string")
+    if probe_enabled and instrument_id not in {
+        member.instrument_id for member in watchlist.members
+    }:
         raise ValueError("historical.probe.instrument_id must be in the configured watchlist")
     window = _non_empty_string(probe_values["window"], "historical.probe.window")
     actor_ids = _unique_non_empty_strings(
