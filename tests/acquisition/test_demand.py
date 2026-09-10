@@ -205,6 +205,7 @@ def test_owner_kinds_and_lifecycle_vocabulary_are_explicit() -> None:
         "watchlist",
         "operator",
         "analyzer",
+        "projection",
         "agent",
     }
     assert {state.value for state in AcquisitionLifecycleState} == {

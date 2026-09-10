@@ -71,3 +71,6 @@ hand or run bare MkDocs commands; use the first-party wrapper described in the o
 Retired V1 source and superseded V2 plans remain recoverable through Git history, migration tags,
 and merged pull requests. They are not current product or architecture authority and must not be
 reintroduced without a separately reviewed admission into current V2 contracts.
+
+- [Dashboard POC](operations/dashboard.md): configuration, local preview, acquisition ownership,
+  lifecycle and Markeitect-run acceptance.

@@ -4,10 +4,10 @@ Status: implemented for review; **ready for Markeitect live test**, not live-acc
 
 ## Outcome And Scope
 
-`config/system.operational.toml` starts the native Nautilus IB data client and exactly nine
+`config/system.operational.toml` starts the native Nautilus IB data client and exactly ten
 operational actors: System Control, Session State, Evidence Health, Historical Evidence Planner,
-Data Acquisition, Discord Health, Runtime Resources, Runtime Resource Health, and Operational
-Persistence. The watchlist is disabled and empty. There are no instrument loads, market-data
+Data Acquisition, Discord Health, Runtime Resources, Runtime Resource Health, Operational
+Persistence, and Dashboard. The loopback dashboard starts with an empty watchlist. The watchlist is disabled and empty. There are no instrument loads, market-data
 subscriptions, historical requests, analytical actors, visual capture, diagnostic probes, execution
 clients, or model calls. Configured calendars remain active independently of instruments.
 
@@ -18,11 +18,11 @@ and a restart; this task does not introduce a dynamic universe controller.
 
 ## Configuration And Contracts
 
-The profile uses system schema 25. For older local profiles, remove the complete `[acquisition]`
+The profile uses system schema 26. For older local profiles, remove the complete `[acquisition]`
 and `[historical.probe]` sections, plus `[visual_debug_capture]`,
 the entire `[metrics]` tree (including quote quality, session measurements, and entity analysis) if
 present, and update
-`schema_version` to 25. Keep `[historical]` and its
+`schema_version` to 26. Keep `[historical]` and its
 production request limits. The loader rejects older schemas and retired sections.
 
 `watchlist.enabled` defaults to true; a disabled watchlist must have `members = []`. Enabling the
@@ -60,7 +60,7 @@ cp -n config/system.operational.toml config/system.operational.local.toml
 
 Review that copy before running. Set the correct TWS/IB Gateway host, port, and a free nonzero client
 ID. The template uses `127.0.0.1:4002`, client `20`; these values do not select or identify an account
-mode. Keep TWS API read-only enabled. Keep `watchlist.enabled = false`, `members = []`, the nine-actor
+mode. Keep TWS API read-only enabled. Keep `watchlist.enabled = false`, `members = []`, the ten-actor
 roster, and analytics disabled. Review the resource thresholds for this machine.
 
 Have PostgreSQL running using the existing [PostgreSQL operations](v2-postgresql.md). The existing
@@ -101,7 +101,7 @@ Do not change the default CLI profile or PyCharm configuration for this test.
 | Condition | Evidence required for acceptance |
 | --- | --- |
 | IB connected | Native IB client connection-success output and the matching client/session in TWS; node construction or global READY alone is insufficient |
-| Operational actors started | Native actor-start output for the exact nine actors, with no faults |
+| Operational actors started | Native actor-start output for the exact ten actors, with no faults |
 | Persistence ready | `SYSTEM_HEALTH` reaches READY after persistence/acquisition startup, and matching run/health/resource records are actually in PostgreSQL |
 | Calendars initialized | `CALENDAR_TRANSITION` for every configured calendar, plus `EVIDENCE_SESSION_STATE_SYNC` and `HISTORICAL_PLAN_SESSION_STATE_SYNC` reaching LIVE |
 | Discord available | Health and zero-instrument operational cards visible; matching `DISCORD_HEALTH_DELIVERED` and `DISCORD_OPERATIONAL_DELIVERED` success results |

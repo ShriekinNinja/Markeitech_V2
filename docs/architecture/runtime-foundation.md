@@ -195,3 +195,19 @@ proof of runtime composition or live delivery.
 Use [`current-status.md`](../current-status.md) for the current acceptance envelope and
 [`tools/system-diagram/docs/maintenance.md`](../../tools/system-diagram/docs/maintenance.md) for the
 non-authoritative architecture-diagram procedure.
+
+## Optional dashboard projection
+
+System schema 26 adds `dashboard.enabled` (default false). `DashboardActor` is composed after
+operational persistence and owns `DashboardServer` startup/shutdown. The FastAPI worker receives
+detached snapshots through a one-item conflating queue, serves the bundled `DashboardUI` and
+bounded HTTP/SSE clients on loopback, and never accesses actors or providers. Actor timers own
+presentation publication and membership retry. Port/worker failure stays local and requires
+operator correction/restart; connected behavior is not yet accepted.
+
+Composition binds a native consumer port to `DataAcquisitionActor` before either actor starts.
+Acquisition admits dashboard demands and executes the native consumer subscribe/unsubscribe
+methods from its own timer. This is necessary because the pinned native methods both register
+callbacks and issue subscription commands. Dashboard's native `on_quote`/`on_bar` callbacks update
+transient display state. All dashboard market-data operations remain acquisition-owned.
+See [dashboard runbook](../operations/dashboard.md) for the native-capability matrix and limits.

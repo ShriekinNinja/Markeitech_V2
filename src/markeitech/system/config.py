@@ -12,6 +12,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas_market_calendars as market_calendars
 
+from markeitech.dashboard.config import DashboardConfig
+
 
 @dataclass(frozen=True, slots=True)
 class RuntimeConfig:
@@ -300,6 +302,7 @@ class SystemConfig:
     watchlist: WatchlistConfig
     sessions: SessionsConfig
     evidence_health: EvidenceHealthConfig
+    dashboard: DashboardConfig = DashboardConfig()
 
     @property
     def instrument_ids(self) -> tuple[str, ...]:
@@ -328,8 +331,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
     with config_path.open("rb") as file:
         raw = tomllib.load(file)
 
-    if raw.get("schema_version") != 25:
-        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 25")
+    if raw.get("schema_version") != 26:
+        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 26")
 
     root_keys = {
         "schema_version",
@@ -346,7 +349,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
     }
     _require_keys(
         raw,
-        root_keys,
+        root_keys | ({"dashboard"} if "dashboard" in raw else set()),
         "root",
     )
 
@@ -360,6 +363,9 @@ def load_system_config(path: str | Path) -> SystemConfig:
     historical = _load_historical(raw["historical"])
     sessions = _load_sessions(raw["sessions"], config_path.parent)
     evidence_health = _load_evidence_health(raw["evidence_health"])
+    dashboard = DashboardConfig.from_mapping(raw.get("dashboard", {}))
+    if dashboard.enabled and len(watchlist.members) > dashboard.maximum_instruments:
+        raise ValueError("dashboard maximum_instruments is below watchlist size")
     known_calendars = {calendar.calendar_id for calendar in sessions.calendars}
     unknown_calendars = sorted(
         {member.calendar_id for member in watchlist.members} - known_calendars,
@@ -401,6 +407,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         watchlist=watchlist,
         sessions=sessions,
         evidence_health=evidence_health,
+        dashboard=dashboard,
     )
 
 

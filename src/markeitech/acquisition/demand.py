@@ -52,6 +52,7 @@ class DemandOwnerKind(StrEnum):
     WATCHLIST = "watchlist"
     OPERATOR = "operator"
     ANALYZER = "analyzer"
+    PROJECTION = "projection"
     AGENT = "agent"
 
 

@@ -5,11 +5,11 @@ from uuid import UUID
 
 from markeitech.intelligence.actors import SessionStateActor, SessionStateActorConfig
 from markeitech.system.composition import StartupPrerequisites, build_actor_plan
-from markeitech.system.config import load_system_config
+from tests.system.config_fixtures import minimal_calendar_config
 
 
-def test_v3_es_minimal_config_has_operational_calendar_surface() -> None:
-    config = load_system_config("config/system.v3-es-minimal.toml")
+def test_minimal_calendar_config_has_operational_calendar_surface() -> None:
+    config = minimal_calendar_config()
     plan = build_actor_plan(
         config,
         StartupPrerequisites(
@@ -104,8 +104,8 @@ def test_v3_es_minimal_config_has_operational_calendar_surface() -> None:
     ]
 
 
-def test_v3_es_minimal_composes_active_calendar_operational_path() -> None:
-    config = load_system_config("config/system.v3-es-minimal.toml")
+def test_minimal_calendar_composes_active_calendar_operational_path() -> None:
+    config = minimal_calendar_config()
 
     plan = build_actor_plan(
         config,

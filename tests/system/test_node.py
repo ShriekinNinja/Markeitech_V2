@@ -30,22 +30,11 @@ def test_maps_provider_boundary_to_installed_ib_config() -> None:
     assert {str(instrument_id) for instrument_id in provider_config.load_ids} == {
         "ESU6.CME",
         "NQU6.CME",
-        "YMU6.CBOT",
         "CLV6.NYMEX",
         "SPY.ARCA",
         "QQQ.NASDAQ",
         "^SPX.CBOE",
         "^VIX.CBOE",
-        "NVDA.NASDAQ",
-        "AAPL.NASDAQ",
-        "GOOGL.NASDAQ",
-        "MSFT.NASDAQ",
-        "AMZN.NASDAQ",
-        "TSM.NYSE",
-        "AVGO.NASDAQ",
-        "SPCX.NASDAQ",
-        "META.NASDAQ",
-        "TSLA.NASDAQ",
     }
 
 

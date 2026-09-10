@@ -293,6 +293,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#markeitech.dashboard.actor.DashboardActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      DashboardActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#markeitech.system.acquisition.DataAcquisitionActor" class="md-nav__link">
     <span class="md-ellipsis">
       DataAcquisitionActor
@@ -566,6 +575,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#markeitech.dashboard.actor.DashboardActor" class="md-nav__link">
+    <span class="md-ellipsis">
+      DashboardActor
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#markeitech.system.acquisition.DataAcquisitionActor" class="md-nav__link">
     <span class="md-ellipsis">
       DataAcquisitionActor
@@ -701,18 +719,25 @@ components, status, and evidence remain deferred to a separately reviewed source
 </thead>
 <tbody>
 <tr>
+<td><code>actor.dashboard</code><br>Dashboard</td>
+<td><code>markeitech.dashboard.actor.DashboardActor</code></td>
+<td><code>markeitech_actor</code></td>
+<td><code>boundary.system</code></td>
+<td>Request configured display feeds through acquisition and receive native callbacks.<br>Retain bounded transient display state and own local web-server startup and shutdown.<br>Announce the accepting dashboard address for operational Discord projection.</td>
+</tr>
+<tr>
 <td><code>actor.data-acquisition</code><br>Data Acquisition</td>
 <td><code>markeitech.system.acquisition.DataAcquisitionActor</code></td>
 <td><code>markeitech_actor</code></td>
 <td><code>boundary.acquisition</code></td>
-<td>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.<br>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.<br>Publish acquisition lifecycle, historical batches, and consumer readiness.</td>
+<td>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.<br>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.<br>Publish acquisition lifecycle, historical batches, and consumer readiness.<br>Admit dashboard display demand and execute its native callback attachment and release.</td>
 </tr>
 <tr>
 <td><code>actor.discord-health</code><br>Discord Health Projection</td>
 <td><code>markeitech.system.discord.DiscordHealthActor</code></td>
 <td><code>markeitech_actor</code></td>
 <td><code>boundary.system</code></td>
-<td>Not yet declared</td>
+<td>Project system health, resource health, operational readiness and dashboard availability through the configured Discord delivery workers.</td>
 </tr>
 <tr>
 <td><code>actor.evidence-health</code><br>Evidence Health</td>
@@ -780,18 +805,18 @@ components, status, and evidence remain deferred to a separately reviewed source
 </tbody>
 </table>
 <h2 id="class-reference">Class Reference<a class="headerlink" href="#class-reference" title="Permanent link">&para;</a></h2>
-<h3 id="actordata-acquisition-data-acquisition"><code>actor.data-acquisition</code> — Data Acquisition<a class="headerlink" href="#actordata-acquisition-data-acquisition" title="Permanent link">&para;</a></h3>
+<h3 id="actordashboard-dashboard"><code>actor.dashboard</code> — Dashboard<a class="headerlink" href="#actordashboard-dashboard" title="Permanent link">&para;</a></h3>
 
 
 <div class="doc doc-object doc-class">
 
 
 
-<h2 id="markeitech.system.acquisition.DataAcquisitionActor" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">markeitech.system.acquisition.DataAcquisitionActor</span>
+<h2 id="markeitech.dashboard.actor.DashboardActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.dashboard.actor.DashboardActor</span>
 
 
-<a href="#markeitech.system.acquisition.DataAcquisitionActor" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#markeitech.dashboard.actor.DashboardActor" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
     <div class="doc doc-contents first">
@@ -800,13 +825,15 @@ components, status, and evidence remain deferred to a separately reviewed source
 
 
 
-        <p>Own provider-facing acquisition demand and historical execution.</p>
+        <p>Project admitted native observations and own the local web-server lifecycle.</p>
+<p>Market-data requests and native callback attachment/release are executed by
+DataAcquisitionActor. This actor never calls native subscription methods.</p>
 <section class="markeitech-responsibilities" aria-label="Responsibilities">
 <h4>Responsibilities</h4>
 <ul>
-<li>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.</li>
-<li>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.</li>
-<li>Publish acquisition lifecycle, historical batches, and consumer readiness.</li>
+<li>Request configured display feeds through acquisition and receive native callbacks.</li>
+<li>Retain bounded transient display state and own local web-server startup and shutdown.</li>
+<li>Announce the accepting dashboard address for operational Discord projection.</li>
 </ul>
 </section>
 
@@ -814,18 +841,18 @@ components, status, and evidence remain deferred to a separately reviewed source
 <h4>Markeitech Metadata</h4>
 <dl>
 <dt><code>architecture.component.id</code></dt>
-<dd>actor.data-acquisition</dd>
+<dd>actor.dashboard</dd>
 <dt><code>architecture.component.label</code></dt>
-<dd>Data Acquisition</dd>
+<dd>Dashboard</dd>
 <dt><code>architecture.component.kind</code></dt>
 <dd>markeitech_actor</dd>
 <dt><code>architecture.component.boundary</code></dt>
-<dd>boundary.acquisition</dd>
+<dd>boundary.system</dd>
 <dt><code>architecture.component.responsibilities</code></dt>
 <dd><ul>
-<li>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.</li>
-<li>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.</li>
-<li>Publish acquisition lifecycle, historical batches, and consumer readiness.</li>
+<li>Request configured display feeds through acquisition and receive native callbacks.</li>
+<li>Retain bounded transient display state and own local web-server startup and shutdown.</li>
+<li>Announce the accepting dashboard address for operational Discord projection.</li>
 </ul></dd>
 </dl>
 </section>
@@ -857,6 +884,108 @@ components, status, and evidence remain deferred to a separately reviewed source
 
     </div>
 
+</div><h3 id="actordata-acquisition-data-acquisition"><code>actor.data-acquisition</code> — Data Acquisition<a class="headerlink" href="#actordata-acquisition-data-acquisition" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="markeitech.system.acquisition.DataAcquisitionActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.acquisition.DataAcquisitionActor</span>
+
+
+<a href="#markeitech.system.acquisition.DataAcquisitionActor" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nautilus_trader.common.DataActor">DataActor</span></code></p>
+
+
+
+        <p>Own provider-facing acquisition demand and historical execution.</p>
+<section class="markeitech-responsibilities" aria-label="Responsibilities">
+<h4>Responsibilities</h4>
+<ul>
+<li>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.</li>
+<li>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.</li>
+<li>Publish acquisition lifecycle, historical batches, and consumer readiness.</li>
+<li>Admit dashboard display demand and execute its native callback attachment and release.</li>
+</ul>
+</section>
+
+<section class="markeitech-metadata" aria-label="Markeitech Metadata">
+<h4>Markeitech Metadata</h4>
+<dl>
+<dt><code>architecture.component.id</code></dt>
+<dd>actor.data-acquisition</dd>
+<dt><code>architecture.component.label</code></dt>
+<dd>Data Acquisition</dd>
+<dt><code>architecture.component.kind</code></dt>
+<dd>markeitech_actor</dd>
+<dt><code>architecture.component.boundary</code></dt>
+<dd>boundary.acquisition</dd>
+<dt><code>architecture.component.responsibilities</code></dt>
+<dd><ul>
+<li>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.</li>
+<li>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.</li>
+<li>Publish acquisition lifecycle, historical batches, and consumer readiness.</li>
+<li>Admit dashboard display demand and execute its native callback attachment and release.</li>
+</ul></dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="markeitech.system.acquisition.DataAcquisitionActor.bind_dashboard_consumer" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">markeitech.system.acquisition.DataAcquisitionActor.bind_dashboard_consumer</span>
+
+
+<a href="#markeitech.system.acquisition.DataAcquisitionActor.bind_dashboard_consumer" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">bind_dashboard_consumer</span><span class="p">(</span><span class="n">consumer</span><span class="p">:</span> <span class="n">DataActor</span><span class="p">,</span> <span class="n">allowed_feeds</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">retry_interval_ms</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Bind the composed dashboard before startup; acquisition owns its native calls.</p>
+<p>Nautilus rc4 couples handler registration with subscription commands.
+This port executes those calls on the admitted consumer's behalf, on the
+runtime thread. No market observations are relayed through this binding.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
 </div><h3 id="actordiscord-health-discord-health-projection"><code>actor.discord-health</code> — Discord Health Projection<a class="headerlink" href="#actordiscord-health-discord-health-projection" title="Permanent link">&para;</a></h3>
 
 
@@ -878,6 +1007,13 @@ components, status, and evidence remain deferred to a separately reviewed source
 
 
         <p>Project optional system-health notifications to Discord.</p>
+<section class="markeitech-responsibilities" aria-label="Responsibilities">
+<h4>Responsibilities</h4>
+<ul>
+<li>Project system health, resource health, operational readiness and dashboard availability through the configured Discord delivery workers.</li>
+</ul>
+</section>
+
 <section class="markeitech-metadata" aria-label="Markeitech Metadata">
 <h4>Markeitech Metadata</h4>
 <dl>
@@ -889,6 +1025,8 @@ components, status, and evidence remain deferred to a separately reviewed source
 <dd>markeitech_actor</dd>
 <dt><code>architecture.component.boundary</code></dt>
 <dd>boundary.system</dd>
+<dt><code>architecture.component.responsibilities</code></dt>
+<dd>Project system health, resource health, operational readiness and dashboard availability through the configured Discord delivery workers.</dd>
 </dl>
 </section>
 

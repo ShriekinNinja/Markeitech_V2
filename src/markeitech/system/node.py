@@ -102,6 +102,35 @@ def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites)
         .add_data_client(None, InteractiveBrokersDataClientFactory(), data_config)
         .build()
     )
-    for registration in build_actor_plan(config, prerequisites):
-        node.add_actor_from_config(registration.config)
+    plan = build_actor_plan(config, prerequisites)
+    if config.dashboard.enabled:
+        # Explicit composition keeps provider operations inside acquisition while
+        # registering the dashboard's own native handlers. No global actor lookup.
+        from markeitech.dashboard.actor import DashboardActor, DashboardActorConfig
+        from markeitech.system.acquisition import DataAcquisitionActor, DataAcquisitionActorConfig
+
+        configs = {item.key: item.config.config for item in plan}
+        dashboard = DashboardActor(DashboardActorConfig(**configs["dashboard"]))
+        acquisition = DataAcquisitionActor(
+            DataAcquisitionActorConfig(**configs["data_acquisition"])
+        )
+        acquisition.bind_dashboard_consumer(
+            dashboard,
+            {
+                (member.instrument_id, {"top_of_book": "quotes", "watchlist_last": "bars"}[cap])
+                for member in config.watchlist.members
+                for cap in member.capabilities
+            },
+            config.dashboard.acquisition_retry_interval_ms,
+        )
+        for registration in plan:
+            if registration.key == "data_acquisition":
+                node.add_actor(acquisition)
+            elif registration.key == "dashboard":
+                node.add_actor(dashboard)
+            else:
+                node.add_actor_from_config(registration.config)
+    else:
+        for registration in plan:
+            node.add_actor_from_config(registration.config)
     return node

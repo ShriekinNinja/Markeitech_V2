@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 25
+schema_version = 26
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -253,7 +253,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert len(cme_equity.definition_digest) == 64
     assert config.evidence_health.policies[0].fresh_for_ms == 2000
     assert config.evidence_health.consumer_retry_interval_ms == 1000
-    assert config.schema_version == 25
+    assert config.schema_version == 26
     assert config.instrument_ids == ("ESU6.CME",)
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
@@ -280,10 +280,10 @@ def test_rejects_retired_root_sections(tmp_path: Path, section: str) -> None:
         load_system_config(path)
 
 
-@pytest.mark.parametrize("version", [22, 23, 24])
+@pytest.mark.parametrize("version", [22, 23, 24, 25])
 def test_rejects_older_system_schema(tmp_path: Path, version: int) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("schema_version = 25", f"schema_version = {version}", 1))
+    path.write_text(VALID_CONFIG.replace("schema_version = 26", f"schema_version = {version}", 1))
 
     with pytest.raises(ValueError, match=f"unsupported schema_version: {version}"):
         load_system_config(path)

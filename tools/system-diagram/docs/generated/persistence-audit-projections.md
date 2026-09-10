@@ -5,25 +5,25 @@
 Separate bounded operational persistence from optional notifications and diagnostic projections.
 
 - View ID: `view.persistence-audit-projections`
-- Profile: `profile.v3-es-minimal`
+- Profile: `profile.example`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `b2c5bf41d00e43dea47369e569cd4f326ea758af`
+- Checkout evidence: `a382f2e0636cdb3148b451e3e0e8239a684438e5`
 - Review status: `proposed`
 
 ## Components
 
 | ID | Component | Kind | Implementation | Composition | Order | Active profile | Semantic owner | Boundary |
 |---|---|---|---|---|---:|---|---|---|
-| `actor.discord-health` | Discord Health Projection | markeitech_actor | implemented | conditional | 4 | disabled | `actor.discord-health` | `boundary.system` |
+| `actor.discord-health` | Discord Health Projection | markeitech_actor | implemented | conditional | 4 | enabled | `actor.discord-health` | `boundary.system` |
 | `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 10 | enabled | `actor.operational-persistence` | `boundary.system` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
 | `actor.system-control` | System Control | markeitech_actor | implemented | always | 1 | enabled | `actor.system-control` | `boundary.system` |
 | `operator.markeitect` | Markeitect / Operator | operator | external | external | not applicable | not_applicable | `operator.markeitect` | `boundary.projections` |
 | `projection.discord` | Discord | projection | external | external | not applicable | not_applicable | `projection.discord` | `boundary.projections` |
-| `queue.discord` | Discord Delivery Queue | queue | implemented | not_composed | not applicable | disabled | `queue.discord` | `boundary.workers` |
+| `queue.discord` | Discord Delivery Queue | queue | implemented | not_composed | not applicable | enabled | `queue.discord` | `boundary.workers` |
 | `queue.persistence` | Persistence Admission Queue | queue | implemented | not_composed | not applicable | enabled | `queue.persistence` | `boundary.workers` |
 | `store.postgres` | PostgreSQL Operational Audit | data_store | external | external | not applicable | not_applicable | `store.postgres` | `boundary.persistence` |
-| `worker.discord` | Discord Delivery Worker | worker | implemented | not_composed | not applicable | disabled | `worker.discord` | `boundary.workers` |
+| `worker.discord` | Discord Delivery Worker | worker | implemented | not_composed | not applicable | enabled | `worker.discord` | `boundary.workers` |
 | `worker.persistence` | Persistence Writer Worker | worker | implemented | not_composed | not applicable | enabled | `worker.persistence` | `boundary.workers` |
 
 ## Configuration-gated capabilities

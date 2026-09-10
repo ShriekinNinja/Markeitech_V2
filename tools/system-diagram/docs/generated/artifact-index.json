@@ -1,11 +1,11 @@
 {
   "authority": "generated documentation only; canonical content is the validated TOML manifest",
-  "checkout_commit": "b2c5bf41d00e43dea47369e569cd4f326ea758af",
+  "checkout_commit": "a382f2e0636cdb3148b451e3e0e8239a684438e5",
   "generator_contract_version": 1,
-  "generator_sha256": "eb8e4b1bd440bcd38a78b9afc52f62c4c1e45958829605198230ca2d75fb3958",
+  "generator_sha256": "633ee818cb72c7918db982888f5e6ceda31729f4315470b42681746b73436d65",
   "generator_version": "0.1.0",
   "manifest": "markeitech-v3-system-dataflow",
-  "manifest_sha256": "7d90b0d551b76350728109443fc195837afe92c11cff92856dbbb3bd1c773c3c",
+  "manifest_sha256": "946cf8e6b57393aa22193b11fc0b48b6e0a23c117e042474665d5154bb589ada",
   "theme": {
     "id": "style.theme",
     "label": "Markeitech polished dark theme v2"
@@ -33,11 +33,11 @@
         "complete-inventory.svg"
       ],
       "id": "view.complete-inventory",
-      "nodes": 30
+      "nodes": 33
     },
     {
-      "capabilities": 2,
-      "edges": 28,
+      "capabilities": 5,
+      "edges": 38,
       "files": [
         "current-runtime.dot",
         "current-runtime.md",
@@ -45,7 +45,7 @@
         "current-runtime.svg"
       ],
       "id": "view.current-runtime",
-      "nodes": 16
+      "nodes": 25
     },
     {
       "capabilities": 0,

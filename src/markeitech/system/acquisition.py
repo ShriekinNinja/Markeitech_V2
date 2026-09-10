@@ -31,6 +31,7 @@ from markeitech.acquisition.historical_native import (
     HistoricalResponseMismatch,
     validate_historical_bars,
 )
+from markeitech.dashboard.messages import DASHBOARD_DEMAND_SIGNAL, DashboardDemand
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STATUS_SIGNAL,
@@ -136,6 +137,7 @@ class DataAcquisitionActor(DataActor):
             - Execute exact HistoricalRequestPlan values without deciding sessions or
               calendar-relative request bounds.
             - Publish acquisition lifecycle, historical batches, and consumer readiness.
+            - Admit dashboard display demand and execute its native callback attachment and release.
     """
 
     def __init__(self, config: DataAcquisitionActorConfig) -> None:
@@ -160,9 +162,7 @@ class DataAcquisitionActor(DataActor):
         self._maximum_historical_observations_per_request = historical[
             "maximum_observations_per_request"
         ]
-        self._maximum_historical_observations_outstanding = historical[
-            "maximum_total_observations"
-        ]
+        self._maximum_historical_observations_outstanding = historical["maximum_total_observations"]
         self._historical_plan_type = DataType(HISTORICAL_REQUEST_PLAN_TYPE_NAME)
         self._historical_requests: dict[str, HistoricalRequest] = {}
         self._pending_historical_plans: dict[str, HistoricalRequestPlan] = {}
@@ -177,8 +177,38 @@ class DataAcquisitionActor(DataActor):
         self._statuses_published = 0
         self._failure_published = False
         self._startup_released = False
+        self._dashboard_port: NautilusSubscriptionPort | None = None
+        self._dashboard_allowed: set[tuple[str, str]] = set()
+        self._dashboard_desired: dict[str, DashboardDemand] = {}
+        self._dashboard_attached: dict[str, FeedRequirement] = {}
+        self._dashboard_retry_ms = 1000
+
+    def bind_dashboard_consumer(
+        self,
+        consumer: DataActor,
+        allowed_feeds: set[tuple[str, str]],
+        retry_interval_ms: int,
+    ) -> None:
+        """Bind the composed dashboard before startup; acquisition owns its native calls.
+
+        Nautilus rc4 couples handler registration with subscription commands.
+        This port executes those calls on the admitted consumer's behalf, on the
+        runtime thread. No market observations are relayed through this binding.
+        """
+        if self._startup_released or self._dashboard_port is not None:
+            raise RuntimeError("dashboard binding must occur once before startup")
+        self._dashboard_port = NautilusSubscriptionPort(consumer)
+        self._dashboard_allowed = set(allowed_feeds)
+        self._dashboard_retry_ms = retry_interval_ms
 
     def on_start(self) -> None:
+        if self._dashboard_port is not None:
+            self.subscribe_signal(DASHBOARD_DEMAND_SIGNAL)
+            self.clock.set_timer_ns(
+                "dashboard-acquisition",
+                self._dashboard_retry_ms * 1_000_000,
+                callback=self._reconcile_dashboard,
+            )
         self.subscribe_signal(ACQUISITION_STATUS_REQUEST_SIGNAL)
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.subscribe_signal(WATCHLIST_DEMAND_SIGNAL)
@@ -220,6 +250,18 @@ class DataAcquisitionActor(DataActor):
             self._duplicate_instruments += 1
 
     def on_signal(self, signal: Signal) -> None:
+        if signal.name == DASHBOARD_DEMAND_SIGNAL:
+            try:
+                demand = DashboardDemand.from_signal_value(signal.value)
+                if (demand.instrument_id, demand.feed_kind) not in self._dashboard_allowed:
+                    raise ValueError("dashboard request is outside configured feeds")
+                if demand.action == "RELEASE":
+                    self._dashboard_desired.pop(demand.demand_id, None)
+                else:
+                    self._dashboard_desired[demand.demand_id] = demand
+            except ValueError:
+                self.log.error("DASHBOARD_DEMAND_REJECTED | outside admitted contract")
+            return
         if signal.name == WATCHLIST_DEMAND_SIGNAL:
             self._handle_watchlist_demand(signal.value)
             return
@@ -323,6 +365,12 @@ class DataAcquisitionActor(DataActor):
         self._observe(str(status.instrument_id), FeedKind.INSTRUMENT_STATUS)
 
     def on_stop(self) -> None:
+        if self._dashboard_port is not None:
+            self.unsubscribe_signal(DASHBOARD_DEMAND_SIGNAL)
+            if "dashboard-acquisition" in self.clock.timer_names():
+                self.clock.cancel_timer("dashboard-acquisition")
+            self._dashboard_desired.clear()
+            self._reconcile_dashboard(None)
         if self._startup_released:
             for demand in tuple(self._coordinator.demands):
                 self._publish_lifecycle_events(
@@ -373,6 +421,61 @@ class DataAcquisitionActor(DataActor):
                 },
             ).to_signal_value(),
         )
+
+    def _reconcile_dashboard(self, _event) -> None:  # noqa: ANN001
+        if self._dashboard_port is None:
+            return
+        # Release the consumer before reconciling the last provider claim. Other
+        # native consumers keep their handlers and acquisition claims intact.
+        for demand_id in tuple(self._dashboard_attached):
+            if demand_id in self._dashboard_desired:
+                continue
+            try:
+                self._dashboard_port.unsubscribe(self._dashboard_attached[demand_id])
+            except Exception as exc:  # noqa: BLE001
+                self.log.error(f"DASHBOARD_DETACH_FAILED | error={type(exc).__name__}")
+                continue
+            del self._dashboard_attached[demand_id]
+        for demand in tuple(self._coordinator.demands):
+            if (
+                demand.owner.kind == DemandOwnerKind.PROJECTION
+                and demand.demand_id not in self._dashboard_desired
+                and demand.demand_id not in self._dashboard_attached
+            ):
+                self._publish_lifecycle_events(
+                    self._coordinator.cancel(demand.demand_id, now=self.clock.utc_now()),
+                )
+        if not self._startup_released or self._tracker.missing:
+            return
+        for request in self._dashboard_desired.values():
+            if request.demand_id in self._dashboard_attached:
+                continue
+            requirement = FeedRequirement(
+                request.instrument_id,
+                FeedKind(request.feed_kind),
+                selector=request.selector,
+            )
+            demand = ObservationDemand(
+                demand_id=request.demand_id,
+                owner=DemandOwner(DemandOwnerKind.PROJECTION, "DASHBOARD"),
+                requirement=requirement,
+                purpose="display configured watchlist observations",
+            )
+            self._managed_stream_keys.add(requirement.stream_key)
+            self._publish_lifecycle_events(
+                self._coordinator.request(demand, now=self.clock.utc_now())
+            )
+            subscribed = {
+                d.requirement.stream_key for d in self._coordinator.subscribed_provider_demands
+            }
+            if requirement.stream_key not in subscribed:
+                continue
+            try:
+                self._dashboard_port.subscribe(requirement)
+            except Exception as exc:  # noqa: BLE001
+                self.log.error(f"DASHBOARD_ATTACH_FAILED | error={type(exc).__name__}")
+                continue
+            self._dashboard_attached[request.demand_id] = requirement
 
     def _publish_status(self) -> None:
         status = self._tracker.status(str(self.actor_id))

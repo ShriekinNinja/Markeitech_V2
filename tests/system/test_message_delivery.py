@@ -15,6 +15,7 @@ from markeitech.system.composition import (
     build_actor_plan,
 )
 from markeitech.system.config import load_system_config
+from tests.system.config_fixtures import minimal_calendar_config
 from tests.system.message_actor_fixtures import (
     calendar_received,
     current_state_received,
@@ -100,8 +101,7 @@ def test_session_state_delivers_typed_transition_and_projection() -> None:
     received_calendar_transitions.clear()
     received_calendar_transitions_v2.clear()
     received_calendar_projections.clear()
-    root = Path(__file__).parents[2]
-    config = load_system_config(root / "config/system.v3-es-minimal.toml")
+    config = minimal_calendar_config()
     session_state = next(
         item
         for item in build_actor_plan(
@@ -264,8 +264,7 @@ def test_session_state_returns_and_replays_complete_not_ready_snapshot() -> None
     received_calendar_transitions.clear()
     received_calendar_transitions_v2.clear()
     received_current_state_snapshots.clear()
-    root = Path(__file__).parents[2]
-    config = load_system_config(root / "config/system.v3-es-minimal.toml")
+    config = minimal_calendar_config()
     source_epoch = "00000000-0000-0000-0000-000000000001"
     session_state = next(
         item
@@ -329,8 +328,7 @@ def test_session_state_contains_projection_failure_and_publishes_typed_response(
     calendar_received.clear()
     received_calendar_transitions.clear()
     received_calendar_projections.clear()
-    root = Path(__file__).parents[2]
-    config = load_system_config(root / "config/system.v3-es-minimal.toml")
+    config = minimal_calendar_config()
     session_state = next(
         item
         for item in build_actor_plan(
@@ -449,8 +447,7 @@ def test_session_state_preserves_successful_calendar_in_mixed_failure_response()
 def test_calendar_consumers_stop_after_bounded_correlated_timeouts() -> None:
     projection_requests_complete.clear()
     received_projection_requests.clear()
-    root = Path(__file__).parents[2]
-    config = load_system_config(root / "config/system.v3-es-minimal.toml")
+    config = minimal_calendar_config()
     plan = build_actor_plan(
         config,
         StartupPrerequisites(

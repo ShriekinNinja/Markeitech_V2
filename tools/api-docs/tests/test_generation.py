@@ -43,10 +43,10 @@ class GenerationTest(unittest.TestCase):
         self.assertTrue(index["not_runtime_configuration"])
         self.assertEqual(index["public_surface"]["selected"], 98)
         self.assertEqual(index["metadata"]["occurrence_count"], 0)
-        self.assertEqual(index["architecture_components"]["counts"]["components"], 11)
+        self.assertEqual(index["architecture_components"]["counts"]["components"], 12)
         self.assertEqual(
             index["architecture_components"]["counts"]["with_responsibilities"],
-            5,
+            7,
         )
         architecture = json.loads(
             (output / "architecture-components-index.json").read_text(encoding="utf-8")
@@ -59,6 +59,7 @@ class GenerationTest(unittest.TestCase):
         )
         self.assertIn("Architecture Components", architecture_html)
         self.assertIn("actor.session-state", architecture_html)
+        self.assertIn("actor.dashboard", architecture_html)
         self.assertIn("not a Python call graph", architecture_html)
         self.assertIn('class="markeitech-metadata"', architecture_html)
         self.assertIn('class="markeitech-responsibilities"', architecture_html)

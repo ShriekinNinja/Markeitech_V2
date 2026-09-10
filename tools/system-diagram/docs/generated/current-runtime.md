@@ -1,23 +1,27 @@
-# Current V3 ES Runtime Topology
+# Current Example Runtime Topology
 
 > Offline architecture documentation. No current order submission or execution.
 
-Profile-specific implemented and enabled topology for the tracked V3 ES review profile.
+Profile-specific implemented and enabled topology for the tracked seven-instrument dashboard review profile.
 
 - View ID: `view.current-runtime`
-- Profile: `profile.v3-es-minimal`
+- Profile: `profile.example`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `b2c5bf41d00e43dea47369e569cd4f326ea758af`
+- Checkout evidence: `a382f2e0636cdb3148b451e3e0e8239a684438e5`
 - Review status: `proposed`
 
 ## Components
 
 | ID | Component | Kind | Implementation | Composition | Order | Active profile | Semantic owner | Boundary |
 |---|---|---|---|---|---:|---|---|---|
+| `actor.dashboard` | Dashboard | markeitech_actor | implemented | conditional | 11 | enabled | `actor.dashboard` | `boundary.system` |
 | `actor.data-acquisition` | Data Acquisition | markeitech_actor | implemented | always | 7 | enabled | `actor.data-acquisition` | `boundary.acquisition` |
+| `actor.discord-health` | Discord Health Projection | markeitech_actor | implemented | conditional | 4 | enabled | `actor.discord-health` | `boundary.system` |
 | `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | always | 3 | enabled | `actor.evidence-health` | `boundary.intelligence` |
 | `actor.historical-planner` | Historical Evidence Planner | markeitech_actor | implemented | always | 5 | enabled | `actor.historical-planner` | `boundary.intelligence` |
 | `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 10 | enabled | `actor.operational-persistence` | `boundary.system` |
+| `actor.runtime-resource-health` | Runtime Resource Health | markeitech_actor | implemented | conditional | 9 | enabled | `actor.runtime-resource-health` | `boundary.system` |
+| `actor.runtime-resources` | Runtime Resources | markeitech_actor | implemented | conditional | 8 | enabled | `actor.runtime-resources` | `boundary.system` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
 | `actor.system-control` | System Control | markeitech_actor | implemented | always | 1 | enabled | `actor.system-control` | `boundary.system` |
 | `actor.watchlist` | Watchlist | markeitech_actor | implemented | conditional | 6 | enabled | `actor.watchlist` | `boundary.acquisition` |
@@ -26,9 +30,14 @@ Profile-specific implemented and enabled topology for the tracked V3 ES review p
 | `component.data-engine` | Nautilus Data Engine | engine | implemented | always | not applicable | enabled | `component.data-engine` | `boundary.nautilus` |
 | `component.live-node` | Nautilus LiveNode | framework | implemented | always | not applicable | enabled | `component.live-node` | `boundary.nautilus` |
 | `operator.markeitect` | Markeitect / Operator | operator | external | external | not applicable | not_applicable | `operator.markeitect` | `boundary.projections` |
+| `projection.dashboard-ui` | Dashboard UI | projection | implemented | conditional | not applicable | enabled | `actor.dashboard` | `boundary.projections` |
+| `projection.discord` | Discord | projection | external | external | not applicable | not_applicable | `projection.discord` | `boundary.projections` |
 | `provider.interactive-brokers` | Interactive Brokers / TWS / Gateway | provider | external | external | not applicable | not_applicable | `provider.interactive-brokers` | `boundary.providers` |
+| `queue.discord` | Discord Delivery Queue | queue | implemented | not_composed | not applicable | enabled | `queue.discord` | `boundary.workers` |
 | `queue.persistence` | Persistence Admission Queue | queue | implemented | not_composed | not applicable | enabled | `queue.persistence` | `boundary.workers` |
 | `store.postgres` | PostgreSQL Operational Audit | data_store | external | external | not applicable | not_applicable | `store.postgres` | `boundary.persistence` |
+| `worker.dashboard-server` | Dashboard Server | worker | implemented | conditional | not applicable | enabled | `actor.dashboard` | `boundary.workers` |
+| `worker.discord` | Discord Delivery Worker | worker | implemented | not_composed | not applicable | enabled | `worker.discord` | `boundary.workers` |
 | `worker.persistence` | Persistence Writer Worker | worker | implemented | not_composed | not applicable | enabled | `worker.persistence` | `boundary.workers` |
 
 ## Configuration-gated capabilities
@@ -37,6 +46,9 @@ Profile-specific implemented and enabled topology for the tracked V3 ES review p
 |---|---|---|---|---|---|---|
 | `capability.acquisition.historical-bars` | `actor.data-acquisition` | Bounded analytical historical bar requests | implemented | conditional | enabled | historical plus consumer AnalyticalDemand |
 | `capability.acquisition.watchlist-last` | `actor.data-acquisition` | Watchlist last-price bar acquisition | implemented | conditional | enabled | watchlist.members[].capabilities contains watchlist_last |
+| `capability.discord.notifications` | `actor.discord-health` | Queued Discord health notifications | implemented | conditional | disabled | discord.enabled |
+| `capability.runtime-resources.health` | `actor.runtime-resource-health` | Runtime resource health classification | implemented | conditional | disabled | runtime_resources.enabled and runtime_resources.health.enabled |
+| `capability.runtime-resources.telemetry` | `actor.runtime-resources` | Runtime resource telemetry | implemented | conditional | disabled | runtime_resources.enabled |
 
 ## Flows
 
@@ -55,6 +67,16 @@ Profile-specific implemented and enabled topology for the tracked V3 ES review p
 | `edge.calendar-transition-health` | `actor.session-state` | `actor.evidence-health` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-transition-persistence` | `actor.session-state` | `actor.operational-persistence` | persistence | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-transition-planner` | `actor.session-state` | `actor.historical-planner` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
+| `edge.dashboard-bars` | `component.data-engine` | `actor.dashboard` | native_observation | `contract.native-bar` | nautilus_native_data | yes | always | unknown |
+| `edge.dashboard-demand` | `actor.dashboard` | `actor.data-acquisition` | command | `contract.dashboard-demand` | nautilus_signal | yes | always | unknown |
+| `edge.dashboard-http` | `worker.dashboard-server` | `projection.dashboard-ui` | projection | `contract.dashboard-http` | external_http | yes | always | unknown |
+| `edge.dashboard-lifecycle` | `actor.data-acquisition` | `actor.dashboard` | event | `contract.acquisition-stream` | nautilus_signal | yes | always | unknown |
+| `edge.dashboard-mailbox` | `actor.dashboard` | `worker.dashboard-server` | projection | `contract.dashboard-projection` | thread_queue | yes | always | unknown |
+| `edge.dashboard-membership` | `actor.watchlist` | `actor.dashboard` | response | `contract.watchlist-membership` | nautilus_signal | yes | always | unknown |
+| `edge.dashboard-membership-request` | `actor.dashboard` | `actor.watchlist` | query | `contract.dashboard-membership-request` | nautilus_signal | yes | always | unknown |
+| `edge.dashboard-native-attachment` | `actor.data-acquisition` | `actor.dashboard` | subscription_command | `contract.dashboard-native-attachment` | method_call | yes | always | at_most_once_attempt |
+| `edge.dashboard-quotes` | `component.data-engine` | `actor.dashboard` | native_observation | `contract.native-quote` | nautilus_native_data | yes | always | unknown |
+| `edge.dashboard-ready-discord` | `actor.dashboard` | `actor.discord-health` | event | `contract.dashboard-ready` | nautilus_signal | yes | always | unknown |
 | `edge.data-engine-live-callback` | `component.data-engine` | `actor.data-acquisition` | callback | `contract.native-bar` | nautilus_callback | yes | always | unknown |
 | `edge.historical-plan-acquisition` | `actor.historical-planner` | `actor.data-acquisition` | publication | `contract.historical-request-plan` | nautilus_custom_data | yes | always | unknown |
 | `edge.historical-provider-response` | `provider.interactive-brokers` | `component.data-engine` | response | `contract.native-bar` | nautilus_native_data | yes | historical.enabled | unknown |

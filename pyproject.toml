@@ -8,12 +8,14 @@ version = "0.1.0"
 description = "Markeitech runtime on the NautilusTrader v2 Rust core."
 requires-python = ">=3.13,<3.14"
 dependencies = [
+  "fastapi>=0.115,<1",
   "nautilus_trader==2.0.0rc4",
   "pandas-market-calendars>=5.4,<6",
   "psutil>=7,<8",
   "psycopg[binary]>=3.2,<4",
   "python-dotenv>=1.1,<2",
   "requests>=2.34,<3",
+  "uvicorn>=0.34,<1",
 ]
 
 [project.scripts]
@@ -22,6 +24,7 @@ markeitech-system = "markeitech.system.cli:main"
 
 [dependency-groups]
 dev = [
+  "httpx>=0.28,<1",
   "pytest>=8.3",
   "ruff>=0.6",
 ]

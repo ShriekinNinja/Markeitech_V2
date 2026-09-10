@@ -21,6 +21,7 @@ from markeitech.acquisition.historical_messages import (
     HistoricalDependencyDemandEvent,
     HistoricalReadinessEvent,
 )
+from markeitech.dashboard.messages import DASHBOARD_READY_SIGNAL, DashboardReadyEvent
 from markeitech.system.control import SystemHealthState
 from markeitech.system.messages import (
     SYSTEM_HEALTH_SIGNAL,
@@ -334,6 +335,9 @@ class DiscordHealthActor(DataActor):
         architecture.component.label: Discord Health Projection
         architecture.component.kind: markeitech_actor
         architecture.component.boundary: boundary.system
+        architecture.component.responsibilities:
+            - Project system health, resource health, operational readiness and dashboard
+              availability through the configured Discord delivery workers.
     """
 
     def __init__(self, config: DiscordHealthActorConfig) -> None:
@@ -350,6 +354,7 @@ class DiscordHealthActor(DataActor):
         )
         self._subscribed = False
         self._summary_logged = False
+        self._dashboard_ready_epoch: str | None = None
 
     def on_start(self) -> None:
         webhook_url = os.getenv(self._webhook_env, "").strip()
@@ -382,6 +387,7 @@ class DiscordHealthActor(DataActor):
         self.subscribe_signal(SYSTEM_HEALTH_SIGNAL)
         self.subscribe_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL)
         if self._operational_worker is not None:
+            self.subscribe_signal(DASHBOARD_READY_SIGNAL)
             self.subscribe_signal(WATCHLIST_MEMBERSHIP_SIGNAL)
             self.subscribe_signal(WATCHLIST_LIFECYCLE_SIGNAL)
             self.subscribe_signal(HISTORICAL_DEPENDENCY_DEMAND_SIGNAL)
@@ -396,6 +402,9 @@ class DiscordHealthActor(DataActor):
 
     def on_signal(self, signal: Signal) -> None:
         if self._worker is None:
+            return
+        if signal.name == DASHBOARD_READY_SIGNAL:
+            self._handle_dashboard_ready(signal)
             return
         if signal.name in {
             WATCHLIST_MEMBERSHIP_SIGNAL,
@@ -435,6 +444,7 @@ class DiscordHealthActor(DataActor):
             self.unsubscribe_signal(SYSTEM_HEALTH_SIGNAL)
             self.unsubscribe_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL)
             if self._operational_worker is not None:
+                self.unsubscribe_signal(DASHBOARD_READY_SIGNAL)
                 self.unsubscribe_signal(WATCHLIST_MEMBERSHIP_SIGNAL)
                 self.unsubscribe_signal(WATCHLIST_LIFECYCLE_SIGNAL)
                 self.unsubscribe_signal(HISTORICAL_DEPENDENCY_DEMAND_SIGNAL)
@@ -505,6 +515,24 @@ class DiscordHealthActor(DataActor):
                 f" | accepted={operational.accepted} | delivered={operational.delivered}"
                 f" | failed={operational.failed} | rejected={operational.rejected}"
                 f" | pending={operational.pending}",
+            )
+
+    def _handle_dashboard_ready(self, signal: Signal) -> None:
+        if self._operational_worker is None:
+            return
+        try:
+            event = DashboardReadyEvent.from_signal_value(signal.value)
+        except ValueError:
+            self.log.error("DISCORD_OPERATIONAL_REJECTED | reason=invalid_dashboard_ready")
+            return
+        if event.server_epoch == self._dashboard_ready_epoch:
+            return
+        self._dashboard_ready_epoch = event.server_epoch
+        if not self._operational_worker.submit(
+            DiscordDelivery(state="DASHBOARD_READY", body=render_dashboard_ready_message(event))
+        ):
+            self.log.error(
+                "DISCORD_OPERATIONAL_DROPPED | state=DASHBOARD_READY | reason=queue_full"
             )
 
     def _handle_operational_readiness(self, signal: Signal) -> None:
@@ -647,6 +675,29 @@ def render_runtime_resource_health_message(
     if ping_critical:
         payload["content"] = "@here"
     return json.dumps(payload, separators=(",", ":")).encode()
+
+
+def render_dashboard_ready_message(event: DashboardReadyEvent) -> bytes:
+    """Render the local dashboard address without pings or a data-readiness claim."""
+    return json.dumps(
+        {
+            "allowed_mentions": {"parse": []},
+            "embeds": [
+                {
+                    "title": "Markeitech | Dashboard ready to view",
+                    "description": f"[Open dashboard]({event.url})\n{event.url}",
+                    "color": 0xD1AD60,
+                    "footer": {
+                        "text": (
+                            "Open on the machine running Markeitech. "
+                            "Market data may still be loading."
+                        )
+                    },
+                }
+            ],
+        },
+        separators=(",", ":"),
+    ).encode("utf-8")
 
 
 def render_operational_readiness_message(snapshot: OperationalReadinessSnapshot) -> bytes:
