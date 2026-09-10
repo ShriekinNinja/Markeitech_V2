@@ -1,11 +1,11 @@
 {
   "authority": "generated documentation only; canonical content is the validated TOML manifest",
-  "checkout_commit": "a382f2e0636cdb3148b451e3e0e8239a684438e5",
+  "checkout_commit": "af25f09ae80403b0f5421157cfc54cc85a8e5d6c",
   "generator_contract_version": 1,
   "generator_sha256": "633ee818cb72c7918db982888f5e6ceda31729f4315470b42681746b73436d65",
   "generator_version": "0.1.0",
   "manifest": "markeitech-v3-system-dataflow",
-  "manifest_sha256": "946cf8e6b57393aa22193b11fc0b48b6e0a23c117e042474665d5154bb589ada",
+  "manifest_sha256": "1e31d413c86d29b04da4338ba453416a34ca606d37158efea251391fb14c0ac9",
   "theme": {
     "id": "style.theme",
     "label": "Markeitech polished dark theme v2"
@@ -24,7 +24,7 @@
   },
   "views": [
     {
-      "capabilities": 5,
+      "capabilities": 7,
       "edges": 0,
       "files": [
         "complete-inventory.dot",
@@ -36,7 +36,7 @@
       "nodes": 33
     },
     {
-      "capabilities": 5,
+      "capabilities": 7,
       "edges": 38,
       "files": [
         "current-runtime.dot",
