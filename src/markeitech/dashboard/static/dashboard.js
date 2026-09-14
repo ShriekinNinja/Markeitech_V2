@@ -16,23 +16,100 @@
     rightPriceScale: {borderColor:"#3b3b3b",scaleMargins:{top:0.1,bottom:0.1}},
     timeScale: {borderColor:"#3b3b3b",timeVisible:true,secondsVisible:false,rightOffset:6,barSpacing:8},
     crosshair: {vertLine:{color:"#827656",labelBackgroundColor:"#615238"},horzLine:{color:"#827656",labelBackgroundColor:"#615238"}},
-    localization: {locale:"en-US",timeFormatter:utc}
+    localization: {locale:"en-US",timeFormatter:seconds=>new Date(seconds*1000).toISOString().replace("T"," ").slice(0,19)+" UTC"}
   });
   const series = chart.addSeries(LightweightCharts.CandlestickSeries, {
     upColor:"#eeeeee",downColor:"#c42b32",borderUpColor:"#eeeeee",borderDownColor:"#c42b32",
     wickUpColor:"#eeeeee",wickDownColor:"#c42b32",lastValueVisible:false,priceLineVisible:false,
   });
-  let priceLine = null;
+  let priceLine = null, liveCandles = new Map(), historyCandles = new Map();
+  let historyBusy = false, historyIntent = false, rangeMode = null, oldestCursor = null;
+  let maximumCandles = 720, pageMinutes = 60, historyTimeout = 120, installing = false;
+  const datetimeValue = seconds => new Date(seconds*1000).toISOString().slice(0,16);
+  const parseDatetime = value => Date.parse(`${value}:00Z`)/1000;
+  const historyStatus = text => {$("history-status").textContent=text;};
+  function installCandles(reset=false) {
+    const before=candles, range=chart.timeScale().getVisibleLogicalRange();
+    const merged=new Map(historyCandles);
+    for(const [time,bar] of liveCandles)merged.set(time,bar);
+    const all=[...merged.values()].filter(bar=>!rangeMode || (bar.time>=rangeMode.start && bar.time<rangeMode.end)).sort((a,b)=>a.time-b.time);
+    candles=following?all.slice(-maximumCandles):all.slice(0,maximumCandles);
+    installing=true;series.setData(candles.map(chartBar));
+    if(reset)chart.timeScale().fitContent();
+    else if(!following && range) {
+      const shift=before.length&&candles.length?candles.filter(bar=>bar.time<before[0].time).length-before.filter(bar=>bar.time<candles[0].time).length:0;
+      chart.timeScale().setVisibleLogicalRange({from:range.from+shift,to:range.to+shift});
+    }
+    if(following)chart.timeScale().scrollToRealTime();
+    requestAnimationFrame(()=>{installing=false;});
+  }
+  async function historyPage(start,end,token) {
+    let response=await fetch("/api/history",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({instrument_id:selected,start,end})});
+    if(!response.ok){const error=await response.json();throw new Error(error.detail || "History unavailable");}
+    let result=await response.json();const deadline=Date.now()+historyTimeout*1000;
+    while(result.status==="PENDING" && token===generation && Date.now()<deadline){
+      await new Promise(resolve=>setTimeout(resolve,500));
+      if(token!==generation)return null;
+      response=await fetch(`/api/history/${encodeURIComponent(result.request_id)}`);
+      if(!response.ok)throw new Error("History request expired; try again");
+      result=await response.json();
+    }
+    if(token!==generation)return null;
+    if(result.status!=="COMPLETED")throw new Error(`History ${result.status.toLowerCase()}; try again`);
+    return result;
+  }
+  async function loadHistory(start,end,replaceRange=false) {
+    if(historyBusy || !selected)return;
+    const token=generation;historyBusy=true;historyIntent=false;
+    $("older").disabled=true;$("show-range").disabled=true;follow(false);
+    if(replaceRange){rangeMode={start,end};historyCandles.clear();installCandles(true);}
+    let cursor=end, count=0;
+    try {
+      while(cursor>start && token===generation){
+        const pageStart=Math.max(start,cursor-pageMinutes*60);
+        historyStatus("Loading history…");
+        const result=await historyPage(pageStart,cursor,token);if(!result)return;
+        for(const candle of result.candles)historyCandles.set(candle.time,candle);
+        count+=result.candles.length;cursor=pageStart;oldestCursor=pageStart;
+        if(!replaceRange){const retained=[...historyCandles].sort((a,b)=>a[0]-b[0]).slice(0,maximumCandles);historyCandles=new Map(retained);}
+        installCandles(replaceRange);$("chart-empty").hidden=candles.length>0;
+      }
+      historyStatus(count?`${count} candles loaded · UTC`:"No bars returned for this window");
+      legend(candles.at(-1));
+    } catch(error) {if(token===generation)historyStatus(error.message);}
+    finally {if(token===generation){historyBusy=false;$("older").disabled=false;$("show-range").disabled=false;}}
+  }
+  function older() {
+    if(rangeMode){historyStatus("Use Follow live before loading older pages");return;}
+    if(!candles.length)return;
+    const end=Math.min(oldestCursor ?? candles[0].time,candles[0].time);
+    loadHistory(end-pageMinutes*60,end);
+  }
+  $("older").addEventListener("click",older);
+  $("range-form").addEventListener("submit",event=>{
+    event.preventDefault();const start=parseDatetime($("range-start").value),end=parseDatetime($("range-end").value);
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<=0||end<=start){historyStatus("Choose a valid UTC start and end");return;}
+    if(end>Math.floor(Date.now()/60000)*60){historyStatus("End must be a completed UTC minute");return;}
+    if(end-start>maximumCandles*60){historyStatus(`Choose at most ${maximumCandles} minutes at 1m`);return;}
+    loadHistory(start,end,true);
+  });
+  chart.timeScale().subscribeVisibleLogicalRangeChange(range=>{
+    if(range && range.from<8 && historyIntent && !historyBusy && !following && !installing && !rangeMode)older();
+  });
   const chartBar = bar => ({time:bar.time,open:Number(bar.open),high:Number(bar.high),low:Number(bar.low),close:Number(bar.close)});
   function setConnected(value, label) {
     $("connection").textContent=label || (value?"Connected to system":"Disconnected · reconnecting");
     $("connection-dot").style.background=value?"#d1ad60":"#747474";
   }
   function follow(value) {following=value; $("follow").setAttribute("aria-pressed",String(value)); if(value) chart.timeScale().scrollToRealTime();}
-  $("follow").addEventListener("click",()=>follow(!following));
+  $("follow").addEventListener("click",()=>{
+    const next=!following;
+    if(next){rangeMode=null;historyCandles.clear();oldestCursor=null;historyStatus("");}
+    follow(next);if(next)installCandles(true);
+  });
   $("fit").addEventListener("click",()=>{follow(false);chart.timeScale().fitContent();});
-  $("chart").addEventListener("pointerdown",()=>follow(false));
-  $("chart").addEventListener("wheel",()=>follow(false),{passive:true});
+  $("chart").addEventListener("pointerdown",()=>{historyIntent=true;follow(false);});
+  $("chart").addEventListener("wheel",()=>{historyIntent=true;follow(false);},{passive:true});
   function legend(bar) {
     $("ohlc").textContent=bar?`O ${price(bar.open)}    H ${price(bar.high)}    L ${price(bar.low)}    C ${price(bar.close)}`:"Waiting for minute candles";
   }
@@ -84,20 +161,11 @@
     $("instrument-id").textContent=selected || "Watchlist is empty";
     $("last").textContent=price(row?.last);$("bid").textContent=price(row?.bid);$("ask").textContent=price(row?.ask);
     $("bar-time").textContent=row?.bar_ts_event_ns?`${utc(Number(BigInt(row.bar_ts_event_ns)/1000000000n))} UTC`:"—";
-    if(reset) {
-      candles=view.candles;series.setData(candles.map(chartBar));chart.timeScale().fitContent();follow(true);
-    } else {
-      const before=candles, range=chart.timeScale().getVisibleLogicalRange();
-      const merged=new Map(candles.map(bar=>[bar.time,bar]));
-      for(const bar of view.candles)merged.set(bar.time,bar);
-      candles=[...merged.values()].filter(bar=>view.window_start==null || bar.time>=view.window_start).sort((a,b)=>a.time-b.time).slice(-view.maximum_candles);
-      if(view.candles.length || candles.length!==before.length){
-        series.setData(candles.map(chartBar));
-        const shift=before.length&&candles.length?candles.filter(bar=>bar.time<before[0].time).length-before.filter(bar=>bar.time<candles[0].time).length:0;
-        if(!following && range)chart.timeScale().setVisibleLogicalRange({from:range.from+shift,to:range.to+shift});
-      }
-      if(following)chart.timeScale().scrollToRealTime();
-    }
+    maximumCandles=view.maximum_candles;pageMinutes=view.history_page_minutes || 60;historyTimeout=view.history_timeout_seconds || 120;
+    if(reset)liveCandles=new Map(view.candles.map(bar=>[bar.time,bar]));
+    else for(const bar of view.candles)liveCandles.set(bar.time,bar);
+    liveCandles=new Map([...liveCandles].sort((a,b)=>a[0]-b[0]).slice(-maximumCandles));
+    installCandles(reset && !rangeMode && !historyCandles.size);
     if(candles.length){
       const last=candles.at(-1);const precision=(last.close.split(".")[1]||"").length;
       series.applyOptions({priceFormat:{type:"price",precision,minMove:10**(-precision)}});
@@ -118,7 +186,7 @@
   }
   async function select(id) {
     const token=++generation;if(stream)stream.close();stream=null;
-    selected=id;candles=[];series.setData([]);if(priceLine){series.removePriceLine(priceLine);priceLine=null;}
+    selected=id;candles=[];liveCandles.clear();historyCandles.clear();rangeMode=null;oldestCursor=null;historyBusy=false;historyIntent=false;following=true;$("follow").setAttribute("aria-pressed","true");$("older").disabled=false;$("show-range").disabled=false;historyStatus("");series.setData([]);if(priceLine){series.removePriceLine(priceLine);priceLine=null;}
     $("chart-empty").hidden=false;$("chart-empty").querySelector("h3").textContent="Loading instrument…";
     setConnected(false,"Connecting…");
     const query=id?`?instrument_id=${encodeURIComponent(id)}`:"";
@@ -132,5 +200,6 @@
     } catch {if(token===generation){setConnected(false,"Unavailable · retrying");setTimeout(()=>{if(token===generation)select(id);},2000);}}
   }
   window.addEventListener("pagehide",()=>stream?.close());
+  const now=Math.floor(Date.now()/60000)*60;$("range-start").value=datetimeValue(now-3600);$("range-end").value=datetimeValue(now);
   select(null);
 })();

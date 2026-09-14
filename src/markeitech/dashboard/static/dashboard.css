@@ -127,3 +127,10 @@ main { padding: 14px 14px 10px; min-width: 0; display: flex; flex-direction: col
   .gold-button { padding: 5px 7px; }
   .ohlc { font-size: 10px; padding: 0 6px; }
 }
+
+.history-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:5px 9px; border-bottom:1px solid var(--line); color:var(--muted); font-size:10px; }
+.history-toolbar label { display:flex; align-items:center; gap:4px; }
+.history-toolbar input, .history-toolbar button { color:var(--text); background:var(--raised); border:1px solid #414141; border-radius:3px; padding:3px 5px; font-size:10px; }
+.history-toolbar input { width:150px; }
+.history-toolbar button:disabled { opacity:.45; cursor:wait; }
+#history-status { color:var(--gold); }

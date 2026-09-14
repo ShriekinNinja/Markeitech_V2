@@ -239,3 +239,18 @@ and live overlap is counted once, with live values preferred and conflicts count
 mutable derived projection over immutable provider bars, not a provider minute stream or a new
 analytical canonical bar. There is no raw-data persistence. Higher/session timeframes are deferred.
 See [dashboard operation](../operations/dashboard.md) and the [native gate and live evidence](../operations/dashboard-native-backfill.md).
+
+Operator-selected past minute windows use a bounded `DashboardHistoryRequest` mailbox from HTTP
+to DashboardActor. The existing historical demand/planner/executor path remains the only request
+route. DataAcquisitionActor projects `DashboardHistoryPage` CustomData on
+`markeitech.acquisition.dashboard_history.v1`, correlated by unique consumer/request ID and exact
+window. DashboardActor forwards detached results through a bounded result mailbox. HTTP and the
+browser select/merge projected candles; neither aggregates source OHLCV. Pages do not evict live
+buckets. Per-page, pending, timeout and per-process admission budgets bound resources and retained
+request metadata. There is no durable raw-data store. Higher timeframe session anchoring is pending
+Markeitect's choice; the present page contract is UTC one-minute history only.
+
+Operator page plans retain the compiler's logical window key but scope execution IDs to the
+operator request UUID. This permits an explicit re-fetch after a previous request completes,
+while retries/redelivery of that same intent retain one execution identity. Native provider
+parameters, requested bounds, and ordinary non-dashboard historical request IDs are unchanged.

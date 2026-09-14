@@ -126,6 +126,8 @@ async def _run(args: argparse.Namespace) -> dict:
     http_samples = 0
     view = {}
     seen_closes = set()
+    history_job = None
+    history_page = None
     print(f"LIVE_DASHBOARD | url=http://127.0.0.1:{args.port}", flush=True)
     try:
         async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{args.port}") as client:
@@ -139,6 +141,31 @@ async def _run(args: argparse.Namespace) -> dict:
                     continue
                 http_samples += 1
                 candles = view["candles"]
+                if args.check_history_pages and candles:
+                    if history_job is None:
+                        # Exercise a page older than the initial retained history.
+                        end = candles[0]["time"] - 120
+                        response = await client.post(
+                            "/api/history",
+                            json={
+                                "instrument_id": args.instrument,
+                                "start": end - 120,
+                                "end": end,
+                            },
+                        )
+                        response.raise_for_status()
+                        history_job = response.json()["request_id"]
+                    elif history_page is None:
+                        response = await client.get(f"/api/history/{history_job}")
+                        response.raise_for_status()
+                        result = response.json()
+                        if result["status"] != "PENDING":
+                            history_page = result
+                            print(
+                                f"PAGE_DELIVERED | status={result['status']}"
+                                f" candles={len(result.get('candles', []))}",
+                                flush=True,
+                            )
                 latest = candles[-1] if candles else None
                 if latest and previous and latest["time"] == previous["time"]:
                     if any(
@@ -154,7 +181,11 @@ async def _run(args: argparse.Namespace) -> dict:
                             if end not in seen_closes:
                                 seen_closes.add(end)
                                 print(f"MINUTE_COMPLETE | close_ns={end} inputs=12", flush=True)
-                if len(seen_closes) >= 2 and mutations >= 2:
+                if (
+                    len(seen_closes) >= 2
+                    and mutations >= 2
+                    and (not args.check_history_pages or history_page is not None)
+                ):
                     break
                 await asyncio.sleep(0.25)
     finally:
@@ -164,7 +195,8 @@ async def _run(args: argparse.Namespace) -> dict:
     inputs = {bar.ts_event: bar for bar in acquisition.raw_history}
     inputs.update({bar.ts_event: bar for bar in acquisition.raw_live})
     comparisons = []
-    for candle in view.get("candles", []):
+    page_candles = (history_page or {}).get("candles", [])
+    for candle in [*view.get("candles", []), *page_candles]:
         if candle["status"] == "COMPLETE":
             comparisons.append(
                 _comparison(
@@ -182,6 +214,15 @@ async def _run(args: argparse.Namespace) -> dict:
         and all(c["complete_5s_coverage"] and c.get("ohlcv_match") for c in comparisons)
         and not node.is_running
         and not dashboard._server.ready.is_set()
+        and (
+            not args.check_history_pages
+            or (
+                history_page is not None
+                and history_page["status"] == "COMPLETED"
+                and len(page_candles) == 2
+                and all(c["status"] == "COMPLETE" for c in page_candles)
+            )
+        )
     )
     return {
         "passed": passed,
@@ -195,6 +236,11 @@ async def _run(args: argparse.Namespace) -> dict:
         "same_candle_http_changes": mutations,
         "http_samples": http_samples,
         "comparisons": comparisons,
+        "older_history_page": {
+            "requested": args.check_history_pages,
+            "status": (history_page or {}).get("status"),
+            "candles": len(page_candles),
+        },
         "node_stopped": not node.is_running,
         "server_stopped": not dashboard._server.ready.is_set(),
         "scope": "Production data path; isolated startup, membership and calendar synchronization",
@@ -209,6 +255,7 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=8766)
     parser.add_argument("--timeout-seconds", type=int, default=140)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--check-history-pages", action="store_true")
     parser.add_argument("--connect", choices=["I_UNDERSTAND_THIS_CONNECTS_TO_IB"], required=True)
     args = parser.parse_args()
     if (

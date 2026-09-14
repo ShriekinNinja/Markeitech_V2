@@ -4,40 +4,40 @@
   "components": [
     {
       "boundary": "boundary.system",
-      "definition_line": 48,
+      "definition_line": 53,
       "id": "actor.dashboard",
       "implementation_ref": "src/markeitech/dashboard/actor.py:DashboardActor",
       "kind": "markeitech_actor",
       "label": "Dashboard",
       "object_path": "markeitech.dashboard.actor.DashboardActor",
-      "record_sha256": "0baca0aa8cbb22e77722dfc6cbbc70d4f71018e3baefec232289db697f27e894",
+      "record_sha256": "9b72c51eeadfe16ddb85eda7c1f979650ef7ea1cc353ba3b4ef7bfb062d81c70",
       "responsibilities": [
         "Request configured display feeds through acquisition and receive native callbacks.",
         "Retain bounded transient display state and own local web-server startup and shutdown.",
-        "Request history through the historical planner and project acquisition minute candles.",
+        "Request startup and operator history; project acquisition-owned candles.",
         "Announce the accepting dashboard address for operational Discord projection."
       ],
       "source": "src/markeitech/dashboard/actor.py",
-      "source_sha256": "05b38da5275e6dbd66dd46c55ede9d9bdadde70e45c71cf52176d9b3a11fb9f8"
+      "source_sha256": "317b552ec591fe819f67aea9be144bdb2bc63fe96300a1570127194b1743871f"
     },
     {
       "boundary": "boundary.acquisition",
-      "definition_line": 127,
+      "definition_line": 132,
       "id": "actor.data-acquisition",
       "implementation_ref": "src/markeitech/system/acquisition.py:DataAcquisitionActor",
       "kind": "markeitech_actor",
       "label": "Data Acquisition",
       "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
-      "record_sha256": "d424bff32c4b61c892d9543687c807cf4f38da0c904027894ceac81d22ace777",
+      "record_sha256": "3e100e7f3739c460effec79783639d15cc613131d64dff0fc56b5ea98dffe1b2",
       "responsibilities": [
         "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
         "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
         "Publish acquisition lifecycle, historical batches, and consumer readiness.",
         "Admit dashboard display demand and execute its native callback attachment and release.",
-        "Derive bounded UTC minute candles from source-time five-second inputs for display."
+        "Derive bounded UTC minute candles and requested history pages from five-second inputs."
       ],
       "source": "src/markeitech/system/acquisition.py",
-      "source_sha256": "dd371b92256c5c8259807671cc8581721e74280c3e31207acf80091ae6f5a2a1"
+      "source_sha256": "16adcbda65fa50599f42739248aba8a1fddfba76e464b8eaff1d8e05739c2ebe"
     },
     {
       "boundary": "boundary.system",
@@ -73,20 +73,20 @@
     },
     {
       "boundary": "boundary.intelligence",
-      "definition_line": 218,
+      "definition_line": 219,
       "id": "actor.historical-planner",
       "implementation_ref": "src/markeitech/system/historical_planner.py:HistoricalEvidencePlannerActor",
       "kind": "markeitech_actor",
       "label": "Historical Evidence Planner",
       "object_path": "markeitech.system.historical_planner.HistoricalEvidencePlannerActor",
-      "record_sha256": "ef946af8574d6d206702588e66cacd2bf1f6bcb0e942249b5148017485eff0da",
+      "record_sha256": "44ff83fe25d6ac6761c710d12397315caf1c32742a266c438783e890537b00b1",
       "responsibilities": [
         "Resolve semantic historical evidence demands into exact UTC request plans.",
         "Use immutable canonical-calendar projections for calendar-relative windows.",
         "Publish exact plans without calling providers or owning provider pacing."
       ],
       "source": "src/markeitech/system/historical_planner.py",
-      "source_sha256": "6454cee2a892ebd1a2c675a7c4ad45463fe2a2d942a1427b9c8f59be65940bad"
+      "source_sha256": "7b0024f7f3fb663b1c8da04bfe12e6d61901a8c144d5daddcfc9f2361f883c41"
     },
     {
       "boundary": "boundary.system",
@@ -207,5 +207,5 @@
   },
   "schema_id": "markeitech-architecture-class-components",
   "schema_version": 1,
-  "source_snapshot_sha256": "946622cdac6affd64badd59d841c436aad9d5a6e492502c0741c471e448209bb"
+  "source_snapshot_sha256": "1d8e39e74b0a98ba953b50c71e3f7a030d20ac55fb2a90db2c2cdc95496e5f60"
 }

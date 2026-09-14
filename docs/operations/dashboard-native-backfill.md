@@ -52,7 +52,7 @@ run restarted the dashboard or sent Discord/model messages.
 
 Local evidence: `data/review/native-backfill.json` and
 `data/review/native-backfill-timing.json`. Both runs exited with status 1 because live
-correctness did not pass. The repeatable probe and this report are left uncommitted.
+correctness did not pass. The repeatable probe and this report were included in the one-minute checkpoint.
 
 ## Live procedure
 
@@ -152,9 +152,9 @@ the one-minute dashboard. Higher/session timeframes remain separate work.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Fetch initial and older history or a datetime window | `request_bars`, `on_historical_bars` | rc4 Python signature and request binding; existing `NautilusHistoricalPort` | rc4 IB request path segments, sorts, deduplicates and limits history | Bounded history fits | `DataAcquisitionActor` | USE_NATIVE | No new provider client or historical fetch engine needed | Recent ES history delivered live; old pages and other timeframes unmeasured |
 | Seed aggregates from source history | `params.bar_types`, `update_subscriptions=true` | rc4 request aggregation and cleanup retain native state | Live ES five-second response passed through the native engine | Historical one-minute aggregation fits; live correctness is separate | Native DataEngine, acquisition-owned requests | COMPOSE_NATIVE | Bootstrap is ordered before target subscription; running-target backfill is rejected | Three historical minutes matched all twelve five-second inputs in the first live run |
-| Continue completed minute bars from IB five-second delivery | Native composite `TimeBarAggregator` | rc4 live timer emits at the close; historical path processes the boundary input before firing | Two live minutes mismatched despite complete source coverage; final inputs arrived after emission | Native default policy fails tested source-time buckets | DataAcquisitionActor with bounded helper | EXTEND | Close the derived minute only from source coverage; retain native provider delivery and history requests | Both live closes and all 22 complete minute comparisons matched their twelve inputs in the final isolated run |
-| Change the current candle every five seconds | Native partial state or revised-bar output | No public Python partial-builder accessor identified; completed cache inspected | External IB longer-bar revisions use a different source subscription | Native candidates do not satisfy the required projection | DataAcquisitionActor with bounded helper | EXTEND | Keep native source bars and fetching; derive only the missing source-time minute projection | 21 same-candle HTTP changes and matching minute constituents in the final isolated live run |
-| Scrollback, datetime selectors, retained viewport | Existing dashboard plus native requests | Merged POC has bounded snapshots but no history request UI | Provider request bounds and availability apply | Narrow dashboard extension still needed | Existing dashboard and acquisition | DEFER | This branch implements initial one-minute history and live updates; loading older pages and datetime selection remain later work | Older-page and datetime requests not exercised |
+| Continue completed minute bars from IB five-second delivery | Native composite `TimeBarAggregator` | rc4 live timer emits at the close; historical path processes the boundary input before firing | Two live minutes mismatched despite complete source coverage; final inputs arrived after emission | Native default policy fails tested source-time buckets | DataAcquisitionActor with bounded helper | WRAP_NATIVE | Close the derived minute only from source coverage; retain native provider delivery and history requests | Both live closes and all 22 complete minute comparisons matched their twelve inputs in the final isolated run |
+| Change the current candle every five seconds | Native partial state or revised-bar output | No public Python partial-builder accessor identified; completed cache inspected | External IB longer-bar revisions use a different source subscription | Native candidates do not satisfy the required projection | DataAcquisitionActor with bounded helper | WRAP_NATIVE | Keep native source bars and fetching; derive only the missing source-time minute projection | 21 same-candle HTTP changes and matching minute constituents in the final isolated live run |
+| One-minute older pages and datetime selection | Native `request_bars(start,end,limit)` through the existing planner | rc4 exact bounds resolve from a past `recent_completed` anchor | Older two-minute page passed in the isolated ES run | Fits bounded UTC minute windows | Acquisition requests/projection; DashboardActor intent; HTTP detached mailbox | WRAP_NATIVE | Add bounded operator correlation and viewport controls around native history, without a new provider client | Live page comparisons passed; browser date selection and 60-minute Older page passed; automatic left-edge trigger still needs manual review |
 
 ## Sources and freshness
 
@@ -176,3 +176,21 @@ interfaces and freshly retrieved tag-pinned source.
 Upstream tests were inspected, not executed. They establish intended native behavior and do
 not replace the measured IB case. No dependencies, production settings, persistence schemas,
 raw-data retention, or provider ownership were changed by this diagnostic.
+
+## Continuation checkpoint and remaining choice
+
+The one-minute baseline was committed as `a1eea5b` after Markeitect requested commit and continuation.
+The subsequent bounded history controls are documented in [dashboard operations](dashboard.md).
+Nautilus nightly guide/API roots were refreshed on 2026-09-10 and the installed
+`DataActor.request_bars` signature rechecked on 2.0.0rc4. The nightly IB integration page was
+unavailable; pinned adapter source and the isolated live run supply the provider-path evidence.
+The inspected adapter converts date-only daily history to UTC midnight before adding the bar
+interval. That transport label alone does not establish exchange-session meaning. Four-hour and
+daily anchoring (exchange sessions versus fixed UTC) remains a product choice before expanding
+the timeframe contract. No daily settlement or session alignment is claimed by the minute POC.
+
+Completion review refreshed both nightly roots again on 2026-09-14; the API root reports rc4.
+The execution change is a narrow wrapper around the existing planner/compiler: explicit history
+re-fetches carry UUID-scoped execution IDs; unchanged-window retries keep the same ID. The native
+request signature, provider bounds and source-time aggregation are unchanged. Local tests cover
+re-fetch after executor completion; no new connected acceptance is claimed for that fix.

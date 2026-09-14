@@ -27,6 +27,11 @@ from markeitech.acquisition import (
     NautilusSubscriptionPort,
     ObservationDemand,
 )
+from markeitech.acquisition.dashboard_history import (
+    HISTORY_CONSUMER_PREFIX,
+    HISTORY_PAGE_TYPE_NAME,
+    project_history_page,
+)
 from markeitech.acquisition.historical_native import (
     HistoricalResponseMismatch,
     validate_historical_bars,
@@ -139,7 +144,7 @@ class DataAcquisitionActor(DataActor):
               calendar-relative request bounds.
             - Publish acquisition lifecycle, historical batches, and consumer readiness.
             - Admit dashboard display demand and execute its native callback attachment and release.
-            - Derive bounded UTC minute candles from source-time five-second inputs for display.
+            - Derive bounded UTC minute candles and requested history pages from five-second inputs.
     """
 
     def __init__(self, config: DataAcquisitionActorConfig) -> None:
@@ -624,6 +629,23 @@ class DataAcquisitionActor(DataActor):
             )
         batch_type = DataType(HISTORICAL_BATCH_TYPE_NAME)
         for batch in update.batches:
+            if self._minute_book is not None:
+                for ref in batch.request.dependencies:
+                    if (
+                        ref.consumer_id.startswith(HISTORY_CONSUMER_PREFIX)
+                        and ref.capability_id == "dashboard.history-page"
+                        and batch.request.selector == "5-SECOND-LAST-EXTERNAL"
+                        and (batch.request.instrument_id, "bars") in self._dashboard_allowed
+                    ):
+                        try:
+                            page = project_history_page(
+                                batch, ref.consumer_id, self.clock.timestamp_ns()
+                            )
+                        except ValueError:
+                            self.log.error("DASHBOARD_HISTORY_REJECTED | invalid page bounds")
+                            continue
+                        page_type = DataType(HISTORY_PAGE_TYPE_NAME)
+                        self.publish_data(page_type, CustomData(page_type, page))
             if self._minute_book is not None and any(
                 ref.consumer_id == "DASHBOARD" and ref.capability_id == "dashboard.minute-chart"
                 for ref in batch.request.dependencies

@@ -18,8 +18,9 @@ connected acceptance remains Markeitect's run and review.
   detached snapshots from the actor thread. It serves local HTTP snapshots and Server-Sent Events
   (SSE), with a bounded number of browser connections. New snapshots replace unconsumed snapshots.
 - `DashboardUI` is the locally served HTML/CSS/JavaScript interface using the bundled
-  TradingView Lightweight Charts 5.2.1 asset. Selection changes the browser projection only. Minute changes and older backfill are merged
-  through SSE without changing the selected instrument; fit/follow and reload retain history.
+  TradingView Lightweight Charts 5.2.1 asset. Selection changes the browser projection. Live updates arrive through SSE;
+  requested history arrives as detached pages. Reload restores runtime history; operator-fetched
+  pages and selected date windows are transient browser state.
 
 Every dashboard market-data request and release goes through `DataAcquisitionActor`. Composition
 binds a native subscription port for the dashboard to acquisition before startup. Acquisition
@@ -35,22 +36,26 @@ available. A disabled watchlist produces an empty dashboard.
 
 ## Configuration and migration
 
-The system configuration schema is **27**. Dashboard policy is version **2**. Copy the commented
+The system configuration schema is **28**. Dashboard policy is version **3**. Copy the commented
 `[dashboard]` section from `config/system.example.toml` into your existing ignored local profile,
-preserving its machine/provider settings. For schema-25/26 profiles set `schema_version = 27`. If `[dashboard]` already exists,
-set its `policy_version = 2`; `initial_history_minutes` defaults to 20. The section remains
+preserving its machine/provider settings. For schema-25/26/27 profiles set `schema_version = 28`. If `[dashboard]` already exists,
+set its `policy_version = 3`; `initial_history_minutes` defaults to 20. The section remains
 optional and omission disables the dashboard. Preserve machine-specific connection settings.
 For older profiles, first follow [developer setup](developer-setup.md). Local files are never
 migrated automatically.
 
 | Setting | Default | Valid range / meaning |
 | --- | --- | --- |
-| `policy_version` | `2` | Exactly `2` |
+| `policy_version` | `3` | Exactly `3` |
 | `enabled` | `false` | Boolean; compose dashboard on startup |
 | `port` | `8765` | 1024–65535; host fixed to `127.0.0.1` |
 | `maximum_instruments` | `64` | 1–256; reject an enabled watchlist beyond this limit |
 | `candles_per_instrument` | `720` | 2–5000; transient minute candles including the forming candle per instrument |
 | `initial_history_minutes` | `20` | 1–120 elapsed minutes, capped by candle capacity; one extra minute of source input covers partial boundaries |
+| `history_page_minutes` | `60` | 1–120 elapsed UTC minutes per provider history page |
+| `maximum_history_requests` | `4` | 1–16 pending/unread jobs across browsers |
+| `maximum_history_requests_per_session` | `256` | 1–4096 admitted pages per process; bounds retained executor request metadata |
+| `history_request_timeout_seconds` | `120` | 10–300 seconds; web jobs/results and unacknowledged actor requests expire |
 | `publish_interval_ms` | `250` | 100–5000; browser projection cadence |
 | `acquisition_retry_interval_ms` | `1000` | 100–10000; membership and attachment retry cadence |
 | `maximum_clients` | `4` | 1–16; concurrent SSE clients |
@@ -101,7 +106,7 @@ Stop this preview before starting the connected system on the same port.
 ## Markeitect's connected scenario
 
 Review the dashboard PR on `watchlist-review`. The existing IB/Discord/persistence prerequisites
-and explicit connection confirmation apply. Use your reviewed schema-27 local configuration:
+and explicit connection confirmation apply. Use your reviewed schema-28 local configuration:
 
 ```bash
 .venv/bin/markeitech system build --config config/system.local.toml --dashboard
@@ -225,3 +230,47 @@ all enabled members, history status, forming updates and minute boundaries. Stop
 The existing production process was left running throughout development; only the isolated
 client-21/port-8766 diagnostics were started and stopped by the agent. This is ready for Markeitect's
 full-system local review; no commit, push or PR was made.
+
+## Older history and UTC date selection
+
+The **Older** button requests a page before the earliest loaded minute. Dragging/scrolling to the
+left edge also requests one page per user interaction; installing a result never recursively
+fetches more pages. Page duration is elapsed time, so a closed-market page can legitimately return
+no bars; the next Older action advances to the preceding window. Large gaps are not filled.
+
+**From** and **To** are explicitly UTC, regardless of the browser's local timezone. **Show** loads
+the half-open range `[From, To)` in sequential bounded pages. The end must be a completed minute;
+the range is limited to `candles_per_instrument` elapsed minutes. **Follow live** leaves the date
+window and restores current runtime candles. The watchlist keeps receiving live prices while a
+past range is displayed. Chart pages and live candles remain bounded in browser memory.
+
+`POST /api/history` accepts only `instrument_id`, `start`, and `end` (Unix seconds on minute
+boundaries). It returns a UUID-correlated pending job. `GET /api/history/{request_id}` returns its
+state and detached candles. Same-origin/Host checks, JSON size bounds, configured membership,
+page duration, future-time rejection, queue capacity, finite lifetime, and a per-process admission
+budget apply. A full queue returns 429; expired results return 404. Retry is an explicit new
+operator action. No provider calls occur in the HTTP worker.
+
+DashboardActor republishes unacknowledged demand through the existing native historical planner.
+The request uses `recent_completed` anchored at the selected past end, giving exact UTC bounds
+without requiring a new calendar resolver. DataAcquisitionActor owns the native request, validates
+the response, and projects a one-minute page from its five-second constituents. A separate result
+mailbox returns it to HTTP. Pages do not evict the acquisition live book; matching live candles
+win at the browser display boundary. Request metadata is bounded by the session admission budget;
+raw inputs are discarded after projection, with no new persistence or dependencies.
+
+Verification on 2026-09-10 used the same isolated ES/client-21/port-8766 diagnostic with
+`--check-history-pages`. The run passed in 66.76 seconds: 13 forming-candle changes, two live
+minute closes, and a two-minute page older than initial history. Every compared complete candle
+matched its twelve source inputs. During that run the browser also loaded 13:00–13:02 UTC and a
+60-minute Older page, displayed live prices while viewing the past, and returned with Follow live;
+no browser errors were reported. Evidence: `data/review/live-minute-history-navigation.json`.
+Automatic left-edge triggering and instrument changes during a pending page remain manual review
+items; the bounded server/actor request paths and exact correlation have focused tests.
+This is isolated provider/data-path evidence, not full production startup acceptance.
+
+The 2026-09-14 completion review added a focused re-fetch fix: each explicit operator page has a
+UUID-scoped execution identity, so a completed historical window can be requested again after its
+HTTP result expires. Redelivery/retries retain that intent's identity and exact provider bounds.
+This fix passed the existing compiler/executor integration test; the September 10 provider run
+predates it. The web queue also rejects expired intents before they reach the actor.
