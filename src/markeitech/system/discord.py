@@ -417,6 +417,10 @@ class DiscordHealthActor(DataActor):
         if signal.name == RUNTIME_RESOURCE_HEALTH_SIGNAL:
             self._handle_resource_health(signal)
             return
+        # Native signal subscriptions also deliver names with the subscribed prefix.
+        # A membership snapshot request is not a health event.
+        if signal.name != SYSTEM_HEALTH_SIGNAL:
+            return
         try:
             event = SystemHealthEvent.from_signal_value(signal.value)
         except ValueError as exc:

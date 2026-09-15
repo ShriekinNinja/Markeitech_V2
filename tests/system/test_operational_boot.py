@@ -10,10 +10,11 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from nautilus_trader.common import Environment, LoggerConfig
+from nautilus_trader.common import DataActor, DataActorConfig, Environment, LoggerConfig
 from nautilus_trader.live import LiveNode
-from nautilus_trader.model import TraderId
+from nautilus_trader.model import ActorId, TraderId
 
+from markeitech.dashboard.messages import WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL
 from markeitech.system.acquisition import InstrumentDefinitionTracker
 from markeitech.system.composition import StartupPrerequisites, build_actor_plan
 from markeitech.system.config import load_system_config
@@ -97,7 +98,8 @@ def test_discord_zero_work_summary_requires_explicit_configuration_and_ready() -
     assert projection.accept_system_health(ready, 101) is None
 
 
-def test_nine_operational_actors_boot_and_stop_offline(monkeypatch) -> None:
+@pytest.mark.parametrize("request_membership", [False, True])
+def test_nine_operational_actors_boot_and_stop_offline(monkeypatch, request_membership) -> None:
     """Exercise native lifecycle/workers with SQL, HTTP and host samples replaced."""
     records = []
     deliveries = []
@@ -166,6 +168,15 @@ def test_nine_operational_actors_boot_and_stop_offline(monkeypatch) -> None:
         actors[entry.key] = actor_cls(actor_config)
         node.add_actor(actors[entry.key])
 
+    if request_membership:
+        class MembershipRequester(DataActor):
+            def on_start(self) -> None:
+                self.publish_signal(WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL, "DASHBOARD")
+
+        node.add_actor(
+            MembershipRequester(DataActorConfig(actor_id=ActorId.from_str("REQUESTER"))),
+        )
+
     async def exercise():
         task = asyncio.create_task(node.run_async())
         try:
@@ -190,6 +201,7 @@ def test_nine_operational_actors_boot_and_stop_offline(monkeypatch) -> None:
             assert "historical-execution" not in acquisition.clock.timer_names()
             assert actors["runtime_resource_health"]._samples > 0
             assert actors["runtime_resource_health"]._rejected == 0
+            assert not actors["operational_persistence"]._failure_published
             assert not acquisition._managed_stream_keys
             assert not acquisition._pending_demands
             assert actors["historical_evidence_planner"]._counts["planned"] == 0

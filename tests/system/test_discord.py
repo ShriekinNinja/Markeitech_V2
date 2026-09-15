@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
+import pytest
+from nautilus_trader.common import Signal
 from requests import Response
 
 from markeitech.acquisition import (
@@ -11,6 +14,7 @@ from markeitech.acquisition import (
 from markeitech.system.discord import (
     DiscordDelivery,
     DiscordDeliveryWorker,
+    DiscordHealthActor,
     OperationalReadinessProjection,
     OperationalReadinessSnapshot,
     render_operational_readiness_message,
@@ -18,12 +22,28 @@ from markeitech.system.discord import (
     render_system_health_message,
 )
 from markeitech.system.messages import (
+    SYSTEM_HEALTH_SIGNAL,
     SystemHealthEvent,
     WatchlistLifecycleEvent,
     WatchlistMember,
     WatchlistMembershipEvent,
 )
 from markeitech.system.resource_contracts import RuntimeResourceHealthEvent
+
+
+@pytest.mark.parametrize(
+    ("name", "rejected"),
+    [
+        ("markeitech.watchlist.membership.request", False),
+        ("markeitech.system.health.request", False),
+        (SYSTEM_HEALTH_SIGNAL, True),
+    ],
+)
+def test_discord_validates_only_exact_health_signal(name, rejected) -> None:
+    errors = []
+    actor = SimpleNamespace(_worker=object(), log=SimpleNamespace(error=errors.append))
+    DiscordHealthActor.on_signal(actor, Signal(name, "not-json", 1, 1))
+    assert bool(errors) is rejected
 
 
 def test_renders_readable_health_embed_without_mentions() -> None:

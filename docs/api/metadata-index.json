@@ -48,12 +48,12 @@
         "kind": "markeitech_actor",
         "label": "Discord Health Projection",
         "object_path": "markeitech.system.discord.DiscordHealthActor",
-        "record_sha256": "905c45bc3e13cd536fbb69eddc6a68396cded58728cab3661254e3a8868c2d51",
+        "record_sha256": "e9acf575d813e661a5d6362073dd5a6216b42b00071f0d55e15a9776c07ddb62",
         "responsibilities": [
           "Project system health, resource health, operational readiness and dashboard availability through the configured Discord delivery workers."
         ],
         "source": "src/markeitech/system/discord.py",
-        "source_sha256": "8eae75fe8b6a6951441c271574029fe9f45fd20610e533cf137978f385929c7c"
+        "source_sha256": "c4df58e1773554aec156db7d1bf535fadd8ecc3fb60b8b2d8bdc9c626f20b03b"
       },
       {
         "boundary": "boundary.intelligence",
@@ -97,10 +97,10 @@
         "kind": "markeitech_actor",
         "label": "Operational Persistence",
         "object_path": "markeitech.system.persistence.OperationalPersistenceActor",
-        "record_sha256": "daf77506dd9e6471cee46eb0198e0ffe847cb1d690cf64bbd32d62b30359af03",
+        "record_sha256": "322231748c98946fee0bb57f2ba877c7dcfa6e6ee1cc145a7e2ef7e28de2c9e7",
         "responsibilities": [],
         "source": "src/markeitech/system/persistence.py",
-        "source_sha256": "dd18d798090a59007d881eb8432d9cc0b9acf8083298bc65d138894a446b3f6a"
+        "source_sha256": "d1678f99daa4904f50a97396ab454663471be4d5eaa9dc05cac181ce26fda9da"
       },
       {
         "boundary": "boundary.system",
@@ -208,7 +208,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "1d8e39e74b0a98ba953b50c71e3f7a030d20ac55fb2a90db2c2cdc95496e5f60"
+    "source_snapshot_sha256": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1331,7 +1331,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 76,
-    "input_signature": "1d8e39e74b0a98ba953b50c71e3f7a030d20ac55fb2a90db2c2cdc95496e5f60"
+    "input_signature": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e"
   },
-  "source_snapshot_sha256": "1d8e39e74b0a98ba953b50c71e3f7a030d20ac55fb2a90db2c2cdc95496e5f60"
+  "source_snapshot_sha256": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e"
 }

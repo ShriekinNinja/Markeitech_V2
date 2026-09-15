@@ -274,3 +274,59 @@ UUID-scoped execution identity, so a completed historical window can be requeste
 HTTP result expires. Redelivery/retries retain that intent's identity and exact provider bounds.
 This fix passed the existing compiler/executor integration test; the September 10 provider run
 predates it. The web queue also rejects expired intents before they reach the actor.
+
+## September 14 startup log review
+
+The operator's runs at 19:28 and 19:29 UTC exposed a signal-routing defect. On the installed
+NautilusTrader 2.0.0rc4, subscribing to `markeitech.watchlist.membership` also delivers
+`markeitech.watchlist.membership.request`. The dashboard published the latter with the value
+`DASHBOARD`. Discord previously parsed this unknown signal as system health; persistence rejected
+it as an unsupported operational record and published a component failure. System control then
+entered `FAILED` before startup readiness. This did not demonstrate a PostgreSQL or HTTP outage:
+the later run stored 251 accepted records without worker failures and delivered Discord HTTP 200.
+
+The request channel is now `markeitech.watchlist.request_membership`, outside the membership-event
+prefix. Dashboard and Watchlist share that definition for publication, subscription, dispatch,
+and unsubscribe. The response remains `markeitech.watchlist.membership`. No compatibility alias
+publishes the old request channel. This internal transient-channel rename takes effect on system
+restart and requires no durable-data migration or operator configuration change.
+
+Both consumers also check exact signal identity before parsing. Persistence admits only its
+registered audit/request contracts; Discord parses system health only on the exact health signal.
+Invalid payloads on admitted contracts still follow their existing rejection paths. These checks
+are defensive dispatch; the channel rename prevents the unintended native delivery itself.
+Provider ownership, dependencies, persistence policy, and topology remain unchanged.
+
+Native alignment was refreshed on September 15 against the nightly guide/API roots and the
+installed rc4. The [nightly Common API](https://nautechsystems.github.io/nautilus_docs/python-api-nightly/common.html)
+currently displays rc5, so an offline rc4 native-node reproduction governs this fix. Native signal
+pub/sub remains the existing transport; custom data, cache, and durable storage are not needed
+to repair routing. The regression test uses the production Watchlist response handler after
+fixture-supplied audit readiness, plus unfiltered native subscribers representing Dashboard,
+Discord, and persistence. Each receives exactly one membership response and no request.
+
+| Requirement | Native candidate | Installed-version evidence | Adapter/provider evidence | Semantic fit | Proposed owner | Decision | Rejection or extension rationale | Acceptance evidence |
+|---|---|---|---|---|---|---|---|---|
+| Keep membership requests distinct from audit facts and health | `DataActor.subscribe_signal` / `publish_signal` and `Signal.name` | rc4 delivers the old request to membership-prefix subscribers; the renamed request reaches only its intended subscriber in the routing fixture | No provider involved; reproduced without clients | Separate request/event names on native transport, plus defensive exact dispatch | Existing Dashboard, Watchlist, Discord and persistence actors | USE_NATIVE | Move the request outside the event prefix; retain the existing native bus and validated response | Unfiltered subscribers receive only the membership response; offline boot reaches readiness; malformed admitted events remain rejected; operator restart remains unverified |
+
+Other observed conditions remain separate:
+
+- IB error 420 denied SPY/AMEX and QQQ/ISLAND real-time bars in the first run; QQQ was explicitly
+  denied again in the later run. Neither stock received live observations in that later run.
+  Their historical responses ended 15 minutes before the requested endpoint. Historical data
+  availability therefore does not establish live API entitlements or freshness.
+- The first run's native adapter reported six timestamp parse failures on
+  `20260914-17:57:20` (expected `YYYYMMDD HH:MM:SS TZ`), plus a CL historical request interrupted
+  by notice 165 reporting an HMDS connection. These became empty native responses and degraded
+  historical readiness. The later run returned history for all seven instruments and completed
+  an ES Older page with 720 observations. The adapter parsing/notice issue is not fixed by this
+  dispatch change; the logs do not establish why the restart succeeded.
+- IB error 300 appeared immediately after rejected live subscriptions (missing ticker ID).
+  The ordering is consistent with cleanup of a rejected subscription; that cause is an inference.
+- Host resource health reported 6.36% free disk space, about 29.3 GB, and entered `WARNING`.
+  No files or resource thresholds were changed.
+
+For local review, restart with the existing run command and inspect fresh log timestamps.
+The membership request should no longer produce `invalid_operational_event`, `DISCORD_HEALTH_REJECTED`,
+or a consequent false global `FAILED`. Genuine provider and resource errors must remain visible.
+All verification of this repair uses offline fixtures; no IB, Discord, or PostgreSQL run was made.

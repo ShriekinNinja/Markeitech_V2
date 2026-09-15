@@ -223,7 +223,7 @@ The optional dashboard submits version-1 `DashboardDemand` values via the native
 `markeitech.dashboard.demand`. `DataAcquisitionActor` accepts only configured instrument/feed pairs,
 uses stable projection demand IDs, and defers native consumer attachment/release to its timer.
 Native observations arrive on DashboardActor's own callbacks. Watchlist supplies membership and
-answers `markeitech.watchlist.membership.request` after its existing startup audit is ready; it
+answers `markeitech.watchlist.request_membership` after its existing startup audit is ready; it
 does not relay raw data to the dashboard. Shared watchlist acquisition claims survive dashboard
 release. Five-second source callbacks still supply the latest price. The dashboard submits
 recent-completed history demands to `HistoricalEvidencePlannerActor`; the existing acquisition

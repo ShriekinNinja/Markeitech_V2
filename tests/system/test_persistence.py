@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from threading import Event
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -22,6 +23,7 @@ from markeitech.intelligence.messages import (
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STREAM_SIGNAL,
+    SYSTEM_HEALTH_SIGNAL,
     WATCHLIST_DEMAND_SIGNAL,
     WATCHLIST_LIFECYCLE_SIGNAL,
     WATCHLIST_MEMBERSHIP_SIGNAL,
@@ -36,6 +38,7 @@ from markeitech.system.messages import (
 from markeitech.system.persistence import (
     HealthEventRecord,
     OperationalEventRecord,
+    OperationalPersistenceActor,
     PersistenceWorker,
     _is_critical_record,
     _record_from_calendar_transition,
@@ -47,6 +50,29 @@ from markeitech.system.resource_contracts import (
     RuntimeResourceEvent,
     RuntimeResourceHealthEvent,
 )
+
+
+@pytest.mark.parametrize(
+    ("name", "rejected"),
+    [
+        ("markeitech.watchlist.membership.request", False),
+        ("markeitech.system.health.request", False),
+        (SYSTEM_HEALTH_SIGNAL, True),
+        (WATCHLIST_MEMBERSHIP_SIGNAL, True),
+    ],
+)
+def test_persistence_admits_exact_contracts_before_validation(name, rejected) -> None:
+    failures = []
+    actor = SimpleNamespace(
+        _subscribed_signals={SYSTEM_HEALTH_SIGNAL, WATCHLIST_MEMBERSHIP_SIGNAL},
+        _worker=object(),
+        _run_id=uuid4(),
+        _sequence=0,
+        _report_failure=lambda *args: failures.append(args),
+    )
+    OperationalPersistenceActor.on_signal(actor, Signal(name, "not-json", 1, 1))
+    assert bool(failures) is rejected
+    assert actor._sequence == int(rejected)
 
 
 def test_operational_event_record_validates_durable_identity_and_timestamps() -> None:
