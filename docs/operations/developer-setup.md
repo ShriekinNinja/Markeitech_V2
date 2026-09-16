@@ -146,17 +146,19 @@ test -e config/system.local.toml || \
 
 Both destination files are ignored by Git.
 
-The current loader accepts only system schema **26**. To migrate a schema-23/24 local profile:
+The current loader accepts only system schema **28**. To migrate a schema-23/24 local profile:
 
 1. Remove the complete `[acquisition]` section, which contained only native-consumer diagnostic settings.
 2. Remove the complete `[historical.probe]` section; keep `[historical]` and its production limits.
 3. Remove `[visual_debug_capture]` if present; the capture actor and renderer have been removed.
 4. Remove the entire `[metrics]` tree, including quote quality, session measurements, entity analysis, and all child tables.
-5. Set `schema_version = 26` and compare the result with the corresponding tracked profile.
+5. Set `schema_version = 28` and compare the result with the corresponding tracked profile.
 
-For a schema-25 profile, set `schema_version = 26` and optionally copy the documented
+For a schema-25/26/27 profile, set `schema_version = 28` and optionally copy the documented
 `[dashboard]` section from `system.example.toml`. Omission keeps it disabled. All dashboard
-settings are startup-only; see the [dashboard runbook](dashboard.md) for bounds and local review.
+settings are startup-only. An existing dashboard section must set `policy_version = 3`;
+`initial_history_minutes` defaults to 20. Candle capacity now counts one-minute candles,
+and the loader checks the initial-history budget against `[historical]`. See the [dashboard runbook](dashboard.md) for bounds and local review.
 
 Preserve machine-specific IB settings, paths, thresholds, and secret environment references.
 Local files are not migrated automatically. For profiles older than schema 23, also apply the

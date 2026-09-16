@@ -831,6 +831,9 @@ class OperationalPersistenceActor(DataActor):
         )
 
     def on_signal(self, signal: Signal) -> None:
+        # Native subscriptions match prefixes; admit only our exact audit contracts.
+        if signal.name not in self._subscribed_signals:
+            return
         if signal.name == PERSISTENCE_READY_REQUEST_SIGNAL:
             try:
                 PersistenceReadyRequest.from_signal_value(signal.value)

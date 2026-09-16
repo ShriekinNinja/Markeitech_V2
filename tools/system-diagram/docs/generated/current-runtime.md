@@ -69,11 +69,14 @@ Profile-specific implemented and enabled topology for the tracked seven-instrume
 | `edge.calendar-transition-planner` | `actor.session-state` | `actor.historical-planner` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
 | `edge.dashboard-bars` | `component.data-engine` | `actor.dashboard` | native_observation | `contract.native-bar` | nautilus_native_data | yes | always | unknown |
 | `edge.dashboard-demand` | `actor.dashboard` | `actor.data-acquisition` | command | `contract.dashboard-demand` | nautilus_signal | yes | always | unknown |
+| `edge.dashboard-history-demand` | `actor.dashboard` | `actor.historical-planner` | command | `contract.historical-demand` | nautilus_signal | yes | always | unknown |
+| `edge.dashboard-history-lifecycle` | `actor.data-acquisition` | `actor.dashboard` | event | `contract.historical-execution` | nautilus_signal | yes | always | unknown |
 | `edge.dashboard-http` | `worker.dashboard-server` | `projection.dashboard-ui` | projection | `contract.dashboard-http` | external_http | yes | always | unknown |
 | `edge.dashboard-lifecycle` | `actor.data-acquisition` | `actor.dashboard` | event | `contract.acquisition-stream` | nautilus_signal | yes | always | unknown |
 | `edge.dashboard-mailbox` | `actor.dashboard` | `worker.dashboard-server` | projection | `contract.dashboard-projection` | thread_queue | yes | always | unknown |
 | `edge.dashboard-membership` | `actor.watchlist` | `actor.dashboard` | response | `contract.watchlist-membership` | nautilus_signal | yes | always | unknown |
 | `edge.dashboard-membership-request` | `actor.dashboard` | `actor.watchlist` | query | `contract.dashboard-membership-request` | nautilus_signal | yes | always | unknown |
+| `edge.dashboard-minute-candles` | `actor.data-acquisition` | `actor.dashboard` | event | `contract.minute-candles` | nautilus_custom_data | yes | always | unknown |
 | `edge.dashboard-native-attachment` | `actor.data-acquisition` | `actor.dashboard` | subscription_command | `contract.dashboard-native-attachment` | method_call | yes | always | at_most_once_attempt |
 | `edge.dashboard-quotes` | `component.data-engine` | `actor.dashboard` | native_observation | `contract.native-quote` | nautilus_native_data | yes | always | unknown |
 | `edge.dashboard-ready-discord` | `actor.dashboard` | `actor.discord-health` | event | `contract.dashboard-ready` | nautilus_signal | yes | always | unknown |

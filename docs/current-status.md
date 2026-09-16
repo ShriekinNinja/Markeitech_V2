@@ -93,7 +93,7 @@ display of native observations; it adds no analytical owner, execution capabilit
 
 ## Connected Operational Boot Profile
 
-`config/system.operational.toml` uses a schema-26 zero-instrument baseline with ten operational
+`config/system.operational.toml` uses a schema-28 zero-instrument baseline with ten operational
 actors: System Control, Session State, Evidence Health, Historical Evidence Planner, Data
 Acquisition, Discord Health, Runtime Resources, Runtime Resource Health, and Operational
 Persistence, and Dashboard. IB remains configured; the watchlist, probes, analytics, and visual capture are
@@ -117,7 +117,7 @@ contracts remain.
 The API registry selects 98 public objects; the diagram source census recognizes eleven actor
 registrations. Offline checks do not establish connected acceptance.
 
-System configuration is now schema 26. Remove the complete `[acquisition]` and
+System configuration is now schema 28. Remove the complete `[acquisition]` and
 `[historical.probe]`, `[visual_debug_capture]`, `[metrics.session_measurements]`, and
 `[metrics.entity_analysis]` sections, plus the entire `[metrics]` tree (including
 `[metrics.quote_quality]`), from older local profiles, then set
@@ -128,14 +128,17 @@ not migrated automatically. See [developer setup](operations/developer-setup.md)
 ## Dashboard POC (Local Review)
 
 The optional `DashboardActor`, actor-owned `DashboardServer`, and `DashboardUI` display enabled
-watchlist membership, latest configured quotes and five-second closes, and one selected native
-candlestick series. Dashboard demand and native callback attachment/release are owned by
+watchlist membership, latest configured quotes and five-second closes, and one selected
+one-minute candlestick series with a forming candle. Acquisition derives the chart from source-time
+five-second bars and merges bounded native backfill through the existing historical planner/executor. Dashboard demand and native callback attachment/release are owned by
 `DataAcquisitionActor`. HTTP/SSE is loopback-only, history is bounded and transient, and the server
 starts/stops with its actor. An accepting HTTP listener publishes a one-time ready event; the
 existing Discord operational worker sends its loopback address through the operational-events
-webhook. System schema 26 adds optional versioned `[dashboard]` configuration;
+webhook. System schema 28 uses dashboard policy 3 with bounded initial history, Older pages and UTC datetime selection;
 omission disables it. See [dashboard setup and acceptance](operations/dashboard.md). The POC is
-uncommitted for local review; provider-connected acceptance is pending.
+uncommitted for local review. An authorized isolated ES live diagnostic verified history, minute
+constituents, forming HTTP/SSE updates and browser reload; full production startup/session acceptance
+remains pending. Other timeframes and chart navigation requests are not implemented in this increment.
 
 ## Implemented Foundation
 

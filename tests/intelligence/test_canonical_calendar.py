@@ -203,8 +203,8 @@ def test_watchlist_owns_concrete_instrument_calendar_bindings() -> None:
         item.instrument_id: item.calendar_id for item in config.watchlist.members
     }
 
-    assert mappings["ESU6.CME"] == "cme_equity"
-    assert mappings["NQU6.CME"] == "cme_equity"
+    assert mappings["ESZ6.CME"] == "cme_equity"
+    assert mappings["NQZ6.CME"] == "cme_equity"
     assert mappings["CLV6.NYMEX"] == "cme_energy"
     correction = canonical_calendar("cme_equity").definition.corrections[0]
     assert correction.product_roots == ("ES", "NQ", "YM")

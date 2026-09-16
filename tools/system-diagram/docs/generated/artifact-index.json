@@ -2,10 +2,10 @@
   "authority": "generated documentation only; canonical content is the validated TOML manifest",
   "checkout_commit": "a382f2e0636cdb3148b451e3e0e8239a684438e5",
   "generator_contract_version": 1,
-  "generator_sha256": "633ee818cb72c7918db982888f5e6ceda31729f4315470b42681746b73436d65",
+  "generator_sha256": "ad5a1788b5250271ed39f7e1440156a5d862e28a284e21a7e8553ad84174aaab",
   "generator_version": "0.1.0",
   "manifest": "markeitech-v3-system-dataflow",
-  "manifest_sha256": "946cf8e6b57393aa22193b11fc0b48b6e0a23c117e042474665d5154bb589ada",
+  "manifest_sha256": "e6a52e7319bfcc51d03712a20a6727618827dd51f75c0dd4201bb7b1f332da69",
   "theme": {
     "id": "style.theme",
     "label": "Markeitech polished dark theme v2"
@@ -37,7 +37,7 @@
     },
     {
       "capabilities": 5,
-      "edges": 38,
+      "edges": 41,
       "files": [
         "current-runtime.dot",
         "current-runtime.md",
@@ -46,6 +46,18 @@
       ],
       "id": "view.current-runtime",
       "nodes": 25
+    },
+    {
+      "capabilities": 2,
+      "edges": 10,
+      "files": [
+        "dashboard-history.dot",
+        "dashboard-history.md",
+        "dashboard-history.png",
+        "dashboard-history.svg"
+      ],
+      "id": "view.dashboard-history",
+      "nodes": 7
     },
     {
       "capabilities": 0,

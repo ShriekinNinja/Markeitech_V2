@@ -6,7 +6,8 @@ from uuid import UUID
 
 DASHBOARD_DEMAND_SIGNAL = "markeitech.dashboard.demand"
 DASHBOARD_READY_SIGNAL = "markeitech.dashboard.ready"
-WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL = "markeitech.watchlist.membership.request"
+# Requests must not share the membership-event prefix: native signals match prefixes.
+WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL = "markeitech.watchlist.request_membership"
 
 
 @dataclass(frozen=True, slots=True)

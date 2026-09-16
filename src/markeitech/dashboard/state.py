@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from collections import deque
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from decimal import Decimal, InvalidOperation
 
+from markeitech.acquisition.minute_candles import MinuteCandleUpdate
 from markeitech.dashboard.config import DashboardConfig
 
 
@@ -19,16 +20,19 @@ class _Instrument:
     bar_ts_event_ns: int | None = None
     quote_ts_init_ns: int | None = None
     bar_ts_init_ns: int | None = None
+    live_bar_ts_event_ns: int | None = None
     candles: deque = field(default_factory=deque)
     feed_states: dict[str, str] = field(default_factory=dict)
     rejected_bars: int = 0
+    candle_conflicts: int = 0
+    candle_rejected_inputs: int = 0
 
 
 class DashboardState:
     """Actor-thread display state, retaining native identities and decimal strings.
 
-    Completed bars are immutable within this runtime. Duplicate or late bars do
-    not overwrite a candle. No aggregation, gap filling, or durable storage occurs.
+    Source bars supply the latest price. Acquisition-owned minute projections
+    supply the chart. No aggregation, gap filling, or durable storage occurs here.
     """
 
     def __init__(self, config: DashboardConfig, market_data_type: str = "unknown") -> None:
@@ -82,21 +86,43 @@ class DashboardState:
             valid = valid and prices["volume"] >= 0
         except InvalidOperation:
             valid = False
-        if not valid or (item.bar_ts_event_ns is not None and bar.ts_event <= item.bar_ts_event_ns):
+        if not valid or (
+            item.live_bar_ts_event_ns is not None and bar.ts_event <= item.live_bar_ts_event_ns
+        ):
             item.rejected_bars += 1
             self.sequence += 1
             return
-        item.candles.append(
-            {
-                **values,
-                "ts_event_ns": str(bar.ts_event),
-                "ts_init_ns": str(bar.ts_init),
-                "time": bar.ts_event // 1_000_000_000,
-            }
-        )
-        item.last = values["close"]
-        item.bar_ts_event_ns, item.bar_ts_init_ns = bar.ts_event, bar.ts_init
+        item.live_bar_ts_event_ns = bar.ts_event
+        if item.bar_ts_event_ns is None or bar.ts_event >= item.bar_ts_event_ns:
+            item.last = values["close"]
+            item.bar_ts_event_ns, item.bar_ts_init_ns = bar.ts_event, bar.ts_init
         item.feed_states["bars"] = "OBSERVED"
+        self.sequence += 1
+
+    def observe_candles(self, update: MinuteCandleUpdate) -> None:
+        """Replace a detached chart projection produced by acquisition, including repairs."""
+        item = self.instruments.get(update.instrument_id)
+        if (
+            item is None
+            or "watchlist_last" not in item.capabilities
+            or update.source != "DATA-ACQUISITION"
+            or update.schema_version != 1
+            or update.provider != "IB"
+            or update.selector != "5-SECOND-LAST-EXTERNAL"
+        ):
+            return
+        item.candles = deque(
+            (asdict(candle) for candle in update.candles[-self.config.candles_per_instrument :]),
+            maxlen=self.config.candles_per_instrument,
+        )
+        item.candle_conflicts = update.conflicts
+        item.candle_rejected_inputs = update.rejected_inputs
+        if update.candles and (
+            item.bar_ts_event_ns is None or update.ts_event > item.bar_ts_event_ns
+        ):
+            item.last = update.candles[-1].close
+            item.bar_ts_event_ns = update.ts_event
+            item.bar_ts_init_ns = int(update.candles[-1].ts_init_ns)
         self.sequence += 1
 
     def feed_state(self, instrument_id: str, feed_kind: str, state: str) -> None:
@@ -122,20 +148,24 @@ class DashboardState:
                     "bar_ts_init_ns": _ns(item.bar_ts_init_ns),
                     "feed_states": dict(item.feed_states),
                     "rejected_bars": item.rejected_bars,
+                    "candle_conflicts": item.candle_conflicts,
+                    "candle_rejected_inputs": item.candle_rejected_inputs,
                 }
             )
             candles[item.instrument_id] = list(item.candles)
         return deepcopy(
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "sequence": self.sequence,
                 "status": self.status,
                 "provider": "IB",
                 "requested_market_data_type": self.market_data_type,
                 "received_market_data_type": "unknown",
-                "bar_selector": "5-SECOND-LAST-EXTERNAL",
+                "bar_selector": "1-MINUTE-LAST-DERIVED",
+                "source_bar_selector": "5-SECOND-LAST-EXTERNAL",
+                "timeframe": "1m",
                 "last_source": "5s_bar_close",
-                "timestamp_basis": "provider_bar_event_time",
+                "timestamp_basis": "UTC_minute_open_from_provider_5s_close",
                 "maximum_candles": self.config.candles_per_instrument,
                 "instruments": rows,
                 "candles": candles,

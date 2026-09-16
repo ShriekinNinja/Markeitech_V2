@@ -56,7 +56,7 @@ def test_minimal_calendar_config_has_operational_calendar_surface() -> None:
     )
     assert actor._calendars["cme_equity"].evaluate(maintenance_break_ns).market_state == "OPEN"
 
-    assert config.instrument_ids == ("ESU6.CME",)
+    assert config.instrument_ids == ("ESZ6.CME",)
     assert config.watchlist.members[0].capabilities == ("watchlist_last",)
     assert len(config.sessions.calendars) == 1
     assert len(config.sessions.available_calendars) == 5

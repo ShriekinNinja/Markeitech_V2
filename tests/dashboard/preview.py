@@ -14,6 +14,7 @@ from nautilus_trader.common import Environment
 from nautilus_trader.live import LiveNode
 from nautilus_trader.model import Bar, BarType, InstrumentId, Price, Quantity, QuoteTick, TraderId
 
+from markeitech.acquisition.minute_candles import _MinuteCandleBook
 from markeitech.dashboard.actor import DashboardActor, DashboardActorConfig
 from markeitech.dashboard.config import DashboardConfig
 from markeitech.dashboard.state import DashboardState
@@ -49,11 +50,19 @@ class _PreviewActor(DashboardActor):
                 for key in _BASES
             ]
         )
+        self._preview_book = _MinuteCandleBook(set(_BASES), self._policy.candles_per_instrument)
         self._sample = 0
         end = int(time.time()) // 5 * 5
         for stamp in range(end - 80 * 5, end, 5):
             self._emit(stamp)
         self.clock.set_timer_ns("preview-synthetic-data", 5_000_000_000, callback=self._tick)
+
+    def on_bar(self, bar) -> None:  # noqa: ANN001
+        self._display.observe_bar(bar)
+        self._preview_book.observe(bar)
+        self._display.observe_candles(
+            self._preview_book.snapshot(str(bar.bar_type.instrument_id), bar.ts_init)
+        )
 
     def _tick(self, _event) -> None:  # noqa: ANN001
         self._emit(int(time.time()) // 5 * 5)

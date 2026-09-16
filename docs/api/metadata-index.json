@@ -5,38 +5,40 @@
     "components": [
       {
         "boundary": "boundary.system",
-        "definition_line": 41,
+        "definition_line": 53,
         "id": "actor.dashboard",
         "implementation_ref": "src/markeitech/dashboard/actor.py:DashboardActor",
         "kind": "markeitech_actor",
         "label": "Dashboard",
         "object_path": "markeitech.dashboard.actor.DashboardActor",
-        "record_sha256": "37acf15bd7be3ea521128dc89a4ab2b548e0cd780ca46b18aa95ccc8367b2aad",
+        "record_sha256": "9b72c51eeadfe16ddb85eda7c1f979650ef7ea1cc353ba3b4ef7bfb062d81c70",
         "responsibilities": [
           "Request configured display feeds through acquisition and receive native callbacks.",
           "Retain bounded transient display state and own local web-server startup and shutdown.",
+          "Request startup and operator history; project acquisition-owned candles.",
           "Announce the accepting dashboard address for operational Discord projection."
         ],
         "source": "src/markeitech/dashboard/actor.py",
-        "source_sha256": "ba197c85fd0a874af44d231fec8de40807ff07902f2f1be48c76bb9e4e53d656"
+        "source_sha256": "317b552ec591fe819f67aea9be144bdb2bc63fe96300a1570127194b1743871f"
       },
       {
         "boundary": "boundary.acquisition",
-        "definition_line": 126,
+        "definition_line": 132,
         "id": "actor.data-acquisition",
         "implementation_ref": "src/markeitech/system/acquisition.py:DataAcquisitionActor",
         "kind": "markeitech_actor",
         "label": "Data Acquisition",
         "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
-        "record_sha256": "183b0f392c60c9f021be42318e6605a53b3c49b3ab40a266a2f29469f723a073",
+        "record_sha256": "3e100e7f3739c460effec79783639d15cc613131d64dff0fc56b5ea98dffe1b2",
         "responsibilities": [
           "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
           "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
           "Publish acquisition lifecycle, historical batches, and consumer readiness.",
-          "Admit dashboard display demand and execute its native callback attachment and release."
+          "Admit dashboard display demand and execute its native callback attachment and release.",
+          "Derive bounded UTC minute candles and requested history pages from five-second inputs."
         ],
         "source": "src/markeitech/system/acquisition.py",
-        "source_sha256": "2a5f9176acafe5636bd8e2e8f7aa1bb983d245570b8d060f31cee860185f5176"
+        "source_sha256": "16adcbda65fa50599f42739248aba8a1fddfba76e464b8eaff1d8e05739c2ebe"
       },
       {
         "boundary": "boundary.system",
@@ -46,12 +48,12 @@
         "kind": "markeitech_actor",
         "label": "Discord Health Projection",
         "object_path": "markeitech.system.discord.DiscordHealthActor",
-        "record_sha256": "905c45bc3e13cd536fbb69eddc6a68396cded58728cab3661254e3a8868c2d51",
+        "record_sha256": "e9acf575d813e661a5d6362073dd5a6216b42b00071f0d55e15a9776c07ddb62",
         "responsibilities": [
           "Project system health, resource health, operational readiness and dashboard availability through the configured Discord delivery workers."
         ],
         "source": "src/markeitech/system/discord.py",
-        "source_sha256": "8eae75fe8b6a6951441c271574029fe9f45fd20610e533cf137978f385929c7c"
+        "source_sha256": "c4df58e1773554aec156db7d1bf535fadd8ecc3fb60b8b2d8bdc9c626f20b03b"
       },
       {
         "boundary": "boundary.intelligence",
@@ -72,20 +74,20 @@
       },
       {
         "boundary": "boundary.intelligence",
-        "definition_line": 218,
+        "definition_line": 219,
         "id": "actor.historical-planner",
         "implementation_ref": "src/markeitech/system/historical_planner.py:HistoricalEvidencePlannerActor",
         "kind": "markeitech_actor",
         "label": "Historical Evidence Planner",
         "object_path": "markeitech.system.historical_planner.HistoricalEvidencePlannerActor",
-        "record_sha256": "ef946af8574d6d206702588e66cacd2bf1f6bcb0e942249b5148017485eff0da",
+        "record_sha256": "44ff83fe25d6ac6761c710d12397315caf1c32742a266c438783e890537b00b1",
         "responsibilities": [
           "Resolve semantic historical evidence demands into exact UTC request plans.",
           "Use immutable canonical-calendar projections for calendar-relative windows.",
           "Publish exact plans without calling providers or owning provider pacing."
         ],
         "source": "src/markeitech/system/historical_planner.py",
-        "source_sha256": "6454cee2a892ebd1a2c675a7c4ad45463fe2a2d942a1427b9c8f59be65940bad"
+        "source_sha256": "7b0024f7f3fb663b1c8da04bfe12e6d61901a8c144d5daddcfc9f2361f883c41"
       },
       {
         "boundary": "boundary.system",
@@ -95,10 +97,10 @@
         "kind": "markeitech_actor",
         "label": "Operational Persistence",
         "object_path": "markeitech.system.persistence.OperationalPersistenceActor",
-        "record_sha256": "daf77506dd9e6471cee46eb0198e0ffe847cb1d690cf64bbd32d62b30359af03",
+        "record_sha256": "322231748c98946fee0bb57f2ba877c7dcfa6e6ee1cc145a7e2ef7e28de2c9e7",
         "responsibilities": [],
         "source": "src/markeitech/system/persistence.py",
-        "source_sha256": "dd18d798090a59007d881eb8432d9cc0b9acf8083298bc65d138894a446b3f6a"
+        "source_sha256": "d1678f99daa4904f50a97396ab454663471be4d5eaa9dc05cac181ce26fda9da"
       },
       {
         "boundary": "boundary.system",
@@ -206,7 +208,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "d6724842530b8305f045a0683164ddeb55cd11a819e1119fcf384ea6bb90bba6"
+    "source_snapshot_sha256": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1272,7 +1274,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.SystemConfig",
-        "definition_line": 290,
+        "definition_line": 286,
         "exposed": "markeitech.system.SystemConfig",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1294,7 +1296,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.load_system_config",
-        "definition_line": 312,
+        "definition_line": 308,
         "exposed": "markeitech.system.load_system_config",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1328,8 +1330,8 @@
   "schema_id": "markeitech-api-metadata-index",
   "schema_version": 2,
   "source_snapshot": {
-    "file_count": 74,
-    "input_signature": "d6724842530b8305f045a0683164ddeb55cd11a819e1119fcf384ea6bb90bba6"
+    "file_count": 76,
+    "input_signature": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e"
   },
-  "source_snapshot_sha256": "d6724842530b8305f045a0683164ddeb55cd11a819e1119fcf384ea6bb90bba6"
+  "source_snapshot_sha256": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e"
 }

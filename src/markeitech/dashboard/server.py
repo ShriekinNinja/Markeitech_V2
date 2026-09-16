@@ -3,9 +3,11 @@ from __future__ import annotations
 import asyncio
 import json
 import socket
+from dataclasses import asdict
 from pathlib import Path
 from queue import Empty, Full, Queue
 from threading import Event, Thread
+from time import monotonic, time
 from uuid import uuid4
 
 import uvicorn
@@ -13,6 +15,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from markeitech.acquisition.dashboard_history import DashboardHistoryRequest
 from markeitech.dashboard.config import DashboardConfig
 
 _STATIC = Path(__file__).parent / "static"
@@ -33,7 +36,8 @@ class DashboardServer:
     """Serve loopback HTTP/SSE in one actor-owned thread with a one-snapshot mailbox.
 
     The web thread receives detached projections only. It cannot reach native
-    actors, the cache, provider clients, configuration secrets, or acquisition.
+    actors, the cache, provider clients or configuration secrets. A bounded request
+    mailbox carries validated history intents back to DashboardActor.
     Slow clients receive a new snapshot after reconnect; raw tick delivery is not promised.
     """
 
@@ -43,6 +47,12 @@ class DashboardServer:
         self._latest = initial
         self._epoch = str(uuid4())
         self._clients = 0
+        self._history_requests: Queue[tuple[float, DashboardHistoryRequest]] = Queue(
+            config.maximum_history_requests
+        )
+        self._history_results: Queue[dict] = Queue(config.maximum_history_requests)
+        self._history_jobs: dict[str, tuple[float, dict]] = {}
+        self._history_admissions = 0
         self._thread: Thread | None = None
         self._server: uvicorn.Server | None = None
         self.stopping = Event()
@@ -86,7 +96,45 @@ class DashboardServer:
             "epoch": self._epoch,
             "selected": selected,
             "candles": snapshot["candles"].get(selected, []),
+            "history_page_minutes": self.config.history_page_minutes,
+            "history_timeout_seconds": self.config.history_request_timeout_seconds,
         }
+
+    def take_history_requests(self) -> tuple[DashboardHistoryRequest, ...]:
+        """Drain bounded operator intents on the actor thread without blocking."""
+        requests = []
+        for _ in range(self.config.maximum_history_requests):
+            try:
+                deadline, command = self._history_requests.get_nowait()
+                if monotonic() < deadline:
+                    requests.append(command)
+            except Empty:
+                break
+        return tuple(requests)
+
+    def finish_history(self, result: dict) -> None:
+        """Offer a detached terminal result; an unconsumed result expires in the web worker."""
+        try:
+            self._history_results.put_nowait(result)
+        except Full:
+            # Never block the market-data thread. The HTTP job has a finite deadline.
+            return
+
+    def _read_history(self) -> None:
+        now = monotonic()
+        self._history_jobs = {
+            key: value
+            for key, value in self._history_jobs.items()
+            if now - value[0] < self.config.history_request_timeout_seconds
+        }
+        for _ in range(self.config.maximum_history_requests):
+            try:
+                result = self._history_results.get_nowait()
+            except Empty:
+                break
+            if result["request_id"] in self._history_jobs:
+                started, original = self._history_jobs[result["request_id"]]
+                self._history_jobs[result["request_id"]] = (started, {**original, **result})
 
     def _application(self) -> FastAPI:
         app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -118,6 +166,75 @@ class DashboardServer:
         async def snapshot(instrument_id: str | None = None) -> dict:
             return self._view(instrument_id)
 
+        @app.post("/api/history", status_code=202)
+        async def history(request: Request) -> dict:
+            if request.headers.get("content-type", "").split(";")[0] != "application/json":
+                raise HTTPException(415, "JSON history request required")
+            body = bytearray()
+            async for chunk in request.stream():
+                body.extend(chunk)
+                if len(body) > 1024:
+                    raise HTTPException(413, "History request is too large")
+            try:
+                payload = json.loads(body)
+                if not isinstance(payload, dict) or payload.keys() != {
+                    "instrument_id",
+                    "start",
+                    "end",
+                }:
+                    raise ValueError("invalid fields")
+                command = DashboardHistoryRequest(str(uuid4()), **payload)
+            except (ValueError, TypeError):
+                raise HTTPException(
+                    422, "Use an instrument and UTC minute start/end bounds"
+                ) from None
+            view = self._view(command.instrument_id)
+            row = next(
+                r for r in view["instruments"] if r["instrument_id"] == command.instrument_id
+            )
+            if "watchlist_last" not in row["capabilities"]:
+                raise HTTPException(422, "Instrument has no configured bar feed")
+            if command.end > int(time()) // 60 * 60:
+                raise HTTPException(422, "History must end at a completed UTC minute")
+            if command.end - command.start > self.config.history_page_minutes * 60:
+                raise HTTPException(422, "History page exceeds the configured duration")
+            self._read_history()
+            for _, job in self._history_jobs.values():
+                if all(job.get(key) == value for key, value in payload.items()):
+                    if job["status"] != "PENDING":
+                        job["delivered"] = True
+                    return job
+            # Completed pages need not occupy admission slots once returned.
+            for key in tuple(self._history_jobs):
+                if self._history_jobs[key][1].get("delivered"):
+                    del self._history_jobs[key]
+            if len(self._history_jobs) >= self.config.maximum_history_requests:
+                raise HTTPException(429, "History request limit reached")
+            if self._history_admissions >= self.config.maximum_history_requests_per_session:
+                raise HTTPException(
+                    429, "History session budget reached; restart the system to reset"
+                )
+            try:
+                self._history_requests.put_nowait(
+                    (monotonic() + self.config.history_request_timeout_seconds, command)
+                )
+            except Full:
+                raise HTTPException(429, "History request queue is full") from None
+            result = {**asdict(command), "status": "PENDING"}
+            self._history_jobs[command.request_id] = (monotonic(), result)
+            self._history_admissions += 1
+            return result
+
+        @app.get("/api/history/{request_id}")
+        async def history_result(request_id: str) -> dict:
+            self._read_history()
+            job = self._history_jobs.get(request_id)
+            if job is None:
+                raise HTTPException(404, "History request expired or is unknown")
+            if job[1]["status"] != "PENDING":
+                job[1]["delivered"] = True
+            return job[1]
+
         @app.get("/api/events")
         async def events(request: Request, instrument_id: str | None = None) -> StreamingResponse:
             self._view(instrument_id)
@@ -128,7 +245,7 @@ class DashboardServer:
             async def stream():  # noqa: ANN202
                 sequence = -1
                 previous_selected = None
-                last_time = None
+                previous_candles = {}
                 try:
                     while not self.stopping.is_set() and not await request.is_disconnected():
                         view = self._view(instrument_id)
@@ -137,12 +254,13 @@ class DashboardServer:
                             candles = view["candles"]
                             view["reset"] = reset
                             view["window_start"] = candles[0]["time"] if candles else None
-                            if not reset and last_time is not None:
+                            if not reset:
                                 view["candles"] = [
-                                    bar for bar in candles if bar["time"] > last_time
+                                    bar
+                                    for bar in candles
+                                    if previous_candles.get(bar["time"]) != bar
                                 ]
-                            if candles:
-                                last_time = candles[-1]["time"]
+                            previous_candles = {bar["time"]: bar for bar in candles}
                             sequence, previous_selected = view["sequence"], view["selected"]
                             payload = json.dumps(view, separators=(",", ":"))
                             yield f"event: update\ndata: {payload}\n\n"
