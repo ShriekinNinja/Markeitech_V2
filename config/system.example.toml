@@ -191,13 +191,13 @@ enabled = true
 consumer_retry_interval_ms = 1000
 
 [[watchlist.members]]
-instrument_id = "ESU6.CME"
+instrument_id = "ESZ6.CME"
 calendar_id = "cme_equity"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 
 [[watchlist.members]]
-instrument_id = "NQU6.CME"
+instrument_id = "NQZ6.CME"
 calendar_id = "cme_equity"
 owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]

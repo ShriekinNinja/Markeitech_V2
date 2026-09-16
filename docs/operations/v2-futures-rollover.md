@@ -8,14 +8,18 @@ Markeitech uses explicit dated futures contracts. It does not silently substitut
 contracts. This procedure keeps provider identity, historical dependencies, analytical lineage,
 and operator expectations aligned when the configured contract changes.
 
-The current tracked baseline uses:
+The current tracked example selects:
 
-- `ESU6.CME`, `NQU6.CME`, and `YMU6.CBOT`: September 2026 equity-index futures; and
+- `ESZ6.CME` and `NQZ6.CME`: December 2026 equity-index futures; and
 - `CLV6.NYMEX`: October 2026 crude-oil futures.
 
-Month code `U` means September; month code `V` means October. Read each configured symbol's month
-code directly rather than inferring its expiry month from another instrument or from a watchlist
-label.
+Month code `U` means September, `V` means October, and `Z` means December. Read each configured
+symbol's month code directly rather than inferring its expiry month from another instrument or
+from a watchlist label.
+
+Markeitect requested the ES/NQ December selection and confirmed the runtime stopped before
+the configuration changed. Offline configuration validation passes; connected December-contract
+resolution, live delivery, and historical coverage have not been recorded as accepted.
 
 ## Ownership And Gate
 

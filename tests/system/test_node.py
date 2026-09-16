@@ -28,8 +28,8 @@ def test_maps_provider_boundary_to_installed_ib_config() -> None:
     assert provider_config.symbology_method == SymbologyMethod.SIMPLIFIED
     assert provider_config.convert_exchange_to_mic_venue is False
     assert {str(instrument_id) for instrument_id in provider_config.load_ids} == {
-        "ESU6.CME",
-        "NQU6.CME",
+        "ESZ6.CME",
+        "NQZ6.CME",
         "CLV6.NYMEX",
         "SPY.ARCA",
         "QQQ.NASDAQ",

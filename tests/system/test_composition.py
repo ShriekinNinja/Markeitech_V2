@@ -93,7 +93,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
     assert "instrument_calendars" not in acquisition.config.config
     assert "calendars" not in acquisition.config.config
     planner = next(item for item in plan if item.key == "historical_evidence_planner")
-    assert planner.config.config["instrument_calendars"]["ESU6.CME"] == "cme_equity"
+    assert planner.config.config["instrument_calendars"]["ESZ6.CME"] == "cme_equity"
     assert set(planner.config.config["expected_calendar_digests"]) == {
         "cboe_spxw",
         "us_equities",
@@ -116,7 +116,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
             "instrument_id": instrument_id,
             "calendar_id": (
                 "cme_equity"
-                if instrument_id in {"ESU6.CME", "NQU6.CME"}
+                if instrument_id in {"ESZ6.CME", "NQZ6.CME"}
                 else "cme_energy"
                 if instrument_id == "CLV6.NYMEX"
                 else "us_equities"
@@ -129,8 +129,8 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
             ),
         }
         for instrument_id in [
-            "ESU6.CME",
-            "NQU6.CME",
+            "ESZ6.CME",
+            "NQZ6.CME",
             "CLV6.NYMEX",
             "SPY.ARCA",
             "QQQ.NASDAQ",
