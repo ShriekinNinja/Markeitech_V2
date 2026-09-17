@@ -157,7 +157,7 @@ class DashboardActor(DataActor):
                             event.instrument_id == command.instrument_id
                             and event.start_ns == command.start * 1_000_000_000
                             and event.end_ns == command.end * 1_000_000_000 - 1
-                            and event.selector == "5-SECOND-LAST-EXTERNAL"
+                            and event.selector == command.selector
                         ):
                             self._page_requests[consumer_id] = (command, started, True)
                             if event.state in {"FAILED", "REJECTED", "EXPIRED", "CANCELED"}:
@@ -204,9 +204,7 @@ class DashboardActor(DataActor):
     def _queue_history(
         self, instrument: str, as_of_ns: int, source_count: int | None = None
     ) -> None:
-        count = source_count or 12 * (
-            min(self._policy.initial_history_minutes, self._policy.candles_per_instrument) + 1
-        )
+        count = source_count or self._policy.source_history_count
         self._history_demands[instrument] = HistoricalDependencyDemandEvent(
             demand_id=f"dashboard:{self._server.epoch}:{instrument}:history",
             consumer_id="DASHBOARD",
@@ -237,10 +235,11 @@ class DashboardActor(DataActor):
                     payload.source == "DATA-ACQUISITION"
                     and payload.schema_version == 1
                     and payload.instrument_id == command.instrument_id
+                    and payload.timeframe == command.timeframe
                     and (payload.start, payload.end) == (command.start, command.end)
                 ):
                     self._page_requests.pop(consumer_id)
-                    self._server.finish_history({**asdict(payload), "status": "COMPLETED"})
+                    self._server.finish_history(asdict(payload))
 
     def _finish_page(self, command: DashboardHistoryRequest, status: str) -> None:
         self._page_requests.pop(command.consumer_id, None)
@@ -262,7 +261,7 @@ class DashboardActor(DataActor):
             if (
                 item is None
                 or "watchlist_last" not in item.capabilities
-                or command.end - command.start > self._policy.history_page_minutes * 60
+                or command.demand().maximum_observations > self._policy.history_page_candles
                 or command.end * 1_000_000_000 > self.clock.timestamp_ns()
                 or len(self._page_requests) >= self._policy.maximum_history_requests
             ):
