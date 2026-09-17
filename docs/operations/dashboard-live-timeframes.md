@@ -141,6 +141,27 @@ failure and explicitly excluded system-wide reconnect work from this dashboard i
 as a known external dependency; do not claim reconnect acceptance or hide failed-provider history
 as evidence of a genuinely empty market window.
 
-Remaining order: 4h/daily with provider/session alignment; bounded history-cache reuse; final
-dashboard regression/operator review; documentation and the closing PR. Source observations,
-local configuration, logs and screenshots are not included in commits.
+The next implementation order is pending Markeitect review. The 4h/daily work is deferred
+as recorded below. Source observations, local configuration, logs and screenshots are not
+included in commits.
+
+
+## Deferred 4h / 1d debt — 2026-09-17
+
+At Markeitect's request, the uncommitted 4h increment was reverted to the reviewed committed
+baseline. Supported timeframes remain 1m/5m/15m/30m/1h, dashboard policy remains 4, and the
+example historical observation budget remains 20000. No 4h/1d implementation is included.
+
+- **4h:** deferred native selected-history support and five-second forming updates. Revisit
+  provider candle boundaries, sufficient bounded source warmup/retention, and resource budgets.
+- **1d:** deferred exchange trading-date/session-aware candles using the existing canonical
+  session calendar. Daily candles must not be treated as fixed midnight-to-midnight UTC buckets.
+- **Reference:** Markeitect confirmed that the supplied TWS extended-hours screenshots use UTC.
+  This establishes display timezone, not API grouping or OHLC parity; live comparison remains due.
+- **Separate known dashboard defect:** history admission slots can remain occupied by abandoned,
+  unread completed requests, blocking other selections. The committed implementation also has a
+  lifetime request budget. Neither behavior was changed by this rollback; cleanup/scheduling and
+  metadata retirement need a subsequent scoped fix. System-wide reconnect recovery stays excluded.
+
+Further implementation is paused until Markeitect continues the task. This debt note remains
+uncommitted for local review.
