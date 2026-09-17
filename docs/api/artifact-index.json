@@ -27,12 +27,12 @@
     },
     {
       "path": "architecture-components/index.html",
-      "sha256": "54ec332711a874e0b526125c89babe9f430d680a5ec136544c56919147ae8967",
-      "size_bytes": 48586
+      "sha256": "9a232b4318b8dcb97a1dff9357820624ac2d3c39ccb21676a80ea646b4ee4832",
+      "size_bytes": 48582
     },
     {
       "path": "architecture-components-index.json",
-      "sha256": "23291f959fd28f0eeccf5006d2394b15f912e6a890d4694e7f7427b6331c4471",
+      "sha256": "d712c1581909c83c9c4b54fe0af6bac10c62de69c8e72d883d512506764a0793",
       "size_bytes": 10637
     },
     {
@@ -262,7 +262,7 @@
     },
     {
       "path": "metadata-index.json",
-      "sha256": "6f33b41b39a8f92c97dcad9ec482187aaeba0e6f00a609b55158a5beac3fb8bc",
+      "sha256": "a92d1af043e0f256fb22b3706b10f46c53e064469b1718daaa5eca449533ea60",
       "size_bytes": 57594
     },
     {
@@ -272,8 +272,8 @@
     },
     {
       "path": "search/search_index.json",
-      "sha256": "b725d68cd7d17ddadbb6163ad9a66e55670b869c38cf0f6363bcf80db819b024",
-      "size_bytes": 71558
+      "sha256": "e3f1b5c012a28d49b536eddf45c2f1879b2b348b9d70017cb37cc6ecbbe5651f",
+      "size_bytes": 71554
     },
     {
       "path": "sitemap.xml",
@@ -293,12 +293,12 @@
   ],
   "authority": "generated_projection_only",
   "config_sha256": "375d8e1330c6a30bcdec23948a02b427e837dffb278b4a008a20aa3ff462bca5",
-  "lock_sha256": "bb2ef93f6eac5b95685c49aa16ccb291436a511f69c1ba8bd4157af98bdfd86c",
+  "lock_sha256": "dfc1376639e4d40b9e071f75d08fbcba892596f4a8624721a7a9e32ef1e3e16a",
   "not_runtime_configuration": true,
   "python_series": "3.13",
   "schema_id": "markeitech-api-docs-artifact-index",
   "schema_version": 3,
-  "source_signature": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e",
+  "source_signature": "224440899100dfc1a954dca1de71ca8c11a0f8e14161464b21c37c090297cc69",
   "tool_version": "0.1.0",
   "tool_versions": {
     "griffe": "2.2.0",

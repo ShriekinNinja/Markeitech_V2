@@ -200,7 +200,7 @@ class DataAcquisitionActor(DataActor):
     ) -> None:
         """Bind the composed dashboard before startup; acquisition owns its native calls.
 
-        Nautilus rc4 couples handler registration with subscription commands.
+        Nautilus couples handler registration with subscription commands.
         This port executes those calls on the admitted consumer's behalf, on the
         runtime thread. No market observations are relayed through this binding.
         """

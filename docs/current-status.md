@@ -1,6 +1,6 @@
 # Current Status
 
-**Last reviewed:** 2026-09-08 (delivery plan; runtime capabilities remain unchanged)
+**Last reviewed:** 2026-09-17 (dependency update; runtime capabilities remain unchanged)
 
 **Implementation baseline inspected:** `master` at `241b73e`
 
@@ -18,7 +18,7 @@ None of those future documents proves implementation.
 
 | Area | Current state |
 |---|---|
-| Product runtime | Active V2 source at repository root, built on NautilusTrader `2.0.0rc4` |
+| Product runtime | Active V2 source at repository root, built on NautilusTrader `2.0.0rc5` |
 | First visible product | Sir Loke v1 is accepted product direction but unimplemented |
 | Provider | Interactive Brokers connection through TWS/IB Gateway for market data only |
 | Active tracked profile | Zero-instrument operational profile; optional one-instrument V3 ES profile |
@@ -144,7 +144,7 @@ remains pending. Other timeframes and chart navigation requests are not implemen
 
 ### Runtime and provider boundary
 
-- The package and lockfile pin NautilusTrader `2.0.0rc4`; the upgrade was merged through PR 17.
+- The package and lockfile pin NautilusTrader `2.0.0rc5`; the earlier rc4 upgrade was merged through PR 17.
 - `LiveNode` construction, caller-owned embedded lifecycle tests, guarded production startup,
   controlled shutdown, rotating logs, and explicit IB connection confirmation exist.
 - NautilusTrader owns IB market-data connectivity and native normalized observations.
@@ -263,7 +263,7 @@ The trader selects the broker account and TWS session. The product has one analy
 workflow without account-mode classification. Broker facts retain actual account identity; this
 policy change does not implement broker observation or establish new connected acceptance.
 
-NautilusTrader `2.0.0rc4` exposes an Interactive Brokers execution client, live execution-engine
+NautilusTrader `2.0.0rc5` exposes an Interactive Brokers execution client, live execution-engine
 reconciliation, cache access to accounts/orders/positions, typed strategy callbacks, and native
 reports. Gate 1A verifies that the installed native factory and `LiveNode` construct with
 connection client `1`; it also inventories startup, report, reconciliation, recovery, and
@@ -290,8 +290,8 @@ Recorded connected acceptance is useful but narrow:
 - V3-01 accepted the canonical `cme_equity` calendar path for one tracked ES profile and one
   bounded lookback/lookahead envelope.
 - V3-02 accepted one late-consumer current-state recovery and five-bar historical request chain.
-- Existing connected evidence predates the rc4 upgrade unless a record explicitly says otherwise;
-  the rc4 upgrade itself was offline-verified.
+- Existing connected evidence predates the rc5 upgrade unless a record explicitly says otherwise;
+  the rc5 upgrade itself has offline verification only.
 - No connected acceptance establishes SPXW/QQQ options acquisition, a Discord bot, a live model,
   Sir Loke advice, account observation, manual TWS trade detection, or trade monitoring.
 

@@ -32,9 +32,9 @@ does not place orders; automated execution is intentionally absent.
 
 The implemented foundation includes:
 
-- NautilusTrader `2.0.0rc4` with a guarded Interactive Brokers market-data connection
-  (the upgrade is merged and offline-verified; earlier connected evidence does not automatically
-  establish rc4 provider behavior);
+- NautilusTrader `2.0.0rc5` with a guarded Interactive Brokers market-data connection
+  (the dependency update has offline verification; earlier connected evidence does not
+  establish rc5 provider behavior);
 - actor-owned system control, static watchlist, and shared native acquisition;
 - session/calendar ownership and adaptive evidence-health contracts;
 - purpose-specific historical dependency execution;
