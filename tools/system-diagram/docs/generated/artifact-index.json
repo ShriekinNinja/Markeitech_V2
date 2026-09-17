@@ -5,7 +5,7 @@
   "generator_sha256": "ad5a1788b5250271ed39f7e1440156a5d862e28a284e21a7e8553ad84174aaab",
   "generator_version": "0.1.0",
   "manifest": "markeitech-v3-system-dataflow",
-  "manifest_sha256": "48676042bb4163f0f93eae518edd429684f7d16bc797aa58d61e67bc841509a1",
+  "manifest_sha256": "dbeb6e4cb8a014ecd80cca0611b80d6efaacae646483410ae23ce50d9dbfd539",
   "theme": {
     "id": "style.theme",
     "label": "Markeitech polished dark theme v2"

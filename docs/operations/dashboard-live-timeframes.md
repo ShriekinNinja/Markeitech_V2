@@ -163,5 +163,17 @@ example historical observation budget remains 20000. No 4h/1d implementation is 
   lifetime request budget. Neither behavior was changed by this rollback; cleanup/scheduling and
   metadata retirement need a subsequent scoped fix. System-wide reconnect recovery stays excluded.
 
-Further implementation is paused until Markeitect continues the task. This debt note remains
-uncommitted for local review.
+The debt note was committed as 0c77757. Catalog evaluation is a separate subsequent task;
+4h/daily remain deferred.
+
+
+## Updated master compatibility — 2026-09-17
+
+Integrated master cfa485f (dependency refresh PR 58), including NautilusTrader 2.0.0rc5,
+and synced the root and both isolated documentation environments from their locked dependencies.
+The combined dashboard branch passed Ruff and 571 offline tests (2 PostgreSQL tests excluded,
+2 existing third-party deprecation warnings). Generated documentation conflicts were resolved
+through the approved generators; the example configuration hash was recomputed from this branch.
+The earlier rc4 cache/catalog research is historical evidence and must be rechecked against rc5
+before storage implementation. No connected provider, Discord or PostgreSQL acceptance was run.
+The previously observed steady-state dashboard acceptance does not prove rc5 live compatibility.
