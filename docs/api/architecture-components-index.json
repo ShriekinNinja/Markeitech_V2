@@ -10,7 +10,7 @@
       "kind": "markeitech_actor",
       "label": "Dashboard",
       "object_path": "markeitech.dashboard.actor.DashboardActor",
-      "record_sha256": "9b72c51eeadfe16ddb85eda7c1f979650ef7ea1cc353ba3b4ef7bfb062d81c70",
+      "record_sha256": "32c8651a4b33b02af67f8d4ed0ed5408bdb5131448e88d16d2559ead6e2fe593",
       "responsibilities": [
         "Request configured display feeds through acquisition and receive native callbacks.",
         "Retain bounded transient display state and own local web-server startup and shutdown.",
@@ -18,17 +18,17 @@
         "Announce the accepting dashboard address for operational Discord projection."
       ],
       "source": "src/markeitech/dashboard/actor.py",
-      "source_sha256": "317b552ec591fe819f67aea9be144bdb2bc63fe96300a1570127194b1743871f"
+      "source_sha256": "7fb51cd188e7e2813c94ad9ed357c6713682714ff478f5c64553d9bd4263a93d"
     },
     {
       "boundary": "boundary.acquisition",
-      "definition_line": 132,
+      "definition_line": 137,
       "id": "actor.data-acquisition",
       "implementation_ref": "src/markeitech/system/acquisition.py:DataAcquisitionActor",
       "kind": "markeitech_actor",
       "label": "Data Acquisition",
       "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
-      "record_sha256": "3e100e7f3739c460effec79783639d15cc613131d64dff0fc56b5ea98dffe1b2",
+      "record_sha256": "2428cd90a2e54b9f047d90cbdb7b73b558fa8215739411cd3e2657d464dcb457",
       "responsibilities": [
         "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
         "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
@@ -37,7 +37,7 @@
         "Derive bounded UTC minute candles and requested history pages from five-second inputs."
       ],
       "source": "src/markeitech/system/acquisition.py",
-      "source_sha256": "16adcbda65fa50599f42739248aba8a1fddfba76e464b8eaff1d8e05739c2ebe"
+      "source_sha256": "a606b7893c7c93e35d2c05993219bcdfe0382c386ca99547e50a96f842003b3d"
     },
     {
       "boundary": "boundary.system",
@@ -207,5 +207,5 @@
   },
   "schema_id": "markeitech-architecture-class-components",
   "schema_version": 1,
-  "source_snapshot_sha256": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e"
+  "source_snapshot_sha256": "0aeda5b5b8478f48820311fa2550b132af7aeb610f7a64b1e551d96b13ee9c1c"
 }
