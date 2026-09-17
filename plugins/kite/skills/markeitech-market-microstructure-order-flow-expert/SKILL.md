@@ -1,49 +1,32 @@
 ---
 name: markeitech-market-microstructure-order-flow-expert
-description: Review Markeitech trades, quotes, BBO or NBBO, spreads, trade classification, delta and CVD, large trades, bursts, liquidity and book evidence, absorption, exhaustion, effort-versus-response, and trapped-participant hypotheses. Do not turn bars or anonymous activity into observed flow or participant intent.
+description: Review trade/quote classification, BBO/NBBO, delta/CVD, books, liquidity, or effort-response evidence. Preserve observed versus inferred flow and bounded participant hypotheses.
 ---
 
-# Markeitech Market Microstructure And Order Flow Expert
+# Market Microstructure Order Flow
 
-Act as a narrow read-only advisor. Read repository authority, accepted stage contracts, current
-branch/worktree, exact feed/provider/venue/instrument/session contracts, relevant code/tests and
-permitted raw evidence. For substantive work read
-[references/domain-contract.md](references/domain-contract.md) and refresh material primary
-sources from [references/sources.md](references/sources.md).
+Use this guidance directly in the current task. Inspect the affected code, contract, and tests;
+reuse current evidence already established in the task. A skill adds no edit, connection, or
+approval authority. Review requests and delegated reviews remain read-only.
 
-## Sole Advisory Authority
+Work only on the requested outcome. Read supporting references only for a named uncertainty;
+apply the relevant sections, not a whole audit by default. The primary agent may combine checks
+from other skills directly. Do not require separate specialist dispositions or create handoffs.
+Expand scope only for a concrete defect or missing fact that can change this result, explain why,
+and preserve the user's approval boundaries. Stop only the unsupported conclusion.
 
-Own the meaning and evidence limits of trades, quotes, spread state, equity NBBO versus venue or
-futures BBO, trade/aggressor classification, signed volume/delta/CVD, large trades, same-side
-bursts, liquidity/book evidence, replenishment/resiliency, absorption/exhaustion, initiative versus
-responsive activity, price response versus aggressive flow, trapped-participant hypotheses, and
-cross-instrument order-flow comparison.
+## Checks For This Question
 
-## Non-Negotiable Boundaries
+- Identify feed, venue, instrument, conditions, timestamps, coverage, and the quote/trade alignment used.
+- Distinguish aggressor classification from an observed exchange flag; specify unknown classification and coverage.
+- Do not reconstruct historical delta from OHLCV or claim participant identity, motive, or position from prints.
+- Check book depth and update semantics, trade corrections, crossed/locked markets, and session resets only when they affect the question.
 
-- Never claim participant identity, inventory, intent, opening/closing, hedging, speculation,
-  manipulation, profit/loss, or entrapment as observed fact without direct authoritative evidence.
-- Never convert OHLCV bars, candles, volume histograms, footprints, or chart images into observed
-  order flow or historical delta. Candle-derived proxies remain explicitly inferred.
-- A trade classifier is inference unless the exact source reports aggressor side under documented
-  semantics. Preserve ambiguous/unclassified quantity and measured coverage.
-- Displayed depth is feed-scoped visible interest, not total liquidity or guaranteed size. Unknown
-  quote context, incomplete books, delayed data, sequence gaps, partial venue coverage and
-  classifier uncertainty remain visible.
-- Every conclusion carries source/provider, venue, instrument/contract, event and receive time,
-  session, fidelity, coverage, method/version and confidence/unknowns.
-- This advisor does not own market geometry, provider entitlements, licensing, options mechanics,
-  product semantics, signals, trade recommendations, risk, or execution.
+## Optional References
 
-## Required Output And Gates
+- [domain-contract.md](references/domain-contract.md) — use for the matching flow, classification, or book question.
+- [sources.md](references/sources.md) — use for feed or market rules require current primary evidence.
 
-Return the decision question; source/capability census; evidence-fidelity matrix; findings by
-severity; calculation/lifecycle assessment; bounded policy candidates; unknowns/contradictions;
-stop gates/handoffs; and recommendation or abstention. Use `VERIFIED FACT`, `MEASURED EVIDENCE`,
-`INFERENCE`, `HYPOTHESIS`, `RECOMMENDATION`, and `UNKNOWN`.
-
-Stop on unresolved feed/venue/instrument/time semantics, coverage/consolidation/correction,
-sequence/recovery, quote alignment, classification ambiguity, licensing, bar-to-flow conflation,
-participant-intent claims, or hidden thresholds. Return `REQUIRED_HANDOFF`; never delegate.
-
-Remain read-only and preserve every repository approval and side-effect boundary.
+Return the finding or recommendation, its supporting evidence, the smallest correction or
+next check, and material uncertainty. Distinguish verified behavior, measured evidence, and
+inference. Use tables only when they clarify the actual decision; omit empty audit sections.

@@ -1,47 +1,32 @@
 ---
 name: markeitech-data-quality-lineage-expert
-description: Audit Markeitech provider/source identity, instrument and contract identity, lineage, timestamps, sessions, completeness, duplicates, conflicts, revisions, freshness, fidelity, schema identity, and evidence-health inputs. Do not validate formulas, invent market meaning, or approve downstream fitness.
+description: Check source identity, timestamps, sessions, coverage, duplicates, revisions, freshness, or lineage for identified evidence. Investigate only dimensions that can change the requested result.
 ---
 
-# Markeitech Data Quality And Lineage Expert
+# Data Quality Lineage
 
-Act as a read-only evidence-honesty advisor. Before substantive work read repository authority,
-the accepted stage documents, current branch/worktree, exact schemas/contracts/configuration,
-nearby tests, and permitted raw artifacts. Read
-[references/review-contract.md](references/review-contract.md) for every consultation and refresh
-material sources from [references/sources.md](references/sources.md).
+Use this guidance directly in the current task. Inspect the affected code, contract, and tests;
+reuse current evidence already established in the task. A skill adds no edit, connection, or
+approval authority. Review requests and delegated reviews remain read-only.
 
-## Sole Advisory Authority
+Work only on the requested outcome. Read supporting references only for a named uncertainty;
+apply the relevant sections, not a whole audit by default. The primary agent may combine checks
+from other skills directly. Do not require separate specialist dispositions or create handoffs.
+Expand scope only for a concrete defect or missing fact that can change this result, explain why,
+and preserve the user's approval boundaries. Stop only the unsupported conclusion.
 
-Own provider/source and instrument/contract identity; observation lineage; event, receive and
-calculation clocks; timezone/session/calendar identity; completeness and defensible coverage;
-duplicates/conflicts; corrections, revisions and supersession; freshness/staleness; fidelity;
-schema identity/version; and evidence-health inputs.
+## Checks For This Question
 
-Do not validate formulas, units, warmup or numerical behavior; invent provider or market meaning;
-approve storage; or decide fitness for a downstream use. Return `REQUIRED_HANDOFF` to the router for
-provider truth, quantitative validation, licensing, persistence, market semantics, or final
-fitness. Never delegate.
+- Preserve provider, instrument/contract, clock domain, timezone/session, and source/filter/version where they affect meaning.
+- Identify the expected population before claiming completeness; distinguish missing, conflicting, duplicate, revised, and stale observations.
+- Do not silently fill gaps, merge possible duplicates, backdate availability, or upgrade inferred fidelity.
+- Keep source quality separate from formula correctness and fitness for a named use. The same agent may check all three with their supporting evidence.
 
-## Stop Gates
+## Optional References
 
-Stop the affected conclusion when identity, clock domain, timezone/session, expected population,
-correction target, source/filter/version, lineage, or fidelity is missing or conflicting. Establish
-the exact vendor, product, account, artifact, filter, and version identity, then return a licensing
-handoff whenever permitted acquisition, processing, retention, display, redistribution, derived-data,
-or agent/model use is material. Governing terms block this role's quality conclusion only when they
-define the actual data semantics, population, coverage, corrections, or fidelity. Never decide
-permitted use, merge possible duplicates, overwrite conflicts, backdate availability, fill a gap,
-or call a response complete without authoritative semantics and policy.
+- [review-contract.md](references/review-contract.md) — use for a detailed lineage, time, revision, or coverage question.
+- [sources.md](references/sources.md) — use for provider or standard semantics need verification.
 
-## Required Output
-
-Return the named consumer quality question; freshness/authority statement; source/identity/time/
-lineage matrix; quality disposition by dimension; duplicate/conflict/revision matrix; fidelity and
-health inputs; unknowns and stop gates; bounded policy candidates; handoffs; and minimum offline,
-provider, connected, and operator evidence. Label claims `VERIFIED FACT`, `MEASURED EVIDENCE`,
-`INFERENCE`, `HYPOTHESIS`, `RECOMMENDATION`, or `UNKNOWN`.
-
-Remain read-only. Do not edit, commit, push, connect services, query/mutate databases, consume paid
-capacity, repair data, change schemas, or make product, trading, architecture, review, release, or
-execution decisions.
+Return the finding or recommendation, its supporting evidence, the smallest correction or
+next check, and material uncertainty. Distinguish verified behavior, measured evidence, and
+inference. Use tables only when they clarify the actual decision; omit empty audit sections.

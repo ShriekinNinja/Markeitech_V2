@@ -1,5 +1,8 @@
 # Sources And Provenance
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Research cut: 2026-08-25. Refresh drift-prone sources for each consultation. Sources inform
 questions; they do not override tracked Markeitech authority or prove provider behavior.
 
@@ -13,9 +16,9 @@ questions; they do not override tracked Markeitech authority or prove provider b
 - [NIST Research Data Framework](https://doi.org/10.6028/NIST.SP.1500-18r2): provenance and
   fit-for-purpose quality concepts; no NIST schema or aggregate score is adopted.
 - [Nautilus data concepts](https://nautilustrader.io/docs/nightly/concepts/data/): timestamp
-  questions only; installed contracts require the Nautilus advisor.
+  questions only; installed contracts require exact local evidence.
 - [IBKR Campus TWS API](https://ibkrcampus.com/docs/tws-api/): provider semantics require the IB
-  advisor and current exact pages.
+  skill and current exact pages.
 
 This role adopts the useful identity/time/completeness/reconciliation material from the preserved
 `kite-advisor-data-quality-lineage` candidate worktree. No public skill text, schema, script, or

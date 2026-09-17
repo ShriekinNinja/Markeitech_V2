@@ -1,5 +1,8 @@
 # Market Structure Source And Public-Skill Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 **Census date:** 2026-08-25
 
 This is a provenance and compatibility record, not a frozen reading list. Refresh web sources and

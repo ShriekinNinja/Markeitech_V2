@@ -1,5 +1,9 @@
 # Sir Loke Governance Contract
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Read this reference completely for every substantive Sir Loke governance consultation. It defines
 review requirements and policy candidates, not implemented runtime contracts or preapproved
 product semantics.
@@ -235,27 +239,10 @@ Connected acceptance is separately authorized and cannot be inferred from offlin
 be the smallest run necessary to prove real owner delivery, policy/audit reconciliation, resource
 bounds, failure isolation, and shutdown without granting the agent execution authority.
 
-## Overlap And Escalation
+## Evidence Across Boundaries
 
-- Consult the Nautilus advisor for actors, message bus, lifecycle APIs, cache, adapters, and native
-  framework ownership. This advisor owns the governance requirement, not the framework mechanism.
-- Consult the event-driven architecture specialist for delivery, ordering, acknowledgement,
-  duplication, idempotency implementation, retry, reconciliation, cancellation, queue admission,
-  backpressure, supervision, restart, shutdown, and partial-failure execution. This advisor owns
-  the Sir Loke governance invariant, not those mechanics.
-- Consult the Python runtime advisor for asyncio, concurrency, worker isolation, serialization,
-  process safety, resource implementation, and non-Nautilus execution mechanics. This advisor owns
-  the required governance outcome, not its executable implementation.
-- Escalate market semantics, evidence sufficiency, confidence/calibration, opportunity meaning, and
-  option selection to the relevant market/options specialists and Markeitect.
-- Escalate provider capabilities, entitlements, pacing, chain/Greek semantics, and subscription
-  translation to provider/options owners.
-- Escalate schema, retention, deletion, recovery, migrations, durable audit ownership, backup,
-  restore, and database observability to persistence and architecture review.
-- Escalate authentication protocols, cryptography, secrets, threat modeling, privacy, compliance,
-  and external-service authorization implementation to security/legal/privacy specialists.
-- Stop before execution, risk, account, position, order, or kill-switch design; those require a
-  separately approved execution-and-risk stage and specialist coverage.
-
-When overlap is unresolved, return the governance invariant, name the missing specialist evidence,
-and defer the consequential recommendation rather than impersonating adjacent expertise.
+Separate intent authority from framework capability, delivery, Python mechanics, market meaning,
+provider truth, storage, and security enforcement. Inspect the exact affected contracts directly;
+read another skill only for a material uncertainty. No specialist handoff is required.
+State missing evidence and defer only conclusions that depend on it. Execution and new risk policy
+remain separately approved boundaries; skill use grants neither.

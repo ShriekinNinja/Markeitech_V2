@@ -1,5 +1,9 @@
 # IB Provider Domain Playbook
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Read only sections relevant to the request. Refresh exact limits from current official sources;
 this file is a question map, not cached provider policy.
 

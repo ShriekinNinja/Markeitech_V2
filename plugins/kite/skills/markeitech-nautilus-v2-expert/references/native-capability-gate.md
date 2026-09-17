@@ -1,5 +1,9 @@
 # Native Capability Gate
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Use this gate before custom design or implementation. Its purpose is to prevent accidental reinvention and framework bypass while preserving legitimate Markeitech product semantics.
 
 ## 1. Define The Requirement Before The Mechanism
@@ -15,9 +19,10 @@ State:
 
 Do not name a custom actor, table, model, or algorithm until the requirement is independent of its implementation.
 
-## 2. Breadth Before Depth
+## 2. Select The Relevant Native Families
 
-Survey every relevant Nautilus family before searching exact symbols:
+For a new or replacement capability, identify candidates in the families that could satisfy the
+named requirement. These are navigation options, not a mandatory census for ordinary fixes:
 
 - actor and strategy lifecycle;
 - clocks, timers, and scheduling;
@@ -30,7 +35,8 @@ Survey every relevant Nautilus family before searching exact symbols:
 - persistence, catalogs, writers, serialization, and external stream backing;
 - configuration, identifiers, resources, and observability.
 
-Record candidates even when they appear only partially relevant. Narrow the list only after examining semantics.
+Investigate a candidate only when its semantics could change the decision. For a fix within an
+accepted design, verify the affected API and lifecycle without reopening unrelated ownership.
 
 ## 3. Verify The Installed Contract
 
@@ -116,7 +122,8 @@ Invalid reasons include familiarity, convenience, existing custom code, aestheti
 
 ## 8. Nautilus Alignment Matrix
 
-Use one row per requirement:
+For a consequential native-versus-custom decision, a compact comparison can use these columns.
+Include only the requirements under decision:
 
 | Requirement | Native candidate | Installed-version evidence | Adapter/provider evidence | Semantic fit | Proposed owner | Decision | Rejection or extension rationale | Acceptance evidence |
 |---|---|---|---|---|---|---|---|---|

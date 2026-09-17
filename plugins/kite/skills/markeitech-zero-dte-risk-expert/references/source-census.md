@@ -1,5 +1,8 @@
 # Zero DTE Candidate Risk Source Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Last researched: 2026-08-25. This is a routing map, not frozen doctrine. Refresh the exact source,
 effective version, relevant section, access timestamp, product, date, venue, broker, and conclusion
 for every review.

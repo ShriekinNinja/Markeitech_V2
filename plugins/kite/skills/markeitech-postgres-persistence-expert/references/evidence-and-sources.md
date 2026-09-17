@@ -1,5 +1,8 @@
 # Evidence And Source Discipline
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Apply this protocol to every consultation. A recorded census is orientation; refresh the relevant
 primary source whenever the server, driver, schema, workload, or upstream guidance may have changed.
 

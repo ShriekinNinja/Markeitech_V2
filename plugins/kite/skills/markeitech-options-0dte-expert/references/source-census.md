@@ -1,5 +1,8 @@
 # Primary Source Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Last refreshed for candidate construction: **2026-08-25**. URLs are references, not bundled or
 redistributed source content. Refresh the subset material to each future task.
 
@@ -42,7 +45,7 @@ redistributed source content. Refresh the subset material to each future task.
 | OPRA Pillar Output Specification | https://cdn.opraplan.com/documents/OPRA_Pillar_Output_Specification.pdf | Current message categories, BBO appendages, conditions, sessions, open interest, and series fields | A feed type is not proof of provider delivery; version-date and implementation coverage must be recorded |
 | OCC Series Search | https://www.theocc.com/market-data/market-data-reports/series-and-trading-data/series-search | Current OCC series/contract lookup surface | Do not infer open-interest timing from the page shell; verify the exact report definition and record its own as-of date before using OI |
 | IBKR API documentation root | https://ibkrcampus.com/campus/ibkr-api-page/ | Current official API documentation and changelog root | Refresh exact TWS/API version; IB API existence is not Nautilus adapter delivery |
-| IBKR market-data subscriptions | https://ibkrcampus.com/docs/general/market-data-subscriptions/introduction | Current official subscription categories and dependency cautions for underlying-dependent values such as Greeks | Account eligibility, professional status, exact live subscription, permissions, and observed delivery still require the IB advisor and current account evidence |
+| IBKR market-data subscriptions | https://ibkrcampus.com/docs/general/market-data-subscriptions/introduction | Current official subscription categories and dependency cautions for underlying-dependent values such as Greeks | Account eligibility, professional status, exact live subscription, permissions, and observed delivery still require current provider/account evidence |
 | IBKR market-data lines | https://ibkrcampus.com/docs/general/market-data-subscriptions/market-data-lines/introduction | Official simultaneous market-data-line resource model | Published examples do not prove the current account allowance, option request cost, pacing, or Nautilus release behavior |
 | IBKR handling options chains | https://ibkrcampus.com/campus/ibkr-quant-news/handling-options-chains/ | Official example of staged option-chain discovery | Example targets Web API and does not prove current TWS/Nautilus semantics or entitlement |
 | IBKR `SecDefOptParamsRequest` | https://ibkrcampus.com/docs/tws-api/protobuf/sec-def-opt-params-request | Current official request fields for one chain-definition interface | Verify the installed IB/Nautilus path separately |

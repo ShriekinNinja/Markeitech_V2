@@ -1,5 +1,8 @@
 # External Agent-Skill Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Researched on **2026-08-25** for structure and guardrails only. No external skill text, script, or
 asset was copied into this candidate.
 

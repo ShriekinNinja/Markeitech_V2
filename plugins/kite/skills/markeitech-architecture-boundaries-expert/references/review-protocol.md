@@ -1,5 +1,9 @@
 # Architecture Boundary Review Protocol
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Use this protocol for consequential design advice or a defect-first boundary audit. Scale the
 depth to the decision, but do not omit a material owner, canonical source, persistence effect, or
 escalation.
@@ -16,7 +20,7 @@ escalation.
 5. Which component currently defines, mutates, transports, persists, restores, and projects it?
 6. Which consumers depend on it, and which merely observe or format it?
 7. Is the proposed owner already present in NautilusTrader or an existing Markeitech component?
-   If the answer depends on Nautilus, has `markeitech_nautilus_advisor` returned current evidence?
+   If the answer depends on Nautilus, what current installed-contract evidence supports it?
 8. Does the proposal create a second writer, state machine, cache, bus, wrapper, database,
    scheduler, retry policy, calendar, configuration source, or health truth?
 9. Can reuse, composition, a narrower contract, or deletion solve the requirement with less
@@ -120,36 +124,13 @@ actual affected owners and contracts.
   proof than it is.
 - Do not let an advisor approve architecture, mutate the repository, or expand permissions.
 
-## Overlap And Escalation
+## Evidence Across Boundaries
 
-- `markeitech_nautilus_advisor`: every Nautilus capability, installed-version, adapter, bus,
-  lifecycle, cache, catalog, persistence, indicator, or native-versus-custom claim.
-- Event-driven architecture specialist: event delivery, ordering, acknowledgement, duplication,
-  idempotency, retry, reconciliation, cancellation, queues, backpressure, supervision, shutdown,
-  restart, and partial-failure execution. This advisor owns topology and accountability, not those
-  runtime semantics.
-- PostgreSQL persistence specialist: schema objects, migrations, constraints, indexes, queries,
-  transactions, locks, retention and deletion mechanics, backup, restore, and database
-  observability. This advisor owns the logical durable boundary and change consequences.
-- Data-quality and lineage specialist: provenance, identity, completeness, duplicates, conflicts,
-  revisions, timestamps, timezones, session identity, staleness, and fidelity classifications.
-  This advisor may assign their structural owners but may not define their meaning.
-- Markeitech Python runtime expert: consequential asyncio, threading, GIL, typing, memory,
-  profiling, package, or partial-failure implementation questions not owned by Nautilus.
-- Live-agent governance specialist, when available through the advisor router: Sir Loke authority,
-  tool policy, approvals, abstention, advisory-state semantics, configuration proposals, and agent
-  failure containment. This advisor may map structural ownership and change consequences but may
-  not define those semantics. If coverage is unavailable, use the router's missing-coverage gate.
-- Product/trading specialist: signal meaning, market interpretation, opportunity semantics,
-  option selection, or execution behavior.
-- Provider/data specialist: entitlement, market-data fidelity, exchange/provider semantics,
-  licensing, and paid-feed constraints.
-- Security specialist: threat model, secrets, trust boundary, authorization, or security sign-off.
-- Markeitect: architecture, infrastructure, persistence, schema, provider ownership, runtime
-  policy, product semantics, trading, review, and release decisions.
-
-If another specialist is missing, use the repository advisor router's missing-coverage gate. Do
-not impersonate the absent domain.
+Verify framework capability from the installed contract, delivery from its actual execution path,
+database behavior from the relevant SQL/version, and market meaning from accepted definitions.
+Use the corresponding skill directly when guidance is needed; no separate agent is required.
+Do not infer one evidence layer from another. Missing facts block only their dependent conclusion.
+Markeitect retains approval of architecture, persistence, policy, and product changes.
 
 ## Output Contract
 

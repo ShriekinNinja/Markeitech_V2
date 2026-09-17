@@ -1,5 +1,8 @@
 # Sources And Provenance
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Research cut: 2026-08-25. Tracked Markeitech metric and Stage 9 contracts are controlling.
 Refresh exact library/version sources when used.
 

@@ -1,5 +1,8 @@
 # Source Census And Refresh Policy
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 This census records sources used to establish the advisor contract on 2026-08-25. Cite the exact
 source beside consequential claims. Refresh versioned official documentation when invoked; older
 papers remain conceptual authorities but do not prove current library behavior or Markeitech fit.

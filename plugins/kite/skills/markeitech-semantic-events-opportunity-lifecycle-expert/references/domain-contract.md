@@ -1,5 +1,9 @@
 # Semantic Events And Opportunity Lifecycle Contract
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Each definition records schema/definition/config versions; subject/exposure/instrument/relationship
 identity; evidence/entity revisions; event/effective, observed, published, expiry and invalidation
 times; causation/correlation; direction/horizon/magnitude/confidence/urgency as separate fields when

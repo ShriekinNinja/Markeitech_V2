@@ -1,5 +1,9 @@
 # Evaluation And Governance Protocol
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Use this reference whenever the task concerns features, labels, datasets, evaluation, calibration,
 uncertainty, model monitoring, online learning, adaptive parameters, or optimization.
 
