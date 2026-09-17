@@ -19,7 +19,7 @@ from nautilus_trader.adapters.interactive_brokers import (
 )
 
 ROOT = Path(__file__).parents[2]
-PINNED_NAUTILUS_VERSION = "2.0.0rc4"
+PINNED_NAUTILUS_VERSION = "2.0.0rc5"
 CONSTRUCTION_TIMEOUT_SECONDS = 15
 CONSTRUCTION_SENTINEL = "GATE1A_NATIVE_CONSTRUCTION_OK"
 
@@ -263,7 +263,7 @@ def test_gate1a_dependency_identity_matches_lock() -> None:
 
 def test_gate1a_dependency_identity_rejects_drift() -> None:
     with pytest.raises(AssertionError, match="version-bound"):
-        _assert_dependency_identity(PINNED_NAUTILUS_VERSION, "2.0.0rc5", "2.0.0rc5")
+        _assert_dependency_identity(PINNED_NAUTILUS_VERSION, "2.0.0rc4", "2.0.0rc4")
 
 
 def test_gate1a_dependency_identity_requires_integrity_metadata() -> None:

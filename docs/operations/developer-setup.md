@@ -225,13 +225,14 @@ The tracked example's `4002` value is only an example endpoint; replace it with 
 session's port when needed. Product behavior and acceptance do not depend on account mode.
 
 Configure TWS or IB Gateway to send instrument-specific API attributes in **instrument timezone**
-for the pinned Nautilus `2.0.0rc4` runtime. Its Rust `ibapi 3.3.0` dependency is unchanged; the
-rc3-established dashed UTC `HistoricalDataEnd` parsing limitation remains open, and rc4 connected
-timestamp calibration is pending. This is a temporary transport compatibility setting:
+for the pinned Nautilus `2.0.0rc5` runtime. The dashed UTC `HistoricalDataEnd` parsing limitation
+was established under rc3 and remained open under rc4; rc5 connected timestamp calibration is
+pending. Retain this temporary transport compatibility setting until that calibration:
 Nautilus and Markeitech still normalize bar instants to Unix nanoseconds and use UTC internally.
 Keep execution unavailable. Each user must supply their own account, permissions, and
 subscriptions. A dependency or TWS/Gateway change requires one bounded connected timestamp
 calibration before historical-data acceptance.
+Record the rc5 result in [issue #59](https://github.com/ShriekinNinja/Markeitech_V2/issues/59).
 
 See [V2 Interactive Brokers setup](ib-setup.md) for the complete checklist.
 

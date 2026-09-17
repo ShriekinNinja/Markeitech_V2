@@ -29,7 +29,7 @@
         "kind": "markeitech_actor",
         "label": "Data Acquisition",
         "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
-        "record_sha256": "3e100e7f3739c460effec79783639d15cc613131d64dff0fc56b5ea98dffe1b2",
+        "record_sha256": "b79c84a0508e93b2f61e02ae3fc774dca5ad56513db38fbd4dcf59f6762f26d0",
         "responsibilities": [
           "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
           "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
@@ -38,7 +38,7 @@
           "Derive bounded UTC minute candles and requested history pages from five-second inputs."
         ],
         "source": "src/markeitech/system/acquisition.py",
-        "source_sha256": "16adcbda65fa50599f42739248aba8a1fddfba76e464b8eaff1d8e05739c2ebe"
+        "source_sha256": "da82443676a90c586fdd0c843f8a6444bdf776ab2f0132c4b11813eaa1358301"
       },
       {
         "boundary": "boundary.system",
@@ -208,7 +208,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e"
+    "source_snapshot_sha256": "c4161e932259691583b0f09dfe61484fe13ede233873e76c41f4309f8970c04f"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1331,7 +1331,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 76,
-    "input_signature": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e"
+    "input_signature": "c4161e932259691583b0f09dfe61484fe13ede233873e76c41f4309f8970c04f"
   },
-  "source_snapshot_sha256": "91423e1afa248af31321f103540b09754601d8b9786d30dd1185e1ea194c722e"
+  "source_snapshot_sha256": "c4161e932259691583b0f09dfe61484fe13ede233873e76c41f4309f8970c04f"
 }

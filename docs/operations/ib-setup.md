@@ -62,13 +62,14 @@ The repository does not include account credentials or entitlements.
    characterizes connection client `1`; Markeitect reports Master `1`, but that TWS setting has not
    been inspected. Master `1` does not give connection `1` the special behavior of client `0`.
 8. Set “Send instrument-specific attributes for dual-mode API client” to **instrument timezone**
-   for pinned Nautilus `2.0.0rc4`. The [rc4 Cargo lockfile](https://github.com/nautechsystems/nautilus_trader/blob/v2.0.0rc4/Cargo.lock)
-   retains Rust `ibapi 3.3.0`, whose rejection of IB's valid dashed UTC `HistoricalDataEnd`
-   metadata was established under rc3. The upgrade does not close this debt; rc4 connected
-   timestamp calibration remains pending. This affects response transport syntax only: Nautilus and
-   Markeitech retain absolute Unix-nanosecond timestamps internally. Do not infer API behavior from
-   the TWS chart display timezone. Recalibrate with one bounded connected request after a
-   consequential TWS/Gateway, Nautilus adapter, or `ibapi` parser change.
+   for pinned Nautilus `2.0.0rc5`. The [rc4 Cargo lockfile](https://github.com/nautechsystems/nautilus_trader/blob/v2.0.0rc4/Cargo.lock)
+   retained Rust `ibapi 3.3.0`, whose rejection of IB's valid dashed UTC `HistoricalDataEnd`
+   metadata was established under rc3. Rc5 connected timestamp calibration remains pending, so
+   retain this setting until the provider response is checked. This affects response transport
+   syntax only: Nautilus and Markeitech retain absolute Unix-nanosecond timestamps internally.
+   Do not infer API behavior from the TWS chart display timezone. Recalibrate with one bounded
+   connected request after a consequential TWS/Gateway, Nautilus adapter, or `ibapi` parser change.
+   Record the rc5 result in [issue #59](https://github.com/ShriekinNinja/Markeitech_V2/issues/59).
 
 This checklist is accepted only for the implemented market-data client. Do not change to client ID
 `0`, enable automatic open-order download/binding, disable read-only mode, or add an execution
