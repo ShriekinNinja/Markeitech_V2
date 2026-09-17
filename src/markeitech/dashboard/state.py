@@ -5,7 +5,7 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from decimal import Decimal, InvalidOperation
 
-from markeitech.acquisition.minute_candles import MinuteCandleUpdate
+from markeitech.acquisition.minute_candles import INTRADAY_TIMEFRAMES, MinuteCandleUpdate
 from markeitech.dashboard.config import DashboardConfig
 
 
@@ -22,6 +22,7 @@ class _Instrument:
     bar_ts_init_ns: int | None = None
     live_bar_ts_event_ns: int | None = None
     candles: deque = field(default_factory=deque)
+    timeframe_candles: dict[str, deque] = field(default_factory=dict)
     feed_states: dict[str, str] = field(default_factory=dict)
     rejected_bars: int = 0
     candle_conflicts: int = 0
@@ -31,7 +32,7 @@ class _Instrument:
 class DashboardState:
     """Actor-thread display state, retaining native identities and decimal strings.
 
-    Source bars supply the latest price. Acquisition-owned minute projections
+    Source bars supply the latest price. Acquisition-owned intraday projections
     supply the chart. No aggregation, gap filling, or durable storage occurs here.
     """
 
@@ -109,12 +110,16 @@ class DashboardState:
             or update.schema_version != 1
             or update.provider != "IB"
             or update.selector != "5-SECOND-LAST-EXTERNAL"
+            or update.timeframe not in INTRADAY_TIMEFRAMES
         ):
             return
-        item.candles = deque(
+        projection = deque(
             (asdict(candle) for candle in update.candles[-self.config.candles_per_instrument :]),
             maxlen=self.config.candles_per_instrument,
         )
+        item.timeframe_candles[update.timeframe] = projection
+        if update.timeframe == "1m":
+            item.candles = projection
         item.candle_conflicts = update.conflicts
         item.candle_rejected_inputs = update.rejected_inputs
         if update.candles and (
@@ -134,6 +139,7 @@ class DashboardState:
         """Return a detached JSON-ready projection; nanoseconds remain exact strings."""
         rows = []
         candles = {}
+        timeframes = {}
         for item in self.instruments.values():
             rows.append(
                 {
@@ -153,6 +159,9 @@ class DashboardState:
                 }
             )
             candles[item.instrument_id] = list(item.candles)
+            timeframes[item.instrument_id] = {
+                frame: list(values) for frame, values in item.timeframe_candles.items()
+            }
         return deepcopy(
             {
                 "schema_version": 2,
@@ -169,6 +178,8 @@ class DashboardState:
                 "maximum_candles": self.config.candles_per_instrument,
                 "instruments": rows,
                 "candles": candles,
+                "candles_by_timeframe": timeframes,
+                "available_timeframes": list(INTRADAY_TIMEFRAMES),
             }
         )
 

@@ -2,7 +2,7 @@
 
 > Offline architecture documentation. No current order submission or execution.
 
-Bounded operator request, native provider history, and detached projection for the one-minute dashboard.
+Candle-count-bounded selected-timeframe native history and detached intraday projection.
 
 - View ID: `view.dashboard-history`
 - Profile: `profile.example`

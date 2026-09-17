@@ -1,3 +1,6 @@
+For issue #56 intraday implementation and its remaining gates, see
+[dashboard live timeframes](dashboard-live-timeframes.md).
+
 # Dashboard POC — Local Review
 
 For the subsequent timeframe investigation, see the
@@ -19,7 +22,7 @@ connected acceptance remains Markeitect's run and review.
   (SSE), with a bounded number of browser connections. New snapshots replace unconsumed snapshots.
 - `DashboardUI` is the locally served HTML/CSS/JavaScript interface using the bundled
   TradingView Lightweight Charts 5.2.1 asset. Selection changes the browser projection. Live updates arrive through SSE;
-  requested history arrives as detached pages. Reload restores runtime history; operator-fetched
+  requested history arrives as detached pages. Reload restores runtime history and the last instrument/timeframe preference; operator-fetched
   pages and selected date windows are transient browser state.
 
 Every dashboard market-data request and release goes through `DataAcquisitionActor`. Composition
@@ -36,23 +39,26 @@ available. A disabled watchlist produces an empty dashboard.
 
 ## Configuration and migration
 
-The system configuration schema is **28**. Dashboard policy is version **3**. Copy the commented
+The system configuration schema is **28**. Dashboard policy is version **4**. Copy the commented
 `[dashboard]` section from `config/system.example.toml` into your existing ignored local profile,
 preserving its machine/provider settings. For schema-25/26/27 profiles set `schema_version = 28`. If `[dashboard]` already exists,
-set its `policy_version = 3`; `initial_history_minutes` defaults to 20. The section remains
+use policy 4 for new profiles. Policy-3 input is normalized in memory without changing the file;
+its legacy page-minute count becomes the selected candle count. `initial_history_minutes` defaults
+to 20, with a 60-minute minimum effective source warmup. The section remains
 optional and omission disables the dashboard. Preserve machine-specific connection settings.
 For older profiles, first follow [developer setup](developer-setup.md). Local files are never
 migrated automatically.
 
 | Setting | Default | Valid range / meaning |
 | --- | --- | --- |
-| `policy_version` | `3` | Exactly `3` |
+| `policy_version` | `4` | Exactly `4`; version-3 mappings migrate in memory |
 | `enabled` | `false` | Boolean; compose dashboard on startup |
 | `port` | `8765` | 1024–65535; host fixed to `127.0.0.1` |
 | `maximum_instruments` | `64` | 1–256; reject an enabled watchlist beyond this limit |
-| `candles_per_instrument` | `720` | 2–5000; transient minute candles including the forming candle per instrument |
-| `initial_history_minutes` | `20` | 1–120 elapsed minutes, capped by candle capacity; one extra minute of source input covers partial boundaries |
-| `history_page_minutes` | `60` | 1–120 elapsed UTC minutes per provider history page |
+| `candles_per_instrument` | `720` | 2–5000; display candles per timeframe; underlying source-minute retention has a 60-minute floor |
+| `initial_history_minutes` | `20` | 1–120 source minutes; effective minimum 60, plus one boundary minute |
+| `initial_history_candles` | `200` | 1–1000 selected intervals on selection, capped by display capacity |
+| `history_page_candles` | `200` | 1–1000 selected intervals per native page; closed sessions may return fewer |
 | `maximum_history_requests` | `4` | 1–16 pending/unread jobs across browsers |
 | `maximum_history_requests_per_session` | `256` | 1–4096 admitted pages per process; bounds retained executor request metadata |
 | `history_request_timeout_seconds` | `120` | 10–300 seconds; web jobs/results and unacknowledged actor requests expire |

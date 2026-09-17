@@ -2,22 +2,26 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
 
 MINUTE_CANDLES_TYPE_NAME = "markeitech.acquisition.minute_candles.v1"
 _SECOND = 1_000_000_000
 _MINUTE = 60 * _SECOND
 _SOURCE_INTERVAL = 5 * _SECOND
+# Protocol-supported clock-aligned intraday intervals; session intervals are separate.
+INTRADAY_TIMEFRAMES = {"1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}
 _FIELDS = ("open", "high", "low", "close", "volume")
 
 
 @dataclass(frozen=True, slots=True)
 class MinuteCandle:
-    """Derived UTC minute with exact decimal strings and observed constituent coverage.
+    """UTC intraday candle with exact decimals and explicit source provenance.
 
     ``time`` labels the opening second; ``ts_event_ns`` is the closing boundary.
-    COMPLETE means all twelve unique five-second constituents were observed. INCOMPLETE
+    For derived_5s, COMPLETE means every expected five-second constituent was observed.
+    For provider_history, COMPLETE means one completed native bar was received; input
+    counts refer to that native selector and do not claim five-second coverage. INCOMPLETE
     means the source has reached/passed the close with missing constituents. FORMING
     means the latest source has not reached the close. History can repair incomplete
     projections; native observations are never rewritten.
@@ -35,13 +39,15 @@ class MinuteCandle:
     input_count: int
     historical_inputs: int
     live_inputs: int
+    selector: str = "5-SECOND-LAST-EXTERNAL"
+    provenance: str = "derived_5s"
 
 
 @dataclass(frozen=True, slots=True)
 class MinuteCandleUpdate:
     """Detached acquisition projection; UTC nanoseconds retain native source identity.
 
-    Candles are transient derived evidence, not provider minute bars. Conflict counts
+    Candles are transient derived evidence, not provider-aggregated bars. Conflict counts
     expose differing observations at an identical source timestamp; live wins over
     historical overlap, and conflicting same-origin duplicates retain the first value.
     """
@@ -56,6 +62,7 @@ class MinuteCandleUpdate:
     provider: str = "IB"
     selector: str = "5-SECOND-LAST-EXTERNAL"
     schema_version: int = 1
+    timeframe: str = "1m"
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,7 +122,26 @@ class _MinuteCandleBook:
             del buckets[min(buckets)]
         return True
 
-    def snapshot(self, instrument: str, received_ns: int) -> MinuteCandleUpdate:
+    def _snapshots(self, instrument: str, received_ns: int) -> tuple[MinuteCandleUpdate, ...]:
+        minute = self.snapshot(instrument, received_ns)
+        return (
+            minute,
+            *(
+                replace(
+                    minute,
+                    timeframe=frame,
+                    candles=tuple(_rollup(list(minute.candles), seconds, minute.ts_event)),
+                )
+                for frame, seconds in INTRADAY_TIMEFRAMES.items()
+                if frame != "1m"
+            ),
+        )
+
+    def snapshot(
+        self, instrument: str, received_ns: int, timeframe: str = "1m"
+    ) -> MinuteCandleUpdate:
+        if timeframe not in INTRADAY_TIMEFRAMES:
+            raise ValueError("unsupported intraday timeframe")
         candles = []
         for end, inputs in sorted(self._buckets[instrument].items()):
             ordered = [value for _, value in sorted(inputs.items())]
@@ -143,6 +169,8 @@ class _MinuteCandleBook:
                     live_inputs=sum(not v.historical for v in ordered),
                 )
             )
+        if timeframe != "1m":
+            candles = _rollup(candles, INTRADAY_TIMEFRAMES[timeframe], self._latest[instrument])
         return MinuteCandleUpdate(
             instrument,
             tuple(candles),
@@ -150,4 +178,36 @@ class _MinuteCandleBook:
             self._rejected[instrument],
             self._latest[instrument],
             received_ns,
+            timeframe=timeframe,
         )
+
+
+def _rollup(candles: list[MinuteCandle], seconds: int, latest_ns: int) -> list[MinuteCandle]:
+    """Compose disjoint minute constituents without filling missing source intervals."""
+    groups: dict[int, list[MinuteCandle]] = {}
+    for candle in candles:
+        start = candle.time // seconds * seconds
+        groups.setdefault(start, []).append(candle)
+    result = []
+    for start, group in sorted(groups.items()):
+        count = sum(c.input_count for c in group)
+        end_ns = (start + seconds) * _SECOND
+        result.append(
+            replace(
+                group[0],
+                time=start,
+                ts_event_ns=str(end_ns),
+                ts_init_ns=str(max(int(c.ts_init_ns) for c in group)),
+                high=str(max(Decimal(c.high) for c in group)),
+                low=str(min(Decimal(c.low) for c in group)),
+                close=group[-1].close,
+                volume=str(sum(Decimal(c.volume) for c in group)),
+                status="COMPLETE"
+                if count == seconds // 5
+                else ("INCOMPLETE" if latest_ns >= end_ns else "FORMING"),
+                input_count=count,
+                historical_inputs=sum(c.historical_inputs for c in group),
+                live_inputs=sum(c.live_inputs for c in group),
+            )
+        )
+    return result

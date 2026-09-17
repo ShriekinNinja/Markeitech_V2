@@ -30,13 +30,18 @@ from markeitech.acquisition import (
 from markeitech.acquisition.dashboard_history import (
     HISTORY_CONSUMER_PREFIX,
     HISTORY_PAGE_TYPE_NAME,
+    DashboardHistoryPage,
     project_history_page,
 )
 from markeitech.acquisition.historical_native import (
     HistoricalResponseMismatch,
     validate_historical_bars,
 )
-from markeitech.acquisition.minute_candles import MINUTE_CANDLES_TYPE_NAME, _MinuteCandleBook
+from markeitech.acquisition.minute_candles import (
+    INTRADAY_TIMEFRAMES,
+    MINUTE_CANDLES_TYPE_NAME,
+    _MinuteCandleBook,
+)
 from markeitech.dashboard.messages import DASHBOARD_DEMAND_SIGNAL, DashboardDemand
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
@@ -210,7 +215,8 @@ class DataAcquisitionActor(DataActor):
         self._dashboard_allowed = set(allowed_feeds)
         self._dashboard_retry_ms = retry_interval_ms
         self._minute_book = _MinuteCandleBook(
-            {instrument for instrument, kind in allowed_feeds if kind == "bars"}, candle_capacity
+            {instrument for instrument, kind in allowed_feeds if kind == "bars"},
+            max(60, candle_capacity),
         )
 
     def on_start(self) -> None:
@@ -335,8 +341,8 @@ class DataAcquisitionActor(DataActor):
     def _publish_minute_candles(self, instrument_id: str) -> None:
         if self._minute_book is not None:
             data_type = DataType(MINUTE_CANDLES_TYPE_NAME)
-            update = self._minute_book.snapshot(instrument_id, self.clock.timestamp_ns())
-            self.publish_data(data_type, CustomData(data_type, update))
+            for update in self._minute_book._snapshots(instrument_id, self.clock.timestamp_ns()):
+                self.publish_data(data_type, CustomData(data_type, update))
 
     def on_historical_bars(self, bars) -> None:  # noqa: ANN001
         active = self._historical.active_request_ids
@@ -633,8 +639,11 @@ class DataAcquisitionActor(DataActor):
                 for ref in batch.request.dependencies:
                     if (
                         ref.consumer_id.startswith(HISTORY_CONSUMER_PREFIX)
-                        and ref.capability_id == "dashboard.history-page"
-                        and batch.request.selector == "5-SECOND-LAST-EXTERNAL"
+                        and ref.capability_id
+                        in {
+                            "dashboard.history-page",
+                            *(f"dashboard.history-page.{frame}" for frame in INTRADAY_TIMEFRAMES),
+                        }
                         and (batch.request.instrument_id, "bars") in self._dashboard_allowed
                     ):
                         try:
@@ -643,7 +652,22 @@ class DataAcquisitionActor(DataActor):
                             )
                         except ValueError:
                             self.log.error("DASHBOARD_HISTORY_REJECTED | invalid page bounds")
-                            continue
+                            page = DashboardHistoryPage(
+                                ref.consumer_id.removeprefix(HISTORY_CONSUMER_PREFIX),
+                                batch.request.instrument_id,
+                                batch.request.start_ns // 1_000_000_000,
+                                (batch.request.end_ns + 1) // 1_000_000_000,
+                                (),
+                                0,
+                                0,
+                                0,
+                                self.clock.timestamp_ns(),
+                                timeframe=ref.capability_id.removeprefix("dashboard.history-page.")
+                                if ref.capability_id != "dashboard.history-page"
+                                else "1m",
+                                status="FAILED",
+                                detail="Provider history does not match the candle contract",
+                            )
                         page_type = DataType(HISTORY_PAGE_TYPE_NAME)
                         self.publish_data(page_type, CustomData(page_type, page))
             if self._minute_book is not None and any(

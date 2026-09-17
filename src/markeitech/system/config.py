@@ -363,11 +363,9 @@ def load_system_config(path: str | Path) -> SystemConfig:
     if dashboard.enabled and len(watchlist.members) > dashboard.maximum_instruments:
         raise ValueError("dashboard maximum_instruments is below watchlist size")
     if dashboard.enabled:
-        history_count = 12 * (
-            min(dashboard.initial_history_minutes, dashboard.candles_per_instrument) + 1
-        )
+        history_count = dashboard.source_history_count
         bar_members = sum("watchlist_last" in m.capabilities for m in watchlist.members)
-        page_count = dashboard.history_page_minutes * 12
+        page_count = dashboard.history_page_candles
         if bar_members and (
             history_count > historical.maximum_observations_per_request
             or page_count > historical.maximum_observations_per_request

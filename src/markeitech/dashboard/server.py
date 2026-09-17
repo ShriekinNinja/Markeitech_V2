@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from markeitech.acquisition.dashboard_history import DashboardHistoryRequest
+from markeitech.acquisition.minute_candles import INTRADAY_TIMEFRAMES
 from markeitech.dashboard.config import DashboardConfig
 
 _STATIC = Path(__file__).parent / "static"
@@ -85,18 +86,33 @@ class DashboardServer:
             pass
         return self._latest
 
-    def _view(self, instrument_id: str | None) -> dict:
+    def _view(self, instrument_id: str | None, timeframe: str = "1m") -> dict:
+        if timeframe not in INTRADAY_TIMEFRAMES:
+            raise HTTPException(422, "Unsupported timeframe")
         snapshot = self._read()
         ids = [row["instrument_id"] for row in snapshot["instruments"]]
         selected = instrument_id or (ids[0] if ids else None)
         if selected is not None and selected not in ids:
             raise HTTPException(404, "Instrument is not in the dashboard watchlist")
         return {
-            **{key: value for key, value in snapshot.items() if key != "candles"},
+            **{
+                key: value
+                for key, value in snapshot.items()
+                if key not in {"candles", "candles_by_timeframe"}
+            },
             "epoch": self._epoch,
             "selected": selected,
-            "candles": snapshot["candles"].get(selected, []),
-            "history_page_minutes": self.config.history_page_minutes,
+            "timeframe": timeframe,
+            "timeframe_seconds": INTRADAY_TIMEFRAMES[timeframe],
+            "bar_selector": f"{INTRADAY_TIMEFRAMES[timeframe] // 60}-MINUTE-LAST-DERIVED",
+            "timestamp_basis": "UTC_interval_open_from_provider_5s_close",
+            "candles": (
+                snapshot["candles"].get(selected, [])
+                if timeframe == "1m"
+                else snapshot.get("candles_by_timeframe", {}).get(selected, {}).get(timeframe, [])
+            ),
+            "history_page_candles": self.config.history_page_candles,
+            "initial_history_candles": self.config.initial_history_candles,
             "history_timeout_seconds": self.config.history_request_timeout_seconds,
         }
 
@@ -163,8 +179,8 @@ class DashboardServer:
             return FileResponse(_STATIC / "index.html")
 
         @app.get("/api/snapshot")
-        async def snapshot(instrument_id: str | None = None) -> dict:
-            return self._view(instrument_id)
+        async def snapshot(instrument_id: str | None = None, timeframe: str = "1m") -> dict:
+            return self._view(instrument_id, timeframe)
 
         @app.post("/api/history", status_code=202)
         async def history(request: Request) -> dict:
@@ -177,18 +193,17 @@ class DashboardServer:
                     raise HTTPException(413, "History request is too large")
             try:
                 payload = json.loads(body)
-                if not isinstance(payload, dict) or payload.keys() != {
-                    "instrument_id",
-                    "start",
-                    "end",
-                }:
+                if not isinstance(payload, dict) or payload.keys() not in (
+                    {"instrument_id", "start", "end"},
+                    {"instrument_id", "start", "end", "timeframe"},
+                ):
                     raise ValueError("invalid fields")
                 command = DashboardHistoryRequest(str(uuid4()), **payload)
             except (ValueError, TypeError):
                 raise HTTPException(
-                    422, "Use an instrument and UTC minute start/end bounds"
+                    422, "Use an instrument and aligned UTC timeframe bounds (1..1000 candles)"
                 ) from None
-            view = self._view(command.instrument_id)
+            view = self._view(command.instrument_id, command.timeframe)
             row = next(
                 r for r in view["instruments"] if r["instrument_id"] == command.instrument_id
             )
@@ -196,11 +211,14 @@ class DashboardServer:
                 raise HTTPException(422, "Instrument has no configured bar feed")
             if command.end > int(time()) // 60 * 60:
                 raise HTTPException(422, "History must end at a completed UTC minute")
-            if command.end - command.start > self.config.history_page_minutes * 60:
-                raise HTTPException(422, "History page exceeds the configured duration")
+            if command.demand().maximum_observations > self.config.history_page_candles:
+                raise HTTPException(422, "History page exceeds the configured candle count")
             self._read_history()
             for _, job in self._history_jobs.values():
-                if all(job.get(key) == value for key, value in payload.items()):
+                if all(
+                    job.get(key) == value
+                    for key, value in {**payload, "timeframe": command.timeframe}.items()
+                ):
                     if job["status"] != "PENDING":
                         job["delivered"] = True
                     return job
@@ -236,8 +254,10 @@ class DashboardServer:
             return job[1]
 
         @app.get("/api/events")
-        async def events(request: Request, instrument_id: str | None = None) -> StreamingResponse:
-            self._view(instrument_id)
+        async def events(
+            request: Request, instrument_id: str | None = None, timeframe: str = "1m"
+        ) -> StreamingResponse:
+            self._view(instrument_id, timeframe)
             if self._clients >= self.config.maximum_clients:
                 raise HTTPException(503, "Dashboard connection limit reached")
             self._clients += 1
@@ -248,7 +268,7 @@ class DashboardServer:
                 previous_candles = {}
                 try:
                     while not self.stopping.is_set() and not await request.is_disconnected():
-                        view = self._view(instrument_id)
+                        view = self._view(instrument_id, timeframe)
                         if view["sequence"] != sequence:
                             reset = sequence == -1 or view["selected"] != previous_selected
                             candles = view["candles"]

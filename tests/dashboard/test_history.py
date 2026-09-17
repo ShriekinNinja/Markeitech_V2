@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from nautilus_trader.model import Bar, BarType
 
 from markeitech.acquisition import HistoricalDependencyCompiler, HistoricalResourcePolicy
 from markeitech.acquisition.dashboard_history import (
@@ -44,25 +45,36 @@ def test_operator_window_compiles_to_exact_native_bounds_and_unique_correlation(
     compiled = batch(command, ()).request
     assert compiled.start_ns == START * SECOND
     assert compiled.end_ns == (START + 120) * SECOND - 1
-    assert compiled.limit == 24
-    assert compiled.selector == "5-SECOND-LAST-EXTERNAL"
+    assert compiled.limit == 2
+    assert compiled.selector == "1-MINUTE-LAST-EXTERNAL"
     assert compiled.dependencies[0].consumer_id == command.consumer_id
     with pytest.raises(ValueError):
         DashboardHistoryRequest(str(uuid4()), ID, START + 1, START + 120)
     with pytest.raises(ValueError):
-        request(121)
+        request(1001)
 
 
 def test_acquisition_page_uses_only_its_window_and_does_not_invent_missing_inputs() -> None:
     command = request()
-    observations = [bar((START + i * 5) * SECOND) for i in range(0, 24)]
-    page = project_history_page(batch(command, observations), command.consumer_id, 10)
-    assert [c.time for c in page.candles] == [START, START + 60]
-    assert page.candles[0].volume == "120"
+    # Only one of two provider intervals exists. Do not fabricate the absent candle.
+    source = bar((START + 60) * SECOND)
+    observation = Bar(
+        BarType.from_str(f"{ID}-1-MINUTE-LAST-EXTERNAL"),
+        source.open,
+        source.high,
+        source.low,
+        source.close,
+        source.volume,
+        source.ts_event,
+        source.ts_init,
+    )
+    page = project_history_page(batch(command, [observation]), command.consumer_id, 10)
+    assert [c.time for c in page.candles] == [START]
+    assert page.candles[0].volume == str(source.volume)
     assert page.candles[0].status == "COMPLETE"
-    assert page.candles[1].volume == "110"
-    assert page.candles[1].status == "INCOMPLETE"
-    assert page.candles[1].historical_inputs == 11
+    assert page.candles[0].historical_inputs == 1
+    assert page.candles[0].provenance == "provider_history"
+    assert page.candles[0].selector == "1-MINUTE-LAST-EXTERNAL"
     empty = project_history_page(batch(command, ()), command.consumer_id, 11)
     assert empty.candles == ()
 
@@ -88,7 +100,10 @@ def test_http_history_admission_is_bounded_same_origin_and_retains_unread_result
             client.post("/api/history", json={**payload, "instrument_id": "BAD.CME"}).status_code
             == 404
         )
-        assert client.post("/api/history", json={**payload, "end": START + 7200}).status_code == 422
+        assert (
+            client.post("/api/history", json={**payload, "end": START + 201 * 60}).status_code
+            == 422
+        )
         response = client.post("/api/history", json=payload)
         assert response.status_code == 202
         job = response.json()
