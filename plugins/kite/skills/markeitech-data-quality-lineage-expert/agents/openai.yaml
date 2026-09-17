@@ -2,6 +2,6 @@ policy:
   allow_implicit_invocation: false
 
 interface:
-  display_name: "Markeitech Data Quality And Lineage"
-  short_description: "Audit market evidence identity and lineage"
-  default_prompt: "Use $kite:markeitech-data-quality-lineage-expert to audit this evidence path's identity, lineage, time, coverage, and fidelity."
+  display_name: "Data Quality Lineage"
+  short_description: "Focused data quality lineage guidance"
+  default_prompt: "Use $kite:markeitech-data-quality-lineage-expert to answer this scoped question using the relevant evidence."

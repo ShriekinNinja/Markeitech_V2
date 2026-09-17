@@ -1,5 +1,9 @@
 # Event-Driven Architecture Review Protocol
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Use this protocol for consequential design, review, or failure analysis. Adapt its depth to the
 risk, but do not omit a boundary whose failure could invalidate the recommendation.
 
@@ -157,5 +161,5 @@ and migration effect.
 
 Stop before implementation if the winning option requires an unapproved architecture, ownership,
 topology, persistence, provider, schema, infrastructure, dependency, runtime-policy, or
-product-semantic change. Present the owning-advisor analysis and decision gate to Markeitect; do
+product-semantic change. Present the supporting analysis and decision gate to Markeitect; do
 not accept or implement it here.

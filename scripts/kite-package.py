@@ -8,7 +8,6 @@ import json
 import re
 import subprocess
 import sys
-import tomllib
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -48,21 +47,13 @@ def bump(root: Path, stamp: str) -> str:
         raise ValueError("STAMP_MUST_BE_UTC_YYYYMMDDHHMMSS")
     datetime.strptime(stamp, "%Y%m%d%H%M%S")
     manifest = root / ".codex-plugin/plugin.json"
-    policy = root / "skills/markeitech-advisor-router/references/council-policy.toml"
     data = json.loads(manifest.read_text())
     old = data["version"]
-    content = policy.read_text()
-    if tomllib.loads(content)["plugin_version"] != old:
-        raise ValueError("SOURCE_VERSION_MISMATCH")
     version = old.split("+", 1)[0] + "+codex." + stamp
     if version == old:
         raise ValueError("VERSION_UNCHANGED")
-    line = f'plugin_version = "{old}"'
-    if content.count(line) != 1:
-        raise ValueError("POLICY_VERSION_LINE_AMBIGUOUS")
     data["version"] = version
     manifest.write_text(json.dumps(data, indent=2) + "\n")
-    policy.write_text(content.replace(line, f'plugin_version = "{version}"'))
     return version
 
 
@@ -77,7 +68,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.command == "bump":
-            validator = [sys.executable, "-B", str(PLUGIN / "scripts/validate_advisor_council.py")]
+            validator = [sys.executable, "-B", str(PLUGIN / "scripts/validate_skill_library.py")]
             subprocess.run(validator, check=True, cwd=ROOT)
             bump(PLUGIN, args.stamp)
             subprocess.run(validator, check=True, cwd=ROOT)

@@ -10,23 +10,15 @@ does not replace them.
 
 ## Codex And Optional Kite Mode
 
-A fresh Codex task starts in normal Codex mode. The installed or enabled Kite plugin is available,
-not active. Do not invoke Kite, its router, a Kite specialist skill, or a Kite custom advisor unless
-Markeitect explicitly selects the Kite plugin, invokes `$kite:markeitech-advisor-router`, or
-explicitly invokes one named specialist skill. Direct specialist invocation is a narrow user
-override; it does not activate Kite mode or count as router acceptance. Merely mentioning or
-discussing Kite is not activation.
+A fresh task starts in normal Codex mode. Kite is available when installed, and activates only
+when Markeitect selects it or invokes `$kite:markeitech-advisor-router`. Casual discussion does
+not activate it. Direct follow-ups remain active; a new or unrelated task returns to normal Codex.
+A directly invoked domain skill applies only to its named question.
 
-Explicit activation starts Kite mode for that task and its direct follow-ups. A new task or an
-unrelated request returns to normal Codex mode unless Kite is explicitly invoked again. While Kite
-mode is active, the plugin owns advisor selection and uses its smallest sufficient advisor set by
-default; Markeitect does not need to name individual advisors.
-
-Kite and its advisor council are development-time engineering collaborators. Sir Loke is the
-accepted first V2 product experience but remains an unimplemented runtime advisory component.
-Kite consultation does not create Sir Loke behavior, product semantics, tool authority, policy
-acceptance, runtime readiness, or completed work. Sir Loke does not invoke or inherit authority
-from the development-time Kite advisor council.
+Kite is a library of focused development-time skills. The primary agent selects and reads the
+guidance needed for the task; Markeitect need not name skills. It has no mandatory advisor roster,
+coverage check, dependency graph, or model-allocation procedure. Sir Loke runtime behavior and
+authority remain separate from Kite.
 
 ## Authority And Precedence
 
@@ -63,47 +55,34 @@ Before acting, inspect the current branch, worktree status, relevant code, and n
 unfamiliar local changes belong to Markeitect or generated tooling. Work with them; never discard,
 overwrite, or normalize them away merely to simplify the task.
 
-## Kite Advisor Consultation
+## Focused Kite Work
 
-The repository-owned Kite plugin packages specialist Markeitech advisors. Those advisors provide
-evidence and recommendations; they do not override this file, tracked project authority, or
-Markeitect's final decision.
+While Kite is active, use relevant skills directly in the primary task. Start from the requested
+outcome, affected code, accepted contract, and nearby tests. Reuse current evidence already
+established in this task unless inputs or material freshness changed. Do not audit every domain
+that a file touches, require separate specialist dispositions, or create new roles to cover gaps.
 
-This section applies only while Kite mode is active. Kite performs the advisor-coverage check
-automatically after explicit activation. Select the smallest sufficient set: every selected role
-must own one exact question whose answer can materially change the recommendation, edit,
-acceptance result, or stop gate. Selection is evidence-bounded Kite judgment; dependency execution
-becomes deterministic only after selected-role edges are recorded. Dependency tiers and adjacent
-usefulness do not activate advisors. Consult each selected domain through its exact custom role
-before planning or editing; do not use a specialist skill directly when that role exists unless
-Markeitect explicitly invoked that skill. An explicit specialist invocation does not count as
-router acceptance. Keep successful, unnecessary, and `NOT_NEEDED` routing silent unless a
-consultation changes the recommendation, exposes material risk, or supplies useful evidence. If
-coverage is missing, report the domain and proposed advisor briefly, then wait for Markeitect's
-approval before creating it or making the consequential domain decision. Do not silently replace
-missing or failed coverage with general engineering knowledge, and do not create advisors merely
-to accumulate generic skills.
+Expand investigation only for a concrete defect, conflicting authority, or missing fact that can
+change this task's result; explain the connection. Keep adjacent improvements outside the batch
+unless they are actual prerequisites. Scope expansion does not expand implementation authority.
+Missing evidence blocks only the dependent conclusion. Preserve all existing approval gates.
 
-Advisor roles have a mandatory read-only consultation contract and declare a read-only sandbox
-default. Effective tool isolation depends on the parent task's live permissions and requires
-separate acceptance evidence; configuration or cooperative behavior alone is not proof of least
-authority. Advisors never receive permission to edit, commit, connect services, consume paid
-capacity, mutate data, or make a project decision.
+For a new or replacement Nautilus capability, inspect the relevant installed/native alternatives
+before custom design. A fix inside an accepted design requires the exact affected contract, not
+a full subsystem census. Source quality, formula validity, domain meaning, and downstream fitness
+remain separate checks that one agent can perform with appropriate evidence.
 
-While Kite mode is active, before a consequential NautilusTrader design, review, plan, or edit
-involving actors, LiveNode, indicators, cache, persistence, catalog, message bus, market data,
-adapters, lifecycle, concurrency, configuration, or framework alignment, delegate a narrow
-read-only consultation to the project-scoped `markeitech_nautilus_advisor` custom agent. That
-advisor must invoke the bundled `$kite:markeitech-nautilus-v2-expert` skill and complete its
-native-capability gate and Nautilus Alignment Matrix before Kite recommends or implements custom
-behavior. Kite remains responsible for validating the returned evidence against tracked authority
-and the current checkout.
+Default to no delegation. Kite may use one bounded, read-only independent reviewer for a named
+question when it materially improves confidence and the host permits it. Use the relevant skills
+with raw evidence; inherit task model/effort unless Markeitect specifies otherwise. A broader
+multi-agent review requires his explicit request. The reviewer never edits, delegates, connects
+services, accesses credentials, or makes project decisions. Reuse it for affected follow-ups.
+If unavailable, report the missing independent check and continue supported direct work; never
+invent evidence or claim review occurred. Declared read-only behavior is not technical isolation.
 
-If a required advisor is unavailable, stale, or cannot inspect its required sources, report that
-limitation and stop before the consequential decision or edit. Do not silently substitute memory,
-stable-channel documentation, or the current custom implementation for the required consultation.
-Invoking an advisor never grants permission to edit, commit, connect services, mutate data, or
-perform another restricted action.
+The old project advisor roles are retired. Historical skills or roles already loaded in an older
+task do not establish the revised behavior; use a coherent reviewed checkout/package and a fresh
+task after an authorized refresh. See `docs/operations/kite.md` for the lifecycle procedure.
 
 ## Delivery And Live Acceptance
 

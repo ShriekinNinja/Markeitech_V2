@@ -1,5 +1,8 @@
 # Sources And Provenance
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Research cut: 2026-08-25. Tracked Markeitech authority and exact executable contracts govern.
 
 - [NIST SSDF](https://csrc.nist.gov/projects/ssdf): secure-development and supply-chain practices;

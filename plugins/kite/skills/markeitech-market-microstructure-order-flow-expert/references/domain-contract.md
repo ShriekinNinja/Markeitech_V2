@@ -1,5 +1,9 @@
 # Market Microstructure And Order Flow Contract
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Use the narrowest defensible evidence rung: direct reported field; deterministic reconstruction;
 deterministic measurement; classified inference; behavioral hypothesis; or unavailable.
 

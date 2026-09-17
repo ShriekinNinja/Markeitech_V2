@@ -1,5 +1,8 @@
 # Public Agent-Skill Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Research date: 2026-08-25. External skills were inspected only for structure and decision-pattern
 inspiration. No external prose, formulas, thresholds, strategy rules, or code was copied into the
 Markeitech skill.

@@ -1,5 +1,8 @@
 # Research And Source Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Access date: 2026-08-25. This ledger records sources used to design the advisor, not permanent
 product or dependency approval. Refresh versioned or drift-prone sources before consequential use.
 

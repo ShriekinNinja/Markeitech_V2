@@ -5,7 +5,6 @@ from __future__ import annotations
 import importlib.util
 import json
 import tempfile
-import tomllib
 import unittest
 from pathlib import Path
 
@@ -22,33 +21,24 @@ class PackageTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.manifest = self.root / ".codex-plugin/plugin.json"
-        self.policy = self.root / "skills/markeitech-advisor-router/references/council-policy.toml"
         self.manifest.parent.mkdir(parents=True)
-        self.policy.parent.mkdir(parents=True)
         self.manifest.write_text(
             json.dumps({"name": "kite", "version": "0.1.0+codex.20260801000000"})
         )
-        self.policy.write_text('plugin_version = "0.1.0+codex.20260801000000"\n')
 
-    def test_bump_preserves_base_and_updates_both_owners(self) -> None:
+    def test_bump_preserves_base_without_requiring_a_council_policy(self) -> None:
         version = PACKAGE.bump(self.root, "20260905210000")
         self.assertEqual(version, "0.1.0+codex.20260905210000")
         self.assertEqual(json.loads(self.manifest.read_text())["version"], version)
-        self.assertEqual(tomllib.loads(self.policy.read_text())["plugin_version"], version)
         before = PACKAGE.inventory(self.root)
         with self.assertRaisesRegex(ValueError, "VERSION_UNCHANGED"):
             PACKAGE.bump(self.root, "20260905210000")
         self.assertEqual(before, PACKAGE.inventory(self.root))
 
-    def test_mismatch_or_bad_stamp_does_not_mutate(self) -> None:
+    def test_bad_stamp_does_not_mutate(self) -> None:
         before = PACKAGE.inventory(self.root)
         with self.assertRaises(ValueError):
             PACKAGE.bump(self.root, "20261301000000")
-        self.assertEqual(before, PACKAGE.inventory(self.root))
-        self.policy.write_text('plugin_version = "other"\n')
-        before = PACKAGE.inventory(self.root)
-        with self.assertRaisesRegex(ValueError, "SOURCE_VERSION_MISMATCH"):
-            PACKAGE.bump(self.root, "20260905210000")
         self.assertEqual(before, PACKAGE.inventory(self.root))
 
     def test_identity_includes_extra_content_and_rejects_symlinks(self) -> None:

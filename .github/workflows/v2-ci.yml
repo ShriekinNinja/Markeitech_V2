@@ -58,6 +58,10 @@ jobs:
         run: uv sync --locked --dev
       - name: Run offline V2 tests
         run: .venv/bin/markeitech verify test
+      - name: Verify Kite skill package
+        run: |
+          .venv/bin/python -B plugins/kite/scripts/validate_skill_library.py
+          .venv/bin/python -B -m unittest discover -s plugins/kite/tests
 
   postgres-tests:
     name: V2 PostgreSQL Integration

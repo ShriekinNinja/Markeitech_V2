@@ -232,12 +232,13 @@ Enabling the webhook actor cannot turn it into Sir Loke.
 
 ### Development collaboration tooling
 
-The development-time Kite router now has an offline advisor-capacity preflight and dispatch
-validator, tracked in [issue #47](https://github.com/ShriekinNinja/Markeitech_V2/issues/47).
-It checks complete selected plans, retained open threads, dependency readiness, and bounded
-confirmed-refusal recovery while preserving model-execution budgets. See the
-[operations guide](operations/kite.md#advisor-capacity-and-dispatch). Source validation does not
-establish installed-host behavior, release actual agent slots, or change Sir Loke/Gate 1 readiness.
+Kite now supplies focused domain skills for direct use by the primary agent, with optional
+independent review. Issue [#63](https://github.com/ShriekinNinja/Markeitech_V2/issues/63) retires the
+mandatory advisor roster and allocation/dispatch machinery. The existing explicit router command
+remains compatible. See [the library overview](development/kite-advisor-council.md) and
+[evaluation record](development/kite-focused-skills-evaluation.md). Source-directed checks do not
+establish installed-host discovery, technical isolation, or Markeitect's usefulness verdict.
+This development tooling change does not change Sir Loke readiness or runtime behavior.
 
 ## Sir Loke V1 Gap
 

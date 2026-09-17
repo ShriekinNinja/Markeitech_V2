@@ -108,31 +108,18 @@ codex plugin add kite@markeitech
 
 Start a new Codex task after installation so its bundled skills are discovered. A new task remains
 normal Codex: installing or enabling Kite makes it available, not active. Explicitly select Kite or
-invoke `$kite:markeitech-advisor-router` to activate Kite for one task and its direct follow-ups;
-Kite then selects required advisors by default. The plugin contains engineering advisors and
-declares no runtime code, package dependency, credential, MCP server, app connector, or autonomous
-authority. Some advisors require approved unauthenticated public documentation for current
-evidence. Repository or global Codex configuration is a separate trust surface and is not made safe
-by the plugin manifest. `AGENTS.md` remains the always-on repository authority while keeping Kite
-dormant unless explicitly invoked.
+invoke `$kite:markeitech-advisor-router` for a task and direct follow-ups. Kite selects relevant
+skills for the primary agent; no project advisor roles or council dispatch are required.
+The package adds no runtime code, dependency, credential, MCP server, or app connector.
 
-The council overview and acceptance status are documented in
-[`kite-advisor-council.md`](../development/kite-advisor-council.md); that document
-links the canonical machine-checkable policy and observed acceptance ledger.
-For installation, update/reinstall, byte verification, purge, project-role behavior, fresh-task
-acceptance, recovery, and rollback, follow the [Kite operations runbook](kite.md).
-The tracked `python3 -B scripts/kite-package.py bump` procedure updates both package version owners;
-source validation must not be reported as installed routing proof.
-
-Run the dependency-free source validator from the repository root:
+See [Kite focused skills](../development/kite-advisor-council.md) for the workflow and
+[Kite operations](kite.md) for authorized installation, versioning, identity, fresh-task checks,
+and rollback. Source validation is not installed-behavior proof.
 
 ```bash
-python3 -B plugins/kite/scripts/validate_advisor_council.py
-python3 -B -m unittest plugins/kite/tests/test_validate_advisor_council.py
+python3 -B plugins/kite/scripts/validate_skill_library.py
+python3 -B -m unittest discover -s plugins/kite/tests
 ```
-
-The validator proves structural policy only. It does not prove fresh-task selection, delegated
-execution, effective read-only tool isolation, redaction, safe failure, or plugin revocation.
 
 ## 2. Create Local Configuration
 

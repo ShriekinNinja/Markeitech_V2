@@ -2,6 +2,6 @@ policy:
   allow_implicit_invocation: false
 
 interface:
-  display_name: "Markeitech PostgreSQL Persistence Expert"
-  short_description: "Evidence-first PostgreSQL persistence advice"
-  default_prompt: "Use $kite:markeitech-postgres-persistence-expert to review this Markeitech persistence decision against current repository authority and version-matched PostgreSQL evidence."
+  display_name: "Postgres Persistence"
+  short_description: "Focused postgres persistence guidance"
+  default_prompt: "Use $kite:markeitech-postgres-persistence-expert to answer this scoped question using the relevant evidence."

@@ -1,5 +1,8 @@
 # Event-Driven Architecture Source Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Last researched: 2026-08-25. Refresh versioned and `current` sources before a consequential design
 or audit. These sources inform questions and failure analysis; they do not override tracked
 Markeitech authority or prove the installed NautilusTrader contract.

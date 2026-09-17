@@ -1,5 +1,9 @@
 # Options And 0DTE Domain Contract
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 ## Questions This Advisor Owns
 
 - Whether an option chain or contract identity is sufficiently exact for the stated decision.
@@ -20,8 +24,7 @@ provider ownership, risk policy, execution, trading, release, or external action
 
 It also does not own underlying swing, pivot, FVG, zone, or auction-structure semantics; provider
 entitlement truth; OPRA or vendor licensing; statistical or causal validation; participant or
-dealer-position inference; execution quality; margin; liquidation; or account-risk policy. Use the
-router and the owning specialist whenever those questions are material.
+dealer-position inference; execution quality; margin; liquidation; or account-risk policy. Use the relevant skill and primary evidence only when those questions affect the requested result.
 
 ## Exact Identity Gate
 
@@ -143,22 +146,12 @@ A sound thesis may have no usable option. A high-quality option does not create 
 opportunity may have several expression candidates, several opportunities may coexist, and the
 advisor may abstain from ranking when evidence is not comparable.
 
-## Required Other Advisors
+## Evidence Across Boundaries
 
-Stop and invoke the repository advisor router when the work materially crosses domains:
+For a claim outside option mechanics, inspect its own source: installed adapter contracts,
+vendor-field definitions, provider delivery/entitlements, governing use terms, or quantitative
+evaluation. The primary agent can read the relevant skill directly. Do not infer delivery,
+permission, predictive value, or participant intent from contract mechanics.
 
-- Nautilus actors, adapters, native option types, cache, message bus, subscription ownership,
-  lifecycle, concurrency, persistence, or installed-version behavior require the project-scoped
-  Nautilus advisor and its native-capability gate.
-- Vendor schemas, sweeps/blocks/repeats, complex-order ambiguity, classifications, premium
-  aggregation, filters and transformations require `markeitech_options_flow_advisor`.
-- Provider entitlements or exchange routing require the provider advisor; OPRA redistribution,
-  non-display use, retention, derived data, or vendor licensing require
-  `markeitech_vendor_data_licensing_provenance_advisor`. If unavailable, stop.
-- Execution, fill models, order types, margin, liquidation, exercise instructions, assignment,
-  position/risk limits, or automated actions require separately approved execution and risk
-  specialists. This options advisor does not supply that authority.
-- Tax, legal, regulatory, suitability, or accounting conclusions require qualified coverage and
-  current jurisdiction-specific authority.
-- Statistical validation, causal market-impact claims, or optimization require an appropriate
-  quantitative-methods review independent of the builder.
+Execution, account risk, and automated actions remain outside current authority. Tax, legal,
+regulatory, suitability, and accounting conclusions require current qualified authority.

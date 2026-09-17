@@ -1,5 +1,9 @@
 # Options And 0DTE Review Protocol
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 ## 1. Frame The Decision
 
 State the exact question, decision owner, affected stage, products, provider, session, horizon,
@@ -85,9 +89,9 @@ Abstain when independent dimensions conflict or evidence cannot support the requ
 ## 8. Escalate Cross-Domain Decisions
 
 Use the boundaries in `domain-contract.md`. In particular, any consequential Nautilus or IB
-adapter design requires the project Nautilus advisor before a custom behavior recommendation.
-Provider licensing, automated execution, margin/liquidation, and legal/tax conclusions require
-their own approved specialist coverage.
+adapter design needs the relevant installed Nautilus evidence before a custom behavior recommendation.
+Provider licensing and legal/tax conclusions need current governing terms and qualified authority
+where necessary. Automated execution and new account-risk policy remain outside this task.
 
 ## 9. Define Acceptance Before Implementation
 
@@ -114,7 +118,7 @@ Stop before recommendation or implementation when any of these is material and u
 - a variable policy without bounded configuration and safe rejection behavior;
 - an inference presented as observation, or a vendor/model estimate presented as positioning;
 - an architecture, persistence, execution, risk, legal, tax, or regulatory decision lacking the
-  required advisor and approval.
+  required evidence and approval.
 
 ## Completion Checklist
 

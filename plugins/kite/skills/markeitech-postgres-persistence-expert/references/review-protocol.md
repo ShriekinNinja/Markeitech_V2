@@ -1,5 +1,9 @@
 # PostgreSQL Persistence Review Protocol
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Select only the modes relevant to the request. This protocol is advisory and read-only; it does
 not authorize SQL execution, migrations, repairs, retention, backup, restore, or infrastructure
 changes.
@@ -97,7 +101,7 @@ Do not infer rollback or commit from exception shape when the server outcome may
 
 For Psycopg, verify the locked version and actual context-manager/autocommit behavior. A connection
 context, transaction context, cursor, statement, and database transaction are different boundaries.
-Route Python thread/queue/shutdown mechanics to the Python runtime advisor.
+Read the Python runtime skill if thread/queue/shutdown mechanics affect this database question.
 
 ## Retention, Backup, And Recovery Mode
 
