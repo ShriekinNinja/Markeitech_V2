@@ -138,3 +138,8 @@ main { padding: 14px 14px 10px; min-width: 0; display: flex; flex-direction: col
 
 
 .chart-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; padding-left: 16px; border-left: 1px solid #333; }
+
+#chart-loading { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #111; color: var(--muted); font-size: 12px; cursor: wait; }
+.loading-spinner { width: 24px; height: 24px; border: 2px solid #333; border-top-color: var(--gold); border-radius: 50%; animation: chart-loading-spin .9s linear infinite; }
+@keyframes chart-loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .loading-spinner { animation: none; } }

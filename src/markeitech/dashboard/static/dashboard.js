@@ -214,7 +214,12 @@
     const phase=candles.at(-1)?.status?.toLowerCase() || "waiting";
     $("window-status").textContent=`${candles.length} candles · ${phase} · History ${historyResultState}${incomplete?` · ${incomplete} incomplete`:""}`;
   }
+  function initialLoading(loading) {
+    $("chart-loading").hidden=!loading;
+    $("chart-loading").parentElement.setAttribute("aria-busy",String(loading));
+  }
   async function select(id) {
+    initialLoading(true);
     const token=++generation;if(stream)stream.close();stream=null;
     selected=id;historyResultState="waiting";candles=[];liveCandles.clear();historyCandles.clear();rangeMode=null;oldestCursor=null;historyBusy=false;historyIntent=false;following=true;$("follow").setAttribute("aria-pressed","true");$("older").disabled=false;$("show-range").disabled=false;historyStatus("");series.setData([]);if(priceLine){series.removePriceLine(priceLine);priceLine=null;}
     $("chart-empty").hidden=false;$("chart-empty").querySelector("h3").textContent="Loading instrument…";
@@ -234,6 +239,7 @@
         await loadHistory(end-initialCandles*timeframeSeconds,end,false,true);
       }
     } catch {if(token===generation){setConnected(false,"Unavailable · retrying");setTimeout(()=>{if(token===generation)select(id);},2000);}}
+    finally {if(token===generation)initialLoading(false);}
   }
   window.addEventListener("pagehide",()=>stream?.close());
   const now=Math.floor(Date.now()/60000)*60;$("range-start").value=datetimeValue(now-3600);$("range-end").value=datetimeValue(now);

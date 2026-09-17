@@ -177,3 +177,14 @@ through the approved generators; the example configuration hash was recomputed f
 The earlier rc4 cache/catalog research is historical evidence and must be rechecked against rc5
 before storage implementation. No connected provider, Discord or PostgreSQL acceptance was run.
 The previously observed steady-state dashboard acceptance does not prove rc5 live compatibility.
+
+## Chart loading and favicon — 2026-09-17
+
+The dashboard serves a packaged, byte-identical copy of `docs/assets/favicon.ico` from its
+existing static route. The chart-only loading overlay spans the initial snapshot and first
+history fetch for each instrument/timeframe selection. It clears when that selection finishes
+or fails; stale requests cannot clear a newer selection's overlay. Older pages and explicit
+date-range requests keep the chart visible. The spinner respects reduced-motion preferences.
+An isolated delayed synthetic feed verified initial loading, completion, nonblocking Older
+loading and a new timeframe's loading state. The favicon response returned HTTP 200 with
+bytes identical to the approved asset. No live service was accessed for these checks.
