@@ -290,8 +290,10 @@ Recorded connected acceptance is useful but narrow:
 - V3-01 accepted the canonical `cme_equity` calendar path for one tracked ES profile and one
   bounded lookback/lookahead envelope.
 - V3-02 accepted one late-consumer current-state recovery and five-bar historical request chain.
-- Existing connected evidence predates the rc5 upgrade unless a record explicitly says otherwise;
-  the rc5 upgrade itself has offline verification only.
+- The rc5 dependency upgrade passed offline verification. Markeitect reports an online-verified
+  rc5 run using `config/system.example.toml` on 2026-09-17. The exact head, provider responses,
+  and sanitized result are not recorded here; [issue #59](https://github.com/ShriekinNinja/Markeitech_V2/issues/59)
+  tracks the bounded historical timestamp calibration.
 - No connected acceptance establishes SPXW/QQQ options acquisition, a Discord bot, a live model,
   Sir Loke advice, account observation, manual TWS trade detection, or trade monitoring.
 

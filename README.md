@@ -33,8 +33,8 @@ does not place orders; automated execution is intentionally absent.
 The implemented foundation includes:
 
 - NautilusTrader `2.0.0rc5` with a guarded Interactive Brokers market-data connection
-  (the dependency update has offline verification; earlier connected evidence does not
-  establish rc5 provider behavior);
+  (the dependency update has offline verification; Markeitect reports the rc5 example profile
+  running online, with historical timestamp calibration tracked in issue #59);
 - actor-owned system control, static watchlist, and shared native acquisition;
 - session/calendar ownership and adaptive evidence-health contracts;
 - purpose-specific historical dependency execution;

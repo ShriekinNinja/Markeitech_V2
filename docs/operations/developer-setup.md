@@ -232,6 +232,7 @@ Nautilus and Markeitech still normalize bar instants to Unix nanoseconds and use
 Keep execution unavailable. Each user must supply their own account, permissions, and
 subscriptions. A dependency or TWS/Gateway change requires one bounded connected timestamp
 calibration before historical-data acceptance.
+Record the rc5 result in [issue #59](https://github.com/ShriekinNinja/Markeitech_V2/issues/59).
 
 See [V2 Interactive Brokers setup](ib-setup.md) for the complete checklist.
 

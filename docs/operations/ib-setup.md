@@ -69,6 +69,7 @@ The repository does not include account credentials or entitlements.
    syntax only: Nautilus and Markeitech retain absolute Unix-nanosecond timestamps internally.
    Do not infer API behavior from the TWS chart display timezone. Recalibrate with one bounded
    connected request after a consequential TWS/Gateway, Nautilus adapter, or `ibapi` parser change.
+   Record the rc5 result in [issue #59](https://github.com/ShriekinNinja/Markeitech_V2/issues/59).
 
 This checklist is accepted only for the implemented market-data client. Do not change to client ID
 `0`, enable automatic open-order download/binding, disable read-only mode, or add an execution
