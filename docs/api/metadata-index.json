@@ -29,7 +29,7 @@
         "kind": "markeitech_actor",
         "label": "Data Acquisition",
         "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
-        "record_sha256": "21c5fe66a721c9395f0b932da1c9156c25a81938aee5f14edd6a11f5b5934585",
+        "record_sha256": "3eb5e1d9026d5582a53bc9c064a0e1b4d3dda661705fa5374e43610b18c9c7f8",
         "responsibilities": [
           "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
           "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
@@ -38,7 +38,7 @@
           "Derive bounded UTC minute candles and requested history pages from five-second inputs."
         ],
         "source": "src/markeitech/system/acquisition.py",
-        "source_sha256": "393df6fa270553f43bb7de4f38cbe646820e086132595aba8a3aec9ee4cfba2c"
+        "source_sha256": "351d2882bd85647517267c9359ce2388d88923c5e7cd9695e9555a7ad5595dcd"
       },
       {
         "boundary": "boundary.system",
@@ -208,7 +208,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "8420550aa61fd0c03e667057113e93c718bfde3b542963c310b6c1321f594836"
+    "source_snapshot_sha256": "472cf4c7873366f8e364bc6debfc92a1b5b078b73c228a7693ca1be3718e24dd"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -416,7 +416,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.historical_execution.HistoricalBatch",
-        "definition_line": 122,
+        "definition_line": 123,
         "exposed": "markeitech.acquisition.HistoricalBatch",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -471,7 +471,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.historical_execution.HistoricalDependencyResult",
-        "definition_line": 174,
+        "definition_line": 175,
         "exposed": "markeitech.acquisition.HistoricalDependencyResult",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -482,7 +482,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.historical_execution.HistoricalExecutionCoordinator",
-        "definition_line": 220,
+        "definition_line": 221,
         "exposed": "markeitech.acquisition.HistoricalExecutionCoordinator",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -493,7 +493,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.historical_execution.HistoricalExecutionError",
-        "definition_line": 216,
+        "definition_line": 217,
         "exposed": "markeitech.acquisition.HistoricalExecutionError",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -504,7 +504,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.historical_execution.HistoricalExecutionEvent",
-        "definition_line": 111,
+        "definition_line": 112,
         "exposed": "markeitech.acquisition.HistoricalExecutionEvent",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -526,7 +526,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.historical_execution.HistoricalExecutionPolicy",
-        "definition_line": 90,
+        "definition_line": 91,
         "exposed": "markeitech.acquisition.HistoricalExecutionPolicy",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -537,7 +537,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.historical_execution.HistoricalExecutionPort",
-        "definition_line": 36,
+        "definition_line": 37,
         "exposed": "markeitech.acquisition.HistoricalExecutionPort",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -548,7 +548,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.historical_execution.HistoricalExecutionState",
-        "definition_line": 13,
+        "definition_line": 14,
         "exposed": "markeitech.acquisition.HistoricalExecutionState",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -559,7 +559,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.historical_execution.HistoricalExecutionUpdate",
-        "definition_line": 186,
+        "definition_line": 187,
         "exposed": "markeitech.acquisition.HistoricalExecutionUpdate",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -592,7 +592,7 @@
       {
         "alias": true,
         "canonical": "markeitech.acquisition.historical_execution.HistoricalReadinessState",
-        "definition_line": 26,
+        "definition_line": 27,
         "exposed": "markeitech.acquisition.HistoricalReadinessState",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.acquisition.__all__",
@@ -1331,7 +1331,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 76,
-    "input_signature": "8420550aa61fd0c03e667057113e93c718bfde3b542963c310b6c1321f594836"
+    "input_signature": "472cf4c7873366f8e364bc6debfc92a1b5b078b73c228a7693ca1be3718e24dd"
   },
-  "source_snapshot_sha256": "8420550aa61fd0c03e667057113e93c718bfde3b542963c310b6c1321f594836"
+  "source_snapshot_sha256": "472cf4c7873366f8e364bc6debfc92a1b5b078b73c228a7693ca1be3718e24dd"
 }

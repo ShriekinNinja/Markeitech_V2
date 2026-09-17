@@ -28,7 +28,7 @@
       "kind": "markeitech_actor",
       "label": "Data Acquisition",
       "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
-      "record_sha256": "21c5fe66a721c9395f0b932da1c9156c25a81938aee5f14edd6a11f5b5934585",
+      "record_sha256": "3eb5e1d9026d5582a53bc9c064a0e1b4d3dda661705fa5374e43610b18c9c7f8",
       "responsibilities": [
         "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
         "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
@@ -37,7 +37,7 @@
         "Derive bounded UTC minute candles and requested history pages from five-second inputs."
       ],
       "source": "src/markeitech/system/acquisition.py",
-      "source_sha256": "393df6fa270553f43bb7de4f38cbe646820e086132595aba8a3aec9ee4cfba2c"
+      "source_sha256": "351d2882bd85647517267c9359ce2388d88923c5e7cd9695e9555a7ad5595dcd"
     },
     {
       "boundary": "boundary.system",
@@ -207,5 +207,5 @@
   },
   "schema_id": "markeitech-architecture-class-components",
   "schema_version": 1,
-  "source_snapshot_sha256": "8420550aa61fd0c03e667057113e93c718bfde3b542963c310b6c1321f594836"
+  "source_snapshot_sha256": "472cf4c7873366f8e364bc6debfc92a1b5b078b73c228a7693ca1be3718e24dd"
 }
