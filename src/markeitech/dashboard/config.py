@@ -7,11 +7,11 @@ from dataclasses import dataclass, fields
 class DashboardConfig:
     """Bound startup-only dashboard resources; durations are seconds or milliseconds.
 
-    Policy version 4 exposes only loopback HTTP. History is transient per instrument,
+    Policy version 5 exposes only loopback HTTP. History is transient per instrument,
     and the projection interval limits browser publication, not provider cadence.
     """
 
-    policy_version: int = 4
+    policy_version: int = 5
     enabled: bool = False
     port: int = 8765
     maximum_instruments: int = 64
@@ -20,7 +20,6 @@ class DashboardConfig:
     initial_history_candles: int = 200
     history_page_candles: int = 200
     maximum_history_requests: int = 4
-    maximum_history_requests_per_session: int = 256
     history_request_timeout_seconds: int = 120
     publish_interval_ms: int = 250
     acquisition_retry_interval_ms: int = 1000
@@ -31,7 +30,7 @@ class DashboardConfig:
         if type(self.enabled) is not bool:
             raise ValueError("dashboard.enabled must be a boolean")
         bounds = {
-            "policy_version": (4, 4),
+            "policy_version": (5, 5),
             "port": (1024, 65535),
             "maximum_instruments": (1, 256),
             "candles_per_instrument": (2, 5000),
@@ -39,7 +38,6 @@ class DashboardConfig:
             "initial_history_candles": (1, 1000),
             "history_page_candles": (1, 1000),
             "maximum_history_requests": (1, 16),
-            "maximum_history_requests_per_session": (1, 4096),
             "history_request_timeout_seconds": (10, 300),
             "publish_interval_ms": (100, 5000),
             "acquisition_retry_interval_ms": (100, 10000),
@@ -67,6 +65,12 @@ class DashboardConfig:
                 raise ValueError("legacy dashboard.history_page_minutes must be 1..120")
             # Preserve the legacy one-minute page count, now at each selected interval.
             values.setdefault("history_page_candles", legacy_page)
+        if isinstance(values, dict) and values.get("policy_version") == 4:
+            values = dict(values)
+            legacy_limit = values.pop("maximum_history_requests_per_session", 256)
+            if type(legacy_limit) is not int or not 1 <= legacy_limit <= 4096:
+                raise ValueError("legacy dashboard history session limit must be 1..4096")
+            values["policy_version"] = 5
         if not isinstance(values, dict) or values.keys() - {f.name for f in fields(cls)}:
             raise ValueError("dashboard must be a table with known policy fields")
         return cls(**values)

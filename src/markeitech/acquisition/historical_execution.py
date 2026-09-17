@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass, replace
 from enum import StrEnum
 from typing import Protocol
@@ -231,6 +232,7 @@ class HistoricalExecutionCoordinator:
         self._pending: dict[str, _PendingRequest] = {}
         self._active: dict[str, _ActiveRequest] = {}
         self._terminal: set[str] = set()
+        self._dashboard_terminal: deque[str] = deque()
 
     @property
     def pending_request_ids(self) -> tuple[str, ...]:
@@ -334,7 +336,7 @@ class HistoricalExecutionCoordinator:
             self._authority.source_schema_id,
         )
         del self._active[request_id]
-        self._terminal.add(request_id)
+        self._remember_terminal(active.request)
         results = tuple(
             self._readiness_result(
                 active.request,
@@ -415,8 +417,18 @@ class HistoricalExecutionCoordinator:
         )
         return update.extend(self._dispatch(now_ns))
 
+    def _remember_terminal(self, request: HistoricalRequest) -> None:
+        self._terminal.add(request.request_id)
+        if request.dependencies and all(
+            ref.consumer_id.startswith("DASHBOARD-HISTORY:") for ref in request.dependencies
+        ):
+            self._dashboard_terminal.append(request.request_id)
+            while len(self._dashboard_terminal) > self._policy.maximum_queued_requests:
+                self._terminal.discard(self._dashboard_terminal.popleft())
+
     def _dispatch(self, now_ns: int) -> HistoricalExecutionUpdate:
         events: list[HistoricalExecutionEvent] = []
+        results: list[HistoricalDependencyResult] = []
         while len(self._active) < self._policy.maximum_in_flight_requests:
             eligible = [
                 pending
@@ -442,6 +454,7 @@ class HistoricalExecutionCoordinator:
                     detail=f"provider submission failed: {type(exc).__name__}: {exc}",
                 )
                 events.extend(update.events)
+                results.extend(update.results)
                 continue
             self._active[pending.request.request_id] = _ActiveRequest(
                 pending.request,
@@ -456,7 +469,7 @@ class HistoricalExecutionCoordinator:
                     now_ns,
                 ),
             )
-        return HistoricalExecutionUpdate(events=tuple(events))
+        return HistoricalExecutionUpdate(events=tuple(events), results=tuple(results))
 
     def _retry_or_finish(
         self,
@@ -502,7 +515,7 @@ class HistoricalExecutionCoordinator:
         readiness_state: HistoricalReadinessState,
         detail: str,
     ) -> HistoricalExecutionUpdate:
-        self._terminal.add(active.request.request_id)
+        self._remember_terminal(active.request)
         return HistoricalExecutionUpdate(
             events=(
                 self._event(

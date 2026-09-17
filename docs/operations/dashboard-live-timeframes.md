@@ -188,3 +188,42 @@ date-range requests keep the chart visible. The spinner respects reduced-motion 
 An isolated delayed synthetic feed verified initial loading, completion, nonblocking Older
 loading and a new timeframe's loading state. The favicon response returned HTTP 200 with
 bytes identical to the approved asset. No live service was accessed for these checks.
+
+
+## History lifecycle correction — 2026-09-17
+
+Dashboard policy 5 removes the lifetime history-request quota. Policy 3/4 mappings migrate in
+memory, validate and discard the obsolete quota without rewriting local files. Active requests
+retain the existing `maximum_history_requests` bound. Terminal results have a separate buffer
+of the same capacity and retain the existing timeout; oldest results can be evicted, and a
+client polling an evicted/expired ID receives 404. Unread results cannot block admission.
+
+When all active slots are occupied, HTTP returns 429 and the current browser selection retries
+using `acquisition_retry_interval_ms`, bounded by `history_request_timeout_seconds`. Switching
+selection stops that browser retry/poll loop. Already admitted provider requests finish or time
+out through the existing coordinator; no unsupported provider cancellation or concurrency
+increase is introduced. Existing request expiry, provider retries and history/live isolation remain.
+
+Acquisition publishes terminal lifecycle, data and readiness before removing dashboard page
+request metadata. The coordinator retains the most recent dashboard terminal IDs up to
+`historical.maximum_outstanding_requests`; active/retrying IDs are never retired. Dashboard
+requests use fresh UUIDs, so ordinary browsing does not reuse retired IDs. Duplicate rejection
+for page IDs outside this bounded window is not promised. Other consumers retain their existing
+terminal identity protection. Immediate terminal submission failures now retain the request long
+enough to publish their result instead of raising a lost-request error. Dispatch also forwards
+terminal readiness results on submission failure; previously it forwarded only lifecycle events.
+
+Native check, 2026-09-17: installed NautilusTrader 2.0.0rc5 exposes request_bars and no public
+historical cancellation on DataActor. Refreshed nightly guide/API roots; the API site still
+labels itself rc4, so the installed interface governs this change. No provider probe was run.
+
+| Requirement | Native candidate | Installed evidence | Provider evidence | Fit | Owner | Decision | Extension rationale | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Bounded provider requests | DataActor.request_bars | rc5 method and existing request port | Existing accepted delivery; no new connected run | Reuse existing execution lane | DataAcquisitionActor | USE_NATIVE | No new provider owner | Existing execution tests |
+| Browser abandonment and retained results | HTTP jobs and native request lifecycle | No native historical cancellation exposed | Cancellation not claimed | Finish admitted work; stop obsolete browser waits | Dashboard HTTP worker / acquisition | WRAP_NATIVE | HTTP result retention and page metadata belong to existing application owners | Repeated unread completions/failures, expiry, metadata retirement and rapid switching |
+
+No Redis, catalog, raw-data persistence, new actor, 4h/daily or reconnect changes are included.
+Operator review: rapidly switch instrument/timeframe while history loads, then leave one selected;
+it should finish without requiring restart. Repeat Older requests, test a failed/empty window,
+and verify the current candle continues updating. Busy waits are bounded and a sustained stall
+remains visible rather than increasing provider concurrency.

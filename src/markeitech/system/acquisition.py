@@ -589,9 +589,7 @@ class DataAcquisitionActor(DataActor):
             )
             update = self._historical.enqueue((request,), now_ns=now_ns)
             current = self._historical.request_for(request.request_id)
-            if current is None:
-                raise RuntimeError("historical coordinator lost an enqueued request")
-            self._historical_requests[request.request_id] = current
+            self._historical_requests[request.request_id] = current or request
             self._publish_historical_update(update)
         except ValueError as exc:
             self.log.error(
@@ -708,6 +706,16 @@ class DataAcquisitionActor(DataActor):
                 f" | consumer_id={message.consumer_id} | request_id={message.request_id}"
                 f" | observations={message.observed_count}/{message.minimum_observations}",
             )
+
+        # Publish all terminal events, batches and readiness before dropping page metadata.
+        # Dashboard page IDs are unique; retries keep their metadata while still active.
+        for result in update.results:
+            request = self._historical_requests.get(result.request_id)
+            if request is not None and request.dependencies and all(
+                ref.consumer_id.startswith(HISTORY_CONSUMER_PREFIX)
+                for ref in request.dependencies
+            ):
+                self._historical_requests.pop(result.request_id, None)
 
     def _observe(
         self,

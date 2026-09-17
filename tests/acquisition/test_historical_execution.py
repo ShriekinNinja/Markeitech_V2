@@ -273,3 +273,30 @@ def test_duplicate_active_enqueue_is_idempotent_but_terminal_reuse_is_rejected()
     assert duplicate.events == ()
     with pytest.raises(HistoricalExecutionError, match="terminal historical request"):
         coordinator.enqueue((request,), now_ns=4)
+
+
+@pytest.mark.parametrize("outcome", ["complete", "fail", "cancel", "timeout"])
+def test_dashboard_terminal_metadata_is_bounded_without_weakening_other_consumers(outcome):
+    port = RecordingHistoricalPort()
+    coordinator = _coordinator(port, maximum_queued_requests=2, maximum_attempts=1)
+    ordinary = _request("ordinary")
+    coordinator.enqueue((ordinary,), now_ns=0)
+    coordinator.complete("ordinary", observations=(), now_ns=1)
+    for i in range(20):
+        request = _request(str(i), dependencies=(_dependency(f"DASHBOARD-HISTORY:{i}", 1),))
+        coordinator.enqueue((request,), now_ns=1000 * (i + 1))
+        if outcome == "complete":
+            coordinator.complete(str(i), observations=(), now_ns=1000 * (i + 1) + 1)
+        elif outcome == "fail":
+            coordinator.fail(str(i), reason="test", retryable=False, now_ns=1000 * (i + 1) + 1)
+        elif outcome == "cancel":
+            coordinator.cancel(str(i), now_ns=1000 * (i + 1) + 1)
+        else:
+            coordinator.advance(now_ns=1000 * (i + 1) + 101)
+        assert len(coordinator._dashboard_terminal) <= 2
+        assert len(coordinator._terminal) <= 3
+        assert not coordinator.active_request_ids and not coordinator.pending_request_ids
+    with pytest.raises(HistoricalExecutionError, match="terminal"):
+        coordinator.enqueue((ordinary,), now_ns=30000)
+    with pytest.raises(HistoricalExecutionError, match="terminal"):
+        coordinator.enqueue((request,), now_ns=30000)

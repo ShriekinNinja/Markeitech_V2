@@ -37,7 +37,7 @@ ping_critical_resource_alerts = true
 # Local browser dashboard. All settings are startup-only; restart to apply changes.
 # Policy version identifies this bounded display contract; no raw data is persisted.
 [dashboard]
-policy_version = 4 # Selected-timeframe native history with five-second forming updates.
+policy_version = 5 # Selected-timeframe native history with five-second forming updates.
 enabled = true # Set true to start/stop the dashboard with the system.
 port = 8765 # TCP port, 1024..65535; binds to 127.0.0.1 only.
 maximum_instruments = 64 # 1..256; must cover every enabled watchlist member.
@@ -51,7 +51,6 @@ shutdown_timeout_seconds = 5 # 1..30 seconds to drain/close the web-server worke
 initial_history_candles = 200 # 1..1000 selected intervals on selection, capped by display capacity.
 history_page_candles = 200 # 1..1000 selected intervals per native history page; closed sessions may return fewer bars.
 maximum_history_requests = 4 # 1..16 queued/pending operator requests across clients.
-maximum_history_requests_per_session = 256 # 1..4096 admitted pages per process; bounds retained request metadata.
 history_request_timeout_seconds = 120 # 10..300 seconds; requests and transient results expire.
 
 [runtime_resources]

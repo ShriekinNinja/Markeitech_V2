@@ -45,7 +45,7 @@
   });
   let priceLine = null, liveCandles = new Map(), historyCandles = new Map();
   let historyBusy = false, historyIntent = false, rangeMode = null, oldestCursor = null, historyResultState = "waiting";
-  let maximumCandles = 720, pageCandles = 200, initialCandles = 200, historyTimeout = 120, installing = false;
+  let maximumCandles = 720, pageCandles = 200, initialCandles = 200, historyTimeout = 120, historyRetryMs = 1000, installing = false;
   const datetimeValue = seconds => new Date(seconds*1000).toISOString().slice(0,16);
   const parseDatetime = value => Date.parse(`${value}:00Z`)/1000;
   const historyStatus = text => {$("history-status").textContent=text;};
@@ -66,9 +66,20 @@
     requestAnimationFrame(()=>{installing=false;});
   }
   async function historyPage(start,end,token) {
-    let response=await fetch("/api/history",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({instrument_id:selected,start,end,timeframe})});
+    const deadline=Date.now()+historyTimeout*1000;
+    const body=JSON.stringify({instrument_id:selected,start,end,timeframe});
+    let response;
+    do {
+      if(token!==generation)return null;
+      response=await fetch("/api/history",{method:"POST",headers:{"Content-Type":"application/json"},body});
+      if(response.status!==429)break;
+      if(Date.now()>=deadline)throw new Error("History is still busy; try again");
+      historyStatus("Waiting for history…");
+      await new Promise(resolve=>setTimeout(resolve,historyRetryMs));
+    } while(token===generation);
+    if(token!==generation)return null;
     if(!response.ok){const error=await response.json();throw new Error(error.detail || "History unavailable");}
-    let result=await response.json();const deadline=Date.now()+historyTimeout*1000;
+    let result=await response.json();
     while(result.status==="PENDING" && token===generation && Date.now()<deadline){
       await new Promise(resolve=>setTimeout(resolve,500));
       if(token!==generation)return null;
@@ -181,6 +192,7 @@
   setInterval(ages,1000);
   function render(view, reset) {
     selected=view.selected; rows=view.instruments;renderRows();
+    historyRetryMs=view.history_retry_interval_ms || 1000;
     timeframe = view.timeframe || "1m"; timeframeSeconds=view.timeframe_seconds || 60;
     renderTimeframes(); rememberSelection();
     chart.applyOptions({timeScale:{secondsVisible:!view.timeframe}});

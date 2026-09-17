@@ -149,7 +149,7 @@ def test_two_hundred_selected_candles_use_native_history_not_five_second_inputs(
 def test_legacy_dashboard_config_migrates_without_rewriting_local_profile():
     original = {"policy_version": 3, "history_page_minutes": 60, "initial_history_minutes": 20}
     config = DashboardConfig.from_mapping(original)
-    assert config.policy_version == 4 and config.history_page_candles == 60
+    assert config.policy_version == 5 and config.history_page_candles == 60
     assert config.initial_history_candles == 200
     assert config.source_history_count == 61 * 12
     assert original["policy_version"] == 3

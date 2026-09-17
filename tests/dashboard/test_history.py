@@ -115,8 +115,8 @@ def test_http_history_admission_is_bounded_same_origin_and_retains_unread_result
         worker.finish_history(
             {"request_id": job["request_id"], "status": "COMPLETED", "candles": []}
         )
-        # A new client cannot discard a result its requester has not fetched yet.
-        assert client.post("/api/history", json=later).status_code == 429
+        # Unread completion no longer blocks admission; the result remains readable.
+        assert client.post("/api/history", json=later).status_code == 202
         result = client.get(f"/api/history/{job['request_id']}")
         assert result.json()["status"] == "COMPLETED"
         assert client.post("/api/history", json=later).status_code == 202
@@ -138,22 +138,33 @@ def test_dashboard_routes_only_matching_acquisition_pages_to_the_web_mailbox() -
     assert result["status"] == "COMPLETED"
 
 
-def test_history_session_budget_bounds_executor_metadata_after_results_are_consumed() -> None:
-    from dataclasses import replace
-
+@pytest.mark.parametrize("status", ["COMPLETED", "FAILED", "EXPIRED", "CANCELED"])
+def test_unread_terminal_pages_do_not_exhaust_admission_or_accumulate(status) -> None:
     worker = server(1)
-    worker.config = replace(worker.config, maximum_history_requests_per_session=1)
     command = request()
     payload = {k: v for k, v in asdict(command).items() if k != "request_id"}
     with TestClient(worker.app, base_url="http://127.0.0.1:8765") as client:
-        job = client.post("/api/history", json=payload).json()
-        worker.take_history_requests()
-        worker.finish_history(
-            {"request_id": job["request_id"], "status": "COMPLETED", "candles": []}
-        )
-        assert client.get(f"/api/history/{job['request_id']}").json()["status"] == "COMPLETED"
-        result = client.post("/api/history", json={**payload, "end": START + 180})
-        assert result.status_code == 429 and "session budget" in result.json()["detail"]
+        for index in range(300):
+            window = {**payload, "start": START + index * 60, "end": START + (index + 2) * 60}
+            response = client.post("/api/history", json=window)
+            assert response.status_code == 202
+            job = response.json()
+            assert len(worker.take_history_requests()) == 1
+            worker.finish_history(
+                {"request_id": job["request_id"], "status": status, "candles": []}
+            )
+            # Deliberately abandon polling, as a browser selection change does.
+            worker._read_history()
+            assert len(worker._history_jobs) <= 1
+        assert client.get(f"/api/history/{job['request_id']}").json()["status"] == status
+
+
+def test_legacy_session_quota_is_removed_without_rewriting_input() -> None:
+    values = {"policy_version": 4, "maximum_history_requests_per_session": 1}
+    config = DashboardConfig.from_mapping(values)
+    assert config.policy_version == 5
+    assert "maximum_history_requests_per_session" not in asdict(config)
+    assert values["maximum_history_requests_per_session"] == 1
 
 
 def test_expired_web_requests_never_reach_provider_demand(monkeypatch) -> None:
@@ -193,3 +204,58 @@ def test_completed_window_can_be_fetched_again_through_existing_executor() -> No
     executor.enqueue((second,), now_ns=3)
     assert port.submitted == [first.request_id, second.request_id]
     assert executor.active_request_ids == (second.request_id,)
+
+
+def test_acquisition_retires_page_metadata_after_terminal_publication() -> None:
+    from collections import Counter
+
+    from markeitech.system.acquisition import DataAcquisitionActor
+    from tests.acquisition.test_historical_execution import RecordingHistoricalPort, _coordinator
+
+    coordinator = _coordinator(RecordingHistoricalPort())
+    signals = []
+    actor = SimpleNamespace(
+        _historical_requests={}, _historical_counts=Counter(), _minute_book=None,
+        actor_id="DATA-ACQUISITION", publish_signal=lambda *args: signals.append(args),
+        publish_data=lambda *args: None, log=SimpleNamespace(info=lambda _: None),
+    )
+    for index in range(30):
+        command = request()
+        compiled = batch(command, ()).request
+        actor._historical_requests[compiled.request_id] = compiled
+        coordinator.enqueue((compiled,), now_ns=index * 1000 + 1)
+        update = coordinator.complete(compiled.request_id, (), now_ns=index * 1000 + 2)
+        DataAcquisitionActor._publish_historical_update(actor, update)
+        assert not actor._historical_requests
+    assert len(signals) == 60  # Completion and readiness are both emitted before cleanup.
+
+
+def test_immediate_submission_failure_publishes_and_retires_page_metadata() -> None:
+    from collections import Counter
+
+    from markeitech.system.acquisition import DataAcquisitionActor
+    from tests.acquisition.test_historical_execution import RecordingHistoricalPort, _coordinator
+
+    port = RecordingHistoricalPort()
+    port.fail_submissions = 1
+    coordinator = _coordinator(port, maximum_attempts=1)
+    signals = []
+    actor = SimpleNamespace(
+        _historical=coordinator, _historical_requests={}, _historical_counts=Counter(),
+        _minute_book=None, _maximum_historical_observations_per_request=10000,
+        _maximum_historical_observations_outstanding=10000,
+        clock=SimpleNamespace(timestamp_ns=lambda: 1), actor_id="DATA-ACQUISITION",
+        publish_signal=lambda *args: signals.append(args), publish_data=lambda *args: None,
+        log=SimpleNamespace(info=lambda _: None),
+    )
+    actor._publish_historical_update = lambda update: (
+        DataAcquisitionActor._publish_historical_update(actor, update)
+    )
+    compiled = batch(request(), ()).request
+    DataAcquisitionActor._start_historical_plan(
+        actor, SimpleNamespace(request=compiled, demand_id="dashboard-test")
+    )
+    assert actor._historical_counts["FAILED"] == 2  # Lifecycle event and readiness result.
+    assert len(signals) == 3  # Queued, failed, and terminal readiness.
+    assert not actor._historical_requests
+    assert not coordinator.active_request_ids

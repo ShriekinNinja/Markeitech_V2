@@ -53,7 +53,6 @@ class DashboardServer:
         )
         self._history_results: Queue[dict] = Queue(config.maximum_history_requests)
         self._history_jobs: dict[str, tuple[float, dict]] = {}
-        self._history_admissions = 0
         self._thread: Thread | None = None
         self._server: uvicorn.Server | None = None
         self.stopping = Event()
@@ -114,6 +113,7 @@ class DashboardServer:
             "history_page_candles": self.config.history_page_candles,
             "initial_history_candles": self.config.initial_history_candles,
             "history_timeout_seconds": self.config.history_request_timeout_seconds,
+            "history_retry_interval_ms": self.config.acquisition_retry_interval_ms,
         }
 
     def take_history_requests(self) -> tuple[DashboardHistoryRequest, ...]:
@@ -151,6 +151,12 @@ class DashboardServer:
             if result["request_id"] in self._history_jobs:
                 started, original = self._history_jobs[result["request_id"]]
                 self._history_jobs[result["request_id"]] = (started, {**original, **result})
+
+        # Results have their own bounded retention; unread results never consume active slots.
+        completed = [key for key, (_, job) in self._history_jobs.items()
+                     if job["status"] != "PENDING"]
+        for key in completed[:-self.config.maximum_history_requests]:
+            del self._history_jobs[key]
 
     def _application(self) -> FastAPI:
         app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -226,12 +232,10 @@ class DashboardServer:
             for key in tuple(self._history_jobs):
                 if self._history_jobs[key][1].get("delivered"):
                     del self._history_jobs[key]
-            if len(self._history_jobs) >= self.config.maximum_history_requests:
-                raise HTTPException(429, "History request limit reached")
-            if self._history_admissions >= self.config.maximum_history_requests_per_session:
-                raise HTTPException(
-                    429, "History session budget reached; restart the system to reset"
-                )
+            pending = sum(job["status"] == "PENDING" for _, job in self._history_jobs.values())
+            if pending >= self.config.maximum_history_requests:
+                raise HTTPException(429, "History is busy; waiting for an active request to finish",
+                                    headers={"Retry-After": "1"})
             try:
                 self._history_requests.put_nowait(
                     (monotonic() + self.config.history_request_timeout_seconds, command)
@@ -240,7 +244,6 @@ class DashboardServer:
                 raise HTTPException(429, "History request queue is full") from None
             result = {**asdict(command), "status": "PENDING"}
             self._history_jobs[command.request_id] = (monotonic(), result)
-            self._history_admissions += 1
             return result
 
         @app.get("/api/history/{request_id}")
