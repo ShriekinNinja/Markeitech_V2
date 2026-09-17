@@ -215,7 +215,8 @@ read/write access; it has no administration, secrets, or workflow permissions. W
 user OAuth are disabled. App registration ID is `4807574`; installation ID is `158548175`.
 These identifiers are not credentials. The private key and local configuration stay outside Git.
 
-The following `master` protection settings were read back after activation on 2026-09-02:
+The following `master` protection settings were read back on 2026-09-17. The original
+protection was activated on 2026-09-02; issue #34 subsequently added the API docs check.
 
 | Setting | Required value |
 | --- | --- |
@@ -224,14 +225,15 @@ The following `master` protection settings were read back after activation on 20
 | Require review from Code Owners | Enabled; `ShriekinNinja` is the sole owner of every path |
 | Dismiss stale approvals when new commits are pushed | Enabled |
 | Apply protection to administrators | Enabled; no review bypass allowances |
-| Required status checks | Preserve all three existing V2 checks and their GitHub Actions source |
+| Required status checks | `V2 Ruff`, `V2 Offline Tests`, `V2 PostgreSQL Integration`, and `API docs verification`, all bound to GitHub Actions |
 | Require branch to be up to date | Preserve enabled |
 | Require conversation resolution | Preserve enabled |
 | Allow force pushes / branch deletion | Preserve disabled |
 
-The activation changed only the approval count, code-owner requirement, and stale-review
-dismissal. A before/after comparison confirmed all other protection settings were preserved.
-There were no repository rulesets. This is a dated settings observation; re-read live protection
+The 2026-09-17 API readback reports all four checks with strict synchronization enabled,
+one required code-owner approval, stale-review dismissal, administrator enforcement,
+conversation resolution, and force-push and deletion prohibitions. This is a dated settings
+observation; re-read live protection
 before any later update. GitHub's
 [branch-protection guide](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
 describes these controls.
@@ -377,7 +379,7 @@ advisor plugin and from Sir Loke, and does not grant either component runtime or
 ## Required CI
 
 Pull requests targeting `master` and manual workflow runs execute `.github/workflows/v2-ci.yml`.
-The workflow has three branch-protection-ready jobs:
+That workflow has three required jobs:
 
 - **V2 Ruff** runs `markeitech verify lint` over `src`, `tests`, and the Sir Kite publishing helper.
 - **V2 Offline Tests** runs `markeitech verify test`, with PostgreSQL-marked tests excluded.
@@ -388,8 +390,15 @@ CI uses Python 3.13 and the V2 `uv.lock` with frozen installation. It has `conte
 cancels superseded pull-request runs, and never launches the Markeitech runtime, IB/TWS,
 Discord, or a market-data path. The CI database and credentials exist only for the job.
 
-All three jobs must succeed on the current PR head before merge; failed, pending, missing, or
-skipped required checks do not satisfy the gate. Green CI does not replace Markeitect's approval.
+`.github/workflows/api-docs.yml` also runs on pull requests to `master`. Its required
+**API docs verification** job validates the static API documentation, checks that the tracked
+`docs/api` artifact is current, runs the API-docs tests, and checks that the tests leave the
+artifact unchanged. Pages deployment runs only after verification on `master` and is not a
+required PR check.
+
+All four required checks must succeed on the current PR head before merge; failed, pending,
+missing, or skipped required checks do not satisfy the gate. Green CI does not replace
+Markeitect's approval.
 
 GitHub branch protections/rulesets should enforce PR-only integration, these checks, and denial
 of force pushes. Documentation and the PR template express policy; they do not configure or prove
