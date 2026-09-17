@@ -1,31 +1,31 @@
 ---
 name: markeitech-security-tool-boundary-expert
-description: Review Markeitech secrets, webhooks and tokens, tool and agent permissions, least privilege, logging/redaction, dependency and supply-chain exposure, network surfaces, database credentials, plugin/MCP boundaries, approval gates, and safe failure. Do not provide market analysis, architecture ownership, or legal approval.
+description: Review a specific credential, authentication, permission, tool/MCP, redaction, dependency, or network-boundary change. Trigger on a changed trust boundary or concrete threat.
 ---
 
-# Markeitech Security And Tool Boundary Expert
+# Security Tool Boundary
 
-Act as a narrow read-only security advisor. Read repository authority, current branch/worktree,
-exact proposed trust boundary, configuration/code/tests, dependency lock/manifest and permitted
-operational evidence. Refresh [references/sources.md](references/sources.md) when current guidance
-or dependency state matters.
+Use this guidance directly in the current task. Inspect the affected code, contract, and tests;
+reuse current evidence already established in the task. A skill adds no edit, connection, or
+approval authority. Review requests and delegated reviews remain read-only.
 
-Own credential and secret flow; token/webhook handling; tool/agent/MCP/plugin permission scope;
-least privilege; authentication/authorization boundary; logs, prompts, traces and redaction;
-dependency/supply-chain exposure; inbound/outbound network surface; database credentials; approval
-and revocation gates; and safe failure/degradation.
+Work only on the requested outcome. Read supporting references only for a named uncertainty;
+apply the relevant sections, not a whole audit by default. The primary agent may combine checks
+from other skills directly. Do not require separate specialist dispositions or create handoffs.
+Expand scope only for a concrete defect or missing fact that can change this result, explain why,
+and preserve the user's approval boundaries. Stop only the unsupported conclusion.
 
-Do not own component placement, market evidence, provider entitlements, licensing/legal advice,
-privacy law, product semantics, or execution design. Security analysis does not grant approval.
-Return `REQUIRED_HANDOFF`; never delegate.
+## Checks For This Question
 
-For consequential work return asset/actor/trust-boundary inventory; data/credential flow;
-threat-and-control matrix; least-authority decision; logging/redaction review; dependency/network
-exposure; approval/revocation/audit requirements; failure behavior; residual risks; unknowns; and
-minimum deterministic/operational acceptance. Stop on secret exposure, ambiguous authority,
-unbounded tools, arbitrary query/code/network access, unsafe default, missing revocation/audit,
-unreviewed dependency/surface or absent owner.
+- Trace the affected actor, input, secret or capability, destination, and authority check.
+- Check least privilege, untrusted input, secret redaction, failure behavior, and revocation where the change affects them.
+- Prompt instructions and a declared sandbox are not proof of effective tool isolation; distinguish configured and observed permissions.
+- Do not expose secrets or treat this skill as permission to rotate credentials, scan targets, install dependencies, or change external systems.
 
-Remain read-only. Never reveal secret values, edit configuration, rotate credentials, install or
-update dependencies/plugins, connect services, scan external targets, mutate data, or make
-architecture, security-approval, product, trading, review, release or execution decisions.
+## Optional References
+
+- [sources.md](references/sources.md) — use for current security or tool-contract evidence.
+
+Return the finding or recommendation, its supporting evidence, the smallest correction or
+next check, and material uncertainty. Distinguish verified behavior, measured evidence, and
+inference. Use tables only when they clarify the actual decision; omit empty audit sections.

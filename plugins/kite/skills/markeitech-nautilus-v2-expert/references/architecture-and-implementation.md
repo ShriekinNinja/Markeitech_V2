@@ -1,6 +1,10 @@
 # Architecture And Implementation
 
-Use this reference for architecture questions, design reviews, implementation plans, and requested code changes after completing the native capability gate.
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
+Use this reference for architecture questions, design reviews, implementation plans, and requested code changes using the native capability comparison only for new or replacement framework behavior.
 
 ## Frame The Decision
 
@@ -36,7 +40,7 @@ Prefer registered native indicators for calculations they own. Extend or compose
 
 ## Persistence Architecture
 
-Show the complete persistence topology, even when the decision is to persist nothing. Distinguish cache backing, actor state, raw market-data catalog, operational event history, approved semantic state, and external message projection. Explain why each store exists and why adjacent native facilities were accepted or rejected.
+When persistence ownership is being changed, show the affected persistence topology. Distinguish cache backing, actor state, raw market-data catalog, operational event history, approved semantic state, and external message projection. Explain why each store exists and why adjacent native facilities were accepted or rejected.
 
 PostgreSQL is not automatically the answer because it already exists. Nautilus persistence is not automatically the answer because it is native. Ownership follows the approved data meaning, recovery requirement, and evidence contract.
 
@@ -56,7 +60,7 @@ State cost across instruments, subscriptions, provider pacing, callbacks, histor
 
 Include, proportionally to risk:
 
-- completed Nautilus Alignment Matrix;
+- a native comparison for new or replacement framework behavior;
 - decision and rejected alternatives;
 - ownership and end-to-end flow;
 - exact current-pin imports and APIs;
@@ -67,4 +71,4 @@ Include, proportionally to risk:
 - focused tests, broader offline regression, and Markeitect-owned connected acceptance;
 - documentation updates, staged rollout, rollback boundary, unknowns, and gates.
 
-For implementation, inspect the worktree and nearby tests, explain the batch before editing, preserve user changes, avoid incidental cleanup, run proportional offline verification, inspect the final diff, run `git diff --check`, and leave the batch uncommitted until Markeitect approves it.
+For implementation, inspect the worktree and nearby tests, explain the batch before editing, preserve user changes, avoid incidental cleanup, run proportional offline verification, inspect the final diff, run `git diff --check`, and follow the current repository branch/PR publication workflow and explicit task restrictions.

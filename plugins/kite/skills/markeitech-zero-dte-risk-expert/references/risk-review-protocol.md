@@ -1,5 +1,9 @@
 # Zero DTE Candidate Risk Review Protocol
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Use this protocol to synthesize risk for supplied long, single-leg same-day-expiry option
 candidates. It is not a contract-discovery, candidate-quality, affordability, trade-selection,
 portfolio-management, or execution workflow.

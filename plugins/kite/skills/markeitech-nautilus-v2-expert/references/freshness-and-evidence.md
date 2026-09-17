@@ -1,5 +1,9 @@
 # Freshness And Evidence
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Use this protocol on every invocation to keep nightly documentation, the installed package, current code, and provider behavior distinct.
 
 ## Refresh Upstream

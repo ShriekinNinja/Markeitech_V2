@@ -1,5 +1,9 @@
 # Evidence And Workflow
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 ## Precedence And Freshness
 
 Tracked Markeitech authority governs product and safety boundaries. Current official IB
@@ -51,7 +55,7 @@ account secrets, invoices, or raw licensed data.
 
 - Current primary documentation.
 - Offline local contract/configuration verification.
-- Pinned adapter verification by `markeitech_nautilus_advisor`.
+- Pinned adapter verification from its actual installed contract.
 - Markeitect-authorized, exact read-only connected check.
 - Exact session/holiday/DST/closed-market boundary observation when material.
 - Operational reconciliation of lifecycle, failure isolation, resources, audit, and shutdown.

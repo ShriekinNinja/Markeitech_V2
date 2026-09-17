@@ -2,6 +2,6 @@ policy:
   allow_implicit_invocation: false
 
 interface:
-  display_name: "Markeitech Event-Driven Architecture Expert"
-  short_description: "Failure-aware actor and event architecture"
-  default_prompt: "Use $kite:markeitech-event-driven-architecture-expert to review this Markeitech event contract for delivery, idempotency, bounded recovery, overload, and partial-failure risks inside the accepted topology."
+  display_name: "Event Driven Architecture"
+  short_description: "Focused event driven architecture guidance"
+  default_prompt: "Use $kite:markeitech-event-driven-architecture-expert to answer this scoped question using the relevant evidence."

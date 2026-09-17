@@ -41,10 +41,8 @@ generated review artifacts now live with the isolated tool under
 
 ## Detailed Reference And Development Collaboration
 
-- [Kite advisor council](development/kite-advisor-council.md) — development-time consultation,
-  separate from Sir Loke runtime behavior.
-- [Kite resource allocation](development/kite-advisor-allocation-design.md) — per-consultation
-  model/effort selection, with bounded execution evidence and remaining acceptance gates.
+- [Kite focused skills](development/kite-advisor-council.md) — direct domain guidance and optional
+  independent review, separate from Sir Loke runtime behavior.
 
 ## Operations
 

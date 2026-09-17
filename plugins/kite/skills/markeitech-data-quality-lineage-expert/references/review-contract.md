@@ -1,5 +1,9 @@
 # Data Quality And Lineage Review Contract
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 For each path record provider/adapter/version, venue, exact instrument/contract/raw symbol,
 observation type/selector/aggregation/resolution, request/subscription/artifact/filter identity,
 schema/config/transformation versions, parents, event/interval/receive/init/calculate/publish times,

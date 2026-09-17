@@ -2,6 +2,6 @@ policy:
   allow_implicit_invocation: false
 
 interface:
-  display_name: "Markeitech Security And Tool Boundary"
-  short_description: "Review least-authority security boundaries"
-  default_prompt: "Use $kite:markeitech-security-tool-boundary-expert to review this credential, tool, dependency, network, logging, or approval boundary."
+  display_name: "Security Tool Boundary"
+  short_description: "Focused security tool boundary guidance"
+  default_prompt: "Use $kite:markeitech-security-tool-boundary-expert to answer this scoped question using the relevant evidence."

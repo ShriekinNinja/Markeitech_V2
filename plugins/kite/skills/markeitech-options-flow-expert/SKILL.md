@@ -1,48 +1,32 @@
 ---
 name: markeitech-options-flow-expert
-description: Review vendor options-flow schemas, OPRA and quote-coverage implications, sweeps, blocks, splits, repeated prints, complex-order ambiguity, bid/ask classification, premium aggregation, 0DTE identity, open interest timing, filters, transformations, provenance, licensing flags, and limits on directional inference. Do not replace options mechanics or recommend trades.
+description: Interpret a specific vendor options-flow schema or print with its source, filter, classification, premium, and open-interest timing. Vendor labels do not prove market intent.
 ---
 
-# Markeitech Vendor Options Flow Expert
+# Options Flow
 
-Act as a read-only vendor-flow evidence advisor. Read repository authority, Stage 9 options
-boundaries, the exact vendor documentation and terms, current branch/worktree, the immutable raw
-artifact and filters when supplied, and [references/domain-contract.md](references/domain-contract.md).
-Refresh sources from [references/sources.md](references/sources.md); marketing language is not a
-field contract.
+Use this guidance directly in the current task. Inspect the affected code, contract, and tests;
+reuse current evidence already established in the task. A skill adds no edit, connection, or
+approval authority. Review requests and delegated reviews remain read-only.
 
-## Sole Advisory Authority
+Work only on the requested outcome. Read supporting references only for a named uncertainty;
+apply the relevant sections, not a whole audit by default. The primary agent may combine checks
+from other skills directly. Do not require separate specialist dispositions or create handoffs.
+Expand scope only for a concrete defect or missing fact that can change this result, explain why,
+and preserve the user's approval boundaries. Stop only the unsupported conclusion.
 
-Own vendor options-flow schemas and transformations; OPRA/BBO coverage implications; sweep,
-block, split and repeated-print labels; complex/multi-leg ambiguity; bid/ask/mid classification;
-premium aggregation; same-day-expiry identification; volume versus prior-clearing open interest;
-OI publication timing; underlying/Greek/volatility context needed for interpretation; export
-filters; immutable provenance; licensing/retention flags; and the limits of opening/closing,
-hedging/speculation and direction inferences.
+## Checks For This Question
 
-## Non-Negotiable Boundaries
+- Identify vendor/product, schema version, exact contract, source/filter, timestamp, conditions, and aggregation.
+- Check premium units and calculation, classification semantics, corrections, and the as-of time of open interest.
+- Do not equate sweep/block labels with urgency, opening positions, buyer intent, consolidated flow, or a trade signal.
+- Verify permitted use when the requested acquisition, retention, display, or external processing changes it; provenance is not a license.
 
-- A vendor export is not automatically consolidated options flow. Preserve selection thresholds,
-  default and user filters, omitted trade types, delayed/corrected events and source coverage.
-- Prints and vendor “buy/sell”, “bullish/bearish”, “sweep/block”, “opening”, or color labels do not
-  prove participant intent, position direction, opening/closing, strategy, hedge or speculation.
-- Never invent undocumented field semantics. Unsupported or conflicting fields remain `UNKNOWN`.
-- 0DTE uses actual expiration trade date and exchange calendar, not a rounded DTE label.
-- Volume is current-session activity; OI is clearing-derived with an as-of date/publication lag.
-  Volume exceeding OI does not prove opening flow.
-- Keep measured CSV values, deterministic transformations, domain interpretation, and hypothesis
-  in separate ledgers.
-- No recommendation, ranking, sizing, risk acceptance or execution. General option mechanics stay
-  with `markeitech_options_0dte_advisor`.
+## Optional References
 
-## Required Output And Gates
+- [domain-contract.md](references/domain-contract.md) — use for the matching vendor-field or inference-limit question.
+- [sources.md](references/sources.md) — use for current vendor definitions or source terms are needed.
 
-Return artifact/source/filter/schema identity; row and aggregation lineage; measured-evidence
-ledger; vendor-label/interpretation/hypothesis ledger; quote/OI/underlying/Greek context; coverage,
-correction, complex-order and licensing limitations; unknowns; stop gates/handoffs; and bounded
-parser/evidence-contract recommendations. Label every material claim.
-
-Stop when export/download time, timezone, filters, source/version, terms, exact contract identity,
-quote context, complex grouping, correction semantics or field documentation is missing and
-material. Return `REQUIRED_HANDOFF`; never delegate. Remain read-only and preserve all approval and
-side-effect boundaries.
+Return the finding or recommendation, its supporting evidence, the smallest correction or
+next check, and material uncertainty. Distinguish verified behavior, measured evidence, and
+inference. Use tables only when they clarify the actual decision; omit empty audit sections.

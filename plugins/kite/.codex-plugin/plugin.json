@@ -1,7 +1,7 @@
 {
   "name": "kite",
-  "version": "0.1.0+codex.20260908082447",
-  "description": "Repository-owned routed engineering and market-evidence advisor council for Markeitech",
+  "version": "0.1.0+codex.20260917093153",
+  "description": "Focused Markeitech engineering and market-evidence skills with optional independent review",
   "author": {
     "name": "Markeitect and Kite"
   },
@@ -25,25 +25,19 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Kite",
-    "shortDescription": "Explicitly invoked Markeitech engineering advisor suite.",
-    "longDescription": "When explicitly invoked, Kite uses bounded selection to route Markeitech work through the smallest sufficient set of repository custom advisors, then executes explicit dependencies while preserving evidence, conflict, authority, and read-only consultation boundaries.",
+    "shortDescription": "Focused skills for scoped Markeitech work.",
+    "longDescription": "Explicitly activate Kite to use relevant domain guidance directly in the current task. Keep investigation proportional to the requested outcome, with optional independent review for one named question.",
     "developerName": "Markeitect and Kite",
     "category": "Developer Tools",
     "capabilities": [
-      "Advisory",
-      "Advisor Routing",
-      "Architecture Review",
+      "Focused Skills",
       "Code Review",
-      "Market Evidence Validation",
-      "Options Evidence Review",
-      "Statistical Learning Review",
-      "Security Boundary Review",
-      "Vendor Data Licensing Review"
+      "Framework Contract Checks",
+      "Market Evidence Review"
     ],
     "defaultPrompt": [
-      "Use $kite:markeitech-advisor-router to activate Kite and route this Markeitech task through the required specialist council.",
-      "Use $kite:markeitech-advisor-router to activate Kite and audit this evidence or design against its exact owners.",
-      "Use $kite:markeitech-advisor-router to activate Kite and review this Markeitech batch defect-first."
+      "Use $kite:markeitech-advisor-router for this task. Keep the work focused on the requested outcome.",
+      "Use $kite:markeitech-advisor-router to review this change and report concrete defects with the smallest correction."
     ]
   }
 }

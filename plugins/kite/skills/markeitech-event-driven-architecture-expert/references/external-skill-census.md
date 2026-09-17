@@ -1,5 +1,8 @@
 # External Skill Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Research date: 2026-08-25. Public skills were inspected for structure and guardrails only. This
 candidate was written independently for Markeitech and does not copy third-party prompt text.
 

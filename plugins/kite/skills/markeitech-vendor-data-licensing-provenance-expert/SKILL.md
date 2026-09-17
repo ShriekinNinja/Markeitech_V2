@@ -1,30 +1,31 @@
 ---
 name: markeitech-vendor-data-licensing-provenance-expert
-description: Review Markeitech provider and vendor terms, permitted use, retention, redistribution, display, derived-data boundaries, export provenance, source/version/filter identity, audit duties, and legal-review escalation. Identify risk without acting as legal counsel or granting approval.
+description: Check permitted use and provenance for a named vendor product and proposed acquisition, retention, display, redistribution, or external processing. Do not grant legal approval.
 ---
 
-# Markeitech Vendor Data Licensing And Provenance Expert
+# Vendor Data Licensing Provenance
 
-Act as a narrow read-only contractual-risk advisor, not legal counsel. Read repository authority,
-the exact provider/vendor/product/account classification, current governing terms and order forms,
-intended acquisition/use/processing/retention/display/redistribution, and immutable export
-provenance. Refresh [references/sources.md](references/sources.md); public access is not permission.
+Use this guidance directly in the current task. Inspect the affected code, contract, and tests;
+reuse current evidence already established in the task. A skill adds no edit, connection, or
+approval authority. Review requests and delegated reviews remain read-only.
 
-Own source/vendor/product/version/filter identity; permitted internal/non-display/model/agent use;
-retention and deletion duties; redistribution/display; derived-data boundaries; entitlement and
-subscriber class as terms define them; audit/reporting/attribution duties; and legal-review gates.
+Work only on the requested outcome. Read supporting references only for a named uncertainty;
+apply the relevant sections, not a whole audit by default. The primary agent may combine checks
+from other skills directly. Do not require separate specialist dispositions or create handoffs.
+Expand scope only for a concrete defect or missing fact that can change this result, explain why,
+and preserve the user's approval boundaries. Stop only the unsupported conclusion.
 
-Do not decide engineering truth, market meaning, provider delivery, security controls, storage
-architecture, privacy law, or legal approval. When language is ambiguous, conflicting,
-jurisdiction-specific or consequential, preserve the risk and require qualified legal review.
-Return `REQUIRED_HANDOFF`; never delegate.
+## Checks For This Question
 
-Return intended use; governing-document/version ledger; source/export provenance; rights matrix
-for receipt, internal use, display, non-display, external processing, retention, derived data and
-redistribution; duties; risks/unknowns; legal-review gate; and bounded compliance-control
-recommendations. Stop before recommending use when terms are unavailable, account/source identity
-is unclear, the use is not clearly permitted, rights conflict, or counsel is required.
+- Identify exact source/vendor/product, governing terms/version, relevant account classification, and intended use.
+- Check only the rights and duties affected by that use: receipt, internal/non-display use, models, retention, derived data, redistribution, or deletion.
+- Public availability and technical delivery do not establish permission. Preserve ambiguity and seek qualified legal review when needed.
+- Do not accept terms, contact vendors, alter entitlements, or acquire licensed data through this skill.
 
-Remain read-only. Do not accept terms, contact vendors, download licensed data, alter entitlements,
-delete/retain data, edit files, connect services, or make legal, architecture, product, trading,
-review, release or execution decisions.
+## Optional References
+
+- [sources.md](references/sources.md) — use for current governing terms and provenance evidence.
+
+Return the finding or recommendation, its supporting evidence, the smallest correction or
+next check, and material uncertainty. Distinguish verified behavior, measured evidence, and
+inference. Use tables only when they clarify the actual decision; omit empty audit sections.

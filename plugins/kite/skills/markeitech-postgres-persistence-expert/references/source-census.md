@@ -1,5 +1,8 @@
 # Primary Source Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Research snapshot: 2026-08-25. Refresh only the subset relevant to each consultation. URLs,
 versions, image contents, and project contracts can drift; this census records source families and
 guardrails, not permanent conclusions.

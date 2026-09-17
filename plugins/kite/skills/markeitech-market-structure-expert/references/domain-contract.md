@@ -1,6 +1,10 @@
 # Markeitech Market Structure Domain Contract
 
-Use this reference for every substantive invocation of the market-structure advisor.
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
+Use the sections relevant to the requested market-structure definition or failure.
 
 ## 1. Authority And Evidence Order
 
@@ -101,25 +105,13 @@ distribution are distinct inputs and must not share an unqualified fidelity labe
 `COMPLETE` means configured analytical completion, not acceptance, success, tradeability, or
 validation.
 
-## 4. Explicit Exclusions And Handoffs
+## 4. Evidence Across Boundaries
 
-Escalate rather than impersonate adjacent expertise:
-
-| Topic | Boundary and handoff |
-| --- | --- |
-| Nautilus actors, message bus, cache, lifecycle, adapters, persistence, or framework alignment | Consult `markeitech_nautilus_advisor`; this advisor supplies only the required market meaning and evidence contract. |
-| Python runtime, typing, concurrency, resource isolation, or package architecture | Consult the Python-runtime advisor when consequential; retain this advisor for domain semantics. |
-| Provider capability, entitlements, timestamps, bars, trades, books, or volume fidelity | Require provider/data-boundary evidence and the appropriate specialist. Do not infer delivery from a type's existence. |
-| Semantic approach, test, acceptance, rejection, breakout, failure, or opportunity lifecycle | Hand off to `markeitech_semantic_events_opportunity_lifecycle_advisor` after stable entity evidence exists. This advisor may specify prerequisites and forbidden inferences only. |
-| Observed aggressor flow, delta, CVD, absorption, exhaustion, or participant outcome | Hand off to `markeitech_market_microstructure_order_flow_advisor`; candle geometry is not a substitute. |
-| Cross-instrument leadership, lag, divergence, or causality | Hand off to a cross-market relationships specialist; preserve each horizon/instrument independently. |
-| Options discovery, Greeks, contract choice, affordability, payoff, or 0DTE expression | Hand off to an options specialist. Underlying structure is evidence, not contract selection. |
-| ML ranking, calibration, causal claims, expectancy, or trading validation | Require an approved measurement/evaluation design and independent validation. This advisor must not infer edge from examples. |
-| Execution, order routing, account risk, sizing, stops, or automated action | Out of scope. Markeitech remains read-only and advisory. |
-| PostgreSQL analytical schema or retention | Architecture/persistence decision requiring Markeitect approval; current default does not store raw observations or transient metric values. |
-
-If the request depends on an unavailable specialist for a consequential boundary, stop before the
-decision and report the missing coverage.
+Geometry does not establish provider delivery, observed flow, participant intent, semantic-event
+meaning, option suitability, predictive edge, or permission to retain data. Check those claims
+against their own evidence and accepted contracts if they affect this task. Read the relevant
+skill directly; missing roles do not block work, but missing facts block dependent conclusions.
+Execution remains outside scope and persistence/product changes require current authority.
 
 ## 5. Stop Gates
 
@@ -223,7 +215,7 @@ Reject proposals that:
 4. Separate deterministic measurement from every interpretive claim.
 5. Inventory variable parameters and require typed, bounded, versioned ownership.
 6. Test failure modes and counterexamples, including evidence that would falsify the hypothesis.
-7. Identify adjacent-advisor handoffs and approval gates.
+7. Identify material missing evidence and approval gates.
 8. Produce the proportional Market Structure Evidence Matrix or compact evidence record required by
    `SKILL.md`, with findings ordered by severity.
 9. Recommend the smallest evidence-faithful next step; abstain if the contract cannot be supported.

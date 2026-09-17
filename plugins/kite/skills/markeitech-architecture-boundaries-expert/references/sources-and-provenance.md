@@ -1,5 +1,8 @@
 # Sources And Provenance
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Last researched: 2026-08-25.
 
 This reference records foundations for the advisor, not architecture authority for Markeitech.
@@ -21,7 +24,7 @@ material is paraphrased; no external skill text or code is copied into this prop
 | `docs/architecture/deterministic-evidence-contracts.md` | Completed-bar, measurement, entity, identity, health, and fidelity boundaries. |
 | `docs/architecture/sir-loke-v1-boundaries.md` | Future Sir Loke ownership, request, tool, and side-effect boundaries. |
 | `docs/roadmap/sir-loke-v1-delivery-plan.md` | Canonical future product gates and scoped reliability requirements. |
-| `plugins/kite/skills/markeitech-advisor-router/references/advisor-design.md` | Minimum specialist contract and evidence/permission expectations. |
+| `plugins/kite/skills/markeitech-advisor-router/SKILL.md` | Minimum specialist contract and evidence/permission expectations. |
 | `plugins/kite/skills/markeitech-nautilus-v2-expert/` | Nautilus-specific contract to which this advisor defers. |
 
 ## Authoritative And Institutional Sources
@@ -96,7 +99,7 @@ material is paraphrased; no external skill text or code is copied into this prop
   when they change decisions, and validation of the completed package.
 - Rejected: packaging, installation, and generic examples not needed by this repository-owned
   candidate. Cross-advisor routing expectations and installed acceptance debt are recorded in
-  [routing-evaluation.md](routing-evaluation.md).
+  [routing-evaluation.md](../../markeitech-advisor-router/references/behavior-checks.md).
 - Compatibility: the local installed Codex skill-creator instructions govern this candidate. No
   external authoring text was copied.
 

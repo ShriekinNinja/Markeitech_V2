@@ -1,5 +1,8 @@
 # Source And Public-Skill Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 **Research access date:** 2026-08-25
 
 Use this as a provenance record and research starting point, not as frozen truth. Refresh sources

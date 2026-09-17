@@ -1,10 +1,16 @@
 # Independent Nautilus Alignment Audit
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Use this protocol for a complete read-only audit after implementation work is ready. The auditor evaluates the system that exists, not the architecture the builders intended.
 
 ## Independence
 
-When delegation is available, use a fresh high-capability agent that did not design or implement the reviewed batch. Give it the repository authority files, this skill, the target scope, and raw evidence. Do not disclose expected findings, suspected defects, preferred fixes, or desired conclusions.
+For an explicitly requested independent audit, use one read-only reviewer if delegation is
+authorized and available. Inherit the task model/effort unless the user specifies otherwise.
+Do not require delegation for an ordinary scoped contract check. Give it the repository authority files, this skill, the target scope, and raw evidence. Do not disclose expected findings, suspected defects, preferred fixes, or desired conclusions.
 
 The auditor may inspect code, configuration, tests, installed packages, public stubs, documentation, logs, and approved database evidence. It must not edit, commit, push, run connected services, alter databases, or make architecture decisions.
 
