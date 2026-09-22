@@ -100,7 +100,7 @@ Start Docker Desktop, then use the compact disconnected startup to check the sel
 configuration, start PostgreSQL, build without connecting to IB, and exit:
 
 ```bash
-markeitech start --config config/system.local.toml
+markeitech system start --config config/system.local.toml
 ```
 
 Run offline verification:
@@ -112,7 +112,7 @@ Run offline verification:
 For the normal connected workflow, start Docker Desktop and add the explicit `--ib` flag:
 
 ```bash
-markeitech start --config config/system.local.toml --ib
+markeitech system start --config config/system.local.toml --ib
 ```
 
 This command checks the configured IB endpoint and then connects to IB. It does not start TWS or

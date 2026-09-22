@@ -159,18 +159,19 @@ remains pending. Other timeframes and chart navigation requests are not implemen
 - PR 35 added one Python-owned `.venv/bin/markeitech` hierarchy for explicit system build/run,
   static API-documentation and diagram operations, repository verification, and environment
   checks. The legacy `markeitech-system` entry point delegates to the same runtime owner.
-- Issue 67 adds the compact `markeitech start --config CONFIG [--ib]` operator path and an optional
-  editable uv tool installation for invoking `markeitech` from the user `PATH`. `start` runs the
-  existing doctor against the selected ignored local profile and starts only the existing
-  PostgreSQL Compose service. Without `--ib` it builds disconnected and exits; with `--ib` it
-  checks the configured endpoint and delegates to the existing connected runtime owner.
+- Issue 67 adds the compact `markeitech system start --config CONFIG [--ib]` operator path and an
+  optional editable uv tool installation for invoking `markeitech` from the user `PATH`.
+  `system start` runs the existing doctor against the selected ignored local profile and starts
+  only the existing PostgreSQL Compose service. Without `--ib` it builds disconnected and exits;
+  with `--ib` it checks the configured endpoint and delegates to the existing connected runtime
+  owner.
 - The command hierarchy owns invocation and verification ergonomics; it does not add product
   behavior, a generic task runner, dependency provisioning, arbitrary Docker lifecycle, TWS
   startup, execution authority, GitHub publication, or connected acceptance.
 - `markeitech verify all` is offline and excludes the conspicuous `verify postgres` path, which
   requires an explicitly configured disposable local database.
 - Connected system execution still requires explicit operator consent
-  (`start --config ... --ib` or the exact lower-level confirmation token) and remains an
+  (`system start --config ... --ib` or the exact lower-level confirmation token) and remains an
   operator-authorized action.
 
 See [developer setup](operations/developer-setup.md) for the complete command contract.

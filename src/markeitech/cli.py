@@ -3,10 +3,10 @@
 The module delegates runtime construction and execution to ``markeitech.system.cli`` and launches
 documentation, diagram, verification, environment, and operator-start operations through fixed,
 validated boundaries. Documentation and diagram commands retain their separately locked
-interpreters. The compact start command checks the selected configuration, starts only the fixed
-PostgreSQL Compose service, and treats ``--ib`` as explicit connected-runtime consent. The router
-does not provision dependencies or execute commands supplied by configuration or user-controlled
-shell text.
+interpreters. The compact system-start command checks the selected configuration, starts only the
+fixed PostgreSQL Compose service, and treats ``--ib`` as explicit connected-runtime consent. The
+router does not provision dependencies or execute commands supplied by configuration or
+user-controlled shell text.
 """
 
 from __future__ import annotations
@@ -106,7 +106,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     run.set_defaults(handler=_system_run)
 
-    start = areas.add_parser(
+    start = system_operations.add_parser(
         "start",
         help="Check the environment, start PostgreSQL, and build or run one configuration.",
     )
@@ -432,9 +432,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     The command hierarchy owns parsing and fixed child-process mappings only. Runtime behavior
     remains owned by `markeitech.system.cli`; API documentation and diagrams remain in their
-    isolated locked tool projects. The compact ``start`` operation owns only the fixed environment
-    check and PostgreSQL Compose startup before delegating to that runtime owner. It does not
-    provision dependencies, start TWS, accept arbitrary services, or broaden execution authority.
+    isolated locked tool projects. The compact ``system start`` operation owns only the fixed
+    environment check and PostgreSQL Compose startup before delegating to that runtime owner. It
+    does not provision dependencies, start TWS, accept arbitrary services, or broaden execution
+    authority.
 
     Args:
         argv: Optional command-line arguments. ``None`` reads process arguments.

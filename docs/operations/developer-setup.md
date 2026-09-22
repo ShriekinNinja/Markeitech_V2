@@ -76,8 +76,8 @@ The closed hierarchy and its side-effect class are:
 | --- | --- | --- |
 | `system build` | disconnected | Builds the configured Nautilus node without running or connecting it. |
 | `system run` | connected | Requires the exact IB token, then delegates to the existing runtime owner. |
-| `start --config CONFIG` | local service | Checks the selected ignored local profile, starts PostgreSQL, builds disconnected, and exits. |
-| `start --config CONFIG --ib` | connected | Also checks the IB endpoint, then delegates to the connected runtime until stopped. |
+| `system start --config CONFIG` | local service | Checks the selected ignored local profile, starts PostgreSQL, builds disconnected, and exits. |
+| `system start --config CONFIG --ib` | connected | Also checks the IB endpoint, then delegates to the connected runtime until stopped. |
 | `docs validate` / `check` / `test` | offline read-only | Uses the locked API-doc interpreter; `check` compares a fresh build with tracked output. |
 | `docs generate` | offline write | Atomically regenerates the complete tracked `docs/api` artifact set. |
 | `diagrams validate` / `check` / `test` | offline read-only | Uses the locked diagram interpreter; `check` includes the drift census. |
@@ -277,25 +277,25 @@ The compact disconnected path checks the environment, starts PostgreSQL, builds 
 configuration without connecting to IB, and exits:
 
 ```bash
-.venv/bin/markeitech start --config config/system.local.toml
+.venv/bin/markeitech system start --config config/system.local.toml
 ```
 
 With the optional PATH installation, the equivalent command is:
 
 ```bash
-markeitech start --config config/system.local.toml
+markeitech system start --config config/system.local.toml
 ```
 
 Add `--ib` only for a connected runtime:
 
 ```bash
-.venv/bin/markeitech start --config config/system.local.toml --ib
+.venv/bin/markeitech system start --config config/system.local.toml --ib
 ```
 
 With the optional PATH installation, the equivalent connected command is:
 
 ```bash
-markeitech start --config config/system.local.toml --ib
+markeitech system start --config config/system.local.toml --ib
 ```
 
 The flag is explicit connection consent. The command checks that the configured TWS/IB Gateway

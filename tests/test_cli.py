@@ -21,7 +21,7 @@ from markeitech import cli
         ["system", "--help"],
         ["system", "build", "--help"],
         ["system", "run", "--help"],
-        ["start", "--help"],
+        ["system", "start", "--help"],
         ["docs", "--help"],
         ["diagrams", "--help"],
         ["verify", "--help"],
@@ -202,7 +202,7 @@ def test_start_checks_environment_starts_postgres_and_builds_without_ib(
     monkeypatch.setattr(cli, "_run_process", run_process)
     monkeypatch.setattr("markeitech.system.cli.main", system_main)
 
-    assert cli.main(["start", "--config", "config/system.local.toml"]) == 0
+    assert cli.main(["system", "start", "--config", "config/system.local.toml"]) == 0
 
     assert run_process.call_args_list == [
         call(
@@ -239,7 +239,12 @@ def test_start_with_ib_checks_endpoint_and_runs_connected(
     monkeypatch.setattr(cli, "_run_process", run_process)
     monkeypatch.setattr("markeitech.system.cli.main", system_main)
 
-    assert cli.main(["start", "--config", "config/system.local.toml", "--ib"]) == 0
+    assert (
+        cli.main(
+            ["system", "start", "--config", "config/system.local.toml", "--ib"]
+        )
+        == 0
+    )
 
     assert run_process.call_args_list[0] == call(
         [
@@ -268,7 +273,10 @@ def test_start_stops_after_setup_failure(
     monkeypatch.setattr(cli, "_run_process", run_process)
     monkeypatch.setattr("markeitech.system.cli.main", system_main)
 
-    assert cli.main(["start", "--config", "config/system.local.toml"]) == results[-1]
+    assert (
+        cli.main(["system", "start", "--config", "config/system.local.toml"])
+        == results[-1]
+    )
 
     assert run_process.call_count == len(results)
     system_main.assert_not_called()
