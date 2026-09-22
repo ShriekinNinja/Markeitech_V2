@@ -76,8 +76,7 @@ The closed hierarchy and its side-effect class are:
 | --- | --- | --- |
 | `system build` | disconnected | Builds the configured Nautilus node without running or connecting it. |
 | `system run` | connected | Requires the exact IB token, then delegates to the existing runtime owner. |
-| `system start --config CONFIG` | local service | Checks the selected ignored local profile, starts PostgreSQL, builds disconnected, and exits. |
-| `system start --config CONFIG --ib` | connected | Also checks the IB endpoint, then delegates to the connected runtime until stopped. |
+| `system start` | local service or connected | Checks the selected ignored local profile, starts PostgreSQL, builds disconnected by default, or checks the IB endpoint and runs connected when `--ib` is supplied. |
 | `docs validate` / `check` / `test` | offline read-only | Uses the locked API-doc interpreter; `check` compares a fresh build with tracked output. |
 | `docs generate` | offline write | Atomically regenerates the complete tracked `docs/api` artifact set. |
 | `diagrams validate` / `check` / `test` | offline read-only | Uses the locked diagram interpreter; `check` includes the drift census. |
