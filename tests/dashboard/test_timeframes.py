@@ -21,6 +21,29 @@ SECOND = 1_000_000_000
 START = 1_800_000_000  # Whole UTC hour.
 
 
+@pytest.mark.parametrize("frame,seconds,offset", [("4h", 14400, 7200), ("1d", 86400, 0)])
+def test_provider_history_preserves_session_open_labels_and_exact_ohlcv(frame, seconds, offset):
+    start = START // seconds * seconds
+    command = DashboardHistoryRequest(str(uuid4()), ID, start, start + 2 * seconds, frame)
+    expected_open = start + offset
+    timestamp = (expected_open + seconds) * SECOND - (1 if frame == "1d" else 0)
+    source = bar(timestamp)
+    observation = Bar(
+        BarType.from_str(f"{ID}-{command.selector}"), source.open, source.high,
+        source.low, source.close, source.volume, timestamp, timestamp,
+    )
+    page = project_history_page(batch(command, [observation]), command.consumer_id, 1)
+    assert len(page.candles) == 1
+    candle = page.candles[0]
+    assert candle.time == expected_open
+    assert candle.ts_event_ns == str(timestamp)
+    assert candle.selector == command.selector
+    assert candle.provenance == "provider_history"
+    assert (candle.open, candle.high, candle.low, candle.close, candle.volume) == tuple(
+        str(getattr(observation, field)) for field in ("open", "high", "low", "close", "volume")
+    )
+
+
 @pytest.mark.parametrize("timeframe,seconds", INTRADAY_TIMEFRAMES.items())
 def test_forming_and_complete_candles_use_exact_source_coverage(timeframe, seconds):
     book = _MinuteCandleBook({ID}, 120)
@@ -83,7 +106,7 @@ def test_http_timeframe_selection_does_not_leak_other_projections():
         assert len(minute["candles"]) == 5 and len(five["candles"]) == 1
         assert five["timeframe"] == "5m" and five["timeframe_seconds"] == 300
         assert "candles_by_timeframe" not in five
-        assert client.get("/api/snapshot?timeframe=4h").status_code == 422
+        assert client.get("/api/snapshot?timeframe=4h").status_code == 200
 
 
 def test_history_keeps_timeframe_identity_through_compiler_projection_and_delivery():
@@ -149,7 +172,7 @@ def test_two_hundred_selected_candles_use_native_history_not_five_second_inputs(
 def test_legacy_dashboard_config_migrates_without_rewriting_local_profile():
     original = {"policy_version": 3, "history_page_minutes": 60, "initial_history_minutes": 20}
     config = DashboardConfig.from_mapping(original)
-    assert config.policy_version == 5 and config.history_page_candles == 60
+    assert config.policy_version == 6 and config.history_page_candles == 60
     assert config.initial_history_candles == 200
     assert config.source_history_count == 61 * 12
     assert original["policy_version"] == 3
@@ -177,7 +200,7 @@ def test_hour_history_http_accepts_candle_count_window_and_enforces_budget():
         )
 
 
-def test_provider_alignment_failure_reaches_browser_without_waiting_for_timeout():
+def test_provider_identity_failure_reaches_browser_without_waiting_for_timeout():
     from types import SimpleNamespace
 
     from markeitech.acquisition.dashboard_history import DashboardHistoryPage
@@ -186,7 +209,7 @@ def test_provider_alignment_failure_reaches_browser_without_waiting_for_timeout(
     command = DashboardHistoryRequest(str(uuid4()), ID, START, START + 3600, "1h")
     source = bar((START + 1800) * SECOND)
     observation = Bar(
-        BarType.from_str(f"{ID}-{command.selector}"),
+        BarType.from_str(f"{ID}-30-MINUTE-LAST-EXTERNAL"),
         source.open,
         source.high,
         source.low,
@@ -206,7 +229,7 @@ def test_provider_alignment_failure_reaches_browser_without_waiting_for_timeout(
             actor.on_data(data)
 
     acquisition = SimpleNamespace(
-        _minute_book=_MinuteCandleBook({ID}, 120),
+        _dashboard_port=object(),
         _dashboard_allowed={(ID, "bars")},
         clock=SimpleNamespace(timestamp_ns=lambda: 1),
         log=SimpleNamespace(error=lambda _message: None),

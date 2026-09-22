@@ -219,38 +219,28 @@ The current connected evidence is bounded to the sessions and profiles recorded 
 
 ## Dashboard consumer
 
-The optional dashboard submits version-1 `DashboardDemand` values via the native signal
-`markeitech.dashboard.demand`. `DataAcquisitionActor` accepts only configured instrument/feed pairs,
-uses stable projection demand IDs, and defers native consumer attachment/release to its timer.
-Native observations arrive on DashboardActor's own callbacks. Watchlist supplies membership and
-answers `markeitech.watchlist.request_membership` after its existing startup audit is ready; it
-does not relay raw data to the dashboard. Shared watchlist acquisition claims survive dashboard
-release. Five-second source callbacks still supply the latest price. The dashboard submits
-recent-completed history demands to `HistoricalEvidencePlannerActor`; the existing acquisition
-executor issues native requests and retains pacing, validation, timeout and retry ownership.
-Acquisition merges returned five-second history with its live inputs in a bounded minute-candle
-helper and publishes `markeitech.acquisition.minute_candles.v1` native CustomData. DashboardActor
-only projects those derived candles; the HTTP worker and browser never aggregate observations.
+The optional dashboard submits schema-2 `DashboardDemand` values through the native signal
+`markeitech.dashboard.demand`. DataAcquisitionActor admits configured instrument/feed pairs and
+supported chart selectors, owns shared provider claims, and executes consumer attachment/release
+from its timer. DashboardActor receives native callbacks; HTTP and JavaScript cannot reach the
+provider. Quotes and five-second bars remain watchlist-wide; chart bars use the selected native
+1m/5m/15m/30m/1h/4h/1d selector. Independent watchlist claims survive chart release.
 
-UTC minute constituents have close timestamps in `(minute start, minute end]`; a delayed boundary
-input belongs to the minute it closes. All twelve unique inputs are needed for COMPLETE, and
-missing constituents remain explicitly INCOMPLETE when the source passes their close. Historical
-and live overlap is counted once, with live values preferred and conflicts counted. This is a
-mutable derived projection over immutable provider bars, not a provider minute stream or a new
-analytical canonical bar. There is no raw-data persistence. Higher/session timeframes are deferred.
-See [dashboard operation](../operations/dashboard.md) and the [native gate and live evidence](../operations/dashboard-native-backfill.md).
+The web thread tracks at most `maximum_clients` SSE selections and transfers their detached union
+through a capacity-one mailbox. DashboardActor diffs desired selections into stable acquisition
+claims. Multiple viewers share the same claim. The last viewer leaving releases it; stale
+callbacks are ignored and released chart state is cleared. Native charts do not consume the
+former derived-minute CustomData or perform five-second warmup.
 
-Operator-selected past minute windows use a bounded `DashboardHistoryRequest` mailbox from HTTP
-to DashboardActor. The existing historical demand/planner/executor path remains the only request
-route. DataAcquisitionActor projects `DashboardHistoryPage` CustomData on
-`markeitech.acquisition.dashboard_history.v1`, correlated by unique consumer/request ID and exact
-window. DashboardActor forwards detached results through a bounded result mailbox. HTTP and the
-browser select/merge projected candles; neither aggregates source OHLCV. Pages do not evict live
-buckets. Per-page, pending, timeout and per-process admission budgets bound resources and retained
-request metadata. There is no durable raw-data store. Higher timeframe session anchoring is pending
-Markeitect's choice; the present page contract is UTC one-minute history only.
+Provider OHLCV is copied exactly. Same-timestamp revisions replace values and volume, never add
+them. The display key reverses rc5's open-to-nominal-close conversion (daily also reverses its
+minus-one-nanosecond convention). No session boundaries are invented. UPDATING denotes revisable
+provider subscription data, not a certified completed trading session. The existing session
+calendar retains its independent market-session authority. No new persistence is introduced.
 
-Operator page plans retain the compiler's logical window key but scope execution IDs to the
-operator request UUID. This permits an explicit re-fetch after a previous request completes,
-while retries/redelivery of that same intent retain one execution identity. Native provider
-parameters, requested bounds, and ordinary non-dashboard historical request IDs are unchanged.
+History uses DashboardHistoryRequest through the existing planner/acquisition executor and
+DashboardHistoryPage CustomData, with per-request UUID correlation, pacing, timeouts and bounded
+active/result retention. Pages retain provider bars whose recovered opens lie in the selected
+window, including shortened session bars with nominal closes beyond the endpoint. Historical
+pages cannot overwrite a received subscription revision in the browser. User date ranges filter
+by recovered provider open. See [native chart plan](../operations/dashboard-live-timeframes.md).

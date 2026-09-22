@@ -1,7 +1,5 @@
 from dataclasses import asdict
-from types import SimpleNamespace
 
-from markeitech.acquisition import HISTORICAL_EXECUTION_SIGNAL, HistoricalExecutionEventMessage
 from markeitech.acquisition.minute_candles import _MinuteCandleBook
 from markeitech.dashboard.actor import DashboardActor, DashboardActorConfig
 from markeitech.dashboard.config import DashboardConfig
@@ -102,35 +100,11 @@ def test_history_populates_last_without_waiting_for_live_delivery() -> None:
     assert display.snapshot()["instruments"][0]["rejected_bars"] == 1
 
 
-def test_early_live_input_keeps_initial_history_and_queues_tail_after_its_ack() -> None:
+def test_watchlist_source_does_not_start_derived_chart_warmup() -> None:
     actor = DashboardActor(DashboardActorConfig(dashboard=asdict(DashboardConfig())))
     actor._active = True
     actor._display.set_members(MEMBERS)
-    actor._queue_history(ID, START + SECOND)
-    initial = actor._history_demands[ID]
     actor.on_bar(bar(START + 5 * SECOND))
-    assert actor._history_demands[ID] == initial
-    assert actor._pending_history_tail[ID] == START + 5 * SECOND
-    event = HistoricalExecutionEventMessage(
-        event_id="ack",
-        request_id="initial",
-        state="QUEUED",
-        attempt=1,
-        instrument_id=ID,
-        selector=initial.selector,
-        window=initial.window,
-        start_ns=START - initial.maximum_observations * 5 * SECOND,
-        end_ns=START - 1,
-        limit=initial.maximum_observations,
-        consumer_ids=("DASHBOARD",),
-        occurred_at_ns=START + 6 * SECOND,
-        source="DATA-ACQUISITION",
-        detail="queued",
-    )
-    signal = SimpleNamespace(name=HISTORICAL_EXECUTION_SIGNAL, value=event.to_signal_value())
-    actor.on_signal(signal)
-    tail = actor._history_demands[ID]
-    assert tail.maximum_observations == 24 and tail.as_of_ns == START + 5 * SECOND
-    assert ID not in actor._history_acknowledged
-    actor.on_signal(signal)  # Old initial acknowledgement cannot suppress the tail.
-    assert ID not in actor._history_acknowledged
+    assert not actor._page_requests
+    assert actor._display.snapshot()["candles"][ID] == []
+    assert actor._display.snapshot()["instruments"][0]["last"] == "100.25"

@@ -15,8 +15,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from markeitech.acquisition.dashboard_history import DashboardHistoryRequest
-from markeitech.acquisition.minute_candles import INTRADAY_TIMEFRAMES
+from markeitech.acquisition.dashboard_history import DashboardHistoryRequest, _chart_selector
+from markeitech.acquisition.minute_candles import CHART_TIMEFRAMES
 from markeitech.dashboard.config import DashboardConfig
 
 _STATIC = Path(__file__).parent / "static"
@@ -48,6 +48,8 @@ class DashboardServer:
         self._latest = initial
         self._epoch = str(uuid4())
         self._clients = 0
+        self._chart_clients: dict[str, tuple[str, str]] = {}
+        self._chart_selections: Queue[frozenset[tuple[str, str]]] = Queue(maxsize=1)
         self._history_requests: Queue[tuple[float, DashboardHistoryRequest]] = Queue(
             config.maximum_history_requests
         )
@@ -86,7 +88,7 @@ class DashboardServer:
         return self._latest
 
     def _view(self, instrument_id: str | None, timeframe: str = "1m") -> dict:
-        if timeframe not in INTRADAY_TIMEFRAMES:
+        if timeframe not in CHART_TIMEFRAMES:
             raise HTTPException(422, "Unsupported timeframe")
         snapshot = self._read()
         ids = [row["instrument_id"] for row in snapshot["instruments"]]
@@ -102,9 +104,10 @@ class DashboardServer:
             "epoch": self._epoch,
             "selected": selected,
             "timeframe": timeframe,
-            "timeframe_seconds": INTRADAY_TIMEFRAMES[timeframe],
-            "bar_selector": f"{INTRADAY_TIMEFRAMES[timeframe] // 60}-MINUTE-LAST-DERIVED",
-            "timestamp_basis": "UTC_interval_open_from_provider_5s_close",
+            "timeframe_seconds": CHART_TIMEFRAMES[timeframe],
+            "bar_selector": _chart_selector(timeframe),
+            "source_bar_selector": _chart_selector(timeframe),
+            "timestamp_basis": "provider_open_from_native_timestamp",
             "candles": (
                 snapshot["candles"].get(selected, [])
                 if timeframe == "1m"
@@ -115,6 +118,21 @@ class DashboardServer:
             "history_timeout_seconds": self.config.history_request_timeout_seconds,
             "history_retry_interval_ms": self.config.acquisition_retry_interval_ms,
         }
+
+    def _publish_chart_selections(self) -> None:
+        # Only the web thread mutates client identities; actor gets detached desired state.
+        try:
+            self._chart_selections.get_nowait()
+        except Empty:
+            pass
+        self._chart_selections.put_nowait(frozenset(self._chart_clients.values()))
+
+    def take_chart_selections(self) -> frozenset[tuple[str, str]] | None:
+        """Read the latest bounded set of chart feeds requested by connected browsers."""
+        try:
+            return self._chart_selections.get_nowait()
+        except Empty:
+            return None
 
     def take_history_requests(self) -> tuple[DashboardHistoryRequest, ...]:
         """Drain bounded operator intents on the actor thread without blocking."""
@@ -153,9 +171,10 @@ class DashboardServer:
                 self._history_jobs[result["request_id"]] = (started, {**original, **result})
 
         # Results have their own bounded retention; unread results never consume active slots.
-        completed = [key for key, (_, job) in self._history_jobs.items()
-                     if job["status"] != "PENDING"]
-        for key in completed[:-self.config.maximum_history_requests]:
+        completed = [
+            key for key, (_, job) in self._history_jobs.items() if job["status"] != "PENDING"
+        ]
+        for key in completed[: -self.config.maximum_history_requests]:
             del self._history_jobs[key]
 
     def _application(self) -> FastAPI:
@@ -234,8 +253,11 @@ class DashboardServer:
                     del self._history_jobs[key]
             pending = sum(job["status"] == "PENDING" for _, job in self._history_jobs.values())
             if pending >= self.config.maximum_history_requests:
-                raise HTTPException(429, "History is busy; waiting for an active request to finish",
-                                    headers={"Retry-After": "1"})
+                raise HTTPException(
+                    429,
+                    "History is busy; waiting for an active request to finish",
+                    headers={"Retry-After": "1"},
+                )
             try:
                 self._history_requests.put_nowait(
                     (monotonic() + self.config.history_request_timeout_seconds, command)
@@ -266,12 +288,20 @@ class DashboardServer:
             self._clients += 1
 
             async def stream():  # noqa: ANN202
+                client_key = str(uuid4())
                 sequence = -1
                 previous_selected = None
                 previous_candles = {}
                 try:
                     while not self.stopping.is_set() and not await request.is_disconnected():
                         view = self._view(instrument_id, timeframe)
+                        selection = (view["selected"], timeframe)
+                        if (
+                            selection[0] is not None
+                            and self._chart_clients.get(client_key) != selection
+                        ):
+                            self._chart_clients[client_key] = selection
+                            self._publish_chart_selections()
                         if view["sequence"] != sequence:
                             reset = sequence == -1 or view["selected"] != previous_selected
                             candles = view["candles"]
@@ -293,6 +323,8 @@ class DashboardServer:
                     yield "event: stopping\ndata: {}\n\n"
                 finally:
                     self._clients -= 1
+                    self._chart_clients.pop(client_key, None)
+                    self._publish_chart_selections()
 
             return StreamingResponse(stream(), media_type="text/event-stream")
 

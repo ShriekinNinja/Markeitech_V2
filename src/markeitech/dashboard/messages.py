@@ -4,6 +4,9 @@ import json
 from dataclasses import asdict, dataclass
 from uuid import UUID
 
+from markeitech.acquisition.dashboard_history import _chart_selector
+from markeitech.acquisition.minute_candles import CHART_TIMEFRAMES
+
 DASHBOARD_DEMAND_SIGNAL = "markeitech.dashboard.demand"
 DASHBOARD_READY_SIGNAL = "markeitech.dashboard.ready"
 # Requests must not share the membership-event prefix: native signals match prefixes.
@@ -67,23 +70,31 @@ class DashboardDemand:
     instrument_id: str
     feed_kind: str
     action: str = "REQUEST"
-    schema_version: int = 1
+    schema_version: int = 2
+    timeframe: str | None = None
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
+        if type(self.schema_version) is not int or self.schema_version != 2:
             raise ValueError("unsupported dashboard demand schema")
         if not isinstance(self.instrument_id, str) or not 1 <= len(self.instrument_id) <= 128:
             raise ValueError("invalid dashboard instrument identity")
+        if self.timeframe is not None and (
+            self.feed_kind != "bars" or self.timeframe not in CHART_TIMEFRAMES
+        ):
+            raise ValueError("unsupported dashboard timeframe")
         if self.feed_kind not in {"quotes", "bars"} or self.action not in {"REQUEST", "RELEASE"}:
             raise ValueError("unsupported dashboard demand")
 
     @property
     def selector(self) -> str:
+        if self.timeframe is not None:
+            return _chart_selector(self.timeframe)
         return "default" if self.feed_kind == "quotes" else "5-SECOND-LAST-EXTERNAL"
 
     @property
     def demand_id(self) -> str:
-        return f"dashboard:{self.instrument_id}:{self.feed_kind}"
+        suffix = f":{self.timeframe}" if self.timeframe is not None else ""
+        return f"dashboard:{self.instrument_id}:{self.feed_kind}{suffix}"
 
     def to_signal_value(self) -> str:
         return json.dumps(asdict(self), separators=(",", ":"))
@@ -99,6 +110,7 @@ class DashboardDemand:
                 "feed_kind",
                 "action",
                 "schema_version",
+                "timeframe",
             }:
                 raise ValueError("invalid dashboard demand fields")
             return cls(**data)

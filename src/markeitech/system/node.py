@@ -53,7 +53,9 @@ def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataC
         ignore_quote_tick_size_updates=config.ib.ignore_quote_tick_size_updates,
         connection_timeout=config.ib.connection_timeout_seconds,
         request_timeout=config.ib.request_timeout_seconds,
-        handle_revised_bars=config.ib.handle_revised_bars,
+        # Native chart subscriptions require same-timestamp provider revisions.
+        # Policy 6 enables this for dashboard profiles, including migrated profiles.
+        handle_revised_bars=config.ib.handle_revised_bars or config.dashboard.enabled,
         batch_quotes=config.ib.batch_quotes,
         instrument_provider=provider_config,
     )

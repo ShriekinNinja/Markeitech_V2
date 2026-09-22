@@ -5,7 +5,12 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from decimal import Decimal, InvalidOperation
 
-from markeitech.acquisition.minute_candles import INTRADAY_TIMEFRAMES, MinuteCandleUpdate
+from markeitech.acquisition.dashboard_history import _chart_selector, _provider_candle
+from markeitech.acquisition.minute_candles import (
+    CHART_TIMEFRAMES,
+    INTRADAY_TIMEFRAMES,
+    MinuteCandleUpdate,
+)
 from markeitech.dashboard.config import DashboardConfig
 
 
@@ -32,8 +37,9 @@ class _Instrument:
 class DashboardState:
     """Actor-thread display state, retaining native identities and decimal strings.
 
-    Source bars supply the latest price. Acquisition-owned intraday projections
-    supply the chart. No aggregation, gap filling, or durable storage occurs here.
+    Five-second source bars supply the latest price. Native provider bars supply
+    the chart, including same-timestamp revisions. No aggregation, gap filling,
+    or durable storage occurs here.
     """
 
     def __init__(self, config: DashboardConfig, market_data_type: str = "unknown") -> None:
@@ -77,6 +83,29 @@ class DashboardState:
         if item is None or "watchlist_last" not in item.capabilities:
             return
         if str(bar.bar_type) != f"{instrument_id}-5-SECOND-LAST-EXTERNAL":
+            for timeframe in CHART_TIMEFRAMES:
+                if str(bar.bar_type) == f"{instrument_id}-{_chart_selector(timeframe)}":
+                    try:
+                        candle = asdict(_provider_candle(bar, timeframe, historical=False))
+                    except (ValueError, InvalidOperation):
+                        item.rejected_bars += 1
+                        self.sequence += 1
+                        return
+                    existing = {
+                        row["time"]: row for row in item.timeframe_candles.get(timeframe, ())
+                    }
+                    existing[candle["time"]] = candle
+                    projection = deque(
+                        sorted(existing.values(), key=lambda row: row["time"])[
+                            -self.config.candles_per_instrument :
+                        ],
+                        maxlen=self.config.candles_per_instrument,
+                    )
+                    item.timeframe_candles[timeframe] = projection
+                    if timeframe == "1m":
+                        item.candles = projection
+                    self.sequence += 1
+                    break
             return
         values = {key: str(getattr(bar, key)) for key in ("open", "high", "low", "close", "volume")}
         try:
@@ -130,6 +159,15 @@ class DashboardState:
             item.bar_ts_init_ns = int(update.candles[-1].ts_init_ns)
         self.sequence += 1
 
+    def clear_chart(self, instrument_id: str, timeframe: str) -> None:
+        """Forget released stream revisions so later historical fetches cannot be shadowed."""
+        item = self.instruments[instrument_id]
+        item.timeframe_candles.pop(timeframe, None)
+        item.feed_states.pop(f"chart:{timeframe}", None)
+        if timeframe == "1m":
+            item.candles.clear()
+        self.sequence += 1
+
     def feed_state(self, instrument_id: str, feed_kind: str, state: str) -> None:
         if instrument_id in self.instruments:
             self.instruments[instrument_id].feed_states[feed_kind] = state
@@ -170,16 +208,16 @@ class DashboardState:
                 "provider": "IB",
                 "requested_market_data_type": self.market_data_type,
                 "received_market_data_type": "unknown",
-                "bar_selector": "1-MINUTE-LAST-DERIVED",
-                "source_bar_selector": "5-SECOND-LAST-EXTERNAL",
+                "bar_selector": "1-MINUTE-LAST-EXTERNAL",
+                "source_bar_selector": "1-MINUTE-LAST-EXTERNAL",
                 "timeframe": "1m",
                 "last_source": "5s_bar_close",
-                "timestamp_basis": "UTC_minute_open_from_provider_5s_close",
+                "timestamp_basis": "provider_open_from_native_timestamp",
                 "maximum_candles": self.config.candles_per_instrument,
                 "instruments": rows,
                 "candles": candles,
                 "candles_by_timeframe": timeframes,
-                "available_timeframes": list(INTRADAY_TIMEFRAMES),
+                "available_timeframes": list(CHART_TIMEFRAMES),
             }
         )
 

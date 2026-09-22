@@ -7,8 +7,8 @@ For the subsequent timeframe investigation, see the
 [native backfill live check](dashboard-native-backfill.md). It records the native timer failure, the acquisition-owned source-time extension,
 and subsequent live verification of the one-minute dashboard.
 
-The observable outcome is an enabled-watchlist sidebar with latest quotes and one-minute candles
-that update from each five-second source bar, and one chart selected from that sidebar. The interface uses neutral dark
+The observable outcome is an enabled-watchlist sidebar with latest quotes and native provider
+1m/5m/15m/30m/1h/4h/1d updating candles, with one selected chart. The interface uses neutral dark
 grays, gold accents, white up candles, and red down candles. This is a display projection;
 connected acceptance remains Markeitect's run and review.
 
@@ -39,24 +39,24 @@ available. A disabled watchlist produces an empty dashboard.
 
 ## Configuration and migration
 
-The system configuration schema is **28**. Dashboard policy is version **5**. Copy the commented
+The system configuration schema is **28**. Dashboard policy is version **6**. Copy the commented
 `[dashboard]` section from `config/system.example.toml` into your existing ignored local profile,
 preserving its machine/provider settings. For schema-25/26/27 profiles set `schema_version = 28`. If `[dashboard]` already exists,
-use policy 5 for new profiles. Policy-3/4 input is normalized in memory without changing the file;
-its legacy page-minute count becomes the selected candle count. `initial_history_minutes` defaults
-to 20, with a 60-minute minimum effective source warmup. The section remains
+use policy 6 for new profiles. Policy-3/4/5 input is normalized in memory without changing the file;
+its legacy page-minute count becomes the selected candle count. `initial_history_minutes` is retained for compatibility but no longer requests source warmup.
+Dashboard composition enables IB revised-bar delivery, including migrated profiles. The section remains
 optional and omission disables the dashboard. Preserve machine-specific connection settings.
 For older profiles, first follow [developer setup](developer-setup.md). Local files are never
 migrated automatically.
 
 | Setting | Default | Valid range / meaning |
 | --- | --- | --- |
-| `policy_version` | `5` | Exactly `5`; version-3/4 mappings migrate in memory |
+| `policy_version` | `6` | Exactly `6`; version-3/4/5 mappings migrate in memory |
 | `enabled` | `false` | Boolean; compose dashboard on startup |
 | `port` | `8765` | 1024–65535; host fixed to `127.0.0.1` |
 | `maximum_instruments` | `64` | 1–256; reject an enabled watchlist beyond this limit |
-| `candles_per_instrument` | `720` | 2–5000; display candles per timeframe; underlying source-minute retention has a 60-minute floor |
-| `initial_history_minutes` | `20` | 1–120 source minutes; effective minimum 60, plus one boundary minute |
+| `candles_per_instrument` | `720` | 2–5000; display candles per timeframe |
+| `initial_history_minutes` | `20` | 1–120; legacy compatibility-only, unused by native charts |
 | `initial_history_candles` | `200` | 1–1000 selected intervals on selection, capped by display capacity |
 | `history_page_candles` | `200` | 1–1000 selected intervals per native page; closed sessions may return fewer |
 | `maximum_history_requests` | `4` | 1–16 active jobs, plus a separate equally bounded terminal-result buffer across browsers |
@@ -135,19 +135,12 @@ raw market-data exports. Offline tests and visual inspection do not award connec
 
 ## Evidence and limits
 
-The chart receives acquisition-owned derived minute snapshots with decimal OHLCV strings,
-source counts, status, and exact close timestamps. Chart labels use the minute opening time in
-UTC. A forming candle updates on source arrivals, not a wall-clock timer. COMPLETE requires all
-twelve unique five-second inputs. INCOMPLETE means the source has passed the close with missing
-inputs; no synthetic candles or volumes fill gaps. The current source age remains visible.
-
-The displayed last remains the five-second close; history can populate it before live delivery.
-Bid/ask timestamps are independent. Requested and received market-data modes remain distinct.
-Historical overlap never replaces an observed live value; conflicts and rejected source counts
-are retained in the API. Later history can repair an incomplete derived candle, and SSE delivers
-same-time changes and older inserts. The browser merges, sorts and trims these projections while
-preserving the visible range when follow-live is off. It does not calculate OHLCV. There is no
-provider revision policy change or durable raw market-data storage.
+The chart receives native provider OHLCV with exact decimal values. Same-candle revisions replace
+prior values and cumulative volume. Labels preserve provider opens by reversing the installed
+adapter timestamp conversion; daily labels denote the provider trading date. The chart does not
+invent session boundaries or fill absent candles. Subscription values take precedence over
+history overlap. Five-second closes supply watchlist last-price age independently of chart time.
+No durable raw data is stored. See the [current native chart contract](dashboard-live-timeframes.md).
 
 Server failures remain local and are logged; port conflicts require correcting configuration and
 restarting the system. Dashboard membership is immutable for a run. Chart state is capped, but

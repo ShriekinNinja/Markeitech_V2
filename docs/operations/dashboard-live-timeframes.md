@@ -1,3 +1,101 @@
+# Dashboard native timeframes — issue 56
+
+Issue: https://github.com/ShriekinNinja/Markeitech_V2/issues/56
+Existing implementation PR: https://github.com/ShriekinNinja/Markeitech_V2/pull/60
+
+## Outcome and scope
+
+Display provider-owned 1m/5m/15m/30m/1h/4h/1d candles with native forming-bar revisions.
+All demand goes through DataAcquisitionActor. The operator accepted provider-returned session
+boundaries and approved native subscriptions for all timeframes after the ES 1m probe.
+This supersedes the previous five-second chart aggregation and deferred 4h/daily design.
+Changes remain on the existing branch for local review. No dependency or storage changes.
+
+Open chart selections, shared across browsers, determine native chart subscriptions. The web
+thread sends a bounded desired-selection snapshot to DashboardActor; acquisition owns the
+native calls and reconciliation. Five-second watchlist prices and quote subscriptions continue.
+Selecting another chart or closing the final viewer releases unused streams. Late callbacks
+cannot repopulate released state. No source warmup or local candle aggregation is needed.
+
+Native revisions replace the complete same-timestamp OHLCV. Browser merging prefers received
+subscription values over overlapping history. Bounded memory is at most configured instruments
+and supported frames times candles_per_instrument; active chart streams are bounded by clients.
+History requests retain their existing planner/executor budgets, timeout and paging lifecycle.
+A failed chart does not remove independent watchlist claims. System-wide reconnect repair is #66;
+historical cache/catalog reuse is #65. Neither is part of this batch.
+
+## Native alignment and evidence
+
+Refreshed 2026-09-17: [nightly guides](https://nautilustrader.io/docs/nightly/) and
+[nightly Python API](https://nautechsystems.github.io/nautilus_docs/python-api-nightly/).
+The API landing page still reports rc4; the executable contract and adapter source used here are
+installed 2.0.0rc5. No native indicator, persistence, catalog, cache database or separate scheduler
+is needed to project provider candles. Native actor callbacks, subscription ports, runtime timers,
+and request_bars are composed with the existing dashboard's bounded display/mailbox layer.
+
+| Requirement | Native candidate | Installed-version evidence | Adapter/provider evidence | Semantic fit | Proposed owner | Decision | Rejection or extension rationale | Acceptance evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Updating selected candle | DataActor.subscribe_bars/on_bar | rc5 installed stubs and offline native actor attachment test | rc5 IB historical update subscription; handle_revised_bars enabled; ES 1m live probe | Exact provider OHLCV and revisions | DataAcquisitionActor/native data engine | USE_NATIVE | Replaces custom five-second rollup | 13 deliveries, 11 revisions, one rollover and next-bar revision; integrated dashboard pending |
+| Time labels | Native Bar identity and ts_event | rc5 convert.rs adds nominal duration, daily minus 1ns | Returned 4h/day sample and provider screenshots | Recover provider open without inventing session closes | Acquisition projection helper | WRAP_NATIVE | Only presentation timestamp conversion; no OHLCV reconstruction | Offline all-frame and shortened-session fixtures |
+| History | request_bars and existing acquisition executor | rc5 request API and installed tests | Five returned 4h and five daily bars in earlier authorized probe | Provider bars in selected window | Historical planner/DataAcquisitionActor | COMPOSE_NATIVE | Existing bounded HTTP correlation and paging retained | Offline page tests; integrated long-frame acceptance pending |
+| Demand lifecycle | Native subscriptions plus existing acquisition coordinator | Installed subscribe/unsubscribe and handler routing | 1m probe unsubscribed and node stopped | One shared claim per selected instrument/frame | DataAcquisitionActor | COMPOSE_NATIVE | Browser selections need bounded union/diff | Shared viewer, switch, release and late-callback tests |
+
+Reference source: [rc5 timestamp conversion](https://github.com/nautechsystems/nautilus_trader/blob/v2.0.0rc5/crates/adapters/interactive_brokers/src/data/convert.rs)
+and [IB subscription stream](https://github.com/nautechsystems/nautilus_trader/blob/v2.0.0rc5/crates/adapters/interactive_brokers/src/data/core_streams.rs).
+
+## Configuration and local acceptance
+
+### Browser history window correction
+
+The browser retains at most `candles_per_instrument` displayed candles around the visible
+window. Older/newer pages preserve a visible timestamp and its fractional screen position;
+eviction occurs outside the visible candles. Scrolling to either edge or using Older/Newer
+requests the adjacent page through the existing history endpoint. Removed history is fetched
+again, not persisted. Empty session windows advance the relevant request cursor without
+fabricating bars. If eviction would remove visible candles, pan toward the requested history
+or zoom in before loading another page.
+The bounded live tail remains separate and cannot bridge an evicted gap into an old view.
+A separate transient recent window retains the newest already-loaded candles, bounded by the
+same display capacity, and receives native updates while browsing. Follow live switches to it
+immediately without a history request. Only a selection with no successful initial history yet
+uses the loading fallback: keep the browsing window visible until recent history succeeds, or
+preserve it and show the error on failure. The existing live stream continues. Late responses from superseded browser history work
+are ignored; already-admitted provider requests are not claimed to be canceled.
+
+Offline JavaScript regressions run through `pytest tests/dashboard/test_chart_window.py`
+using an existing Node executable (no npm/install/build; skipped explicitly if unavailable).
+They exercise retention and request control with stubbed transport/chart APIs, not provider or
+real-browser acceptance. Local review: select ES 1h, zoom to a portion of the chart, load/scroll
+past 720 candles, then navigate right into removed history. The same viewed candles should
+remain at the same positions on page arrival. Return to Follow live, including once during a
+pending Older request; recent history and native updates should return without changing 1h.
+Verify a date range still replaces the view and that a fully zoomed-out capacity prompts for
+zoom rather than removing visible candles. This correction changes browser presentation only.
+
+Dashboard policy 6 migrates policies 3–5 in memory, preserving local files. Composition enables
+handle_revised_bars when the dashboard is enabled, a requirement of this approved native path.
+Without dashboard it respects the configured IB flag. initial_history_minutes and its legacy
+source_history_count are retained solely for profile/API compatibility; no warmup is requested.
+initial_history_candles and history_page_candles still control selected-frame history windows.
+Closed sessions can return fewer candles than the nominal window count.
+
+Markeitect runs the ordinary system launcher using the existing local profile. Select ES 1m,
+observe within-candle updates and one rollover; then switch through all seven timeframes. Compare
+exact contract, extended-hours setting and UTC labels against provider candles. Load Older and a
+date range, ensuring arriving history does not undo the live candle. Open two viewers on the same
+chart, close one, then switch/close the last; verify remaining streams and watchlist prices keep
+working. Restart to verify preferences and server lifecycle. No four-hour wait is required for
+implementation checks; the 1m probe exercised the revision/rollover mechanism.
+
+Stop for wrong contract/selector, stale values masking revisions, added rather than replaced
+volume, growing subscriptions after switches, or a server surviving shutdown. Full chart/session
+acceptance belongs to Markeitect; isolated native 1m evidence is not an all-instrument guarantee.
+
+## Prior batches — historical evidence, superseded design
+
+The following records preserve prior review and live-test evidence. The native contract above
+supersedes their five-second aggregation plan, configuration version and 4h/daily debt.
+
 # Dashboard timeframes — issue 56 local implementation
 
 Issue: https://github.com/ShriekinNinja/Markeitech_V2/issues/56

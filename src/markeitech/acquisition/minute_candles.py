@@ -11,6 +11,8 @@ _MINUTE = 60 * _SECOND
 _SOURCE_INTERVAL = 5 * _SECOND
 # Protocol-supported clock-aligned intraday intervals; session intervals are separate.
 INTRADAY_TIMEFRAMES = {"1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}
+PROVIDER_TIMEFRAMES = {"4h": 14400, "1d": 86400}
+CHART_TIMEFRAMES = {**INTRADAY_TIMEFRAMES, **PROVIDER_TIMEFRAMES}
 _FIELDS = ("open", "high", "low", "close", "volume")
 
 
@@ -18,7 +20,10 @@ _FIELDS = ("open", "high", "low", "close", "volume")
 class MinuteCandle:
     """UTC intraday candle with exact decimals and explicit source provenance.
 
-    ``time`` labels the opening second; ``ts_event_ns`` is the closing boundary.
+    ``time`` labels the opening second; ``ts_event_ns`` preserves the adapter timestamp.
+    For provider_subscription, UPDATING means revisable provider data; it does not
+    assert session completion. In rc5, 4h timestamps are nominal closes and daily
+    timestamps label the provider date at UTC end-of-day, not exchange closing instants.
     For derived_5s, COMPLETE means every expected five-second constituent was observed.
     For provider_history, COMPLETE means one completed native bar was received; input
     counts refer to that native selector and do not claim five-second coverage. INCOMPLETE

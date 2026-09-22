@@ -162,7 +162,7 @@ def test_unread_terminal_pages_do_not_exhaust_admission_or_accumulate(status) ->
 def test_legacy_session_quota_is_removed_without_rewriting_input() -> None:
     values = {"policy_version": 4, "maximum_history_requests_per_session": 1}
     config = DashboardConfig.from_mapping(values)
-    assert config.policy_version == 5
+    assert config.policy_version == 6
     assert "maximum_history_requests_per_session" not in asdict(config)
     assert values["maximum_history_requests_per_session"] == 1
 
@@ -215,7 +215,7 @@ def test_acquisition_retires_page_metadata_after_terminal_publication() -> None:
     coordinator = _coordinator(RecordingHistoricalPort())
     signals = []
     actor = SimpleNamespace(
-        _historical_requests={}, _historical_counts=Counter(), _minute_book=None,
+        _historical_requests={}, _historical_counts=Counter(), _dashboard_port=None,
         actor_id="DATA-ACQUISITION", publish_signal=lambda *args: signals.append(args),
         publish_data=lambda *args: None, log=SimpleNamespace(info=lambda _: None),
     )

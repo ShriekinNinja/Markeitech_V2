@@ -19,7 +19,7 @@ market_data_type = "realtime"
 use_regular_trading_hours = false
 batch_quotes = true
 ignore_quote_tick_size_updates = false
-handle_revised_bars = false
+handle_revised_bars = true # Required effectively whenever dashboard.enabled=true.
 connection_timeout_seconds = 30
 request_timeout_seconds = 30
 
@@ -37,12 +37,12 @@ ping_critical_resource_alerts = true
 # Local browser dashboard. All settings are startup-only; restart to apply changes.
 # Policy version identifies this bounded display contract; no raw data is persisted.
 [dashboard]
-policy_version = 5 # Selected-timeframe native history with five-second forming updates.
+policy_version = 6 # Native provider history and updating bars for the selected timeframe.
 enabled = true # Set true to start/stop the dashboard with the system.
 port = 8765 # TCP port, 1024..65535; binds to 127.0.0.1 only.
 maximum_instruments = 64 # 1..256; must cover every enabled watchlist member.
 candles_per_instrument = 720 # 2..5000 displayed candles per timeframe; source retention has a 60-minute minimum.
-initial_history_minutes = 90 # 1..120 source minutes; at least 60 are fetched to seed the forming hour.
+initial_history_minutes = 90 # Legacy policy compatibility only; native charts need no 5s warmup.
 publish_interval_ms = 250 # 100..5000 ms; browser projection cadence, not data cadence.
 acquisition_retry_interval_ms = 1000 # 100..10000 ms; membership/attachment retry cadence.
 maximum_clients = 4 # 1..16 concurrent browser SSE streams.

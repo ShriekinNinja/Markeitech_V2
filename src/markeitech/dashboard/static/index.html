@@ -8,6 +8,7 @@
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="/static/dashboard.css">
   <script src="/static/vendor/lightweight-charts-5.2.1.js" defer></script>
+  <script src="/static/chart-window.js" defer></script>
   <script src="/static/dashboard.js" defer></script>
 </head>
 <body>
@@ -36,18 +37,21 @@
         </div>
       </section>
       <section class="chart-panel" aria-label="Candlestick chart">
-        <div class="chart-toolbar"><div id="timeframes" class="timeframes" role="group" aria-label="Candle timeframe"><button type="button" class="timeframe" data-timeframe="1m" aria-pressed="false">1m</button><button type="button" class="timeframe" data-timeframe="5m" aria-pressed="false">5m</button><button type="button" class="timeframe" data-timeframe="15m" aria-pressed="false">15m</button><button type="button" class="timeframe" data-timeframe="30m" aria-pressed="false">30m</button><button type="button" class="timeframe" data-timeframe="1h" aria-pressed="false">1h</button></div><div class="chart-actions"><button id="follow" class="gold-button" aria-pressed="true"><i></i>Follow live</button><button id="fit" class="icon-button" aria-label="Fit available candles" title="Fit available candles">⛶</button></div></div>
+        <div class="chart-toolbar"><div id="timeframes" class="timeframes" role="group" aria-label="Candle timeframe"><button type="button" class="timeframe" data-timeframe="1m" aria-pressed="false">1m</button><button type="button" class="timeframe" data-timeframe="5m" aria-pressed="false">5m</button><button type="button" class="timeframe" data-timeframe="15m" aria-pressed="false">15m</button><button type="button" class="timeframe" data-timeframe="30m" aria-pressed="false">30m</button><button type="button" class="timeframe" data-timeframe="1h" aria-pressed="false">1h</button>
+              <button type="button" data-timeframe="4h" aria-pressed="false">4h</button>
+              <button type="button" data-timeframe="1d" aria-pressed="false">1d</button></div><div class="chart-actions"><button id="follow" class="gold-button" aria-pressed="true"><i></i>Follow live</button><button id="fit" class="icon-button" aria-label="Fit available candles" title="Fit available candles">⛶</button></div></div>
         <form id="range-form" class="history-toolbar" aria-label="Historical chart window">
           <button id="older" type="button" title="Load an older page">← Older</button>
+          <button id="newer" type="button" title="Load a newer page">Newer →</button>
           <label>From <input id="range-start" type="datetime-local" step="60" required></label>
           <label>To <input id="range-end" type="datetime-local" step="60" required></label>
           <span>UTC</span><button id="show-range" type="submit">Show</button>
           <span id="history-status" role="status"></span>
         </form>
         <div id="ohlc" class="ohlc" aria-live="off">Waiting for candles</div>
-        <div class="chart-body" aria-busy="true"><div id="chart-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Loading candles…</span></div><div id="chart" role="img" aria-label="Selected instrument OHLC candles in UTC. White candles rise; red candles fall."></div><div id="chart-empty"><span class="empty-icon">▥</span><h3>Waiting for candles</h3><p>Minute candles update with each five-second bar.</p></div></div>
+        <div class="chart-body" aria-busy="true"><div id="chart-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Loading candles…</span></div><div id="chart" role="img" aria-label="Selected instrument OHLC candles in UTC. White candles rise; red candles fall."></div><div id="chart-empty"><span class="empty-icon">▥</span><h3>Waiting for candles</h3><p>Selected candles update directly from IB.</p></div></div>
       </section>
-      <footer class="chart-footer"><span id="source">IB · Minute candles from five-second bars · UTC</span><span id="window-status">Waiting for history</span></footer>
+      <footer class="chart-footer"><span id="source">IB · Native provider candles · UTC</span><span id="window-status">Waiting for history</span></footer>
     </main>
   </div>
 </body>

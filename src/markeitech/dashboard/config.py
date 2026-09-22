@@ -7,11 +7,12 @@ from dataclasses import dataclass, fields
 class DashboardConfig:
     """Bound startup-only dashboard resources; durations are seconds or milliseconds.
 
-    Policy version 5 exposes only loopback HTTP. History is transient per instrument,
+    Policy version 6 uses native provider chart subscriptions and loopback HTTP.
+    History is transient per instrument,
     and the projection interval limits browser publication, not provider cadence.
     """
 
-    policy_version: int = 5
+    policy_version: int = 6
     enabled: bool = False
     port: int = 8765
     maximum_instruments: int = 64
@@ -30,7 +31,7 @@ class DashboardConfig:
         if type(self.enabled) is not bool:
             raise ValueError("dashboard.enabled must be a boolean")
         bounds = {
-            "policy_version": (5, 5),
+            "policy_version": (6, 6),
             "port": (1024, 65535),
             "maximum_instruments": (1, 256),
             "candles_per_instrument": (2, 5000),
@@ -51,7 +52,7 @@ class DashboardConfig:
 
     @property
     def source_history_count(self) -> int:
-        """Retain enough five-second inputs to seed any supported forming interval."""
+        """Return the legacy warmup count for compatibility; native charts do not use it."""
         return 12 * (max(60, min(self.initial_history_minutes, self.candles_per_instrument)) + 1)
 
     @classmethod
@@ -71,6 +72,9 @@ class DashboardConfig:
             if type(legacy_limit) is not int or not 1 <= legacy_limit <= 4096:
                 raise ValueError("legacy dashboard history session limit must be 1..4096")
             values["policy_version"] = 5
+        if isinstance(values, dict) and values.get("policy_version") == 5:
+            values = dict(values)
+            values["policy_version"] = 6
         if not isinstance(values, dict) or values.keys() - {f.name for f in fields(cls)}:
             raise ValueError("dashboard must be a table with known policy fields")
         return cls(**values)

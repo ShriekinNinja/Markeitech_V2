@@ -13,7 +13,7 @@
   try {
     const preference = JSON.parse(localStorage.getItem("markeitech.dashboard.selection.v1") || "null");
     if (preference && typeof preference.instrument === "string" && preference.instrument.length <= 128) rememberedInstrument = preference.instrument;
-    if (["1m", "5m", "15m", "30m", "1h"].includes(preference?.timeframe)) timeframe = preference.timeframe;
+    if (["1m", "5m", "15m", "30m", "1h", "4h", "1d"].includes(preference?.timeframe)) timeframe = preference.timeframe;
   } catch { /* Storage is optional; malformed or unavailable preferences cannot block startup. */ }
   function rememberSelection() {
     try { localStorage.setItem("markeitech.dashboard.selection.v1", JSON.stringify({instrument:selected,timeframe})); } catch {}
@@ -44,86 +44,124 @@
     wickUpColor:"#eeeeee",wickDownColor:"#c42b32",lastValueVisible:false,priceLineVisible:false,
   });
   let priceLine = null, liveCandles = new Map(), historyCandles = new Map();
-  let historyBusy = false, historyIntent = false, rangeMode = null, oldestCursor = null, historyResultState = "waiting";
+  let recentCandles = new Map(), recentHistoryReady = false;
+  let historyBusy = false, historyIntent = false, rangeMode = null, oldestCursor = null, newestCursor = null, historyEpoch = 0, historyResultState = "waiting";
   let maximumCandles = 720, pageCandles = 200, initialCandles = 200, historyTimeout = 120, historyRetryMs = 1000, installing = false;
   const datetimeValue = seconds => new Date(seconds*1000).toISOString().slice(0,16);
   const parseDatetime = value => Date.parse(`${value}:00Z`)/1000;
   const historyStatus = text => {$("history-status").textContent=text;};
-  function installCandles(reset=false) {
+  function installCandles(reset=false, direction="stay") {
     const before=candles, range=chart.timeScale().getVisibleLogicalRange();
-    const merged=new Map(historyCandles);
-    for(const [time,bar] of liveCandles)if(!merged.has(time))merged.set(time,bar);
+    const merged=new Map(candles.map(bar=>[bar.time,bar]));
+    for(const [time,bar] of historyCandles)merged.set(time,bar);
+    for(const [time,bar] of liveCandles) {
+      // Do not join an old browsing window to a distant live tail across evicted history.
+      if(following || (oldestCursor===null && newestCursor===null)
+        || (time >= oldestCursor && time < newestCursor))merged.set(time,bar);
+    }
     const all=[...merged.values()].filter(bar=>!rangeMode || (bar.time>=rangeMode.start && bar.time<rangeMode.end)).sort((a,b)=>a.time-b.time);
-    candles=following?all.slice(-maximumCandles):all.slice(0,maximumCandles);
+    const retained=DashboardWindow.retain(all, reset?[]:before, reset?null:range, maximumCandles, following?"newer":direction);
+    candles=following?all.slice(-maximumCandles):retained.bars;
+    if(candles.length) {
+      const first=candles[0].time, last=candles.at(-1).time;
+      if(all[0].time<first)oldestCursor=first;
+      if(all.at(-1).time>last)newestCursor=all.find(bar=>bar.time>last).time;
+      historyCandles=new Map([...historyCandles].filter(([time])=>time>=first && time<=last));
+    }
     installing=true;series.setData(candles.map(chartBar));
     if(reset)chart.timeScale().fitContent();
-    else if(!following && range) {
-      const shift=before.length&&candles.length?candles.filter(bar=>bar.time<before[0].time).length-before.filter(bar=>bar.time<candles[0].time).length:0;
-      chart.timeScale().setVisibleLogicalRange({from:range.from+shift,to:range.to+shift});
-    }
+    else if(!following && retained.range)chart.timeScale().setVisibleLogicalRange(retained.range);
     if(following)chart.timeScale().scrollToRealTime();
     updateWindowStatus();
     requestAnimationFrame(()=>{installing=false;});
   }
-  async function historyPage(start,end,token) {
+  function retainRecent(bars) {
+    for(const bar of bars)recentCandles.set(bar.time,bar);
+    recentCandles=new Map([...recentCandles].sort((a,b)=>a[0]-b[0]).slice(-maximumCandles));
+  }
+  const currentHistory = (token, epoch) => token===generation && epoch===historyEpoch;
+  async function historyPage(start,end,token,epoch) {
     const deadline=Date.now()+historyTimeout*1000;
     const body=JSON.stringify({instrument_id:selected,start,end,timeframe});
     let response;
     do {
-      if(token!==generation)return null;
+      if(!currentHistory(token,epoch))return null;
       response=await fetch("/api/history",{method:"POST",headers:{"Content-Type":"application/json"},body});
       if(response.status!==429)break;
       if(Date.now()>=deadline)throw new Error("History is still busy; try again");
       historyStatus("Waiting for history…");
       await new Promise(resolve=>setTimeout(resolve,historyRetryMs));
-    } while(token===generation);
-    if(token!==generation)return null;
+    } while(currentHistory(token,epoch));
+    if(!currentHistory(token,epoch))return null;
     if(!response.ok){const error=await response.json();throw new Error(error.detail || "History unavailable");}
     let result=await response.json();
-    while(result.status==="PENDING" && token===generation && Date.now()<deadline){
+    while(result.status==="PENDING" && currentHistory(token,epoch) && Date.now()<deadline){
       await new Promise(resolve=>setTimeout(resolve,500));
-      if(token!==generation)return null;
+      if(!currentHistory(token,epoch))return null;
       response=await fetch(`/api/history/${encodeURIComponent(result.request_id)}`);
       if(!response.ok)throw new Error("History request expired; try again");
       result=await response.json();
     }
-    if(token!==generation)return null;
+    if(!currentHistory(token,epoch))return null;
     if(result.status!=="COMPLETED")throw new Error(result.detail || `History ${result.status.toLowerCase()}; try again`);
     return result;
   }
-  async function loadHistory(start,end,replaceRange=false,initial=false) {
+  async function loadHistory(start,end,replaceRange=false,initial=false,direction="older",restore=false) {
     if(historyBusy || !selected)return;
-    const token=generation;historyBusy=true;historyIntent=false;historyResultState="loading";
-    $("older").disabled=true;$("show-range").disabled=true;if(!initial)follow(false);
-    if(replaceRange){rangeMode={start,end};historyCandles.clear();installCandles(true);}
+    const token=generation, epoch=++historyEpoch;historyBusy=true;historyIntent=false;historyResultState="loading";
+    $("older").disabled=true;$("newer").disabled=true;$("show-range").disabled=true;if(!initial)follow(false);
+    if(replaceRange){rangeMode={start,end};historyCandles.clear();candles=[];oldestCursor=start;newestCursor=end;installCandles(true);}
     let cursor=end, count=0;
+    const pending=restore?new Map():null;
     try {
-      while(cursor>start && token===generation){
+      while(cursor>start && currentHistory(token,epoch)){
         const duration=pageCandles*timeframeSeconds;
         if(duration<timeframeSeconds)throw new Error("Configured history page is shorter than this timeframe");
         const pageStart=Math.max(start,cursor-duration);
         historyStatus("Loading history…");
-        const result=await historyPage(pageStart,cursor,token);if(!result)return;
-        for(const candle of result.candles)historyCandles.set(candle.time,candle);
-        count+=result.candles.length;cursor=pageStart;oldestCursor=pageStart;
-        if(!replaceRange){const retained=[...historyCandles].sort((a,b)=>a[0]-b[0]).slice(0,maximumCandles);historyCandles=new Map(retained);}
-        installCandles(replaceRange || (initial && following));$("chart-empty").hidden=candles.length>0;
+        const result=await historyPage(pageStart,cursor,token,epoch);if(!result)return;
+        if(recentHistoryReady)retainRecent(result.candles);
+        for(const candle of result.candles)(pending || historyCandles).set(candle.time,candle);
+        count+=result.candles.length;
+        if(restore){cursor=pageStart;continue;}
+        oldestCursor=Math.min(oldestCursor ?? pageStart,pageStart);
+        newestCursor=Math.max(newestCursor ?? cursor,cursor);
+        cursor=pageStart;
+        installCandles(replaceRange || (initial && following),direction);$("chart-empty").hidden=candles.length>0;
       }
+      if(!currentHistory(token,epoch))return;
+      if(restore) {
+        // Commit only after every recent-history page succeeds; preserve the old view on failure.
+        historyCandles=pending;candles=[];rangeMode=null;oldestCursor=start;newestCursor=end;
+        follow(true);installCandles(true);$("chart-empty").hidden=candles.length>0;
+      }
+      if(initial){recentHistoryReady=true;retainRecent(candles);}
       historyResultState="completed";updateWindowStatus();
       historyStatus(count?`${count} candles loaded · UTC`:"No bars returned for this window");
       legend(candles.at(-1));
-    } catch(error) {if(token===generation){historyResultState="failed";updateWindowStatus();historyStatus(error.message);}}
-    finally {if(token===generation){historyBusy=false;$("older").disabled=false;$("show-range").disabled=false;}}
+    } catch(error) {if(currentHistory(token,epoch)){historyResultState="failed";updateWindowStatus();historyStatus(error.message);}}
+    finally {if(currentHistory(token,epoch)){historyBusy=false;$("older").disabled=false;$("newer").disabled=false;$("show-range").disabled=false;}}
   }
-  function older() {
-    if(rangeMode){historyStatus("Use Follow live before loading older pages");return;}
+  function navigateHistory(direction) {
+    if(historyBusy)return;
+    if(rangeMode){historyStatus("Use Follow live before paging outside a date range");return;}
     if(!candles.length)return;
-    const end=Math.min(oldestCursor ?? candles[0].time,candles[0].time);
-    const duration=pageCandles*timeframeSeconds;
-    if(duration<timeframeSeconds){historyStatus("Configured history page is shorter than this timeframe");return;}
-    loadHistory(end-duration,end);
+    const count=Math.min(pageCandles,DashboardWindow.room(candles,chart.timeScale().getVisibleLogicalRange(),maximumCandles,direction));
+    if(count<1){historyStatus("Zoom in or pan toward the requested history to make room without removing visible candles");return;}
+    const now=Math.floor(Date.now()/1000/timeframeSeconds)*timeframeSeconds;
+    const cursor=direction==="older" ? (oldestCursor ?? candles[0].time)
+      : (newestCursor ?? candles.at(-1).time+timeframeSeconds);
+    // Requests use UTC-aligned bounds; overlap off-grid provider opens rather than skip them.
+    const edge=(direction==="older" ? Math.ceil(cursor/timeframeSeconds) : Math.floor(cursor/timeframeSeconds))*timeframeSeconds;
+    const start=direction==="older" ? edge-count*timeframeSeconds : edge;
+    const end=direction==="older" ? edge : Math.min(now,edge+count*timeframeSeconds);
+    if(end<=start){historyStatus("At the latest completed candle; use Follow live");return;}
+    void loadHistory(start,end,false,false,direction);
   }
+  const older=()=>navigateHistory("older");
+  const newer=()=>navigateHistory("newer");
   $("older").addEventListener("click",older);
+  $("newer").addEventListener("click",newer);
   $("range-form").addEventListener("submit",event=>{
     event.preventDefault();const start=Math.floor(parseDatetime($("range-start").value)/timeframeSeconds)*timeframeSeconds,end=Math.floor(parseDatetime($("range-end").value)/timeframeSeconds)*timeframeSeconds;
     if(!Number.isFinite(start)||!Number.isFinite(end)||start<=0||end<=start){historyStatus("Choose a valid UTC start and end");return;}
@@ -133,18 +171,39 @@
     loadHistory(start,end,true);
   });
   chart.timeScale().subscribeVisibleLogicalRangeChange(range=>{
-    if(range && range.from<8 && historyIntent && !historyBusy && !following && !installing && !rangeMode)older();
+    if(!range || !historyIntent || historyBusy || following || installing || rangeMode)return;
+    if(range.from<8)older();
+    else if(range.to>candles.length-8)newer();
   });
   const chartBar = bar => ({time:bar.time,open:Number(bar.open),high:Number(bar.high),low:Number(bar.low),close:Number(bar.close)});
   function setConnected(value, label) {
     $("connection").textContent=label || (value?"Connected to system":"Disconnected · reconnecting");
     $("connection-dot").style.background=value?"#d1ad60":"#747474";
   }
-  function follow(value) {following=value; $("follow").setAttribute("aria-pressed",String(value)); if(value) chart.timeScale().scrollToRealTime();}
+  function follow(value) {
+    if(following && !value && candles.length) {
+      oldestCursor=Math.min(oldestCursor ?? candles[0].time,candles[0].time);
+      newestCursor=Math.max(newestCursor ?? 0,candles.at(-1).time+timeframeSeconds);
+    }
+    following=value; $("follow").setAttribute("aria-pressed",String(value)); if(value) chart.timeScale().scrollToRealTime();}
+  async function restoreLive() {
+    // Supersede pending browser history work without touching the native subscription.
+    historyEpoch++;historyBusy=false;historyIntent=false;
+    if(recentHistoryReady) {
+      historyCandles=new Map(recentCandles);candles=[];rangeMode=null;
+      oldestCursor=recentCandles.size?recentCandles.values().next().value.time:null;
+      newestCursor=null;historyResultState="completed";
+      follow(true);installCandles(true);legend(candles.at(-1));
+      $("chart-empty").hidden=candles.length>0;
+      $("older").disabled=false;$("newer").disabled=false;$("show-range").disabled=false;
+      historyStatus("Recent candles restored · UTC");
+      return;
+    }
+    const end=Math.floor(Date.now()/1000/timeframeSeconds)*timeframeSeconds;
+    await loadHistory(end-initialCandles*timeframeSeconds,end,false,true,"newer",true);
+  }
   $("follow").addEventListener("click",()=>{
-    const next=!following;
-    if(next){rangeMode=null;oldestCursor=null;historyStatus("");}
-    follow(next);if(next)installCandles(true);
+    if(following)follow(false);else void restoreLive();
   });
   $("fit").addEventListener("click",()=>{follow(false);chart.timeScale().fitContent();});
   $("chart").addEventListener("pointerdown",()=>{historyIntent=true;follow(false);});
@@ -206,6 +265,7 @@
     if(reset)liveCandles=new Map(view.candles.map(bar=>[bar.time,bar]));
     else for(const bar of view.candles)liveCandles.set(bar.time,bar);
     liveCandles=new Map([...liveCandles].sort((a,b)=>a[0]-b[0]).slice(-maximumCandles));
+    if(recentHistoryReady)retainRecent(view.candles);
     installCandles(reset && !rangeMode && !historyCandles.size);
     if(candles.length){
       const last=candles.at(-1);const precision=(last.close.split(".")[1]||"").length;
@@ -216,7 +276,7 @@
     $("chart-empty").hidden=candles.length>0;
     const configured=row?.capabilities.includes("watchlist_last");
     $("chart-empty").querySelector("h3").textContent=!selected?"No instrument selected":configured?"Waiting for candles":"Bar feed not configured";
-    $("chart-empty").querySelector("p").textContent=configured?`${timeframe} candles update with each five-second bar.`:"Select a watchlist instrument with a bar feed.";
+    $("chart-empty").querySelector("p").textContent=configured?`${timeframe} candles update directly from IB.`:"Select a watchlist instrument with a bar feed.";
     $("source").textContent=`IB · Requested ${view.requested_market_data_type} · Received mode unknown · UTC`;
     if(view.preview){$("source").textContent="OFFLINE PREVIEW · Synthetic data · UTC";setConnected(true,"Offline preview");}
     legend(candles.at(-1));ages();
@@ -230,10 +290,20 @@
     $("chart-loading").hidden=!loading;
     $("chart-loading").parentElement.setAttribute("aria-busy",String(loading));
   }
+  let initialHistoryGeneration = -1;
+  async function ensureInitialHistory(view, token) {
+    if(token!==generation || initialHistoryGeneration===token || !selected || view.preview
+      || !rows.find(row=>row.instrument_id===selected)?.capabilities.includes("watchlist_last"))return;
+    initialHistoryGeneration=token;initialLoading(true);
+    try {
+      const end=Math.floor(Date.now()/1000/timeframeSeconds)*timeframeSeconds;
+      await loadHistory(end-initialCandles*timeframeSeconds,end,false,true);
+    } finally {if(token===generation)initialLoading(false);}
+  }
   async function select(id) {
     initialLoading(true);
     const token=++generation;if(stream)stream.close();stream=null;
-    selected=id;historyResultState="waiting";candles=[];liveCandles.clear();historyCandles.clear();rangeMode=null;oldestCursor=null;historyBusy=false;historyIntent=false;following=true;$("follow").setAttribute("aria-pressed","true");$("older").disabled=false;$("show-range").disabled=false;historyStatus("");series.setData([]);if(priceLine){series.removePriceLine(priceLine);priceLine=null;}
+    selected=id;historyResultState="waiting";candles=[];liveCandles.clear();historyCandles.clear();recentCandles.clear();recentHistoryReady=false;rangeMode=null;oldestCursor=null;newestCursor=null;historyEpoch++;historyBusy=false;historyIntent=false;following=true;$("follow").setAttribute("aria-pressed","true");$("older").disabled=false;$("newer").disabled=false;$("show-range").disabled=false;historyStatus("");series.setData([]);if(priceLine){series.removePriceLine(priceLine);priceLine=null;}
     $("chart-empty").hidden=false;$("chart-empty").querySelector("h3").textContent="Loading instrument…";
     setConnected(false,"Connecting…");
     const query=`?timeframe=${encodeURIComponent(timeframe)}${id?`&instrument_id=${encodeURIComponent(id)}`:""}`;
@@ -243,15 +313,12 @@
       if(!response.ok)throw new Error("Snapshot unavailable");
       const view=await response.json();if(token!==generation)return;render(view,true);
       stream=new EventSource(`/api/events${query}`);
-      stream.addEventListener("update",event=>{if(token!==generation)return;setConnected(true);const update=JSON.parse(event.data);render(update,update.reset);});
+      stream.addEventListener("update",event=>{if(token!==generation)return;setConnected(true);const update=JSON.parse(event.data);render(update,update.reset);void ensureInitialHistory(update,token);});
       stream.addEventListener("stopping",()=>{if(token!==generation)return;setConnected(false,"System stopped");});
       stream.onerror=()=>{if(token===generation)setConnected(false);};
-      if (selected && rows.find(row=>row.instrument_id===selected)?.capabilities.includes("watchlist_last") && !view.preview) {
-        const end=Math.floor(Date.now()/1000/timeframeSeconds)*timeframeSeconds;
-        await loadHistory(end-initialCandles*timeframeSeconds,end,false,true);
-      }
+      await ensureInitialHistory(view,token);
     } catch {if(token===generation){setConnected(false,"Unavailable · retrying");setTimeout(()=>{if(token===generation)select(id);},2000);}}
-    finally {if(token===generation)initialLoading(false);}
+    finally {if(token===generation && initialHistoryGeneration!==token)initialLoading(false);}
   }
   window.addEventListener("pagehide",()=>stream?.close());
   const now=Math.floor(Date.now()/60000)*60;$("range-start").value=datetimeValue(now-3600);$("range-end").value=datetimeValue(now);

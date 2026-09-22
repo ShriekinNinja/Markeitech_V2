@@ -723,14 +723,14 @@ components, status, and evidence remain deferred to a separately reviewed source
 <td><code>markeitech.dashboard.actor.DashboardActor</code></td>
 <td><code>markeitech_actor</code></td>
 <td><code>boundary.system</code></td>
-<td>Request configured display feeds through acquisition and receive native callbacks.<br>Retain bounded transient display state and own local web-server startup and shutdown.<br>Request startup and operator history; project acquisition-owned candles.<br>Announce the accepting dashboard address for operational Discord projection.</td>
+<td>Request configured display feeds through acquisition and receive native callbacks.<br>Retain bounded transient display state and own local web-server startup and shutdown.<br>Reconcile browser chart selections and project native provider revisions and history.<br>Announce the accepting dashboard address for operational Discord projection.</td>
 </tr>
 <tr>
 <td><code>actor.data-acquisition</code><br>Data Acquisition</td>
 <td><code>markeitech.system.acquisition.DataAcquisitionActor</code></td>
 <td><code>markeitech_actor</code></td>
 <td><code>boundary.acquisition</code></td>
-<td>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.<br>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.<br>Publish acquisition lifecycle, historical batches, and consumer readiness.<br>Admit dashboard display demand and execute its native callback attachment and release.<br>Derive bounded UTC minute candles and requested history pages from five-second inputs.</td>
+<td>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.<br>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.<br>Publish acquisition lifecycle, historical batches, and consumer readiness.<br>Admit dashboard display demand and execute its native callback attachment and release.<br>Admit selected native chart streams and project requested provider history pages.</td>
 </tr>
 <tr>
 <td><code>actor.discord-health</code><br>Discord Health Projection</td>
@@ -833,7 +833,7 @@ DataAcquisitionActor. This actor never calls native subscription methods.</p>
 <ul>
 <li>Request configured display feeds through acquisition and receive native callbacks.</li>
 <li>Retain bounded transient display state and own local web-server startup and shutdown.</li>
-<li>Request startup and operator history; project acquisition-owned candles.</li>
+<li>Reconcile browser chart selections and project native provider revisions and history.</li>
 <li>Announce the accepting dashboard address for operational Discord projection.</li>
 </ul>
 </section>
@@ -853,7 +853,7 @@ DataAcquisitionActor. This actor never calls native subscription methods.</p>
 <dd><ul>
 <li>Request configured display feeds through acquisition and receive native callbacks.</li>
 <li>Retain bounded transient display state and own local web-server startup and shutdown.</li>
-<li>Request startup and operator history; project acquisition-owned candles.</li>
+<li>Reconcile browser chart selections and project native provider revisions and history.</li>
 <li>Announce the accepting dashboard address for operational Discord projection.</li>
 </ul></dd>
 </dl>
@@ -914,7 +914,7 @@ DataAcquisitionActor. This actor never calls native subscription methods.</p>
 <li>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.</li>
 <li>Publish acquisition lifecycle, historical batches, and consumer readiness.</li>
 <li>Admit dashboard display demand and execute its native callback attachment and release.</li>
-<li>Derive bounded UTC minute candles and requested history pages from five-second inputs.</li>
+<li>Admit selected native chart streams and project requested provider history pages.</li>
 </ul>
 </section>
 
@@ -935,7 +935,7 @@ DataAcquisitionActor. This actor never calls native subscription methods.</p>
 <li>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.</li>
 <li>Publish acquisition lifecycle, historical batches, and consumer readiness.</li>
 <li>Admit dashboard display demand and execute its native callback attachment and release.</li>
-<li>Derive bounded UTC minute candles and requested history pages from five-second inputs.</li>
+<li>Admit selected native chart streams and project requested provider history pages.</li>
 </ul></dd>
 </dl>
 </section>

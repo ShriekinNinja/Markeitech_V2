@@ -38,9 +38,7 @@ from markeitech.acquisition.historical_native import (
     validate_historical_bars,
 )
 from markeitech.acquisition.minute_candles import (
-    INTRADAY_TIMEFRAMES,
-    MINUTE_CANDLES_TYPE_NAME,
-    _MinuteCandleBook,
+    CHART_TIMEFRAMES,
 )
 from markeitech.dashboard.messages import DASHBOARD_DEMAND_SIGNAL, DashboardDemand
 from markeitech.system.messages import (
@@ -149,7 +147,7 @@ class DataAcquisitionActor(DataActor):
               calendar-relative request bounds.
             - Publish acquisition lifecycle, historical batches, and consumer readiness.
             - Admit dashboard display demand and execute its native callback attachment and release.
-            - Derive bounded UTC minute candles and requested history pages from five-second inputs.
+            - Admit selected native chart streams and project requested provider history pages.
     """
 
     def __init__(self, config: DataAcquisitionActorConfig) -> None:
@@ -194,7 +192,6 @@ class DataAcquisitionActor(DataActor):
         self._dashboard_desired: dict[str, DashboardDemand] = {}
         self._dashboard_attached: dict[str, FeedRequirement] = {}
         self._dashboard_retry_ms = 1000
-        self._minute_book: _MinuteCandleBook | None = None
 
     def bind_dashboard_consumer(
         self,
@@ -214,10 +211,7 @@ class DataAcquisitionActor(DataActor):
         self._dashboard_port = NautilusSubscriptionPort(consumer)
         self._dashboard_allowed = set(allowed_feeds)
         self._dashboard_retry_ms = retry_interval_ms
-        self._minute_book = _MinuteCandleBook(
-            {instrument for instrument, kind in allowed_feeds if kind == "bars"},
-            max(60, candle_capacity),
-        )
+
 
     def on_start(self) -> None:
         if self._dashboard_port is not None:
@@ -335,14 +329,6 @@ class DataAcquisitionActor(DataActor):
         instrument_id = str(bar.bar_type.instrument_id)
         selector = str(bar.bar_type).removeprefix(f"{instrument_id}-")
         self._observe(instrument_id, FeedKind.BARS, selector)
-        if self._minute_book is not None and self._minute_book.observe(bar):
-            self._publish_minute_candles(instrument_id)
-
-    def _publish_minute_candles(self, instrument_id: str) -> None:
-        if self._minute_book is not None:
-            data_type = DataType(MINUTE_CANDLES_TYPE_NAME)
-            for update in self._minute_book._snapshots(instrument_id, self.clock.timestamp_ns()):
-                self.publish_data(data_type, CustomData(data_type, update))
 
     def on_historical_bars(self, bars) -> None:  # noqa: ANN001
         active = self._historical.active_request_ids
@@ -633,14 +619,14 @@ class DataAcquisitionActor(DataActor):
             )
         batch_type = DataType(HISTORICAL_BATCH_TYPE_NAME)
         for batch in update.batches:
-            if self._minute_book is not None:
+            if self._dashboard_port is not None:
                 for ref in batch.request.dependencies:
                     if (
                         ref.consumer_id.startswith(HISTORY_CONSUMER_PREFIX)
                         and ref.capability_id
                         in {
                             "dashboard.history-page",
-                            *(f"dashboard.history-page.{frame}" for frame in INTRADAY_TIMEFRAMES),
+                            *(f"dashboard.history-page.{frame}" for frame in CHART_TIMEFRAMES),
                         }
                         and (batch.request.instrument_id, "bars") in self._dashboard_allowed
                     ):
@@ -668,15 +654,6 @@ class DataAcquisitionActor(DataActor):
                             )
                         page_type = DataType(HISTORY_PAGE_TYPE_NAME)
                         self.publish_data(page_type, CustomData(page_type, page))
-            if self._minute_book is not None and any(
-                ref.consumer_id == "DASHBOARD" and ref.capability_id == "dashboard.minute-chart"
-                for ref in batch.request.dependencies
-            ):
-                changed = False
-                for bar in batch.observations:
-                    changed = self._minute_book.observe(bar, historical=True) or changed
-                if changed:
-                    self._publish_minute_candles(batch.request.instrument_id)
             self.publish_data(batch_type, CustomData(batch_type, batch))
         for result in update.results:
             request = self._historical_requests[result.request_id]

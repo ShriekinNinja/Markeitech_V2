@@ -127,18 +127,25 @@ not migrated automatically. See [developer setup](operations/developer-setup.md)
 
 ## Dashboard POC (Local Review)
 
-The optional `DashboardActor`, actor-owned `DashboardServer`, and `DashboardUI` display enabled
-watchlist membership, latest configured quotes and five-second closes, and one selected
-one-minute candlestick series with a forming candle. Acquisition derives the chart from source-time
-five-second bars and merges bounded native backfill through the existing historical planner/executor. Dashboard demand and native callback attachment/release are owned by
-`DataAcquisitionActor`. HTTP/SSE is loopback-only, history is bounded and transient, and the server
-starts/stops with its actor. An accepting HTTP listener publishes a one-time ready event; the
-existing Discord operational worker sends its loopback address through the operational-events
-webhook. System schema 28 uses dashboard policy 3 with bounded initial history, Older pages and UTC datetime selection;
-omission disables it. See [dashboard setup and acceptance](operations/dashboard.md). The POC is
-uncommitted for local review. An authorized isolated ES live diagnostic verified history, minute
-constituents, forming HTTP/SSE updates and browser reload; full production startup/session acceptance
-remains pending. Other timeframes and chart navigation requests are not implemented in this increment.
+The optional dashboard displays enabled watchlist quotes and five-second latest closes, plus
+one selected native IB candle series: 1m/5m/15m/30m/1h/4h/1d. DataAcquisitionActor owns every
+subscription and history request. Connected browsers share selected streams; switching or
+closing the last browser releases a stream. Same-timestamp provider revisions replace OHLCV.
+History, Older pages and UTC date selectors remain bounded and transient. Chart labels recover
+IB's opening timestamp from rc5's nominal timestamp; session candles are not rebuilt locally.
+
+System schema 28 accepts dashboard policy 6, migrating policies 3–5 in memory. Dashboard operation
+requires revised-bar delivery, enabled by composition even when an older local profile sets the
+IB flag false. Five-second warmup is retired; its configuration field remains compatibility-only.
+The server starts/stops with the actor and announces its address through the existing operational
+Discord projection. See [dashboard setup](operations/dashboard.md) and
+[native chart implementation and acceptance](operations/dashboard-live-timeframes.md).
+
+The authorized isolated ES 1m native subscription test on 2026-09-17 observed 13 deliveries,
+11 same-candle revisions, and rollover followed by revision of the next candle. This is measured
+1m adapter evidence, not full dashboard or all-session acceptance. The current native chart batch
+is for local review; Markeitect's integrated run remains pending. History reuse and system-wide
+IB reconnect recovery are separate issues #65 and #66.
 
 ## Implemented Foundation
 

@@ -353,6 +353,7 @@ def test_ready_notification_is_gated_by_accepting_listener_and_not_socket_bindin
         _display=SimpleNamespace(sequence=0),
         _published_sequence=0,
         _accept_pages=lambda: None,
+        _accept_chart_selections=lambda: None,
         publish_signal=lambda name, value: published.append((name, value)),
         log=SimpleNamespace(info=lambda _: None, error=lambda _: None),
     )
@@ -427,6 +428,7 @@ def test_stream_conflates_updates_bounds_clients_and_resets_on_reconnect() -> No
                     lines = response.aiter_lines()
                     first = await next_update(lines)
                     assert first["reset"] and first["candles"] == []
+                    assert server.take_chart_selections() == frozenset({(ID, "1m")})
                     assert (await client.get("/api/events")).status_code == 503
                     for offset in (0, 60, 120):
                         source = bar(1_800_000_000_000_000_000 + offset * 1_000_000_000)
@@ -449,6 +451,7 @@ def test_stream_conflates_updates_bounds_clients_and_resets_on_reconnect() -> No
                     if server._clients == 0:
                         break
                     await asyncio.sleep(0.02)
+                assert server.take_chart_selections() == frozenset()
                 async with client.stream(
                     "GET", "/api/events", params={"instrument_id": ID}
                 ) as response:
@@ -485,6 +488,9 @@ def test_native_acquisition_timer_attaches_other_actor_callbacks_without_nested_
         )
         acquisition.bind_dashboard_consumer(dashboard, {(ID, "bars"), (ID, "quotes")}, 100, 720)
         requests = [DashboardDemand(ID, kind) for kind in ("bars", "quotes")]
+        requests.extend(
+            DashboardDemand(ID, "bars", timeframe=frame) for frame in ("1m", "4h", "1d")
+        )
         acquisition._dashboard_desired = {item.demand_id: item for item in requests}
         node = (
             LiveNode.builder(
@@ -500,7 +506,7 @@ def test_native_acquisition_timer_attaches_other_actor_callbacks_without_nested_
         task = asyncio.create_task(node.run_async())
         try:
             for _attempt in range(60):
-                if len(acquisition._dashboard_attached) == 2:
+                if len(acquisition._dashboard_attached) == len(requests):
                     break
                 await asyncio.sleep(0.05)
             assert set(acquisition._dashboard_attached) == {item.demand_id for item in requests}

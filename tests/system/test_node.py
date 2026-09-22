@@ -24,7 +24,7 @@ def test_maps_provider_boundary_to_installed_ib_config() -> None:
     assert data_config.use_regular_trading_hours is False
     assert data_config.batch_quotes is True
     assert data_config.ignore_quote_tick_size_updates is False
-    assert data_config.handle_revised_bars is False
+    assert data_config.handle_revised_bars is True
     assert provider_config.symbology_method == SymbologyMethod.SIMPLIFIED
     assert provider_config.convert_exchange_to_mic_venue is False
     assert {str(instrument_id) for instrument_id in provider_config.load_ids} == {

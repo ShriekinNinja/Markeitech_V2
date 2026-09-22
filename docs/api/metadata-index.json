@@ -5,40 +5,40 @@
     "components": [
       {
         "boundary": "boundary.system",
-        "definition_line": 53,
+        "definition_line": 51,
         "id": "actor.dashboard",
         "implementation_ref": "src/markeitech/dashboard/actor.py:DashboardActor",
         "kind": "markeitech_actor",
         "label": "Dashboard",
         "object_path": "markeitech.dashboard.actor.DashboardActor",
-        "record_sha256": "32c8651a4b33b02af67f8d4ed0ed5408bdb5131448e88d16d2559ead6e2fe593",
+        "record_sha256": "70d8d7bafaf6a65032ee6321ba627cf38d925935792d07b691381e0bce9c8075",
         "responsibilities": [
           "Request configured display feeds through acquisition and receive native callbacks.",
           "Retain bounded transient display state and own local web-server startup and shutdown.",
-          "Request startup and operator history; project acquisition-owned candles.",
+          "Reconcile browser chart selections and project native provider revisions and history.",
           "Announce the accepting dashboard address for operational Discord projection."
         ],
         "source": "src/markeitech/dashboard/actor.py",
-        "source_sha256": "7fb51cd188e7e2813c94ad9ed357c6713682714ff478f5c64553d9bd4263a93d"
+        "source_sha256": "48da90db411256d9d795393e5623738adb80fac9df40a9aa225a73936a4aaa34"
       },
       {
         "boundary": "boundary.acquisition",
-        "definition_line": 137,
+        "definition_line": 135,
         "id": "actor.data-acquisition",
         "implementation_ref": "src/markeitech/system/acquisition.py:DataAcquisitionActor",
         "kind": "markeitech_actor",
         "label": "Data Acquisition",
         "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
-        "record_sha256": "3eb5e1d9026d5582a53bc9c064a0e1b4d3dda661705fa5374e43610b18c9c7f8",
+        "record_sha256": "70e5de2a366c1d4fc58e28a8da2c5b9569d0a49994e85db053f331c3c4b815c0",
         "responsibilities": [
           "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
           "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
           "Publish acquisition lifecycle, historical batches, and consumer readiness.",
           "Admit dashboard display demand and execute its native callback attachment and release.",
-          "Derive bounded UTC minute candles and requested history pages from five-second inputs."
+          "Admit selected native chart streams and project requested provider history pages."
         ],
         "source": "src/markeitech/system/acquisition.py",
-        "source_sha256": "351d2882bd85647517267c9359ce2388d88923c5e7cd9695e9555a7ad5595dcd"
+        "source_sha256": "1e8872362117dfe3d04e04286565838bd2f62cfe9314e6072457404c420bbeda"
       },
       {
         "boundary": "boundary.system",
@@ -208,7 +208,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "472cf4c7873366f8e364bc6debfc92a1b5b078b73c228a7693ca1be3718e24dd"
+    "source_snapshot_sha256": "5b1a7cb3a04a8b6802c14c86dbce8d1d3a90a769e628c274a188c04629f1bd2b"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1285,7 +1285,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.node.build_system_node",
-        "definition_line": 62,
+        "definition_line": 64,
         "exposed": "markeitech.system.build_system_node",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1331,7 +1331,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 76,
-    "input_signature": "472cf4c7873366f8e364bc6debfc92a1b5b078b73c228a7693ca1be3718e24dd"
+    "input_signature": "5b1a7cb3a04a8b6802c14c86dbce8d1d3a90a769e628c274a188c04629f1bd2b"
   },
-  "source_snapshot_sha256": "472cf4c7873366f8e364bc6debfc92a1b5b078b73c228a7693ca1be3718e24dd"
+  "source_snapshot_sha256": "5b1a7cb3a04a8b6802c14c86dbce8d1d3a90a769e628c274a188c04629f1bd2b"
 }

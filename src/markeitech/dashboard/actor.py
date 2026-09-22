@@ -8,7 +8,6 @@ from nautilus_trader.model import ActorId, CustomData, DataType
 from markeitech.acquisition import (
     HISTORICAL_DEPENDENCY_DEMAND_SIGNAL,
     HISTORICAL_EXECUTION_SIGNAL,
-    HistoricalDependencyDemandEvent,
     HistoricalExecutionEventMessage,
 )
 from markeitech.acquisition.dashboard_history import (
@@ -16,7 +15,6 @@ from markeitech.acquisition.dashboard_history import (
     DashboardHistoryPage,
     DashboardHistoryRequest,
 )
-from markeitech.acquisition.minute_candles import MINUTE_CANDLES_TYPE_NAME, MinuteCandleUpdate
 from markeitech.dashboard.config import DashboardConfig
 from markeitech.dashboard.messages import (
     DASHBOARD_DEMAND_SIGNAL,
@@ -64,7 +62,7 @@ class DashboardActor(DataActor):
         architecture.component.responsibilities:
             - Request configured display feeds through acquisition and receive native callbacks.
             - Retain bounded transient display state and own local web-server startup and shutdown.
-            - Request startup and operator history; project acquisition-owned candles.
+            - Reconcile browser chart selections and project native provider revisions and history.
             - Announce the accepting dashboard address for operational Discord projection.
     """
 
@@ -79,11 +77,6 @@ class DashboardActor(DataActor):
         self._active = False
         self._server_failure_reported = False
         self._ready_announced = False
-        self._history_demands: dict[str, HistoricalDependencyDemandEvent] = {}
-        self._history_acknowledged: set[str] = set()
-        self._first_source_seen: set[str] = set()
-        self._pending_history_tail: dict[str, int] = {}
-        self._minute_type = DataType(MINUTE_CANDLES_TYPE_NAME)
         self._page_type = DataType(HISTORY_PAGE_TYPE_NAME)
         self._page_requests: dict[str, tuple[DashboardHistoryRequest, int, bool]] = {}
 
@@ -94,7 +87,6 @@ class DashboardActor(DataActor):
         self.subscribe_signal(WATCHLIST_MEMBERSHIP_SIGNAL)
         self.subscribe_signal(ACQUISITION_STREAM_SIGNAL)
         self.subscribe_signal(HISTORICAL_EXECUTION_SIGNAL)
-        self.subscribe_data(self._minute_type)
         self.subscribe_data(self._page_type)
         self._server.start()
         self.clock.set_timer_ns(
@@ -115,11 +107,6 @@ class DashboardActor(DataActor):
             self.publish_signal(WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL, "DASHBOARD")
         if self._active:
             self._retry_pages()
-            for instrument, demand in self._history_demands.items():
-                if instrument not in self._history_acknowledged:
-                    self.publish_signal(
-                        HISTORICAL_DEPENDENCY_DEMAND_SIGNAL, demand.to_signal_value()
-                    )
 
     def on_signal(self, signal: Signal) -> None:
         if not self._active:
@@ -140,13 +127,14 @@ class DashboardActor(DataActor):
                         demand = DashboardDemand(member["instrument_id"], kind)
                         self._demands[demand.demand_id] = demand
                         self.publish_signal(DASHBOARD_DEMAND_SIGNAL, demand.to_signal_value())
-                        if kind == "bars":
-                            self._queue_history(member["instrument_id"], self.clock.timestamp_ns())
+
             elif signal.name == ACQUISITION_STREAM_SIGNAL:
                 event = AcquisitionStreamEvent.from_signal_value(signal.value)
                 ids = {*event.consumer_ids, event.demand_id}
-                if ids.intersection(self._demands):
-                    self._display.feed_state(event.instrument_id, event.feed_kind, event.state)
+                for identity in ids.intersection(self._demands):
+                    demand = self._demands[identity]
+                    kind = f"chart:{demand.timeframe}" if demand.timeframe else event.feed_kind
+                    self._display.feed_state(event.instrument_id, kind, event.state)
             elif signal.name == HISTORICAL_EXECUTION_SIGNAL:
                 event = HistoricalExecutionEventMessage.from_signal_value(signal.value)
                 for consumer_id in event.consumer_ids:
@@ -162,19 +150,6 @@ class DashboardActor(DataActor):
                             self._page_requests[consumer_id] = (command, started, True)
                             if event.state in {"FAILED", "REJECTED", "EXPIRED", "CANCELED"}:
                                 self._finish_page(command, event.state)
-                demand = self._history_demands.get(event.instrument_id)
-                if (
-                    demand is not None
-                    and "DASHBOARD" in event.consumer_ids
-                    and event.selector == demand.selector
-                    and event.limit == demand.maximum_observations
-                    and event.end_ns == demand.as_of_ns // 5_000_000_000 * 5_000_000_000 - 1
-                ):
-                    self._history_acknowledged.add(event.instrument_id)
-                    self._display.feed_state(event.instrument_id, "history", event.state)
-                    tail = self._pending_history_tail.pop(event.instrument_id, None)
-                    if tail is not None:
-                        self._queue_history(event.instrument_id, tail, source_count=24)
         except (ValueError, KeyError):
             self.log.error("DASHBOARD_EVENT_REJECTED | invalid display event")
 
@@ -184,49 +159,17 @@ class DashboardActor(DataActor):
 
     def on_bar(self, bar) -> None:  # noqa: ANN001
         if self._active:
-            self._display.observe_bar(bar)
-            instrument = str(bar.bar_type.instrument_id)
-            demand = self._history_demands.get(instrument)
-            if (
-                demand is not None
-                and instrument not in self._first_source_seen
-                and str(bar.bar_type) == f"{instrument}-5-SECOND-LAST-EXTERNAL"
+            selector = str(bar.bar_type).removeprefix(f"{bar.bar_type.instrument_id}-")
+            if selector != "5-SECOND-LAST-EXTERNAL" and not any(
+                d.instrument_id == str(bar.bar_type.instrument_id) and d.selector == selector
+                for d in self._demands.values()
             ):
-                self._first_source_seen.add(instrument)
-                if demand.as_of_ns // 5_000_000_000 * 5_000_000_000 < bar.ts_event:
-                    # A one-time two-minute tail covers the subscription handshake.
-                    # Existing native request pacing applies; no ongoing polling/fetch loop.
-                    if instrument in self._history_acknowledged:
-                        self._queue_history(instrument, bar.ts_event, source_count=24)
-                    else:
-                        self._pending_history_tail[instrument] = bar.ts_event
-
-    def _queue_history(
-        self, instrument: str, as_of_ns: int, source_count: int | None = None
-    ) -> None:
-        count = source_count or self._policy.source_history_count
-        self._history_demands[instrument] = HistoricalDependencyDemandEvent(
-            demand_id=f"dashboard:{self._server.epoch}:{instrument}:history",
-            consumer_id="DASHBOARD",
-            capability_id="dashboard.minute-chart",
-            capability_version=1,
-            instrument_id=instrument,
-            selector="5-SECOND-LAST-EXTERNAL",
-            window="recent_completed",
-            minimum_observations=12,
-            maximum_observations=count,
-            priority=50,
-            purpose="initial minute chart history",
-            as_of_ns=as_of_ns,
-        )
-        self._history_acknowledged.discard(instrument)
-        self._display.feed_state(instrument, "history", "REQUESTED")
+                return
+            self._display.observe_bar(bar)
 
     def on_data(self, data) -> None:  # noqa: ANN001
         payload = data.data if isinstance(data, CustomData) else data
-        if self._active and isinstance(payload, MinuteCandleUpdate):
-            self._display.observe_candles(payload)
-        elif self._active and isinstance(payload, DashboardHistoryPage):
+        if self._active and isinstance(payload, DashboardHistoryPage):
             consumer_id = "DASHBOARD-HISTORY:" + payload.request_id
             pending = self._page_requests.get(consumer_id)
             if pending is not None:
@@ -269,8 +212,31 @@ class DashboardActor(DataActor):
                 continue
             self._page_requests[command.consumer_id] = (command, self.clock.timestamp_ns(), False)
 
+    def _accept_chart_selections(self) -> None:
+        selections = self._server.take_chart_selections()
+        if selections is None:
+            return
+        desired = {}
+        for instrument, timeframe in selections:
+            item = self._display.instruments.get(instrument)
+            if item is not None and "watchlist_last" in item.capabilities:
+                demand = DashboardDemand(instrument, "bars", timeframe=timeframe)
+                desired[demand.demand_id] = demand
+        for identity, demand in tuple(self._demands.items()):
+            if demand.timeframe is not None and identity not in desired:
+                self.publish_signal(
+                    DASHBOARD_DEMAND_SIGNAL, replace(demand, action="RELEASE").to_signal_value()
+                )
+                del self._demands[identity]
+                self._display.clear_chart(demand.instrument_id, demand.timeframe)
+        for identity, demand in desired.items():
+            if identity not in self._demands:
+                self._demands[identity] = demand
+                self.publish_signal(DASHBOARD_DEMAND_SIGNAL, demand.to_signal_value())
+
     def _publish(self, _event) -> None:  # noqa: ANN001
         if self._active:
+            self._accept_chart_selections()
             self._accept_pages()
         if (
             self._active
@@ -304,7 +270,6 @@ class DashboardActor(DataActor):
             self.unsubscribe_signal(WATCHLIST_MEMBERSHIP_SIGNAL)
             self.unsubscribe_signal(ACQUISITION_STREAM_SIGNAL)
             self.unsubscribe_signal(HISTORICAL_EXECUTION_SIGNAL)
-            self.unsubscribe_data(self._minute_type)
             self.unsubscribe_data(self._page_type)
             for command, _, _ in tuple(self._page_requests.values()):
                 self._finish_page(command, "CANCELED")
