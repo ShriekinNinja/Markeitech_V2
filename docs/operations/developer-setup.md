@@ -76,15 +76,15 @@ The closed hierarchy and its side-effect class are:
 | --- | --- | --- |
 | `system build` | disconnected | Builds the configured Nautilus node without running or connecting it. |
 | `system run` | connected | Requires the exact IB token, then delegates to the existing runtime owner. |
-| `start CONFIG` | local service | Checks the selected ignored local profile, starts PostgreSQL, builds disconnected, and exits. |
-| `start CONFIG --ib` | connected | Also checks the IB endpoint, then delegates to the connected runtime until stopped. |
+| `start --config CONFIG` | local service | Checks the selected ignored local profile, starts PostgreSQL, builds disconnected, and exits. |
+| `start --config CONFIG --ib` | connected | Also checks the IB endpoint, then delegates to the connected runtime until stopped. |
 | `docs validate` / `check` / `test` | offline read-only | Uses the locked API-doc interpreter; `check` compares a fresh build with tracked output. |
 | `docs generate` | offline write | Atomically regenerates the complete tracked `docs/api` artifact set. |
 | `diagrams validate` / `check` / `test` | offline read-only | Uses the locked diagram interpreter; `check` includes the drift census. |
 | `diagrams generate` | offline write | Regenerates the canonical complete diagram artifact set with drift checking. |
 | `verify lint` / `test` / `all` | offline read-only | Uses the active root interpreter; `all` runs lint then non-PostgreSQL tests and fails fast. |
 | `verify postgres` | local service | Runs only PostgreSQL-marked tests against the explicitly configured test database. |
-| `environment check` | local diagnostic | Reads local setup/configuration and checks Docker without starting a service; `--config` selects the local profile and `--with-ib` opts into a TCP-listener check. |
+| `environment check` | local diagnostic | Reads local setup/configuration and checks Docker without starting a service; `--with-ib` opts into a TCP-listener check. |
 
 All fixed child-process commands run from the repository root in an owned process group and return
 their child exit code. Parent `SIGINT`, `SIGTERM`, and `SIGHUP` are forwarded to the complete child
@@ -277,13 +277,25 @@ The compact disconnected path checks the environment, starts PostgreSQL, builds 
 configuration without connecting to IB, and exits:
 
 ```bash
-.venv/bin/markeitech start config/system.local.toml
+.venv/bin/markeitech start --config config/system.local.toml
+```
+
+With the optional PATH installation, the equivalent command is:
+
+```bash
+markeitech start --config config/system.local.toml
 ```
 
 Add `--ib` only for a connected runtime:
 
 ```bash
-.venv/bin/markeitech start config/system.local.toml --ib
+.venv/bin/markeitech start --config config/system.local.toml --ib
+```
+
+With the optional PATH installation, the equivalent connected command is:
+
+```bash
+markeitech start --config config/system.local.toml --ib
 ```
 
 The flag is explicit connection consent. The command checks that the configured TWS/IB Gateway

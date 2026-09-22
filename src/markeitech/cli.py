@@ -110,7 +110,12 @@ def _parser() -> argparse.ArgumentParser:
         "start",
         help="Check the environment, start PostgreSQL, and build or run one configuration.",
     )
-    start.add_argument("config", type=Path, help="Path to the local V2 system TOML.")
+    start.add_argument(
+        "--config",
+        required=True,
+        type=Path,
+        help="Path to the local V2 system TOML.",
+    )
     start.add_argument(
         "--ib",
         action="store_true",
@@ -154,12 +159,6 @@ def _parser() -> argparse.ArgumentParser:
         "--with-ib",
         action="store_true",
         help="Also check whether the configured IB endpoint is listening.",
-    )
-    check.add_argument(
-        "--config",
-        type=Path,
-        default=argparse.SUPPRESS,
-        help="Check a specific local system TOML instead of config/system.local.toml.",
     )
     check.set_defaults(handler=_environment_check)
     return parser
@@ -349,8 +348,6 @@ def _verify_command(args: argparse.Namespace) -> int:
 
 def _environment_check(args: argparse.Namespace) -> int:
     command = [str(PROJECT_ROOT / "scripts/check-env")]
-    if hasattr(args, "config"):
-        command.extend(["--config", str(args.config.resolve())])
     if args.with_ib:
         command.append("--with-ib")
     return _run_process(command)

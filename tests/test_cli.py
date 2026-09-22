@@ -202,7 +202,7 @@ def test_start_checks_environment_starts_postgres_and_builds_without_ib(
     monkeypatch.setattr(cli, "_run_process", run_process)
     monkeypatch.setattr("markeitech.system.cli.main", system_main)
 
-    assert cli.main(["start", "config/system.local.toml"]) == 0
+    assert cli.main(["start", "--config", "config/system.local.toml"]) == 0
 
     assert run_process.call_args_list == [
         call(
@@ -239,7 +239,7 @@ def test_start_with_ib_checks_endpoint_and_runs_connected(
     monkeypatch.setattr(cli, "_run_process", run_process)
     monkeypatch.setattr("markeitech.system.cli.main", system_main)
 
-    assert cli.main(["start", "config/system.local.toml", "--ib"]) == 0
+    assert cli.main(["start", "--config", "config/system.local.toml", "--ib"]) == 0
 
     assert run_process.call_args_list[0] == call(
         [
@@ -268,7 +268,7 @@ def test_start_stops_after_setup_failure(
     monkeypatch.setattr(cli, "_run_process", run_process)
     monkeypatch.setattr("markeitech.system.cli.main", system_main)
 
-    assert cli.main(["start", "config/system.local.toml"]) == results[-1]
+    assert cli.main(["start", "--config", "config/system.local.toml"]) == results[-1]
 
     assert run_process.call_count == len(results)
     system_main.assert_not_called()
@@ -512,19 +512,6 @@ def test_environment_check_preserves_explicit_ib_opt_in(monkeypatch: pytest.Monk
     run_process.assert_called_once_with(
         [str(cli.PROJECT_ROOT / "scripts/check-env"), "--with-ib"]
     )
-
-    run_process.reset_mock()
-    assert cli.main(
-        ["environment", "check", "--config", "config/alternate.local.toml"]
-    ) == 0
-    run_process.assert_called_once_with(
-        [
-            str(cli.PROJECT_ROOT / "scripts/check-env"),
-            "--config",
-            str(cli.PROJECT_ROOT / "config/alternate.local.toml"),
-        ]
-    )
-
 
 def test_environment_script_documents_config_selection() -> None:
     result = subprocess.run(
