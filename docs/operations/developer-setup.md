@@ -54,6 +54,16 @@ After provisioning, use the root Python-owned CLI for supported operations:
 .venv/bin/markeitech diagrams --help
 ```
 
+For a user-PATH command bound to this checkout, use uv's editable tool installation:
+
+```bash
+uv tool install --editable .
+uv tool update-shell
+```
+
+Restart the shell if uv changes its `PATH` configuration. The editable tool is an operator
+convenience; use the locked root `.venv` for development and repository verification.
+
 Invoke the already-provisioned entry point directly. Do not put `uv run` in front of routine CLI
 operations: `uv run` may create or synchronize the root environment before the CLI can enforce its
 own offline and isolation checks. Dependency installation remains the separate, explicit
@@ -66,13 +76,15 @@ The closed hierarchy and its side-effect class are:
 | --- | --- | --- |
 | `system build` | disconnected | Builds the configured Nautilus node without running or connecting it. |
 | `system run` | connected | Requires the exact IB token, then delegates to the existing runtime owner. |
+| `start CONFIG` | local service | Checks the selected ignored local profile, starts PostgreSQL, builds disconnected, and exits. |
+| `start CONFIG --ib` | connected | Also checks the IB endpoint, then delegates to the connected runtime until stopped. |
 | `docs validate` / `check` / `test` | offline read-only | Uses the locked API-doc interpreter; `check` compares a fresh build with tracked output. |
 | `docs generate` | offline write | Atomically regenerates the complete tracked `docs/api` artifact set. |
 | `diagrams validate` / `check` / `test` | offline read-only | Uses the locked diagram interpreter; `check` includes the drift census. |
 | `diagrams generate` | offline write | Regenerates the canonical complete diagram artifact set with drift checking. |
 | `verify lint` / `test` / `all` | offline read-only | Uses the active root interpreter; `all` runs lint then non-PostgreSQL tests and fails fast. |
 | `verify postgres` | local service | Runs only PostgreSQL-marked tests against the explicitly configured test database. |
-| `environment check` | local diagnostic | Reads local setup/configuration and checks Docker without starting a service; `--with-ib` opts into a TCP-listener check. |
+| `environment check` | local diagnostic | Reads local setup/configuration and checks Docker without starting a service; `--config` selects the local profile and `--with-ib` opts into a TCP-listener check. |
 
 All fixed child-process commands run from the repository root in an owned process group and return
 their child exit code. Parent `SIGINT`, `SIGTERM`, and `SIGHUP` are forwarded to the complete child
@@ -261,17 +273,23 @@ To construct the configured node without provider or service connection:
 .venv/bin/markeitech system build --config config/system.local.toml
 ```
 
-For the connected runtime, start PostgreSQL explicitly and supply the exact confirmation:
+The compact disconnected path checks the environment, starts PostgreSQL, builds the selected
+configuration without connecting to IB, and exits:
 
 ```bash
-docker compose --env-file .env -f compose.yaml up -d --wait postgres
-.venv/bin/markeitech system run \
-  --config config/system.local.toml \
-  --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
+.venv/bin/markeitech start config/system.local.toml
 ```
 
-The confirmation token is intentional. The command connects to Interactive Brokers but does not
-enable execution.
+Add `--ib` only for a connected runtime:
+
+```bash
+.venv/bin/markeitech start config/system.local.toml --ib
+```
+
+The flag is explicit connection consent. The command checks that the configured TWS/IB Gateway
+endpoint is listening before it starts PostgreSQL and delegates to the existing connected runtime.
+It connects to Interactive Brokers but does not start TWS/IB Gateway or enable execution. The
+lower-level `system run --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB` command remains available.
 
 Expected startup behavior:
 
@@ -362,7 +380,9 @@ have different authority, prerequisites, or side effects:
 
 - `uv sync` provisions locked root or tool environments; the CLI diagnoses missing environments
   but never installs or updates them.
-- `docker compose` owns local PostgreSQL service lifecycle; the CLI never starts or stops Docker.
+- `start` may run the fixed `docker compose ... up -d --wait postgres` operation. Other Compose
+  services, inspection, stopping, backup, restore, and destructive lifecycle operations remain
+  explicit operator commands.
 - `verify postgres` is a conspicuous local-service test command and is excluded from `verify all`.
 - `scripts/sir-kite-pr.py` and Git commands own authenticated publication and source-control
   workflow; the CLI provides no GitHub or arbitrary-command executor.
