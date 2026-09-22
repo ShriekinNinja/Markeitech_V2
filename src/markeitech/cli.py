@@ -1,11 +1,12 @@
 """Route the closed Markeitech runtime and repository command surface.
 
 The module delegates runtime construction and execution to ``markeitech.system.cli`` and launches
-documentation, diagram, verification, and environment operations through fixed, validated
-boundaries. Documentation and diagram commands retain their separately locked interpreters;
-connected runtime authority retains the exact Interactive Brokers confirmation gate. The router
-does not provision dependencies, start services implicitly, or execute commands supplied by
-configuration or user-controlled shell text.
+documentation, diagram, verification, environment, and operator-start operations through fixed,
+validated boundaries. Documentation and diagram commands retain their separately locked
+interpreters. The compact system-start command checks the selected configuration, starts only the
+fixed PostgreSQL Compose service, and treats ``--ib`` as explicit connected-runtime consent. The
+router does not provision dependencies or execute commands supplied by configuration or
+user-controlled shell text.
 """
 
 from __future__ import annotations
@@ -105,6 +106,23 @@ def _parser() -> argparse.ArgumentParser:
     )
     run.set_defaults(handler=_system_run)
 
+    start = system_operations.add_parser(
+        "start",
+        help="Check the environment, start PostgreSQL, and build or run one configuration.",
+    )
+    start.add_argument(
+        "--config",
+        required=True,
+        type=Path,
+        help="Path to the local V2 system TOML.",
+    )
+    start.add_argument(
+        "--ib",
+        action="store_true",
+        help="Check the IB endpoint, connect to IB, and run until stopped.",
+    )
+    start.set_defaults(handler=_start)
+
     docs = areas.add_parser("docs", help="Operate the isolated static API documentation tool.")
     docs_operations = docs.add_subparsers(dest="operation", required=True)
     for operation in ("validate", "check", "generate", "test"):
@@ -193,6 +211,41 @@ def _system_run(args: argparse.Namespace) -> int:
     arguments = [*_system_arguments(args), "--connect", args.connect]
     if args.keep_awake:
         arguments.append("--keep-awake")
+    return system_main(arguments)
+
+
+def _start(args: argparse.Namespace) -> int:
+    config = args.config.resolve()
+    check_arguments = [str(PROJECT_ROOT / "scripts/check-env"), "--config", str(config)]
+    if args.ib:
+        check_arguments.append("--with-ib")
+    result = _run_process(check_arguments)
+    if result != 0:
+        return result
+
+    result = _run_process(
+        [
+            "docker",
+            "compose",
+            "--env-file",
+            ".env",
+            "-f",
+            "compose.yaml",
+            "up",
+            "-d",
+            "--wait",
+            "postgres",
+        ]
+    )
+    if result != 0:
+        return result
+
+    from markeitech.system.cli import IB_CONFIRMATION
+    from markeitech.system.cli import main as system_main
+
+    arguments = [str(config)]
+    if args.ib:
+        arguments.extend(["--connect", IB_CONFIRMATION])
     return system_main(arguments)
 
 
@@ -379,8 +432,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     The command hierarchy owns parsing and fixed child-process mappings only. Runtime behavior
     remains owned by `markeitech.system.cli`; API documentation and diagrams remain in their
-    isolated locked tool projects. No command provisions dependencies, starts Docker, supplies the
-    Interactive Brokers confirmation, or broadens connected or persistence authority.
+    isolated locked tool projects. The compact ``system start`` operation owns only the fixed
+    environment check and PostgreSQL Compose startup before delegating to that runtime owner. It
+    does not provision dependencies, start TWS, accept arbitrary services, or broaden execution
+    authority.
 
     Args:
         argv: Optional command-line arguments. ``None`` reads process arguments.

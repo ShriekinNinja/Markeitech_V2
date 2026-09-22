@@ -73,6 +73,17 @@ Clone the repository, then install the locked environment from the repository ro
 uv sync --locked --dev
 ```
 
+Optionally install the repository command on your user `PATH` using uv's standard tool mechanism:
+
+```bash
+uv tool install --editable .
+uv tool update-shell
+```
+
+The editable tool resolves the command from this checkout. The locked `.venv` remains the
+authoritative development and verification environment. The examples below use the PATH command;
+prefix them with `.venv/bin/` if you skip the optional tool installation.
+
 Create local files without replacing an existing machine configuration:
 
 ```bash
@@ -85,10 +96,11 @@ Edit `.env` with a local PostgreSQL password, matching DSN, and a Discord system
 webhook. Edit `config/system.local.toml` for the local IB port/client ID, current explicit
 futures contracts, entitled instruments, and reviewed runtime policy.
 
-Start Docker Desktop, then run the setup doctor:
+Start Docker Desktop, then use the compact disconnected startup to check the selected local
+configuration, start PostgreSQL, build without connecting to IB, and exit:
 
 ```bash
-.venv/bin/markeitech environment check
+markeitech system start --config config/system.local.toml
 ```
 
 Run offline verification:
@@ -97,16 +109,14 @@ Run offline verification:
 .venv/bin/markeitech verify all
 ```
 
-For the normal connected workflow, start Docker Desktop and run:
+For the normal connected workflow, start Docker Desktop and add the explicit `--ib` flag:
 
 ```bash
-docker compose --env-file .env -f compose.yaml up -d --wait postgres
-.venv/bin/markeitech system run \
-  --config config/system.local.toml \
-  --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
+markeitech system start --config config/system.local.toml --ib
 ```
 
-This command connects to IB. Review the [developer setup](docs/operations/developer-setup.md) and
+This command checks the configured IB endpoint and then connects to IB. It does not start TWS or
+IB Gateway. Review the [developer setup](docs/operations/developer-setup.md) and
 [V2 IB setup](docs/operations/ib-setup.md) before the first connected run.
 
 ## Configuration Ownership
@@ -141,9 +151,10 @@ files under `data/`.
 
 The V2 project is rooted directly in the repository; no nested project selector is required.
 Migration history and recovery boundaries remain in Git and the recorded migration tags. Run
-`.venv/bin/markeitech --help` for the authoritative runtime, static-doc, diagram, verification, and
-environment-check command hierarchy. The retained `markeitech-system` entry point is a backward-
-compatible runtime alias; it delegates to the same behavior owner.
+`markeitech --help` (or `.venv/bin/markeitech --help` without the optional PATH installation) for
+the authoritative runtime, static-doc, diagram, verification, and environment-check command
+hierarchy. The retained `markeitech-system` entry point is a backward-compatible runtime alias; it
+delegates to the same behavior owner.
 
 ## Making Changes
 
