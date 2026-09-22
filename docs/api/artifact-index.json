@@ -32,7 +32,7 @@
     },
     {
       "path": "architecture-components-index.json",
-      "sha256": "fddd4da2c189548c659c5d900a83b0b608b78ed5acc4354f1f72fbd320634862",
+      "sha256": "86fd8696229bb9fe1a1ebc345fee1a01aad214ad31340ec165bd375eb02fe8d4",
       "size_bytes": 10637
     },
     {
@@ -262,7 +262,7 @@
     },
     {
       "path": "metadata-index.json",
-      "sha256": "0436cdc8ff6773526ef5e3c6509a8026303b12279ca53217ad5523ea55c50cd0",
+      "sha256": "32b5c4639b88f30cae74d0bb85cf64f217117f9764ba8565644d3e3edfb754f6",
       "size_bytes": 57594
     },
     {
@@ -298,7 +298,7 @@
   "python_series": "3.13",
   "schema_id": "markeitech-api-docs-artifact-index",
   "schema_version": 3,
-  "source_signature": "5fb787664a5180ceff55c8ca6022c5464cd86be19af0c7998abcff7c4844b045",
+  "source_signature": "b877e081152202e5fed2d9029290886239b237aca3b061164e939f0eedf70b0c",
   "tool_version": "0.1.0",
   "tool_versions": {
     "griffe": "2.2.0",
