@@ -270,7 +270,13 @@ def test_rejects_unknown_configuration(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "section",
-    ["visual_acceptance", "live_evidence_review", "acquisition", "visual_debug_capture", "dashboard"],
+    [
+        "visual_acceptance",
+        "live_evidence_review",
+        "acquisition",
+        "visual_debug_capture",
+        "dashboard",
+    ],
 )
 def test_rejects_retired_root_sections(tmp_path: Path, section: str) -> None:
     path = tmp_path / "system.toml"
