@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored .env.
 
-schema_version = 28
+schema_version = 29
 
 [runtime]
 name = "MARKEITECH-V2-001"
@@ -33,25 +33,6 @@ request_timeout_seconds = 5
 queue_capacity = 32
 ping_critical_resource_alerts = true
 
-
-# Local browser dashboard. All settings are startup-only; restart to apply changes.
-# Policy version identifies this bounded display contract; no raw data is persisted.
-[dashboard]
-policy_version = 3 # One-minute candles from five-second sources; only 3 is supported.
-enabled = true # Set true to start/stop the dashboard with the system.
-port = 8765 # TCP port, 1024..65535; binds to 127.0.0.1 only.
-maximum_instruments = 64 # 1..256; must cover every enabled watchlist member.
-candles_per_instrument = 720 # 2..5000 minute candles, including the forming candle, per member.
-initial_history_minutes = 90 # 1..120 elapsed minutes, capped by candle capacity; IB availability applies.
-publish_interval_ms = 250 # 100..5000 ms; browser projection cadence, not data cadence.
-acquisition_retry_interval_ms = 1000 # 100..10000 ms; membership/attachment retry cadence.
-maximum_clients = 4 # 1..16 concurrent browser SSE streams.
-shutdown_timeout_seconds = 5 # 1..30 seconds to drain/close the web-server worker.
-
-history_page_minutes = 60 # 1..120 elapsed UTC minutes per older-history/date request.
-maximum_history_requests = 4 # 1..16 queued/pending operator requests across clients.
-maximum_history_requests_per_session = 256 # 1..4096 admitted pages per process; bounds retained request metadata.
-history_request_timeout_seconds = 120 # 10..300 seconds; requests and transient results expire.
 
 [runtime_resources]
 enabled = true

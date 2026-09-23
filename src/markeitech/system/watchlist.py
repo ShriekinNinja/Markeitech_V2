@@ -6,7 +6,6 @@ from enum import StrEnum
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId, BarType, ClientId, InstrumentId
 
-from markeitech.dashboard.messages import WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL
 from markeitech.system.messages import (
     ACQUISITION_STREAM_SIGNAL,
     PERSISTENCE_READY_REQUEST_SIGNAL,
@@ -287,7 +286,6 @@ class WatchlistActor(DataActor):
         self._degraded_demand_ids: set[str] = set()
 
     def on_start(self) -> None:
-        self.subscribe_signal(WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL)
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.subscribe_signal(ACQUISITION_STREAM_SIGNAL)
         self._reconcile_consumer_attachments(None)
@@ -297,10 +295,6 @@ class WatchlistActor(DataActor):
         )
 
     def on_signal(self, signal: Signal) -> None:
-        if signal.name == WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL:
-            if self._audit_started and signal.value == "DASHBOARD":
-                self._publish_membership()
-            return
         if signal.name == ACQUISITION_STREAM_SIGNAL:
             self._handle_acquisition_outcome(signal.value)
             return
@@ -350,7 +344,6 @@ class WatchlistActor(DataActor):
         self._log_observation(instrument_id, became_observed)
 
     def on_stop(self) -> None:
-        self.unsubscribe_signal(WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL)
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.unsubscribe_signal(ACQUISITION_STREAM_SIGNAL)
         if _CONSUMER_RETRY_TIMER in self.clock.timer_names():

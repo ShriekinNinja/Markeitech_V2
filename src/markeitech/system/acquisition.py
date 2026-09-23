@@ -27,17 +27,10 @@ from markeitech.acquisition import (
     NautilusSubscriptionPort,
     ObservationDemand,
 )
-from markeitech.acquisition.dashboard_history import (
-    HISTORY_CONSUMER_PREFIX,
-    HISTORY_PAGE_TYPE_NAME,
-    project_history_page,
-)
 from markeitech.acquisition.historical_native import (
     HistoricalResponseMismatch,
     validate_historical_bars,
 )
-from markeitech.acquisition.minute_candles import MINUTE_CANDLES_TYPE_NAME, _MinuteCandleBook
-from markeitech.dashboard.messages import DASHBOARD_DEMAND_SIGNAL, DashboardDemand
 from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STATUS_SIGNAL,
@@ -143,8 +136,6 @@ class DataAcquisitionActor(DataActor):
             - Execute exact HistoricalRequestPlan values without deciding sessions or
               calendar-relative request bounds.
             - Publish acquisition lifecycle, historical batches, and consumer readiness.
-            - Admit dashboard display demand and execute its native callback attachment and release.
-            - Derive bounded UTC minute candles and requested history pages from five-second inputs.
     """
 
     def __init__(self, config: DataAcquisitionActorConfig) -> None:
@@ -184,43 +175,7 @@ class DataAcquisitionActor(DataActor):
         self._statuses_published = 0
         self._failure_published = False
         self._startup_released = False
-        self._dashboard_port: NautilusSubscriptionPort | None = None
-        self._dashboard_allowed: set[tuple[str, str]] = set()
-        self._dashboard_desired: dict[str, DashboardDemand] = {}
-        self._dashboard_attached: dict[str, FeedRequirement] = {}
-        self._dashboard_retry_ms = 1000
-        self._minute_book: _MinuteCandleBook | None = None
-
-    def bind_dashboard_consumer(
-        self,
-        consumer: DataActor,
-        allowed_feeds: set[tuple[str, str]],
-        retry_interval_ms: int,
-        candle_capacity: int,
-    ) -> None:
-        """Bind the composed dashboard before startup; acquisition owns its native calls.
-
-        Nautilus rc5 couples handler registration with subscription commands.
-        This port executes those calls on the admitted consumer's behalf, on the
-        runtime thread. No market observations are relayed through this binding.
-        """
-        if self._startup_released or self._dashboard_port is not None:
-            raise RuntimeError("dashboard binding must occur once before startup")
-        self._dashboard_port = NautilusSubscriptionPort(consumer)
-        self._dashboard_allowed = set(allowed_feeds)
-        self._dashboard_retry_ms = retry_interval_ms
-        self._minute_book = _MinuteCandleBook(
-            {instrument for instrument, kind in allowed_feeds if kind == "bars"}, candle_capacity
-        )
-
     def on_start(self) -> None:
-        if self._dashboard_port is not None:
-            self.subscribe_signal(DASHBOARD_DEMAND_SIGNAL)
-            self.clock.set_timer_ns(
-                "dashboard-acquisition",
-                self._dashboard_retry_ms * 1_000_000,
-                callback=self._reconcile_dashboard,
-            )
         self.subscribe_signal(ACQUISITION_STATUS_REQUEST_SIGNAL)
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.subscribe_signal(WATCHLIST_DEMAND_SIGNAL)
@@ -262,18 +217,6 @@ class DataAcquisitionActor(DataActor):
             self._duplicate_instruments += 1
 
     def on_signal(self, signal: Signal) -> None:
-        if signal.name == DASHBOARD_DEMAND_SIGNAL:
-            try:
-                demand = DashboardDemand.from_signal_value(signal.value)
-                if (demand.instrument_id, demand.feed_kind) not in self._dashboard_allowed:
-                    raise ValueError("dashboard request is outside configured feeds")
-                if demand.action == "RELEASE":
-                    self._dashboard_desired.pop(demand.demand_id, None)
-                else:
-                    self._dashboard_desired[demand.demand_id] = demand
-            except ValueError:
-                self.log.error("DASHBOARD_DEMAND_REJECTED | outside admitted contract")
-            return
         if signal.name == WATCHLIST_DEMAND_SIGNAL:
             self._handle_watchlist_demand(signal.value)
             return
@@ -329,14 +272,6 @@ class DataAcquisitionActor(DataActor):
         instrument_id = str(bar.bar_type.instrument_id)
         selector = str(bar.bar_type).removeprefix(f"{instrument_id}-")
         self._observe(instrument_id, FeedKind.BARS, selector)
-        if self._minute_book is not None and self._minute_book.observe(bar):
-            self._publish_minute_candles(instrument_id)
-
-    def _publish_minute_candles(self, instrument_id: str) -> None:
-        if self._minute_book is not None:
-            data_type = DataType(MINUTE_CANDLES_TYPE_NAME)
-            update = self._minute_book.snapshot(instrument_id, self.clock.timestamp_ns())
-            self.publish_data(data_type, CustomData(data_type, update))
 
     def on_historical_bars(self, bars) -> None:  # noqa: ANN001
         active = self._historical.active_request_ids
@@ -385,12 +320,6 @@ class DataAcquisitionActor(DataActor):
         self._observe(str(status.instrument_id), FeedKind.INSTRUMENT_STATUS)
 
     def on_stop(self) -> None:
-        if self._dashboard_port is not None:
-            self.unsubscribe_signal(DASHBOARD_DEMAND_SIGNAL)
-            if "dashboard-acquisition" in self.clock.timer_names():
-                self.clock.cancel_timer("dashboard-acquisition")
-            self._dashboard_desired.clear()
-            self._reconcile_dashboard(None)
         if self._startup_released:
             for demand in tuple(self._coordinator.demands):
                 self._publish_lifecycle_events(
@@ -441,61 +370,6 @@ class DataAcquisitionActor(DataActor):
                 },
             ).to_signal_value(),
         )
-
-    def _reconcile_dashboard(self, _event) -> None:  # noqa: ANN001
-        if self._dashboard_port is None:
-            return
-        # Release the consumer before reconciling the last provider claim. Other
-        # native consumers keep their handlers and acquisition claims intact.
-        for demand_id in tuple(self._dashboard_attached):
-            if demand_id in self._dashboard_desired:
-                continue
-            try:
-                self._dashboard_port.unsubscribe(self._dashboard_attached[demand_id])
-            except Exception as exc:  # noqa: BLE001
-                self.log.error(f"DASHBOARD_DETACH_FAILED | error={type(exc).__name__}")
-                continue
-            del self._dashboard_attached[demand_id]
-        for demand in tuple(self._coordinator.demands):
-            if (
-                demand.owner.kind == DemandOwnerKind.PROJECTION
-                and demand.demand_id not in self._dashboard_desired
-                and demand.demand_id not in self._dashboard_attached
-            ):
-                self._publish_lifecycle_events(
-                    self._coordinator.cancel(demand.demand_id, now=self.clock.utc_now()),
-                )
-        if not self._startup_released or self._tracker.missing:
-            return
-        for request in self._dashboard_desired.values():
-            if request.demand_id in self._dashboard_attached:
-                continue
-            requirement = FeedRequirement(
-                request.instrument_id,
-                FeedKind(request.feed_kind),
-                selector=request.selector,
-            )
-            demand = ObservationDemand(
-                demand_id=request.demand_id,
-                owner=DemandOwner(DemandOwnerKind.PROJECTION, "DASHBOARD"),
-                requirement=requirement,
-                purpose="display configured watchlist observations",
-            )
-            self._managed_stream_keys.add(requirement.stream_key)
-            self._publish_lifecycle_events(
-                self._coordinator.request(demand, now=self.clock.utc_now())
-            )
-            subscribed = {
-                d.requirement.stream_key for d in self._coordinator.subscribed_provider_demands
-            }
-            if requirement.stream_key not in subscribed:
-                continue
-            try:
-                self._dashboard_port.subscribe(requirement)
-            except Exception as exc:  # noqa: BLE001
-                self.log.error(f"DASHBOARD_ATTACH_FAILED | error={type(exc).__name__}")
-                continue
-            self._dashboard_attached[request.demand_id] = requirement
 
     def _publish_status(self) -> None:
         status = self._tracker.status(str(self.actor_id))
@@ -629,32 +503,6 @@ class DataAcquisitionActor(DataActor):
             )
         batch_type = DataType(HISTORICAL_BATCH_TYPE_NAME)
         for batch in update.batches:
-            if self._minute_book is not None:
-                for ref in batch.request.dependencies:
-                    if (
-                        ref.consumer_id.startswith(HISTORY_CONSUMER_PREFIX)
-                        and ref.capability_id == "dashboard.history-page"
-                        and batch.request.selector == "5-SECOND-LAST-EXTERNAL"
-                        and (batch.request.instrument_id, "bars") in self._dashboard_allowed
-                    ):
-                        try:
-                            page = project_history_page(
-                                batch, ref.consumer_id, self.clock.timestamp_ns()
-                            )
-                        except ValueError:
-                            self.log.error("DASHBOARD_HISTORY_REJECTED | invalid page bounds")
-                            continue
-                        page_type = DataType(HISTORY_PAGE_TYPE_NAME)
-                        self.publish_data(page_type, CustomData(page_type, page))
-            if self._minute_book is not None and any(
-                ref.consumer_id == "DASHBOARD" and ref.capability_id == "dashboard.minute-chart"
-                for ref in batch.request.dependencies
-            ):
-                changed = False
-                for bar in batch.observations:
-                    changed = self._minute_book.observe(bar, historical=True) or changed
-                if changed:
-                    self._publish_minute_candles(batch.request.instrument_id)
             self.publish_data(batch_type, CustomData(batch_type, batch))
         for result in update.results:
             request = self._historical_requests[result.request_id]

@@ -10,11 +10,10 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from nautilus_trader.common import DataActor, DataActorConfig, Environment, LoggerConfig
+from nautilus_trader.common import Environment, LoggerConfig
 from nautilus_trader.live import LiveNode
-from nautilus_trader.model import ActorId, TraderId
+from nautilus_trader.model import TraderId
 
-from markeitech.dashboard.messages import WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL
 from markeitech.system.acquisition import InstrumentDefinitionTracker
 from markeitech.system.composition import StartupPrerequisites, build_actor_plan
 from markeitech.system.config import load_system_config
@@ -41,7 +40,6 @@ ROSTER = [
     "runtime_resources",
     "runtime_resource_health",
     "operational_persistence",
-    "dashboard",
 ]
 
 
@@ -98,8 +96,7 @@ def test_discord_zero_work_summary_requires_explicit_configuration_and_ready() -
     assert projection.accept_system_health(ready, 101) is None
 
 
-@pytest.mark.parametrize("request_membership", [False, True])
-def test_nine_operational_actors_boot_and_stop_offline(monkeypatch, request_membership) -> None:
+def test_nine_operational_actors_boot_and_stop_offline(monkeypatch) -> None:
     """Exercise native lifecycle/workers with SQL, HTTP and host samples replaced."""
     records = []
     deliveries = []
@@ -147,7 +144,6 @@ def test_nine_operational_actors_boot_and_stop_offline(monkeypatch, request_memb
     config = load_system_config(PROFILE)
     config = replace(
         config, runtime_resources=replace(config.runtime_resources, sample_interval_ms=50),
-        dashboard=replace(config.dashboard, enabled=False),
     )
     plan = build_actor_plan(config, StartupPrerequisites(uuid4(), True))
     node = (
@@ -167,15 +163,6 @@ def test_nine_operational_actors_boot_and_stop_offline(monkeypatch, request_memb
         actor_config = getattr(importlib.import_module(module), name)(**entry.config.config)
         actors[entry.key] = actor_cls(actor_config)
         node.add_actor(actors[entry.key])
-
-    if request_membership:
-        class MembershipRequester(DataActor):
-            def on_start(self) -> None:
-                self.publish_signal(WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL, "DASHBOARD")
-
-        node.add_actor(
-            MembershipRequester(DataActorConfig(actor_id=ActorId.from_str("REQUESTER"))),
-        )
 
     async def exercise():
         task = asyncio.create_task(node.run_async())

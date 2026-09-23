@@ -6,18 +6,15 @@ from threading import Event
 from uuid import UUID
 
 import pytest
-from nautilus_trader.common import DataActor, DataActorConfig, Environment, ImportableActorConfig
+from nautilus_trader.common import Environment, ImportableActorConfig
 from nautilus_trader.live import LiveNode
-from nautilus_trader.model import ActorId, TraderId
+from nautilus_trader.model import TraderId
 
-from markeitech.dashboard.messages import WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL
 from markeitech.system.composition import (
     StartupPrerequisites,
     build_actor_plan,
 )
 from markeitech.system.config import load_system_config
-from markeitech.system.messages import WATCHLIST_MEMBERSHIP_SIGNAL, WatchlistMembershipEvent
-from markeitech.system.watchlist import WatchlistActor, WatchlistActorConfig
 from tests.system.config_fixtures import minimal_calendar_config
 from tests.system.message_actor_fixtures import (
     calendar_received,
@@ -63,75 +60,6 @@ async def _run_node_until_then_hold(node: LiveNode, event: Event, hold_seconds: 
     finally:
         handle.stop()
         await run_task
-
-
-def test_membership_request_reaches_watchlist_without_reaching_event_subscribers() -> None:
-    requests = []
-    deliveries = {name: [] for name in ("DASHBOARD", "DISCORD", "PERSISTENCE")}
-    responded = Event()
-
-    class ReadyWatchlist(WatchlistActor):
-        def on_start(self) -> None:
-            # Isolate routing after audit readiness; no provider or persistence work.
-            self._audit_started = True
-            self.subscribe_signal(WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL)
-
-        def on_signal(self, signal) -> None:
-            requests.append((signal.name, signal.value))
-            super().on_signal(signal)
-
-        def on_stop(self) -> None:
-            self.unsubscribe_signal(WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL)
-
-    class MembershipConsumer(DataActor):
-        def on_start(self) -> None:
-            self.subscribe_signal(WATCHLIST_MEMBERSHIP_SIGNAL)
-
-        def on_signal(self, signal) -> None:
-            # Capture every delivery, without the defensive consumer filters.
-            deliveries[str(self.actor_id)].append((signal.name, signal.value))
-            if all(deliveries.values()):
-                responded.set()
-
-    class MembershipRequester(DataActor):
-        def on_start(self) -> None:
-            self.publish_signal(WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL, "DASHBOARD")
-
-    node = (
-        LiveNode.builder(
-            "MEMBERSHIP-ROUTING-TEST",
-            TraderId.from_str("MEMBERSHIP-TEST-001"),
-            Environment.SANDBOX,
-        )
-        .with_delay_post_stop_secs(0)
-        .build()
-    )
-    for name in deliveries:
-        node.add_actor(MembershipConsumer(DataActorConfig(actor_id=ActorId.from_str(name))))
-    node.add_actor(
-        ReadyWatchlist(
-            WatchlistActorConfig(
-                members=[{
-                    "instrument_id": "ESU6.CME",
-                    "calendar_id": "cme_equity",
-                    "owner_ids": ["config:system"],
-                    "capabilities": ["watchlist_last"],
-                }],
-                consumer_retry_interval_ms=1000,
-            ),
-        ),
-    )
-    node.add_actor(MembershipRequester(DataActorConfig(actor_id=ActorId.from_str("REQUESTER"))))
-    asyncio.run(_run_node_until(node, responded))
-
-    assert requests == [(WATCHLIST_MEMBERSHIP_REQUEST_SIGNAL, "DASHBOARD")]
-    for messages in deliveries.values():
-        assert len(messages) == 1
-        name, value = messages[0]
-        assert name == WATCHLIST_MEMBERSHIP_SIGNAL
-        membership = WatchlistMembershipEvent.from_signal_value(value)
-        assert membership.source == "WATCHLIST"
-        assert [member.instrument_id for member in membership.members] == ["ESU6.CME"]
 
 
 def test_health_signal_delivers_between_actors_in_one_live_node() -> None:

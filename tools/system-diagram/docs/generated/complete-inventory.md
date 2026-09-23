@@ -14,7 +14,6 @@ Show implemented, conditional, disabled, external, and future components without
 
 | ID | Component | Kind | Implementation | Composition | Order | Active profile | Semantic owner | Boundary |
 |---|---|---|---|---|---:|---|---|---|
-| `actor.dashboard` | Dashboard | markeitech_actor | implemented | conditional | 11 | enabled | `actor.dashboard` | `boundary.system` |
 | `actor.data-acquisition` | Data Acquisition | markeitech_actor | implemented | always | 7 | enabled | `actor.data-acquisition` | `boundary.acquisition` |
 | `actor.discord-health` | Discord Health Projection | markeitech_actor | implemented | conditional | 4 | enabled | `actor.discord-health` | `boundary.system` |
 | `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | always | 3 | enabled | `actor.evidence-health` | `boundary.intelligence` |
@@ -33,13 +32,11 @@ Show implemented, conditional, disabled, external, and future components without
 | `future.semantic-events` | Semantic Events | future_component | future | not_composed | not applicable | not_applicable | `future.semantic-events` | `boundary.future` |
 | `future.sir-loke` | Sir Loke Advisory Agent | future_component | future | not_composed | not applicable | not_applicable | `future.sir-loke` | `boundary.future` |
 | `operator.markeitect` | Markeitect / Operator | operator | external | external | not applicable | not_applicable | `operator.markeitect` | `boundary.projections` |
-| `projection.dashboard-ui` | Dashboard UI | projection | implemented | conditional | not applicable | enabled | `actor.dashboard` | `boundary.projections` |
 | `projection.discord` | Discord | projection | external | external | not applicable | not_applicable | `projection.discord` | `boundary.projections` |
 | `provider.interactive-brokers` | Interactive Brokers / TWS / Gateway | provider | external | external | not applicable | not_applicable | `provider.interactive-brokers` | `boundary.providers` |
 | `queue.discord` | Discord Delivery Queue | queue | implemented | not_composed | not applicable | enabled | `queue.discord` | `boundary.workers` |
 | `queue.persistence` | Persistence Admission Queue | queue | implemented | not_composed | not applicable | enabled | `queue.persistence` | `boundary.workers` |
 | `store.postgres` | PostgreSQL Operational Audit | data_store | external | external | not applicable | not_applicable | `store.postgres` | `boundary.persistence` |
-| `worker.dashboard-server` | Dashboard Server | worker | implemented | conditional | not applicable | enabled | `actor.dashboard` | `boundary.workers` |
 | `worker.discord` | Discord Delivery Worker | worker | implemented | not_composed | not applicable | enabled | `worker.discord` | `boundary.workers` |
 | `worker.persistence` | Persistence Writer Worker | worker | implemented | not_composed | not applicable | enabled | `worker.persistence` | `boundary.workers` |
 

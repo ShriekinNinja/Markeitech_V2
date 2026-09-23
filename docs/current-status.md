@@ -80,23 +80,22 @@ event coverage under the user-reported Master `1` setting, or connected acceptan
 - Retired source is recoverable through Git history and migration tags but is not current
   authority.
 
-## Tracked Dashboard Review Profile
+## Tracked Example Profile
 
 [`config/system.example.toml`](../config/system.example.toml) enables seven explicit watchlist
-instruments and the optional local dashboard. Its eleven actors are System Control, Session State,
+instruments. Its ten actors are System Control, Session State,
 Evidence Health, Discord Health, Historical Evidence Planner, Watchlist, Data Acquisition, Runtime
-Resources, Runtime Resource Health, Operational Persistence, and Dashboard.
+Resources, Runtime Resource Health, and Operational Persistence.
 
 The former `system.v3-es-minimal.toml` review profile has been removed. Single-calendar offline
-delivery tests derive a bounded ES fixture from the current template. The dashboard is a transient
-display of native observations; it adds no analytical owner, execution capability, or Sir Loke behavior.
+delivery tests derive a bounded ES fixture from the current template.
 
 ## Connected Operational Boot Profile
 
-`config/system.operational.toml` uses a schema-28 zero-instrument baseline with ten operational
+`config/system.operational.toml` uses a schema-29 zero-instrument baseline with nine operational
 actors: System Control, Session State, Evidence Health, Historical Evidence Planner, Data
 Acquisition, Discord Health, Runtime Resources, Runtime Resource Health, and Operational
-Persistence, and Dashboard. IB remains configured; the watchlist, probes, analytics, and visual capture are
+Persistence. IB remains configured; the watchlist, probes, analytics, and visual capture are
 excluded. Older schema-23/24/25 profiles must be migrated before loading. This is **ready for
 Markeitect live test**, not connected-accepted. See the [operational boot runbook](operations/operational-boot.md) for exact
 commands, independent readiness evidence, effects, stop conditions, and remaining limitations.
@@ -110,35 +109,21 @@ Visual Debug capture, its writer/renderer, configuration, and dedicated tests ar
 SessionMetricsActor and its dependent session-reference, market-state, and market-structure
 actors are removed, together with their dedicated calculations, configuration, tests, and
 replacement plan. QuoteQualityMetricsActor, its midpoint/spread calculations, and its
-configuration and dedicated tests are also removed. The current runtime has eleven actor classes;
-the operational profile still composes nine. Independent canonical bar/metric and entity
+configuration and dedicated tests are also removed. The current runtime has ten actor classes;
+the operational profile composes nine. Independent canonical bar/metric and entity
 contracts remain.
 
-The API registry selects 98 public objects; the diagram source census recognizes eleven actor
+The API registry selects 98 public objects; the diagram source census recognizes ten actor
 registrations. Offline checks do not establish connected acceptance.
 
-System configuration is now schema 28. Remove the complete `[acquisition]` and
+System configuration is now schema 29. Remove `[dashboard]` from older local profiles.
+Remove the complete `[acquisition]` and
 `[historical.probe]`, `[visual_debug_capture]`, `[metrics.session_measurements]`, and
 `[metrics.entity_analysis]` sections, plus the entire `[metrics]` tree (including
 `[metrics.quote_quality]`), from older local profiles, then set
-`schema_version = 26`;
+`schema_version = 29`;
 retain `[historical]`, which still configures the production acquisition owner. Local files are
 not migrated automatically. See [developer setup](operations/developer-setup.md).
-
-## Dashboard POC (Local Review)
-
-The optional `DashboardActor`, actor-owned `DashboardServer`, and `DashboardUI` display enabled
-watchlist membership, latest configured quotes and five-second closes, and one selected
-one-minute candlestick series with a forming candle. Acquisition derives the chart from source-time
-five-second bars and merges bounded native backfill through the existing historical planner/executor. Dashboard demand and native callback attachment/release are owned by
-`DataAcquisitionActor`. HTTP/SSE is loopback-only, history is bounded and transient, and the server
-starts/stops with its actor. An accepting HTTP listener publishes a one-time ready event; the
-existing Discord operational worker sends its loopback address through the operational-events
-webhook. System schema 28 uses dashboard policy 3 with bounded initial history, Older pages and UTC datetime selection;
-omission disables it. See [dashboard setup and acceptance](operations/dashboard.md). The POC is
-uncommitted for local review. An authorized isolated ES live diagnostic verified history, minute
-constituents, forming HTTP/SSE updates and browser reload; full production startup/session acceptance
-remains pending. Other timeframes and chart navigation requests are not implemented in this increment.
 
 ## Implemented Foundation
 

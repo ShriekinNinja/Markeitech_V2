@@ -4,7 +4,7 @@
 # INACTIVE marks disabled capabilities; IDLE marks settings with no work in this empty profile.
 # Customize host/port/client ID and resource thresholds in an ignored local copy.
 # Live acceptance belongs to Markeitect; this profile does not prove connectivity or data fitness.
-schema_version = 28
+schema_version = 29
 
 # BOOTSTRAP: node and SystemControlActor identity (actor 1 has no separate settings).
 [runtime]
@@ -174,14 +174,3 @@ write_retry_backoff_ms = 100
 enabled = false
 consumer_retry_interval_ms = 1000
 members = []
-
-# Local dashboard uses validated defaults and displays an empty watchlist in this profile.
-[dashboard]
-policy_version = 3
-initial_history_minutes = 20
-enabled = true
-
-history_page_minutes = 60 # 1..120 elapsed UTC minutes per older-history/date request.
-maximum_history_requests = 4 # 1..16 queued/pending operator requests across clients.
-maximum_history_requests_per_session = 256 # 1..4096 admitted pages per process; bounds retained request metadata.
-history_request_timeout_seconds = 120 # 10..300 seconds; requests and transient results expire.

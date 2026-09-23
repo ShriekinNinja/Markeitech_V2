@@ -12,8 +12,6 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas_market_calendars as market_calendars
 
-from markeitech.dashboard.config import DashboardConfig
-
 
 @dataclass(frozen=True, slots=True)
 class RuntimeConfig:
@@ -298,7 +296,6 @@ class SystemConfig:
     watchlist: WatchlistConfig
     sessions: SessionsConfig
     evidence_health: EvidenceHealthConfig
-    dashboard: DashboardConfig = DashboardConfig()
 
     @property
     def instrument_ids(self) -> tuple[str, ...]:
@@ -327,8 +324,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
     with config_path.open("rb") as file:
         raw = tomllib.load(file)
 
-    if raw.get("schema_version") != 28:
-        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 28")
+    if raw.get("schema_version") != 29:
+        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 29")
 
     root_keys = {
         "schema_version",
@@ -343,11 +340,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "sessions",
         "evidence_health",
     }
-    _require_keys(
-        raw,
-        root_keys | ({"dashboard"} if "dashboard" in raw else set()),
-        "root",
-    )
+    _require_keys(raw, root_keys, "root")
 
     runtime = _load_runtime(raw["runtime"])
     ib = _load_ib(raw["ib"])
@@ -359,24 +352,6 @@ def load_system_config(path: str | Path) -> SystemConfig:
     historical = _load_historical(raw["historical"])
     sessions = _load_sessions(raw["sessions"], config_path.parent)
     evidence_health = _load_evidence_health(raw["evidence_health"])
-    dashboard = DashboardConfig.from_mapping(raw.get("dashboard", {}))
-    if dashboard.enabled and len(watchlist.members) > dashboard.maximum_instruments:
-        raise ValueError("dashboard maximum_instruments is below watchlist size")
-    if dashboard.enabled:
-        history_count = 12 * (
-            min(dashboard.initial_history_minutes, dashboard.candles_per_instrument) + 1
-        )
-        bar_members = sum("watchlist_last" in m.capabilities for m in watchlist.members)
-        page_count = dashboard.history_page_minutes * 12
-        if bar_members and (
-            history_count > historical.maximum_observations_per_request
-            or page_count > historical.maximum_observations_per_request
-            or (history_count + 24) * bar_members + page_count * dashboard.maximum_history_requests
-            > historical.maximum_total_observations
-            or 2 * bar_members + dashboard.maximum_history_requests
-            > historical.maximum_outstanding_requests
-        ):
-            raise ValueError("dashboard initial history exceeds historical resource limits")
     known_calendars = {calendar.calendar_id for calendar in sessions.calendars}
     unknown_calendars = sorted(
         {member.calendar_id for member in watchlist.members} - known_calendars,
@@ -418,7 +393,6 @@ def load_system_config(path: str | Path) -> SystemConfig:
         watchlist=watchlist,
         sessions=sessions,
         evidence_health=evidence_health,
-        dashboard=dashboard,
     )
 
 
