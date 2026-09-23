@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish a Markeitech issue or PR through the local Sir Kite GitHub App.
+"""Publish a Markeitech issue, issue comment, or PR through the local Sir Kite GitHub App.
 
 Uses Python's standard library, curl's verified TLS, and OpenSSL. Credentials stay
 outside Git; tokens travel through stdin, are never printed, and are revoked on exit.
@@ -177,6 +177,29 @@ def publish_issue(config, token, args):
     print(f"Author: {issue['user']['login']}; issue: #{issue['number']}")
 
 
+def publish_issue_comment(config, token, args):
+    """Comment on one open issue after verifying its exact repository and identity."""
+    root = f"/repos/{config['repository']}/issues/{args.comment}"
+    issue = request(root, token)
+    if (
+        issue.get("number") != args.comment
+        or issue.get("html_url")
+        != f"https://github.com/{config['repository']}/issues/{args.comment}"
+        or issue.get("state") != "open"
+        or "pull_request" in issue
+    ):
+        raise ValueError("GitHub returned an unexpected issue identity or state")
+    comment = request(root + "/comments", token, "POST", {"body": args.body_file.read_text()})
+    # A returned resource must remain discoverable even if the author check fails.
+    print(comment["html_url"], flush=True)
+    if (
+        comment["user"]["login"] != config["slug"] + "[bot]"
+        or comment.get("issue_url") != "https://api.github.com" + root
+    ):
+        raise ValueError("GitHub returned an unexpected comment author or issue")
+    print(f"Author: {comment['user']['login']}; issue: #{args.comment}")
+
+
 def publish(config, token, args):
     """Create or update this branch's bot PR and explicitly request owner review."""
     root = f"/repos/{config['repository']}"
@@ -229,6 +252,7 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--head", help="Published branch; master is the fixed PR base")
     mode.add_argument("--issue", action="store_true", help="Create a new issue instead of a PR")
+    mode.add_argument("--comment", type=int, metavar="ISSUE", help="Comment on an open issue")
     parser.add_argument("--title")
     parser.add_argument("--body-file", type=Path)
     parser.add_argument("--label", action="append", default=[])
@@ -236,14 +260,21 @@ def main():
         "--draft", action="store_true", help="Create as draft without a review request"
     )
     args = parser.parse_args()
-    if args.issue and args.draft:
+    if (args.issue or args.comment is not None) and args.draft:
         parser.error("--draft applies only to PRs")
+    if args.comment is not None:
+        if args.comment <= 0:
+            parser.error("--comment requires a positive issue number")
+        if args.title or args.label:
+            parser.error("Issue comments take only --body-file")
     if not args.verify:
-        if not args.title or not args.title.strip() or not args.body_file:
-            parser.error("Publishing requires a non-empty --title and --body-file")
-        if not args.issue and not args.head:
-            parser.error("PR publishing requires --head; use --issue to create an issue")
-    operation = "issue" if args.issue else "pr"
+        if not args.body_file:
+            parser.error("Publishing requires --body-file")
+        if args.comment is None and (not args.title or not args.title.strip()):
+            parser.error("Issue and PR publishing require a non-empty --title")
+        if not args.issue and args.comment is None and not args.head:
+            parser.error("PR publishing requires --head; use --issue or --comment for issues")
+    operation = "issue" if args.issue or args.comment is not None else "pr"
     try:
         config = load_config(args.config)
         with installation_token(config, operation=operation) as token:
@@ -251,6 +282,8 @@ def main():
                 print(f"Verified {config['slug']} on {config['repository']} for {operation}")
             elif args.issue:
                 publish_issue(config, token, args)
+            elif args.comment is not None:
+                publish_issue_comment(config, token, args)
             else:
                 publish(config, token, args)
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as exc:
