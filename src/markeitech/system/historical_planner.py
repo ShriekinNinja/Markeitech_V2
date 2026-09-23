@@ -21,7 +21,6 @@ from markeitech.acquisition import (
     HistoricalResourcePolicy,
     HistoricalWindow,
 )
-from markeitech.acquisition.dashboard_history import scope_history_page_execution
 from markeitech.acquisition.historical_windows import (
     HistoricalWindowParameters,
     HistoricalWindowResolver,
@@ -831,4 +830,4 @@ def compile_historical_demand(
         ),
         {(event.instrument_id, window): bounds},
     )
-    return scope_history_page_execution(requests[0], event)
+    return requests[0]

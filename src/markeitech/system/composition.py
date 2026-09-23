@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from uuid import UUID
 
 from nautilus_trader.common import ImportableActorConfig
@@ -436,25 +436,6 @@ def build_actor_plan(
             ),
         ),
     )
-    if config.dashboard.enabled:
-        if len(config.instrument_ids) > config.dashboard.maximum_instruments:
-            raise ValueError("dashboard maximum_instruments is below watchlist size")
-        registrations.append(
-            ActorRegistration(
-                key="dashboard",
-                actor_id="DASHBOARD",
-                config=ImportableActorConfig(
-                    actor_path="markeitech.dashboard.actor:DashboardActor",
-                    config_path="markeitech.dashboard.actor:DashboardActorConfig",
-                    config={
-                        "actor_id": "DASHBOARD",
-                        "dashboard": asdict(config.dashboard),
-                        "market_data_type": config.ib.market_data_type,
-                        "watchlist_enabled": config.watchlist.enabled,
-                    },
-                ),
-            ),
-        )
     _reject_duplicate_actor_ids(registrations)
     return tuple(registrations)
 

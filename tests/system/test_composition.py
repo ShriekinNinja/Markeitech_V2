@@ -50,7 +50,6 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         "runtime_resources",
         "runtime_resource_health",
         "operational_persistence",
-        "dashboard",
     ]
     assert len({registration.actor_id for registration in plan}) == len(plan)
     session_state = next(item for item in plan if item.key == "session_state")
@@ -174,7 +173,6 @@ def test_actor_plan_omits_disabled_discord_but_never_core() -> None:
         "runtime_resources",
         "runtime_resource_health",
         "operational_persistence",
-        "dashboard",
     ]
 
 
