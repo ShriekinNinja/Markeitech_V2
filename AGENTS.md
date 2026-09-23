@@ -120,12 +120,22 @@ task after an authorized refresh. See `docs/operations/kite.md` for the lifecycl
 - Explain the intended batch and meaningful tradeoffs before editing.
 - Consult Markeitect before introducing or changing architecture, infrastructure, persistence,
   dependencies, provider ownership, schemas, runtime policy, or product semantics.
+- For a repository change, read or open its tracking issue first. Comment on the issue with a
+  milestone checklist, human and agent effort/time estimates, suggested model and reasoning
+  effort, Spark suitability, and open decisions. Resolve the decisions and obtain Markeitect's
+  explicit plan approval before opening the implementation PR or starting its first milestone.
+  Put the approved checklist in the linked PR, keep it current, and stop after each milestone
+  until Markeitect explicitly approves continuing. Record substantive answers, decisions,
+  revisions, approval outcomes, blockers, and completion in follow-up issue comments; link any
+  relevant PR discussion there. A milestone comment does not replace final PR-head approval.
 - Every repository change, including documentation and small fixes, starts on a new scoped branch
-  and is delivered through a GitHub PR. Use stage/task-specific names without a `codex/` prefix.
+  after plan approval. Open its GitHub PR with the approved checklist immediately after the first
+  coherent milestone commit, before requesting that milestone's approval. Use stage/task-specific
+  names without a `codex/` prefix.
   The integration branch is currently `master`; references to the main branch do not authorize a
   rename. Never implement or commit changes directly on it or push directly to it.
-- An authorized repository-change request includes scoped commits, branch pushes, and opening or
-  updating its PR after verification. Do not stop at an uncommitted-only handoff by default.
+- An authorized repository-change request includes the approved-plan PR, scoped commits, branch
+  pushes, and PR updates after verification. Do not stop at an uncommitted-only handoff by default.
   Read-only requests authorize no edits; plan-only requests authorize only the requested planning
   artifact, not implementation. Explicit no-commit or no-push instructions limit publication.
 - Keep one coherent change per branch/PR. Review fixes stay on the same open PR; new work after
@@ -145,11 +155,14 @@ task after an authorized refresh. See `docs/operations/kite.md` for the lifecycl
   Follow the issue and PR commands in `docs/operations/github-workflow.md`.
 - Every PR must request `@ShriekinNinja` as reviewer when ready and requires his approval of the
   current head, regardless of author. Verify the review request in GitHub; a mention alone is
-  not a review request or approval. For issue-tracked work, open or reuse the authorized issue,
+  not a review request or approval. For repository changes, open or reuse the authorized issue,
   link its implementation PR, then leave approval and merge to Markeitect. Opening an issue
   does not itself authorize implementation or merge.
-- No auto-merge, force-push, check bypass, or unapproved branch/worktree deletion. A delegated
-  merge uses the reviewed head and a merge commit only after all required CI checks pass.
+- No auto-merge, force-push, check bypass, or unapproved branch/worktree deletion. If the issue
+  plan explicitly approves task-local cleanup, then after a verified merge remove only that
+  task's clean local branch and managed worktree, recording exact targets on the issue first;
+  preserve any other or dirty work and seek a scoped decision. A delegated merge uses the reviewed
+  head and a merge commit only after all required CI checks pass.
 - PRs are the default review surface; local IDE review remains available on request. Every PR
   must describe scope, contracts, data/persistence effects, validation, live acceptance, and known
   debt in detail. Follow `docs/operations/github-workflow.md`; its current protocol supersedes

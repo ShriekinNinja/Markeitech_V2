@@ -5,11 +5,27 @@
 ## Scope and tracking
 
 - Stage or task:
-- Related issues: <!-- Use "Closes #123" only when this PR completes the issue; otherwise "Refs #123". -->
+- Related issue: <!-- Link the tracking issue. Use "Closes #123" only when this PR completes its accepted checklist; otherwise "Refs #123". -->
+- Approved plan comment and approval record: <!-- Link both issue comments. -->
 - Included files and responsibilities:
 - Outside this batch:
 - Labels: <!-- Apply bug, enhancement, documentation, or question in GitHub; this text does not set labels. -->
 - Milestone: <!-- Existing accepted stage, if applicable; otherwise none. -->
+
+### Approved milestone checklist
+
+<!-- Copy the approved issue plan here, including each milestone's outcome/scope, human and agent
+     time estimates, suggested model/reasoning effort, and Spark suitability. Update checkboxes and
+     exact-head evidence as work lands. Milestone approval is explicit; link its issue comment or
+     PR comment and record any PR-side decision on the issue before continuing. -->
+
+- [ ] M1 — <!-- Approved scope; human/agent estimate; model/effort; Spark suitability. -->
+  Approval to proceed: <!-- Link the approval record, or write pending. -->
+- [ ] M2 — <!-- Add or remove rows to match the approved issue plan. -->
+  Approval to proceed: <!-- Link the approval record, or write pending. -->
+
+Issue communication record: <!-- Link substantive decisions, revisions, blockers, and milestone
+handoffs recorded in follow-up issue comments. -->
 
 ## Contracts and behavior
 
@@ -29,6 +45,7 @@
 | Ruff | | |
 | Offline V2 tests | | |
 | PostgreSQL integration | | |
+| API docs verification | | |
 | Diff and file-scope review | | |
 
 Live acceptance status: `not run` / `run and passed` / `run with findings` / `not applicable`
@@ -70,7 +87,10 @@ Live acceptance status: `not run` / `run and passed` / `run with findings` / `no
 - Required reviewer: **@ShriekinNinja**.
 - Review request status: <!-- Requested / draft / blocked because the author is ShriekinNinja. -->
 - Remaining acceptance gates:
-- [ ] The three required CI jobs pass on the current PR head; pending/missing/skipped is not pass.
+- [ ] The four required CI jobs (V2 Ruff, V2 Offline Tests, V2 PostgreSQL Integration, and API
+      docs verification) pass on the final current PR head; pending/missing/skipped is not pass.
+- [ ] Every approved milestone is complete and has explicit Markeitect approval recorded on the
+      issue before the next milestone began.
 - [ ] @ShriekinNinja has submitted an approving review covering the current head.
 - [ ] No direct integration-branch push, force-push, auto-merge, or check bypass was used.
 
@@ -87,4 +107,5 @@ Approval/merge status: **awaiting Markeitect**. The author must not claim approv
 Markeitect approves the current head and owns its merge. An agent may merge only when Markeitect
 explicitly delegates that specific operation; CI success or review approval alone is not such
 delegation. New commits require renewed approval before merge. Do not delete the branch or
-worktree without separate approval.
+worktree unless the approved issue plan includes that task-local cleanup. Record exact targets on
+the issue before merge; after a verified merge, remove only a clean task-owned branch/worktree.

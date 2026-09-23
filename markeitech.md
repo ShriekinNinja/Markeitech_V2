@@ -180,16 +180,26 @@ statistical validation.
 ## Working Agreement
 
 - Pause and raise architectural concerns when implementation exposes them.
+- For repository changes, begin with a tracking issue and an issue-commented milestone plan with
+  estimates, model/effort suggestions, Spark suitability, and explicit decisions. Markeitect
+  resolves the decisions and approves the plan before an implementation PR or milestone work.
+  Keep the approved checklist in one linked PR, record substantive communication on the issue,
+  and wait for his approval after each milestone before continuing.
 - Every repository change has a new scoped branch and GitHub PR, including documentation and
   small fixes. Never implement, commit, or push directly on the integration branch (`master`).
-- A request to make a repository change includes scoped commits, pushes, and PR publication for
-  review unless the task explicitly restricts them. PR review replaces the former default of
-  stopping with uncommitted changes; local IDE review remains available when requested.
+- A request to make a repository change includes scoped commits, pushes, and, after plan approval,
+  PR publication immediately after the first coherent milestone commit unless the task explicitly
+  restricts them. PR review replaces the former default of stopping with uncommitted changes;
+  local IDE review remains available when requested.
 - Markeitect approves the current PR head and owns its merge. Agents stop with the PR unmerged
   unless Markeitect explicitly delegates that exact merge. Passing CI is required, not permission
   to merge; later commits require renewed approval. No auto-merge or force-push.
 - Keep review fixes on the same open PR. Start a new change on a new branch, and wait for a
   prerequisite PR to merge before dependent work unless Markeitect approves another arrangement.
+- Close the tracking issue when its accepted checklist is complete and the linked PR merges.
+  When the issue plan approves task-local cleanup, record exact targets on the issue and,
+  after verifying the merge, delete only that task's clean local branch/worktree. Preserve other
+  or dirty work for a separate decision.
 - Keep current status separate from implementation history and future intent.
 - Do not claim validation that has not occurred.
 

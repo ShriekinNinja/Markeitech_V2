@@ -181,20 +181,30 @@ looks similar.
 
 Every repository change is a reviewable branch/PR batch, including documentation and small fixes:
 
-1. Create a new scoped branch from current `master` before editing; preserve unrelated work.
-2. Explain the intent and meaningful tradeoffs, implement only the authorized scope, and verify it.
-3. Commit the scoped files, push the branch, and open a PR. This is included in an authorized
-   change request unless the task explicitly restricts commits or publication.
-4. Keep review fixes on that open PR. Leave it unmerged for Markeitect's approval of the current
+1. Read or open the tracking issue. Comment there with a milestone checklist, human and agent
+   effort/time estimates, suggested model/reasoning effort, Spark suitability, and open decisions.
+   Resolve decisions and obtain Markeitect's explicit plan approval before implementation.
+2. Create a new scoped branch from current `master` and preserve unrelated work. Explain the
+   intended batch and meaningful tradeoffs, then implement only the approved first milestone.
+3. Verify and push the first coherent milestone commit, then immediately open one linked PR with
+   the approved checklist before requesting milestone approval. Update its checklist and evidence
+   after each later milestone commit.
+4. Record substantive answers, decisions, revisions, approval outcomes, blockers, and completion
+   in follow-up issue comments. Link and summarize PR-side discussion on the issue. Wait for
+   Markeitect's explicit approval of each milestone before continuing to the next.
+5. Keep review fixes on that open PR. Leave it unmerged for Markeitect's approval of the current
    head and merge after required CI passes. Agents may merge only when that exact operation is
    explicitly delegated; new commits require renewed approval.
-5. After merge, use a new branch/PR for the next change. Do not begin dependent work before its
-   prerequisite merges unless Markeitect explicitly approves another arrangement.
+6. After the merge is verified and the accepted checklist is complete, close the linked issue.
+   When task-local cleanup was approved in the issue plan, record exact targets on the issue and
+   delete only that task's clean local branch/managed worktree. Preserve other or dirty work for a
+   separate decision. Use a new branch/PR for the next change. Do not begin dependent work before
+   its prerequisite merges unless Markeitect approves another arrangement.
 
 No direct integration-branch commits/pushes, auto-merge, force-push, or check bypass. Local IDE
-review remains available when requested. The current
-[GitHub workflow](operations/github-workflow.md) replaces older uncommitted-only review language
-without widening architecture, service, data, or destructive-operation authority.
+review remains available when requested. Milestone comments do not replace final PR-head approval.
+The current [GitHub workflow](operations/github-workflow.md) replaces older uncommitted-only
+review language without widening architecture, service, data, or destructive-operation authority.
 
 Pause when an architectural assumption becomes questionable. A short design
 review is cheaper than carrying a convenient workaround into persistence or

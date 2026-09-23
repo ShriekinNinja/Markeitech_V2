@@ -274,6 +274,141 @@ def test_issue_transport_failure_does_not_retry_or_expose_credentials(
     assert output.out == ""
 
 
+def test_issue_comment_checks_target_and_verifies_author(config, monkeypatch, tmp_path, capsys):
+    body = tmp_path / "comment.md"
+    body.write_text("Plan approved; literal `$(example)`.")
+    root = "/repos/ShriekinNinja/Markeitech_V2/issues/70"
+    api = Mock(
+        side_effect=[
+            {
+                "number": 70,
+                "html_url": "https://github.com/ShriekinNinja/Markeitech_V2/issues/70",
+                "state": "open",
+            },
+            {
+                "html_url": "https://github.com/ShriekinNinja/Markeitech_V2/issues/70#issuecomment-123",
+                "issue_url": "https://api.github.com" + root,
+                "user": {"login": "sir-kite[bot]"},
+            },
+        ]
+    )
+    monkeypatch.setattr(kite, "request", api)
+    kite.publish_issue_comment(config, "fixture-token", SimpleNamespace(comment=70, body_file=body))
+    assert api.call_args_list[0].args == (root, "fixture-token")
+    assert api.call_args_list[1].args == (
+        root + "/comments",
+        "fixture-token",
+        "POST",
+        {"body": "Plan approved; literal `$(example)`."},
+    )
+    assert capsys.readouterr().out.splitlines() == [
+        "https://github.com/ShriekinNinja/Markeitech_V2/issues/70#issuecomment-123",
+        "Author: sir-kite[bot]; issue: #70",
+    ]
+
+
+@pytest.mark.parametrize(
+    "issue",
+    [
+        {
+            "number": 71,
+            "html_url": "https://github.com/ShriekinNinja/Markeitech_V2/issues/71",
+            "state": "open",
+        },
+        {"number": 70, "html_url": "https://github.com/other/repo/issues/70", "state": "open"},
+        {
+            "number": 70,
+            "html_url": "https://github.com/ShriekinNinja/Markeitech_V2/issues/70",
+            "state": "closed",
+        },
+        {
+            "number": 70,
+            "html_url": "https://github.com/ShriekinNinja/Markeitech_V2/issues/70",
+            "state": "open",
+            "pull_request": {},
+        },
+    ],
+)
+def test_issue_comment_rejects_wrong_or_closed_target_before_posting(
+    config, monkeypatch, tmp_path, issue
+):
+    api = Mock(return_value=issue)
+    monkeypatch.setattr(kite, "request", api)
+    with pytest.raises(ValueError, match="unexpected issue identity or state"):
+        kite.publish_issue_comment(
+            config, "fixture-token", SimpleNamespace(comment=70, body_file=tmp_path / "unused.md")
+        )
+    assert api.call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("author", "issue_url"),
+    [
+        ("ShriekinNinja", "https://api.github.com/repos/ShriekinNinja/Markeitech_V2/issues/70"),
+        ("sir-kite[bot]", "https://api.github.com/repos/other/repo/issues/70"),
+    ],
+)
+def test_issue_comment_reports_resource_on_wrong_returned_identity(
+    config, monkeypatch, tmp_path, capsys, author, issue_url
+):
+    body = tmp_path / "comment.md"
+    body.write_text("Fixture")
+    api = Mock(
+        side_effect=[
+            {
+                "number": 70,
+                "html_url": "https://github.com/ShriekinNinja/Markeitech_V2/issues/70",
+                "state": "open",
+            },
+            {
+                "html_url": "https://github.com/ShriekinNinja/Markeitech_V2/issues/70#issuecomment-123",
+                "issue_url": issue_url,
+                "user": {"login": author},
+            },
+        ]
+    )
+    monkeypatch.setattr(kite, "request", api)
+    with pytest.raises(ValueError, match="unexpected comment author or issue"):
+        kite.publish_issue_comment(
+            config, "fixture-token", SimpleNamespace(comment=70, body_file=body)
+        )
+    assert api.call_count == 2
+    assert capsys.readouterr().out == (
+        "https://github.com/ShriekinNinja/Markeitech_V2/issues/70#issuecomment-123\n"
+    )
+
+
+def test_issue_comment_transport_failure_does_not_retry_or_expose_response(
+    config, monkeypatch, tmp_path, capsys
+):
+    body = tmp_path / "comment.md"
+    body.write_text("Fixture")
+    responses = auth_responses(config, "issue")
+    responses.insert(
+        4,
+        {
+            "number": 70,
+            "html_url": "https://github.com/ShriekinNinja/Markeitech_V2/issues/70",
+            "state": "open",
+        },
+    )
+    responses.insert(5, RuntimeError("sensitive response fixture"))
+    api = Mock(side_effect=responses)
+    monkeypatch.setattr(kite, "request", api)
+    monkeypatch.setattr(kite, "make_jwt", lambda _: "fixture-jwt")
+    monkeypatch.setattr(kite, "load_config", lambda _: config)
+    monkeypatch.setattr("sys.argv", [str(SCRIPT), "--comment", "70", "--body-file", str(body)])
+    assert kite.main() == 1
+    posts = [call for call in api.call_args_list if call.args[0].endswith("/comments")]
+    assert len(posts) == 1
+    assert api.call_args.args == ("/installation/token", "fixture-token", "DELETE")
+    output = capsys.readouterr()
+    assert "sensitive response" not in output.err
+    assert "fixture-token" not in output.err
+    assert "RuntimeError" in output.err
+    assert output.out == ""
+
+
 @pytest.mark.parametrize("operation", ["pr", "issue"])
 @pytest.mark.parametrize("verify", [False, True])
 def test_cli_selects_operation_and_verify_never_publishes(
@@ -300,15 +435,40 @@ def test_cli_selects_operation_and_verify_never_publishes(
 
     pr = Mock()
     issue = Mock()
+    comment = Mock()
     monkeypatch.setattr("sys.argv", argv)
     monkeypatch.setattr(kite, "load_config", lambda _: config)
     monkeypatch.setattr(kite, "installation_token", token_scope)
     monkeypatch.setattr(kite, "publish", pr)
     monkeypatch.setattr(kite, "publish_issue", issue)
+    monkeypatch.setattr(kite, "publish_issue_comment", comment)
     assert kite.main() == 0
     assert selected_operations == [operation]
     assert pr.call_count == int(not verify and operation == "pr")
     assert issue.call_count == int(not verify and operation == "issue")
+    comment.assert_not_called()
+
+
+def test_cli_comment_uses_issue_scope_without_title(config, monkeypatch, tmp_path):
+    body = tmp_path / "comment.md"
+    body.write_text("Fixture")
+    selected = []
+
+    @contextmanager
+    def token_scope(actual_config, *, operation):
+        assert actual_config == config
+        selected.append(operation)
+        yield "fixture-token"
+
+    comment = Mock()
+    monkeypatch.setattr("sys.argv", [str(SCRIPT), "--comment", "70", "--body-file", str(body)])
+    monkeypatch.setattr(kite, "load_config", lambda _: config)
+    monkeypatch.setattr(kite, "installation_token", token_scope)
+    monkeypatch.setattr(kite, "publish_issue_comment", comment)
+    assert kite.main() == 0
+    assert selected == ["issue"]
+    assert comment.call_count == 1
+    assert comment.call_args.args[2].comment == 70
 
 
 @pytest.mark.parametrize(
@@ -319,6 +479,11 @@ def test_cli_selects_operation_and_verify_never_publishes(
         ["--issue"],
         ["--issue", "--title", "  ", "--body-file", "fixture.md"],
         ["--title", "Fixture", "--body-file", "fixture.md"],
+        ["--comment", "0", "--body-file", "fixture.md"],
+        ["--comment", "70"],
+        ["--comment", "70", "--body-file", "fixture.md", "--title", "Not allowed"],
+        ["--comment", "70", "--body-file", "fixture.md", "--label", "question"],
+        ["--comment", "70", "--body-file", "fixture.md", "--draft"],
     ],
 )
 def test_invalid_cli_arguments_fail_before_authentication(monkeypatch, arguments):

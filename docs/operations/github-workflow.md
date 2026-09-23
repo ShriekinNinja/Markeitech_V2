@@ -18,15 +18,23 @@ Markeitect approves the current PR head and owns the merge.** This includes code
 documentation, configuration templates, tools, and small fixes. One change means one coherent
 review batch, not a new branch per file or commit.
 
+For repository changes, begin with a tracking issue. Read it and comment there with a milestone
+checklist, human and agent effort/time estimates, suggested model and reasoning effort, Spark
+suitability, and open questions or decisions. Markeitect resolves the decisions and explicitly
+approves the plan before the implementation PR opens or milestone work begins. One PR carries the
+approved checklist and is updated through ordinary commits. Stop after each milestone until
+Markeitect explicitly approves continuing. Final PR-head approval and merge remain separate gates.
+
 The integration/default branch is currently `master`. Informal references to the main branch mean
 that branch; a rename to `main` requires a separate request. Never implement or commit changes
 directly on the integration branch, push changes directly to it, or use a local merge as a bypass
 around the PR gate.
 
 An authorized repository-change request includes the commits, branch pushes, and PR creation or
-updates needed to present that scope for review. It does not authorize a merge. Read-only requests
-authorize no edits and need no branch or PR; plan-only requests permit only the requested planning
-artifact, not runtime implementation. An explicitly requested plan file follows the same branch/PR
+updates needed to present its approved milestones for review. It does not waive plan or milestone
+approval and does not authorize a merge. Read-only requests authorize no edits and need no branch
+or PR; plan-only requests permit only the requested planning artifact, not runtime
+implementation. An explicitly requested plan file follows the same branch/PR
 protocol. Explicit no-commit or no-push restrictions still limit publication. Ignored machine-state
 repairs remain separately authorized local operations and must never be committed just to create
 a PR.
@@ -60,38 +68,49 @@ not itself authorize external publication, implementation, approval, or merge.
 
 ## Change Lifecycle
 
-1. Inspect the current branch, worktree, remote default branch, and task scope. Refresh the
-   integration checkpoint without discarding local work. If unrelated work is present, preserve
-   it and create a separate worktree rather than stash, reset, or carry it into the new PR.
-2. Create a new stage/task-specific branch, without a `codex/` prefix, before editing. Keep one
-   coherent change on it. Review corrections stay on this branch while its PR is open; never
-   reuse a merged/closed PR branch for a new change.
-3. Explain the intended batch and meaningful tradeoffs, implement the authorized scope, and keep
-   code and documentation consistent. Do not infer new architecture or product authority.
-4. Run proportional local verification and inspect the full diff for unintended files, secrets,
-   local configuration, data, or generated churn. Commit only task-owned paths, with a detailed
-   message, and push the branch without force.
-5. Open a PR into `master` through the required [publishing identity](#publishing-identity) once
-   the first coherent batch is published. Request `@ShriekinNinja` as reviewer
-   when ready and verify the request in GitHub. Use a draft for unfinished
-   work and state its remaining gates. A review-ready delivery includes the PR URL, exact head,
-   scope, validation, known debt, and current CI state; uncommitted files alone are not the default
-   handoff. If credentials, connectivity, or an explicit task restriction block publication,
-   preserve the work and report the exact remaining action instead of claiming completion.
-6. Address requested review changes with ordinary commits on the same open PR. Update its scope
-   and evidence, rerun affected checks, and report the new head. Do not amend and force-push.
-7. Stop with the PR **unmerged**. Passing CI, opening a PR, receiving implementation approval,
-   or being asked to finish the workflow does not grant merge authority. Do not enable auto-merge
-   or bypass branch rules/checks.
-8. Markeitect approves the current head and performs the merge after required CI passes. An agent
-   may merge only if Markeitect explicitly delegates that specific PR merge. Before a delegated
-   merge, verify the PR/base/head, current approval, absence of unreviewed changes, and successful
-   required checks for that head; use a merge commit bound to the approved head. New commits
-   invalidate the prior merge approval and require renewed approval.
-9. Verify the remote merge result before reporting it as merged. Only then refresh the local
-   integration branch by fast-forward and start the next change on another new branch. Dependent
-   work waits for its prerequisite PR to merge unless Markeitect explicitly approves another
-   arrangement. Branch/worktree deletion still requires separate approval.
+1. Read or open the tracking issue, post the [milestone plan](#issues-labels-and-planning),
+   resolve its decisions, and obtain Markeitect's explicit plan approval. Record approval on the
+   issue before proceeding. Inspect the current branch, worktree, remote default branch, and task
+   scope. Refresh the integration checkpoint without discarding local work. If unrelated work is
+   present, preserve it and create a separate worktree rather than stash or reset it.
+2. Create a new stage/task-specific branch, without a `codex/` prefix, after plan approval. Keep
+   one coherent change on it. Review corrections stay on this branch while its PR is open; never
+   reuse a merged/closed PR branch for new work.
+3. Explain the intended batch and meaningful tradeoffs, implement only approved milestone 1,
+   and keep code and documentation consistent. Run proportional verification and inspect the diff
+   for unintended files, secrets, local configuration, data, or generated churn. Commit only
+   task-owned paths and push without force. Do not infer new architecture or product authority.
+4. Immediately open one PR into `master` through the required
+   [publishing identity](#publishing-identity) after the first coherent milestone commit. Copy the
+   approved checklist, estimates, decisions, scope, and gates into its body; link the issue.
+   Request `@ShriekinNinja` as reviewer when ready and verify the request in GitHub. Use a draft
+   while unfinished if appropriate. If credentials, connectivity, or an explicit restriction
+   block publication, preserve the work and report the blocker before requesting M1 approval.
+5. Update the PR checklist, exact head, scope, validation, debt, and CI state. Post a milestone
+   handoff on the issue with the PR link and evidence. Stop until Markeitect explicitly approves
+   the milestone in an issue or PR comment. If approval occurs on the PR, link and record that
+   outcome on the issue before the next milestone. A review-ready delivery includes the PR URL,
+   exact head, scope, validation, known debt, and current CI state.
+6. Address review changes with ordinary commits on the same PR. Update its checklist and evidence,
+   rerun affected checks, and report the new head. Do not amend and force-push. A revised milestone
+   needs renewed review of the affected behavior.
+7. Stop with the PR **unmerged**. Passing CI, opening a PR, receiving milestone approval, or being
+   asked to finish the workflow does not grant merge authority. Do not enable auto-merge or bypass
+   branch rules/checks.
+8. Markeitect approves the final current head and performs the merge after required CI passes. An
+   agent may merge only if Markeitect explicitly delegates that specific PR merge. Before a
+   delegated merge, verify the PR/base/head, current approval, absence of unreviewed changes, and
+   successful required checks for that head; use a merge commit bound to the approved head. New
+   commits invalidate prior approval and require renewed approval.
+9. After the accepted checklist is complete, record the final milestone outcome and any approved
+   task-local cleanup targets on the issue before merge. Verify the remote merge result before
+   reporting it as merged. Close the linked issue if merge has not already closed it. If the
+   approved issue plan includes task-local cleanup, remove only the recorded clean local branch
+   and managed worktree after verifying a clean tree. Preserve other or dirty work and request a
+   separate decision.
+   Refresh the local integration branch by fast-forward when appropriate, then start new work on
+   another branch.
+   Dependent work waits for its prerequisite PR to merge unless Markeitect approves otherwise.
 
 ## Sir Loke Task Live Acceptance
 
@@ -112,6 +131,7 @@ scenarios. Documentation-only work, including the plan itself, needs review rath
 
 Use `.github/pull_request_template.md`. Every PR must state:
 
+- the approved milestone checklist and current progress, with links to issue-recorded decisions;
 - the requested stage/change, included files/responsibilities, and explicit exclusions;
 - contract, behavior, configuration, dependency, provider, schema, and persistence effects, or
   an explicit `none` where applicable;
@@ -125,15 +145,26 @@ the exact head reviewed and does not by itself delegate merge execution to an ag
 
 ## Issues, Labels, And Planning
 
-Use an issue for a bug, improvement proposal, or documentation gap that benefits from tracking.
-For issue-tracked changes, follow **Issue -> PR -> Approve -> Merge**:
+Use an issue for every repository change. For repository changes, follow **Issue -> Plan -> Approve
+plan -> PR -> Approve each milestone -> Approve final head -> Merge**:
 
 1. Check for an existing relevant issue, then open or reuse the authorized tracking issue using
    the required publishing identity. State the problem, evidence, bounded scope, and acceptance
    criteria. Verify the author and record its URL.
-2. Implement the authorized change on a scoped branch and link the PR to the issue.
-3. Present the verified PR head for Markeitect's approval. An agent never approves on his behalf.
-4. Markeitect owns the merge after the required CI and current-head approval gates pass. An agent
+2. Read the issue and post a solution-plan comment with a milestone checklist. For each milestone,
+   include its outcome/scope, human effort and time estimate, agent time estimate, suggested model
+   and reasoning effort, and whether Spark is suitable. List open questions and decisions. Resolve
+   every implementation-dependent decision and obtain Markeitect's explicit plan approval before
+   opening the implementation PR or starting milestone 1. Silence, a label, or an issue's existence
+   is not approval.
+3. Open one linked PR with the approved checklist. Update its checklist state, exact head,
+   verification, and remaining gates after each milestone. Record substantive answers, plan
+   changes, decisions, milestone reviews/approvals, blockers, and completion in new follow-up
+   issue comments. When conversation happens elsewhere, summarize its outcome and link it on the
+   issue; editing the plan comment alone does not preserve the conversation.
+4. Present each milestone for Markeitect's explicit approval before continuing. Then present the
+   verified final PR head for his formal approving review. An agent never approves on his behalf.
+5. Markeitect owns the merge after the required CI and current-head approval gates pass. An agent
    may perform only a specifically delegated merge under the existing change lifecycle.
 
 Opening an issue alone changes GitHub metadata and needs no source branch or PR. It grants no
@@ -262,7 +293,9 @@ gh issue create --repo ShriekinNinja/Markeitech_V2 \
 Read back the returned issue with
 `gh issue view ISSUE-NUMBER --repo ShriekinNinja/Markeitech_V2 --json url,author`
 and verify its author matches the intended contributor. Replace the example title, body file,
-label, and issue number with the authorized scope. For a branch already pushed to the target
+label, and issue number with the authorized scope. Record the plan and substantive follow-ups with
+`gh issue comment ISSUE-NUMBER --repo ShriekinNinja/Markeitech_V2 --body-file /tmp/issue-comment.md`
+and verify the resulting comment author and URL. For a branch already pushed to the target
 repository, a ready PR can be opened with:
 
 ```bash
@@ -283,9 +316,10 @@ with `gh pr view PR-NUMBER --repo ShriekinNinja/Markeitech_V2 --json url,author`
 ## Publishing Locally For Markeitect As Sir Kite
 
 This section applies to Markeitect's agents using his authorized local Sir Kite setup.
-Use `scripts/sir-kite-pr.py` for issues and PRs. Its existing path and PR arguments remain
-compatible; `--issue` selects issue creation. Markeitect's ordinary GitHub CLI login remains
-`ShriekinNinja`; the helper authenticates its publications as `sir-kite[bot]`. It requires Python 3,
+Use `scripts/sir-kite-pr.py` for issues, issue comments, and PRs. Its existing path and PR
+arguments remain compatible; `--issue` selects issue creation and `--comment ISSUE` selects an
+existing issue. Markeitect's ordinary GitHub CLI login remains `ShriekinNinja`; the helper
+authenticates its publications as `sir-kite[bot]`. It requires Python 3,
 OpenSSL, and curl and adds no Python package dependency. If this local setup is unavailable,
 report the blocker instead of publishing under another identity. Other contributors use the
 preceding section.
@@ -305,8 +339,21 @@ branch, request PR review, or implement the issue. `--head` and `--draft` are PR
 issue creation blindly after a timeout, error, or unexpected author: a write may have succeeded.
 Inspect the printed URL or recent issues before deciding whether another creation is needed.
 
-After implementing, verifying, committing, and pushing the scoped branch, publish its PR using
-the existing command. Include the tracking issue in the PR body with the appropriate `Closes`
+To record a plan, decision, milestone result, or follow-up on an open issue:
+
+```bash
+python3 scripts/sir-kite-pr.py --comment ISSUE-NUMBER \
+  --body-file /tmp/issue-comment.md
+```
+
+The comment command reuses an issue-scoped token. It checks that the target is the exact open
+issue in this repository and not a PR, then verifies the returned issue and `sir-kite[bot]`
+author. It prints the comment URL before postflight validation; inspect that URL or the issue
+before retrying an uncertain result. A comment takes a body file, not a title, label, or draft
+flag. Recording a plan comment is not plan approval.
+
+After the approved plan and the first publishable branch diff, open or update its PR with the
+approved checklist. Include the tracking issue in the PR body with the appropriate `Closes`
 or `Refs` relationship:
 
 ```bash
