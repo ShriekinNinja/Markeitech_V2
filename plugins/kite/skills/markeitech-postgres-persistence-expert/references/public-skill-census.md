@@ -1,5 +1,8 @@
 # Public Agent-Skill Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Research snapshot: 2026-08-25. External skills were inspected only for reusable workflow and
 packaging ideas. PostgreSQL facts come from primary sources and local evidence. No external prompt
 text, SQL script, or executable asset was copied into this candidate.

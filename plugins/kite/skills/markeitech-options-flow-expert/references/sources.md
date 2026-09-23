@@ -1,5 +1,8 @@
 # Sources And Provenance
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Research refreshed 2026-08-25. Current tracked Markeitech authority and the exact supplied artifact
 govern local claims. Refresh vendor pages and terms for each consequential consultation.
 
@@ -20,4 +23,4 @@ govern local claims. Refresh vendor pages and terms for each consequential consu
   export and remains untracked/vendor data; it must not enter the plugin or diff.
 
 No third-party skill, proprietary schema text, or undocumented vendor claim is copied. Vendor and
-OPRA terms are linked and paraphrased; the licensing advisor owns use-right conclusions.
+OPRA terms are linked and paraphrased; use-right conclusions require the exact governing terms.

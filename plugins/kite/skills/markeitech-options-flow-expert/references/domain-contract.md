@@ -1,5 +1,9 @@
 # Vendor Options Flow Contract
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 The minimum immutable artifact identity is byte hash, filename/export ID, vendor/product/version,
 download/export UTC time, source timezone, requested interval, all filters/defaults, account/user
 context when terms depend on it, schema/column mapping, row count, license/terms version and

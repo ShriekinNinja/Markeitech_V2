@@ -725,8 +725,10 @@ for detailed prerequisites, configuration, generation, review, and safety requir
         <p>Route one explicit Markeitech runtime or repository operation.</p>
 <p>The command hierarchy owns parsing and fixed child-process mappings only. Runtime behavior
 remains owned by <code>markeitech.system.cli</code>; API documentation and diagrams remain in their
-isolated locked tool projects. No command provisions dependencies, starts Docker, supplies the
-Interactive Brokers confirmation, or broadens connected or persistence authority.</p>
+isolated locked tool projects. The compact <code>system start</code> operation owns only the fixed
+environment check and PostgreSQL Compose startup before delegating to that runtime owner. It
+does not provision dependencies, start TWS, accept arbitrary services, or broaden execution
+authority.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

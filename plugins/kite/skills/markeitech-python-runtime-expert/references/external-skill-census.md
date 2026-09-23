@@ -1,5 +1,8 @@
 # External Skill Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 Research snapshot: 2026-08-25. These public repositories were inspected for structure and
 guardrails only. No external text, scripts, or assets were copied. The candidate is original and
 governed by the proprietary Kite plugin license.
@@ -22,7 +25,7 @@ governed by the proprietary Kite plugin license.
   executable helpers.
 - No advisor-specific router hardcoding is required: the generic router discovers the skill catalog
   and matching project custom-agent role. Static routing cases are recorded in
-  [routing-evaluation.md](routing-evaluation.md); installed-plugin discovery remains unverified
+  [routing-evaluation.md](../../markeitech-advisor-router/references/behavior-checks.md); installed-plugin discovery remains unverified
   until the approved cachebuster, reinstall, and fresh-thread acceptance run.
 
 ## License Compatibility Conclusion

@@ -2,6 +2,6 @@ policy:
   allow_implicit_invocation: false
 
 interface:
-  display_name: "Markeitech Advisor Router"
-  short_description: "Explicitly activate Kite and route advisors"
-  default_prompt: "Use $kite:markeitech-advisor-router to activate Kite for this Markeitech task and select the smallest sufficient advisor set."
+  display_name: "Kite Focused Skills"
+  short_description: "Use focused skills for the task at hand"
+  default_prompt: "Use $kite:markeitech-advisor-router for this task. Apply only the relevant skills and keep the work scoped to the requested outcome."

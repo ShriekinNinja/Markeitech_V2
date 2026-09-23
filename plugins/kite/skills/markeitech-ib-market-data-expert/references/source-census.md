@@ -1,5 +1,8 @@
 # Source Census
 
+This is a dated source/provenance map. Refresh only the sources material to the current
+question. Historical advisor arrangements and examples are not current workflow authority.
+
 This is a navigation and provenance map, not a cache of provider rules. Refresh the relevant page
 on the day of a consequential consultation, record its displayed version or update date, and cite
 the exact section used. IB pages, exchange schedules, entitlements, limits, and error behavior can

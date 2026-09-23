@@ -1,5 +1,9 @@
 # Python Runtime Review Protocol
 
+Use only the sections that address the requested question. Checklists and output tables are
+optional aids for the relevant scope, not requirements to audit every category. Apply this
+reference directly; no separate advisor, handoff, or new authority is required.
+
 Select only the relevant modes. This is a decision framework, not authority to redesign or edit.
 
 ## Common Intake
@@ -34,8 +38,8 @@ failure and cancellation semantics to the requirement. Related child tasks may b
 structured concurrency; unrelated capabilities may require separate supervision so one failure
 does not cancel healthy work.
 
-For actor callbacks, require a Nautilus-advisor consultation before asserting framework thread,
-lifecycle, callback, or bus guarantees. The Python advisor may still identify generic blocking,
+For actor callbacks, inspect the exact installed Nautilus contract before asserting thread,
+lifecycle, callback, or bus guarantees. The primary agent can also identify generic blocking,
 shared-state, cleanup, and exception-observation risks.
 
 ## Typing And Package Mode
@@ -108,5 +112,5 @@ NautilusTrader behavior, classify it as unknown and route it instead of assertin
 - Variable controls are bounded policy candidates with units and scopes.
 - Findings distinguish local proof, measurement, inference, hypothesis, recommendation, and unknown.
 - Offline verification is proportional to risk and its limits are stated.
-- Cross-advisor, approval, connected-run, persistence, resource, migration, and operational effects
+- Cross-domain evidence, approval, connected-run, persistence, resource, migration, and operational effects
   are explicit.

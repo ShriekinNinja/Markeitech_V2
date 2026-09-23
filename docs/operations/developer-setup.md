@@ -54,6 +54,16 @@ After provisioning, use the root Python-owned CLI for supported operations:
 .venv/bin/markeitech diagrams --help
 ```
 
+For a user-PATH command bound to this checkout, use uv's editable tool installation:
+
+```bash
+uv tool install --editable .
+uv tool update-shell
+```
+
+Restart the shell if uv changes its `PATH` configuration. The editable tool is an operator
+convenience; use the locked root `.venv` for development and repository verification.
+
 Invoke the already-provisioned entry point directly. Do not put `uv run` in front of routine CLI
 operations: `uv run` may create or synchronize the root environment before the CLI can enforce its
 own offline and isolation checks. Dependency installation remains the separate, explicit
@@ -66,6 +76,7 @@ The closed hierarchy and its side-effect class are:
 | --- | --- | --- |
 | `system build` | disconnected | Builds the configured Nautilus node without running or connecting it. |
 | `system run` | connected | Requires the exact IB token, then delegates to the existing runtime owner. |
+| `system start` | local service or connected | Checks the selected ignored local profile, starts PostgreSQL, builds disconnected by default, or checks the IB endpoint and runs connected when `--ib` is supplied. |
 | `docs validate` / `check` / `test` | offline read-only | Uses the locked API-doc interpreter; `check` compares a fresh build with tracked output. |
 | `docs generate` | offline write | Atomically regenerates the complete tracked `docs/api` artifact set. |
 | `diagrams validate` / `check` / `test` | offline read-only | Uses the locked diagram interpreter; `check` includes the drift census. |
@@ -108,31 +119,18 @@ codex plugin add kite@markeitech
 
 Start a new Codex task after installation so its bundled skills are discovered. A new task remains
 normal Codex: installing or enabling Kite makes it available, not active. Explicitly select Kite or
-invoke `$kite:markeitech-advisor-router` to activate Kite for one task and its direct follow-ups;
-Kite then selects required advisors by default. The plugin contains engineering advisors and
-declares no runtime code, package dependency, credential, MCP server, app connector, or autonomous
-authority. Some advisors require approved unauthenticated public documentation for current
-evidence. Repository or global Codex configuration is a separate trust surface and is not made safe
-by the plugin manifest. `AGENTS.md` remains the always-on repository authority while keeping Kite
-dormant unless explicitly invoked.
+invoke `$kite:markeitech-advisor-router` for a task and direct follow-ups. Kite selects relevant
+skills for the primary agent; no project advisor roles or council dispatch are required.
+The package adds no runtime code, dependency, credential, MCP server, or app connector.
 
-The council overview and acceptance status are documented in
-[`kite-advisor-council.md`](../development/kite-advisor-council.md); that document
-links the canonical machine-checkable policy and observed acceptance ledger.
-For installation, update/reinstall, byte verification, purge, project-role behavior, fresh-task
-acceptance, recovery, and rollback, follow the [Kite operations runbook](kite.md).
-The tracked `python3 -B scripts/kite-package.py bump` procedure updates both package version owners;
-source validation must not be reported as installed routing proof.
-
-Run the dependency-free source validator from the repository root:
+See [Kite focused skills](../development/kite-advisor-council.md) for the workflow and
+[Kite operations](kite.md) for authorized installation, versioning, identity, fresh-task checks,
+and rollback. Source validation is not installed-behavior proof.
 
 ```bash
-python3 -B plugins/kite/scripts/validate_advisor_council.py
-python3 -B -m unittest plugins/kite/tests/test_validate_advisor_council.py
+python3 -B plugins/kite/scripts/validate_skill_library.py
+python3 -B -m unittest discover -s plugins/kite/tests
 ```
-
-The validator proves structural policy only. It does not prove fresh-task selection, delegated
-execution, effective read-only tool isolation, redaction, safe failure, or plugin revocation.
 
 ## 2. Create Local Configuration
 
@@ -274,17 +272,35 @@ To construct the configured node without provider or service connection:
 .venv/bin/markeitech system build --config config/system.local.toml
 ```
 
-For the connected runtime, start PostgreSQL explicitly and supply the exact confirmation:
+The compact disconnected path checks the environment, starts PostgreSQL, builds the selected
+configuration without connecting to IB, and exits:
 
 ```bash
-docker compose --env-file .env -f compose.yaml up -d --wait postgres
-.venv/bin/markeitech system run \
-  --config config/system.local.toml \
-  --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
+.venv/bin/markeitech system start --config config/system.local.toml
 ```
 
-The confirmation token is intentional. The command connects to Interactive Brokers but does not
-enable execution.
+With the optional PATH installation, the equivalent command is:
+
+```bash
+markeitech system start --config config/system.local.toml
+```
+
+Add `--ib` only for a connected runtime:
+
+```bash
+.venv/bin/markeitech system start --config config/system.local.toml --ib
+```
+
+With the optional PATH installation, the equivalent connected command is:
+
+```bash
+markeitech system start --config config/system.local.toml --ib
+```
+
+The flag is explicit connection consent. The command checks that the configured TWS/IB Gateway
+endpoint is listening before it starts PostgreSQL and delegates to the existing connected runtime.
+It connects to Interactive Brokers but does not start TWS/IB Gateway or enable execution. The
+lower-level `system run --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB` command remains available.
 
 Expected startup behavior:
 
@@ -375,7 +391,9 @@ have different authority, prerequisites, or side effects:
 
 - `uv sync` provisions locked root or tool environments; the CLI diagnoses missing environments
   but never installs or updates them.
-- `docker compose` owns local PostgreSQL service lifecycle; the CLI never starts or stops Docker.
+- `start` may run the fixed `docker compose ... up -d --wait postgres` operation. Other Compose
+  services, inspection, stopping, backup, restore, and destructive lifecycle operations remain
+  explicit operator commands.
 - `verify postgres` is a conspicuous local-service test command and is excluded from `verify all`.
 - `scripts/sir-kite-pr.py` and Git commands own authenticated publication and source-control
   workflow; the CLI provides no GitHub or arbitrary-command executor.

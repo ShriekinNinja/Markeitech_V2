@@ -1,37 +1,33 @@
 ---
 name: markeitech-quantitative-metric-validation-expert
-description: Validate Markeitech formulas, units, normalization, warmup, rolling windows, aggregation, numerical stability, missing-value behavior, bounded state, library parity, deterministic fixtures, and measurement invariants. Do not decide provider truth, trading meaning, model utility, or final evidence fitness.
+description: Check a specific metric formula, units, warmup, rolling window, aggregation, numerical behavior, or causal cutoff using independent examples and the accepted definition.
 ---
 
-# Markeitech Quantitative Metric Validation Expert
+# Quantitative Metric Validation
 
-Act as a read-only mathematical-correctness advisor. Read repository authority, accepted metric
-contracts, current code/config/tests/fixtures, the exact upstream quality disposition, and
-[references/validation-contract.md](references/validation-contract.md). Refresh material sources
-from [references/sources.md](references/sources.md).
+Use this guidance directly in the current task. Inspect the affected code, contract, and tests;
+reuse current evidence already established in the task. A skill adds no edit, connection, or
+approval authority. Review requests and delegated reviews remain read-only.
 
-## Sole Advisory Authority
+Work only on the requested outcome. Read supporting references only for a named uncertainty;
+apply the relevant sections, not a whole audit by default. The primary agent may combine checks
+from other skills directly. Do not require separate specialist dispositions or create handoffs.
+Expand scope only for a concrete defect or missing fact that can change this result, explain why,
+and preserve the user's approval boundaries. Stop only the unsupported conclusion.
 
-Own formula correctness; units/dimensions/normalization; exact window and aggregation membership;
-warmup/initialization/reset/restart semantics; finite arithmetic and missing values; bounded-state
-behavior; indicator/library parity; chart/reference comparison limits; independent deterministic
-fixtures; and measurement invariants.
+## Checks For This Question
 
-Do not establish provider truth, market/trading meaning, model usefulness, final downstream
-fitness, persistence, framework ownership, or product thresholds. Preserve the upstream quality
-disposition and return `REQUIRED_HANDOFF` rather than delegating.
+- State the equation, input basis, units, window edges, warmup/reset, missing-value rule, and causal cutoff that matter to this metric.
+- Trace source quality separately from the calculation. A math fix does not establish provider coverage or trading usefulness.
+- Use a small independent oracle or invariant for changed behavior; avoid tests that merely reproduce the implementation.
+- Check native/library parity only when relevant, recording semantic differences. Visual resemblance and shared-code agreement are insufficient.
+- Report exactly what is established: definition correctness, implementation parity, numerical robustness, causal validity, or a narrower subset.
 
-## Stop Gates And Output
+## Optional References
 
-Stop when the decision question, equation, inputs, units, price basis, causal cutoff, window edges,
-coverage, warmup, reset, missing/revision policy, numerical domain/tolerance, or independent oracle
-is materially undefined. Visual resemblance, shared-code agreement, a passing unit test, one
-session, or profitable example is insufficient.
+- [validation-contract.md](references/validation-contract.md) — use for the matching numerical or causal failure mode.
+- [sources.md](references/sources.md) — use for a formula or library contract requires primary evidence.
 
-Return claim boundary; evidence ledger; metric contract; unit/causal/window/warmup/numerical
-findings; diagnostic and acceptance matrix; defects and debt; verdict `ACCEPTED_FOR_SCOPE`,
-`REJECTED`, `BLOCKED`, or `VALIDATION_DEBT`; handoffs; and smallest next evidence. State exactly
-whether the result proves definition correctness, implementation parity, causal validity,
-numerical robustness, or a narrower subset.
-
-Remain read-only and preserve all repository side-effect and approval boundaries.
+Return the finding or recommendation, its supporting evidence, the smallest correction or
+next check, and material uncertainty. Distinguish verified behavior, measured evidence, and
+inference. Use tables only when they clarify the actual decision; omit empty audit sections.

@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -21,6 +21,7 @@ from markeitech import cli
         ["system", "--help"],
         ["system", "build", "--help"],
         ["system", "run", "--help"],
+        ["system", "start", "--help"],
         ["docs", "--help"],
         ["diagrams", "--help"],
         ["verify", "--help"],
@@ -44,6 +45,7 @@ def test_help_is_available_at_every_command_level(
     [
         ["unknown"],
         ["system", "unknown"],
+        ["start"],
         ["docs", "unknown"],
         ["diagrams", "unknown"],
         ["verify", "unknown"],
@@ -190,6 +192,94 @@ def test_system_run_forwards_owned_arguments(monkeypatch: pytest.MonkeyPatch) ->
         ]
     )
 
+
+def test_start_checks_environment_starts_postgres_and_builds_without_ib(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = cli.PROJECT_ROOT / "config/system.local.toml"
+    run_process = Mock(side_effect=[0, 0])
+    system_main = Mock(return_value=0)
+    monkeypatch.setattr(cli, "_run_process", run_process)
+    monkeypatch.setattr("markeitech.system.cli.main", system_main)
+
+    assert cli.main(["system", "start", "--config", "config/system.local.toml"]) == 0
+
+    assert run_process.call_args_list == [
+        call(
+            [
+                str(cli.PROJECT_ROOT / "scripts/check-env"),
+                "--config",
+                str(config),
+            ]
+        ),
+        call(
+            [
+                "docker",
+                "compose",
+                "--env-file",
+                ".env",
+                "-f",
+                "compose.yaml",
+                "up",
+                "-d",
+                "--wait",
+                "postgres",
+            ]
+        ),
+    ]
+    system_main.assert_called_once_with([str(config)])
+
+
+def test_start_with_ib_checks_endpoint_and_runs_connected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = cli.PROJECT_ROOT / "config/system.local.toml"
+    run_process = Mock(side_effect=[0, 0])
+    system_main = Mock(return_value=0)
+    monkeypatch.setattr(cli, "_run_process", run_process)
+    monkeypatch.setattr("markeitech.system.cli.main", system_main)
+
+    assert (
+        cli.main(
+            ["system", "start", "--config", "config/system.local.toml", "--ib"]
+        )
+        == 0
+    )
+
+    assert run_process.call_args_list[0] == call(
+        [
+            str(cli.PROJECT_ROOT / "scripts/check-env"),
+            "--config",
+            str(config),
+            "--with-ib",
+        ]
+    )
+    system_main.assert_called_once_with(
+        [
+            str(config),
+            "--connect",
+            "I_UNDERSTAND_THIS_CONNECTS_TO_IB",
+        ]
+    )
+
+
+@pytest.mark.parametrize("results", [(8,), (0, 9)])
+def test_start_stops_after_setup_failure(
+    results: tuple[int, ...],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_process = Mock(side_effect=results)
+    system_main = Mock(return_value=0)
+    monkeypatch.setattr(cli, "_run_process", run_process)
+    monkeypatch.setattr("markeitech.system.cli.main", system_main)
+
+    assert (
+        cli.main(["system", "start", "--config", "config/system.local.toml"])
+        == results[-1]
+    )
+
+    assert run_process.call_count == len(results)
+    system_main.assert_not_called()
 
 @pytest.mark.parametrize("operation", ["validate", "check", "generate"])
 def test_docs_commands_map_to_the_first_party_wrapper(
@@ -430,6 +520,31 @@ def test_environment_check_preserves_explicit_ib_opt_in(monkeypatch: pytest.Monk
     run_process.assert_called_once_with(
         [str(cli.PROJECT_ROOT / "scripts/check-env"), "--with-ib"]
     )
+
+def test_environment_script_documents_config_selection() -> None:
+    result = subprocess.run(
+        [str(cli.PROJECT_ROOT / "scripts/check-env"), "--help"],
+        cwd=cli.PROJECT_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "[--config FILE] [--with-ib]" in result.stdout
+
+
+def test_environment_script_rejects_missing_config_value() -> None:
+    result = subprocess.run(
+        [str(cli.PROJECT_ROOT / "scripts/check-env"), "--config"],
+        cwd=cli.PROJECT_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 2
+    assert result.stderr == "ERROR: --config requires a file path\n"
 
 
 def test_child_exit_code_is_propagated() -> None:

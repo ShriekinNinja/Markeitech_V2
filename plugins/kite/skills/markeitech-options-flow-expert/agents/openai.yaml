@@ -2,6 +2,6 @@ policy:
   allow_implicit_invocation: false
 
 interface:
-  display_name: "Markeitech Vendor Options Flow"
-  short_description: "Audit vendor options-flow evidence"
-  default_prompt: "Use $kite:markeitech-options-flow-expert to separate measured vendor flow from interpretation, intent hypotheses, and unknowns."
+  display_name: "Options Flow"
+  short_description: "Focused options flow guidance"
+  default_prompt: "Use $kite:markeitech-options-flow-expert to answer this scoped question using the relevant evidence."

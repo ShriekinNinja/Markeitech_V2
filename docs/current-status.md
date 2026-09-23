@@ -166,12 +166,19 @@ IB reconnect recovery are separate issues #65 and #66.
 - PR 35 added one Python-owned `.venv/bin/markeitech` hierarchy for explicit system build/run,
   static API-documentation and diagram operations, repository verification, and environment
   checks. The legacy `markeitech-system` entry point delegates to the same runtime owner.
+- Issue 67 adds the compact `markeitech system start --config CONFIG [--ib]` operator path and an
+  optional editable uv tool installation for invoking `markeitech` from the user `PATH`.
+  `system start` runs the existing doctor against the selected ignored local profile and starts
+  only the existing PostgreSQL Compose service. Without `--ib` it builds disconnected and exits;
+  with `--ib` it checks the configured endpoint and delegates to the existing connected runtime
+  owner.
 - The command hierarchy owns invocation and verification ergonomics; it does not add product
-  behavior, a generic task runner, environment provisioning, Docker lifecycle, provider
-  connection, persistence mutation, GitHub publication, or connected acceptance.
+  behavior, a generic task runner, dependency provisioning, arbitrary Docker lifecycle, TWS
+  startup, execution authority, GitHub publication, or connected acceptance.
 - `markeitech verify all` is offline and excludes the conspicuous `verify postgres` path, which
   requires an explicitly configured disposable local database.
-- Connected system execution still requires the exact confirmation token and remains an
+- Connected system execution still requires explicit operator consent
+  (`system start --config ... --ib` or the exact lower-level confirmation token) and remains an
   operator-authorized action.
 
 See [developer setup](operations/developer-setup.md) for the complete command contract.
@@ -239,12 +246,13 @@ Enabling the webhook actor cannot turn it into Sir Loke.
 
 ### Development collaboration tooling
 
-The development-time Kite router now has an offline advisor-capacity preflight and dispatch
-validator, tracked in [issue #47](https://github.com/ShriekinNinja/Markeitech_V2/issues/47).
-It checks complete selected plans, retained open threads, dependency readiness, and bounded
-confirmed-refusal recovery while preserving model-execution budgets. See the
-[operations guide](operations/kite.md#advisor-capacity-and-dispatch). Source validation does not
-establish installed-host behavior, release actual agent slots, or change Sir Loke/Gate 1 readiness.
+Kite now supplies focused domain skills for direct use by the primary agent, with optional
+independent review. Issue [#63](https://github.com/ShriekinNinja/Markeitech_V2/issues/63) retires the
+mandatory advisor roster and allocation/dispatch machinery. The existing explicit router command
+remains compatible. See [the library overview](development/kite-advisor-council.md) and
+[evaluation record](development/kite-focused-skills-evaluation.md). Source-directed checks do not
+establish installed-host discovery, technical isolation, or Markeitect's usefulness verdict.
+This development tooling change does not change Sir Loke readiness or runtime behavior.
 
 ## Sir Loke V1 Gap
 

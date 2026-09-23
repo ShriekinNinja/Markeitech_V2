@@ -2,6 +2,6 @@ policy:
   allow_implicit_invocation: false
 
 interface:
-  display_name: "Markeitech Evidence Visualization Expert"
-  short_description: "Evidence-faithful visualization advisor"
-  default_prompt: "Use $kite:markeitech-evidence-visualization-expert to audit this visualization against canonical evidence, accessibility, and browser-render acceptance contracts."
+  display_name: "Evidence Visualization"
+  short_description: "Focused evidence visualization guidance"
+  default_prompt: "Use $kite:markeitech-evidence-visualization-expert to answer this scoped question using the relevant evidence."
