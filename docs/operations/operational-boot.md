@@ -12,7 +12,7 @@ subscriptions, historical requests, analytical actors, visual capture, diagnosti
 clients, or model calls. Configured calendars remain active independently of instruments.
 
 This is a connected operational baseline. It does not implement runtime instrument addition,
-market-evidence readiness, broker account observation, or the conversational Sir Loke bot. Discord
+market-evidence readiness or broker account observation. Discord
 uses the existing two outbound webhooks. Adding instruments currently requires a validated profile
 and a restart; this task does not introduce a dynamic universe controller.
 

@@ -1,211 +1,84 @@
 # Markeitech Project Charter
 
-Markeitech is a live-first market-intelligence system built by Markeitect for discretionary index
-trading. Its first product experience is **Sir Loke**, a live analytical trading companion whose
-ambition is to surpass Markeitect's unaided judgment through sustained observation, computation,
-memory, and simultaneous scenario coverage. Recommendations and eventual advisory guardianship
-must be earned through demonstrated analytical value. Markeitech develops reliable market,
-options, and broker evidence into assessments, recommendations, trade monitoring, informed
-challenges, and inspectable after-trade reports. It is not an HFT system and does not execute orders.
+Markeitech is a live trading platform built on NautilusTrader. Its immediate goal is a working
+real-time foundation for market data, the execution engine, account monitoring, and multiple
+actors, strategies, and indicators operating together. Markeitect owns product, trading,
+architecture, review, and release decisions.
 
-This charter governs current product and engineering work. Historical source is recoverable
-through Git history but does not define current behavior.
+## Current Direction
 
-## Current Product Direction
+The first operational priority is to bring up the native execution engine and account monitor,
+expose actual account/order/fill/position state, and exercise an explicitly authorized order
+lifecycle. Then extend concurrent actors, strategies, and indicators through concrete working
+consumers. The [development plan](docs/roadmap/live-foundation-plan.md) records this direction;
+the selected issue defines the actual work.
 
-- The canonical first-version product contract is
-  [`docs/product/sir-loke-v1.md`](docs/product/sir-loke-v1.md). Sir Loke is a live, two-way private
-  Discord bot for Markeitect, running locally. Infrastructure is valuable insofar as it supplies
-  the trustworthy evidence, policy, resilience, and audit required by that user experience.
-- Sir Loke participates before, during, and after a trade. It may recommend qualified trades,
-  observe what Markeitect actually trades, analyze independently entered trades, monitor thesis
-  and risk changes, challenge plan drift or invalidation, request acknowledgement, withhold its own
-  recommendations during a configured cooldown, and publish factual after-trade reports.
-- First-version governance is forceful but advisory. Sir Loke may recommend reducing or closing a
-  position but has no order-submission, modification, cancellation, replacement, or closing tool.
-  Broker-side enforcement or closing authority is a separately approved future execution-and-risk
-  product boundary; it is not a dormant v1 feature.
-- ES and SPY were initial V2 provider-bootstrap instruments; they do not define the first-version
-  trade scope and are not a permanent universe.
-  The observation universe, acquisition cadence, enabled analysis capabilities,
-  and temporary market focus may change while the system runs.
-- SPXW and QQQ 0DTE options are the first-version trade-expression products. SPY and other
-  expressions remain later candidates. No expression instrument is globally preferred, and the
-  initial scope is not a permanent whitelist. Evidence instruments remain distinct from trade
-  expressions.
-- Sir Loke's governing maxim is Sherlock Holmes's
-  principle: "When you have eliminated the impossible, whatever remains, however improbable, must
-  be the truth." Sir Loke must eliminate through cited evidence and deterministic policy, preserve
-  unresolved uncertainty, and abstain when the remaining case is not sufficiently supported.
-- Markeitect selects the broker account and TWS session. Account mode does not change Sir Loke's
-  analysis, capabilities, governance, or acceptance process. Do not introduce account-mode flags,
-  schema discriminators, or separate approval gates. Preserve actual account identity and
-  observed broker facts so records from different accounts cannot be mixed.
-- Native provider observations, deterministic facts, semantic events, persistent
-  entities, rolling state, broker-reported execution facts, trader statements, policy decisions,
-  model outputs, AI interpretations, and execution authority remain separate boundaries.
-- Discord provides the first authenticated conversation surface. The current outbound webhook
-  health projection is useful infrastructure but is not the Sir Loke bot. A full UI remains later.
-- Crypto product work is out of current scope. Provider-neutral support for
-  continuous-session instruments may remain where it costs no product focus.
-- Live operation is the only current product path. Replay and backtesting are out
-  of scope until Markeitect explicitly reopens them and must not drive current
-  storage, contracts, or infrastructure.
+Execution is in scope. The current implementation remains market-data-only until the execution
+issue delivers it. Planning or implementing order capability does not authorize an agent to
+connect to an account or place, modify, cancel, or close an order. Actual connected and order
+actions need explicit authorization for the selected account and scenario.
 
-Keep analytical instruments distinct from trade-expression instruments. A
-signal derived from NQ, ES, SPX, volatility, or equity context may later inform
-an option contract without treating that option as the source of the underlying
-market thesis. Any future linkage must be explicit, versioned, and inspectable.
+The generic outbound Discord health webhook remains operational infrastructure. Instruments and
+strategy choices belong to their issues; there is no project-wide preferred trade expression or
+required options product. Replay and backtesting remain outside the current direction.
 
-## Incremental Product Delivery
+## Issue-Scoped Delivery
 
-Deliver Sir Loke through the small live tasks in the
-[delivery plan](docs/roadmap/sir-loke-v1-delivery-plan.md). Start with a real private Discord/model
-conversation using actual available runtime state, then prioritize making that state analytically
-useful. Agents propose and implement small intelligence improvements from live observations and
-Markeitect's review; the complete capability set is not presumed known. Broker observation gates
-broker-aware features, while guardian interventions require Markeitect's explicit acceptance of
-Sir Loke's analytical value for the intended use. Intermediate capabilities state their limits
-and do not replace full V1 acceptance.
-Each implementation task includes runnable integration and ends with Markeitect alone performing
-the live test and reviewing its results. Agents prepare a concise exact-head run handoff and
-focused verification, then wait for his verdict. Architecture and testing serve that named task;
-unrelated generalization and tooling are deferred. The no-execution and evidence rules still apply.
+Build small changes that reach practical live use quickly. Use the current architecture and native
+framework capabilities unless the selected issue or observed operation identifies a concrete gap.
+Do not reopen accepted foundations, add speculative abstractions, invent product prerequisites,
+or turn the backlog into work inside the current issue.
 
-## Engineering Invariants
+An issue names its outcome, scope, decisions and a short acceptance scenario. Investigate adjacent
+code only for a direct dependency, defect or blocker. Report the connection before expanding work;
+material scope changes need Markeitect's decision. Finish the issue's requested work, then stop.
+Future capability selection is a separate task when requested.
 
-Use NautilusTrader extensively where its semantics fit. Markeitech may own
-product-specific configuration, validation, analytics, persistence, signals,
-and operator projections when duplicating those concerns inside Nautilus would
-reduce clarity or correctness. Document meaningful ownership decisions.
+Live operation and Markeitect's feedback drive priorities. A runtime change should reach a small
+practical live scenario as soon as it is runnable. Record the actual result and fix concrete
+findings. Do not require a subsystem-wide proof programme before the first useful run, and do not
+claim an unexercised condition works. Documentation changes require document review.
 
-The live runtime is centered on a NautilusTrader `LiveNode`. The implemented Interactive Brokers
-connection remains manual, explicitly confirmed, market-data-only, and read-only. The
-first-version product now requires a separately reviewed broker-observation path for account,
-order, fill, and position facts. Evaluate NautilusTrader's native execution client,
-reconciliation, cache, and events before custom IB access, while exposing no order action to Sir
-Loke. Do not add order routing until a separately reviewed future execution and risk stage.
+## Engineering Principles
 
-Maintain these invariants:
+- Prefer NautilusTrader's native lifecycle, actors, strategies, indicators, cache, data delivery,
+  execution and account facilities where they fit the issue.
+- Keep one owner for provider demand and each canonical stream/state. Consumers declare their
+  own needs; external projections render canonical state.
+- Preserve exact instrument, contract and account identity, UTC internal timestamps, source and
+  freshness. Distinguish observations, calculations, interpretations and unknowns.
+- Use typed configuration with explicit defaults and units for variable behavior. Implement only
+  the mutability and versioning needed by the issue.
+- Keep callbacks non-blocking, resources bounded, and unrelated actors/strategies operating through
+  a local failure. Improve recovery where the current issue or live operation requires it.
+- PostgreSQL owns approved operational and semantic records. Raw market-data retention needs a
+  named consumer and an explicit storage decision; do not store data for hypothetical future use.
+- Preserve local work and secrets. Destructive data changes require approval and a recovery plan.
 
-- explicit contract identity with no silent rollover
-- one owner for every live subscription and canonical event stream
-- UTC timestamps internally and explicit IANA timezones for session logic
-- bounded queues and no blocking I/O in live data callbacks
-- provider-specific payloads contained within adapters
-- required durable state written before dependent lifecycle progress is published
-- deterministic, versioned analytics, evidence, signal definitions, and ML data
-- restart recovery that verifies persisted state before resuming evaluation
-- provider-facing demand reconciled independently from analytical consumers
-- no fixed one-active-instrument limit on granular observation
-- analytics independent of console, Discord, WebSocket, and UI transports
-- strategy or presentation failure must not stop ingestion
-- exact broker account identity and honest reconciliation on every trade observation
-- no order-action contract reachable from the v1 agent, Discord, policy, or observation surfaces
+## Testing And Live Feedback
 
-## Configuration And Optimization Principle
+Locally, agents run the tests they add or change for the issue. They may also run a specific failing
+CI test to diagnose and fix it. Do not routinely run the full suite or unrelated validation tools.
+Do not create a test merely to satisfy a ritual for a simple change. Narrow document/package
+checks or required artifact generation are appropriate when those files change.
 
-Do not encode variable market assumptions, analytical thresholds, instrument preferences, timing
-windows, scoring weights, policy choices, or resource budgets as hidden constants.
+PR CI owns broad regression checks: root offline tests, PostgreSQL integration, Ruff, Kite package
+checks and API documentation verification. Standalone tool suites are not all included; add or run
+only the checks required by the selected tool change. CI failures must be resolved before merge.
 
-Anything which may reasonably vary by instrument, asset class, session, regime, market condition,
-data quality, infrastructure capacity, operator preference, experiment, or future model
-optimization must be explicit, typed, scoped, bounded, versioned configuration. Each such
-parameter must define:
-
-- a stable identity, meaning, unit, and type;
-- an explicit documented default rather than an unexplained magic number;
-- its scope, such as global, capability, asset class, instrument, contract, session, or regime;
-- validation and an authorized minimum/maximum envelope;
-- whether it is startup-only, between-session mutable, safely runtime mutable, operator-controlled,
-  policy-controlled, or optimization-eligible;
-- its source, such as default, checked-in configuration, operator, deterministic policy, model, or
-  experiment;
-- version and effective time so every result can identify the parameters which produced it; and
-- safe rejection, expiry, rollback, and audit behavior where runtime changes are allowed.
-
-Implement the parameter behavior needed by the current live task. Startup-only configuration
-needs explicit defaults, validation, scope, units, and version identity; it does not require an
-optimization engine, generic intent framework, or runtime-change lifecycle in advance. Add dynamic
-mutability or optimization only when an approved task needs it, retaining the applicable metadata
-above. Models and agents may propose or apply those changes only through typed, policy-checked
-intents within authorized envelopes and resource budgets. They may not mutate arbitrary
-configuration, rewrite history, bypass validation, or silently change live behavior.
-
-This principle does not make system truth negotiable. Schema integrity, type safety, evidence
-honesty, source identity, authorization boundaries, audit requirements, and the prohibition on
-unauthorized execution remain code-enforced invariants. Tunable limits belong in configuration;
-the enforcement of those limits belongs in deterministic code.
-
-PostgreSQL currently owns runtime runs, system-health events, generic operational events, and
-compact evidence-recency profiles. Additional analytical or agent state requires an explicit
-schema, lifecycle, retention, and recovery decision. Redis, SQLite, Parquet, and raw market-data
-retention are not selected V2 infrastructure. Market data that IB can fetch again should not be
-stored without an approved live consumer and retention requirement.
-
-## Evidence And Interpretation
-
-Authoritative source data, derived evidence, and inferred evidence must remain
-distinguishable. Never represent inferred order flow as exchange-provided truth
-or fabricate historical delta from histogram data.
-
-Analytics are admitted only through current evidence and architecture review. The intended
-intelligence path is deterministic measurement, typed analytical entities, semantic observations
-and interpretations, multidimensional rolling state, options context, bounded broker facts,
-policy state, and Sir Loke's evidence-cited advisory synthesis.
-
-ML may later rank versioned deterministic evidence. Sir Loke may synthesize evidence, surface
-contradictions, suggest an options expression with triggers and invalidation, monitor admitted
-broker observations, mentor the trader, apply configured advisory interventions, and request
-policy-approved changes to observation focus, historical evidence, option snapshots, or analytical
-capabilities. It acts through typed intents and deterministic policy; it may not connect to IB
-directly, submit or alter orders, invent evidence, rewrite the original thesis, or bypass explicit
-resource and risk controls.
-
-## Quality And Validation
-
-Prioritize correctness, determinism, resilience, maintainability, and operator
-utility over microsecond latency. Tick loss may reduce aggression fidelity, but
-must not be hidden or automatically corrupt bar-based context.
-
-Tests should scale with the behavioral risk and include deterministic fixtures,
-persistence and restart coverage, bounded-runtime failure cases, and manual IB
-acceptance where real provider behavior matters.
-
-Screenshots and external chart studies are welcome calibration evidence when the
-instrument contract, timezone, session, window, timeframe, and study settings
-are recorded. A successful trade or visual match is useful evidence, not broad
-statistical validation.
+Tests support delivery. They do not replace live feedback or establish provider behavior. Keep the
+live handoff short: exact revision, setup, commands, account/instruments and intended actions,
+expected result, stop condition and a place to record findings. Markeitect performs and reviews
+live acceptance unless he explicitly delegates a particular run. Never infer order authorization
+from a development request.
 
 ## Working Agreement
 
-- Pause and raise architectural concerns when implementation exposes them.
-- For repository changes, begin with a tracking issue and an issue-commented milestone plan with
-  estimates, model/effort suggestions, Spark suitability, and explicit decisions. Markeitect
-  resolves the decisions and approves the plan before an implementation PR or milestone work.
-  Keep the approved checklist in one linked PR, record substantive communication on the issue,
-  and wait for his approval after each milestone before continuing.
-- Every repository change has a new scoped branch and GitHub PR, including documentation and
-  small fixes. Never implement, commit, or push directly on the integration branch (`master`).
-- A request to make a repository change includes scoped commits, pushes, and, after plan approval,
-  PR publication immediately after the first coherent milestone commit unless the task explicitly
-  restricts them. PR review replaces the former default of stopping with uncommitted changes;
-  local IDE review remains available when requested.
-- Markeitect approves the current PR head and owns its merge. Agents stop with the PR unmerged
-  unless Markeitect explicitly delegates that exact merge. Passing CI is required, not permission
-  to merge; later commits require renewed approval. No auto-merge or force-push.
-- Keep review fixes on the same open PR. Start a new change on a new branch, and wait for a
-  prerequisite PR to merge before dependent work unless Markeitect approves another arrangement.
-- Close the tracking issue when its accepted checklist is complete and the linked PR merges.
-  When the issue plan approves task-local cleanup, record exact targets on the issue and,
-  after verifying the merge, delete only that task's clean local branch/worktree. Preserve other
-  or dirty work for a separate decision.
-- Keep current status separate from implementation history and future intent.
-- Do not claim validation that has not occurred.
+Use the issue, approved plan, scoped branch and PR workflow in
+[GitHub operations](docs/operations/github-workflow.md). Record meaningful decisions and milestone
+results on the issue. Preserve Markeitect's current-head approval and merge authority. Do not
+push directly to `master`, auto-merge, force-push or bypass checks.
 
-The [GitHub workflow](docs/operations/github-workflow.md) defines the operational protocol and
-supersedes older uncommitted-review instructions. Explicit task restrictions and all architecture,
-connected-run, secret-handling, and destructive-action approval boundaries still apply.
-
-See [`docs/README.md`](docs/README.md) for the documentation authority order and
-navigation map.
+Update the smallest authoritative documents affected by a change. Keep implemented state in
+[current status](docs/current-status.md), direction in the development plan, and optional work in
+[the backlog](docs/roadmap/development-backlog.md). Historical plans remain recoverable in Git.

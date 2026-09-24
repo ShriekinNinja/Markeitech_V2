@@ -35,38 +35,23 @@ handoffs recorded in follow-up issue comments. -->
 - Configuration, environment variables, and dependencies:
 - Schema, persistence, and data:
 
-## Verification
+## Verification and live feedback
 
-<!-- Give commands and results. Use "not run" or "not applicable" with a reason, never an implied pass. -->
+- Tests added/changed and local result:
+- Specific CI failure reproduced, if any:
+- Changed document/package checks or artifact generation:
+- PR CI status: <!-- Broad root/PostgreSQL/lint/Kite/API-doc checks run on the PR. -->
+- Diff and file-scope review:
 
-| Check | Command or evidence | Result |
-| --- | --- | --- |
-| Focused verification | | |
-| Ruff | | |
-| Offline V2 tests | | |
-| PostgreSQL integration | | |
-| API docs verification | | |
-| Diff and file-scope review | | |
+Do not routinely rerun full suites locally. Simple changes do not require a new test solely for
+process. Record actual results without implying unexercised behavior passed.
 
-Live acceptance status: `not run` / `run and passed` / `run with findings` / `not applicable`
+For runtime work, include a short practical live handoff. Documentation-only work: not applicable.
 
-<!-- If run, identify the authorized run and its bounded evidence. State deferred acceptance explicitly. -->
-
-## Markeitect live test handoff
-
-<!-- Required for Sir Loke implementation tasks. For documentation-only work, write not applicable.
-     Markeitect alone runs and reviews live acceptance. Do not mark his verdict on his behalf. -->
-
-- Task ID and exact test head:
-- State: <!-- ready for Markeitect live test / changes requested / accepted by Markeitect -->
-- Setup, services, account/instruments, and bounded model budget:
-- Copy-paste Python start/stop commands:
-- Market question and expected added insight: <!-- Intelligence/assessment tasks; otherwise not applicable. -->
-- Bounded manual steps, expected results, and stop conditions:
-- Sanitized result location or identified Discord messages:
-- Markeitect verdict and tested head: <!-- Leave blank until he supplies the result. -->
-- Analytical usefulness: <!-- His review of timely insight, misses/errors, and noise; no agent-awarded verdict. -->
-- Unexercised cases and affected-behavior retest after fixes:
+- Exact revision and setup/commands:
+- Account/instruments, intended actions and run authorization:
+- Steps, expected result and stop condition:
+- Result location, Markeitect's feedback and remaining unexercised cases:
 
 ## Operations and data
 

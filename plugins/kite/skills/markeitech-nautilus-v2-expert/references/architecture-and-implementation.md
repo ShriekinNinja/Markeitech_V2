@@ -34,7 +34,7 @@ When indicators are involved, separate:
 - configured input stream and warmup dependency;
 - Markeitech product interpretation or entity;
 - semantic transitions and evidence health;
-- projection to logs, Discord, UI, or Sir Loke.
+- projection to logs, Discord or UI.
 
 Prefer registered native indicators for calculations they own. Extend or compose them when additional deterministic product meaning is required. Never label bar geometry as observed order flow.
 
@@ -68,7 +68,7 @@ Include, proportionally to risk:
 - lifecycle, state transitions, invariants, and failure behavior;
 - persistence, migration, resource, and operational effects;
 - observability and operator projections;
-- focused tests, broader offline regression, and Markeitect-owned connected acceptance;
+- tests added/changed for the issue, PR CI regression, and practical authorized live feedback;
 - documentation updates, staged rollout, rollback boundary, unknowns, and gates.
 
-For implementation, inspect the worktree and nearby tests, explain the batch before editing, preserve user changes, avoid incidental cleanup, run proportional offline verification, inspect the final diff, run `git diff --check`, and follow the current repository branch/PR publication workflow and explicit task restrictions.
+For implementation, inspect the worktree and nearby tests, explain the batch before editing, preserve user changes, avoid incidental cleanup, run tests added/changed for the issue, inspect the final diff, run `git diff --check`, and follow the current repository branch/PR publication workflow and explicit task restrictions.

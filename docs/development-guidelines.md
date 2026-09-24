@@ -1,238 +1,56 @@
 # Development Guidelines
 
-These guidelines capture the product and collaboration lessons established
-while building and operating Markeitech. They supplement the project charter.
+The [charter](../markeitech.md) and [live foundation plan](roadmap/live-foundation-plan.md) govern
+this work. The aim is a working real-time trading runtime with execution, account monitoring,
+actors, strategies and indicators.
 
-## Product Posture
+## Scope And Architecture
 
-Markeitech serves one discretionary operator first through Sir Loke, its live trading companion,
-mentor, and configurable advisory governor. Optimize for trustworthy context, timely intervention,
-inspectable evidence, disciplined trade decisions, and recovery rather than HFT latency or
-automated execution. The canonical first-version experience is defined in
-[`product/sir-loke-v1.md`](product/sir-loke-v1.md).
+The selected issue defines the outcome. Inspect the affected implementation and direct contracts;
+read additional architecture only when it can change that result. Reuse the current system and
+native Nautilus facilities. A concrete defect, missing capability or observed failure justifies
+improvement; a hypothetical future need does not.
 
-Separate the markets used to form a thesis from the instrument used to express
-the trade. Underlyings, indexes, futures, volatility, sectors, and other context
-may inform an options decision without becoming the traded product. Options
-require distinct chain, expiry, strike, liquidity, and Greek semantics.
+Keep one owner for provider demand and canonical state. Consumers own their independent claims,
+calculations and lifecycle. Console, Discord and UI are projections. Preserve exact account,
+instrument, contract, timestamp, source and freshness. Use typed configuration for variable
+behavior and only the abstraction/mutability needed by the issue.
 
-The [Sir Loke delivery plan](roadmap/sir-loke-v1-delivery-plan.md) owns priority and dependencies.
-Start with an actual private Discord/model conversation over existing runtime state, then make
-that state analytically useful through the IN tasks and live feedback. Observation, computation,
-market/context comparisons, chronological memory, and competing scenarios develop the intended
-advantage over one operator's unaided attention. Guardian behavior follows Markeitect's explicit
-acceptance of useful analytical/trade assessments. Broker safety gates broker-aware features only.
-Existing foundation is reusable; disabled or unverified capabilities are not already available.
+Execution capability is an active priority. An implementation request does not authorize a live
+account connection or order action. The selected run must identify the account, intended actions
+and limits. Markeitect performs and reviews live acceptance unless he explicitly delegates it.
 
-Each implementation task must deliver one observable behavior and end with a live run performed
-and reviewed only by Markeitect. Provide the exact PR head, Python-owned start/stop commands,
-minimal setup, bounded actions, expected results, stop conditions, and sanitized result location.
-Report `ready for Markeitect live test`; wait for his verdict before claiming acceptance. Keep
-fixes on the same PR and dependent work behind live acceptance and merge. A documentation-only
-change needs document review and does not justify an artificial connected run.
+## Practical Verification
 
-Write a short task brief, not a general architecture program. Include just the contracts,
-configuration, audit, integration, and failure handling needed by the task. Add tests for actual
-changed behavior and concrete risks, reuse fixtures, and run required CI. Broaden local checks
-only when the change or findings justify them. A test-count target, generic proof harness, dormant
-owner, optimization framework, or unrelated tooling improvement is not a product outcome.
+Agents locally run the tests they add or change, plus specific CI failures they need to reproduce.
+Do not routinely run the full suite or unrelated tools. Do not create tests merely to satisfy
+process for simple changes. PR CI runs the broad root, PostgreSQL, lint, Kite and API-doc checks.
+Standalone tool suites are not universally included; use only checks required by a changed tool.
 
-Replay and backtesting are outside current scope until Markeitect explicitly
-reopens them. Do not add storage or abstractions for that hypothetical path.
+For a runtime issue, prepare a short usable live scenario as soon as the change runs. State the
+revision, setup/commands, account/instruments, intended actions, expected result and stop condition.
+Live findings drive fixes and subsequent priorities. Do not gate the first useful run on exhaustive
+offline proofs, repeat unchanged acceptance, or claim behavior which was not exercised.
 
-## Instrument Model
+For documentation or generated artifacts, inspect the changed links/output and use the required
+generator. No artificial connected run is needed. Keep test and live results honest and concise.
 
-The current instrument model distinguishes the trade universe, dynamic observation universe,
-active analytical capabilities, and temporary focus; it has no one-active-instrument or fixed
-background-timeframe invariant. Multiple
-instruments may receive granular continuous data when justified and supported.
+## Collaboration
 
-SPXW and QQQ 0DTE options form the first-version trade-expression boundary. SPY and other products
-remain later candidates. No instrument is globally preferred by implementation or configuration.
-Sir Loke may maintain and rank multiple simultaneous opportunities. SPY, QQQ, SPX, ES, NQ,
-volatility, and other approved instruments are useful evidence candidates, not a complete or fixed
-observation universe. Crypto is not a current product priority.
+Follow [GitHub operations](operations/github-workflow.md): issue, approved milestone plan, scoped
+branch, PR, Markeitect review and merge. Preserve unrelated local work. Record substantive decisions
+on the issue and stop at each agreed milestone. Do not start another task automatically.
 
-Analytical capabilities declare the native feeds and historical evidence they
-require. The acquisition owner expands approved demand, coordinates provider
-requests, and publishes honest lifecycle facts. An agent may later request
-policy-approved changes to focus and capability activation, but does not call
-IB or own deterministic analysis.
+Consult Markeitect for material changes to architecture, provider ownership, dependencies, schema,
+persistence, runtime policy or issue scope. Ordinary implementation choices within the approved
+issue do not need an additional permission cycle.
 
-## Runtime Ownership
+## Documentation
 
-Prefer NautilusTrader for instruments, market-data models, actors, message-bus
-integration, clocks, lifecycle, and provider adapters. Extend it through narrow
-Markeitech boundaries when the product requires semantics Nautilus does not own.
+Update the smallest authoritative document needed. Current status records implementation; the plan
+records direction; the backlog records optional candidates. History remains in Git.
 
-Do not pursue framework purity at the expense of clear ownership. Product-specific analytical
-entities, semantic events, rolling state, agent policy, and operator projections may be
-legitimate Markeitech responsibilities after their requirements are approved.
-
-Broker account, order, fill, and position observation is distinct from market-data acquisition.
-Evaluate NautilusTrader's native IB execution client, live reconciliation, cache, event, and report
-contracts before custom provider access. If native execution facilities are used to observe, place
-a narrow fact-only boundary in front of Sir Loke and expose no mutable order object or order action.
-The account alias/identity, broker/source identity, reconciliation origin, and exact order, fill,
-and position identities must remain visible. The trader selects the account; account mode does not
-change product behavior, add a schema field, or create a separate acceptance workflow.
-
-Only one component may own a subscription or canonical stream. Native IB access
-is allowed only for a capability Nautilus does not expose and must share the
-same contract, timestamp, source, health, persistence, and deduplication rules.
-
-## Data And Evidence
-
-- Keep provider source and explicit contract identity on canonical boundaries.
-- Store time in UTC and apply explicit IANA timezones for market sessions.
-- Distinguish historical, live, restored, derived, and inferred evidence.
-- Do not silently fill gaps or invent trade direction from unsupported data.
-- Treat completed bars as immutable observations within one live runtime unless an approved
-  provider-revision policy says otherwise.
-- Do not require durable raw market data or feature history without an approved live consumer.
-- Version feature definitions, signal definitions, schemas, and future ML data.
-
-Because Markeitech is not HFT, isolated missing ticks need not halt bar-based
-analysis. They must remain observable and lower the confidence or fidelity of
-tick-sensitive aggression evidence.
-
-## Analytics And Intelligence
-
-Agents propose the analytical capabilities and small tasks needed to answer the next material
-market question. Inspect existing code, investigate source/method uncertainty inside that task,
-and recommend concrete definitions/settings for approval. Markeitect is not expected to supply an
-indicator list or design the strategy. The capability set grows from live usefulness and blind
-spots; more indicators are not inherently progress. Each live review should assess what Sir Loke
-noticed, explained, missed, contradicted, or revised in time, as well as factual correctness.
-Store only the approved compact semantic/audit record needed for this current use. This is live
-product evaluation, not permission for raw-data retention, replay, backtesting, or model training.
-
-Analytics must be deterministic and transport-neutral. Console, Discord, a
-future gateway, and a future UI consume projections; they do not calculate
-market truth.
-
-Analytics are admitted only through current requirements and evidence. New capabilities must
-declare their inputs, warmup, fidelity, configuration, outputs, and resource cost before
-implementation; retired models, lifecycles, indicators, and thresholds confer no authority.
-
-Semantic events should represent meaningful changes rather than duplicate raw observations.
-Rolling state, ML outputs, and agent interpretations must retain evidence lineage. No event,
-score, or agent proposal is an order instruction. Do not infer product validation from one
-profitable trade, one screenshot, or one live session.
-
-A canonical trade episode may include recommendations, independent trader entries, multiple
-orders, partial fills, scale changes, plan revisions, interventions, acknowledgements, closure, and
-an after-trade report. Preserve the original thesis and each later revision. Recommendation-to-
-execution attribution must be explicit and may remain ambiguous; never invent why the trader
-entered. A new opportunity after a loss must qualify independently and must not be framed as a
-recovery trade.
-
-## ML And AI
-
-Build deterministic features and labels before training models. Persist the
-feature definition and model identity with every inference.
-
-ML may later rank, classify, or calibrate deterministic evidence. Sir Loke may synthesize live
-semantic and broker-observation state, recommend or abstain, monitor open trades, mentor the trader,
-and issue typed policy-checked intents for observation and analysis. Deterministic code—not the
-model—owns evidence admission, authorization, intervention transitions, acknowledgement state,
-cooldown enforcement, and the no-execution invariant. Neither ML nor AI may silently alter
-canonical data, invent evidence, control the IB connection, reach an order method, or bypass
-reviewed resource and risk boundaries.
-
-Sir Loke's firmness is policy state, not prose style. Concern, warning, invalidation,
-acknowledgement-required, noncompliance, cooldown, and resolution behavior must have explicit
-inputs, transitions, timing, recovery, and audit. A generated forceful sentence is not an enforced
-risk control.
-
-## Configuration And Optimization
-
-Do not hide a tunable market or operational decision in implementation code. Variable thresholds,
-windows, weights, instruments, sessions, budgets, limits, cadences, and selection rules must be
-typed, scoped, validated, versioned configuration with explicit defaults and units.
-
-Startup-only parameters do not require optimization or runtime-adjustment machinery. When an
-approved task adds those behaviors, declare the authorized range, mutability boundary, source,
-effective time, and audit behavior. Runtime adjustment must use a typed, policy-checked intent
-with expiry and rollback semantics; models do not receive arbitrary configuration access.
-
-Keep true invariants in code: evidence honesty, schema and type integrity, source identity,
-authorization, audit, and execution prohibitions. The authoritative full rule is the
-[Configuration And Optimization Principle](../markeitech.md#configuration-and-optimization-principle)
-in the project charter.
-
-## Operator Validation
-
-Ask for screenshots when visual comparison can resolve ambiguity. TradingView,
-Tradovate, and order-flow references can all be useful, provided the comparison
-records:
-
-- exact contract and venue
-- chart and API timezone
-- session and start/end timestamps
-- timeframe and visible window
-- study inputs, row size, value-area percentage, and price source
-- whether a study uses fixed range, visible range, or session boundaries
-
-Record disagreements as calibration work. Do not tune solely until one image
-looks similar.
-
-## Collaboration And Git
-
-Every repository change is a reviewable branch/PR batch, including documentation and small fixes:
-
-1. Read or open the tracking issue. Comment there with a milestone checklist, human and agent
-   effort/time estimates, suggested model/reasoning effort, Spark suitability, and open decisions.
-   Resolve decisions and obtain Markeitect's explicit plan approval before implementation.
-2. Create a new scoped branch from current `master` and preserve unrelated work. Explain the
-   intended batch and meaningful tradeoffs, then implement only the approved first milestone.
-3. Verify and push the first coherent milestone commit, then immediately open one linked PR with
-   the approved checklist before requesting milestone approval. Update its checklist and evidence
-   after each later milestone commit.
-4. Record substantive answers, decisions, revisions, approval outcomes, blockers, and completion
-   in follow-up issue comments. Link and summarize PR-side discussion on the issue. Wait for
-   Markeitect's explicit approval of each milestone before continuing to the next.
-5. Keep review fixes on that open PR. Leave it unmerged for Markeitect's approval of the current
-   head and merge after required CI passes. Agents may merge only when that exact operation is
-   explicitly delegated; new commits require renewed approval.
-6. After the merge is verified and the accepted checklist is complete, close the linked issue.
-   When task-local cleanup was approved in the issue plan, record exact targets on the issue and
-   delete only that task's clean local branch/managed worktree. Preserve other or dirty work for a
-   separate decision. Use a new branch/PR for the next change. Do not begin dependent work before
-   its prerequisite merges unless Markeitect approves another arrangement.
-
-No direct integration-branch commits/pushes, auto-merge, force-push, or check bypass. Local IDE
-review remains available when requested. Milestone comments do not replace final PR-head approval.
-The current [GitHub workflow](operations/github-workflow.md) replaces older uncommitted-only
-review language without widening architecture, service, data, or destructive-operation authority.
-
-Pause when an architectural assumption becomes questionable. A short design
-review is cheaper than carrying a convenient workaround into persistence or
-live-runtime behavior.
-
-## Documentation Discipline
-
-Architecture-sensitive changes must follow the
-[system/data-flow manifest maintenance procedure](../tools/system-diagram/docs/maintenance.md).
-Update the canonical TOML and its complete generated artifact set in the same reviewed batch.
-Generated diagrams are never hand-edited authority, and successful generation does not prove live
-runtime behavior.
-
-Public V2 Python APIs follow the separately locked, static
-[API documentation procedure](operations/v2-api-documentation.md). Use Google-style docstrings and
-the versioned public-surface denominator. Custom docstring attributes remain schema-gated discovery
-evidence: they do not establish caller/callee relationships, ownership, accepted architecture, or
-runtime truth, and unknown or invalid values must never escape into generated artifacts.
-
-Keep current status, implementation history, and future plans separate. Update
-present-tense architecture when a future boundary becomes implemented. Preserve
-accepted decision rationale, but do not use the decisions register as a task
-tracker.
-
-State validation honestly. Assumed provider coverage, untested instruments,
-manual observations, and deferred acceptance all belong in validation debt.
-
-Update the smallest authoritative document whenever implementation, product
-direction, or validation status changes. Avoid copying the same status into
-multiple files; link to `current-status.md` or the roadmap instead. Move
-completed roadmap detail into history as part of closing a reviewed slice.
+Public API changes follow the isolated [API documentation procedure](operations/v2-api-documentation.md).
+Changes to the diagram manifest use its [maintenance procedure](../tools/system-diagram/docs/maintenance.md).
+Generate only affected required artifacts and do not hand-edit generated output. No incidental
+package, infrastructure, database or host-plugin changes belong in an issue.

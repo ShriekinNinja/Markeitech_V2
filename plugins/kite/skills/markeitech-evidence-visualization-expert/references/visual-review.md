@@ -48,10 +48,10 @@ position so health, fidelity, lifecycle, and direction never rely on hue alone. 
 prominence to imply support, resistance, confidence, causality, prediction, action, or priority when
 the source contract does not state that meaning.
 
-When an approved Sir Loke output contract exists, map its cited evidence identities, contradictions,
+When an approved consumer output contract exists, map its cited evidence identities, contradictions,
 abstention, unresolved uncertainty, labels, effective time, and supersession into faithful visible
 and accessible equivalents. This advisor does not decide which fields the canonical contract must
-contain, what makes a limitation material, or what Sir Loke may summarize or omit.
+contain, what makes a limitation material, or what consumer may summarize or omit.
 
 Active filters, hidden series, clipping, selected scope, and visible time windows remain inspectable.
 A filtered view never masquerades as complete evidence, material limitations do not disappear

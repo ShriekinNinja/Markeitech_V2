@@ -135,7 +135,7 @@ For probabilistic outputs:
 - define model-selective abstention and out-of-envelope behavior before promotion.
 
 Model-selective abstention means the evaluated model declines to produce an otherwise eligible
-output or action class. It does not define evidence-health, Sir Loke, opportunity, operator-facing,
+output or action class. It does not define evidence-health, strategy, opportunity, operator-facing,
 or tool-policy abstention; those remain with their owning evidence, product, and governance
 contracts.
 

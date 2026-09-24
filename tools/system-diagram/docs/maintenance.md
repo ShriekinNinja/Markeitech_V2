@@ -58,13 +58,15 @@ Graphviz `dot` must be installed in an approved macOS location. The accepted imp
 verified with Diagrams `0.25.1`, Python Graphviz `0.20.3`, Python `3.13.3`, and Graphviz `15.1.1`.
 Generation itself is offline and never downloads dependencies.
 
-After every sensitive change:
+For a manifest/output change, check and regenerate the affected artifact package:
 
 ```bash
 PYTHONPATH="$PWD/src" tools/system-diagram/.venv/bin/python -P -m markeitech diagrams check
 PYTHONPATH="$PWD/src" tools/system-diagram/.venv/bin/python -P -m markeitech diagrams generate
-PYTHONPATH="$PWD/src" tools/system-diagram/.venv/bin/python -P -m markeitech diagrams test
 ```
+
+Run only tests added/changed for a tool implementation change, or specific CI failures.
+A manifest-only update does not require the whole diagram test suite.
 
 This dependency-minimal launch uses the already-provisioned diagram interpreter to enter the same
 unified Python CLI without creating or synchronizing the root runtime environment. Do not use

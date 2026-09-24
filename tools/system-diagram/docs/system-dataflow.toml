@@ -6,13 +6,13 @@ description = "Offline reviewed representation of current, conditional, external
 scope = "Repository architecture documentation only; never runtime configuration or live state."
 authority = "architecture_representation_only"
 not_runtime_configuration = true
-checkout_commit = "a382f2e0636cdb3148b451e3e0e8239a684438e5"
+checkout_commit = "417bc3a3f716c5ec539758f26a9fcf23b533672c"
 owner = "Markeitect"
 review_status = "proposed"
-architecture_effective_at = "2026-08-31"
+architecture_effective_at = "2026-09-24"
 generator_contract_version = 1
 default_profile = "profile.example"
-limitations = ["Static source and configuration checks cannot prove connected runtime behavior.", "Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.", "Generated artifacts are documentation projections and must never be edited or treated as authority.", "Markeitech is read-only and advisory; no current order submission or execution exists."]
+limitations = ["Static source and configuration checks cannot prove connected runtime behavior.", "Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.", "Generated artifacts are documentation projections and must never be edited or treated as authority.", "The current node has no execution client; execution and account monitoring are planned next."]
 
 [[evidence]]
 id = "evidence.current-status"
@@ -160,7 +160,7 @@ limitations = ["Accepted architecture does not prove current composition or runt
 id = "profile.example"
 config_path = "config/system.example.toml"
 config_schema_version = 29
-content_sha256 = "5d6ac3b582ce26e64ba1528888dfa5671015088605f8eacfd4c1c1cf42e84c56"
+content_sha256 = "3856296b9420324d7387ca3e7874b022147dcf02b437f828c34cc38f4698358d"
 status = "tracked_active_review_profile"
 limitations = ["Represents the named tracked profile, not all available capabilities or a connected runtime observation."]
 evidence = ["evidence.profile"]
@@ -944,32 +944,6 @@ profile_states = [{ profile = "profile.example", enablement = "not_applicable" }
 evidence = ["evidence.roadmap"]
 limitations = ["Not implemented or composed."]
 
-[[components]]
-id = "future.sir-loke"
-label = "Sir Loke Advisory Agent"
-kind = "future_component"
-logical_area = "future advisory boundaries"
-boundary = "boundary.future"
-responsibilities = ["Future governed read-only advisory consumer."]
-semantic_owner = "future.sir-loke"
-mutation_owner = "none_current"
-transport_owner = "none_current"
-persistence_owner = "none_current"
-recovery_owner = "none_current"
-projection_owner = "none_current"
-policy_owner = "operator.markeitect"
-implementation_state = "future"
-composition_policy = "not_composed"
-temporal_status = "future"
-acceptance_state = "not_applicable"
-evidence_certainty = "recommendation"
-failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
-cardinality = "one logical boundary"
-style = "style.component.future"
-profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
-evidence = ["evidence.roadmap"]
-limitations = ["Kite advisors are development-time collaborators and are unrelated to Sir Loke runtime behavior."]
-
 [[capabilities]]
 id = "capability.acquisition.watchlist-last"
 component = "actor.data-acquisition"
@@ -1506,7 +1480,7 @@ type_name = "markeitech.evidence.health"
 schema_version_kind = "explicit contract identity or framework-native type"
 canonical_owner = "actor.evidence-health"
 producers = ["actor.evidence-health"]
-consumers = ["future.sir-loke"]
+consumers = []
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
 join_key = []
@@ -1858,7 +1832,7 @@ type_name = "future.markeitech.semantic-event"
 schema_version_kind = "explicit contract identity or framework-native type"
 canonical_owner = "future.semantic-events"
 producers = ["future.semantic-events"]
-consumers = ["future.opportunities", "future.sir-loke"]
+consumers = ["future.opportunities"]
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
 join_key = []
@@ -1880,7 +1854,7 @@ type_name = "future.markeitech.opportunity"
 schema_version_kind = "explicit contract identity or framework-native type"
 canonical_owner = "future.opportunities"
 producers = ["future.opportunities"]
-consumers = ["future.sir-loke"]
+consumers = []
 parent_contracts = []
 identity_fields = ["contract identity", "source identity", "instrument where applicable"]
 join_key = []
@@ -1893,28 +1867,6 @@ reconciliation_policy = "contract owner preserves duplicates, conflicts, revisio
 retention = "transient unless explicitly persisted as an operational fact"
 evidence = ["evidence.roadmap"]
 limitations = ["Future, not implemented."]
-
-[[contracts]]
-id = "contract.future-advisory-intent"
-label = "Future governed advisory intent"
-transport_kind = "not_applicable"
-type_name = "future.markeitech.advisory-intent"
-schema_version_kind = "explicit contract identity or framework-native type"
-canonical_owner = "future.sir-loke"
-producers = ["future.sir-loke"]
-consumers = ["operator.markeitect"]
-parent_contracts = []
-identity_fields = ["contract identity", "source identity", "instrument where applicable"]
-join_key = []
-expected_cardinality = "contract-specific and configuration-bounded"
-event_clock = "source-defined or not applicable"
-availability_clock = "local receipt or publication time where represented"
-clock_unit = "UTC nanoseconds where the contract carries instants"
-source_classes = ["verified_source"]
-reconciliation_policy = "contract owner preserves duplicates, conflicts, revisions, and unknowns according to source contract"
-retention = "transient unless explicitly persisted as an operational fact"
-evidence = ["evidence.roadmap"]
-limitations = ["Future, does not grant execution authority."]
 
 [[delivery_claims]]
 id = "delivery.signal-local"
@@ -2352,57 +2304,6 @@ evidence = ["evidence.roadmap"]
 limitations = []
 
 [[edges]]
-id = "edge.opportunity-sir-loke"
-source = "future.opportunities"
-target = "future.sir-loke"
-category = "projection"
-contract = "contract.future-opportunity"
-transport = "not_applicable"
-correlation = "contract identity plus explicit source/instrument/request identity where verified"
-sync_semantics = "verified_async"
-delivery_claim = "delivery.future-none"
-enablement_condition = "future only"
-authority_direction = "source publishes or commands; canonical ownership remains declared on the contract"
-required = false
-style = "style.edge.projection"
-evidence = ["evidence.roadmap"]
-limitations = []
-
-[[edges]]
-id = "edge.evidence-sir-loke"
-source = "actor.evidence-health"
-target = "future.sir-loke"
-category = "projection"
-contract = "contract.evidence-health"
-transport = "not_applicable"
-correlation = "contract identity plus explicit source/instrument/request identity where verified"
-sync_semantics = "verified_async"
-delivery_claim = "delivery.future-none"
-enablement_condition = "future only"
-authority_direction = "source publishes or commands; canonical ownership remains declared on the contract"
-required = false
-style = "style.edge.projection"
-evidence = ["evidence.roadmap"]
-limitations = []
-
-[[edges]]
-id = "edge.sir-loke-operator"
-source = "future.sir-loke"
-target = "operator.markeitect"
-category = "projection"
-contract = "contract.future-advisory-intent"
-transport = "not_applicable"
-correlation = "contract identity plus explicit source/instrument/request identity where verified"
-sync_semantics = "verified_async"
-delivery_claim = "delivery.future-none"
-enablement_condition = "future only"
-authority_direction = "source publishes or commands; canonical ownership remains declared on the contract"
-required = false
-style = "style.edge.projection"
-evidence = ["evidence.roadmap"]
-limitations = []
-
-[[edges]]
 id = "edge.persistence-ready-request"
 source = "actor.system-control"
 target = "actor.operational-persistence"
@@ -2716,7 +2617,7 @@ explicit_tombstones = ["tombstone.visual-acceptance-actor", "tombstone.live-evid
 include_temporal_status = ["current", "historical", "future"]
 include_implementation_state = ["implemented", "external", "removed", "rejected", "future"]
 include_profile_enablement = ["enabled", "disabled", "not_applicable", "unknown"]
-explicit_components = ["actor.system-control", "actor.session-state", "actor.evidence-health", "actor.discord-health", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.runtime-resources", "actor.runtime-resource-health", "actor.operational-persistence", "component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "queue.persistence", "worker.persistence", "store.postgres", "queue.discord", "worker.discord", "projection.discord", "operator.markeitect", "future.semantic-events", "future.opportunities", "future.sir-loke"]
+explicit_components = ["actor.system-control", "actor.session-state", "actor.evidence-health", "actor.discord-health", "actor.historical-planner", "actor.watchlist", "actor.data-acquisition", "actor.runtime-resources", "actor.runtime-resource-health", "actor.operational-persistence", "component.live-node", "component.data-engine", "component.cache", "component.canonical-calendar", "provider.interactive-brokers", "queue.persistence", "worker.persistence", "store.postgres", "queue.discord", "worker.discord", "projection.discord", "operator.markeitect", "future.semantic-events", "future.opportunities"]
 explicit_edges = []
 direction = "top_to_bottom"
 layout_engine = "dot"

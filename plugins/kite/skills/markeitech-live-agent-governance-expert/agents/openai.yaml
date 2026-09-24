@@ -1,7 +1,0 @@
-policy:
-  allow_implicit_invocation: false
-
-interface:
-  display_name: "Live Agent Governance"
-  short_description: "Focused live agent governance guidance"
-  default_prompt: "Use $kite:markeitech-live-agent-governance-expert to answer this scoped question using the relevant evidence."

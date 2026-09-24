@@ -1,5 +1,8 @@
 # Gate 1A Native IB Observation Characterization
 
+> Historical inspection record only. The live foundation plan supersedes this staged gate.
+> Reuse relevant findings; its old protocol does not constrain or authorize current execution work.
+
 **Status:** Offline construction and source characterization complete for the exact evidence below;
 native lifecycle and connected acceptance not run
 
@@ -235,7 +238,7 @@ aliased, and qualified imports and execution registration. The guard deliberatel
 uses of words such as `execution`, `reconcile`, and `close`.
 
 This proves only that the current Python composition remains data-only at this head. It cannot
-prove isolation of future Sir Loke, Discord, policy, broker-observation, or trade-lifecycle
+prove isolation of future Discord, policy, broker-observation, or trade-lifecycle
 components which do not yet exist.
 
 ## Verification
@@ -290,7 +293,7 @@ synthetic state represented as observation, or unbounded recovery. Disconnect th
 remaining orders manually.
 
 A successful session establishes only the observation behavior exercised for the selected
-account and configuration. It does not implement Sir Loke, complete all broker-observation work,
+account and configuration. It does not implement complete all broker-observation work,
 or create order authority.
 
 ## Remaining Gate

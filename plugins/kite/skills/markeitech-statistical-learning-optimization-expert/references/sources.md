@@ -12,7 +12,7 @@ papers remain conceptual authorities but do not prove current library behavior o
 | Source | Role | Constraint carried into the advisor |
 |---|---|---|
 | `AGENTS.md` | Repository working authority | Markeitect decides; advisors are read-only; evidence classes, side-effect, delegation, and review boundaries apply. |
-| `markeitech.md` | Product and engineering charter | Live-first/read-only/advisory; deterministic truth is separate from model output; all variable behavior is typed, bounded, versioned, auditable policy. |
+| `markeitech.md` | Product and engineering charter | Live-first trading foundation; deterministic truth is separate from model output; all variable behavior is typed, bounded, versioned, auditable policy. |
 | `docs/current-status.md` | Current implementation truth | ML evaluation and richer intelligence remain future work; raw observations are not a PostgreSQL feature store. |
 | `docs/development-guidelines.md` | Engineering guidance | Deterministic features and labels precede training; feature and model identity accompany inference; no silent configuration control. |
 | `docs/roadmap/development-backlog.md` and `docs/architecture/deterministic-evidence-contracts.md` | Accepted future boundary | ML remains deferred pending an approved leakage-safe data, label, evaluation, monitoring, rollback, and bounded-optimization strategy. |

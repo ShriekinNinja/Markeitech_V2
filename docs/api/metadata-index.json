@@ -28,12 +28,12 @@
         "kind": "markeitech_actor",
         "label": "Discord Health Projection",
         "object_path": "markeitech.system.discord.DiscordHealthActor",
-        "record_sha256": "2f9c536cc63e8dd59e0d7812f2fa5a251e9667924d7df9ae460dd1708335722a",
+        "record_sha256": "c3db70e12e2452aaae9d339beb2da0d1e11c536a2a9171e01934a1847d625dbd",
         "responsibilities": [
           "Project system health, resource health, and operational readiness through configured Discord delivery workers."
         ],
         "source": "src/markeitech/system/discord.py",
-        "source_sha256": "0f44904a11572871bd8c1810cc5926ee5b70d1ce1077368e690a5fee94308129"
+        "source_sha256": "d99eabaf3faa4356a28479db34b23b629ec73fa5d55ff218701b53ae5c3d9ff7"
       },
       {
         "boundary": "boundary.intelligence",
@@ -188,7 +188,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "873fd4be355da6aaaff859bfc1659685da5b379431293181382dcb60d1cbe3cf"
+    "source_snapshot_sha256": "29dce9d9dbf0b5e2f0c594bf63e9f1904d474c5de189cae7da432f18864a3d13"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1311,7 +1311,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 68,
-    "input_signature": "873fd4be355da6aaaff859bfc1659685da5b379431293181382dcb60d1cbe3cf"
+    "input_signature": "29dce9d9dbf0b5e2f0c594bf63e9f1904d474c5de189cae7da432f18864a3d13"
   },
-  "source_snapshot_sha256": "873fd4be355da6aaaff859bfc1659685da5b379431293181382dcb60d1cbe3cf"
+  "source_snapshot_sha256": "29dce9d9dbf0b5e2f0c594bf63e9f1904d474c5de189cae7da432f18864a3d13"
 }

@@ -244,11 +244,7 @@ configuration parsing, required environment values, Docker daemon, and Compose m
 connect to IB. Use `.venv/bin/markeitech environment check --with-ib` only when TWS/Gateway should
 already be listening.
 
-Run offline verification:
-
-```bash
-.venv/bin/markeitech verify all
-```
+For development, run tests added or changed for the issue. Broad regression checks run on the PR.
 
 ## 5. Configure PyCharm
 
