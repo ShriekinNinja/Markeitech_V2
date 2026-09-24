@@ -188,7 +188,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "29dce9d9dbf0b5e2f0c594bf63e9f1904d474c5de189cae7da432f18864a3d13"
+    "source_snapshot_sha256": "f3a1c3c62ab1f317e7dd3851b1bd8d2ebbf97e42f354aae1ca1d1a921724c0cb"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1254,7 +1254,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.SystemConfig",
-        "definition_line": 284,
+        "definition_line": 285,
         "exposed": "markeitech.system.SystemConfig",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1265,7 +1265,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.node.build_system_node",
-        "definition_line": 62,
+        "definition_line": 86,
         "exposed": "markeitech.system.build_system_node",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1276,7 +1276,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.load_system_config",
-        "definition_line": 305,
+        "definition_line": 306,
         "exposed": "markeitech.system.load_system_config",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1311,7 +1311,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 68,
-    "input_signature": "29dce9d9dbf0b5e2f0c594bf63e9f1904d474c5de189cae7da432f18864a3d13"
+    "input_signature": "f3a1c3c62ab1f317e7dd3851b1bd8d2ebbf97e42f354aae1ca1d1a921724c0cb"
   },
-  "source_snapshot_sha256": "29dce9d9dbf0b5e2f0c594bf63e9f1904d474c5de189cae7da432f18864a3d13"
+  "source_snapshot_sha256": "f3a1c3c62ab1f317e7dd3851b1bd8d2ebbf97e42f354aae1ca1d1a921724c0cb"
 }
