@@ -117,7 +117,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
                 "cme_equity"
                 if instrument_id in {"ESZ6.CME", "NQZ6.CME"}
                 else "cme_energy"
-                if instrument_id == "CLV6.NYMEX"
+                if instrument_id == "CLX6.NYMEX"
                 else "us_equities"
             ),
             "owner_ids": ["config:system"],
@@ -130,7 +130,7 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
         for instrument_id in [
             "ESZ6.CME",
             "NQZ6.CME",
-            "CLV6.NYMEX",
+            "CLX6.NYMEX",
             "SPY.ARCA",
             "QQQ.NASDAQ",
             "^SPX.CBOE",

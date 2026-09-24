@@ -2,213 +2,214 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored .env.
 
-schema_version = 29
+schema_version = 29 # Required system configuration schema; this loader accepts version 29.
 
 [runtime]
-name = "MARKEITECH-V2-001"
-trader_id = "MARKEITECH-001"
-environment = "live"
+name = "MARKEITECH-V2-001" # Name recorded for this local runtime instance and its operational run.
+trader_id = "MARKEITECH-001" # NautilusTrader identity for this runtime; it is not a broker account ID.
+environment = "live" # NautilusTrader live environment; connecting still requires operator confirmation.
 
 [ib]
-host = "127.0.0.1"
-port = 4002
-client_id = 20
-symbology_method = "simplified"
-convert_exchange_to_mic_venue = false
-market_data_type = "realtime"
-use_regular_trading_hours = false
-batch_quotes = true
-ignore_quote_tick_size_updates = false
-handle_revised_bars = false
-connection_timeout_seconds = 30
-request_timeout_seconds = 30
+host = "127.0.0.1" # TWS or IB Gateway API host.
+port = 4002 # TWS or IB Gateway API port; verify it against the selected session.
+client_id = 20 # API client identity for this data connection, distinct from the broker account.
+symbology_method = "simplified" # Use simplified native IB symbols for instrument resolution.
+convert_exchange_to_mic_venue = false # Keep configured exchange venues instead of converting them to MIC codes.
+market_data_type = "realtime" # Request real-time IB market data; delivery still depends on permissions.
+use_regular_trading_hours = false # False includes eligible extended-session data in IB requests.
+batch_quotes = true # Let the IB adapter batch quote updates.
+ignore_quote_tick_size_updates = false # False retains quote updates that change only bid or ask size.
+handle_revised_bars = false # False disables the adapter's revised-bar handling.
+connection_timeout_seconds = 30 # Maximum seconds allowed for the IB connection attempt.
+request_timeout_seconds = 30 # Maximum seconds allowed for an IB request response.
 
 [logging]
-directory = "../data/logs"
-file_name = "markeitech-v2.log"
+directory = "../data/logs" # Runtime log directory, resolved relative to this TOML file.
+file_name = "markeitech-v2.log" # Name of the rotating runtime log file.
 
 [discord]
-enabled = true
-request_timeout_seconds = 5
-queue_capacity = 32
-ping_critical_resource_alerts = true
+enabled = true # Enable outbound health and operational webhooks, not a conversational bot.
+request_timeout_seconds = 5 # Maximum seconds for one webhook HTTP request.
+queue_capacity = 32 # Maximum queued outbound webhook messages.
+ping_critical_resource_alerts = true # Include @here on eligible critical resource webhook alerts.
 
 
 [runtime_resources]
-enabled = true
-sample_interval_ms = 10000
-log_every_samples = 1
-include_cache_counts = true
-disk_path = "/"
+enabled = true # Start periodic host and process resource sampling.
+sample_interval_ms = 10000 # Milliseconds between resource samples.
+log_every_samples = 1 # Write one resource log entry after this many samples.
+include_cache_counts = true # Include Nautilus cache object counts in resource samples.
+disk_path = "/" # Filesystem path whose free space is sampled.
 
 [runtime_resources.health]
-enabled = true
-threshold_version = "2026-08-22-v2"
-warning_consecutive_samples = 6
-critical_consecutive_samples = 3
-recovery_consecutive_samples = 6
-notification_cooldown_ms = 900000
-rss_growth_window_samples = 90
-stale_warning_ms = 30000
-stale_critical_ms = 120000
+enabled = true # Evaluate resource samples against warning and critical limits.
+threshold_version = "2026-08-22-v2" # Identity recorded with resource-health threshold decisions.
+warning_consecutive_samples = 6 # Warning requires this many consecutive breaching samples.
+critical_consecutive_samples = 3 # Critical requires this many consecutive breaching samples.
+recovery_consecutive_samples = 6 # Recovery requires this many consecutive healthy samples.
+notification_cooldown_ms = 900000 # Minimum milliseconds between repeated resource alerts.
+rss_growth_window_samples = 90 # Number of samples used to measure process memory growth.
+stale_warning_ms = 30000 # Warn when the latest resource sample is this old in milliseconds.
+stale_critical_ms = 120000 # Mark resource sampling critical after this many milliseconds without a sample.
 
 [runtime_resources.health.warning]
-host_memory_available_percent = 15.0
-host_cpu_percent = 90.0
-host_swap_percent = 50.0
-disk_free_bytes = 16106127360
-disk_free_percent = 10.0
-process_rss_bytes = 4294967296
-process_rss_growth_bytes = 536870912
-process_cpu_percent = 400.0
-thread_count = 100
-open_fd_ratio = 0.70
+host_memory_available_percent = 15.0 # Warn when available host memory falls below this percent.
+host_cpu_percent = 90.0 # Warn when host CPU use reaches this percent.
+host_swap_percent = 50.0 # Warn when host swap use reaches this percent.
+disk_free_bytes = 16106127360 # Warn when free space on disk_path falls below this many bytes.
+disk_free_percent = 10.0 # Warn when free space on disk_path falls below this percent.
+process_rss_bytes = 4294967296 # Warn when process resident memory reaches this many bytes.
+process_rss_growth_bytes = 536870912 # Warn when resident memory grows this many bytes over the window.
+process_cpu_percent = 400.0 # Warn when process CPU use reaches this percent across cores.
+thread_count = 100 # Warn when the process reaches this many threads.
+open_fd_ratio = 0.70 # Warn when open file descriptors reach this share of the limit.
 
 [runtime_resources.health.critical]
-host_memory_available_percent = 8.0
-host_cpu_percent = 98.0
-host_swap_percent = 80.0
-disk_free_bytes = 5368709120
-disk_free_percent = 2.0
-process_rss_bytes = 8589934592
-process_rss_growth_bytes = 1073741824
-process_cpu_percent = 800.0
-thread_count = 250
-open_fd_ratio = 0.90
+host_memory_available_percent = 8.0 # Critical when available host memory falls below this percent.
+host_cpu_percent = 98.0 # Critical when host CPU use reaches this percent.
+host_swap_percent = 80.0 # Critical when host swap use reaches this percent.
+disk_free_bytes = 5368709120 # Critical when free space on disk_path falls below this many bytes.
+disk_free_percent = 2.0 # Critical when free space on disk_path falls below this percent.
+process_rss_bytes = 8589934592 # Critical when process resident memory reaches this many bytes.
+process_rss_growth_bytes = 1073741824 # Critical when resident memory grows this many bytes over the window.
+process_cpu_percent = 800.0 # Critical when process CPU use reaches this percent across cores.
+thread_count = 250 # Critical when the process reaches this many threads.
+open_fd_ratio = 0.90 # Critical when open file descriptors reach this share of the limit.
 
 [persistence]
-dsn_env = "MARKEITECH_POSTGRES_DSN"
-connect_timeout_seconds = 5
-queue_capacity = 512
-critical_queue_reserve = 32
-write_batch_size = 64
-result_poll_interval_ms = 250
-shutdown_timeout_seconds = 10
-write_max_attempts = 3
-write_retry_backoff_ms = 100
+dsn_env = "MARKEITECH_POSTGRES_DSN" # Environment variable holding the PostgreSQL connection string.
+connect_timeout_seconds = 5 # Maximum seconds to establish a PostgreSQL connection.
+queue_capacity = 512 # Maximum pending operational writes in the actor queue.
+critical_queue_reserve = 32 # Queue slots reserved for critical operational writes.
+write_batch_size = 64 # Maximum operational records written in one batch.
+result_poll_interval_ms = 250 # Milliseconds between checks for completed database work.
+shutdown_timeout_seconds = 10 # Maximum seconds allowed to drain writes during shutdown.
+write_max_attempts = 3 # Maximum attempts for a retryable operational write.
+write_retry_backoff_ms = 100 # Milliseconds between retryable write attempts.
 
 [historical]
-maximum_plan_requests = 64
-maximum_observations_per_request = 5000
-maximum_total_observations = 20000
-maximum_outstanding_requests = 64
-maximum_in_flight_requests = 1
-timeout_seconds = 30
-maximum_attempts = 3
-retry_backoff_ms = 500
-poll_interval_ms = 100
+maximum_plan_requests = 64 # Maximum provider requests compiled from one historical need.
+maximum_observations_per_request = 5000 # Maximum observations accepted for one historical request.
+maximum_total_observations = 20000 # Maximum observations retained across outstanding requests.
+maximum_outstanding_requests = 64 # Maximum queued historical requests awaiting completion.
+maximum_in_flight_requests = 1 # Maximum simultaneous provider history requests; one preserves attribution.
+timeout_seconds = 30 # Maximum seconds to await one provider history attempt.
+maximum_attempts = 3 # Maximum attempts for a retryable history request.
+retry_backoff_ms = 500 # Milliseconds before a retryable history request is attempted again.
+poll_interval_ms = 100 # Milliseconds between historical execution checks.
 
 [sessions]
-evaluation_interval_ms = 1000
-projection_lookback_days = 120
-projection_lookahead_days = 14
-maximum_projection_days = 400
-maximum_calendars_per_request = 8
-calendar_catalog = "market-calendars.toml"
-calendar_ids = ["cboe_spxw", "us_equities", "cme_equity", "cbot_equity", "cme_energy"]
+evaluation_interval_ms = 1000 # Milliseconds between canonical session-state evaluations.
+projection_lookback_days = 120 # Calendar days included before today in requested projections.
+projection_lookahead_days = 14 # Calendar days included after today in requested projections.
+maximum_projection_days = 400 # Upper bound on days in a calendar projection request.
+maximum_calendars_per_request = 8 # Upper bound on calendars in one projection request.
+calendar_catalog = "market-calendars.toml" # Versioned calendar-definition file relative to this TOML file.
+calendar_ids = ["cboe_spxw", "us_equities", "cme_equity", "cbot_equity", "cme_energy"] # Definitions evaluated at startup; CBOT and SPXW have no current watchlist member.
 
 [sessions.projection_retry]
-response_timeout_ms = 5000
-maximum_attempts = 3
-retry_backoff_ms = 1000
-maximum_elapsed_ms = 60000
+response_timeout_ms = 5000 # Milliseconds to wait for each calendar projection response.
+maximum_attempts = 3 # Maximum attempts in a calendar projection retry cycle.
+retry_backoff_ms = 1000 # Milliseconds between calendar projection retries.
+maximum_elapsed_ms = 60000 # Total millisecond limit for a projection retry cycle.
 
 [sessions.current_state_delivery]
-policy_version = 1
-response_timeout_ms = 5000
-maximum_attempts = 3
-retry_backoff_ms = 1000
-maximum_elapsed_ms = 60000
-maximum_buffered_transitions_per_calendar = 8
-maximum_total_buffered_transitions = 32
-boundary_delivery_grace_ms = 2000
+policy_version = 1 # Version of the current-session snapshot delivery policy.
+response_timeout_ms = 5000 # Milliseconds to wait for each current-session snapshot response.
+maximum_attempts = 3 # Maximum attempts in one snapshot synchronization cycle.
+retry_backoff_ms = 1000 # Milliseconds between snapshot synchronization retries.
+maximum_elapsed_ms = 60000 # Total millisecond limit for a snapshot synchronization cycle.
+maximum_buffered_transitions_per_calendar = 8 # Maximum queued session changes for one calendar during synchronization.
+maximum_total_buffered_transitions = 32 # Maximum queued session changes across all calendars.
+boundary_delivery_grace_ms = 2000 # Milliseconds allowed for a session change and snapshot to arrive out of order.
 
 [evidence_health]
-evaluation_interval_ms = 1000
-consumer_retry_interval_ms = 1000
-provider_id = "IB"
-profile_checkpoint_samples = 25
+evaluation_interval_ms = 1000 # Milliseconds between live evidence-freshness evaluations.
+consumer_retry_interval_ms = 1000 # Milliseconds between attempts to attach native data handlers.
+provider_id = "IB" # Source identity attached to evidence-health and recency records.
+profile_checkpoint_samples = 25 # Adaptive quote samples between durable recency-profile checkpoints.
 
 [[evidence_health.policies]]
-feed_kind = "quotes"
-selector = "default"
-fresh_for_ms = 5000
-stale_after_ms = 15000
-unavailable_after_ms = 60000
-adaptive = true
-minimum_samples = 20
-decay_factor = 0.95
-fresh_stddev_multiplier = 2.0
-stale_stddev_multiplier = 4.0
-unavailable_stddev_multiplier = 8.0
-min_fresh_ms = 2000
-max_fresh_ms = 15000
-min_stale_ms = 5000
-max_stale_ms = 45000
-min_unavailable_ms = 15000
-max_unavailable_ms = 120000
+feed_kind = "quotes" # Evidence stream type covered by this freshness policy.
+selector = "default" # Exact stream selector matched to the requested native feed.
+fresh_for_ms = 5000 # Observation age in milliseconds through which evidence is healthy.
+stale_after_ms = 15000 # Observation age in milliseconds at which evidence becomes stale.
+unavailable_after_ms = 60000 # Observation age in milliseconds at which evidence is unavailable.
+adaptive = true # Learn this stream's receive cadence when true; otherwise use fixed age limits.
+minimum_samples = 20 # Adaptive profile sample count required before learned thresholds apply.
+decay_factor = 0.95 # Weight retaining earlier intervals in adaptive cadence learning.
+fresh_stddev_multiplier = 2.0 # Deviation multiplier for the adaptive healthy-age limit.
+stale_stddev_multiplier = 4.0 # Deviation multiplier for the adaptive stale-age limit.
+unavailable_stddev_multiplier = 8.0 # Deviation multiplier for the adaptive unavailable-age limit.
+min_fresh_ms = 2000 # Lowest adaptive healthy-age limit in milliseconds.
+max_fresh_ms = 15000 # Highest adaptive healthy-age limit in milliseconds.
+min_stale_ms = 5000 # Lowest adaptive stale-age limit in milliseconds.
+max_stale_ms = 45000 # Highest adaptive stale-age limit in milliseconds.
+min_unavailable_ms = 15000 # Lowest adaptive unavailable-age limit in milliseconds.
+max_unavailable_ms = 120000 # Highest adaptive unavailable-age limit in milliseconds.
 
 [[evidence_health.policies]]
-feed_kind = "bars"
-selector = "5-SECOND-LAST-EXTERNAL"
-fresh_for_ms = 7000
-stale_after_ms = 15000
-unavailable_after_ms = 30000
-adaptive = false
-minimum_samples = 20
-decay_factor = 0.95
-fresh_stddev_multiplier = 2.0
-stale_stddev_multiplier = 4.0
-unavailable_stddev_multiplier = 8.0
-min_fresh_ms = 5000
-max_fresh_ms = 10000
-min_stale_ms = 10000
-max_stale_ms = 20000
-min_unavailable_ms = 20000
-max_unavailable_ms = 60000
+feed_kind = "bars" # Evidence stream type covered by this freshness policy.
+selector = "5-SECOND-LAST-EXTERNAL" # Exact stream selector matched to the requested native feed.
+fresh_for_ms = 7000 # Observation age in milliseconds through which evidence is healthy.
+stale_after_ms = 15000 # Observation age in milliseconds at which evidence becomes stale.
+unavailable_after_ms = 30000 # Observation age in milliseconds at which evidence is unavailable.
+adaptive = false # Learn this stream's receive cadence when true; otherwise use fixed age limits.
+# Adaptive tuning fields remain schema-required but do not change fixed bar thresholds here.
+minimum_samples = 20 # Adaptive profile sample count required before learned thresholds apply.
+decay_factor = 0.95 # Weight retaining earlier intervals in adaptive cadence learning.
+fresh_stddev_multiplier = 2.0 # Deviation multiplier for the adaptive healthy-age limit.
+stale_stddev_multiplier = 4.0 # Deviation multiplier for the adaptive stale-age limit.
+unavailable_stddev_multiplier = 8.0 # Deviation multiplier for the adaptive unavailable-age limit.
+min_fresh_ms = 5000 # Lowest adaptive healthy-age limit in milliseconds.
+max_fresh_ms = 10000 # Highest adaptive healthy-age limit in milliseconds.
+min_stale_ms = 10000 # Lowest adaptive stale-age limit in milliseconds.
+max_stale_ms = 20000 # Highest adaptive stale-age limit in milliseconds.
+min_unavailable_ms = 20000 # Lowest adaptive unavailable-age limit in milliseconds.
+max_unavailable_ms = 60000 # Highest adaptive unavailable-age limit in milliseconds.
 
 [watchlist]
-enabled = true
-consumer_retry_interval_ms = 1000
+enabled = true # Compose the static watchlist actor and its configured data demands.
+consumer_retry_interval_ms = 1000 # Milliseconds between native watchlist handler attachment attempts.
 
 [[watchlist.members]]
-instrument_id = "ESZ6.CME"
-calendar_id = "cme_equity"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
+instrument_id = "ESZ6.CME" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "cme_equity" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["top_of_book", "watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
 
 [[watchlist.members]]
-instrument_id = "NQZ6.CME"
-calendar_id = "cme_equity"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
+instrument_id = "NQZ6.CME" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "cme_equity" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["top_of_book", "watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
 
 [[watchlist.members]]
-instrument_id = "CLV6.NYMEX"
-calendar_id = "cme_energy"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
+instrument_id = "CLX6.NYMEX" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "cme_energy" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["top_of_book", "watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
 
 [[watchlist.members]]
-instrument_id = "SPY.ARCA"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
+instrument_id = "SPY.ARCA" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "us_equities" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["top_of_book", "watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
 
 [[watchlist.members]]
-instrument_id = "QQQ.NASDAQ"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
+instrument_id = "QQQ.NASDAQ" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "us_equities" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["top_of_book", "watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
 
 [[watchlist.members]]
-instrument_id = "^SPX.CBOE"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["watchlist_last"]
+instrument_id = "^SPX.CBOE" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "us_equities" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
 
 [[watchlist.members]]
-instrument_id = "^VIX.CBOE"
-calendar_id = "us_equities"
-owner_ids = ["config:system"]
-capabilities = ["watchlist_last"]
+instrument_id = "^VIX.CBOE" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "us_equities" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
