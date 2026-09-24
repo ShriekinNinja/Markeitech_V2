@@ -25,6 +25,7 @@ class InteractiveBrokersConfig:
     host: str
     port: int
     client_id: int
+    execution_account_id: str | None
     symbology_method: str
     convert_exchange_to_mic_venue: bool
     market_data_type: str
@@ -324,8 +325,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
     with config_path.open("rb") as file:
         raw = tomllib.load(file)
 
-    if raw.get("schema_version") != 29:
-        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 29")
+    if raw.get("schema_version") != 30:
+        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 30")
 
     root_keys = {
         "schema_version",
@@ -415,6 +416,7 @@ def _load_ib(raw: Any) -> InteractiveBrokersConfig:
         "host",
         "port",
         "client_id",
+        "execution_account_id",
         "symbology_method",
         "convert_exchange_to_mic_venue",
         "market_data_type",
@@ -438,10 +440,19 @@ def _load_ib(raw: Any) -> InteractiveBrokersConfig:
     ).lower()
     if market_data_type not in {"realtime", "frozen", "delayed", "delayed_frozen"}:
         raise ValueError(f"unsupported ib.market_data_type: {market_data_type!r}")
+    raw_account_id = values["execution_account_id"]
+    if raw_account_id == "":
+        execution_account_id = None
+    else:
+        execution_account_id = _non_empty_string(raw_account_id, "ib.execution_account_id")
+    client_id = _non_negative_int(values["client_id"], "ib.client_id")
+    if execution_account_id is not None and client_id % 1000 == 0:
+        raise ValueError("ib.client_id must not be a multiple of 1000 for execution")
     return InteractiveBrokersConfig(
         host=_non_empty_string(values["host"], "ib.host"),
         port=_positive_int(values["port"], "ib.port"),
-        client_id=_non_negative_int(values["client_id"], "ib.client_id"),
+        client_id=client_id,
+        execution_account_id=execution_account_id,
         symbology_method=symbology_method,
         convert_exchange_to_mic_venue=_bool(
             values["convert_exchange_to_mic_venue"],

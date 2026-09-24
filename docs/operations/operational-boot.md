@@ -18,11 +18,12 @@ and a restart; this task does not introduce a dynamic universe controller.
 
 ## Configuration And Contracts
 
-The profile uses system schema 29. For older local profiles, remove the complete `[acquisition]`
+The profile uses system schema 30. For older local profiles, remove the complete `[acquisition]`
 and `[historical.probe]` sections, plus `[visual_debug_capture]`,
 the entire `[metrics]` tree (including quote quality, session measurements, and entity analysis) if
 present, and update
-`schema_version` to 29. Remove `[dashboard]` if present. Keep `[historical]` and its
+`schema_version` to 30. Add `execution_account_id = ""` under `[ib]` for the existing
+data-only profile. Remove `[dashboard]` if present. Keep `[historical]` and its
 production request limits. The loader rejects older schemas and retired sections.
 
 `watchlist.enabled` defaults to true; a disabled watchlist must have `members = []`. Enabling the

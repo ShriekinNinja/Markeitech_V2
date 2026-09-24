@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from uuid import uuid4
 
@@ -10,7 +11,11 @@ from nautilus_trader.adapters.interactive_brokers import (
 
 from markeitech.system.composition import StartupPrerequisites
 from markeitech.system.config import load_system_config
-from markeitech.system.node import build_ib_data_client_config, build_system_node
+from markeitech.system.node import (
+    build_ib_data_client_config,
+    build_ib_execution_client_config,
+    build_system_node,
+)
 
 
 def test_maps_provider_boundary_to_installed_ib_config() -> None:
@@ -48,4 +53,29 @@ def test_builds_v2_node_without_connecting() -> None:
     )
 
     assert str(node.trader_id) == config.runtime.trader_id
+    assert node.is_running is False
+    assert build_ib_execution_client_config(config) is None
+
+
+def test_builds_native_ib_execution_client_without_connecting() -> None:
+    root = Path(__file__).parents[2]
+    config = load_system_config(root / "config/system.example.toml")
+    config = replace(config, ib=replace(config.ib, execution_account_id="DU123456"))
+
+    execution_config = build_ib_execution_client_config(config)
+    assert execution_config is not None
+    assert execution_config.account_id == "DU123456"
+    assert execution_config.client_id == config.ib.client_id
+    assert execution_config.host == config.ib.host
+    assert execution_config.port == config.ib.port
+    assert execution_config.connection_timeout == config.ib.connection_timeout_seconds
+    assert execution_config.request_timeout == config.ib.request_timeout_seconds
+    assert execution_config.instrument_provider.load_ids == (
+        build_ib_data_client_config(config).instrument_provider.load_ids
+    )
+
+    node = build_system_node(
+        config,
+        StartupPrerequisites(run_id=uuid4(), operational_persistence_ready=True),
+    )
     assert node.is_running is False

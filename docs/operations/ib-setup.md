@@ -1,8 +1,9 @@
 # V2 Interactive Brokers Setup
 
-This runbook describes the current market-data-only node. Execution and account monitoring are
-active priorities in the [live foundation plan](../roadmap/live-foundation-plan.md); their issue
-will supply the execution-specific account, client, permissions and live scenario.
+This runbook describes the tracked market-data profiles and the optional native execution-client
+configuration. Account monitoring remains an active priority in the
+[live foundation plan](../roadmap/live-foundation-plan.md); issue #78 has not delivered a monitor
+or authorized a connected execution-client run.
 
 ## Authoritative References
 
@@ -22,17 +23,20 @@ and [order modification](https://www.interactivebrokers.com/docs/tws-api/doc/ord
 
 ## Safety Boundary
 
-Markeitech currently uses Interactive Brokers for market data only:
+The tracked profiles still use Interactive Brokers for market data only:
 
 - trader-selected account;
 - read-only socket API;
-- no execution client configuration;
+- an empty `[ib].execution_account_id`, so no execution client is registered;
 - no order-routing actor;
 - explicit connection confirmation token; and
 - no automated test or setup command that connects to IB.
 
-The current market-data profile does not configure an execution client. Adding execution is now
-in scope through a selected implementation issue; this existing runbook does not enable it.
+Setting the actual broker-visible account in an ignored local profile registers the native IB
+execution client on the live node. On a connected run, that client requests an order ID and open
+orders and participates in Nautilus reconciliation. No account monitor or order-action route is
+implemented, and the existing market-data run approval does not authorize starting this optional
+client. Leave the value empty until Markeitect approves an exact connected scenario.
 
 ## User-Owned Requirements
 
@@ -91,6 +95,7 @@ Review the `[ib]` section:
 host = "127.0.0.1"
 port = 4002
 client_id = 20
+execution_account_id = "" # Leave empty for the existing market-data run.
 symbology_method = "simplified"
 convert_exchange_to_mic_venue = false
 market_data_type = "realtime"

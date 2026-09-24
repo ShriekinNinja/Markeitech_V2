@@ -12,8 +12,10 @@ the original decision chronology.
 
 Markeitech is one local, event-driven NautilusTrader `LiveNode` with code-owned actor composition,
 native market-data delivery, bounded background workers for blocking side effects, and PostgreSQL
-operational audit. The current node is market-data-only and has no execution client or account monitor.
-Execution and account monitoring are the next priority in the [live foundation plan](../roadmap/live-foundation-plan.md).
+operational audit. The tracked profiles remain market-data-only; the node optionally registers a
+native IB execution client when an account is configured locally. It has no account monitor or
+order-action route. Account monitoring remains a priority in the
+[live foundation plan](../roadmap/live-foundation-plan.md).
 
 The foundation follows five rules:
 

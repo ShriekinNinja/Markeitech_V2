@@ -4,7 +4,7 @@
 # INACTIVE marks disabled capabilities; IDLE marks settings with no work in this empty profile.
 # Customize host/port/client ID and resource thresholds in an ignored local copy.
 # Live acceptance belongs to Markeitect; this profile does not prove connectivity or data fitness.
-schema_version = 29
+schema_version = 30
 
 # BOOTSTRAP: node and SystemControlActor identity (actor 1 has no separate settings).
 [runtime]
@@ -17,12 +17,13 @@ environment = "live"
 directory = "../data/logs"
 file_name = "markeitech-operational.log"
 
-# BOOTSTRAP: IB data-client connection.
+# BOOTSTRAP: IB data-client connection and optional native execution-client account.
 # IDLE: market-data subscription and bar options have no instrument work in this profile.
 [ib]
 host = "127.0.0.1"
 port = 4002
 client_id = 20
+execution_account_id = "" # Keep the native execution client disabled until a local account is selected.
 symbology_method = "simplified"
 convert_exchange_to_mic_venue = false
 market_data_type = "realtime"
