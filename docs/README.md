@@ -6,26 +6,15 @@ pull requests rather than competing with current documents.
 
 ## Authority Order
 
-When sources disagree, use this order and stop for Markeitect's decision on a material conflict:
+1. [`../markeitech.md`](../markeitech.md) — durable direction and engineering principles.
+2. [`current-status.md`](current-status.md) — implemented state and known limitations.
+3. The selected issue and approved plan — actual task scope and acceptance.
+4. [`development-guidelines.md`](development-guidelines.md) and the smallest relevant architecture
+   or operations contract — implementation guidance.
 
-1. [`../markeitech.md`](../markeitech.md) — durable product and engineering charter.
-2. [`product/sir-loke-v1.md`](product/sir-loke-v1.md) — first useful product outcome.
-3. [`current-status.md`](current-status.md) — what is implemented and accepted now.
-4. [`roadmap/sir-loke-v1-delivery-plan.md`](roadmap/sir-loke-v1-delivery-plan.md) — small runnable
-   tasks, each ending in Markeitect's live test and review;
-   [SL-01](roadmap/sir-loke-v1-delivery-plan.md#sl-01--talk-to-sir-loke-in-private-discord) is next.
-5. [`development-guidelines.md`](development-guidelines.md) — implementation and review rules.
-6. The smallest accepted architecture or operations document governing the exact subject.
-
-A plan, generated diagram, test result, historical note, or remembered conversation is not proof
-of current implementation.
-
-## Product And Status
-
-- [Sir Loke V1 product definition](product/sir-loke-v1.md)
-- [Current status](current-status.md)
-- [Sir Loke V1 delivery plan](roadmap/sir-loke-v1-delivery-plan.md)
-- [Unresolved development backlog](roadmap/development-backlog.md)
+[`roadmap/live-foundation-plan.md`](roadmap/live-foundation-plan.md) records direction;
+[`roadmap/development-backlog.md`](roadmap/development-backlog.md) records candidates. Neither expands
+an active issue. Plans, generated diagrams and historical notes do not establish implementation.
 
 ## Architecture
 
@@ -33,16 +22,15 @@ of current implementation.
 - [Market data and acquisition](architecture/market-data-and-acquisition.md)
 - [Session and evidence health](architecture/session-evidence-health.md)
 - [Deterministic evidence contracts](architecture/deterministic-evidence-contracts.md)
-- [Sir Loke V1 boundaries](architecture/sir-loke-v1-boundaries.md)
 
-These five documents consolidate the active architecture. The system-diagram manifest and its
+These four documents consolidate the active architecture. The system-diagram manifest and its
 generated review artifacts now live with the isolated tool under
 [`../tools/system-diagram/docs/`](../tools/system-diagram/docs/).
 
 ## Detailed Reference And Development Collaboration
 
 - [Kite focused skills](development/kite-advisor-council.md) — direct domain guidance and optional
-  independent review, separate from Sir Loke runtime behavior.
+  independent review for the selected development task.
 
 ## Operations
 
@@ -50,7 +38,7 @@ generated review artifacts now live with the isolated tool under
 - [Connected operational boot with zero instruments](operations/operational-boot.md)
 - [Kite installation and operations](operations/kite.md)
 - [GitHub workflow](operations/github-workflow.md)
-- [Interactive Brokers setup and broker-observation gate](operations/ib-setup.md)
+- [Interactive Brokers setup and execution development](operations/ib-setup.md)
 - [IB market-data subscriptions](operations/ib-market-data-subscriptions.md)
 - [Futures rollover](operations/v2-futures-rollover.md)
 - [PostgreSQL](operations/v2-postgresql.md)

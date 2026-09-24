@@ -17,8 +17,6 @@ Read only the documents relevant to the task, after the mandatory repository ent
   path, shared demand, correlation, retry/cancellation, readiness, and transient raw evidence.
 - `docs/architecture/deterministic-evidence-contracts.md` — bounded projection, revision,
   conflict, staleness, recovery, and evidence lifecycle contracts.
-- `docs/roadmap/sir-loke-v1-delivery-plan.md` — accepted destination for product-channel contracts,
-  independent path health, scoped reliability, recovery, and resource gates.
 - Relevant implementation and tests under `src/markeitech/` and `tests/` — final evidence of
   current local behavior where documents lag.
 

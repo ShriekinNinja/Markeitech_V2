@@ -1,6 +1,6 @@
 # Discord Health Webhook
 
-**Status:** Implemented optional outbound projection; not the Sir Loke Discord bot
+**Status:** Implemented optional outbound projection
 
 ## Responsibility
 
@@ -8,9 +8,7 @@
 readiness evidence to configured Discord webhooks. It does not determine system state, supervise
 Interactive Brokers, calculate market truth, admit evidence, or participate in readiness.
 
-The current projection is outbound only. It has no Discord gateway session, inbound messages,
-conversation state, authentication allowlist, model, recommendation, broker observation, trade
-episode, mentoring, or advisory policy. Those are future Sir Loke product gates.
+The projection is outbound operational infrastructure; it has no inbound conversation or order control.
 
 System-health vocabulary currently includes:
 
@@ -21,7 +19,7 @@ System-health vocabulary currently includes:
 - `STOPPING`
 
 The operational-readiness card reports only the joined canonical evidence it observes. It does
-not create a new readiness state or prove end-to-end Sir Loke availability.
+not create a new readiness state or establish unrelated runtime capabilities.
 
 ## Configuration And Secrets
 
@@ -77,7 +75,5 @@ within the configured deadline, and reports undelivered or incomplete work hones
 delivery remains best effort because projection shutdown cannot outrank canonical runtime
 teardown.
 
-Offline delivery tests do not prove Discord availability. A connected webhook observation proves
-only its exact URL, network, Discord context, configuration, message, and time. It does not accept
-the future authenticated two-way bot described in
-[`../product/sir-loke-v1.md`](../product/sir-loke-v1.md).
+Delivery tests cover their exercised behavior. Live webhook results apply to the actual destination,
+configuration and message. A successful projection does not establish underlying runtime readiness.

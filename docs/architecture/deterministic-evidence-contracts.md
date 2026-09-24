@@ -17,11 +17,14 @@ native provider observation
     -> admitted completed-bar or direct deterministic input
     -> versioned measurement
     -> versioned analytical entity and bounded current state
-    -> meaningful semantic transition (future minimum Sir Loke corridor)
+    -> meaningful semantic transition (when required by a selected consumer)
     -> evidence-cited interpretation or recommendation
 ```
 
-The layers never collapse:
+These distinctions apply where the selected consumer needs them. The chain is not a requirement
+to build every layer before an actor, strategy or indicator can run.
+
+Keep meanings explicit:
 
 - an observation is a provider/Nautilus fact with source and timestamp semantics;
 - a measurement is a deterministic numerical or typed transformation;
@@ -29,7 +32,8 @@ The layers never collapse:
 - rolling state is the bounded latest truth about entities;
 - an event is an immutable meaningful transition, not every revision;
 - an opportunity is an advisory thesis/expression lifecycle; and
-- a recommendation remains advisory and cannot become an order instruction.
+- an analytical result is separate from the strategy decision and explicit execution command
+  which may act on it under the selected issue's account and order authorization.
 
 ## Universal Contract Rules
 
@@ -262,5 +266,5 @@ and their replacement plan have been removed. Historical code and acceptance evi
 Git; they do not establish current runtime outputs.
 
 The formula and identity rules above constrain future implementations. A new producer needs a
-reviewed task tied to a named Sir Loke evidence need, one canonical owner for each series/subject,
-and Markeitect's live acceptance.
+selected issue tied to an actual actor, strategy or indicator need, one canonical owner for
+each series/subject, and practical live feedback.

@@ -1,6 +1,6 @@
 ---
 name: markeitech-semantic-events-opportunity-lifecycle-expert
-description: Review a named derived event or opportunity transition, identity, temporal validity, conflict, or revision. Keep event meaning separate from metrics and Sir Loke judgment.
+description: Review a named derived event or opportunity transition, identity, temporal validity, conflict, or revision. Keep event meaning separate from metrics and strategy decisions.
 ---
 
 # Semantic Events Opportunity Lifecycle

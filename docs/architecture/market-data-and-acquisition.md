@@ -16,8 +16,9 @@ in a parallel raw-data model.
 `DataAcquisitionActor` is the sole logical owner of provider-facing live subscriptions and
 historical requests. Consumers declare bounded demand. Acquisition resolves instruments,
 validates support and policy, reconciles shared requirements, owns pacing/retry/cancellation, and
-publishes lifecycle facts. Analytical actors, the watchlist, Discord, and future Sir Loke never
-call IB directly.
+publishes lifecycle facts. Analytical actors, strategies, the watchlist and projections declare
+data needs through acquisition rather than creating independent market-data connections. Execution
+client ownership belongs to its selected issue and does not duplicate market-data ownership.
 
 ```text
 configuration/operator/future policy intent
@@ -38,7 +39,7 @@ The runtime does not use one “active instrument” plus background instruments
 
 | Concept | Meaning |
 |---|---|
-| Trade-expression universe | Products eligible to express an approved thesis; SPXW and QQQ 0DTE are the V1 delivery boundary |
+| Trade-expression universe | Products selected by the current strategy/issue and account permissions |
 | Observation universe | Instruments currently admitted to provide decision evidence; membership may change under policy |
 | Active capabilities | Deterministic calculations enabled for an instrument or related group, each with declared dependencies and cost |
 | Focus | Temporary expiring priority which may increase depth, breadth, cadence, or reporting without redefining membership or truth |
@@ -117,7 +118,7 @@ focused decision covering:
   runtime claims; and
 - explicit provider gaps, including whether broad five-second bar-derived last is sufficient.
 
-No operator, news workflow, model, or Sir Loke intent receives direct subscription authority.
+Consumers and operator requests use the acquisition owner for market-data subscriptions.
 
 ## Historical Dependency Planning
 
@@ -214,5 +215,5 @@ The current connected evidence is bounded to the sessions and profiles recorded 
 - no assumption that data is consolidated, real time, complete, or supported;
 - no persistent raw-data store justified by replay, backtesting, or future convenience;
 - no model-authored formula, selector, provider parameter, or resource limit; and
-- no order submission, modification, bind-for-control, cancellation, replacement, exercise, or
-  close authority.
+- market-data acquisition does not own order actions; the execution issue defines their owner
+  and the account/action authorization needed for its live scenario.

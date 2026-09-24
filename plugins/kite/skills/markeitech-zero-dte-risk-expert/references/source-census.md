@@ -12,14 +12,8 @@ for every review.
 - `AGENTS.md`, `markeitech.md`, `docs/current-status.md`, `docs/development-guidelines.md`, and
   `docs/README.md`: authority, product boundary, current implementation, evidence discipline, and
   permissions.
-- `docs/roadmap/sir-loke-v1-delivery-plan.md`: accepted Options Intelligence ownership,
-  opportunity/expression separation, bounded options proof, candidate evidence, and advisory limit.
-- `docs/product/sir-loke-v1.md`: first-version SPXW/QQQ scope, recommendation, trade episode,
-  monitoring, governance, account-observation, and no-execution boundary.
-- `docs/architecture/sir-loke-v1-boundaries.md`: requested quote, Greek, IV, liquidity, expiry,
-  degradation, request, and side-effect evidence.
-- `docs/roadmap/development-backlog.md`: deferred GEX assumptions and provenance gates; historical
-  research in Git does not authorize live dealer-position or contract-risk claims.
+- The selected issue defines any options-risk work. The general foundation backlog does not
+  authorize a particular options product, dealer-position inference or risk model.
 
 Tracked research is subordinate to the charter, accepted plans, current implementation, and exact
 current market evidence.

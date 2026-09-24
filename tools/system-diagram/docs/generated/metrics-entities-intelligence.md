@@ -7,7 +7,7 @@ Show calendar state, historical planning, and evidence-health capabilities.
 - View ID: `view.metrics-entities-intelligence`
 - Profile: `profile.example`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `a382f2e0636cdb3148b451e3e0e8239a684438e5`
+- Checkout evidence: `417bc3a3f716c5ec539758f26a9fcf23b533672c`
 - Review status: `proposed`
 
 ## Components
@@ -37,7 +37,7 @@ Show calendar state, historical planning, and evidence-health capabilities.
 - Static source and configuration checks cannot prove connected runtime behavior.
 - Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.
 - Generated artifacts are documentation projections and must never be edited or treated as authority.
-- Markeitech is read-only and advisory; no current order submission or execution exists.
+- The current node has no execution client; execution and account monitoring are planned next.
 - Shared metric and entity contracts have no current producer.
 - Dependencies do not imply causality, confidence, ranking, advice, or trading intent.
 

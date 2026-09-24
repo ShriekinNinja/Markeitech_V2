@@ -35,7 +35,7 @@ smallest correction or next check, and material limits; omit empty audit section
 Source quality, mathematical correctness, domain meaning, and consumer fitness remain distinct.
 They require evidence, not separate agents or signed-off dispositions. Missing evidence still
 blocks the affected conclusion. Skills do not grant execution, legal, connected-service, or
-project-decision authority. Sir Loke and runtime ownership are unchanged.
+project-decision authority. Runtime ownership is governed by the selected issue and accepted architecture.
 
 ## Optional Review And Retirement
 

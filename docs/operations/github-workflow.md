@@ -112,20 +112,21 @@ not itself authorize external publication, implementation, approval, or merge.
    another branch.
    Dependent work waits for its prerequisite PR to merge unless Markeitect approves otherwise.
 
-## Sir Loke Task Live Acceptance
+## Runtime Live Feedback And Local Tests
 
-For the [Sir Loke delivery tasks](../roadmap/sir-loke-v1-delivery-plan.md), an implementation PR
-ends in `ready for Markeitect live test`. Supply the exact head, local setup, copy-paste Python
-start/stop commands, bounded scenario, expected results, stop conditions, and sanitized result
-location. Markeitect alone performs the live run and reviews its results before accepting the task
-and approving/merging the tested head. Agents may analyze results supplied for that purpose, but
-never substitute their verdict for his. CI, merge, and a published runbook do not close live
-acceptance. A new head requires renewed review and live checks of the affected behavior.
+Agents locally run the tests they add/change and specific CI failures needed for diagnosis. PR CI
+owns broad regression checks. Do not routinely run full suites or unrelated validation tools, or
+create a test solely to satisfy process. Narrow integrity checks/generation apply to changed
+artifacts. Existing CI jobs and final-head approval requirements remain in force.
 
-Do not start dependent work before live acceptance and merge unless Markeitect explicitly changes
-that dependency. Keep fixes on the same PR. An unobserved market condition is `not exercised`, not
-passed. Keep its live acceptance open and do not use `Closes` for an issue with outstanding required
-scenarios. Documentation-only work, including the plan itself, needs review rather than a live run.
+For runtime changes, reach a short practical live scenario promptly. Provide exact revision,
+setup/commands, account/instruments, intended actions, expected result and stop condition.
+Markeitect performs and reviews the run unless he explicitly delegates it. A development request
+does not authorize an account connection or order. Record actual findings and unexercised cases;
+fix concrete findings on the same PR. Do not require an exhaustive proof programme before live use.
+
+Documentation changes need document review. Use `Refs` when issue acceptance still requires a live
+result, and `Closes` when this PR completes the issue. CI does not establish connected behavior.
 
 ## PR Review Record
 
@@ -421,7 +422,7 @@ valid until expiration. See GitHub's
 [installation-token procedure](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app).
 
 The command is a development-time publishing utility. It is separate from the optional Kite
-advisor plugin and from Sir Loke, and does not grant either component runtime or review authority.
+development plugin and does not grant runtime or review authority.
 
 ## Required CI
 

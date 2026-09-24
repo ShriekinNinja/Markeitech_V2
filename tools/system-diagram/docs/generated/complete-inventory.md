@@ -7,7 +7,7 @@ Show implemented, conditional, disabled, external, and future components without
 - View ID: `view.complete-inventory`
 - Profile: `profile.example`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `a382f2e0636cdb3148b451e3e0e8239a684438e5`
+- Checkout evidence: `417bc3a3f716c5ec539758f26a9fcf23b533672c`
 - Review status: `proposed`
 
 ## Components
@@ -30,7 +30,6 @@ Show implemented, conditional, disabled, external, and future components without
 | `component.live-node` | Nautilus LiveNode | framework | implemented | always | not applicable | enabled | `component.live-node` | `boundary.nautilus` |
 | `future.opportunities` | Plural Opportunities | future_component | future | not_composed | not applicable | not_applicable | `future.opportunities` | `boundary.future` |
 | `future.semantic-events` | Semantic Events | future_component | future | not_composed | not applicable | not_applicable | `future.semantic-events` | `boundary.future` |
-| `future.sir-loke` | Sir Loke Advisory Agent | future_component | future | not_composed | not applicable | not_applicable | `future.sir-loke` | `boundary.future` |
 | `operator.markeitect` | Markeitect / Operator | operator | external | external | not applicable | not_applicable | `operator.markeitect` | `boundary.projections` |
 | `projection.discord` | Discord | projection | external | external | not applicable | not_applicable | `projection.discord` | `boundary.projections` |
 | `provider.interactive-brokers` | Interactive Brokers / TWS / Gateway | provider | external | external | not applicable | not_applicable | `provider.interactive-brokers` | `boundary.providers` |
@@ -70,7 +69,7 @@ Show implemented, conditional, disabled, external, and future components without
 - Static source and configuration checks cannot prove connected runtime behavior.
 - Provider account, entitlement, adapter request mapping, and live delivery remain unknown unless separately measured.
 - Generated artifacts are documentation projections and must never be edited or treated as authority.
-- Markeitech is read-only and advisory; no current order submission or execution exists.
+- The current node has no execution client; execution and account monitoring are planned next.
 - Removed and rejected implementation identities are represented as tombstones in the manifest and companion record, not as active nodes.
 - Configuration-gated subcapabilities are listed in the accessible Markdown companion under their owning components rather than duplicated as visual nodes.
 - Inventory adjacency and clustering do not imply data flow.

@@ -180,7 +180,7 @@ def test_renders_operational_readiness_without_mentions() -> None:
     assert payload["allowed_mentions"] == {"parse": []}
     assert "content" not in payload
     embed = payload["embeds"][0]
-    assert embed["title"] == "Markeitech V2 | Ready for Sir Loke"
+    assert embed["title"] == "Markeitech V2 | Operational Readiness"
     assert {field["name"]: field["value"] for field in embed["fields"]} == {
         "State": "READY",
         "Watchlist": "18/18 observed",

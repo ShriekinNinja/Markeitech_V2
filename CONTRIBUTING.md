@@ -8,7 +8,7 @@ rights to use or distribute the project.
 Read, in order:
 
 1. `markeitech.md`
-2. `docs/product/sir-loke-v1.md`
+2. The selected issue and approved plan
 3. `docs/current-status.md`
 4. `docs/development-guidelines.md`
 5. the accepted architecture and stage plan relevant to the change
@@ -73,15 +73,15 @@ Do not commit secrets, machine configuration, vendor data, logs, database dumps,
 
 ## Verification
 
-```bash
-.venv/bin/markeitech verify all
-```
+Locally run tests you add or change, plus specific CI failures needed for diagnosis. Do not
+routinely run the full suite or unrelated tooling. Simple changes do not require a new test solely
+for process. Use narrow integrity checks and required generation for changed artifacts.
 
-Run `.venv/bin/markeitech verify postgres` separately only against an explicitly configured
-disposable PostgreSQL database. Focused task-specific Ruff or pytest invocations remain valid for
-development, but the full-repository acceptance scope is owned by `markeitech verify`.
+PR CI runs the broad root tests, PostgreSQL integration, Ruff, Kite package checks and API-doc
+verification. `markeitech verify all` remains an available operator/CI utility, not a mandatory
+local preflight. Standalone tool suites are not all included in CI.
 
-Connected IB acceptance is manual and operator-owned. Automated tests and CI must never connect to
-TWS/IB Gateway, Discord, or a live market-data provider.
-
-See `docs/operations/github-workflow.md` for the full integration policy.
+Runtime changes should reach a short practical live scenario promptly. Markeitect performs and
+reviews live acceptance unless he delegates a particular run. CI must not connect to IB, Discord
+or a live provider. Account/order actions need explicit authorization. See
+[GitHub operations](docs/operations/github-workflow.md).

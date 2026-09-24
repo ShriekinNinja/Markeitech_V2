@@ -21,7 +21,6 @@ checklist or read every entry. Domain distinctions require distinct evidence, no
 | Interpret a specific vendor options-flow schema or print with its source, filter, classification, premium, and open-interest timing | [options-flow](../../markeitech-options-flow-expert/SKILL.md) |
 | Review evidence-bound risk for an already named long single-leg 0DTE option candidate | [zero-dte-risk](../../markeitech-zero-dte-risk-expert/SKILL.md) |
 | Review a proposed feature, label, evaluation, calibration, monitoring, or bounded optimization claim | [statistical-learning-optimization](../../markeitech-statistical-learning-optimization-expert/SKILL.md) |
-| Review a named Sir Loke intent, approval, evidence-admission, abstention, audit, or no-execution boundary | [live-agent-governance](../../markeitech-live-agent-governance-expert/SKILL.md) |
 | Review a specific financial chart or evidence projection for faithful meaning, time, freshness, accessibility, or rendering behavior | [evidence-visualization](../../markeitech-evidence-visualization-expert/SKILL.md) |
 | Review a specific credential, authentication, permission, tool/MCP, redaction, dependency, or network-boundary change | [security-tool-boundary](../../markeitech-security-tool-boundary-expert/SKILL.md) |
 | Check permitted use and provenance for a named vendor product and proposed acquisition, retention, display, redistribution, or external processing | [vendor-data-licensing-provenance](../../markeitech-vendor-data-licensing-provenance-expert/SKILL.md) |

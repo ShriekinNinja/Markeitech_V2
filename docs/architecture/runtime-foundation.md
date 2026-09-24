@@ -12,9 +12,8 @@ the original decision chronology.
 
 Markeitech is one local, event-driven NautilusTrader `LiveNode` with code-owned actor composition,
 native market-data delivery, bounded background workers for blocking side effects, and PostgreSQL
-operational audit. The runtime is advisory and currently market-data-only. It has no broker
-account/order/fill/position observer, conversational Discord bot, model, Sir Loke component, or
-order-action path.
+operational audit. The current node is market-data-only and has no execution client or account monitor.
+Execution and account monitoring are the next priority in the [live foundation plan](../roadmap/live-foundation-plan.md).
 
 The foundation follows five rules:
 
@@ -36,10 +35,9 @@ select approved optional components and their configuration, but it cannot name 
 imports or construct a plugin graph. `node.py` builds the Nautilus clients and registers the
 validated plan; it does not redefine component ownership.
 
-The active V3 ES profile is intentionally narrow. Its exact actor roster is maintained in
-[`current-status.md`](../current-status.md#active-tracked-v3-profile). Other implemented actors and
-pure contracts may be disabled, uncomposed, or retained only as migration evidence. Presence in
-source, tests, or the diagram inventory is not evidence that a component is active.
+The tracked example composes ten actors; the zero-instrument operational profile composes nine.
+See [current status](../current-status.md). Strategy registration and active indicator producers
+are not implemented. Extend composition only as needed by the selected issue.
 
 Composition invariants are:
 
@@ -92,7 +90,7 @@ invalid transitions fail visibly.
 Global `READY` remains deliberately narrow: the accepted startup prerequisites and configured
 instrument-definition/acquisition conditions are satisfied. It does not prove that every feed is
 fresh, a calendar-dependent consumer is synchronized, options are usable, broker state is
-reconciled, Discord is connected, or Sir Loke can advise.
+reconciled or Discord is connected.
 
 Local owners publish dimensional facts for provider demand, session state, evidence freshness,
 historical readiness, resources, persistence, and enabled analytical capabilities. A process may
@@ -175,12 +173,12 @@ migration requires separate approval and a recovery plan.
 
 ## External Projections
 
-Console, Discord webhooks, a future Discord bot, and a future UI are projections.
+Console, Discord webhooks and user interfaces are projections.
 They render canonical state and delivery outcomes; they do not calculate or mutate market,
 broker, policy, or trade truth.
 
 The current [`DiscordHealthActor`](../operations/discord-health-webhook.md) is an optional outbound
-webhook projection. It is not Sir Loke. The former Visual Debug capture path has been removed.
+webhook projection. The former Visual Debug capture path has been removed.
 
 Projection failure must remain bounded and must not stop provider ingestion, deterministic
 analysis, broker reconciliation when later added, or required durable audit.

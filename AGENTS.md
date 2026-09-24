@@ -17,43 +17,22 @@ A directly invoked domain skill applies only to its named question.
 
 Kite is a library of focused development-time skills. The primary agent selects and reads the
 guidance needed for the task; Markeitect need not name skills. It has no mandatory advisor roster,
-coverage check, dependency graph, or model-allocation procedure. Sir Loke runtime behavior and
-authority remain separate from Kite.
+coverage check, dependency graph, or model-allocation procedure. Kite provides development-time
+guidance and grants no runtime authority.
 
-## Authority And Precedence
+## Authority And Required Context
 
-- System and platform instructions remain binding.
-- Markeitect's newest explicit instruction governs the current task and supersedes older project
-  preferences when they conflict.
-- `markeitech.md` governs durable product and engineering principles.
-- `docs/product/sir-loke-v1.md` governs the accepted first useful product experience.
-- `docs/current-status.md` states what is implemented now; plans and roadmaps are not proof of
-  implementation.
-- Accepted architecture and stage documents govern their bounded subject area.
-- Remembered chat context is useful orientation, never stronger evidence than the current checkout.
+- System/platform instructions and Markeitect's newest explicit request govern.
+- `markeitech.md` owns durable direction and principles.
+- `docs/current-status.md` records implemented state.
+- `docs/roadmap/live-foundation-plan.md` records development priorities.
+- The selected issue and approved plan define the actual work. Read its affected code, nearby tests
+  and only the architecture/operations contracts needed to resolve that issue.
 
-If instructions, documents, code, or observed runtime behavior disagree materially, stop before
-the consequential action, explain the conflict, and ask Markeitect to decide. Do not quietly choose
-the most convenient interpretation.
-
-## Required Reading
-
-Before planning or editing, read in order:
-
-1. `markeitech.md`
-2. `docs/product/sir-loke-v1.md`
-3. `docs/current-status.md`
-4. `docs/development-guidelines.md`
-5. `docs/README.md`
-6. the accepted architecture, roadmap, and operations documents relevant to the requested stage
-
-Treat tracked documents as authority over remembered chat context. When implementation changes an
-accepted boundary, update the smallest authoritative document needed to keep a fresh checkout
-accurate.
-
-Before acting, inspect the current branch, worktree status, relevant code, and nearby tests. Assume
-unfamiliar local changes belong to Markeitect or generated tooling. Work with them; never discard,
-overwrite, or normalize them away merely to simplify the task.
+Before editing, inspect branch/worktree status and preserve unfamiliar local changes. Read the
+charter and relevant current-state sections; use `docs/README.md` to locate task-specific context.
+Do not load the whole roadmap or backlog as a prerequisite for an ordinary issue. If a material
+conflict affects the task, explain it and ask Markeitect before the consequential action.
 
 ## Focused Kite Work
 
@@ -84,36 +63,27 @@ The old project advisor roles are retired. Historical skills or roles already lo
 task do not establish the revised behavior; use a coherent reviewed checkout/package and a fresh
 task after an authorized refresh. See `docs/operations/kite.md` for the lifecycle procedure.
 
-## Delivery And Live Acceptance
+## Delivery And Live Use
 
-- Follow `docs/roadmap/sir-loke-v1-delivery-plan.md`: one observable Sir Loke behavior per
-  reviewable implementation task, including its runnable integration. After the first real bot
-  and current observations, prioritize stronger analytical observation and useful trade assessment.
-  Guardian behavior follows Markeitect's acceptance of that analytical value. Dormant actors,
-  offline proofs, price narration, and generic confirmation prompts do not establish it.
-- Own the intellectual work: propose the next useful analytical capability, inspect/research its
-  evidence and reusable implementation, and break it into a concrete live task. Do not ask
-  Markeitect to supply the indicator list or technical recipe. Use his live review to propose
-  additions, revisions, or retirement of capabilities. The intelligence backlog is open-ended;
-  do not defer it until after the guardian or require every possible capability before useful work.
-- For each intelligence task, state the market question, expected added insight, and a live
-  usefulness comparison alongside correctness checks. Markeitect judges timeliness, misses,
-  misleading conclusions, noise, and incremental value. Agents must not award that verdict.
-- Define the outcome, exact scope/exclusions, dependencies, unresolved decisions, focused checks,
-  and Markeitect's live scenario in a short task brief. Do not expand it into generic architecture,
-  optimization, tooling, or unrelated hardening without a concrete blocker and scoped decision.
-- Use existing tests and add checks for changed behavior and named failure risks. Run required CI;
-  broaden local verification only for changed boundaries, failures, or unresolved risks. Do not
-  add redundant proof suites or repeat accepted evidence whose inputs and behavior have not changed.
-- Every Sir Loke implementation task ends in a live run performed and reviewed only by Markeitect.
-  Agents deliver exact-head start/stop commands, setup, bounded steps, expected results, stop
-  conditions, and a sanitized result location. Agents do not perform that run or claim his verdict.
-- Deliver the PR as `ready for Markeitect live test`. It becomes `accepted by Markeitect` only
-  after he runs and reviews it. Fixes stay on the same PR and require renewed review/live checks
-  of affected behavior. Dependent work waits for acceptance and merge unless he explicitly says
-  otherwise. Unexercised conditions remain unaccepted; CI or merge alone does not close them.
-- Documentation-only maintenance needs document review, not an artificial connected run. This
-  exception does not permit splitting runtime work into offline-only tasks to evade live feedback.
+- Work only on the selected issue and its direct dependencies. Future backlog or product ideas
+  do not expand it. Stop when the requested result is delivered.
+- Prioritize a working execution engine and account monitor, then concurrent actors, strategies
+  and indicators, as selected through issues. Reuse the existing foundation until the task or
+  actual operation reveals a concrete need to change it.
+- Keep the brief short: outcome, scope, unresolved decisions and a practical acceptance scenario.
+  Do not create general proof programmes, speculative hardening or unrelated infrastructure.
+- Locally run tests you add/change and specific CI failures needed for diagnosis. PR CI owns broad
+  regression checks. Do not routinely run full suites or unrelated tools, and do not create a test
+  solely to satisfy process for a simple change. Use narrow integrity/generation checks for changed
+  documentation or packages.
+- Bring runtime changes to a small live scenario promptly. Give exact revision, setup, commands,
+  account/instruments, intended actions, expected result and stop condition. Markeitect runs and
+  reviews live acceptance unless he explicitly delegates a particular run. Fix concrete findings
+  on the same PR and state unexercised cases honestly.
+- An execution implementation request does not authorize actual connected/order actions. Require
+  explicit account, intended actions and limits for the selected live run.
+- Documentation maintenance needs document review. CI remains required for merge; neither CI nor
+  a single live scenario establishes unexercised behavior.
 
 ## Working Boundaries
 
@@ -170,10 +140,9 @@ task after an authorized refresh. See `docs/operations/kite.md` for the lifecycl
   approval, but never overrides a newer explicit task restriction.
 - Do not run connected IB, Discord, database-destructive, or execution paths unless Markeitect
   explicitly authorizes that exact run. Offline tests are allowed when relevant.
-- Markeitect exclusively performs and reviews Sir Loke task live acceptance, including IB/TWS,
-  Discord, and live model calls. An implementation request or prepared run command is not permission
-  for an agent to run it. Analyze supplied results only when asked; do not consume external capacity
-  with redundant probes.
+- Markeitect performs and reviews live acceptance unless he explicitly delegates a particular run.
+  Prepared commands or implementation approval alone do not authorize a connected run or order.
+  Analyze supplied results when asked; avoid redundant probes.
 - Never commit secrets, local configuration, `.idea/`, vendor exports, raw market data, runtime
   logs, database dumps, or licensed data.
 - Do not reintroduce retired source, product semantics, or historical authority without a
@@ -189,9 +158,8 @@ change.
 
 ## Engineering Invariants
 
-- V2 is live-first, event-driven, read-only, and advisory. It does not place orders.
-- Sir Loke v1 may observe admitted broker account/order/fill/position facts but receives no submit,
-  modify, cancel, replace, or close capability. Observation and execution authority remain separate.
+- V2 is live-first and event-driven. Execution and account monitoring are active development
+  priorities; actual connected/order actions require explicit authorization for the selected run.
 - Account mode is not a product, schema, or acceptance discriminator. Markeitect selects the broker
   account/session; use the same analysis and task workflow. Preserve account identity and actual
   data/permissions, and do not infer account mode from ports, prefixes, or runtime environment.
@@ -203,8 +171,8 @@ change.
   resources, typed contracts, and durable operational audit.
 - Analytics, signals, thresholds, and instrument-selection assumptions require explicit current
   V2 authority and may not be inherited implicitly from retired implementations.
-- No trade-expression instrument is globally preferred. Preserve multiple concurrent
-  opportunities and keep evidence instruments distinct from options expressions.
+- Instruments and trading products are selected by the issue and account permissions. Keep
+  analytical inputs distinct from traded contracts; no product is globally preferred.
 - Anything reasonably variable must be typed, bounded, versioned configuration with explicit
   defaults. Implement only the current task's required mutability; defer optimization machinery
   until an approved task needs it. Do not hide tunable behavior in constants.
@@ -278,19 +246,12 @@ The V2 API documentation utility is an isolated, static source-analysis tool und
 
 ## Completion Standard
 
-A batch is ready for review when implementation and documentation agree, focused verification
-passes, broader verification is proportional to risk, `git diff --check` is clean, and remaining
-acceptance is stated honestly. A Sir Loke implementation task is complete only after Markeitect's
-live run and acceptance; report `ready for Markeitect live test` at the agent handoff. Before
-presenting work for review:
-
-1. inspect the final diff and worktree for accidental files, secrets, data, or unrelated churn;
-2. verify local configuration and IDE state were not overwritten;
-3. confirm no connected or destructive action occurred without approval;
-4. summarize what changed, what was verified, and what remains unknown; and
-5. commit only the scoped files, push the change branch, open or update its PR, and report its
-   exact head and CI status while leaving it unmerged for Markeitect; if an explicit task
-   restriction prevents publication, preserve the work and state the remaining gate.
+A batch is ready for review when the issue outcome and documentation agree, changed local tests
+and narrow integrity checks pass, and `git diff --check` is clean. PR CI owns broad regression checks.
+Inspect the final diff for unrelated files, secrets or local configuration changes. Commit only
+scoped files, push the branch, open/update its PR and report the exact head and CI status. Leave it
+unmerged for Markeitect. For runtime changes, provide the short live handoff and record what remains
+unexercised; do not declare his acceptance. Explicit no-commit/no-push restrictions still apply.
 
 See `CONTRIBUTING.md` and `docs/operations/github-workflow.md` for the branch, PR review, CI, and
 Markeitect-owned merge process.

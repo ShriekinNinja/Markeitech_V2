@@ -12,6 +12,10 @@ applies only to that question. Installation and casual discussion do not activat
 
 ## Work On The Requested Outcome
 
+The selected issue defines work. Use existing foundations until the task or live operation exposes
+a concrete problem. Do not select future capabilities from the backlog unless asked. Runtime work
+should reach practical live feedback promptly, with explicit authorization for connected/order actions.
+
 1. Use the repository authority and current branch/worktree context. Inspect the affected code,
    contract, and nearby tests. Reuse evidence already established in this task unless its inputs
    changed or its freshness is material.
@@ -24,8 +28,9 @@ applies only to that question. Installation and casual discussion do not activat
 4. Expand the investigation only for an observed defect, conflicting authority, or missing fact
    with a concrete effect on the requested result. Explain that connection. Keep unrelated
    improvement suggestions outside the implementation scope; do not make them prerequisites.
-5. Make the smallest authorized correction and run relevant checks. Finish once the outcome is
-   supported. Report the result, evidence, material limits, and any actual blocker. A full audit,
+5. Make the smallest authorized correction. Run tests added/changed for the issue and specific CI
+   failures needed for diagnosis; PR CI owns broad regression. Use narrow artifact checks when
+   needed. Finish once the outcome is supported. Report the result, evidence, material limits, and any actual blocker. A full audit,
    exhaustive matrix, or architecture redesign belongs only to a request that needs that breadth.
 
 For a new framework capability or replacement, inspect the relevant Nautilus alternatives before
@@ -56,7 +61,7 @@ use distinct. Preserve unknowns and upstream limitations. State missing facts di
 than requiring an advisor to exist. Consult current primary sources for unstable claims.
 
 Skills do not grant approval, execution authority, service access, or legal permission. Keep the
-repository's no-order-action boundary, secret handling, Markeitect-owned live acceptance, scoped
+repository's account/order authorization, secret handling, live acceptance, scoped
 PR workflow, and approval gates. A declared read-only review is not proof of technical isolation.
 
 Behavioral evaluation belongs to plugin maintenance, not every task. See

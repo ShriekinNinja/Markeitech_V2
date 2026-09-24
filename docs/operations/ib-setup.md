@@ -1,9 +1,8 @@
 # V2 Interactive Brokers Setup
 
-This guide applies to the currently implemented Markeitech V2 **market-data** runtime. Retired
-commands and the former active/background instrument model are not part of this workflow. The
-accepted future Sir Loke broker-observation boundary is described separately below; it is not
-implemented or authorized by the current run command.
+This runbook describes the current market-data-only node. Execution and account monitoring are
+active priorities in the [live foundation plan](../roadmap/live-foundation-plan.md); their issue
+will supply the execution-specific account, client, permissions and live scenario.
 
 ## Authoritative References
 
@@ -32,11 +31,8 @@ Markeitech currently uses Interactive Brokers for market data only:
 - explicit connection confirmation token; and
 - no automated test or setup command that connects to IB.
 
-The Sir Loke v1 product now requires future read-only observation of broker account, order, fill,
-and position facts, but no such client or actor exists in the current checkout. Observation must
-not be confused with order routing. Any submit, modify, bind for control, cancel, replace,
-exercise, or close capability
-requires a separately reviewed future execution and risk program and is outside Sir Loke v1.
+The current market-data profile does not configure an execution client. Adding execution is now
+in scope through a selected implementation issue; this existing runbook does not enable it.
 
 ## User-Owned Requirements
 
@@ -74,7 +70,7 @@ The repository does not include account credentials or entitlements.
 This checklist is accepted only for the implemented market-data client. Do not change to client ID
 `0`, enable automatic open-order download/binding, disable read-only mode, or add an execution
 client in an ordinary market-data run. Those settings may affect which manual TWS orders are
-visible or controllable and belong to the separately reviewed observation proof.
+visible or controllable and belong to the selected execution issue and its authorized live scenario.
 
 Use the socket port configured in the actual TWS/Gateway session and set the same value in
 `config/system.local.toml`. The example port is a connection setting, not account classification.
@@ -130,11 +126,8 @@ With Docker Desktop running and local files configured:
 The doctor checks that the configured TCP endpoint is listening. It does not authenticate, request
 market data, validate entitlements, or start Nautilus.
 
-Run offline checks before a connected acceptance:
-
-```bash
-.venv/bin/markeitech verify all
-```
+Run the tests added/changed for the issue. Broad regression checks run on the PR; a full local
+suite is not a prerequisite for this runbook.
 
 ## Connected Run
 
@@ -164,66 +157,23 @@ Inspect:
 Provider observations remain transient. PostgreSQL stores operational intent, status, health,
 request, retry, transition, and outcome evidence rather than raw quotes, trades, or bars.
 
-This run does not observe the account's orders, fills, positions, or P&L. A successful
-market-data run is not evidence that Sir Loke can detect a manually entered TWS trade.
+This market-data run does not observe orders, fills, positions or P&L.
 
-## Planned Sir Loke Broker-Observation Proof
+## Execution And Account Monitor Development
 
-Markeitect selects the Interactive Brokers account and TWS session for connected acceptance.
-Sir Loke uses one analysis and mentoring workflow. Broker facts retain a stable non-secret account
-identity or alias; account-mode classification is not required by the product or test protocol.
+Use the native Nautilus execution client, cache, account/order/position events and reconciliation
+where they meet the issue. Inspect the exact startup and order paths needed for the chosen account,
+client settings and scenario. Reach a small authorized live run promptly; resolve observed gaps
+without a mandatory staged proof programme.
 
-The proof must evaluate the exact pinned NautilusTrader capabilities before custom IB access:
+The issue must identify the account and TWS session, intended order actions, instrument/quantity
+limits and stop condition. Market-data run approval does not authorize orders. Account monitoring
+must preserve account/order/fill/position identity. Unexpected account or order behavior stops the
+scenario. Markeitect runs and reviews acceptance unless he delegates that particular run.
 
-- `InteractiveBrokersExecutionClientConfig` and its factory;
-- live execution-engine reconciliation and external-order settings;
-- native cache account/order/position state;
-- typed order and position events/callbacks; and
-- native execution/position reports.
-
-The proof is observation-only. It must establish event coverage and identity for manually entered
-orders, partial fills, cancel/replace, scale changes, manual closure, duplicates, reconnect, and
-reconciliation without submitting an order or silently taking control of a manual TWS order.
-
-The [Gate 1A evidence reference](../reference/ib-observation-gate1.md) records the exact pinned
-construction, configuration, startup, request, report, reconciliation, recovery, and disconnect
-source inventory. Client `1` constructs offline; client `0` is rejected by the pinned constructor's
-modulo-1000 order-ID partition. No lifecycle or connected behavior was exercised.
-
-Official IBKR documentation distinguishes several materially different paths. `reqOpenOrders`
-returns orders placed by the same API client; when client `0` invokes it, existing manual TWS
-orders are also bound for API control. `reqAutoOpenOrders(True)` is restricted to client `0` and
-associates future manual TWS orders. `reqAllOpenOrders` is a one-time download of current open
-orders in associated accounts and does not start a future-order subscription. Automatic download
-is therefore not synonymous with automatic binding. Binding makes a manual order
-modifiable/cancelable by the API and can cancel/resubmit a working exchange order, potentially
-changing queue priority.
-
-The inspected rc4 startup calls its `all_open_orders()` request while establishing an order-ID
-baseline even though the public `fetch_all_open_orders` default is `False`; the field is logged but
-was not found controlling the inspected execution paths. Treat that as an unresolved pinned-source
-inconsistency. The TWS API read-only setting prevents API modifications; it is not by itself
-evidence that the surrounding client startup avoids all control effects or that the required
-manual-order events are visible.
-
-Therefore no client ID, binding mode, open-order request, reconciliation setting, or read-only
-combination is accepted for this product until the offline safety review identifies every exact
-call and the bounded connected proof measures the chosen configuration. An unexpected bind,
-resubmission, modification, cancellation, replacement, exercise, or order submission is an
-immediate stop condition.
-
-Relevant provider references:
-
-- [TWS API settings](https://www.interactivebrokers.com/docs/tws-api/doc/tws-settings/introduction)
-- [API client orders and client-0 binding](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/requesting-currently-active-orders/api-clients-orders)
-- [All submitted orders snapshot](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/requesting-currently-active-orders/all-submitted-orders)
-- [Manual TWS orders and client ID 0](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/requesting-currently-active-orders/manually-submitted-tws-orders)
-- [Order binding notification](https://www.interactivebrokers.com/docs/tws-api/doc/order-management/requesting-currently-active-orders/order-binding-notification)
-- [Modifying orders and queue-priority warning](https://www.interactivebrokers.com/docs/tws-api/doc/orders/modifying-orders)
-
-The proof needs separate explicit authorization for its connected run. It must use dedicated local
-configuration outside Git, record the exact TWS instance/account identity/client ID/settings,
-and stop on any unexpected order-control behavior. Markeitect performs and reviews the run.
+The [earlier native-client inspection](../reference/ib-observation-gate1.md) is historical evidence
+which may save work where still applicable; it is not a prerequisite gate or current execution
+acceptance. Do not assume that a setting from the old observation experiment fits the new task.
 
 ## Common Failures
 

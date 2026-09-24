@@ -5,9 +5,9 @@ question. Historical advisor arrangements and examples are not current workflow 
 
 The controlling sources are `markeitech.md`, `docs/current-status.md`,
 `docs/development-guidelines.md`, `docs/architecture/deterministic-evidence-contracts.md`, and the
-accepted `docs/roadmap/sir-loke-v1-delivery-plan.md`. They establish the target evidence chain,
-plural opportunities, semantic-event separation, typed envelopes and no-execution boundary; they
-also state semantic events, Sir Loke and opportunity lifecycle are not yet implemented.
+`docs/roadmap/live-foundation-plan.md`. Current architecture owns evidence and event contracts;
+the selected issue owns any new semantic or opportunity behavior. A plan does not prove an active
+producer exists.
 
 Superseded semantic-event research remains informative in Git history only. No external
 state-machine or trading ontology is adopted as product semantics. Event-delivery standards and

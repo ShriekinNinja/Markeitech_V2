@@ -8,16 +8,14 @@
 
 > "Build only what the evidence can defend; leave the rest configurable." - Kite
 
-Markeitech is a live-first market-intelligence and trading-discipline system for discretionary
-index trading. Its first product is **Sir Loke**, a local private Discord trading companion,
-mentor, and configurable advisory governor backed by deterministic market, options, broker, policy,
-and audit evidence. The current V2 runtime is the read-only NautilusTrader foundation for that
-product.
+Markeitech is a live trading platform built on NautilusTrader. The immediate priority is a working
+execution engine and account monitor, followed by multiple actors, strategies and indicators
+operating together in real time. Small issue-defined changes reach live use promptly; actual
+operation and Markeitect's feedback drive improvements.
 
-Sir Loke v1 will recommend qualified SPXW/QQQ 0DTE trades, observe trades entered
-through TWS, monitor their thesis and evidence, challenge the trader firmly, and produce after-trade
-reports. That experience is accepted product direction but is not implemented yet. The runtime
-does not place orders; automated execution is intentionally absent.
+The current runtime supplies market data and operational actors. Execution and account monitoring
+are the next development priority, not implemented capabilities. See the
+[live foundation plan](docs/roadmap/live-foundation-plan.md).
 
 ## Project Credits
 
@@ -30,27 +28,15 @@ does not place orders; automated execution is intentionally absent.
 
 ## Current State
 
-The implemented foundation includes:
+The implemented foundation includes NautilusTrader `2.0.0rc5`, guarded Interactive Brokers market
+data, actor composition, static watchlist/shared acquisition, session/evidence health, historical
+planning, PostgreSQL operational audit, resource monitoring and optional Discord health webhooks.
+The tracked example composes ten actors; the zero-instrument operational profile composes nine.
+Shared metric/entity contracts exist; active indicator production and strategy registration do
+not. The current node registers a data client and no execution client.
 
-- NautilusTrader `2.0.0rc5` with a guarded Interactive Brokers market-data connection
-  (the dependency update has offline verification; Markeitect reports the rc5 example profile
-  running online, with historical timestamp calibration tracked in issue #59);
-- actor-owned system control, static watchlist, and shared native acquisition;
-- session/calendar ownership and adaptive evidence-health contracts;
-- purpose-specific historical dependency execution;
-- substantial deterministic measurement/entity code and historical acceptance evidence, while the
-  active V3 profile keeps those owners disabled during the incomplete V3-03 replacement;
-- PostgreSQL operational audit, schema recovery, and compact evidence recency profiles;
-- optional outbound Discord system-health webhooks, not a two-way Sir Loke bot;
-- passive host/process/cache telemetry and sustained resource-health transitions; and
-- explicit supervision, bounded queues, deduplication, and failure isolation.
-
-The tracked V3 ES profile currently composes eight calendar, evidence, historical-planning,
-acquisition, probe, and persistence actors. V3-03 Slices 1-2 are merged but inactive; Slices 3-9
-are unimplemented. Broker trade observation, options intelligence, semantic events, Sir Loke,
-the conversational Discord bot, trade episodes, governance, and reports are absent. See
-[current status](docs/current-status.md) for the exact surface and
-[the Sir Loke v1 product definition](docs/product/sir-loke-v1.md) for the destination.
+See [current status](docs/current-status.md) for implementation and known gaps. The project direction
+includes execution; a run or order requires explicit account and action authorization.
 
 ## Supported Development Environment
 
@@ -103,11 +89,7 @@ configuration, start PostgreSQL, build without connecting to IB, and exit:
 markeitech system start --config config/system.local.toml
 ```
 
-Run offline verification:
-
-```bash
-.venv/bin/markeitech verify all
-```
+For development, run tests added or changed for the issue. Broad regression checks run on the PR.
 
 For the normal connected workflow, start Docker Desktop and add the explicit `--ib` flag:
 
@@ -173,7 +155,7 @@ gets a new branch. See [CONTRIBUTING](CONTRIBUTING.md) and the
 Start with the [documentation map](docs/README.md), then read:
 
 - [project charter](markeitech.md)
-- [Sir Loke v1 product definition](docs/product/sir-loke-v1.md)
+- [Live trading foundation plan](docs/roadmap/live-foundation-plan.md)
 - [current status](docs/current-status.md)
 - [development guidelines](docs/development-guidelines.md)
 - [developer setup](docs/operations/developer-setup.md)

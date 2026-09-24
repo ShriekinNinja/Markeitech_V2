@@ -3,7 +3,7 @@
 Kite is a repository-owned library of focused skills. Installing it makes it available. Explicitly
 select Kite or invoke `$kite:markeitech-advisor-router` to use it; the retained command now selects
 guidance for the primary agent. A domain skill may also be invoked directly for one question.
-Kite does not activate runtime services or implement Sir Loke.
+Kite provides development guidance; it does not activate runtime services.
 
 ## Source, Installation, And Loaded Tasks
 
@@ -82,7 +82,7 @@ python3 -B scripts/kite-package.py verify --installed-root "$KITE_INSTALLED_ROOT
 Require `BYTE_IDENTICAL`; a matching version string is insufficient. Start a new task rooted in
 the reviewed checkout. Verify explicit Kite activation and a narrow request from the behavior
 checks. Report installed discovery separately from source-directed evaluation and human usefulness.
-Do not invoke IB/TWS, Discord, databases, or live Sir Loke models to test development-time skills.
+Do not invoke IB/TWS, Discord, databases, or live models to test development-time skills.
 
 ## Recovery, Removal, And Rollback
 

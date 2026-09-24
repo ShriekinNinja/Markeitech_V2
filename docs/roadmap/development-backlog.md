@@ -1,138 +1,42 @@
 # Markeitech Development Backlog
 
-**Status:** Unresolved work only
+The [live foundation plan](live-foundation-plan.md) owns direction. The selected GitHub issue owns
+work and acceptance. This inventory supplies candidates only when Markeitect requests task
+selection; it does not add prerequisites to an active issue.
 
-The ordered V1 path is [`sir-loke-v1-delivery-plan.md`](sir-loke-v1-delivery-plan.md). The
-implementation ledger is [`../current-status.md`](../current-status.md). Completed stage history
-is recoverable through Git and merged pull requests; it is intentionally absent here.
+## Immediate Priority
 
-## Sir Loke V1 Tasks
+Bring up the native execution engine and account monitoring, then exercise an explicitly authorized
+live order lifecycle. Define the exact account, client configuration, actions and limits in that
+issue. The current runtime does not implement these capabilities.
 
-Use the [delivery plan](sir-loke-v1-delivery-plan.md) as the single task/dependency list. SL-01 is
-next: real private Discord/model conversation over current runtime state. SL-02 then IN-01 follow;
-intelligence development has priority before guardian behavior. Do not recreate the old
-Gate 1–7 subsystem sequence here. Broker safety blocks broker-aware work only. Each implementation
-task ends with Markeitect alone performing and reviewing its live run; CI is preparation for that
-review. This backlog contains remaining constraints and optional work, not another prerequisite
-program that must finish before Sir Loke can speak.
+## Subsequent Foundation Work
 
-## Intelligence Discovery Candidates
+- Compose the actors and strategies needed by selected live consumers with explicit configuration
+  and lifecycle ownership.
+- Run indicators on admitted native data with the warmup, freshness and output semantics required
+  by those consumers.
+- Demonstrate concurrent operation and inspect actual health, resource use and output in live use.
 
-The plan's IN-01 through IN-08 are initial live tasks, not the final intelligence specification.
-After each review, agents recommend a specific next question/capability from observed blind spots.
-Promote a candidate only with an available source/method, bounded implementation, and a live result
-Markeitect can judge. Candidates include:
+## Observed Debt And Optional Work
 
-| Possible blind spot | Candidate improvement to investigate when it matters |
-|---|---|
-| Price moves without clear participation context | Valid volume/quote/trade-pressure analysis; explicitly distinguish observed and inferred flow |
-| Important related markets are not being watched | Add one relevant instrument/comparison at a time, then expand accepted simultaneous coverage |
-| One indicator/context view misses a change | Add a specific session, volatility, structural, or participation measurement tied to that miss |
-| A developing setup is forgotten or attention is misplaced | Improve scenario memory, opportunity tracking, or bounded evidence/focus requests |
-| A thesis is sound but the expression is poor | Compare a bounded set of eligible SPXW/QQQ contracts and explain the tradeoffs |
-| Material external context is absent | Investigate an approved event/context source, its freshness, permitted use, and clear effect on the assessment |
-| Interpretation repeatedly misleads or alerts too late | Revise or retire the rule using prospective live outcomes, preserving failures in the review |
+Address these only when selected or when they directly block the current issue:
 
-This list does not approve a feed, inference, trading rule, dependency, or retention policy. It is
-not a prerequisite checklist. Agents own turning a relevant candidate into the next small task;
-Markeitect owns product choices and live usefulness review. Sophisticated-sounding explanations
-and a greater indicator count do not establish trading competence.
+- provider subscription/reconnect recovery and interrupted historical requests;
+- shared historical reuse and request cancellation/correlation;
+- account/order/fill/position reconciliation and recovery after the execution path exists;
+- indicator production, late-consumer state and historical/live warmup;
+- persistence or webhook delivery failures encountered in operation;
+- dynamic watchlist membership, additional feeds, options evidence or interfaces required by a
+  named consumer.
 
-## Reliability Of Used Paths
+Existing issues retain their own scope and decisions. The list does not authorize new storage,
+providers, schemas, policy or dependencies. Use existing foundations until concrete behavior
+requires improvement. Replay, backtesting, model training and speculative raw-data retention are
+outside the current plan.
 
-Close or explicitly bound the debt that affects the current task's exposed behavior. Do not
-turn this inventory into a mandatory suite for every task or claim unexercised recovery accepted:
+## Delivery
 
-- initial subscription failure recovery and controlled provider disconnect/resubscription;
-- historical-request correlation beyond one lane, cancellation fencing, timeout/retry, duplicate,
-  and shutdown behavior;
-- late-consumer session/evidence projection reconciliation and connected retry/failure evidence;
-- complete calendar-definition identity through completed bars and metric subjects;
-- deterministic producer-route, duplicate-owner, atomicity, historical/live equivalence,
-  conflict/revision, warmup, restart, and health/fidelity proof for the V3 evidence cutover;
-- broker-event omission, duplication, late arrival, reconciliation, reconnect, and sanitized
-  no-control proof;
-- Discord reconnect/rate-limit/delivery ordering and bounded shutdown;
-- persistence idempotency, required-write atomicity, restart recovery, terminal outcome, retention,
-  and redaction; and
-- model/tool timeout, cost, citation, authorization, loop, malformed-output, and failure isolation.
-
-Passing offline suites or a single connected session does not close a wider reliability item.
-
-## V3 Deterministic Evidence Cutover
-
-Resume only the measurement capability needed by a named Sir Loke task, starting with IN-01. Its brief
-must identify required formulas, canonical producer, integration, and live acceptance. Preserve
-identity, lineage, correctness, and single-writer constraints. The former session-metrics and
-entity implementations and replacement plan have been removed. Shared contracts remain; new
-analytical production requires implementation, integration, and live review under the delivery
-plan. Historical details are available in Git.
-
-## Dynamic Watchlist Decision
-
-Before enabling dynamic membership, approve one canonical membership owner and typed contracts
-for proposals, claims, reasons/evidence, priority, policy/configuration version, effective time,
-lease/expiry, revision/invalidation, resource admission, restart behavior, and audit. A model may
-propose bounded intent but cannot mutate membership, provider subscriptions, or capability
-activation directly. Static configuration remains authoritative until this decision is accepted.
-
-## Optional Options-Flow Evidence
-
-No vendor file or flow label is admitted by default. A future source-specific batch must approve:
-
-- vendor/schema/version and immutable provenance;
-- timestamp, venue, condition, correction/cancel, side/classification, premium, size, strike,
-  expiry, option type, underlying, and contract identity semantics;
-- NBBO or quote-context availability and whether classifications are reported or inferred;
-- open-interest publication timing and the impossibility of per-print opening/closing truth when
-  the source does not provide it;
-- completeness, deduplication, revision, licensing, permitted use, retention, display,
-  redistribution, derived-data, and deletion obligations; and
-- deterministic isolation from native broker/market observations and from generic product truth.
-
-The prior detailed vendor-export assessment remains recoverable through Git history. Its findings
-are evidence about that exact export, not a universal options-flow contract.
-
-## Optional Gamma-Exposure Evidence
-
-Any GEX capability requires a separately approved source and formula contract covering exact
-option universe, open-interest vintage, gamma/Greek source and units, multiplier, sign convention,
-spot reference, expiry/settlement identity, filters, missing contracts, freshness, corrections,
-dealer-positioning assumptions, aggregation, and display limits. It must remain an explicitly
-derived scenario under stated assumptions, not observed dealer inventory or causal certainty.
-
-The earlier GEX research is recoverable through Git history and remains informative only.
-
-## Deferred Visualization
-
-A full live dashboard remains deferred. If reopened, begin with a fresh user/job decision and use
-only canonical projections. The UI must not create market truth, broker truth, policy, or agent
-state; must expose identity, freshness, fidelity, gaps, and provenance; and must remain isolated
-from the runtime event loop. The former Visual Debug implementation and its runbook have been
-removed; any future visualization requires a new scoped review.
-
-## Later Product And Research Tracks
-
-- additional intelligence methods/sources promoted through the current live development loop;
-- broader quantitative calibration beyond the compact prospective usefulness review already
-  required by the active tasks;
-- ML only after an approved leakage-safe data/label/evaluation/rollback strategy;
-- policy-controlled optimization only for explicitly dynamic, bounded, versioned parameters;
-- additional products, expiries, accounts, users, hosted operation, and interfaces; and
-- any broker-side prevention or close authority as a separately governed product/security program.
-
-Replay, backtesting, raw-data retention for hypothetical use, and autonomous execution remain out
-of scope until Markeitect explicitly reopens them.
-
-## Documentation And Tooling
-
-- Keep the active human-authored set small and update the narrowest authority with each accepted
-  boundary change.
-- Keep completed history in Git/PRs rather than restoring stage plans as current authority.
-- Regenerate system-diagram artifacts only through the tool procedure under
-  [`../../tools/system-diagram/docs/maintenance.md`](../../tools/system-diagram/docs/maintenance.md).
-- Regenerate tracked API documentation only through the isolated first-party wrapper described in
-  [`../operations/v2-api-documentation.md`](../operations/v2-api-documentation.md).
-- Fail CI on broken active links, stale generated artifacts, invalid diagrams, public-surface
-  drift, or accidental admission of secrets, local configuration, logs, raw/licensed data, and
-  generated scratch files.
+Use focused local tests and PR CI. Reach a practical live scenario quickly for runtime changes;
+record failures and fix them in the relevant issue. Keep completed history in Git/PRs and current
+implementation in [current status](../current-status.md).

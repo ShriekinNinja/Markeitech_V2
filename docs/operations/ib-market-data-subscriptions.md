@@ -214,7 +214,7 @@ or connected acceptance:
    USD 500 for ordinary individual and organizational accounts, with different published minimums
    for certain account categories.
 3. U.S. futures trading permission is enabled for U.S. futures data. This permission does not
-   grant Markeitech execution authority; the runtime remains data-only and read-only.
+   grant Markeitech execution authority; the current market-data profile remains data-only. Execution settings belong to the execution issue.
 4. `Market Data API Acknowledgement` is enabled and signed in Client Portal. IBKR states that API
    requests may otherwise return market-data-not-subscribed errors.
 5. Entitlements belong to the exact username used by TWS or IB Gateway.
@@ -349,7 +349,8 @@ Only after this authenticated check should the final account-specific purchase l
 - SPXW, SPY, and QQQ are a future configurable expression universe with no globally preferred
   product.
 - Option-chain acquisition and live options intelligence remain future work.
-- Markeitech is data-only, read-only, and advisory; it has no order-routing authority.
+- The current node is data-only. Execution and account monitoring are active development priorities;
+  entitlement planning does not itself authorize a connected run or order.
 
 ### Verified From Current Public IBKR Documentation
 

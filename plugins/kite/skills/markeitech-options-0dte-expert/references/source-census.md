@@ -14,9 +14,6 @@ redistributed source content. Refresh the subset material to each future task.
 | `markeitech.md` | Product charter | Live-first, advisory/non-ordering, no global expression preference, evidence/configuration invariants | Does not prove implementation |
 | `docs/current-status.md` | Current implementation ledger | Stage state, implemented boundaries, validation debt | Recheck code/tests for exact behavior |
 | `docs/development-guidelines.md` | Engineering guidance | Separate thesis from expression; options need distinct chain/expiry/strike/liquidity/Greek semantics | Not external product authority |
-| `docs/product/sir-loke-v1.md` | Accepted first-version product | SPXW/QQQ 0DTE scope, recommendation and trade-monitoring experience, evidence honesty, no-execution boundary | Product intent is not provider or implementation evidence |
-| `docs/roadmap/sir-loke-v1-delivery-plan.md` | Accepted Sir Loke delivery plan | Gate 4 bounded SPXW/QQQ options evidence, plural opportunities, ownership, and persistence intent | Future intent is not implementation |
-| `docs/architecture/sir-loke-v1-boundaries.md` | Accepted future architecture | Required request fields, side-effect classes, and anti-requests | Does not prove provider availability |
 | `docs/roadmap/development-backlog.md` | Deferred evidence tracks | Vendor-flow provenance/overclaim guards and GEX identity/freshness/assumption gates | Historical research remains in Git and is not accepted product semantics |
 
 ## Product, Exercise, And Settlement

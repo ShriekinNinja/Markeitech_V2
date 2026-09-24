@@ -22,8 +22,6 @@ material is paraphrased; no external skill text or code is copied into this prop
 | `docs/architecture/market-data-and-acquisition.md` | Native provider transport, demand ownership, watchlist, and historical execution boundaries. |
 | `docs/architecture/session-evidence-health.md` | Calendar/session ownership and evidence-health semantics. |
 | `docs/architecture/deterministic-evidence-contracts.md` | Completed-bar, measurement, entity, identity, health, and fidelity boundaries. |
-| `docs/architecture/sir-loke-v1-boundaries.md` | Future Sir Loke ownership, request, tool, and side-effect boundaries. |
-| `docs/roadmap/sir-loke-v1-delivery-plan.md` | Canonical future product gates and scoped reliability requirements. |
 | `plugins/kite/skills/markeitech-advisor-router/SKILL.md` | Minimum specialist contract and evidence/permission expectations. |
 | `plugins/kite/skills/markeitech-nautilus-v2-expert/` | Nautilus-specific contract to which this advisor defers. |
 

@@ -659,7 +659,7 @@ def render_runtime_resource_health_message(
 def render_operational_readiness_message(snapshot: OperationalReadinessSnapshot) -> bytes:
     state = "READY" if snapshot.is_ready else "DEGRADED"
     title = (
-        "Markeitech V2 | Ready for Sir Loke"
+        "Markeitech V2 | Operational Readiness"
         if snapshot.is_ready
         else "Markeitech V2 | Warmup Complete with Gaps"
     )
