@@ -11,15 +11,18 @@ and operator expectations aligned when the configured contract changes.
 The current tracked example selects:
 
 - `ESZ6.CME` and `NQZ6.CME`: December 2026 equity-index futures; and
-- `CLV6.NYMEX`: October 2026 crude-oil futures.
+- `CLX6.NYMEX`: November 2026 crude-oil futures.
 
-Month code `U` means September, `V` means October, and `Z` means December. Read each configured
-symbol's month code directly rather than inferring its expiry month from another instrument or
-from a watchlist label.
+Month code `U` means September, `V` means October, `X` means November, and `Z` means December.
+Read each configured symbol's month code directly rather than inferring its expiry month from
+another instrument or from a watchlist label.
 
 Markeitect requested the ES/NQ December selection and confirmed the runtime stopped before
 the configuration changed. Offline configuration validation passes; connected December-contract
 resolution, live delivery, and historical coverage have not been recorded as accepted.
+For issue #74, Markeitect approved changing the CL starting example to `CLX6.NYMEX` before a
+connected check. That change does not establish IB contract resolution, entitlement, live delivery,
+or historical coverage for CLX6.
 
 ## Ownership And Gate
 
@@ -52,8 +55,9 @@ its lifecycle from current exchange or provider information for that instrument.
    - clean shutdown without orphaned demand.
 7. Compare a small set of provider observations with an independent operator reference. Record
    any contract-basis or continuity caveat instead of normalizing it away.
-8. Update `docs/current-status.md` and any tracked example IDs only after the connected evidence is
-   reviewed. Commit through the normal local-review and PR process.
+8. Update `docs/current-status.md` acceptance claims only after connected evidence is reviewed.
+   A specifically approved tracked example-ID change may precede connected review if its provider
+   behavior remains explicitly unaccepted. Commit through the normal local-review and PR process.
 
 ## Failure And Rollback
 
