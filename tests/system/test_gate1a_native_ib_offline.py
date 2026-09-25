@@ -83,12 +83,6 @@ _FORBIDDEN_LIFECYCLE_CALLS = frozenset(
         "stop",
     }
 )
-_FORBIDDEN_COMPOSITION_SYMBOLS = frozenset(
-    {
-        "InteractiveBrokersExecutionClientConfig",
-        "InteractiveBrokersExecutionClientFactory",
-    }
-)
 _FORBIDDEN_BROKER_COMMAND_SYMBOLS = frozenset(
     {
         "BatchCancelOrders",
@@ -219,7 +213,7 @@ def _validate_relevant_record_entries(distribution: Any) -> tuple[str, ...]:
 def _composition_violations(source: str) -> tuple[tuple[int, str], ...]:
     tree = ast.parse(source)
     violations: set[tuple[int, str]] = set()
-    forbidden_imports = _FORBIDDEN_COMPOSITION_SYMBOLS | _FORBIDDEN_BROKER_COMMAND_SYMBOLS
+    forbidden_imports = _FORBIDDEN_BROKER_COMMAND_SYMBOLS
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
@@ -230,19 +224,19 @@ def _composition_violations(source: str) -> tuple[tuple[int, str], ...]:
             violations.add((node.lineno, node.attr))
         elif isinstance(node, ast.Call):
             name = _call_name(node)
-            if name == "add_exec_client" or name in forbidden_imports:
+            if name in forbidden_imports:
                 violations.add((node.lineno, name))
 
     return tuple(sorted(violations))
 
 
-def _assert_data_only_composition(sources: dict[Path, str]) -> None:
+def _assert_no_broker_commands(sources: dict[Path, str]) -> None:
     violations = {
         str(path.relative_to(ROOT)): _composition_violations(source)
         for path, source in sources.items()
         if _composition_violations(source)
     }
-    assert not violations, f"production execution/order wiring detected: {violations}"
+    assert not violations, f"production broker command wiring detected: {violations}"
 
 
 def test_gate1a_dependency_identity_matches_lock() -> None:
@@ -351,33 +345,29 @@ def test_gate1a_characterization_guard_rejects_lifecycle_calls(
         _assert_construction_only(forbidden_call)
 
 
-def test_gate1a_current_composition_remains_data_only() -> None:
+def test_gate1a_current_composition_has_no_broker_commands() -> None:
     sources = {
         path: path.read_text(encoding="utf-8")
         for path in (ROOT / "src").rglob("*.py")
     }
-    _assert_data_only_composition(sources)
+    _assert_no_broker_commands(sources)
 
 
 @pytest.mark.parametrize(
     "source",
     [
-        "from nautilus_trader.adapters.interactive_brokers import "
-        "InteractiveBrokersExecutionClientFactory as Factory",
-        "import nautilus_trader.adapters.interactive_brokers as ib\n"
-        "factory = ib.InteractiveBrokersExecutionClientFactory()",
-        "builder.add_exec_client(None, factory, config)",
         "from nautilus_trader.execution.messages import SubmitOrder as BrokerCommand",
         "command = SubmitOrder()",
     ],
 )
-def test_gate1a_composition_guard_rejects_execution_wiring(source: str) -> None:
+def test_gate1a_composition_guard_rejects_broker_commands(source: str) -> None:
     assert _composition_violations(source)
 
 
 def test_gate1a_composition_guard_ignores_unrelated_words_and_methods() -> None:
     source = """
 execution_note = "descriptive evidence only"
+builder.add_exec_client(None, factory, config)
 cache.reconcile()
 resource.close()
 """

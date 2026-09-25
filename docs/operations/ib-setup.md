@@ -1,8 +1,9 @@
 # V2 Interactive Brokers Setup
 
-This runbook describes the current market-data-only node. Execution and account monitoring are
-active priorities in the [live foundation plan](../roadmap/live-foundation-plan.md); their issue
-will supply the execution-specific account, client, permissions and live scenario.
+This runbook describes the tracked market-data profiles and the optional native execution-client
+configuration. Account monitoring remains an active priority in the
+[live foundation plan](../roadmap/live-foundation-plan.md); issue #78 has not delivered a monitor
+or authorized a connected execution-client run.
 
 ## Authoritative References
 
@@ -22,17 +23,23 @@ and [order modification](https://www.interactivebrokers.com/docs/tws-api/doc/ord
 
 ## Safety Boundary
 
-Markeitech currently uses Interactive Brokers for market data only:
+The tracked profiles still use Interactive Brokers for market data only:
 
 - trader-selected account;
 - read-only socket API;
-- no execution client configuration;
+- an empty `[ib].execution_account_id`, so no execution client is registered;
 - no order-routing actor;
 - explicit connection confirmation token; and
 - no automated test or setup command that connects to IB.
 
-The current market-data profile does not configure an execution client. Adding execution is now
-in scope through a selected implementation issue; this existing runbook does not enable it.
+Setting the actual broker-visible account in an ignored local profile registers the native IB
+execution client on the live node. On a connected run, that client requests an order ID and open
+orders and participates in Nautilus reconciliation. No account monitor or order-action route is
+implemented, and the existing market-data run approval does not authorize starting this optional
+client. The configured execution client ID is separate from the data client ID;
+`fetch_all_open_orders = true` requests all open orders visible to that IB session, while
+`track_option_exercise_from_position_update = false` disables that optional inference.
+Leave the account value empty until Markeitect approves an exact connected scenario.
 
 ## User-Owned Requirements
 
@@ -41,7 +48,7 @@ Every machine/user supplies:
 - its own selected IB account;
 - TWS or IB Gateway;
 - market-data subscriptions and permissions;
-- local API port and client ID; and
+- local API port and the data and execution client IDs; and
 - current explicit contract configuration.
 
 The repository does not include account credentials or entitlements.
@@ -53,7 +60,7 @@ The repository does not include account credentials or entitlements.
 3. Enable read-only API mode.
 4. Allow localhost connections.
 5. Note the configured socket port.
-6. Ensure the selected client ID is not already in use.
+6. Ensure each selected client ID is not already in use for its authorized run.
 7. Treat the connection client ID and TWS **Master API Client ID** as separate settings. Gate 1A
    characterizes connection client `1`; Markeitect reports Master `1`, but that TWS setting has not
    been inspected. Master `1` does not give connection `1` the special behavior of client `0`.
@@ -91,6 +98,10 @@ Review the `[ib]` section:
 host = "127.0.0.1"
 port = 4002
 client_id = 20
+execution_client_id = 1
+execution_account_id = "" # Leave empty for the existing market-data run.
+track_option_exercise_from_position_update = false
+fetch_all_open_orders = true
 symbology_method = "simplified"
 convert_exchange_to_mic_venue = false
 market_data_type = "realtime"

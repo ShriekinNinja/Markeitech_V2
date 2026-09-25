@@ -25,6 +25,10 @@ class InteractiveBrokersConfig:
     host: str
     port: int
     client_id: int
+    execution_client_id: int
+    execution_account_id: str | None
+    track_option_exercise_from_position_update: bool
+    fetch_all_open_orders: bool
     symbology_method: str
     convert_exchange_to_mic_venue: bool
     market_data_type: str
@@ -324,8 +328,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
     with config_path.open("rb") as file:
         raw = tomllib.load(file)
 
-    if raw.get("schema_version") != 29:
-        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 29")
+    if raw.get("schema_version") != 30:
+        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 30")
 
     root_keys = {
         "schema_version",
@@ -415,6 +419,10 @@ def _load_ib(raw: Any) -> InteractiveBrokersConfig:
         "host",
         "port",
         "client_id",
+        "execution_client_id",
+        "execution_account_id",
+        "track_option_exercise_from_position_update",
+        "fetch_all_open_orders",
         "symbology_method",
         "convert_exchange_to_mic_venue",
         "market_data_type",
@@ -438,10 +446,25 @@ def _load_ib(raw: Any) -> InteractiveBrokersConfig:
     ).lower()
     if market_data_type not in {"realtime", "frozen", "delayed", "delayed_frozen"}:
         raise ValueError(f"unsupported ib.market_data_type: {market_data_type!r}")
+    raw_account_id = values["execution_account_id"]
+    if raw_account_id == "":
+        execution_account_id = None
+    else:
+        execution_account_id = _non_empty_string(raw_account_id, "ib.execution_account_id")
+    execution_client_id = _positive_int(values["execution_client_id"], "ib.execution_client_id")
+    if execution_client_id % 1000 == 0:
+        raise ValueError("ib.execution_client_id must not be a multiple of 1000")
     return InteractiveBrokersConfig(
         host=_non_empty_string(values["host"], "ib.host"),
         port=_positive_int(values["port"], "ib.port"),
         client_id=_non_negative_int(values["client_id"], "ib.client_id"),
+        execution_client_id=execution_client_id,
+        execution_account_id=execution_account_id,
+        track_option_exercise_from_position_update=_bool(
+            values["track_option_exercise_from_position_update"],
+            "ib.track_option_exercise_from_position_update",
+        ),
+        fetch_all_open_orders=_bool(values["fetch_all_open_orders"], "ib.fetch_all_open_orders"),
         symbology_method=symbology_method,
         convert_exchange_to_mic_venue=_bool(
             values["convert_exchange_to_mic_venue"],

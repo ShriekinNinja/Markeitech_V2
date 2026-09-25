@@ -2,7 +2,7 @@
 # Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
 # Never place secrets in this file; local secrets belong in the ignored .env.
 
-schema_version = 29 # Required system configuration schema; this loader accepts version 29.
+schema_version = 30 # Required system configuration schema; this loader accepts version 30.
 
 [runtime]
 name = "MARKEITECH-V2-001" # Name recorded for this local runtime instance and its operational run.
@@ -12,7 +12,11 @@ environment = "live" # NautilusTrader live environment; connecting still require
 [ib]
 host = "127.0.0.1" # TWS or IB Gateway API host.
 port = 4002 # TWS or IB Gateway API port; verify it against the selected session.
-client_id = 20 # API client identity for this data connection, distinct from the broker account.
+client_id = 20 # API client identity for the market-data client.
+execution_client_id = 1 # API client identity for the optional native execution client.
+execution_account_id = "" # Set the broker-visible account in the ignored local copy to register the native execution client.
+track_option_exercise_from_position_update = false # Do not infer option exercise from position updates.
+fetch_all_open_orders = true # Request all open orders visible to the selected IB session.
 symbology_method = "simplified" # Use simplified native IB symbols for instrument resolution.
 convert_exchange_to_mic_venue = false # Keep configured exchange venues instead of converting them to MIC codes.
 market_data_type = "realtime" # Request real-time IB market data; delivery still depends on permissions.

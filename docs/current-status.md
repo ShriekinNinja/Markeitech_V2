@@ -2,7 +2,7 @@
 
 **Direction and source inventory reviewed:** 2026-09-24; no new connected run in this batch
 
-**Implementation baseline inspected:** `master` at `417bc3a`
+**Implementation baseline inspected:** `master` at `14699d1`
 
 This page is the source of truth for what the active Markeitech checkout implements now. It is
 deliberately a current-state ledger, not an implementation diary. Completed design and acceptance
@@ -20,7 +20,7 @@ not implement them. Historical verification below is retained with its original 
 | Runtime | NautilusTrader `2.0.0rc5`, market-data client and code-owned actor composition |
 | Provider | Interactive Brokers through TWS/IB Gateway |
 | Profiles | Seven-instrument example with ten actors; zero-instrument operational profile with nine |
-| Execution and account monitor | Not implemented in the current node; next development priority |
+| Execution and account monitor | Optional native IB execution-client registration when a broker account is configured; no account monitor or order-action route |
 | Strategies and indicators | No strategy registration or active metric-producing actors; shared contracts remain |
 | Discord | Optional outbound operational health webhook |
 | Persistence | PostgreSQL operational audit and compact evidence-recency profiles |
@@ -52,7 +52,8 @@ path. Its bounded subprocess constructs the genuine client with connection `clie
 synthetic explicit account, empty provider loads, and logging bypassed without invoking lifecycle
 or report methods. The same seam confirms the pinned client-`0` modulo-1000 constructor rejection.
 Tests also verify the exact dependency and installed `RECORD` integrity evidence, measured config
-defaults, adversarial construction-only guards, and the current data-only production composition.
+defaults, and adversarial construction-only guards. The data-only composition guard applied to
+the earlier baseline; current tests permit native client registration but reject broker commands.
 See the [Gate 1A evidence reference](reference/ib-observation-gate1.md) for exact artifacts,
 commands, source inventory, evidence limits, and verification results.
 
@@ -62,11 +63,12 @@ event coverage under the user-reported Master `1` setting, or connected acceptan
 
 ## Operating Posture
 
-- Markeitech is live-first, event-driven and local. The current node is market-data-only;
-  execution and account monitoring are active development priorities.
+- Markeitech is live-first, event-driven and local. Tracked profiles remain data-only until a
+  broker account is selected locally; account monitoring is still an active development priority.
 - Markeitect is the only first-version user and retains every trading and product decision.
-- The implemented IB client is a NautilusTrader data client. It does not expose broker account,
-  order, fill, or position state to Markeitech.
+- The IB data client remains the market-data path. An optional native execution client can be
+  registered for a selected account, but no account monitor or order-action route consumes its
+  events in Markeitech yet.
 - Connected runs remain manually and explicitly authorized. Automated tests do not connect to IB,
   Discord, or another live provider.
 - PostgreSQL stores approved operational facts, not raw quotes, trades, bars, option chains, or
@@ -89,7 +91,7 @@ delivery tests derive a bounded ES fixture from the current template.
 
 ## Connected Operational Boot Profile
 
-`config/system.operational.toml` uses a schema-29 zero-instrument baseline with nine operational
+`config/system.operational.toml` uses a schema-30 zero-instrument baseline with nine operational
 actors: System Control, Session State, Evidence Health, Historical Evidence Planner, Data
 Acquisition, Discord Health, Runtime Resources, Runtime Resource Health, and Operational
 Persistence. IB remains configured; the watchlist, probes, analytics, and visual capture are
@@ -113,12 +115,14 @@ contracts remain.
 The API registry selects 98 public objects; the diagram source census recognizes ten actor
 registrations. Offline checks do not establish connected acceptance.
 
-System configuration is now schema 29. Remove `[dashboard]` from older local profiles.
+System configuration is now schema 30. Remove `[dashboard]` from older local profiles.
 Remove the complete `[acquisition]` and
 `[historical.probe]`, `[visual_debug_capture]`, `[metrics.session_measurements]`, and
 `[metrics.entity_analysis]` sections, plus the entire `[metrics]` tree (including
 `[metrics.quote_quality]`), from older local profiles, then set
-`schema_version = 29`;
+`schema_version = 30` and add `execution_client_id = 1`,
+`execution_account_id = ""`, `track_option_exercise_from_position_update = false`, and
+`fetch_all_open_orders = true` under `[ib]`;
 retain `[historical]`, which still configures the production acquisition owner. Local files are
 not migrated automatically. See [developer setup](operations/developer-setup.md).
 
@@ -223,9 +227,12 @@ Development tooling does not activate runtime capabilities.
 
 ## Execution And Account Monitoring
 
-The current node configures only a market-data client. There is no production execution client,
-account monitor or order-action route. These are implementation gaps to address in the next issue,
-not project-wide prohibitions.
+The node always configures the market-data client. If `[ib].execution_account_id` names an actual
+broker-visible account, it also constructs NautilusTrader's native IB execution client for that
+account using the configured host, port, dedicated execution client ID, timeouts and native flags.
+The tracked profiles leave the account empty and
+do not register it. There is no account monitor, periodic or change log, or order-action route yet.
+Client registration has only offline construction evidence; no connected IB run is claimed.
 
 The [historical native-client reference](reference/ib-observation-gate1.md) records earlier offline
 construction and source inspection. Reuse relevant evidence where current; it is not a mandatory

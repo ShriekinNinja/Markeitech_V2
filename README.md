@@ -33,7 +33,9 @@ data, actor composition, static watchlist/shared acquisition, session/evidence h
 planning, PostgreSQL operational audit, resource monitoring and optional Discord health webhooks.
 The tracked example composes ten actors; the zero-instrument operational profile composes nine.
 Shared metric/entity contracts exist; active indicator production and strategy registration do
-not. The current node registers a data client and no execution client.
+not. The current node always registers a data client and optionally registers the native IB
+execution client when an account is selected in the ignored local configuration. No account
+monitor or order-action route is implemented yet.
 
 See [current status](docs/current-status.md) for implementation and known gaps. The project direction
 includes execution; a run or order requires explicit account and action authorization.

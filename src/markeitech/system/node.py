@@ -3,6 +3,8 @@ from __future__ import annotations
 from nautilus_trader.adapters.interactive_brokers import (
     InteractiveBrokersDataClientConfig,
     InteractiveBrokersDataClientFactory,
+    InteractiveBrokersExecutionClientConfig,
+    InteractiveBrokersExecutionClientFactory,
     InteractiveBrokersInstrumentProviderConfig,
     MarketDataType,
     SymbologyMethod,
@@ -37,13 +39,18 @@ _ENVIRONMENTS = {
 }
 
 
-def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataClientConfig:
+def _build_ib_instrument_provider_config(
+    config: SystemConfig,
+) -> InteractiveBrokersInstrumentProviderConfig:
     instrument_ids = [InstrumentId.from_str(value) for value in config.instrument_ids]
-    provider_config = InteractiveBrokersInstrumentProviderConfig(
+    return InteractiveBrokersInstrumentProviderConfig(
         symbology_method=_SYMBOLOGY_METHODS[config.ib.symbology_method],
         load_ids=set(instrument_ids),
         convert_exchange_to_mic_venue=config.ib.convert_exchange_to_mic_venue,
     )
+
+
+def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataClientConfig:
     return InteractiveBrokersDataClientConfig(
         host=config.ib.host,
         port=config.ib.port,
@@ -55,7 +62,28 @@ def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataC
         request_timeout=config.ib.request_timeout_seconds,
         handle_revised_bars=config.ib.handle_revised_bars,
         batch_quotes=config.ib.batch_quotes,
-        instrument_provider=provider_config,
+        instrument_provider=_build_ib_instrument_provider_config(config),
+    )
+
+
+def build_ib_execution_client_config(
+    config: SystemConfig,
+) -> InteractiveBrokersExecutionClientConfig | None:
+    account_id = config.ib.execution_account_id
+    if account_id is None:
+        return None
+    return InteractiveBrokersExecutionClientConfig(
+        host=config.ib.host,
+        port=config.ib.port,
+        client_id=config.ib.execution_client_id,
+        account_id=account_id,
+        connection_timeout=config.ib.connection_timeout_seconds,
+        request_timeout=config.ib.request_timeout_seconds,
+        fetch_all_open_orders=config.ib.fetch_all_open_orders,
+        track_option_exercise_from_position_update=(
+            config.ib.track_option_exercise_from_position_update
+        ),
+        instrument_provider=_build_ib_instrument_provider_config(config),
     )
 
 
@@ -63,8 +91,8 @@ def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites)
     """Construct the configured Nautilus live node without starting it.
 
     The function creates the configured log directory, registers the IB data
-    client, and composes validated actors. It does not connect to IB or run the
-    node lifecycle.
+    client and optional IB execution client, then composes validated actors.
+    It does not connect to IB or run the node lifecycle.
 
     Args:
         config: Validated V2 system configuration.
@@ -80,8 +108,9 @@ def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites)
 
     config.logging.directory.mkdir(parents=True, exist_ok=True)
     data_config = build_ib_data_client_config(config)
+    execution_config = build_ib_execution_client_config(config)
 
-    node = (
+    builder = (
         LiveNode.builder(
             config.runtime.name,
             TraderId.from_str(config.runtime.trader_id),
@@ -100,8 +129,14 @@ def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites)
             ),
         )
         .add_data_client(None, InteractiveBrokersDataClientFactory(), data_config)
-        .build()
     )
+    if execution_config is not None:
+        builder.add_exec_client(
+            None,
+            InteractiveBrokersExecutionClientFactory(),
+            execution_config,
+        )
+    node = builder.build()
     plan = build_actor_plan(config, prerequisites)
     for registration in plan:
         node.add_actor_from_config(registration.config)

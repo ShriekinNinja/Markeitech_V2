@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 29
+schema_version = 30
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -18,6 +18,10 @@ environment = "sandbox"
 host = "127.0.0.1"
 port = 4002
 client_id = 20
+execution_client_id = 1
+execution_account_id = ""
+track_option_exercise_from_position_update = false
+fetch_all_open_orders = true
 symbology_method = "simplified"
 convert_exchange_to_mic_venue = false
 market_data_type = "realtime"
@@ -253,7 +257,11 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert len(cme_equity.definition_digest) == 64
     assert config.evidence_health.policies[0].fresh_for_ms == 2000
     assert config.evidence_health.consumer_retry_interval_ms == 1000
-    assert config.schema_version == 29
+    assert config.schema_version == 30
+    assert config.ib.execution_account_id is None
+    assert config.ib.execution_client_id == 1
+    assert config.ib.track_option_exercise_from_position_update is False
+    assert config.ib.fetch_all_open_orders is True
     assert config.instrument_ids == ("ESU6.CME",)
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
@@ -286,13 +294,50 @@ def test_rejects_retired_root_sections(tmp_path: Path, section: str) -> None:
         load_system_config(path)
 
 
-@pytest.mark.parametrize("version", [22, 23, 24, 25, 28])
+@pytest.mark.parametrize("version", [22, 23, 24, 25, 28, 29])
 def test_rejects_older_system_schema(tmp_path: Path, version: int) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("schema_version = 29", f"schema_version = {version}", 1))
+    path.write_text(VALID_CONFIG.replace("schema_version = 30", f"schema_version = {version}", 1))
 
     with pytest.raises(ValueError, match=f"unsupported schema_version: {version}"):
         load_system_config(path)
+
+
+def test_execution_account_is_optional_and_requires_valid_client_id(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    (tmp_path / "market-calendars.toml").write_bytes(
+        (Path(__file__).parents[2] / "config/market-calendars.toml").read_bytes(),
+    )
+    path.write_text(
+        VALID_CONFIG.replace('execution_account_id = ""', 'execution_account_id = "DU123456"'),
+    )
+    assert load_system_config(path).ib.execution_account_id == "DU123456"
+
+    path.write_text(
+        VALID_CONFIG.replace('execution_account_id = ""', 'execution_account_id = "DU123456"')
+        .replace("client_id = 20", "client_id = 0"),
+    )
+    assert load_system_config(path).ib.client_id == 0
+
+    path.write_text(VALID_CONFIG.replace('execution_account_id = ""', 'execution_account_id = " "'))
+    with pytest.raises(ValueError, match="ib.execution_account_id must be a non-empty string"):
+        load_system_config(path)
+
+    path.write_text(VALID_CONFIG.replace("execution_client_id = 1", "execution_client_id = 1000"))
+    with pytest.raises(ValueError, match="ib.execution_client_id must not be a multiple of 1000"):
+        load_system_config(path)
+
+    path.write_text(VALID_CONFIG.replace("execution_client_id = 1", "execution_client_id = 0"))
+    with pytest.raises(ValueError, match="ib.execution_client_id must be a positive integer"):
+        load_system_config(path)
+
+    for setting, value in (
+        ("track_option_exercise_from_position_update", "false"),
+        ("fetch_all_open_orders", "true"),
+    ):
+        path.write_text(VALID_CONFIG.replace(f"{setting} = {value}", f'{setting} = "{value}"'))
+        with pytest.raises(ValueError, match=f"ib.{setting} must be a boolean"):
+            load_system_config(path)
 
 
 @pytest.mark.parametrize(
