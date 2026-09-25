@@ -150,10 +150,10 @@ The current loader accepts only system schema **30**. To migrate a schema-23/24 
 2. Remove the complete `[historical.probe]` section; keep `[historical]` and its production limits.
 3. Remove `[visual_debug_capture]` if present; the capture actor and renderer have been removed.
 4. Remove the entire `[metrics]` tree, including quote quality, session measurements, entity analysis, and all child tables.
-5. Remove the entire `[dashboard]` section if present. Set `schema_version = 30`, add `execution_account_id = ""` under `[ib]`, and compare the result with the corresponding tracked profile.
+5. Remove the entire `[dashboard]` section if present. Set `schema_version = 30`, add `execution_client_id = 1`, `execution_account_id = ""`, `track_option_exercise_from_position_update = false`, and `fetch_all_open_orders = true` under `[ib]`, and compare the result with the corresponding tracked profile.
 
 For a schema-25/26/27/28/29 profile, remove the entire `[dashboard]` section if present, then set
-`schema_version = 30` and add `execution_account_id = ""` under `[ib]`. Keep the production
+`schema_version = 30` and add the four execution-client settings above under `[ib]`. Keep the production
 `[historical]` section.
 
 Preserve machine-specific IB settings, paths, thresholds, and secret environment references.

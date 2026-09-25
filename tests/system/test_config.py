@@ -18,7 +18,10 @@ environment = "sandbox"
 host = "127.0.0.1"
 port = 4002
 client_id = 20
+execution_client_id = 1
 execution_account_id = ""
+track_option_exercise_from_position_update = false
+fetch_all_open_orders = true
 symbology_method = "simplified"
 convert_exchange_to_mic_venue = false
 market_data_type = "realtime"
@@ -256,6 +259,9 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.evidence_health.consumer_retry_interval_ms == 1000
     assert config.schema_version == 30
     assert config.ib.execution_account_id is None
+    assert config.ib.execution_client_id == 1
+    assert config.ib.track_option_exercise_from_position_update is False
+    assert config.ib.fetch_all_open_orders is True
     assert config.instrument_ids == ("ESU6.CME",)
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
@@ -307,16 +313,31 @@ def test_execution_account_is_optional_and_requires_valid_client_id(tmp_path: Pa
     )
     assert load_system_config(path).ib.execution_account_id == "DU123456"
 
+    path.write_text(
+        VALID_CONFIG.replace('execution_account_id = ""', 'execution_account_id = "DU123456"')
+        .replace("client_id = 20", "client_id = 0"),
+    )
+    assert load_system_config(path).ib.client_id == 0
+
     path.write_text(VALID_CONFIG.replace('execution_account_id = ""', 'execution_account_id = " "'))
     with pytest.raises(ValueError, match="ib.execution_account_id must be a non-empty string"):
         load_system_config(path)
 
-    path.write_text(
-        VALID_CONFIG.replace('execution_account_id = ""', 'execution_account_id = "DU123456"')
-        .replace("client_id = 20", "client_id = 1000"),
-    )
-    with pytest.raises(ValueError, match="ib.client_id must not be a multiple of 1000"):
+    path.write_text(VALID_CONFIG.replace("execution_client_id = 1", "execution_client_id = 1000"))
+    with pytest.raises(ValueError, match="ib.execution_client_id must not be a multiple of 1000"):
         load_system_config(path)
+
+    path.write_text(VALID_CONFIG.replace("execution_client_id = 1", "execution_client_id = 0"))
+    with pytest.raises(ValueError, match="ib.execution_client_id must be a positive integer"):
+        load_system_config(path)
+
+    for setting, value in (
+        ("track_option_exercise_from_position_update", "false"),
+        ("fetch_all_open_orders", "true"),
+    ):
+        path.write_text(VALID_CONFIG.replace(f"{setting} = {value}", f'{setting} = "{value}"'))
+        with pytest.raises(ValueError, match=f"ib.{setting} must be a boolean"):
+            load_system_config(path)
 
 
 @pytest.mark.parametrize(

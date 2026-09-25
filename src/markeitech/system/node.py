@@ -75,10 +75,14 @@ def build_ib_execution_client_config(
     return InteractiveBrokersExecutionClientConfig(
         host=config.ib.host,
         port=config.ib.port,
-        client_id=config.ib.client_id,
+        client_id=config.ib.execution_client_id,
         account_id=account_id,
         connection_timeout=config.ib.connection_timeout_seconds,
         request_timeout=config.ib.request_timeout_seconds,
+        fetch_all_open_orders=config.ib.fetch_all_open_orders,
+        track_option_exercise_from_position_update=(
+            config.ib.track_option_exercise_from_position_update
+        ),
         instrument_provider=_build_ib_instrument_provider_config(config),
     )
 

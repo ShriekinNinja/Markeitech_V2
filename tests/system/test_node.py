@@ -65,7 +65,10 @@ def test_builds_native_ib_execution_client_without_connecting() -> None:
     execution_config = build_ib_execution_client_config(config)
     assert execution_config is not None
     assert execution_config.account_id == "DU123456"
-    assert execution_config.client_id == config.ib.client_id
+    assert execution_config.client_id == config.ib.execution_client_id
+    assert execution_config.client_id != build_ib_data_client_config(config).client_id
+    assert execution_config.track_option_exercise_from_position_update is False
+    assert execution_config.fetch_all_open_orders is True
     assert execution_config.host == config.ib.host
     assert execution_config.port == config.ib.port
     assert execution_config.connection_timeout == config.ib.connection_timeout_seconds
@@ -73,6 +76,21 @@ def test_builds_native_ib_execution_client_without_connecting() -> None:
     assert execution_config.instrument_provider.load_ids == (
         build_ib_data_client_config(config).instrument_provider.load_ids
     )
+
+    alternate = replace(
+        config,
+        ib=replace(
+            config.ib,
+            execution_client_id=7,
+            track_option_exercise_from_position_update=True,
+            fetch_all_open_orders=False,
+        ),
+    )
+    alternate_config = build_ib_execution_client_config(alternate)
+    assert alternate_config is not None
+    assert alternate_config.client_id == 7
+    assert alternate_config.track_option_exercise_from_position_update is True
+    assert alternate_config.fetch_all_open_orders is False
 
     node = build_system_node(
         config,

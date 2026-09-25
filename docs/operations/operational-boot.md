@@ -22,8 +22,9 @@ The profile uses system schema 30. For older local profiles, remove the complete
 and `[historical.probe]` sections, plus `[visual_debug_capture]`,
 the entire `[metrics]` tree (including quote quality, session measurements, and entity analysis) if
 present, and update
-`schema_version` to 30. Add `execution_account_id = ""` under `[ib]` for the existing
-data-only profile. Remove `[dashboard]` if present. Keep `[historical]` and its
+`schema_version` to 30. Add `execution_client_id = 1`, `execution_account_id = ""`,
+`track_option_exercise_from_position_update = false`, and `fetch_all_open_orders = true` under
+`[ib]` for the existing data-only profile. Remove `[dashboard]` if present. Keep `[historical]` and its
 production request limits. The loader rejects older schemas and retired sections.
 
 `watchlist.enabled` defaults to true; a disabled watchlist must have `members = []`. Enabling the

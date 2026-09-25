@@ -120,7 +120,9 @@ Remove the complete `[acquisition]` and
 `[historical.probe]`, `[visual_debug_capture]`, `[metrics.session_measurements]`, and
 `[metrics.entity_analysis]` sections, plus the entire `[metrics]` tree (including
 `[metrics.quote_quality]`), from older local profiles, then set
-`schema_version = 30` and add `execution_account_id = ""` under `[ib]`;
+`schema_version = 30` and add `execution_client_id = 1`,
+`execution_account_id = ""`, `track_option_exercise_from_position_update = false`, and
+`fetch_all_open_orders = true` under `[ib]`;
 retain `[historical]`, which still configures the production acquisition owner. Local files are
 not migrated automatically. See [developer setup](operations/developer-setup.md).
 
@@ -227,7 +229,8 @@ Development tooling does not activate runtime capabilities.
 
 The node always configures the market-data client. If `[ib].execution_account_id` names an actual
 broker-visible account, it also constructs NautilusTrader's native IB execution client for that
-account using the configured connection settings. The tracked profiles leave the account empty and
+account using the configured host, port, dedicated execution client ID, timeouts and native flags.
+The tracked profiles leave the account empty and
 do not register it. There is no account monitor, periodic or change log, or order-action route yet.
 Client registration has only offline construction evidence; no connected IB run is claimed.
 
