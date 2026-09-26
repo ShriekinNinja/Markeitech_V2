@@ -11,14 +11,14 @@
         "kind": "markeitech_actor",
         "label": "Data Acquisition",
         "object_path": "markeitech.system.acquisition.DataAcquisitionActor",
-        "record_sha256": "3ba27f132454e9337a95e20aba259635856b4cc2f998962f5ee3ad3a2a918df9",
+        "record_sha256": "120ffaf2772dcbaa34c2f54eeb115a184b570e749e6ebca0c7b9c7340baa832d",
         "responsibilities": [
           "Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.",
           "Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.",
           "Publish acquisition lifecycle, historical batches, and consumer readiness."
         ],
         "source": "src/markeitech/system/acquisition.py",
-        "source_sha256": "8f768fb190199eadf3ef0c649d5c48b0befdbf6d3cd7c3f05480bb9f668b314e"
+        "source_sha256": "bb9029e9886f512938e5bce187de29af20388f96f62b451d8c500ec08147bbeb"
       },
       {
         "boundary": "boundary.system",
@@ -28,12 +28,12 @@
         "kind": "markeitech_actor",
         "label": "Discord Health Projection",
         "object_path": "markeitech.system.discord.DiscordHealthActor",
-        "record_sha256": "c3db70e12e2452aaae9d339beb2da0d1e11c536a2a9171e01934a1847d625dbd",
+        "record_sha256": "3ec35d8363cc5c932a2ae85409e63764c36586292e0845547bddcaacd6c322fc",
         "responsibilities": [
           "Project system health, resource health, and operational readiness through configured Discord delivery workers."
         ],
         "source": "src/markeitech/system/discord.py",
-        "source_sha256": "d99eabaf3faa4356a28479db34b23b629ec73fa5d55ff218701b53ae5c3d9ff7"
+        "source_sha256": "4b6385a60bea99821f55c2adab15128265b141f3a5a4a022eb2df86ab2cd5351"
       },
       {
         "boundary": "boundary.intelligence",
@@ -43,14 +43,14 @@
         "kind": "markeitech_actor",
         "label": "Evidence Health",
         "object_path": "markeitech.intelligence.actors.EvidenceHealthActor",
-        "record_sha256": "073abecb60c894702ebf3f54a6b38e2fad4912ba2feba022afeb9c42dd1a8852",
+        "record_sha256": "8533b449ba65dab046f4a32c10b71cb49b3df7fe69b7a09151b58fc518e69940",
         "responsibilities": [
           "Evaluate observation freshness and availability.",
           "Consume definition-identified calendar context without owning mcal.",
           "Synchronize bounded current state without inferring calendar phase from silence."
         ],
         "source": "src/markeitech/intelligence/actors.py",
-        "source_sha256": "8e8b7a61fbec04b0d234fcb2b78c1bbb3f7d5839c097db63b628a84ba48be6d8"
+        "source_sha256": "c6074f7994d250815dd5b6d972bab58294f47063ff32567f12e149b9683c7b42"
       },
       {
         "boundary": "boundary.intelligence",
@@ -60,14 +60,14 @@
         "kind": "markeitech_actor",
         "label": "Historical Evidence Planner",
         "object_path": "markeitech.system.historical_planner.HistoricalEvidencePlannerActor",
-        "record_sha256": "ef946af8574d6d206702588e66cacd2bf1f6bcb0e942249b5148017485eff0da",
+        "record_sha256": "6724f814d306fe12c27f259e329fdb521fa60c7e61233c7fe98f7b8aeb2e9591",
         "responsibilities": [
           "Resolve semantic historical evidence demands into exact UTC request plans.",
           "Use immutable canonical-calendar projections for calendar-relative windows.",
           "Publish exact plans without calling providers or owning provider pacing."
         ],
         "source": "src/markeitech/system/historical_planner.py",
-        "source_sha256": "6454cee2a892ebd1a2c675a7c4ad45463fe2a2d942a1427b9c8f59be65940bad"
+        "source_sha256": "66c22b94b75ff5eaee14c5bbd3d8a580bb581ded9b8c0851f8a836ba74cf2edc"
       },
       {
         "boundary": "boundary.system",
@@ -77,10 +77,10 @@
         "kind": "markeitech_actor",
         "label": "Operational Persistence",
         "object_path": "markeitech.system.persistence.OperationalPersistenceActor",
-        "record_sha256": "322231748c98946fee0bb57f2ba877c7dcfa6e6ee1cc145a7e2ef7e28de2c9e7",
+        "record_sha256": "9bc9c3d445e7988efaeedc586fe321391ac75a4cc250574ffd5b9d3fe94c2829",
         "responsibilities": [],
         "source": "src/markeitech/system/persistence.py",
-        "source_sha256": "d1678f99daa4904f50a97396ab454663471be4d5eaa9dc05cac181ce26fda9da"
+        "source_sha256": "b480d8a8c21549d9567a3dd1b5ad97b28950b404fab6600db940cbb82f8d6ef0"
       },
       {
         "boundary": "boundary.system",
@@ -90,10 +90,10 @@
         "kind": "markeitech_actor",
         "label": "Runtime Resource Health",
         "object_path": "markeitech.system.resource_health_actor.RuntimeResourceHealthActor",
-        "record_sha256": "e31bb1be351b202b08e1793c071832b9fefc979e12a91a4f9cb3310b4168bc82",
+        "record_sha256": "3d082a2f01db8115319694d87f877f44940a972f4cd3e8fe2696f282db48d42b",
         "responsibilities": [],
         "source": "src/markeitech/system/resource_health_actor.py",
-        "source_sha256": "f92f8e9a96b6f2a0a1b952492759e9a7c2723957a51309fa036ffe5a2feb1753"
+        "source_sha256": "d8cb374b9407842d700f13453d23e75639de2386043b13d61530158796c81828"
       },
       {
         "boundary": "boundary.system",
@@ -103,10 +103,10 @@
         "kind": "markeitech_actor",
         "label": "Runtime Resources",
         "object_path": "markeitech.system.resource_actor.RuntimeResourceActor",
-        "record_sha256": "264fa00d79a39986a6bd3f6f6a595f44c0cff631c3fe4b1ddc9fc37fad8a69f8",
+        "record_sha256": "25aee4f81e3c39e97acefaf117ddc3176ed8b004162d9d4204c2cf1bd9fc1711",
         "responsibilities": [],
         "source": "src/markeitech/system/resource_actor.py",
-        "source_sha256": "0c1f9de601ccc02bcd2d8c5d2a182c745eef1271c9fafae4bf206178f10c6607"
+        "source_sha256": "75d97557b9b5676df6ea3d3524eb597ddc31ce7142f3a67fa4111cb3d26f4d91"
       },
       {
         "boundary": "boundary.intelligence",
@@ -116,14 +116,14 @@
         "kind": "markeitech_actor",
         "label": "Session State",
         "object_path": "markeitech.intelligence.actors.SessionStateActor",
-        "record_sha256": "07fec636c17761b1f00121419c0b77f89d10709c43fc25d93abbbb019d97cfe3",
+        "record_sha256": "d3a4a7da3fea92fa2e4586da00c2b62bb74e3231c103794850689ddbe6d108e7",
         "responsibilities": [
           "Sole runtime owner of active CanonicalCalendar instances.",
           "Publish definition-identified calendar transitions and bounded immutable projections.",
           "Contain ordinary per-calendar projection construction failures without redefining provider data."
         ],
         "source": "src/markeitech/intelligence/actors.py",
-        "source_sha256": "8e8b7a61fbec04b0d234fcb2b78c1bbb3f7d5839c097db63b628a84ba48be6d8"
+        "source_sha256": "c6074f7994d250815dd5b6d972bab58294f47063ff32567f12e149b9683c7b42"
       },
       {
         "boundary": "boundary.system",
@@ -133,10 +133,10 @@
         "kind": "markeitech_actor",
         "label": "System Control",
         "object_path": "markeitech.system.actor.SystemControlActor",
-        "record_sha256": "7b11f1b5cffb67e45ea43c258e5d3ef4bd2ab0fd969d2b78505eca03e1db74f3",
+        "record_sha256": "a285e4d0a7dd12702ce8c951953aa0fefa544412bc69fad05279738166dc6f40",
         "responsibilities": [],
         "source": "src/markeitech/system/actor.py",
-        "source_sha256": "3d48690643ce513f3ed00e56daa7465ebb8eb16056b4a039a2c934586b57b8ff"
+        "source_sha256": "593969d5574d7a6d7782272ff6061063d0a4046162f877349f05a3fa98b5b766"
       },
       {
         "boundary": "boundary.acquisition",
@@ -146,10 +146,10 @@
         "kind": "markeitech_actor",
         "label": "Watchlist",
         "object_path": "markeitech.system.watchlist.WatchlistActor",
-        "record_sha256": "6b10729b5221a58ed4329d4db1642478c5db39eaa266993b093f607d2b659b2e",
+        "record_sha256": "0f0f74977f9147ec7a8518171f117dddadbc10fdd92b88b7a3808f58a3511ca1",
         "responsibilities": [],
         "source": "src/markeitech/system/watchlist.py",
-        "source_sha256": "c71ad65a6d193b69a56a7d67793e620a745d24a7a7aa50e8d7839a734e67c6d5"
+        "source_sha256": "64948b134b300024cffeec1676cbb86c2cfc0b1eb7f25c48a712fd716690b515"
       },
       {
         "boundary": "boundary.intelligence",
@@ -188,7 +188,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "29dce9d9dbf0b5e2f0c594bf63e9f1904d474c5de189cae7da432f18864a3d13"
+    "source_snapshot_sha256": "98e850e4c84afb259f94963987893ab44abf67b5cd3cd9c19d0675a096faac24"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1254,7 +1254,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.SystemConfig",
-        "definition_line": 284,
+        "definition_line": 286,
         "exposed": "markeitech.system.SystemConfig",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1276,7 +1276,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.load_system_config",
-        "definition_line": 305,
+        "definition_line": 307,
         "exposed": "markeitech.system.load_system_config",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1311,7 +1311,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 68,
-    "input_signature": "29dce9d9dbf0b5e2f0c594bf63e9f1904d474c5de189cae7da432f18864a3d13"
+    "input_signature": "98e850e4c84afb259f94963987893ab44abf67b5cd3cd9c19d0675a096faac24"
   },
-  "source_snapshot_sha256": "29dce9d9dbf0b5e2f0c594bf63e9f1904d474c5de189cae7da432f18864a3d13"
+  "source_snapshot_sha256": "98e850e4c84afb259f94963987893ab44abf67b5cd3cd9c19d0675a096faac24"
 }
