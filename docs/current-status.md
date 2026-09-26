@@ -19,7 +19,7 @@ not implement them. Historical verification below is retained with its original 
 |---|---|
 | Runtime | NautilusTrader `2.0.0rc5`, market-data client and code-owned actor composition |
 | Provider | Interactive Brokers through TWS/IB Gateway |
-| Profiles | Seven-instrument example with ten actors; zero-instrument operational profile with nine |
+| Profiles | Seven-instrument example with ten actors; no separate operational profile |
 | Execution and account monitor | Not implemented in the current node; next development priority |
 | Strategies and indicators | No strategy registration or active metric-producing actors; shared contracts remain |
 | Discord | Optional outbound operational health webhook |
@@ -79,24 +79,14 @@ event coverage under the user-reported Master `1` setting, or connected acceptan
 
 ## Tracked Example Profile
 
-[`config/system.example.toml`](../config/system.example.toml) enables seven explicit watchlist
-instruments. Its ten actors are System Control, Session State,
-Evidence Health, Discord Health, Historical Evidence Planner, Watchlist, Data Acquisition, Runtime
-Resources, Runtime Resource Health, and Operational Persistence.
+[`config/runtime.example.toml`](../config/runtime.example.toml) selects reviewed limits from
+[`config/system.policy.toml`](../config/system.policy.toml) and contains seven explicit watchlist
+instruments. Its ten actors are System
+Control, Session State, Evidence Health, Discord Health, Historical Evidence Planner, Watchlist,
+Data Acquisition, Runtime Resources, Runtime Resource Health, and Operational Persistence.
 
 The former `system.v3-es-minimal.toml` review profile has been removed. Single-calendar offline
 delivery tests derive a bounded ES fixture from the current template.
-
-## Connected Operational Boot Profile
-
-`config/system.operational.toml` uses a schema-29 zero-instrument baseline with nine operational
-actors: System Control, Session State, Evidence Health, Historical Evidence Planner, Data
-Acquisition, Discord Health, Runtime Resources, Runtime Resource Health, and Operational
-Persistence. IB remains configured; the watchlist, probes, analytics, and visual capture are
-excluded. Older schema-23/24/25 profiles must be migrated before loading. This is **ready for
-Markeitect live test**, not connected-accepted. See the [operational boot runbook](operations/operational-boot.md) for exact
-commands, independent readiness evidence, effects, stop conditions, and remaining limitations.
-This profile supplies no runtime instrument addition or account monitoring.
 
 ## Diagnostic And Inactive Actor Removal
 
@@ -106,21 +96,21 @@ Visual Debug capture, its writer/renderer, configuration, and dedicated tests ar
 SessionMetricsActor and its dependent session-reference, market-state, and market-structure
 actors are removed, together with their dedicated calculations, configuration, tests, and
 replacement plan. QuoteQualityMetricsActor, its midpoint/spread calculations, and its
-configuration and dedicated tests are also removed. The current runtime has ten actor classes;
-the operational profile composes nine. Independent canonical bar/metric and entity
-contracts remain.
+configuration and dedicated tests are also removed. The current runtime has ten actor classes.
+Independent canonical bar/metric and entity contracts remain.
 
 The API registry selects 98 public objects; the diagram source census recognizes ten actor
 registrations. Offline checks do not establish connected acceptance.
 
-System configuration is now schema 29. Remove `[dashboard]` from older local profiles.
-Remove the complete `[acquisition]` and
-`[historical.probe]`, `[visual_debug_capture]`, `[metrics.session_measurements]`, and
-`[metrics.entity_analysis]` sections, plus the entire `[metrics]` tree (including
-`[metrics.quote_quality]`), from older local profiles, then set
-`schema_version = 29`;
-retain `[historical]`, which still configures the production acquisition owner. Local files are
-not migrated automatically. See [developer setup](operations/developer-setup.md).
+The tracked runtime example is schema 30: operator choices and watchlist membership are in the
+runtime profile, reviewed runtime policy is in `system.policy.toml`, and active calendars are
+derived from watchlist members. An empty watchlist uses the policy's `idle_calendar_ids` so the
+zero-instrument runtime can still synchronize session state. Complete schema-29 profiles remain
+supported. Older local profiles need
+their retired `[dashboard]`, `[acquisition]`, `[historical.probe]`,
+`[visual_debug_capture]`, and `[metrics]` sections removed before setting schema 29. Retain
+`[historical]`, which configures the production acquisition owner. Local files are not migrated
+automatically. See [developer setup](operations/developer-setup.md) for the schema-30 split.
 
 ## Implemented Foundation
 
@@ -243,7 +233,7 @@ Recorded connected acceptance is useful but narrow:
   bounded lookback/lookahead envelope.
 - V3-02 accepted one late-consumer current-state recovery and five-bar historical request chain.
 - The rc5 dependency upgrade passed offline verification. Markeitect reports an online-verified
-  rc5 run using `config/system.example.toml` on 2026-09-17. The exact head, provider responses,
+  rc5 run using the then-named `config/system.example.toml` on 2026-09-17. The exact head, provider responses,
   and sanitized result are not recorded here; [issue #59](https://github.com/ShriekinNinja/Markeitech_V2/issues/59)
   tracks the bounded historical timestamp calibration.
 - No connected acceptance establishes SPXW/QQQ options acquisition, a Discord bot, a live model,

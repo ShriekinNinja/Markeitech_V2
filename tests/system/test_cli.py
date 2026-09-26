@@ -25,15 +25,15 @@ def test_default_env_file_is_owned_by_project_root() -> None:
 
 
 def test_default_config_file_is_local_and_owned_by_project_root() -> None:
-    assert DEFAULT_CONFIG_FILE == PROJECT_ROOT / "config/system.local.toml"
-    assert DEFAULT_CONFIG_FILE != PROJECT_ROOT / "config/system.example.toml"
+    assert DEFAULT_CONFIG_FILE == PROJECT_ROOT / "config/runtime.local.toml"
+    assert DEFAULT_CONFIG_FILE != PROJECT_ROOT / "config/runtime.example.toml"
 
 
 def test_loads_explicit_env_file_without_overriding_process_environment(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    config_path = PROJECT_ROOT / "config/system.example.toml"
+    config_path = PROJECT_ROOT / "config/runtime.example.toml"
     env_path = tmp_path / ".env"
     env_path.write_text("MARKEITECH_TEST_FILE_VALUE=loaded\nMARKEITECH_TEST_PRIORITY=file\n")
     monkeypatch.setenv("MARKEITECH_TEST_PRIORITY", "process")
@@ -76,7 +76,7 @@ def test_clean_connected_run_is_closed_only_after_node_returns(
 
     result = main(
         [
-            str(PROJECT_ROOT / "config/system.example.toml"),
+            str(PROJECT_ROOT / "config/runtime.example.toml"),
             "--env-file",
             str(tmp_path / "missing.env"),
             "--connect",
@@ -108,7 +108,7 @@ def test_unclean_connected_run_remains_open(tmp_path: Path, monkeypatch) -> None
     try:
         main(
             [
-                str(PROJECT_ROOT / "config/system.example.toml"),
+                str(PROJECT_ROOT / "config/runtime.example.toml"),
                 "--env-file",
                 str(tmp_path / "missing.env"),
                 "--connect",

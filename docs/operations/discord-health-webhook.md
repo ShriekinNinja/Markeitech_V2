@@ -24,7 +24,7 @@ not create a new readiness state or establish unrelated runtime capabilities.
 ## Configuration And Secrets
 
 Tracked configuration contains timeout and environment-variable names, never webhook values.
-Local configuration begins from `config/system.example.toml`; actual secrets are read from:
+Local configuration begins from `config/runtime.example.toml`; actual secrets are read from:
 
 ```text
 MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK
@@ -62,11 +62,10 @@ The card reports counts and gaps. It says ready only when every required termina
 ready; otherwise it reports completion with limitations. Producers may publish in any order, so
 the observer starts early enough to retain their bounded declarations and outcomes.
 
-For the explicitly configured zero-instrument operational profile, a separate rendering of this
-card reports empty acquisition and persistence initialization without waiting for nonexistent
+When a profile explicitly disables the watchlist and has no instruments, a separate rendering of
+this card reports empty acquisition and persistence initialization without waiting for nonexistent
 watchlist members or historical demands. It does not infer zero work from silence or claim that
-IB, calendars, resources, or webhook delivery are healthy. See the
-[operational boot runbook](operational-boot.md) for the independent acceptance evidence.
+IB, calendars, resources, or webhook delivery are healthy.
 
 ## Shutdown And Acceptance
 

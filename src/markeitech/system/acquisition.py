@@ -243,7 +243,7 @@ class DataAcquisitionActor(DataActor):
             AcquisitionStatusRequest.from_signal_value(signal.value)
         except ValueError as exc:
             self._malformed_status_requests += 1
-            self.log.error(
+            self.log.warning(
                 "ACQUISITION_STATUS_REQUEST_REJECTED"
                 f" | reason=invalid_request | error={type(exc).__name__}",
             )
@@ -302,7 +302,7 @@ class DataAcquisitionActor(DataActor):
             return
         first_ts_event = observations[0].ts_event if observations else "n/a"
         last_ts_event = observations[-1].ts_event if observations else "n/a"
-        self.log.info(
+        self.log.debug(
             f"HISTORICAL_RESPONSE_ACCEPTED | request_id={request_id}"
             f" | bar_type={request.instrument_id}-{request.selector}"
             f" | observations={len(observations)}/{request.limit}"
@@ -375,7 +375,7 @@ class DataAcquisitionActor(DataActor):
         status = self._tracker.status(str(self.actor_id))
         self.publish_signal(ACQUISITION_STATUS_SIGNAL, status.to_signal_value())
         self._statuses_published += 1
-        self.log.info(
+        self.log.debug(
             f"ACQUISITION_STATUS | state={status.state}"
             f" | available={len(status.available_instrument_ids)}"
             f"/{len(status.expected_instrument_ids)}",
@@ -495,12 +495,20 @@ class DataAcquisitionActor(DataActor):
                 detail=event.detail,
             )
             self.publish_signal(HISTORICAL_EXECUTION_SIGNAL, message.to_signal_value())
-            self.log.info(
+            log_message = (
                 f"HISTORICAL_EXECUTION | state={message.state}"
                 f" | request_id={message.request_id} | attempt={message.attempt}"
                 f" | instrument_id={message.instrument_id} | selector={message.selector}"
-                f" | detail={message.detail}",
+                f" | detail={message.detail}"
             )
+            if message.state in {"FAILED", "EXPIRED"}:
+                self.log.error(log_message)
+            elif message.state == "RETRY_SCHEDULED":
+                self.log.warning(log_message)
+            elif message.state == "COMPLETED":
+                self.log.info(log_message)
+            else:
+                self.log.debug(log_message)
         batch_type = DataType(HISTORICAL_BATCH_TYPE_NAME)
         for batch in update.batches:
             self.publish_data(batch_type, CustomData(batch_type, batch))
@@ -527,11 +535,19 @@ class DataAcquisitionActor(DataActor):
                 reason=result.reason,
             )
             self.publish_signal(HISTORICAL_READINESS_SIGNAL, message.to_signal_value())
-            self.log.info(
+            log_message = (
                 f"HISTORICAL_READINESS | state={message.state}"
                 f" | consumer_id={message.consumer_id} | request_id={message.request_id}"
-                f" | observations={message.observed_count}/{message.minimum_observations}",
+                f" | observations={message.observed_count}/{message.minimum_observations}"
             )
+            if message.state in {"FAILED", "EXPIRED"}:
+                self.log.error(log_message)
+            elif message.state == "DEGRADED":
+                self.log.warning(log_message)
+            elif message.state == "READY":
+                self.log.info(log_message)
+            else:
+                self.log.debug(log_message)
 
     def _observe(
         self,
@@ -565,13 +581,21 @@ class DataAcquisitionActor(DataActor):
                 detail=event.detail,
             )
             self.publish_signal(ACQUISITION_STREAM_SIGNAL, message.to_signal_value())
-            self.log.info(
+            log_message = (
                 f"ACQUISITION_STREAM | state={message.state}"
                 f" | instrument_id={message.instrument_id}"
                 f" | feed={message.feed_kind}/{message.selector}"
                 f" | consumers={len(message.consumer_ids)}"
-                f" | detail={message.detail}",
+                f" | detail={message.detail}"
             )
+            if message.state == "FAILED":
+                self.log.error(log_message)
+            elif message.state in {"REJECTED", "EXPIRED"}:
+                self.log.warning(log_message)
+            elif message.state in {"SUBSCRIBED", "ACTIVE", "COMPLETED"}:
+                self.log.info(log_message)
+            else:
+                self.log.debug(log_message)
 
 
 def validate_historical_plan_limits(
