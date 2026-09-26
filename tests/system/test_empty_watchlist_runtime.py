@@ -29,7 +29,7 @@ from markeitech.system.node import build_ib_data_client_config
 from markeitech.system.persistence import OperationalStore
 from markeitech.system.resource_actor import ProcessResourceSample, ProcessResourceSampler
 
-EXAMPLE = Path(__file__).parents[2] / "config/system.example.toml"
+EXAMPLE = Path(__file__).parents[2] / "config/runtime.example.toml"
 ROSTER = [
     "system_control",
     "session_state",
@@ -45,12 +45,15 @@ ROSTER = [
 
 def _empty_profile(tmp_path: Path) -> Path:
     path = tmp_path / "system.toml"
-    path.write_bytes(EXAMPLE.read_bytes())
-    (tmp_path / "market-calendars.toml").write_bytes(
-        (EXAMPLE.parent / "market-calendars.toml").read_bytes(),
+    path.write_text(
+        EXAMPLE.read_text().split("\n[watchlist]\n", 1)[0]
+        + "\n[watchlist]\nenabled = false\nmembers = []\n",
     )
-    (tmp_path / "system.watchlist.toml").write_text(
-        "[watchlist]\nenabled = false\nconsumer_retry_interval_ms = 1000\nmembers = []\n",
+    (tmp_path / "system.calendars.toml").write_bytes(
+        (EXAMPLE.parent / "system.calendars.toml").read_bytes(),
+    )
+    (tmp_path / "system.policy.toml").write_bytes(
+        (EXAMPLE.parent / "system.policy.toml").read_bytes(),
     )
     return path
 
@@ -59,17 +62,19 @@ def test_empty_watchlist_has_exact_roster_and_empty_native_provider_loads(tmp_pa
     config = load_system_config(_empty_profile(tmp_path))
     assert config.instrument_ids == ()
     assert not config.watchlist.enabled
+    assert {item.calendar_id for item in config.sessions.calendars} == {
+        "cboe_spxw", "us_equities", "cme_equity", "cbot_equity", "cme_energy",
+    }
     plan = build_actor_plan(config, StartupPrerequisites(uuid4(), True))
     assert [item.key for item in plan] == ROSTER
     assert build_ib_data_client_config(config).instrument_provider.load_ids == set()
 
 
 def test_empty_watchlist_cannot_be_enabled(tmp_path) -> None:
-    _empty_profile(tmp_path)
-    watchlist = tmp_path / "system.watchlist.toml"
-    watchlist.write_text(watchlist.read_text().replace("enabled = false", "enabled = true"))
+    profile = _empty_profile(tmp_path)
+    profile.write_text(profile.read_text().replace("enabled = false", "enabled = true"))
     with pytest.raises(ValueError, match="non-empty"):
-        load_system_config(tmp_path / "system.toml")
+        load_system_config(profile)
 
 
 def test_empty_acquisition_status_roundtrips_without_provider_requests() -> None:

@@ -24,7 +24,7 @@ not create a new readiness state or establish unrelated runtime capabilities.
 ## Configuration And Secrets
 
 Tracked configuration contains timeout and environment-variable names, never webhook values.
-Local configuration begins from `config/system.example.toml`; actual secrets are read from:
+Local configuration begins from `config/runtime.example.toml`; actual secrets are read from:
 
 ```text
 MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK

@@ -34,8 +34,8 @@ from tests.system.message_actor_fixtures import (
 
 @pytest.fixture(autouse=True)
 def _write_calendar_catalog(tmp_path: Path) -> None:
-    source = Path(__file__).parents[2] / "config/market-calendars.toml"
-    (tmp_path / "market-calendars.toml").write_text(source.read_text())
+    source = Path(__file__).parents[2] / "config/system.calendars.toml"
+    (tmp_path / "system.calendars.toml").write_text(source.read_text())
 
 
 async def _run_node_until(node: LiveNode, *events: Event) -> None:
@@ -161,7 +161,7 @@ def test_session_state_delivers_one_cut_snapshot_and_replays_exact_duplicate() -
     received_current_state_snapshots.clear()
     inspectable_session_state_actors.clear()
     root = Path(__file__).parents[2]
-    config = load_system_config(root / "config/system.example.toml")
+    config = load_system_config(root / "config/runtime.example.toml")
     source_epoch = "00000000-0000-0000-0000-000000000001"
     session_state = next(
         item
@@ -389,7 +389,7 @@ def test_session_state_preserves_successful_calendar_in_mixed_failure_response()
     received_calendar_transitions.clear()
     received_calendar_projections.clear()
     root = Path(__file__).parents[2]
-    config = load_system_config(root / "config/system.example.toml")
+    config = load_system_config(root / "config/runtime.example.toml")
     session_state = next(
         item
         for item in build_actor_plan(

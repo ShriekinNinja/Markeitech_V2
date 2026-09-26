@@ -20,13 +20,13 @@ from markeitech.system.discord import (
 
 @pytest.fixture(autouse=True)
 def _write_calendar_catalog(tmp_path: Path) -> None:
-    source = Path(__file__).parents[2] / "config/market-calendars.toml"
-    (tmp_path / "market-calendars.toml").write_text(source.read_text())
+    source = Path(__file__).parents[2] / "config/system.calendars.toml"
+    (tmp_path / "system.calendars.toml").write_text(source.read_text())
 
 
 def _config():  # noqa: ANN202
     root = Path(__file__).parents[2]
-    return load_system_config(root / "config/system.example.toml")
+    return load_system_config(root / "config/runtime.example.toml")
 
 
 def _prerequisites(ready: bool = True) -> StartupPrerequisites:
@@ -94,10 +94,8 @@ def test_actor_plan_has_mandatory_core_and_enabled_discord() -> None:
     planner = next(item for item in plan if item.key == "historical_evidence_planner")
     assert planner.config.config["instrument_calendars"]["ESZ6.CME"] == "cme_equity"
     assert set(planner.config.config["expected_calendar_digests"]) == {
-        "cboe_spxw",
         "us_equities",
         "cme_equity",
-        "cbot_equity",
         "cme_energy",
     }
     assert (

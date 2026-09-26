@@ -74,20 +74,20 @@ Create local files without replacing an existing machine configuration:
 
 ```bash
 test -e .env || cp .env.example .env
-test -e config/system.local.toml || \
-  cp config/system.example.toml config/system.local.toml
+test -e config/runtime.local.toml || \
+  cp config/runtime.example.toml config/runtime.local.toml
 ```
 
 Edit `.env` with a local PostgreSQL password, matching DSN, and a Discord system-health
-webhook. Edit `config/system.local.toml` for the local IB port/client ID and reviewed runtime
-policy. Review the selected watchlist file for current explicit futures contracts and entitled
+webhook. Edit `config/runtime.local.toml` for the local IB port/client ID and reviewed runtime
+policy. Review its `[watchlist]` table for current explicit futures contracts and entitled
 instruments.
 
 Start Docker Desktop, then use the compact disconnected startup to check the selected local
 configuration, start PostgreSQL, build without connecting to IB, and exit:
 
 ```bash
-markeitech system start --config config/system.local.toml
+markeitech system start --config config/runtime.local.toml
 ```
 
 For development, run tests added or changed for the issue. Broad regression checks run on the PR.
@@ -95,7 +95,7 @@ For development, run tests added or changed for the issue. Broad regression chec
 For the normal connected workflow, start Docker Desktop and add the explicit `--ib` flag:
 
 ```bash
-markeitech system start --config config/system.local.toml --ib
+markeitech system start --config config/runtime.local.toml --ib
 ```
 
 This command checks the configured IB endpoint and then connects to IB. It does not start TWS or
@@ -104,23 +104,24 @@ IB Gateway. Review the [developer setup](docs/operations/developer-setup.md) and
 
 ## Configuration Ownership
 
-- `config/system.example.toml` is the tracked starting template.
-- `config/system.local.toml` is the ignored machine/runtime configuration.
-- [`config/system.watchlist.toml`](config/system.watchlist.toml) is the tracked watchlist selected
-  by the example and default local profile.
-- [`config/market-calendars.toml`](config/market-calendars.toml) is the tracked calendar catalog,
+- `config/runtime.example.toml` is the tracked starting template.
+- `config/runtime.local.toml` is the ignored machine/runtime configuration.
+- [`config/system.policy.toml`](config/system.policy.toml) is the tracked runtime limits and
+  delivery policy selected by the example and default local profile.
+- The `[watchlist]` table in the runtime profile selects exact instruments and requested feeds.
+- [`config/system.calendars.toml`](config/system.calendars.toml) is the tracked calendar catalog,
   containing reusable exchange-calendar definitions, product phases, and source-cited corrections.
 - `.env.example` documents required environment keys.
 - `.env` contains ignored local secrets.
 - `.idea/` is entirely local; create IDE launchers around the documented command as needed.
 
-Under `[sessions]` in the system TOML, `calendar_catalog = "market-calendars.toml"` selects the
-catalog relative to that system file, and `calendar_ids` selects the active definitions. Each
-`[[watchlist.members]]` entry binds its instrument to a `calendar_id`; rolling a futures contract
-does not require editing the calendar catalog. See [developer setup](docs/operations/developer-setup.md)
-for configuration details.
+Under `[sessions]` in the policy TOML, `calendar_catalog = "system.calendars.toml"` selects the
+catalog relative to the selected runtime profile. Active calendars come from the distinct
+`calendar_id` values in `[[watchlist.members]]`; the policy supplies calendars for an empty
+watchlist. Rolling a futures contract does not require editing the calendar catalog. See
+[developer setup](docs/operations/developer-setup.md) for configuration details.
 
-Never commit `.env`, `system.local.toml`, runtime logs, vendor exports, database dumps, or other
+Never commit `.env`, `runtime.local.toml`, runtime logs, vendor exports, database dumps, or other
 files under `data/`.
 
 ## Repository Map

@@ -1,23 +1,10 @@
-# Tracked V2 starting template. Copy this file to system.local.toml before a connected run.
-# Review IB port/client identity, explicit futures contracts, entitlements, calendars, and policy.
-# Never place secrets in this file; local secrets belong in the ignored .env.
+# Reviewed runtime policy. Operator choices live in runtime.example.toml or runtime.local.toml.
+# Relative catalog and log paths resolve against the selected system TOML.
 
-schema_version = 29 # Required system configuration schema; this loader accepts version 29.
-watchlist_file = "system.watchlist.toml" # Relative to this system TOML; contains the [watchlist] table.
-
-[runtime]
-name = "MARKEITECH-V2-001" # Name recorded for this local runtime instance and its operational run.
-trader_id = "MARKEITECH-001" # NautilusTrader identity for this runtime; it is not a broker account ID.
-environment = "live" # NautilusTrader live environment; connecting still requires operator confirmation.
+policy_version = 1 # Policy document schema for system schema 30.
 
 [ib]
-host = "127.0.0.1" # TWS or IB Gateway API host.
-port = 4002 # TWS or IB Gateway API port; verify it against the selected session.
-client_id = 20 # API client identity for this data connection, distinct from the broker account.
-symbology_method = "simplified" # Use simplified native IB symbols for instrument resolution.
 convert_exchange_to_mic_venue = false # Keep configured exchange venues instead of converting them to MIC codes.
-market_data_type = "realtime" # Request real-time IB market data; delivery still depends on permissions.
-use_regular_trading_hours = false # False includes eligible extended-session data in IB requests.
 batch_quotes = true # Let the IB adapter batch quote updates.
 ignore_quote_tick_size_updates = false # False retains quote updates that change only bid or ask size.
 handle_revised_bars = false # False disables the adapter's revised-bar handling.
@@ -25,15 +12,15 @@ connection_timeout_seconds = 30 # Maximum seconds allowed for the IB connection 
 request_timeout_seconds = 30 # Maximum seconds allowed for an IB request response.
 
 [logging]
-directory = "../data/logs" # Runtime log directory, resolved relative to this TOML file.
+directory = "../data/logs" # Runtime log directory, resolved relative to the selected system TOML.
 file_name = "markeitech-v2.log" # Name of the rotating runtime log file.
 
 [discord]
-enabled = true # Enable outbound health and operational webhooks, not a conversational bot.
 request_timeout_seconds = 5 # Maximum seconds for one webhook HTTP request.
 queue_capacity = 32 # Maximum queued outbound webhook messages.
-ping_critical_resource_alerts = true # Include @here on eligible critical resource webhook alerts.
 
+[watchlist]
+consumer_retry_interval_ms = 1000 # Milliseconds between native watchlist handler attachment attempts.
 
 [runtime_resources]
 enabled = true # Start periodic host and process resource sampling.
@@ -105,8 +92,8 @@ projection_lookback_days = 120 # Calendar days included before today in requeste
 projection_lookahead_days = 14 # Calendar days included after today in requested projections.
 maximum_projection_days = 400 # Upper bound on days in a calendar projection request.
 maximum_calendars_per_request = 8 # Upper bound on calendars in one projection request.
-calendar_catalog = "market-calendars.toml" # Versioned calendar-definition file relative to this TOML file.
-calendar_ids = ["cboe_spxw", "us_equities", "cme_equity", "cbot_equity", "cme_energy"] # Definitions evaluated at startup; CBOT and SPXW have no current watchlist member.
+calendar_catalog = "system.calendars.toml" # Versioned calendar-definition file relative to the selected system TOML.
+idle_calendar_ids = ["cboe_spxw", "us_equities", "cme_equity", "cbot_equity", "cme_energy"] # Calendars evaluated only when the watchlist is empty.
 
 [sessions.projection_retry]
 response_timeout_ms = 5000 # Milliseconds to wait for each calendar projection response.

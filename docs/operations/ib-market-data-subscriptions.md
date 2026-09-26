@@ -38,7 +38,7 @@ Subscribe in phases:
 
 The former ES-only review profile used `ESU6.CME`, `watchlist_last`, and bounded historical-bar
 requests. That profile has been removed. The current
-[`example watchlist`](../../config/system.watchlist.toml) enables seven instruments; this ES-only
+[`example watchlist`](../../config/runtime.example.toml) enables seven instruments; this ES-only
 entitlement baseline does not cover that full watchlist.
 
 | IBKR subscription | Coverage | Markeitech requirement | Published non-professional price |
@@ -80,7 +80,7 @@ waivers. Do not apply this total to a professional subscriber; professional prod
 differ substantially.
 
 The relevant configured instruments are declared in
-[`config/system.watchlist.toml`](../../config/system.watchlist.toml).
+[`config/runtime.example.toml`](../../config/runtime.example.toml).
 
 ### Consolidated Equity Data Requirement
 

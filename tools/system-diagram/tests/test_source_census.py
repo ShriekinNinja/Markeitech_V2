@@ -13,20 +13,26 @@ from markeitech_system_diagram.source_census import (
 
 
 class SourceCensusTests(unittest.TestCase):
-    def test_resolves_relative_watchlist_file_for_profile_conditions(self) -> None:
+    def test_resolves_relative_policy_and_inline_watchlist_for_profile_conditions(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "config").mkdir()
-            (root / "config/system.example.toml").write_text(
-                'schema_version = 29\nwatchlist_file = "system.watchlist.toml"\n',
+            (root / "config/runtime.example.toml").write_text(
+                'schema_version = 30\npolicy_file = "system.policy.toml"\n'
+                '[ib]\n[discord]\nenabled = true\n[watchlist]\nenabled = true\n',
             )
-            (root / "config/system.watchlist.toml").write_text(
-                "[watchlist]\nenabled = true\n",
+            (root / "config/system.policy.toml").write_text(
+                "policy_version = 1\n[ib]\n[discord]\nqueue_capacity = 32\n"
+                "[watchlist]\nconsumer_retry_interval_ms = 1000\n"
+                "[sessions]\n[runtime_resources]\nenabled = true\n",
             )
 
-            raw = _profile_configuration(root, "config/system.example.toml")
+            raw = _profile_configuration(root, "config/runtime.example.toml")
 
         self.assertTrue(raw["watchlist"]["enabled"])
+        self.assertEqual(raw["watchlist"]["consumer_retry_interval_ms"], 1000)
+        self.assertTrue(raw["runtime_resources"]["enabled"])
+        self.assertEqual(raw["discord"], {"enabled": True, "queue_capacity": 32})
 
     def test_extracts_constant_and_bounded_dynamic_actor_registrations(self) -> None:
         source = """

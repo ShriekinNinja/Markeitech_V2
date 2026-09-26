@@ -17,8 +17,8 @@ cache-policy or Redis decision.
 
 ## Configuration
 
-The `[runtime_resources]` block in local `config/system.local.toml` owns the behavior. New
-machines begin from the tracked `config/system.example.toml` template:
+The `[runtime_resources]` block in tracked `config/system.policy.toml` owns the behavior. The
+selected local `config/runtime.local.toml` profile points to that policy file:
 
 - `enabled`: registers or omits the actor.
 - `sample_interval_ms`: cadence for resource samples; initially 10 seconds.

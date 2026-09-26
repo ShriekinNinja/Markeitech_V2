@@ -51,9 +51,9 @@ limitations = ["Static construction does not prove a successful provider connect
 [[evidence]]
 id = "evidence.profile"
 evidence_class = "configuration"
-source_path = "config/system.example.toml"
-observed_at = "2026-08-30"
-proves = ["named active-profile enablement", "configuration conditions"]
+source_path = "config/runtime.example.toml"
+observed_at = "2026-09-26"
+proves = ["named active-profile enablement", "watchlist membership", "configuration conditions"]
 limitations = ["Requested realtime mode does not prove received realtime data."]
 
 [[evidence]]
@@ -157,21 +157,21 @@ proves = ["deterministic evidence and future semantic-layer boundaries"]
 limitations = ["Accepted architecture does not prove current composition or runtime behavior."]
 
 [[evidence]]
-id = "evidence.watchlist"
+id = "evidence.policy"
 evidence_class = "configuration"
-source_path = "config/system.watchlist.toml"
+source_path = "config/system.policy.toml"
 observed_at = "2026-09-26"
-proves = ["named example watchlist membership and enablement"]
-limitations = ["Configured instruments do not prove provider delivery or entitlement."]
+proves = ["versioned runtime policy for the named example profile"]
+limitations = ["Policy settings do not prove runtime or provider acceptance."]
 
 [[profiles]]
 id = "profile.example"
-config_path = "config/system.example.toml"
-config_schema_version = 29
-content_sha256 = "690507f0d561373c89cfb70509e5f20b94c736da0b9cefc3ce39edcef8161b2b"
+config_path = "config/runtime.example.toml"
+config_schema_version = 30
+content_sha256 = "a37ffedd847e47ec5a24a7df7ebc07624a65f339756fdf19ce03776f450049a7"
 status = "tracked_active_review_profile"
 limitations = ["Represents the named tracked profile, not all available capabilities or a connected runtime observation."]
-evidence = ["evidence.profile", "evidence.watchlist"]
+evidence = ["evidence.profile", "evidence.policy"]
 
 [[boundaries]]
 id = "boundary.process"

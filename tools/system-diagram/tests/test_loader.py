@@ -122,8 +122,8 @@ limitations = ["Fixture tombstone only"]
 
     def test_rejects_local_profile_path(self) -> None:
         text = FIXTURE.read_text().replace(
-            'config_path = "config/system.example.toml"',
-            'config_path = "config/system.local.toml"',
+            'config_path = "config/runtime.example.toml"',
+            'config_path = "config/runtime.local.toml"',
         )
         error = self._error_for(text)
         self.assertEqual(error.code, "MANIFEST_PROFILE_PATH")
