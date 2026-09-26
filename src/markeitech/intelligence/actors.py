@@ -229,7 +229,7 @@ class SessionStateActor(DataActor):
             if timer_name in self.clock.timer_names():
                 self.clock.cancel_timer(timer_name)
         self._snapshot_cycles.clear()
-        self.log.info(
+        self.log.debug(
             f"SESSION_STATE_STOPPED | calendars={len(self._calendars)}"
             f" | transitions={sum(self._revisions.values())}"
             f" | projection_requests={self._projection_requests}"
@@ -1069,7 +1069,7 @@ class EvidenceHealthActor(DataActor):
             self.clock.cancel_timer(_EVIDENCE_CONSUMER_RETRY_TIMER)
         if _EVIDENCE_SESSION_STATE_ALERT in self.clock.timer_names():
             self.clock.cancel_timer(_EVIDENCE_SESSION_STATE_ALERT)
-        self.log.info(
+        self.log.debug(
             f"EVIDENCE_HEALTH_STOPPED | streams={len(self._requirements)}"
             f" | transitions={sum(self._revisions.values())}"
             f" | session_state={self._session_state.phase.value}",
@@ -1145,11 +1145,17 @@ class EvidenceHealthActor(DataActor):
         )
         self._session_state = update.state
         if self._session_state.phase is not previous_phase:
-            self.log.info(
+            message = (
                 "EVIDENCE_SESSION_STATE_SYNC"
                 f" | phase={self._session_state.phase.value}"
-                f" | calendars={len(self._calendar_expectations)}",
+                f" | calendars={len(self._calendar_expectations)}"
             )
+            if self._session_state.phase is SessionStateDeliveryPhase.LIVE:
+                self.log.info(message)
+            elif self._session_state.phase is SessionStateDeliveryPhase.DEGRADED:
+                self.log.warning(message)
+            else:
+                self.log.debug(message)
         self._install_session_states(update.installed_calendar_ids)
         if self._session_state.phase is SessionStateDeliveryPhase.CONFLICT:
             self._cancel_session_state_alert()
@@ -1378,21 +1384,27 @@ class EvidenceHealthActor(DataActor):
         )
         self.publish_signal(EVIDENCE_HEALTH_SIGNAL, event.to_signal_value())
         self._latest_events[key] = event
-        self.log.info(
+        message = (
             f"EVIDENCE_HEALTH | instrument={instrument_id} | feed={feed_kind}/{selector}"
             f" | state={previous or 'UNINITIALIZED'}->{event.state}"
             f" | age_ms={event.age_ms} | session={event.session_phase or 'UNKNOWN'}"
             f" | thresholds_ms={effective_policy.fresh_for_ms}/"
             f"{effective_policy.stale_after_ms}/{effective_policy.unavailable_after_ms}"
-            f" | reason={event.reason}",
+            f" | reason={event.reason}"
         )
+        if event.state in {"STALE", "UNAVAILABLE", "UNSUPPORTED"}:
+            self.log.warning(message)
+        elif event.state in {"DORMANT", "NOT_EVALUATED"}:
+            self.log.debug(message)
+        else:
+            self.log.info(message)
         self._states[key] = assessment.state
 
     def _publish_snapshot(self, value: str) -> None:
         try:
             request = EvidenceHealthSnapshotRequest.from_signal_value(value)
         except ValueError as exc:
-            self.log.error(f"EVIDENCE_SNAPSHOT_REQUEST_REJECTED | error={type(exc).__name__}")
+            self.log.warning(f"EVIDENCE_SNAPSHOT_REQUEST_REJECTED | error={type(exc).__name__}")
             return
         requested = set(request.instrument_ids)
         events = tuple(

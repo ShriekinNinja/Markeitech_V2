@@ -13,7 +13,9 @@ request_timeout_seconds = 30 # Maximum seconds allowed for an IB request respons
 
 [logging]
 directory = "../data/logs" # Runtime log directory, resolved relative to the selected system TOML.
-file_name = "markeitech-v2.log" # Name of the rotating runtime log file.
+file_name = "markeitech-v2" # Base name for the timestamped runtime log files.
+max_file_size_bytes = 100000000 # Rotate before the next entry would exceed 100 MB.
+max_backup_count = 5 # Retain up to five rotated log files.
 
 [discord]
 request_timeout_seconds = 5 # Maximum seconds for one webhook HTTP request.

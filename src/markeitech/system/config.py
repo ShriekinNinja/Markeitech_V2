@@ -205,6 +205,8 @@ class EvidenceHealthConfig:
 class LoggingConfig:
     directory: Path
     file_name: str
+    max_file_size_bytes: int
+    max_backup_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -576,13 +578,35 @@ def _load_ib(raw: Any) -> InteractiveBrokersConfig:
 
 def _load_logging(raw: Any, config_directory: Path) -> LoggingConfig:
     values = _mapping(raw, "logging")
-    _require_keys(values, {"directory", "file_name"}, "logging")
+    _require_keys_allowing(
+        values,
+        {"directory", "file_name"},
+        {"max_file_size_bytes", "max_backup_count"},
+        "logging",
+    )
     directory = Path(_non_empty_string(values["directory"], "logging.directory"))
     if not directory.is_absolute():
         directory = (config_directory / directory).resolve()
+    file_name = _non_empty_string(values["file_name"], "logging.file_name").removesuffix(".log")
+    if not file_name:
+        raise ValueError("logging.file_name must contain a basename")
+    max_file_size_bytes = _positive_int(
+        values.get("max_file_size_bytes", 100_000_000),
+        "logging.max_file_size_bytes",
+    )
+    if not 1_000_000 <= max_file_size_bytes <= 1_000_000_000:
+        raise ValueError("logging.max_file_size_bytes must be between 1000000 and 1000000000")
+    max_backup_count = _positive_int(
+        values.get("max_backup_count", 5),
+        "logging.max_backup_count",
+    )
+    if max_backup_count > 20:
+        raise ValueError("logging.max_backup_count must be at most 20")
     return LoggingConfig(
         directory=directory,
-        file_name=_non_empty_string(values["file_name"], "logging.file_name"),
+        file_name=file_name,
+        max_file_size_bytes=max_file_size_bytes,
+        max_backup_count=max_backup_count,
     )
 
 

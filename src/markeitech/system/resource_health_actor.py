@@ -218,7 +218,7 @@ class RuntimeResourceHealthActor(DataActor):
             self._sample_interval_ns,
             callback=self._check_staleness,
         )
-        self.log.info("RUNTIME_RESOURCE_HEALTH_STARTED")
+        self.log.debug("RUNTIME_RESOURCE_HEALTH_STARTED")
 
     def on_signal(self, signal: Signal) -> None:
         if signal.name != RUNTIME_RESOURCE_SIGNAL:
@@ -240,7 +240,7 @@ class RuntimeResourceHealthActor(DataActor):
         self.unsubscribe_signal(RUNTIME_RESOURCE_SIGNAL)
         if _STALE_TIMER in self.clock.timer_names():
             self.clock.cancel_timer(_STALE_TIMER)
-        self.log.info(
+        self.log.debug(
             "RUNTIME_RESOURCE_HEALTH_SUMMARY"
             f" | state={self._evaluator.state} | samples={self._samples}"
             f" | transitions={self._transitions} | rejected={self._rejected}",
@@ -259,13 +259,19 @@ class RuntimeResourceHealthActor(DataActor):
             return
         self._transitions += 1
         self.publish_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL, event.to_signal_value())
-        self.log.warning(
+        message = (
             "RUNTIME_RESOURCE_HEALTH"
             f" | state={event.previous_state}->{event.state}"
             f" | reasons={','.join(event.reason_codes)}"
             f" | threshold_version={event.threshold_version}"
-            f" | notification_eligible={event.notification_eligible}",
+            f" | notification_eligible={event.notification_eligible}"
         )
+        if event.state == "CRITICAL":
+            self.log.error(message)
+        elif event.state == "WARNING":
+            self.log.warning(message)
+        else:
+            self.log.info(message)
 
 
 def _observations(

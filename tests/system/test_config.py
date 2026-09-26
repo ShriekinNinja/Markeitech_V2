@@ -206,10 +206,40 @@ def test_loads_split_system_profile_with_policy_and_watchlist(tmp_path: Path) ->
     assert config.ib.market_data_type == "realtime"
     assert config.ib.batch_quotes is True
     assert config.persistence.queue_capacity == 512
+    assert config.logging.file_name == "markeitech-v2"
+    assert config.logging.max_file_size_bytes == 100_000_000
+    assert config.logging.max_backup_count == 5
     assert config.runtime_resources.health.threshold_version == "2026-08-22-v2"
     assert {calendar.calendar_id for calendar in config.sessions.calendars} == {
         "cme_equity", "cme_energy", "us_equities",
     }
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement", "message"),
+    [
+        ("max_file_size_bytes = 100000000", "max_file_size_bytes = 999999", "max_file_size_bytes"),
+        (
+            "max_file_size_bytes = 100000000",
+            "max_file_size_bytes = 1000000001",
+            "max_file_size_bytes",
+        ),
+        ("max_backup_count = 5", "max_backup_count = true", "max_backup_count"),
+        ("max_backup_count = 5", "max_backup_count = 21", "max_backup_count"),
+    ],
+)
+def test_rejects_invalid_log_rotation_policy(
+    tmp_path: Path,
+    original: str,
+    replacement: str,
+    message: str,
+) -> None:
+    path = _write_split_profile(tmp_path)
+    policy_path = tmp_path / "system.policy.toml"
+    policy_path.write_text(policy_path.read_text().replace(original, replacement, 1))
+
+    with pytest.raises(ValueError, match=message):
+        load_system_config(path)
 
 
 def test_rejects_operator_key_owned_by_policy(tmp_path: Path) -> None:
@@ -267,7 +297,9 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.ib.ignore_quote_tick_size_updates is False
     assert config.ib.handle_revised_bars is False
     assert config.logging.directory == tmp_path.parent / "data/logs"
-    assert config.logging.file_name == "markeitech-v2.log"
+    assert config.logging.file_name == "markeitech-v2"
+    assert config.logging.max_file_size_bytes == 100_000_000
+    assert config.logging.max_backup_count == 5
     assert config.discord.request_timeout_seconds == 5
     assert config.discord.enabled is True
     assert config.discord.queue_capacity == 32
