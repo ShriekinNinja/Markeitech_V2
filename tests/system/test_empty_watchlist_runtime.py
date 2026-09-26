@@ -29,7 +29,7 @@ from markeitech.system.node import build_ib_data_client_config
 from markeitech.system.persistence import OperationalStore
 from markeitech.system.resource_actor import ProcessResourceSample, ProcessResourceSampler
 
-PROFILE = Path(__file__).parents[2] / "config/system.operational.toml"
+EXAMPLE = Path(__file__).parents[2] / "config/system.example.toml"
 ROSTER = [
     "system_control",
     "session_state",
@@ -43,8 +43,20 @@ ROSTER = [
 ]
 
 
-def test_operational_profile_has_exact_roster_and_empty_native_provider_loads() -> None:
-    config = load_system_config(PROFILE)
+def _empty_profile(tmp_path: Path) -> Path:
+    path = tmp_path / "system.toml"
+    path.write_bytes(EXAMPLE.read_bytes())
+    (tmp_path / "market-calendars.toml").write_bytes(
+        (EXAMPLE.parent / "market-calendars.toml").read_bytes(),
+    )
+    (tmp_path / "system.watchlist.toml").write_text(
+        "[watchlist]\nenabled = false\nconsumer_retry_interval_ms = 1000\nmembers = []\n",
+    )
+    return path
+
+
+def test_empty_watchlist_has_exact_roster_and_empty_native_provider_loads(tmp_path) -> None:
+    config = load_system_config(_empty_profile(tmp_path))
     assert config.instrument_ids == ()
     assert not config.watchlist.enabled
     plan = build_actor_plan(config, StartupPrerequisites(uuid4(), True))
@@ -52,20 +64,12 @@ def test_operational_profile_has_exact_roster_and_empty_native_provider_loads() 
     assert build_ib_data_client_config(config).instrument_provider.load_ids == set()
 
 
-@pytest.mark.parametrize(
-    ("old", "new", "error"),
-    [
-        ("[watchlist]\nenabled = false", "[watchlist]\nenabled = true", "non-empty"),
-    ],
-)
-def test_empty_profile_rejects_instrument_consumers(tmp_path, old, new, error) -> None:
-    (tmp_path / "market-calendars.toml").write_bytes(
-        (PROFILE.parent / "market-calendars.toml").read_bytes(),
-    )
-    path = tmp_path / "system.toml"
-    path.write_text(PROFILE.read_text().replace(old, new))
-    with pytest.raises(ValueError, match=error):
-        load_system_config(path)
+def test_empty_watchlist_cannot_be_enabled(tmp_path) -> None:
+    _empty_profile(tmp_path)
+    watchlist = tmp_path / "system.watchlist.toml"
+    watchlist.write_text(watchlist.read_text().replace("enabled = false", "enabled = true"))
+    with pytest.raises(ValueError, match="non-empty"):
+        load_system_config(tmp_path / "system.toml")
 
 
 def test_empty_acquisition_status_roundtrips_without_provider_requests() -> None:
@@ -96,7 +100,7 @@ def test_discord_zero_work_summary_requires_explicit_configuration_and_ready() -
     assert projection.accept_system_health(ready, 101) is None
 
 
-def test_nine_operational_actors_boot_and_stop_offline(monkeypatch) -> None:
+def test_nine_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch) -> None:
     """Exercise native lifecycle/workers with SQL, HTTP and host samples replaced."""
     records = []
     deliveries = []
@@ -141,14 +145,14 @@ def test_nine_operational_actors_boot_and_stop_offline(monkeypatch) -> None:
             monotonic_seconds=monotonic(),
         ),
     )
-    config = load_system_config(PROFILE)
+    config = load_system_config(_empty_profile(tmp_path))
     config = replace(
         config, runtime_resources=replace(config.runtime_resources, sample_interval_ms=50),
     )
     plan = build_actor_plan(config, StartupPrerequisites(uuid4(), True))
     node = (
         LiveNode.builder(
-            "operational-offline-test", TraderId.from_str("BOOT-001"), Environment.LIVE
+            "empty-watchlist-offline-test", TraderId.from_str("BOOT-001"), Environment.LIVE
         )
         .with_logging(LoggerConfig(bypass_logging=True))
         .with_delay_post_stop_secs(0)

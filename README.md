@@ -31,9 +31,9 @@ are the next development priority, not implemented capabilities. See the
 The implemented foundation includes NautilusTrader `2.0.0rc5`, guarded Interactive Brokers market
 data, actor composition, static watchlist/shared acquisition, session/evidence health, historical
 planning, PostgreSQL operational audit, resource monitoring and optional Discord health webhooks.
-The tracked example composes ten actors; the zero-instrument operational profile composes nine.
-Shared metric/entity contracts exist; active indicator production and strategy registration do
-not. The current node registers a data client and no execution client.
+The tracked example composes ten actors. Shared metric/entity contracts exist; active indicator
+production and strategy registration do not. The current node registers a data client and no
+execution client.
 
 See [current status](docs/current-status.md) for implementation and known gaps. The project direction
 includes execution; a run or order requires explicit account and action authorization.
@@ -79,8 +79,9 @@ test -e config/system.local.toml || \
 ```
 
 Edit `.env` with a local PostgreSQL password, matching DSN, and a Discord system-health
-webhook. Edit `config/system.local.toml` for the local IB port/client ID, current explicit
-futures contracts, entitled instruments, and reviewed runtime policy.
+webhook. Edit `config/system.local.toml` for the local IB port/client ID and reviewed runtime
+policy. Review the selected watchlist file for current explicit futures contracts and entitled
+instruments.
 
 Start Docker Desktop, then use the compact disconnected startup to check the selected local
 configuration, start PostgreSQL, build without connecting to IB, and exit:
@@ -105,6 +106,8 @@ IB Gateway. Review the [developer setup](docs/operations/developer-setup.md) and
 
 - `config/system.example.toml` is the tracked starting template.
 - `config/system.local.toml` is the ignored machine/runtime configuration.
+- [`config/system.watchlist.toml`](config/system.watchlist.toml) is the tracked watchlist selected
+  by the example and default local profile.
 - [`config/market-calendars.toml`](config/market-calendars.toml) is the tracked calendar catalog,
   containing reusable exchange-calendar definitions, product phases, and source-cited corrections.
 - `.env.example` documents required environment keys.

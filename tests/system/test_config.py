@@ -260,6 +260,56 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.watchlist.members[0].capabilities == ("top_of_book", "watchlist_last")
 
 
+def test_loads_watchlist_from_relative_file(tmp_path: Path) -> None:
+    system_text, watchlist_text = VALID_CONFIG.split("\n[watchlist]\n", 1)
+    (tmp_path / "system.watchlist.toml").write_text("[watchlist]\n" + watchlist_text)
+    path = tmp_path / "system.toml"
+    path.write_text(
+        system_text.replace(
+            "schema_version = 29",
+            'schema_version = 29\nwatchlist_file = "system.watchlist.toml"',
+            1,
+        ),
+    )
+
+    config = load_system_config(path)
+
+    assert config.watchlist.members[0].instrument_id == "ESU6.CME"
+    assert config.instrument_ids == ("ESU6.CME",)
+
+
+def test_rejects_both_inline_and_external_watchlists(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            "schema_version = 29",
+            'schema_version = 29\nwatchlist_file = "system.watchlist.toml"',
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="exactly one of watchlist or watchlist_file"):
+        load_system_config(path)
+
+
+def test_rejects_unexpected_tables_in_external_watchlist(tmp_path: Path) -> None:
+    system_text, watchlist_text = VALID_CONFIG.split("\n[watchlist]\n", 1)
+    (tmp_path / "system.watchlist.toml").write_text(
+        "[watchlist]\n" + watchlist_text + "\n[unrelated]\nvalue = true\n",
+    )
+    path = tmp_path / "system.toml"
+    path.write_text(
+        system_text.replace(
+            "schema_version = 29",
+            'schema_version = 29\nwatchlist_file = "system.watchlist.toml"',
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="watchlist_file has unknown keys: unrelated"):
+        load_system_config(path)
+
+
 def test_rejects_unknown_configuration(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
     path.write_text(VALID_CONFIG.replace("environment =", "legacy_option = true\nenvironment ="))

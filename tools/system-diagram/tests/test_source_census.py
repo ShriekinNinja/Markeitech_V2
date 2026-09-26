@@ -6,12 +6,28 @@ from pathlib import Path
 
 from markeitech_system_diagram import ManifestError
 from markeitech_system_diagram.source_census import (
+    _profile_configuration,
     extract_actor_registrations,
     extract_contract_constants,
 )
 
 
 class SourceCensusTests(unittest.TestCase):
+    def test_resolves_relative_watchlist_file_for_profile_conditions(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "config").mkdir()
+            (root / "config/system.example.toml").write_text(
+                'schema_version = 29\nwatchlist_file = "system.watchlist.toml"\n',
+            )
+            (root / "config/system.watchlist.toml").write_text(
+                "[watchlist]\nenabled = true\n",
+            )
+
+            raw = _profile_configuration(root, "config/system.example.toml")
+
+        self.assertTrue(raw["watchlist"]["enabled"])
+
     def test_extracts_constant_and_bounded_dynamic_actor_registrations(self) -> None:
         source = """
 def build():

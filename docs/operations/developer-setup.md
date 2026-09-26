@@ -142,7 +142,11 @@ test -e config/system.local.toml || \
   cp config/system.example.toml config/system.local.toml
 ```
 
-Both destination files are ignored by Git.
+Both destination files are ignored by Git. The example and local system profiles reference the
+tracked `config/system.watchlist.toml`; its `[watchlist]` table owns membership and retry settings.
+The `watchlist_file` path is resolved relative to the system TOML. To keep a machine-specific
+watchlist, copy it to `config/system.watchlist.local.toml` and point the local system profile there.
+Existing inline `[watchlist]` profiles still load, but a profile must use exactly one source.
 
 The current loader accepts only system schema **29**. To migrate a schema-23/24 local profile:
 
@@ -170,8 +174,8 @@ these local actor-delivery controls are independent of IB historical polling and
 retries. The referenced catalog path is resolved relative to the system
 TOML and must exist; the tracked catalog is `config/market-calendars.toml`. Set `calendar_ids`
 to the exact catalog definitions this profile needs; unused entries are validated but are not
-instantiated. Concrete instrument-to-calendar bindings belong
-only to `[[watchlist.members]]`; rolling a futures contract does not require editing the calendar
+instantiated. Concrete instrument-to-calendar bindings belong only to `[[watchlist.members]]` in
+the selected watchlist file; rolling a futures contract does not require editing the calendar
 catalog. The CME/CBOT definitions also expose overlapping `ASIA`, `LONDON`, and `NEW_YORK` phases.
 Those phase clocks describe market regions and do not create analytical windows by themselves.
 
@@ -200,7 +204,7 @@ its values into issues, pull requests, logs, or documentation.
 
 ### System configuration
 
-Review `config/system.local.toml` before connecting:
+Review `config/system.local.toml` and its selected watchlist file before connecting:
 
 1. `[ib].host`, `[ib].port`, and `[ib].client_id`
 2. current explicit futures contracts in profile bindings and watchlist members
@@ -328,6 +332,7 @@ continue with local state, transfer these separately through a secure channel:
 
 - `.env`
 - `config/system.local.toml`
+- `config/system.watchlist.local.toml`, if the local profile references a machine-specific copy
 - required files under `data/`, such as licensed vendor exports
 - an optional PostgreSQL dump when operational history must continue
 

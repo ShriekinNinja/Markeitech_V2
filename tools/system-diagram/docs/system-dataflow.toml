@@ -156,31 +156,22 @@ observed_at = "2026-09-05"
 proves = ["deterministic evidence and future semantic-layer boundaries"]
 limitations = ["Accepted architecture does not prove current composition or runtime behavior."]
 
+[[evidence]]
+id = "evidence.watchlist"
+evidence_class = "configuration"
+source_path = "config/system.watchlist.toml"
+observed_at = "2026-09-26"
+proves = ["named example watchlist membership and enablement"]
+limitations = ["Configured instruments do not prove provider delivery or entitlement."]
+
 [[profiles]]
 id = "profile.example"
 config_path = "config/system.example.toml"
 config_schema_version = 29
-content_sha256 = "3856296b9420324d7387ca3e7874b022147dcf02b437f828c34cc38f4698358d"
+content_sha256 = "690507f0d561373c89cfb70509e5f20b94c736da0b9cefc3ce39edcef8161b2b"
 status = "tracked_active_review_profile"
 limitations = ["Represents the named tracked profile, not all available capabilities or a connected runtime observation."]
-evidence = ["evidence.profile"]
-
-[[evidence]]
-id = "evidence.operational-boot"
-evidence_class = "configuration"
-source_path = "config/system.operational.toml"
-observed_at = "2026-09-10"
-proves = ["Nine operational actors with a disabled empty watchlist"]
-limitations = ["Connected boot and host measurement require Markeitect live acceptance."]
-
-[[profiles]]
-id = "profile.operational"
-config_path = "config/system.operational.toml"
-config_schema_version = 29
-content_sha256 = "6a13925b346919fb83ab382544093593b6daccb64669e4abb4b53511187fc721"
-status = "tracked_operational_review_profile"
-limitations = ["Zero instrument loads and demands; IB, Discord and persistence remain configured.", "Not live-accepted; no runtime instrument addition."]
-evidence = ["evidence.operational-boot"]
+evidence = ["evidence.profile", "evidence.watchlist"]
 
 [[boundaries]]
 id = "boundary.process"
@@ -301,7 +292,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.composition"]
 limitations = []
 
@@ -331,7 +322,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.composition", "evidence.calendar-contracts", "evidence.canonical-calendar"]
 limitations = ["Global system READY does not currently assert calendar-projection readiness."]
 
@@ -358,7 +349,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Pure evaluator owned inside SessionStateActor; ordinary per-calendar projection failures are converted to typed response failures."
 cardinality = "one per active configured calendar ID, owned by SessionStateActor"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.canonical-calendar"]
 limitations = ["mcal authors admitted exchange-schedule facts; Markeitech-defined product phases remain separate configured semantics."]
 
@@ -388,7 +379,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.composition", "evidence.calendar-contracts"]
 limitations = ["Calendar projection delivery is local and transient; no replay guarantee is claimed."]
 
@@ -419,7 +410,7 @@ configuration_path = "discord.enabled"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.disabled"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.discord"]
 limitations = []
 
@@ -449,7 +440,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Demand rejection, calendar-window deferral, and bounded projection-delivery failure remain local to the planner actor."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.composition", "evidence.historical-planner", "evidence.calendar-contracts"]
 limitations = ["Recent-completed count windows use completed interval boundaries; they do not guarantee a requested number of traded observations across closures or provider gaps."]
 
@@ -480,7 +471,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "disabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.composition"]
 limitations = []
 
@@ -510,7 +501,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.composition", "evidence.historical-contracts"]
 limitations = ["The verified local historical port has one active lane and no provider cancellation mapping."]
 
@@ -541,7 +532,7 @@ configuration_path = "runtime_resources.enabled"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.disabled"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.composition"]
 limitations = []
 
@@ -572,7 +563,7 @@ configuration_path = "runtime_resources.health.enabled"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.disabled"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.resource-contracts"]
 limitations = ["Effective composition also depends on runtime_resources.enabled."]
 
@@ -602,7 +593,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Nautilus actor callback boundary; failure is surfaced according to component policy."
 cardinality = "one when composed"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.persistence"]
 limitations = ["Application-level persistence readiness is implemented; current-status prose still contains a conflicting historical statement."]
 
@@ -628,7 +619,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.node"]
 limitations = []
 
@@ -654,7 +645,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.node"]
 limitations = []
 
@@ -680,7 +671,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.node"]
 limitations = ["Cache contents are not architecture evidence."]
 
@@ -706,7 +697,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.external"
-profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }]
 evidence = ["evidence.node"]
 limitations = ["Exact IB contract qualification, entitlement, returned data mode, request methods, callbacks, and cancellation mapping remain unknown."]
 
@@ -732,7 +723,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.persistence"]
 limitations = []
 
@@ -758,7 +749,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "enabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.persistence"]
 limitations = []
 
@@ -784,7 +775,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.external"
-profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }]
 evidence = ["evidence.persistence"]
 limitations = ["Database-internal schema, transaction, index, privilege, recovery, and deployment topology are intentionally unknown in this diagram."]
 
@@ -810,7 +801,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "disabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.discord"]
 limitations = []
 
@@ -836,7 +827,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.current"
-profile_states = [{ profile = "profile.example", enablement = "enabled" }, { profile = "profile.operational", enablement = "disabled" }]
+profile_states = [{ profile = "profile.example", enablement = "enabled" }]
 evidence = ["evidence.discord"]
 limitations = []
 
@@ -862,7 +853,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.external"
-profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }]
 evidence = ["evidence.discord"]
 limitations = []
 
@@ -888,7 +879,7 @@ evidence_certainty = "verified_source"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.external"
-profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }]
 evidence = ["evidence.current-status"]
 limitations = []
 
@@ -914,7 +905,7 @@ evidence_certainty = "recommendation"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.future"
-profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }]
 evidence = ["evidence.roadmap"]
 limitations = ["Not implemented or composed."]
 
@@ -940,7 +931,7 @@ evidence_certainty = "recommendation"
 failure_isolation = "Boundary-specific; no additional recovery guarantee is inferred."
 cardinality = "one logical boundary"
 style = "style.component.future"
-profile_states = [{ profile = "profile.example", enablement = "not_applicable" }, { profile = "profile.operational", enablement = "not_applicable" }]
+profile_states = [{ profile = "profile.example", enablement = "not_applicable" }]
 evidence = ["evidence.roadmap"]
 limitations = ["Not implemented or composed."]
 

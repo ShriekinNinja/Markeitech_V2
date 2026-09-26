@@ -237,6 +237,28 @@ def _dotted_value(raw: dict[str, Any], dotted_path: str, location: str) -> Any:
     return value
 
 
+def _profile_configuration(repository_root: Path, config_path: str) -> dict[str, Any]:
+    raw = _read_toml(repository_root, config_path)
+    watchlist_file = raw.get("watchlist_file")
+    if watchlist_file is None:
+        return raw
+    if "watchlist" in raw or not isinstance(watchlist_file, str) or not watchlist_file:
+        raise ManifestError(
+            "DRIFT_PROFILE_WATCHLIST_SOURCE",
+            config_path,
+            "profile must select one valid watchlist source",
+        )
+    watchlist_path = Path(config_path).parent / watchlist_file
+    watchlist_document = _read_toml(repository_root, watchlist_path.as_posix())
+    if set(watchlist_document) != {"watchlist"}:
+        raise ManifestError(
+            "DRIFT_PROFILE_WATCHLIST_SOURCE",
+            watchlist_path.as_posix(),
+            "referenced file must contain only the watchlist table",
+        )
+    return {**raw, "watchlist": watchlist_document["watchlist"]}
+
+
 def _validate_node_shape(repository_root: Path, relative_path: str) -> None:
     tree = _parse_python(repository_root, relative_path)
     calls = {
@@ -330,7 +352,7 @@ def validate_source_census(
     profiles_by_id = {profile.id: profile for profile in manifest.profiles}
     checked_profiles: list[str] = []
     for profile_id, profile in profiles_by_id.items():
-        raw = _read_toml(repository_root, profile.config_path)
+        raw = _profile_configuration(repository_root, profile.config_path)
         schema_version = raw.get("schema_version")
         if schema_version != profile.config_schema_version:
             raise ManifestError(

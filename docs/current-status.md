@@ -19,7 +19,7 @@ not implement them. Historical verification below is retained with its original 
 |---|---|
 | Runtime | NautilusTrader `2.0.0rc5`, market-data client and code-owned actor composition |
 | Provider | Interactive Brokers through TWS/IB Gateway |
-| Profiles | Seven-instrument example with ten actors; zero-instrument operational profile with nine |
+| Profiles | Seven-instrument example with ten actors; no separate operational profile |
 | Execution and account monitor | Not implemented in the current node; next development priority |
 | Strategies and indicators | No strategy registration or active metric-producing actors; shared contracts remain |
 | Discord | Optional outbound operational health webhook |
@@ -79,24 +79,13 @@ event coverage under the user-reported Master `1` setting, or connected acceptan
 
 ## Tracked Example Profile
 
-[`config/system.example.toml`](../config/system.example.toml) enables seven explicit watchlist
-instruments. Its ten actors are System Control, Session State,
-Evidence Health, Discord Health, Historical Evidence Planner, Watchlist, Data Acquisition, Runtime
-Resources, Runtime Resource Health, and Operational Persistence.
+[`config/system.example.toml`](../config/system.example.toml) loads seven explicit instruments from
+[`config/system.watchlist.toml`](../config/system.watchlist.toml). Its ten actors are System
+Control, Session State, Evidence Health, Discord Health, Historical Evidence Planner, Watchlist,
+Data Acquisition, Runtime Resources, Runtime Resource Health, and Operational Persistence.
 
 The former `system.v3-es-minimal.toml` review profile has been removed. Single-calendar offline
 delivery tests derive a bounded ES fixture from the current template.
-
-## Connected Operational Boot Profile
-
-`config/system.operational.toml` uses a schema-29 zero-instrument baseline with nine operational
-actors: System Control, Session State, Evidence Health, Historical Evidence Planner, Data
-Acquisition, Discord Health, Runtime Resources, Runtime Resource Health, and Operational
-Persistence. IB remains configured; the watchlist, probes, analytics, and visual capture are
-excluded. Older schema-23/24/25 profiles must be migrated before loading. This is **ready for
-Markeitect live test**, not connected-accepted. See the [operational boot runbook](operations/operational-boot.md) for exact
-commands, independent readiness evidence, effects, stop conditions, and remaining limitations.
-This profile supplies no runtime instrument addition or account monitoring.
 
 ## Diagnostic And Inactive Actor Removal
 
@@ -106,9 +95,8 @@ Visual Debug capture, its writer/renderer, configuration, and dedicated tests ar
 SessionMetricsActor and its dependent session-reference, market-state, and market-structure
 actors are removed, together with their dedicated calculations, configuration, tests, and
 replacement plan. QuoteQualityMetricsActor, its midpoint/spread calculations, and its
-configuration and dedicated tests are also removed. The current runtime has ten actor classes;
-the operational profile composes nine. Independent canonical bar/metric and entity
-contracts remain.
+configuration and dedicated tests are also removed. The current runtime has ten actor classes.
+Independent canonical bar/metric and entity contracts remain.
 
 The API registry selects 98 public objects; the diagram source census recognizes ten actor
 registrations. Offline checks do not establish connected acceptance.

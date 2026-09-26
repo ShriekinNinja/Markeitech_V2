@@ -1,0 +1,46 @@
+# Shared watchlist for the example and local system profiles.
+[watchlist]
+enabled = true # Compose the static watchlist actor and its configured data demands.
+consumer_retry_interval_ms = 1000 # Milliseconds between native watchlist handler attachment attempts.
+
+[[watchlist.members]]
+instrument_id = "ESZ6.CME" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "cme_equity" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["top_of_book", "watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
+
+[[watchlist.members]]
+instrument_id = "NQZ6.CME" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "cme_equity" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["top_of_book", "watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
+
+[[watchlist.members]]
+instrument_id = "CLX6.NYMEX" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "cme_energy" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["top_of_book", "watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
+
+[[watchlist.members]]
+instrument_id = "SPY.ARCA" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "us_equities" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["top_of_book", "watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
+
+[[watchlist.members]]
+instrument_id = "QQQ.NASDAQ" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "us_equities" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["top_of_book", "watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
+
+[[watchlist.members]]
+instrument_id = "^SPX.CBOE" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "us_equities" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.
+
+[[watchlist.members]]
+instrument_id = "^VIX.CBOE" # Exact provider-facing instrument ID; dated futures never roll automatically.
+calendar_id = "us_equities" # Canonical session calendar used for this instrument's expectations.
+owner_ids = ["config:system"] # Static system-configuration claim that owns this membership.
+capabilities = ["watchlist_last"] # Requested feeds: top-of-book quotes and/or five-second bar-derived last.

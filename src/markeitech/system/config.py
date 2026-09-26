@@ -327,7 +327,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
     if raw.get("schema_version") != 29:
         raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 29")
 
-    root_keys = {
+    required_root_keys = {
         "schema_version",
         "runtime",
         "ib",
@@ -336,11 +336,17 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "runtime_resources",
         "persistence",
         "historical",
-        "watchlist",
         "sessions",
         "evidence_health",
     }
-    _require_keys(raw, root_keys, "root")
+    _require_keys_allowing(
+        raw,
+        required_root_keys,
+        {"watchlist", "watchlist_file"},
+        "root",
+    )
+    if ("watchlist" in raw) == ("watchlist_file" in raw):
+        raise ValueError("root requires exactly one of watchlist or watchlist_file")
 
     runtime = _load_runtime(raw["runtime"])
     ib = _load_ib(raw["ib"])
@@ -348,7 +354,16 @@ def load_system_config(path: str | Path) -> SystemConfig:
     discord = _load_discord(raw["discord"])
     runtime_resources = _load_runtime_resources(raw["runtime_resources"])
     persistence = _load_persistence(raw["persistence"])
-    watchlist = _load_watchlist(raw["watchlist"])
+    if "watchlist_file" in raw:
+        watchlist_path = config_path.parent / _non_empty_string(
+            raw["watchlist_file"], "watchlist_file",
+        )
+        with watchlist_path.open("rb") as file:
+            watchlist_document = tomllib.load(file)
+        _require_keys(watchlist_document, {"watchlist"}, "watchlist_file")
+        watchlist = _load_watchlist(watchlist_document["watchlist"])
+    else:
+        watchlist = _load_watchlist(raw["watchlist"])
     historical = _load_historical(raw["historical"])
     sessions = _load_sessions(raw["sessions"], config_path.parent)
     evidence_health = _load_evidence_health(raw["evidence_health"])
