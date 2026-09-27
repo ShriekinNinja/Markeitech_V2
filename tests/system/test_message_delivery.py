@@ -3,18 +3,14 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 from threading import Event
-from uuid import UUID
 
 import pytest
 from nautilus_trader.common import Environment, ImportableActorConfig
 from nautilus_trader.live import LiveNode
 from nautilus_trader.model import TraderId
 
-from markeitech.system.composition import (
-    StartupPrerequisites,
-    build_actor_plan,
-)
-from markeitech.system.config import load_system_config
+from markeitech.system.composition import _canonical_calendar_payload
+from markeitech.system.config import SystemConfig, load_system_config
 from tests.system.config_fixtures import minimal_calendar_config
 from tests.system.message_actor_fixtures import (
     calendar_received,
@@ -62,6 +58,86 @@ async def _run_node_until_then_hold(node: LiveNode, event: Event, hold_seconds: 
         await run_task
 
 
+def _session_state_config(config: SystemConfig, source_epoch: str) -> ImportableActorConfig:
+    # Delivery tests compose Session State explicitly while it is absent from the runtime plan.
+    delivery = config.sessions.current_state_delivery
+    return ImportableActorConfig(
+        actor_path="markeitech.intelligence.actors:SessionStateActor",
+        config_path="markeitech.intelligence.actors:SessionStateActorConfig",
+        config={
+            "actor_id": "SESSION-STATE",
+            "evaluation_interval_ms": config.sessions.evaluation_interval_ms,
+            "source_epoch": source_epoch,
+            "maximum_projection_days": config.sessions.maximum_projection_days,
+            "maximum_calendars_per_request": config.sessions.maximum_calendars_per_request,
+            "current_state_delivery": {
+                "policy_version": delivery.policy_version,
+                "response_timeout_ms": delivery.response_timeout_ms,
+                "maximum_attempts": delivery.maximum_attempts,
+                "retry_backoff_ms": delivery.retry_backoff_ms,
+                "maximum_elapsed_ms": delivery.maximum_elapsed_ms,
+                "maximum_buffered_transitions_per_calendar": (
+                    delivery.maximum_buffered_transitions_per_calendar
+                ),
+                "maximum_total_buffered_transitions": delivery.maximum_total_buffered_transitions,
+                "boundary_delivery_grace_ms": delivery.boundary_delivery_grace_ms,
+            },
+            "allowed_current_state_requesters": [
+                "EVIDENCE-HEALTH",
+                "HISTORICAL-EVIDENCE-PLANNER",
+            ],
+            "calendars": [_canonical_calendar_payload(item) for item in config.sessions.calendars],
+        },
+    )
+
+
+def _historical_planner_config(config: SystemConfig, source_epoch: str) -> ImportableActorConfig:
+    retry = config.sessions.projection_retry
+    delivery = _session_state_config(config, source_epoch).config["current_state_delivery"]
+    return ImportableActorConfig(
+        actor_path="markeitech.system.historical_planner:HistoricalEvidencePlannerActor",
+        config_path="markeitech.system.historical_planner:HistoricalEvidencePlannerActorConfig",
+        config={
+            "actor_id": "HISTORICAL-EVIDENCE-PLANNER",
+            "instrument_ids": list(config.instrument_ids),
+            "instrument_calendars": {
+                member.instrument_id: member.calendar_id for member in config.watchlist.members
+            },
+            "expected_calendar_digests": {
+                calendar.calendar_id: calendar.definition_digest
+                for calendar in config.sessions.calendars
+            },
+            "projection_lookback_days": config.sessions.projection_lookback_days,
+            "projection_lookahead_days": config.sessions.projection_lookahead_days,
+            "calendar_source": "SESSION-STATE",
+            "calendar_source_epoch": source_epoch,
+            "projection_retry": {
+                "response_timeout_ms": retry.response_timeout_ms,
+                "maximum_attempts": retry.maximum_attempts,
+                "retry_backoff_ms": retry.retry_backoff_ms,
+                "maximum_elapsed_ms": retry.maximum_elapsed_ms,
+            },
+            "current_state_delivery": delivery,
+            "calendar_expectations": [
+                {
+                    "calendar_id": calendar.calendar_id,
+                    "definition_version": calendar.definition_version,
+                    "definition_digest": calendar.definition_digest,
+                    "definition_effective_from_ns": calendar.effective_from_ns,
+                }
+                for calendar in config.sessions.calendars
+            ],
+            "historical": {
+                "maximum_plan_requests": config.historical.maximum_plan_requests,
+                "maximum_observations_per_request": (
+                    config.historical.maximum_observations_per_request
+                ),
+                "maximum_total_observations": config.historical.maximum_total_observations,
+            },
+        },
+    )
+
+
 def test_health_signal_delivers_between_actors_in_one_live_node() -> None:
     received.clear()
     received_events.clear()
@@ -102,17 +178,7 @@ def test_session_state_delivers_typed_transition_and_projection() -> None:
     received_calendar_transitions_v2.clear()
     received_calendar_projections.clear()
     config = minimal_calendar_config()
-    session_state = next(
-        item
-        for item in build_actor_plan(
-            config,
-            StartupPrerequisites(
-                run_id=UUID("00000000-0000-0000-0000-000000000001"),
-                operational_persistence_ready=True,
-            ),
-        )
-        if item.key == "session_state"
-    )
+    session_state = _session_state_config(config, "00000000-0000-0000-0000-000000000001")
     node = (
         LiveNode.builder(
             "MARKEITECH-V2-CALENDAR-MESSAGE-TEST",
@@ -122,7 +188,7 @@ def test_session_state_delivers_typed_transition_and_projection() -> None:
         .with_delay_post_stop_secs(0)
         .build()
     )
-    node.add_actor_from_config(session_state.config)
+    node.add_actor_from_config(session_state)
     node.add_actor_from_config(
         ImportableActorConfig(
             actor_path="tests.system.message_actor_fixtures:CalendarProjectionProbe",
@@ -163,18 +229,8 @@ def test_session_state_delivers_one_cut_snapshot_and_replays_exact_duplicate() -
     root = Path(__file__).parents[2]
     config = load_system_config(root / "config/runtime.example.toml")
     source_epoch = "00000000-0000-0000-0000-000000000001"
-    session_state = next(
-        item
-        for item in build_actor_plan(
-            config,
-            StartupPrerequisites(
-                run_id=UUID(source_epoch),
-                operational_persistence_ready=True,
-            ),
-        )
-        if item.key == "session_state"
-    )
-    producer_config = dict(session_state.config.config)
+    session_state = _session_state_config(config, source_epoch)
+    producer_config = dict(session_state.config)
     producer_config["allowed_current_state_requesters"] = [
         *producer_config["allowed_current_state_requesters"],
         "CURRENT-STATE-PROBE",
@@ -192,7 +248,7 @@ def test_session_state_delivers_one_cut_snapshot_and_replays_exact_duplicate() -
     node.add_actor_from_config(
         ImportableActorConfig(
             actor_path="tests.system.message_actor_fixtures:InspectableSessionStateActor",
-            config_path=session_state.config.config_path,
+            config_path=session_state.config_path,
             config=producer_config,
         ),
     )
@@ -266,18 +322,8 @@ def test_session_state_returns_and_replays_complete_not_ready_snapshot() -> None
     received_current_state_snapshots.clear()
     config = minimal_calendar_config()
     source_epoch = "00000000-0000-0000-0000-000000000001"
-    session_state = next(
-        item
-        for item in build_actor_plan(
-            config,
-            StartupPrerequisites(
-                run_id=UUID(source_epoch),
-                operational_persistence_ready=True,
-            ),
-        )
-        if item.key == "session_state"
-    )
-    producer_config = dict(session_state.config.config)
+    session_state = _session_state_config(config, source_epoch)
+    producer_config = dict(session_state.config)
     producer_config["allowed_current_state_requesters"] = ["CURRENT-STATE-PROBE"]
     calendar = config.sessions.calendars[0]
     node = (
@@ -291,8 +337,8 @@ def test_session_state_returns_and_replays_complete_not_ready_snapshot() -> None
     )
     node.add_actor_from_config(
         ImportableActorConfig(
-            actor_path=session_state.config.actor_path,
-            config_path=session_state.config.config_path,
+            actor_path=session_state.actor_path,
+            config_path=session_state.config_path,
             config=producer_config,
         ),
     )
@@ -329,21 +375,11 @@ def test_session_state_contains_projection_failure_and_publishes_typed_response(
     received_calendar_transitions.clear()
     received_calendar_projections.clear()
     config = minimal_calendar_config()
-    session_state = next(
-        item
-        for item in build_actor_plan(
-            config,
-            StartupPrerequisites(
-                run_id=UUID("00000000-0000-0000-0000-000000000001"),
-                operational_persistence_ready=True,
-            ),
-        )
-        if item.key == "session_state"
-    )
+    session_state = _session_state_config(config, "00000000-0000-0000-0000-000000000001")
     failing_state = ImportableActorConfig(
         actor_path=("tests.system.message_actor_fixtures:FailingProjectionSessionStateActor"),
-        config_path=session_state.config.config_path,
-        config=session_state.config.config,
+        config_path=session_state.config_path,
+        config=session_state.config,
     )
     node = (
         LiveNode.builder(
@@ -390,17 +426,7 @@ def test_session_state_preserves_successful_calendar_in_mixed_failure_response()
     received_calendar_projections.clear()
     root = Path(__file__).parents[2]
     config = load_system_config(root / "config/runtime.example.toml")
-    session_state = next(
-        item
-        for item in build_actor_plan(
-            config,
-            StartupPrerequisites(
-                run_id=UUID("00000000-0000-0000-0000-000000000001"),
-                operational_persistence_ready=True,
-            ),
-        )
-        if item.key == "session_state"
-    )
+    session_state = _session_state_config(config, "00000000-0000-0000-0000-000000000001")
     node = (
         LiveNode.builder(
             "MARKEITECH-V2-MIXED-CALENDAR-FAILURE-TEST",
@@ -413,8 +439,8 @@ def test_session_state_preserves_successful_calendar_in_mixed_failure_response()
     node.add_actor_from_config(
         ImportableActorConfig(
             actor_path=("tests.system.message_actor_fixtures:FailingProjectionSessionStateActor"),
-            config_path=session_state.config.config_path,
-            config=session_state.config.config,
+            config_path=session_state.config_path,
+            config=session_state.config,
         ),
     )
     node.add_actor_from_config(
@@ -448,16 +474,9 @@ def test_calendar_consumers_stop_after_bounded_correlated_timeouts() -> None:
     projection_requests_complete.clear()
     received_projection_requests.clear()
     config = minimal_calendar_config()
-    plan = build_actor_plan(
-        config,
-        StartupPrerequisites(
-            run_id=UUID("00000000-0000-0000-0000-000000000001"),
-            operational_persistence_ready=True,
-        ),
-    )
-    keys = {"historical_evidence_planner"}
-    registrations = [item for item in plan if item.key in keys]
-    requesters = [item.actor_id for item in registrations]
+    # The planner remains an isolated consumer test while its runtime registration is paused.
+    planner = _historical_planner_config(config, "00000000-0000-0000-0000-000000000001")
+    requesters = ["HISTORICAL-EVIDENCE-PLANNER"]
     node = (
         LiveNode.builder(
             "MARKEITECH-V2-BOUNDED-CALENDAR-RETRY-TEST",
@@ -480,22 +499,21 @@ def test_calendar_consumers_stop_after_bounded_correlated_timeouts() -> None:
             },
         ),
     )
-    for registration in registrations:
-        node.add_actor_from_config(
-            ImportableActorConfig(
-                actor_path=registration.config.actor_path,
-                config_path=registration.config.config_path,
-                config={
-                    **registration.config.config,
-                    "projection_retry": {
-                        "response_timeout_ms": 10,
-                        "maximum_attempts": 3,
-                        "retry_backoff_ms": 1,
-                        "maximum_elapsed_ms": 100,
-                    },
+    node.add_actor_from_config(
+        ImportableActorConfig(
+            actor_path=planner.actor_path,
+            config_path=planner.config_path,
+            config={
+                **planner.config,
+                "projection_retry": {
+                    "response_timeout_ms": 10,
+                    "maximum_attempts": 3,
+                    "retry_backoff_ms": 1,
+                    "maximum_elapsed_ms": 100,
                 },
-            ),
-        )
+            },
+        ),
+    )
 
     asyncio.run(_run_node_until_then_hold(node, projection_requests_complete, 0.05))
 

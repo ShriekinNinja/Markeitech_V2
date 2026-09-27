@@ -164,8 +164,7 @@ def test_cme_projection_keeps_exchange_state_separate_from_product_phase() -> No
     )
 
     exchange_segments = [
-        (item.market_state, item.start_ns, item.end_ns)
-        for item in projection.exchange_segments
+        (item.market_state, item.start_ns, item.end_ns) for item in projection.exchange_segments
     ]
     assert exchange_segments == [
         ("OPEN", _ns("2026-08-23T22:00:00Z"), _ns("2026-08-24T21:00:00Z")),
@@ -197,15 +196,16 @@ def test_cme_and_cbot_have_distinct_identity_but_equal_current_hours() -> None:
     assert cme.definition_digest != cbot.definition_digest
 
 
-def test_watchlist_owns_concrete_instrument_calendar_bindings() -> None:
+def test_configured_instrument_calendar_bindings_match_selected_watchlist() -> None:
     config = _config()
-    mappings = {
-        item.instrument_id: item.calendar_id for item in config.watchlist.members
-    }
+    mappings = {item.instrument_id: item.calendar_id for item in config.watchlist.members}
 
-    assert mappings["ESZ6.CME"] == "cme_equity"
-    assert mappings["NQZ6.CME"] == "cme_equity"
-    assert mappings["CLX6.NYMEX"] == "cme_energy"
+    assert mappings == {
+        "ESZ6.CME": "cme_equity",
+        "SPY.SMART": "us_equities",
+        "^SPX.CBOE": "us_equities",
+    }
+    # Calendar correction product scope is independent of current watchlist membership.
     correction = canonical_calendar("cme_equity").definition.corrections[0]
     assert correction.product_roots == ("ES", "NQ", "YM")
 
