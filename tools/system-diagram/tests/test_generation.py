@@ -35,18 +35,14 @@ def _tree_digest(directory: Path) -> str:
 def _relative_luminance(color: str) -> float:
     channels = [int(color[index : index + 2], 16) / 255 for index in (1, 3, 5)]
     linear = [
-        channel / 12.92
-        if channel <= 0.04045
-        else ((channel + 0.055) / 1.055) ** 2.4
+        channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
         for channel in channels
     ]
     return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
 
 
 def _contrast(first: str, second: str) -> float:
-    light, dark = sorted(
-        (_relative_luminance(first), _relative_luminance(second)), reverse=True
-    )
+    light, dark = sorted((_relative_luminance(first), _relative_luminance(second)), reverse=True)
     return (light + 0.05) / (dark + 0.05)
 
 
@@ -126,7 +122,7 @@ class GenerationTests(unittest.TestCase):
         manifest = load_manifest(CANONICAL, repository_root=REPOSITORY_ROOT)
         report = validate_source_census(manifest, repository_root=REPOSITORY_ROOT)
 
-        self.assertEqual(len(report.actor_registrations), 10)
+        self.assertEqual(len(report.actor_registrations), 5)
         self.assertEqual(report.checked_profiles, ("profile.example",))
         self.assertGreaterEqual(len(report.contract_constants), 20)
 
@@ -172,9 +168,7 @@ class GenerationTests(unittest.TestCase):
             dot = (GENERATED / f"{stem}.dot").read_text(encoding="utf-8")
             svg_root = ElementTree.parse(GENERATED / f"{stem}.svg").getroot()
             svg_ids = {
-                element.attrib["id"]
-                for element in svg_root.iter()
-                if "id" in element.attrib
+                element.attrib["id"] for element in svg_root.iter() if "id" in element.attrib
             }
             markdown = (GENERATED / f"{stem}.md").read_text(encoding="utf-8")
             for component in selected.components:

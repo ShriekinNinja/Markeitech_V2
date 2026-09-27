@@ -35,29 +35,29 @@ select approved optional components and their configuration, but it cannot name 
 imports or construct a plugin graph. `node.py` builds the Nautilus clients and registers the
 validated plan; it does not redefine component ownership.
 
-The tracked example composes ten actors. See [current status](../current-status.md). Strategy
-registration and active indicator producers are not implemented. Extend composition only as needed
-by the selected issue.
+The tracked example currently composes five actors, including the optional Discord projection.
+The other actor classes remain available in source but are not registered. See
+[current status](../current-status.md). Strategy registration and active indicator producers are
+not implemented. Extend composition only as needed by the selected issue.
 
 Composition invariants are:
 
 - one `SystemControlActor` owns global system-health transitions;
-- one `DataAcquisitionActor` owns provider-facing demand and request lifetime;
+- `DataAcquisitionActor` owns provider-facing demand and request lifetime when composed;
 - one `OperationalPersistenceActor` owns operational writes while the node is running;
-- one `WatchlistActor`, when enabled, owns the configured observation membership; a disabled
-  empty watchlist omits this actor while retaining the operational acquisition infrastructure;
-- resource sampling and resource health are mandatory; optional projections and intelligence
-  actors are included only when their validated configuration enables them;
+- Watchlist and Data Acquisition are currently unregistered, even when the profile contains
+  watchlist members; consumers can verify instrument availability through Nautilus;
+- resource sampling and resource health are mandatory, while Discord composition follows its
+  enable setting;
 - duplicate actor IDs and missing mandatory prerequisites fail before provider connection; and
 - dynamic actor loading/removal and a generic dependency-injection or plugin system are not part
   of the current runtime.
 
-The code supports an explicitly disabled, empty watchlist. In that configuration, acquisition
-accepts zero expected instruments and performs no provider work or historical polling. Empty startup
-readiness requires its matching status and persistence readiness; it does not prove provider
-connectivity, calendar synchronization, webhook delivery, resource health, or market evidence.
-Those conditions require separate verification. Configuration identity and source semantics remain
-startup-only. No tracked zero-instrument profile is maintained.
+The code supports an explicitly disabled, empty watchlist. That profile selects no instrument IDs
+for native IB provider loading. System Control readiness still requires its current persistence and
+resource gates; it does not wait for watchlist observations, historical work, or market ticks.
+Configuration identity and source semantics remain startup-only. No tracked zero-instrument profile
+is maintained.
 
 ## Messaging And State Transfer
 
@@ -95,11 +95,11 @@ contract identity and availability of the instruments it needs. `READY` does not
 feed is fresh, a calendar-dependent consumer is synchronized, options are usable, broker state is
 reconciled or Discord is connected.
 
-Local owners publish dimensional facts for provider demand, session state, evidence freshness,
-historical readiness, resources, persistence, and enabled analytical capabilities. A process may
-remain running while one instrument is stale or one optional projection is unavailable. Consumers
-must evaluate the exact dependencies needed by their decision rather than treating global health
-as permission to use all evidence.
+When composed, local owners publish dimensional facts for provider demand, session state, evidence
+freshness, historical readiness, resources, persistence, and enabled analytical capabilities.
+A process may remain running while one instrument is stale or one optional projection is
+unavailable. Consumers must evaluate the exact dependencies needed by their decision rather than
+treating global health as permission to use all evidence.
 
 Workers report sanitized results to their owning actor. Workers and projections never decide
 global health. Unknown internal component identities are programming/configuration failures; a

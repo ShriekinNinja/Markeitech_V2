@@ -12,15 +12,18 @@
 <text xml:space="preserve" text-anchor="start" x="10" y="-956.05" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="20.00" fill="#f2f6fa">Provider to Canonical Data Flow</text>
 <text xml:space="preserve" text-anchor="start" x="10" y="-939.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#ffc1bb">OFFLINE DOCUMENTATION — NO CURRENT ORDER SUBMISSION OR EXECUTION</text>
 <text xml:space="preserve" text-anchor="start" x="10" y="-924.8" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#c7d2dd">PROFILE: profile.example · REVIEW: PROPOSED · MANIFEST SCHEMA: 1 · COMPONENTS: 9 · CAPABILITIES: 2 · FLOWS: 18</text>
-<text xml:space="preserve" text-anchor="start" x="10" y="-910.3" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: 417bc3a3f716c5ec539758f26a9fcf23b533672c</text>
-<polygon fill="#164c3e" stroke="none" points="18,-878.3 18,-896.05 121.31,-896.05 121.31,-878.3 18,-878.3"/>
-<polygon fill="none" stroke="#6fa8cc" points="18,-878.3 18,-896.05 121.31,-896.05 121.31,-878.3 18,-878.3"/>
-<text xml:space="preserve" text-anchor="start" x="47.53" y="-884.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#f4f7fa">ENABLED</text>
-<polygon fill="#5a3419" stroke="none" points="129.31,-878.3 129.31,-896.05 237.12,-896.05 237.12,-878.3 129.31,-878.3"/>
-<polygon fill="none" stroke="#f0a45d" points="129.31,-878.3 129.31,-896.05 237.12,-896.05 237.12,-878.3 129.31,-878.3"/>
-<text xml:space="preserve" text-anchor="start" x="158.84" y="-884.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff4e8">EXTERNAL</text>
-<text xml:space="preserve" text-anchor="start" x="270.66" y="-884.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#b9ddf0">DATA · SOLID/DASHED</text>
-<text xml:space="preserve" text-anchor="start" x="427.97" y="-884.55" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">R = REQUIRED · O = OPTIONAL</text>
+<text xml:space="preserve" text-anchor="start" x="10" y="-910.3" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">CHECKOUT EVIDENCE: 5cb865e74653c8451f407320f566aa72bb73c3d2</text>
+<polygon fill="#164c3e" stroke="none" points="18,-878.3 18,-896.05 98.6,-896.05 98.6,-878.3 18,-878.3"/>
+<polygon fill="none" stroke="#6fa8cc" points="18,-878.3 18,-896.05 98.6,-896.05 98.6,-878.3 18,-878.3"/>
+<text xml:space="preserve" text-anchor="start" x="36.18" y="-884.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#f4f7fa">ENABLED</text>
+<polygon fill="#5b4316" stroke="none" points="106.6,-878.3 106.6,-896.05 189.45,-896.05 189.45,-878.3 106.6,-878.3"/>
+<polygon fill="none" stroke="#e2b75c" points="106.6,-878.3 106.6,-896.05 189.45,-896.05 189.45,-878.3 106.6,-878.3"/>
+<text xml:space="preserve" text-anchor="start" x="124.77" y="-884.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<polygon fill="#5a3419" stroke="none" points="197.45,-878.3 197.45,-896.05 282.55,-896.05 282.55,-878.3 197.45,-878.3"/>
+<polygon fill="none" stroke="#f0a45d" points="197.45,-878.3 197.45,-896.05 282.55,-896.05 282.55,-878.3 197.45,-878.3"/>
+<text xml:space="preserve" text-anchor="start" x="215.62" y="-884.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff4e8">EXTERNAL</text>
+<text xml:space="preserve" text-anchor="start" x="304.72" y="-884.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#b9ddf0">DATA · SOLID/DASHED</text>
+<text xml:space="preserve" text-anchor="start" x="439.32" y="-884.55" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">R = REQUIRED · O = OPTIONAL</text>
 <g id="boundary.process" class="cluster">
 <title>cluster_Markeitech V2 process</title>
 <path fill="#0e1721" stroke="#566b7d" stroke-width="1.4" d="M369,-8C369,-8 1465,-8 1465,-8 1471,-8 1477,-14 1477,-20 1477,-20 1477,-844.3 1477,-844.3 1477,-850.3 1471,-856.3 1465,-856.3 1465,-856.3 369,-856.3 369,-856.3 363,-856.3 357,-850.3 357,-844.3 357,-844.3 357,-20 357,-20 357,-14 363,-8 369,-8"/>
@@ -66,18 +69,18 @@
 <g id="edge.acquisition&#45;stream&#45;health" class="edge">
 <title>actor.data&#45;acquisition&#45;&gt;actor.evidence&#45;health</title>
 <g id="a_edge.acquisition&#45;stream&#45;health"><a xlink:title="edge.acquisition&#45;stream&#45;health">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M702.72,-284.53C820.9,-311.44 981.29,-369.78 1054,-493.88 1120.52,-607.42 940.6,-626.19 817,-671.34 781.93,-684.15 770.55,-676.73 734,-684.34 732.09,-684.74 730.16,-685.15 728.23,-685.56"/>
-<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="720.51,-687.25 727.55,-682.02 722.32,-686.5 728.25,-685.2 728.32,-685.54 728.4,-685.88 722.47,-687.18 729.09,-689.06 720.51,-687.25"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M722.94,-283.83C894.48,-314.36 1130.8,-383.55 1054,-527.63 1000.11,-628.73 947.36,-631.33 840,-671.34 795.52,-687.91 780.75,-676.12 734,-684.34 731.93,-684.7 729.84,-685.08 727.74,-685.46"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="719.9,-686.92 727.11,-681.92 721.73,-686.22 727.7,-685.11 727.77,-685.46 727.83,-685.8 721.86,-686.91 728.43,-688.99 719.9,-686.92"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="start" x="1067.3" y="-513.75" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · PUB — Acquisition</text>
-<text xml:space="preserve" text-anchor="start" x="1090.17" y="-502.5" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">stream state</text>
+<text xml:space="preserve" text-anchor="start" x="1065.69" y="-513.75" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · PUB — Acquisition</text>
+<text xml:space="preserve" text-anchor="start" x="1088.56" y="-502.5" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">stream state</text>
 </g>
 <!-- actor.data&#45;acquisition&#45;&gt;component.data&#45;engine -->
 <g id="edge.acquisition&#45;subscribe" class="edge">
 <title>actor.data&#45;acquisition&#45;&gt;component.data&#45;engine</title>
 <g id="a_edge.acquisition&#45;subscribe"><a xlink:title="edge.acquisition&#45;subscribe">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" stroke-dasharray="5,2" d="M702.58,-260.97C871.09,-259.22 1140.48,-248.2 1226,-197.46 1249.99,-183.22 1268.05,-158.1 1280.52,-135.21"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" stroke-dasharray="5,2" d="M722.92,-260.72C892.01,-258.29 1143.84,-246.21 1226,-197.46 1249.99,-183.22 1268.05,-158.1 1280.52,-135.21"/>
 <polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="1284.08,-128.41 1283.57,-137.16 1283.49,-130.28 1280.68,-135.66 1280.37,-135.5 1280.06,-135.33 1282.87,-129.95 1277.18,-133.83 1284.08,-128.41"/>
 </a>
 </g>
@@ -88,7 +91,7 @@
 <g id="edge.native&#45;historical&#45;request" class="edge">
 <title>actor.data&#45;acquisition&#45;&gt;component.data&#45;engine</title>
 <g id="a_edge.native&#45;historical&#45;request"><a xlink:title="edge.native&#45;historical&#45;request">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" stroke-dasharray="5,2" d="M702.41,-221.08C770.75,-203.77 854.3,-185.1 930.5,-174.96 977.78,-168.67 1098.89,-179.19 1145,-166.96 1174.11,-159.24 1203.92,-145.43 1229.64,-131.32"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" stroke-dasharray="5,2" d="M711.72,-218.74C778.25,-202.11 857.73,-184.65 930.5,-174.96 977.78,-168.67 1098.89,-179.19 1145,-166.96 1174.11,-159.24 1203.92,-145.43 1229.64,-131.32"/>
 <polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="1236.39,-127.54 1231.16,-134.59 1234.88,-128.79 1229.58,-131.75 1229.41,-131.45 1229.24,-131.14 1234.53,-128.18 1227.65,-128.31 1236.39,-127.54"/>
 </a>
 </g>
@@ -121,13 +124,13 @@
 <g id="edge.calendar&#45;request&#45;health" class="edge">
 <title>actor.evidence&#45;health&#45;&gt;actor.session&#45;state</title>
 <g id="a_edge.calendar&#45;request&#45;health"><a xlink:title="edge.calendar&#45;request&#45;health">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M695.89,-683.61C699.64,-679.87 703.04,-675.79 706,-671.34 714.31,-658.85 712.52,-651.1 706,-637.59 705.34,-636.23 704.64,-634.9 703.88,-633.59"/>
-<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="699.42,-627.01 706.89,-631.61 700.79,-628.41 704.2,-633.44 703.91,-633.63 703.62,-633.83 700.21,-628.8 700.93,-635.65 699.42,-627.01"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M717.85,-683.93C721.91,-680.09 725.64,-675.9 729,-671.34 738.16,-658.89 734.89,-645.41 726.21,-632.85"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="721.45,-626.79 729.22,-630.86 722.91,-628.09 726.66,-632.87 726.39,-633.08 726.11,-633.3 722.36,-628.52 723.56,-635.31 721.45,-626.79"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="start" x="711.58" y="-663.09" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · REQ — Canonical</text>
-<text xml:space="preserve" text-anchor="start" x="713.08" y="-651.84" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar current&#45;state</text>
-<text xml:space="preserve" text-anchor="start" x="722.83" y="-640.59" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">snapshot request</text>
+<text xml:space="preserve" text-anchor="start" x="734.47" y="-663.09" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · REQ — Canonical</text>
+<text xml:space="preserve" text-anchor="start" x="735.97" y="-651.84" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar current&#45;state</text>
+<text xml:space="preserve" text-anchor="start" x="745.72" y="-640.59" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">snapshot request</text>
 </g>
 <!-- actor.historical&#45;planner&#45;&gt;actor.data&#45;acquisition -->
 <g id="edge.historical&#45;plan&#45;acquisition" class="edge">
@@ -144,54 +147,54 @@
 <g id="edge.calendar&#45;request&#45;planner" class="edge">
 <title>actor.historical&#45;planner&#45;&gt;actor.session&#45;state</title>
 <g id="a_edge.calendar&#45;request&#45;planner"><a xlink:title="edge.calendar&#45;request&#45;planner">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M840.46,-450.39C911.44,-461.19 975.21,-483.12 938,-527.63 918.1,-551.43 853.52,-564.75 789.34,-572.2"/>
-<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="781.53,-573.07 789.08,-568.61 783.41,-572.51 789.44,-571.84 789.48,-572.18 789.52,-572.53 783.48,-573.21 789.88,-575.76 781.53,-573.07"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M860.95,-453.69C922.71,-465.45 971.18,-487.25 938,-527.63 923.54,-545.23 882.69,-557.19 836.86,-565.27"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="829.06,-566.59 836.34,-561.71 830.9,-565.93 836.89,-564.91 836.94,-565.26 837,-565.6 831.02,-566.62 837.55,-568.81 829.06,-566.59"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="start" x="948.95" y="-519.38" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · REQ — Canonical</text>
-<text xml:space="preserve" text-anchor="start" x="956.82" y="-508.13" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar projection</text>
-<text xml:space="preserve" text-anchor="start" x="981.57" y="-496.88" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">request</text>
+<text xml:space="preserve" text-anchor="start" x="948.76" y="-519.38" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · REQ — Canonical</text>
+<text xml:space="preserve" text-anchor="start" x="956.64" y="-508.13" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar projection</text>
+<text xml:space="preserve" text-anchor="start" x="981.39" y="-496.88" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">request</text>
 </g>
 <!-- actor.historical&#45;planner&#45;&gt;actor.session&#45;state -->
 <g id="edge.calendar&#45;state&#45;request&#45;planner" class="edge">
 <title>actor.historical&#45;planner&#45;&gt;actor.session&#45;state</title>
 <g id="a_edge.calendar&#45;state&#45;request&#45;planner"><a xlink:title="edge.calendar&#45;state&#45;request&#45;planner">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M557.56,-454.16C507.55,-462.36 459.85,-474.93 444.5,-493.88 420.75,-523.19 446.87,-543.09 486.8,-556.41"/>
-<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="494.38,-558.79 485.67,-559.83 492.44,-558.54 486.65,-556.73 486.75,-556.4 486.85,-556.06 492.65,-557.88 487.83,-552.96 494.38,-558.79"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M536.99,-457.64C494.53,-465.78 456.85,-477.42 443.5,-493.88 416.69,-526.94 447.23,-547.6 493.34,-560.48"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="501.08,-562.51 492.43,-563.97 499.12,-562.36 493.25,-560.82 493.34,-560.48 493.43,-560.14 499.3,-561.68 494.25,-557 501.08,-562.51"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="start" x="444.5" y="-519.38" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · REQ — Canonical</text>
-<text xml:space="preserve" text-anchor="start" x="446" y="-508.13" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar current&#45;state</text>
-<text xml:space="preserve" text-anchor="start" x="455.75" y="-496.88" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">snapshot request</text>
+<text xml:space="preserve" text-anchor="start" x="443.5" y="-519.38" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · REQ — Canonical</text>
+<text xml:space="preserve" text-anchor="start" x="445" y="-508.13" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar current&#45;state</text>
+<text xml:space="preserve" text-anchor="start" x="454.75" y="-496.88" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">snapshot request</text>
 </g>
 <!-- actor.session&#45;state&#45;&gt;actor.evidence&#45;health -->
 <g id="edge.calendar&#45;response&#45;health" class="edge">
 <title>actor.session&#45;state&#45;&gt;actor.evidence&#45;health</title>
 <g id="a_edge.calendar&#45;response&#45;health"><a xlink:title="edge.calendar&#45;response&#45;health">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M496.25,-609.63C483.97,-616.88 473.01,-626.03 464.5,-637.59 455.61,-649.67 456.51,-658.64 464.5,-671.34 465.67,-673.2 466.93,-675 468.26,-676.74"/>
-<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="473.2,-682.42 465.23,-678.74 471.67,-681.19 467.68,-676.61 467.95,-676.38 468.21,-676.15 472.19,-680.73 470.66,-674.02 473.2,-682.42"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M503.23,-620.95C497.4,-625.86 492.1,-631.38 487.5,-637.59 478.57,-649.64 480.95,-657.84 487.5,-671.34 488.16,-672.7 488.87,-674.04 489.64,-675.35"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="494.14,-681.96 486.66,-677.37 492.76,-680.56 489.34,-675.54 489.63,-675.35 489.92,-675.15 493.34,-680.17 492.61,-673.32 494.14,-681.96"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="start" x="464.5" y="-663.09" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · RESP — Canonical</text>
-<text xml:space="preserve" text-anchor="start" x="469" y="-651.84" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar current&#45;state</text>
-<text xml:space="preserve" text-anchor="start" x="475" y="-640.59" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">snapshot response</text>
+<text xml:space="preserve" text-anchor="start" x="487.5" y="-663.09" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · RESP — Canonical</text>
+<text xml:space="preserve" text-anchor="start" x="492" y="-651.84" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar current&#45;state</text>
+<text xml:space="preserve" text-anchor="start" x="498" y="-640.59" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">snapshot response</text>
 </g>
 <!-- actor.session&#45;state&#45;&gt;actor.evidence&#45;health -->
 <g id="edge.calendar&#45;transition&#45;health" class="edge">
 <title>actor.session&#45;state&#45;&gt;actor.evidence&#45;health</title>
 <g id="a_edge.calendar&#45;transition&#45;health"><a xlink:title="edge.calendar&#45;transition&#45;health">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M607.73,-625.26C605.36,-629.33 603.16,-633.47 601.25,-637.59 595.96,-649.02 591.61,-661.83 588.13,-674.06"/>
-<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="586.07,-681.71 584.68,-673.05 586.23,-679.76 587.82,-673.89 588.15,-673.99 588.49,-674.08 586.91,-679.94 591.63,-674.92 586.07,-681.71"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M632.95,-625.28C620.72,-641.17 606.67,-659.44 593.95,-675.99"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="589.08,-682.31 591.11,-673.77 589.98,-680.57 593.68,-675.75 593.96,-675.97 594.24,-676.18 590.54,-680.99 596.81,-678.16 589.08,-682.31"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="start" x="601.25" y="-657.47" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · PUB — Canonical</text>
-<text xml:space="preserve" text-anchor="start" x="609.88" y="-646.22" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar transition</text>
+<text xml:space="preserve" text-anchor="start" x="623.47" y="-657.47" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · PUB — Canonical</text>
+<text xml:space="preserve" text-anchor="start" x="632.09" y="-646.22" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar transition</text>
 </g>
 <!-- actor.session&#45;state&#45;&gt;actor.historical&#45;planner -->
 <g id="edge.calendar&#45;response&#45;planner" class="edge">
 <title>actor.session&#45;state&#45;&gt;actor.historical&#45;planner</title>
 <g id="a_edge.calendar&#45;response&#45;planner"><a xlink:title="edge.calendar&#45;response&#45;planner">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M564.34,-540.24C560.95,-536.35 557.94,-532.15 555.5,-527.63 548.37,-514.44 546.96,-506.21 555.5,-493.88 556.76,-492.06 558.09,-490.3 559.49,-488.59"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M565.26,-540.06C561.59,-536.26 558.3,-532.13 555.5,-527.63 547.58,-514.89 546.96,-506.21 555.5,-493.88 556.76,-492.06 558.09,-490.3 559.49,-488.59"/>
 <polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="564.6,-483.03 561.84,-491.36 563.55,-484.69 559.44,-489.16 559.19,-488.92 558.93,-488.69 563.03,-484.22 556.53,-486.49 564.6,-483.03"/>
 </a>
 </g>
@@ -203,31 +206,31 @@
 <g id="edge.calendar&#45;state&#45;response&#45;planner" class="edge">
 <title>actor.session&#45;state&#45;&gt;actor.historical&#45;planner</title>
 <g id="a_edge.calendar&#45;state&#45;response&#45;planner"><a xlink:title="edge.calendar&#45;state&#45;response&#45;planner">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M657.43,-540.14C659.34,-535.93 661.22,-531.7 663,-527.63 668.2,-515.73 673.61,-502.83 678.61,-490.68"/>
-<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="681.56,-483.48 681.86,-492.25 681.15,-485.4 678.85,-491.01 678.53,-490.88 678.2,-490.75 680.5,-485.13 675.2,-489.52 681.56,-483.48"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M674.93,-540.24C678.59,-524.95 682.8,-507.43 686.65,-491.36"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="688.52,-483.58 690.15,-492.2 688.41,-485.54 686.99,-491.44 686.65,-491.36 686.31,-491.28 687.73,-485.37 683.15,-490.52 688.52,-483.58"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="start" x="677.23" y="-519.38" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · RESP — Canonical</text>
-<text xml:space="preserve" text-anchor="start" x="681.73" y="-508.13" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar current&#45;state</text>
-<text xml:space="preserve" text-anchor="start" x="687.73" y="-496.88" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">snapshot response</text>
+<text xml:space="preserve" text-anchor="start" x="686.05" y="-519.38" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · RESP — Canonical</text>
+<text xml:space="preserve" text-anchor="start" x="690.55" y="-508.13" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar current&#45;state</text>
+<text xml:space="preserve" text-anchor="start" x="696.55" y="-496.88" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">snapshot response</text>
 </g>
 <!-- actor.session&#45;state&#45;&gt;actor.historical&#45;planner -->
 <g id="edge.calendar&#45;transition&#45;planner" class="edge">
 <title>actor.session&#45;state&#45;&gt;actor.historical&#45;planner</title>
 <g id="a_edge.calendar&#45;transition&#45;planner"><a xlink:title="edge.calendar&#45;transition&#45;planner">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M778.5,-539.88C782.35,-536.14 785.87,-532.07 789,-527.63 797.64,-515.37 796.39,-506.93 789,-493.88 788.14,-492.35 787.21,-490.87 786.23,-489.42"/>
-<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="781.3,-483.15 789.08,-487.22 782.77,-484.45 786.52,-489.22 786.25,-489.44 785.97,-489.66 782.22,-484.88 783.41,-491.66 781.3,-483.15"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M787.81,-539.9C791.58,-536.15 795.01,-532.07 798,-527.63 806.38,-515.19 805.66,-506.78 798,-493.88 796.99,-492.18 795.9,-490.52 794.75,-488.92"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="789.77,-482.89 797.64,-486.77 791.27,-484.16 795.13,-488.84 794.87,-489.06 794.6,-489.28 790.73,-484.6 792.09,-491.35 789.77,-482.89"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="start" x="795.02" y="-513.75" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · PUB — Canonical</text>
-<text xml:space="preserve" text-anchor="start" x="803.65" y="-502.5" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar transition</text>
+<text xml:space="preserve" text-anchor="start" x="804.01" y="-513.75" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · PUB — Canonical</text>
+<text xml:space="preserve" text-anchor="start" x="812.64" y="-502.5" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">calendar transition</text>
 </g>
 <!-- component.data&#45;engine&#45;&gt;actor.data&#45;acquisition -->
 <g id="edge.data&#45;engine&#45;live&#45;callback" class="edge">
 <title>component.data&#45;engine&#45;&gt;actor.data&#45;acquisition</title>
 <g id="a_edge.data&#45;engine&#45;live&#45;callback"><a xlink:title="edge.data&#45;engine&#45;live&#45;callback">
-<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M1233.75,-126.61C1206.92,-141.35 1175.32,-156.79 1145,-166.96 1124.6,-173.8 1118.22,-170.13 1097.25,-174.96 1062.82,-182.89 1055.55,-190.04 1021,-197.46 919.01,-219.36 802.59,-235.21 712.39,-245.53"/>
-<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="704.69,-246.41 712.23,-241.93 706.57,-245.84 712.6,-245.16 712.64,-245.51 712.68,-245.85 706.65,-246.54 713.04,-249.08 704.69,-246.41"/>
+<path fill="none" stroke="#8dc5e3" stroke-width="1.7" d="M1233.75,-126.61C1206.92,-141.35 1175.32,-156.79 1145,-166.96 1124.6,-173.8 1118.22,-170.13 1097.25,-174.96 1062.82,-182.89 1055.55,-190.04 1021,-197.46 926.52,-217.75 819.66,-232.84 732.72,-243.16"/>
+<polygon fill="#8dc5e3" stroke="#8dc5e3" stroke-width="1.7" points="724.82,-244.09 732.34,-239.58 726.69,-243.52 732.72,-242.81 732.77,-243.16 732.81,-243.51 726.78,-244.22 733.19,-246.73 724.82,-244.09"/>
 </a>
 </g>
 <text xml:space="preserve" text-anchor="start" x="1097.25" y="-189.21" font-family="Sans-Serif" font-size="10.00" fill="#b9ddf0">R · CALLBACK — Nautilus</text>
@@ -259,16 +262,16 @@
 <g id="actor.data&#45;acquisition" class="node">
 <title>actor.data&#45;acquisition</title>
 <g id="a_actor.data&#45;acquisition"><a xlink:title="actor.data&#45;acquisition">
-<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M690.01,-303.42C690.01,-303.42 431.99,-303.42 431.99,-303.42 425.99,-303.42 419.99,-297.42 419.99,-291.42 419.99,-291.42 419.99,-231.46 419.99,-231.46 419.99,-225.46 425.99,-219.46 431.99,-219.46 431.99,-219.46 690.01,-219.46 690.01,-219.46 696.01,-219.46 702.01,-225.46 702.01,-231.46 702.01,-231.46 702.01,-291.42 702.01,-291.42 702.01,-297.42 696.01,-303.42 690.01,-303.42"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="428.62,-273.19 428.62,-273.19 581.75,-273.19 581.75,-273.19 428.62,-273.19"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="581.75,-273.19 581.75,-273.19 693.38,-273.19 693.38,-273.19 581.75,-273.19"/>
-<text xml:space="preserve" text-anchor="start" x="431.62" y="-281.04" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Data Acquisition</text>
-<polygon fill="#164c3e" stroke="none" points="584.75,-276.19 584.75,-293.94 690.38,-293.94 690.38,-276.19 584.75,-276.19"/>
-<polygon fill="none" stroke="#43d9ae" points="584.75,-276.19 584.75,-293.94 690.38,-293.94 690.38,-276.19 584.75,-276.19"/>
-<text xml:space="preserve" text-anchor="start" x="615.44" y="-282.39" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
-<text xml:space="preserve" text-anchor="start" x="431.62" y="-262.69" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.data&#45;acquisition</text>
-<text xml:space="preserve" text-anchor="start" x="431.62" y="-246.94" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: ALWAYS</text>
-<text xml:space="preserve" text-anchor="start" x="431.62" y="-231.19" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 7</text>
+<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="722.26,-303.42 399.74,-303.42 399.74,-219.46 722.26,-219.46 722.26,-303.42"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="408.38,-273.19 408.38,-273.19 580.62,-273.19 580.62,-273.19 408.38,-273.19"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="580.62,-273.19 580.62,-273.19 713.62,-273.19 713.62,-273.19 580.62,-273.19"/>
+<text xml:space="preserve" text-anchor="start" x="411.38" y="-281.04" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Data Acquisition</text>
+<polygon fill="#5b4316" stroke="none" points="583.62,-276.19 583.62,-293.94 710.62,-293.94 710.62,-276.19 583.62,-276.19"/>
+<polygon fill="none" stroke="#e2b75c" points="583.62,-276.19 583.62,-293.94 710.62,-293.94 710.62,-276.19 583.62,-276.19"/>
+<text xml:space="preserve" text-anchor="start" x="623.88" y="-282.39" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<text xml:space="preserve" text-anchor="start" x="411.38" y="-262.69" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.data&#45;acquisition</text>
+<text xml:space="preserve" text-anchor="start" x="411.38" y="-246.94" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="start" x="411.38" y="-231.19" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER NOT APPLICABLE</text>
 </a>
 </g>
 </g>
@@ -276,16 +279,16 @@
 <g id="actor.watchlist" class="node">
 <title>actor.watchlist</title>
 <g id="a_actor.watchlist"><a xlink:title="actor.watchlist">
-<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M702.76,-125.96C702.76,-125.96 419.24,-125.96 419.24,-125.96 413.24,-125.96 407.24,-119.96 407.24,-113.96 407.24,-113.96 407.24,-54 407.24,-54 407.24,-48 413.24,-42 419.24,-42 419.24,-42 702.76,-42 702.76,-42 708.76,-42 714.76,-48 714.76,-54 714.76,-54 714.76,-113.96 714.76,-113.96 714.76,-119.96 708.76,-125.96 702.76,-125.96"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="415.88,-95.73 415.88,-95.73 561.12,-95.73 561.12,-95.73 415.88,-95.73"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="561.12,-95.73 561.12,-95.73 706.12,-95.73 706.12,-95.73 561.12,-95.73"/>
-<text xml:space="preserve" text-anchor="start" x="418.88" y="-103.58" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Watchlist</text>
-<polygon fill="#164c3e" stroke="none" points="564.12,-98.73 564.12,-116.48 703.12,-116.48 703.12,-98.73 564.12,-98.73"/>
-<polygon fill="none" stroke="#43d9ae" points="564.12,-98.73 564.12,-116.48 703.12,-116.48 703.12,-98.73 564.12,-98.73"/>
-<text xml:space="preserve" text-anchor="start" x="611.5" y="-104.93" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
-<text xml:space="preserve" text-anchor="start" x="418.88" y="-85.23" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.watchlist</text>
-<text xml:space="preserve" text-anchor="start" x="418.88" y="-69.48" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: CONDITIONAL</text>
-<text xml:space="preserve" text-anchor="start" x="418.88" y="-53.73" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 6</text>
+<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="722.26,-125.96 399.74,-125.96 399.74,-42 722.26,-42 722.26,-125.96"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="408.38,-95.73 408.38,-95.73 560,-95.73 560,-95.73 408.38,-95.73"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="560,-95.73 560,-95.73 713.62,-95.73 713.62,-95.73 560,-95.73"/>
+<text xml:space="preserve" text-anchor="start" x="411.38" y="-103.58" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Watchlist</text>
+<polygon fill="#5b4316" stroke="none" points="563,-98.73 563,-116.48 710.62,-116.48 710.62,-98.73 563,-98.73"/>
+<polygon fill="none" stroke="#e2b75c" points="563,-98.73 563,-116.48 710.62,-116.48 710.62,-98.73 563,-98.73"/>
+<text xml:space="preserve" text-anchor="start" x="613.56" y="-104.93" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<text xml:space="preserve" text-anchor="start" x="411.38" y="-85.23" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.watchlist</text>
+<text xml:space="preserve" text-anchor="start" x="411.38" y="-69.48" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="start" x="411.38" y="-53.73" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER NOT APPLICABLE</text>
 </a>
 </g>
 </g>
@@ -293,16 +296,16 @@
 <g id="actor.evidence&#45;health" class="node">
 <title>actor.evidence&#45;health</title>
 <g id="a_actor.evidence&#45;health"><a xlink:title="actor.evidence&#45;health">
-<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M706.01,-768.3C706.01,-768.3 447.99,-768.3 447.99,-768.3 441.99,-768.3 435.99,-762.3 435.99,-756.3 435.99,-756.3 435.99,-696.34 435.99,-696.34 435.99,-690.34 441.99,-684.34 447.99,-684.34 447.99,-684.34 706.01,-684.34 706.01,-684.34 712.01,-684.34 718.01,-690.34 718.01,-696.34 718.01,-696.34 718.01,-756.3 718.01,-756.3 718.01,-762.3 712.01,-768.3 706.01,-768.3"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="444.62,-738.07 444.62,-738.07 597.38,-738.07 597.38,-738.07 444.62,-738.07"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="597.38,-738.07 597.38,-738.07 709.38,-738.07 709.38,-738.07 597.38,-738.07"/>
-<text xml:space="preserve" text-anchor="start" x="447.62" y="-745.92" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Evidence Health</text>
-<polygon fill="#164c3e" stroke="none" points="600.38,-741.07 600.38,-758.82 706.38,-758.82 706.38,-741.07 600.38,-741.07"/>
-<polygon fill="none" stroke="#43d9ae" points="600.38,-741.07 600.38,-758.82 706.38,-758.82 706.38,-741.07 600.38,-741.07"/>
-<text xml:space="preserve" text-anchor="start" x="631.25" y="-747.27" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
-<text xml:space="preserve" text-anchor="start" x="447.62" y="-727.57" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.evidence&#45;health</text>
-<text xml:space="preserve" text-anchor="start" x="447.62" y="-711.82" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: ALWAYS</text>
-<text xml:space="preserve" text-anchor="start" x="447.62" y="-696.07" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 3</text>
+<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="717.26,-768.3 394.74,-768.3 394.74,-684.34 717.26,-684.34 717.26,-768.3"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="403.38,-738.07 403.38,-738.07 575.25,-738.07 575.25,-738.07 403.38,-738.07"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="575.25,-738.07 575.25,-738.07 708.62,-738.07 708.62,-738.07 575.25,-738.07"/>
+<text xml:space="preserve" text-anchor="start" x="406.38" y="-745.92" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Evidence Health</text>
+<polygon fill="#5b4316" stroke="none" points="578.25,-741.07 578.25,-758.82 705.62,-758.82 705.62,-741.07 578.25,-741.07"/>
+<polygon fill="none" stroke="#e2b75c" points="578.25,-741.07 578.25,-758.82 705.62,-758.82 705.62,-741.07 578.25,-741.07"/>
+<text xml:space="preserve" text-anchor="start" x="618.69" y="-747.27" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<text xml:space="preserve" text-anchor="start" x="406.38" y="-727.57" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.evidence&#45;health</text>
+<text xml:space="preserve" text-anchor="start" x="406.38" y="-711.82" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="start" x="406.38" y="-696.07" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER NOT APPLICABLE</text>
 </a>
 </g>
 </g>
@@ -310,16 +313,16 @@
 <g id="actor.historical&#45;planner" class="node">
 <title>actor.historical&#45;planner</title>
 <g id="a_actor.historical&#45;planner"><a xlink:title="actor.historical&#45;planner">
-<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M828.01,-480.88C828.01,-480.88 569.99,-480.88 569.99,-480.88 563.99,-480.88 557.99,-474.88 557.99,-468.88 557.99,-468.88 557.99,-408.92 557.99,-408.92 557.99,-402.92 563.99,-396.92 569.99,-396.92 569.99,-396.92 828.01,-396.92 828.01,-396.92 834.01,-396.92 840.01,-402.92 840.01,-408.92 840.01,-408.92 840.01,-468.88 840.01,-468.88 840.01,-474.88 834.01,-480.88 828.01,-480.88"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="566.62,-450.65 566.62,-450.65 751.62,-450.65 751.62,-450.65 566.62,-450.65"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="751.62,-450.65 751.62,-450.65 831.38,-450.65 831.38,-450.65 751.62,-450.65"/>
-<text xml:space="preserve" text-anchor="start" x="569.62" y="-458.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Historical Evidence Planner</text>
-<polygon fill="#164c3e" stroke="none" points="754.62,-453.65 754.62,-471.4 828.38,-471.4 828.38,-453.65 754.62,-453.65"/>
-<polygon fill="none" stroke="#43d9ae" points="754.62,-453.65 754.62,-471.4 828.38,-471.4 828.38,-453.65 754.62,-453.65"/>
-<text xml:space="preserve" text-anchor="start" x="769.38" y="-459.85" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
-<text xml:space="preserve" text-anchor="start" x="569.62" y="-440.15" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.historical&#45;planner</text>
-<text xml:space="preserve" text-anchor="start" x="569.62" y="-424.4" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: ALWAYS</text>
-<text xml:space="preserve" text-anchor="start" x="569.62" y="-408.65" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 5</text>
+<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="860.26,-480.88 537.74,-480.88 537.74,-396.92 860.26,-396.92 860.26,-480.88"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="546.38,-450.65 546.38,-450.65 750.5,-450.65 750.5,-450.65 546.38,-450.65"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="750.5,-450.65 750.5,-450.65 851.62,-450.65 851.62,-450.65 750.5,-450.65"/>
+<text xml:space="preserve" text-anchor="start" x="549.38" y="-458.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Historical Evidence Planner</text>
+<polygon fill="#5b4316" stroke="none" points="753.5,-453.65 753.5,-471.4 848.62,-471.4 848.62,-453.65 753.5,-453.65"/>
+<polygon fill="none" stroke="#e2b75c" points="753.5,-453.65 753.5,-471.4 848.62,-471.4 848.62,-453.65 753.5,-453.65"/>
+<text xml:space="preserve" text-anchor="start" x="777.81" y="-459.85" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<text xml:space="preserve" text-anchor="start" x="549.38" y="-440.15" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.historical&#45;planner</text>
+<text xml:space="preserve" text-anchor="start" x="549.38" y="-424.4" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="start" x="549.38" y="-408.65" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER NOT APPLICABLE</text>
 </a>
 </g>
 </g>
@@ -327,16 +330,16 @@
 <g id="actor.session&#45;state" class="node">
 <title>actor.session&#45;state</title>
 <g id="a_actor.session&#45;state"><a xlink:title="actor.session&#45;state">
-<path fill="#102b28" stroke="#43d9ae" stroke-width="1.5" d="M767.01,-624.59C767.01,-624.59 508.99,-624.59 508.99,-624.59 502.99,-624.59 496.99,-618.59 496.99,-612.59 496.99,-612.59 496.99,-552.63 496.99,-552.63 496.99,-546.63 502.99,-540.63 508.99,-540.63 508.99,-540.63 767.01,-540.63 767.01,-540.63 773.01,-540.63 779.01,-546.63 779.01,-552.63 779.01,-552.63 779.01,-612.59 779.01,-612.59 779.01,-618.59 773.01,-624.59 767.01,-624.59"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="505.62,-594.36 505.62,-594.36 651.25,-594.36 651.25,-594.36 505.62,-594.36"/>
-<polygon fill="#43d9ae" stroke="#43d9ae" points="651.25,-594.36 651.25,-594.36 770.38,-594.36 770.38,-594.36 651.25,-594.36"/>
-<text xml:space="preserve" text-anchor="start" x="508.62" y="-602.21" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ecfff8">Session State</text>
-<polygon fill="#164c3e" stroke="none" points="654.25,-597.36 654.25,-615.11 767.38,-615.11 767.38,-597.36 654.25,-597.36"/>
-<polygon fill="none" stroke="#43d9ae" points="654.25,-597.36 654.25,-615.11 767.38,-615.11 767.38,-597.36 654.25,-597.36"/>
-<text xml:space="preserve" text-anchor="start" x="688.69" y="-603.56" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#ecfff8">ENABLED</text>
-<text xml:space="preserve" text-anchor="start" x="508.62" y="-583.86" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.session&#45;state</text>
-<text xml:space="preserve" text-anchor="start" x="508.62" y="-568.11" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: ALWAYS</text>
-<text xml:space="preserve" text-anchor="start" x="508.62" y="-552.36" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#ecfff8">PROFILE: ENABLED · ORDER 2</text>
+<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="826.26,-624.59 503.74,-624.59 503.74,-540.63 826.26,-540.63 826.26,-624.59"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="512.38,-594.36 512.38,-594.36 677.12,-594.36 677.12,-594.36 512.38,-594.36"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="677.12,-594.36 677.12,-594.36 817.62,-594.36 817.62,-594.36 677.12,-594.36"/>
+<text xml:space="preserve" text-anchor="start" x="515.38" y="-602.21" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Session State</text>
+<polygon fill="#5b4316" stroke="none" points="680.12,-597.36 680.12,-615.11 814.62,-615.11 814.62,-597.36 680.12,-597.36"/>
+<polygon fill="none" stroke="#e2b75c" points="680.12,-597.36 680.12,-615.11 814.62,-615.11 814.62,-597.36 680.12,-597.36"/>
+<text xml:space="preserve" text-anchor="start" x="724.12" y="-603.56" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
+<text xml:space="preserve" text-anchor="start" x="515.38" y="-583.86" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">actor.session&#45;state</text>
+<text xml:space="preserve" text-anchor="start" x="515.38" y="-568.11" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="start" x="515.38" y="-552.36" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER NOT APPLICABLE</text>
 </a>
 </g>
 </g>
@@ -344,16 +347,16 @@
 <g id="component.canonical&#45;calendar" class="node">
 <title>component.canonical&#45;calendar</title>
 <g id="a_component.canonical&#45;calendar"><a xlink:title="component.canonical&#45;calendar">
-<path fill="#172332" stroke="#6fa8cc" stroke-width="1.5" d="M1060.26,-768.3C1060.26,-768.3 761.74,-768.3 761.74,-768.3 755.74,-768.3 749.74,-762.3 749.74,-756.3 749.74,-756.3 749.74,-696.34 749.74,-696.34 749.74,-690.34 755.74,-684.34 761.74,-684.34 761.74,-684.34 1060.26,-684.34 1060.26,-684.34 1066.26,-684.34 1072.26,-690.34 1072.26,-696.34 1072.26,-696.34 1072.26,-756.3 1072.26,-756.3 1072.26,-762.3 1066.26,-768.3 1060.26,-768.3"/>
-<polygon fill="#6fa8cc" stroke="#6fa8cc" points="758.38,-738.07 758.38,-738.07 941.12,-738.07 941.12,-738.07 758.38,-738.07"/>
-<polygon fill="#6fa8cc" stroke="#6fa8cc" points="941.12,-738.07 941.12,-738.07 1063.62,-738.07 1063.62,-738.07 941.12,-738.07"/>
-<text xml:space="preserve" text-anchor="start" x="761.38" y="-745.92" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#f4f7fa">Canonical Calendar</text>
-<polygon fill="#164c3e" stroke="none" points="944.12,-741.07 944.12,-758.82 1060.62,-758.82 1060.62,-741.07 944.12,-741.07"/>
-<polygon fill="none" stroke="#6fa8cc" points="944.12,-741.07 944.12,-758.82 1060.62,-758.82 1060.62,-741.07 944.12,-741.07"/>
-<text xml:space="preserve" text-anchor="start" x="980.25" y="-747.27" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#f4f7fa">ENABLED</text>
+<polygon fill="#2b2416" stroke="#e2b75c" stroke-width="1.5" stroke-dasharray="5,2" points="1072.26,-768.3 749.74,-768.3 749.74,-684.34 1072.26,-684.34 1072.26,-768.3"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="758.38,-738.07 758.38,-738.07 940,-738.07 940,-738.07 758.38,-738.07"/>
+<polygon fill="#e2b75c" stroke="#e2b75c" points="940,-738.07 940,-738.07 1063.62,-738.07 1063.62,-738.07 940,-738.07"/>
+<text xml:space="preserve" text-anchor="start" x="761.38" y="-745.92" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#fff3d6">Canonical Calendar</text>
+<polygon fill="#5b4316" stroke="none" points="943,-741.07 943,-758.82 1060.62,-758.82 1060.62,-741.07 943,-741.07"/>
+<polygon fill="none" stroke="#e2b75c" points="943,-741.07 943,-758.82 1060.62,-758.82 1060.62,-741.07 943,-741.07"/>
+<text xml:space="preserve" text-anchor="start" x="978.56" y="-747.27" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="9.00" fill="#fff3d6">DISABLED</text>
 <text xml:space="preserve" text-anchor="start" x="761.38" y="-727.57" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#c7d2dd">component.canonical&#45;calendar</text>
-<text xml:space="preserve" text-anchor="start" x="761.38" y="-711.82" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#f4f7fa">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
-<text xml:space="preserve" text-anchor="start" x="761.38" y="-696.07" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#f4f7fa">PROFILE: ENABLED · ORDER NOT APPLICABLE</text>
+<text xml:space="preserve" text-anchor="start" x="761.38" y="-711.82" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">IMPLEMENTATION: IMPLEMENTED · COMPOSITION: NOT_COMPOSED</text>
+<text xml:space="preserve" text-anchor="start" x="761.38" y="-696.07" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#fff3d6">PROFILE: DISABLED · ORDER NOT APPLICABLE</text>
 </a>
 </g>
 </g>

@@ -7,16 +7,15 @@ Separate bounded operational persistence from optional notifications and diagnos
 - View ID: `view.persistence-audit-projections`
 - Profile: `profile.example`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `417bc3a3f716c5ec539758f26a9fcf23b533672c`
+- Checkout evidence: `5cb865e74653c8451f407320f566aa72bb73c3d2`
 - Review status: `proposed`
 
 ## Components
 
 | ID | Component | Kind | Implementation | Composition | Order | Active profile | Semantic owner | Boundary |
 |---|---|---|---|---|---:|---|---|---|
-| `actor.discord-health` | Discord Health Projection | markeitech_actor | implemented | conditional | 4 | enabled | `actor.discord-health` | `boundary.system` |
-| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 10 | enabled | `actor.operational-persistence` | `boundary.system` |
-| `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
+| `actor.discord-webhooks` | Discord Webhooks | markeitech_actor | implemented | conditional | 2 | enabled | `actor.discord-webhooks` | `boundary.system` |
+| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 3 | enabled | `actor.operational-persistence` | `boundary.system` |
 | `actor.system-control` | System Control | markeitech_actor | implemented | always | 1 | enabled | `actor.system-control` | `boundary.system` |
 | `operator.markeitect` | Markeitect / Operator | operator | external | external | not applicable | not_applicable | `operator.markeitect` | `boundary.projections` |
 | `projection.discord` | Discord | projection | external | external | not applicable | not_applicable | `projection.discord` | `boundary.projections` |
@@ -30,22 +29,22 @@ Separate bounded operational persistence from optional notifications and diagnos
 
 | ID | Owning component | Capability | Implementation | Composition | Active profile | Configuration |
 |---|---|---|---|---|---|---|
-| `capability.discord.notifications` | `actor.discord-health` | Queued Discord health notifications | implemented | conditional | disabled | discord.enabled |
+| `capability.discord.notifications` | `actor.discord-webhooks` | Queued Discord system and resource health notifications | implemented | conditional | enabled | discord.enabled |
 
 ## Flows
 
 | ID | Source | Target | Category | Contract | Transport | Required | Condition | Delivery |
 |---|---|---|---|---|---|---|---|---|
-| `edge.calendar-transition-persistence` | `actor.session-state` | `actor.operational-persistence` | persistence | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
+| `edge.component-recovery` | `actor.operational-persistence` | `actor.system-control` | event | `contract.component-recovery` | nautilus_signal | no | always | unknown |
 | `edge.discord-external` | `worker.discord` | `projection.discord` | notification | `contract.discord-notification` | external_http | no | discord.enabled | at_least_once_attempt |
-| `edge.discord-queue` | `actor.discord-health` | `queue.discord` | queue_admission | `contract.discord-notification` | thread_queue | no | discord.enabled | at_least_once_attempt |
+| `edge.discord-queue` | `actor.discord-webhooks` | `queue.discord` | queue_admission | `contract.discord-notification` | thread_queue | no | discord.enabled | at_least_once_attempt |
 | `edge.discord-worker` | `queue.discord` | `worker.discord` | queue_admission | `contract.discord-notification` | thread_queue | no | discord.enabled | at_least_once_attempt |
 | `edge.persistence-failure` | `actor.operational-persistence` | `actor.system-control` | failure | `contract.component-failure` | nautilus_signal | yes | always | unknown |
 | `edge.persistence-queue` | `actor.operational-persistence` | `queue.persistence` | queue_admission | `contract.operational-event` | thread_queue | yes | always | at_least_once_attempt |
 | `edge.persistence-ready-request` | `actor.system-control` | `actor.operational-persistence` | query | `contract.persistence-ready-request` | nautilus_signal | yes | always | unknown |
 | `edge.persistence-ready-response` | `actor.operational-persistence` | `actor.system-control` | readiness | `contract.persistence-ready` | nautilus_signal | yes | always | unknown |
 | `edge.queue-worker` | `queue.persistence` | `worker.persistence` | queue_admission | `contract.operational-event` | thread_queue | yes | always | at_least_once_attempt |
-| `edge.system-health-discord` | `actor.system-control` | `actor.discord-health` | notification | `contract.system-health` | nautilus_signal | no | discord.enabled | unknown |
+| `edge.system-health-discord` | `actor.system-control` | `actor.discord-webhooks` | notification | `contract.system-health` | nautilus_signal | no | discord.enabled | unknown |
 | `edge.system-health-persistence` | `actor.system-control` | `actor.operational-persistence` | publication | `contract.system-health` | nautilus_signal | yes | always | unknown |
 | `edge.worker-postgres` | `worker.persistence` | `store.postgres` | persistence | `contract.operational-event` | postgres_write | yes | always | at_least_once_attempt |
 | `edge.worker-result` | `worker.persistence` | `actor.operational-persistence` | worker_result | `contract.persistence-result` | thread_queue | yes | always | at_least_once_attempt |

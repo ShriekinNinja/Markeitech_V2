@@ -188,7 +188,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "15512d36317bd76c9e62d4903d3aaf9df8b67eb0b3a0e80394ec0e2ac95b3366"
+    "source_snapshot_sha256": "0c3b78b0d9b12020af4f1d412e4d402ec7b8a6905214c000678cdb61c3a19da1"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1311,7 +1311,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 68,
-    "input_signature": "15512d36317bd76c9e62d4903d3aaf9df8b67eb0b3a0e80394ec0e2ac95b3366"
+    "input_signature": "0c3b78b0d9b12020af4f1d412e4d402ec7b8a6905214c000678cdb61c3a19da1"
   },
-  "source_snapshot_sha256": "15512d36317bd76c9e62d4903d3aaf9df8b67eb0b3a0e80394ec0e2ac95b3366"
+  "source_snapshot_sha256": "0c3b78b0d9b12020af4f1d412e4d402ec7b8a6905214c000678cdb61c3a19da1"
 }

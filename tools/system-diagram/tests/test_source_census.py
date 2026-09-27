@@ -19,10 +19,10 @@ class SourceCensusTests(unittest.TestCase):
             (root / "config").mkdir()
             (root / "config/runtime.example.toml").write_text(
                 'schema_version = 30\npolicy_file = "system.policy.toml"\n'
-                '[ib]\n[discord]\nenabled = true\n[watchlist]\nenabled = true\n',
+                "[ib]\n[discord]\nenabled = true\n[watchlist]\nenabled = true\n",
             )
             (root / "config/system.policy.toml").write_text(
-                "policy_version = 1\n[ib]\n[discord]\nqueue_capacity = 32\n"
+                "policy_version = 3\n[ib]\n[discord]\nqueue_capacity = 32\n"
                 "[watchlist]\nconsumer_retry_interval_ms = 1000\n"
                 "[sessions]\n[runtime_resources]\nenabled = true\n",
             )
@@ -33,6 +33,20 @@ class SourceCensusTests(unittest.TestCase):
         self.assertEqual(raw["watchlist"]["consumer_retry_interval_ms"], 1000)
         self.assertTrue(raw["runtime_resources"]["enabled"])
         self.assertEqual(raw["discord"], {"enabled": True, "queue_capacity": 32})
+
+    def test_rejects_policy_version_older_than_the_runtime_loader(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "config").mkdir()
+            (root / "config/runtime.example.toml").write_text(
+                'schema_version = 30\npolicy_file = "system.policy.toml"\n',
+            )
+            (root / "config/system.policy.toml").write_text("policy_version = 1\n")
+
+            with self.assertRaises(ManifestError) as raised:
+                _profile_configuration(root, "config/runtime.example.toml")
+
+        self.assertEqual(raised.exception.code, "DRIFT_PROFILE_POLICY_SOURCE")
 
     def test_extracts_constant_and_bounded_dynamic_actor_registrations(self) -> None:
         source = """

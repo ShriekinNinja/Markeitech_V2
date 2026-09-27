@@ -249,9 +249,10 @@ def _profile_configuration(repository_root: Path, config_path: str) -> dict[str,
             )
         policy_path = Path(config_path).parent / policy_file
         policy_document = _read_toml(repository_root, policy_path.as_posix())
+        # Match the runtime loader's exact schema; older policy documents are not merged.
         if (
             type(policy_document.get("policy_version")) is not int
-            or policy_document["policy_version"] != 1
+            or policy_document["policy_version"] != 3
         ):
             raise ManifestError(
                 "DRIFT_PROFILE_POLICY_SOURCE",
@@ -351,9 +352,11 @@ def validate_source_census(
     manifest: ArchitectureManifest,
     *,
     repository_root: Path,
-    policy: CensusPolicy = CensusPolicy(),
+    policy: CensusPolicy | None = None,
 ) -> CensusReport:
     """Compare mechanically supported source/configuration facts with the manifest."""
+    if policy is None:
+        policy = CensusPolicy()
 
     _validate_node_shape(repository_root, policy.node_path)
     actor_facts = extract_actor_registrations(repository_root, policy.composition_path)

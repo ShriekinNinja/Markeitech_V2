@@ -98,14 +98,15 @@ replacement plan. QuoteQualityMetricsActor, its midpoint/spread calculations, an
 configuration and dedicated tests are also removed. The current runtime has ten actor classes.
 Independent canonical bar/metric and entity contracts remain.
 
-The API registry selects 98 public objects; the diagram source census recognizes ten actor
-registrations. Offline checks do not establish connected acceptance.
+The API registry selects 98 public objects; the active actor plan has five registrations when
+Discord is enabled and four when it is disabled. Offline checks do not establish connected
+acceptance.
 
 The tracked runtime example is schema 30: operator choices and watchlist membership are in the
-runtime profile, reviewed runtime policy is in `system.policy.toml`, and active calendars are
-derived from watchlist members. An empty watchlist uses the policy's `idle_calendar_ids` so the
-zero-instrument runtime can still synchronize session state. Complete schema-29 profiles remain
-supported. Older local profiles need
+runtime profile, and reviewed runtime policy is in `system.policy.toml`. Calendar definitions are
+derived from configured members, but Session State is not currently composed. An empty watchlist
+uses the policy's `idle_calendar_ids` for configuration; it does not start Session State. Complete
+schema-29 profiles remain supported. Older local profiles need
 their retired `[dashboard]`, `[acquisition]`, `[historical.probe]`,
 `[visual_debug_capture]`, and `[metrics]` sections removed before setting schema 29. Retain
 `[historical]`, which configures the production acquisition owner. Local files are not migrated
@@ -119,7 +120,8 @@ automatically. See [developer setup](operations/developer-setup.md) for the sche
 - `LiveNode` construction, caller-owned embedded lifecycle tests, guarded production startup,
   controlled shutdown, rotating logs, and explicit IB connection confirmation exist.
 - NautilusTrader owns IB market-data connectivity and native normalized observations.
-- `DataAcquisitionActor` owns logical provider demand and subscription/request lifetime.
+- `DataAcquisitionActor` owns logical provider demand and subscription/request lifetime when
+  composed; it is inactive in the current actor plan.
 - Static watchlist ownership and native multi-consumer market-data delivery were accepted in the
   predecessor V2 profile.
 - Provider-subscription recovery, full connection-loss recovery, and several pacing/cancellation
@@ -149,10 +151,12 @@ See [developer setup](operations/developer-setup.md) for the complete command co
 
 ### Calendar, evidence health, and historical acquisition
 
+These actor implementations remain in source but are not registered in the current actor plan.
+
 - `SessionStateActor` owns canonical calendar evaluation and publishes typed transitions and
   bounded current-state projections.
 - The tracked calendar catalog contains CBOE SPXW, NYSE, CME equity, CBOT equity, and CME energy
-  definitions; only `cme_equity` is active in the V3 ES profile.
+  definitions; the active plan does not evaluate them through Session State.
 - `EvidenceHealthActor` owns source/feed freshness and fidelity state for configured observations.
 - `HistoricalEvidencePlannerActor` converts symbolic approved needs into exact UTC request plans;
   `DataAcquisitionActor` executes admitted provider work.
