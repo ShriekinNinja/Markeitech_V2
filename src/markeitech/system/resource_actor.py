@@ -3,11 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from resource import RLIMIT_NOFILE, getrlimit
 from time import monotonic
+from uuid import uuid4
 
 import psutil
 from nautilus_trader.common import DataActor, DataActorConfig
 from nautilus_trader.model import ActorId, AggregationSource
 
+from markeitech.system.messages import COMPONENT_FAILURE_SIGNAL, ComponentFailureEvent
 from markeitech.system.resource_contracts import (
     RUNTIME_RESOURCE_SIGNAL,
     RuntimeResourceEvent,
@@ -95,6 +97,7 @@ class ProcessResourceSampler:
 class RuntimeResourceActorConfig(DataActorConfig):
     def __new__(
         cls,
+        run_id: str,
         sample_interval_ms: int,
         log_every_samples: int,
         include_cache_counts: bool,
@@ -105,6 +108,7 @@ class RuntimeResourceActorConfig(DataActorConfig):
             actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
         )
         obj = super().__new__(cls, actor_id=resolved_actor_id)
+        obj.run_id = run_id
         obj.sample_interval_ms = sample_interval_ms
         obj.log_every_samples = log_every_samples
         obj.include_cache_counts = include_cache_counts
@@ -124,6 +128,7 @@ class RuntimeResourceActor(DataActor):
 
     def __init__(self, config: RuntimeResourceActorConfig) -> None:
         super().__init__(config)
+        self._run_id = config.run_id
         self._sample_interval_ms = config.sample_interval_ms
         self._sample_interval_ns = config.sample_interval_ms * 1_000_000
         self._log_every_samples = config.log_every_samples
@@ -184,6 +189,18 @@ class RuntimeResourceActor(DataActor):
             f" | max_cache_trades={self._maximum_cache_trade_tick_count}"
             f" | max_cache_bar_types={self._maximum_cache_bar_type_count}"
             f" | max_cache_bars={self._maximum_cache_bar_count}",
+        )
+
+    def on_fault(self) -> None:
+        # Ordinary sampling errors remain retryable; an actor fault removes the sampler itself.
+        self.publish_signal(
+            COMPONENT_FAILURE_SIGNAL,
+            ComponentFailureEvent(
+                component="runtime_resources",
+                code="resource_sampler_faulted",
+                reason="runtime resource sampler faulted",
+                evidence={"run_id": self._run_id, "incident_id": str(uuid4())},
+            ).to_signal_value(),
         )
 
     def _sample(self, _event) -> None:  # noqa: ANN001

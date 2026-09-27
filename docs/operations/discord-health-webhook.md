@@ -1,12 +1,11 @@
-# Discord Health Webhook
+# Discord Webhooks
 
 **Status:** Implemented optional outbound projection
 
 ## Responsibility
 
-`DiscordHealthActor` projects accepted system-health, resource-health, watchlist, and historical-
-readiness evidence to configured Discord webhooks. It does not determine system state, supervise
-Interactive Brokers, calculate market truth, admit evidence, or participate in readiness.
+`DiscordWebhooksActor` projects accepted system-health and resource-health events to one
+configured Discord webhook. It does not determine system state or participate in readiness.
 
 The projection is outbound operational infrastructure; it has no inbound conversation or order control.
 
@@ -18,9 +17,6 @@ System-health vocabulary currently includes:
 - `FAILED`
 - `STOPPING`
 
-The operational-readiness card reports only the joined canonical evidence it observes. It does
-not create a new readiness state or establish unrelated runtime capabilities.
-
 ## Configuration And Secrets
 
 Tracked configuration contains timeout and environment-variable names, never webhook values.
@@ -28,10 +24,9 @@ Local configuration begins from `config/runtime.example.toml`; actual secrets ar
 
 ```text
 MARKEITECH_DISCORD_SYSTEM_HEALTH_WEBHOOK
-MARKEITECH_DISCORD_OPERATIONAL_EVENTS_WEBHOOK
 ```
 
-When Discord is enabled, runtime preflight requires the configured variables. Webhook URLs and
+When Discord is enabled, runtime preflight requires this variable. Webhook URLs and
 exceptions which may contain URLs must not enter logs, audit payloads, generated artifacts, or
 Git.
 
@@ -49,23 +44,6 @@ analysis, persistence truth, or system-health ownership.
 Messages disable unintended mention parsing. Critical resource notifications may use only the
 separately configured mention policy. A successful Discord response proves only that Discord
 accepted that projection, not that the underlying system is universally ready.
-
-## Operational-Readiness Join
-
-The optional one-shot card waits for observed evidence that:
-
-- system control reached its accepted `READY` meaning;
-- every configured watchlist member produced the required instrument-observed lifecycle; and
-- every initial historical dependency reached a terminal readiness outcome.
-
-The card reports counts and gaps. It says ready only when every required terminal outcome is
-ready; otherwise it reports completion with limitations. Producers may publish in any order, so
-the observer starts early enough to retain their bounded declarations and outcomes.
-
-When a profile explicitly disables the watchlist and has no instruments, a separate rendering of
-this card reports empty acquisition and persistence initialization without waiting for nonexistent
-watchlist members or historical demands. It does not infer zero work from silence or claim that
-IB, calendars, resources, or webhook delivery are healthy.
 
 ## Shutdown And Acceptance
 

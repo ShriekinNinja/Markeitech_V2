@@ -12,6 +12,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas_market_calendars as market_calendars
 
+from markeitech.system.control import ComponentFailureRule, SystemControlPolicy
+
 
 @dataclass(frozen=True, slots=True)
 class RuntimeConfig:
@@ -247,7 +249,6 @@ class RuntimeResourceThresholdConfig:
 
 @dataclass(frozen=True, slots=True)
 class RuntimeResourceHealthConfig:
-    enabled: bool
     threshold_version: str
     warning_consecutive_samples: int
     critical_consecutive_samples: int
@@ -262,7 +263,6 @@ class RuntimeResourceHealthConfig:
 
 @dataclass(frozen=True, slots=True)
 class RuntimeResourcesConfig:
-    enabled: bool
     sample_interval_ms: int
     log_every_samples: int
     include_cache_counts: bool
@@ -289,6 +289,7 @@ class SystemConfig:
 
     schema_version: int
     runtime: RuntimeConfig
+    system_control: SystemControlPolicy
     ib: InteractiveBrokersConfig
     logging: LoggingConfig
     discord: DiscordConfig
@@ -346,6 +347,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "sessions",
         "evidence_health",
     }
+    if schema_version == 30:
+        required_root_keys.add("system_control")
     _require_keys_allowing(
         raw,
         required_root_keys,
@@ -356,14 +359,31 @@ def load_system_config(path: str | Path) -> SystemConfig:
         raise ValueError("root requires exactly one of watchlist or watchlist_file")
 
     runtime = _load_runtime(raw["runtime"])
+    system_control = (
+        _load_system_control(raw["system_control"])
+        if schema_version == 30
+        else (
+            SystemControlPolicy(
+                component_failures=(
+                    ComponentFailureRule("operational_persistence", "FAILED", "DEGRADED"),
+                    ComponentFailureRule("runtime_resources", "FAILED", "DEGRADED"),
+                    ComponentFailureRule("runtime_resource_health", "FAILED", "DEGRADED"),
+                ),
+            )
+        )
+    )
     ib = _load_ib(raw["ib"])
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
-    runtime_resources = _load_runtime_resources(raw["runtime_resources"])
+    runtime_resources = _load_runtime_resources(
+        raw["runtime_resources"],
+        legacy_enabled=schema_version == 29,
+    )
     persistence = _load_persistence(raw["persistence"])
     if "watchlist_file" in raw:
         watchlist_path = config_path.parent / _non_empty_string(
-            raw["watchlist_file"], "watchlist_file",
+            raw["watchlist_file"],
+            "watchlist_file",
         )
         with watchlist_path.open("rb") as file:
             watchlist_document = tomllib.load(file)
@@ -377,13 +397,15 @@ def load_system_config(path: str | Path) -> SystemConfig:
     if schema_version == 30:
         session_values = _mapping(session_values, "sessions")
         idle_calendar_ids = _unique_strings(
-            session_values["idle_calendar_ids"], "sessions.idle_calendar_ids",
+            session_values["idle_calendar_ids"],
+            "sessions.idle_calendar_ids",
         )
         if not idle_calendar_ids:
             raise ValueError("sessions.idle_calendar_ids must not be empty")
-        selected_calendar_ids = tuple(dict.fromkeys(
-            member.calendar_id for member in watchlist.members
-        )) or idle_calendar_ids
+        selected_calendar_ids = (
+            tuple(dict.fromkeys(member.calendar_id for member in watchlist.members))
+            or idle_calendar_ids
+        )
         session_values = {
             **{key: value for key, value in session_values.items() if key != "idle_calendar_ids"},
             "calendar_ids": list(selected_calendar_ids),
@@ -432,6 +454,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
     return SystemConfig(
         schema_version=raw["schema_version"],
         runtime=runtime,
+        system_control=system_control,
         ib=ib,
         logging=logging,
         discord=discord,
@@ -454,7 +477,11 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
     operator_keys = {
         "runtime": {"name", "trader_id", "environment"},
         "ib": {
-            "host", "port", "client_id", "symbology_method", "market_data_type",
+            "host",
+            "port",
+            "client_id",
+            "symbology_method",
+            "market_data_type",
             "use_regular_trading_hours",
         },
         "discord": {"enabled", "ping_critical_resource_alerts"},
@@ -466,15 +493,24 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
     policy_path = config_path.parent / _non_empty_string(raw["policy_file"], "policy_file")
     with policy_path.open("rb") as file:
         policy = tomllib.load(file)
-    if type(policy.get("policy_version")) is not int or policy["policy_version"] != 1:
+    if type(policy.get("policy_version")) is not int or policy["policy_version"] != 3:
         raise ValueError(
-            f"unsupported policy_version: {policy.get('policy_version')!r}; expected 1",
+            f"unsupported policy_version: {policy.get('policy_version')!r}; expected 3",
         )
     _require_keys(
         policy,
         {
-            "policy_version", "ib", "logging", "discord", "watchlist",
-            "runtime_resources", "persistence", "historical", "sessions", "evidence_health",
+            "policy_version",
+            "ib",
+            "system_control",
+            "logging",
+            "discord",
+            "watchlist",
+            "runtime_resources",
+            "persistence",
+            "historical",
+            "sessions",
+            "evidence_health",
         },
         "policy",
     )
@@ -498,6 +534,30 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
         runtime=raw["runtime"],
     )
     return assembled
+
+
+def _load_system_control(raw: Any) -> SystemControlPolicy:
+    values = _mapping(raw, "system_control")
+    _require_keys(values, {"component_failures"}, "system_control")
+    components = _mapping(values["component_failures"], "system_control.component_failures")
+    if not components or len(components) > 32:
+        raise ValueError("system_control.component_failures must contain 1 to 32 components")
+    rules: list[ComponentFailureRule] = []
+    for component, raw_rule in sorted(components.items()):
+        if (
+            not isinstance(component, str)
+            or re.fullmatch(r"[a-z][a-z0-9_]{0,63}", component) is None
+        ):
+            raise ValueError(f"invalid system_control component: {component!r}")
+        label = f"system_control.component_failures.{component}"
+        rule = _mapping(raw_rule, label)
+        _require_keys(rule, {"startup", "running"}, label)
+        startup = _non_empty_string(rule["startup"], f"{label}.startup")
+        running = _non_empty_string(rule["running"], f"{label}.running")
+        if startup not in {"FAILED", "DEGRADED"} or running not in {"FAILED", "DEGRADED"}:
+            raise ValueError(f"{label} states must be FAILED or DEGRADED")
+        rules.append(ComponentFailureRule(component, startup, running))
+    return SystemControlPolicy(tuple(rules))
 
 
 def _load_runtime(raw: Any) -> RuntimeConfig:
@@ -636,12 +696,14 @@ def _load_discord(raw: Any) -> DiscordConfig:
     )
 
 
-def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
+def _load_runtime_resources(raw: Any, *, legacy_enabled: bool) -> RuntimeResourcesConfig:
     values = _mapping(raw, "runtime_resources")
+    # Schema 29's enable switches remain readable only when both mandatory actors are enabled.
+    enabled_keys = {"enabled"} if legacy_enabled else set()
     _require_keys(
         values,
-        {
-            "enabled",
+        enabled_keys
+        | {
             "sample_interval_ms",
             "log_every_samples",
             "include_cache_counts",
@@ -653,8 +715,8 @@ def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
     health_values = _mapping(values["health"], "runtime_resources.health")
     _require_keys(
         health_values,
-        {
-            "enabled",
+        enabled_keys
+        | {
             "threshold_version",
             "warning_consecutive_samples",
             "critical_consecutive_samples",
@@ -668,6 +730,11 @@ def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
         },
         "runtime_resources.health",
     )
+    if legacy_enabled and (
+        not _bool(values["enabled"], "runtime_resources.enabled")
+        or not _bool(health_values["enabled"], "runtime_resources.health.enabled")
+    ):
+        raise ValueError("runtime resource actors are mandatory and cannot be disabled")
     warning = _load_runtime_resource_thresholds(
         health_values["warning"],
         "runtime_resources.health.warning",
@@ -690,7 +757,6 @@ def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
             "runtime_resources.health.stale_critical_ms must exceed stale_warning_ms",
         )
     return RuntimeResourcesConfig(
-        enabled=_bool(values["enabled"], "runtime_resources.enabled"),
         sample_interval_ms=_positive_int(
             values["sample_interval_ms"],
             "runtime_resources.sample_interval_ms",
@@ -705,7 +771,6 @@ def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
         ),
         disk_path=_non_empty_string(values["disk_path"], "runtime_resources.disk_path"),
         health=RuntimeResourceHealthConfig(
-            enabled=_bool(health_values["enabled"], "runtime_resources.health.enabled"),
             threshold_version=_non_empty_string(
                 health_values["threshold_version"],
                 "runtime_resources.health.threshold_version",

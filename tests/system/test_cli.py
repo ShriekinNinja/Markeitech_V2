@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 from markeitech.system.cli import (
     DEFAULT_CONFIG_FILE,
     DEFAULT_ENV_FILE,
@@ -11,10 +13,7 @@ from markeitech.system.cli import (
     _start_caffeinate,
     main,
 )
-from markeitech.system.discord import (
-    OPERATIONAL_EVENTS_WEBHOOK_ENV,
-    SYSTEM_HEALTH_WEBHOOK_ENV,
-)
+from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
 
 POSTGRES_DSN_ENV = "MARKEITECH_POSTGRES_DSN"
 
@@ -93,7 +92,10 @@ def test_clean_connected_run_is_closed_only_after_node_returns(
     )
 
 
-def test_unclean_connected_run_remains_open(tmp_path: Path, monkeypatch) -> None:
+def test_unclean_connected_run_is_closed_without_masking_node_error(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
     store = Mock()
     node = Mock()
     _set_synthetic_runtime_environment(monkeypatch)
@@ -120,7 +122,37 @@ def test_unclean_connected_run_remains_open(tmp_path: Path, monkeypatch) -> None
     else:
         raise AssertionError("expected node failure")
 
-    store.close_run.assert_not_called()
+    assert store.close_run.call_args.args[1:] == (
+        "FAILED",
+        "Nautilus LiveNode raised RuntimeError",
+    )
+
+
+def test_close_failure_does_not_replace_native_node_error(tmp_path: Path, monkeypatch) -> None:
+    store = Mock()
+    node = Mock()
+    _set_synthetic_runtime_environment(monkeypatch)
+    store.load_evidence_recency_profiles.return_value = ()
+    node.run.side_effect = RuntimeError("node failed")
+    store.close_run.side_effect = OSError("store unavailable")
+    monkeypatch.setattr(
+        "markeitech.system.cli.OperationalStore.from_environment",
+        lambda *_args: store,
+    )
+    monkeypatch.setattr("markeitech.system.cli.build_system_node", lambda *_args: node)
+
+    with pytest.raises(RuntimeError, match="node failed"):
+        main(
+            [
+                str(PROJECT_ROOT / "config/runtime.example.toml"),
+                "--env-file",
+                str(tmp_path / "missing.env"),
+                "--connect",
+                "I_UNDERSTAND_THIS_CONNECTS_TO_IB",
+            ],
+        )
+
+    store.close_run.assert_called_once()
 
 
 def _set_synthetic_runtime_environment(monkeypatch) -> None:
@@ -131,8 +163,4 @@ def _set_synthetic_runtime_environment(monkeypatch) -> None:
     monkeypatch.setenv(
         SYSTEM_HEALTH_WEBHOOK_ENV,
         "https://discord.invalid/api/webhooks/ci-placeholder",
-    )
-    monkeypatch.setenv(
-        OPERATIONAL_EVENTS_WEBHOOK_ENV,
-        "https://discord.invalid/api/webhooks/ci-operational-placeholder",
     )

@@ -1,11 +1,11 @@
 {
   "authority": "generated documentation only; canonical content is the validated TOML manifest",
-  "checkout_commit": "417bc3a3f716c5ec539758f26a9fcf23b533672c",
+  "checkout_commit": "5cb865e74653c8451f407320f566aa72bb73c3d2",
   "generator_contract_version": 1,
-  "generator_sha256": "0d67c08185ddd5a7635177fc59798a6b70fd7fb28c923e65bf8a5e8e75db7ac8",
+  "generator_sha256": "60dfaf386d1cff712ce2a8101477b151cde0e857b13931a959db30178a55af88",
   "generator_version": "0.1.0",
   "manifest": "markeitech-v3-system-dataflow",
-  "manifest_sha256": "066d089aae3344d3fd188a813b1695d71b6741383f6275f0656d4baeaa4cbe39",
+  "manifest_sha256": "c955be798102c39e4e6824aa3618c8bff240016d1edd03c8fe996cc22edb9894",
   "theme": {
     "id": "style.theme",
     "label": "Markeitech polished dark theme v2"
@@ -36,8 +36,8 @@
       "nodes": 29
     },
     {
-      "capabilities": 5,
-      "edges": 28,
+      "capabilities": 3,
+      "edges": 17,
       "files": [
         "current-runtime.dot",
         "current-runtime.md",
@@ -45,7 +45,7 @@
         "current-runtime.svg"
       ],
       "id": "view.current-runtime",
-      "nodes": 22
+      "nodes": 16
     },
     {
       "capabilities": 0,
@@ -69,7 +69,7 @@
         "persistence-audit-projections.svg"
       ],
       "id": "view.persistence-audit-projections",
-      "nodes": 11
+      "nodes": 10
     },
     {
       "capabilities": 2,

@@ -62,7 +62,10 @@ Before connecting to IB, Markeitech:
 4. confirms the persistence actor can connect; and
 5. opens the runtime run record.
 
-`READY` requires both configured instrument definitions and operational persistence readiness.
+`READY` requires operational persistence readiness, an evaluated runtime-resource sample without
+a confirmed critical condition, and no active required-component failure. Nautilus completes data
+client startup before actors start; System Control does not separately count instrument definitions.
+
 During shutdown, the actor records `STOPPING`. The CLI records `STOPPED` only after Nautilus has
 fully returned. An unclosed run is intentional evidence of a crash, forced kill, or failed terminal
 write.
@@ -71,8 +74,9 @@ write.
 
 - Startup database failure prevents IB startup and prevents `READY`.
 - Normal admissions cannot consume the queue capacity reserved for health and failure records.
-- A persistence admission rejection is reported once to the control actor and produces
-  `DEGRADED`; the persistence actor never defines system state.
+- A persistence admission rejection is reported to the control actor. The versioned System Control
+  policy makes it `FAILED` before first `READY` and `DEGRADED` afterward; the persistence actor
+  never defines system state.
 - An unresolved persistence failure prevents a later readiness evaluation from overwriting the
   degraded or failed state.
 - Accepted writes drain in order during bounded shutdown.

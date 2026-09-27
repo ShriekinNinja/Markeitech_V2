@@ -19,6 +19,7 @@ from markeitech.system.messages import (
     AcquisitionStreamEvent,
     AnalyticalDemandEvent,
     ComponentFailureEvent,
+    ComponentRecoveryEvent,
     PersistenceReadyEvent,
     PersistenceReadyRequest,
     SystemHealthEvent,
@@ -408,6 +409,17 @@ def test_component_failure_event_round_trips_as_deterministic_json_text() -> Non
 
     assert encoded == json.dumps(json.loads(encoded), separators=(",", ":"), sort_keys=True)
     assert ComponentFailureEvent.from_signal_value(encoded) == event
+
+
+def test_component_recovery_event_round_trips_with_audit_gap_evidence() -> None:
+    event = ComponentRecoveryEvent(
+        component="operational_persistence",
+        code="operational_event_write_failed",
+        reason="writer committed a subsequent event",
+        evidence={"run_id": "example-run", "lost_event_count": 2},
+    )
+
+    assert ComponentRecoveryEvent.from_signal_value(event.to_signal_value()) == event
 
 
 @pytest.mark.parametrize(

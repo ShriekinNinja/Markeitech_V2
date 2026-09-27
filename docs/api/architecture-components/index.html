@@ -302,9 +302,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#markeitech.system.discord.DiscordHealthActor" class="md-nav__link">
+  <a href="#markeitech.system.discord.DiscordWebhooksActor" class="md-nav__link">
     <span class="md-ellipsis">
-      DiscordHealthActor
+      DiscordWebhooksActor
     </span>
   </a>
   
@@ -575,9 +575,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#markeitech.system.discord.DiscordHealthActor" class="md-nav__link">
+  <a href="#markeitech.system.discord.DiscordWebhooksActor" class="md-nav__link">
     <span class="md-ellipsis">
-      DiscordHealthActor
+      DiscordWebhooksActor
     </span>
   </a>
   
@@ -708,11 +708,11 @@ components, status, and evidence remain deferred to a separately reviewed source
 <td>Own provider-facing live demand reconciliation, subscription lifetime, historical queueing, pacing, retries, and execution.<br>Execute exact HistoricalRequestPlan values without deciding sessions or calendar-relative request bounds.<br>Publish acquisition lifecycle, historical batches, and consumer readiness.</td>
 </tr>
 <tr>
-<td><code>actor.discord-health</code><br>Discord Health Projection</td>
-<td><code>markeitech.system.discord.DiscordHealthActor</code></td>
+<td><code>actor.discord-webhooks</code><br>Discord Webhooks</td>
+<td><code>markeitech.system.discord.DiscordWebhooksActor</code></td>
 <td><code>markeitech_actor</code></td>
 <td><code>boundary.system</code></td>
-<td>Project system health, resource health, and operational readiness through configured Discord delivery workers.</td>
+<td>Project accepted system and runtime resource health without changing their state.</td>
 </tr>
 <tr>
 <td><code>actor.evidence-health</code><br>Evidence Health</td>
@@ -857,18 +857,18 @@ components, status, and evidence remain deferred to a separately reviewed source
 
     </div>
 
-</div><h3 id="actordiscord-health-discord-health-projection"><code>actor.discord-health</code> — Discord Health Projection<a class="headerlink" href="#actordiscord-health-discord-health-projection" title="Permanent link">&para;</a></h3>
+</div><h3 id="actordiscord-webhooks-discord-webhooks"><code>actor.discord-webhooks</code> — Discord Webhooks<a class="headerlink" href="#actordiscord-webhooks-discord-webhooks" title="Permanent link">&para;</a></h3>
 
 
 <div class="doc doc-object doc-class">
 
 
 
-<h2 id="markeitech.system.discord.DiscordHealthActor" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">markeitech.system.discord.DiscordHealthActor</span>
+<h2 id="markeitech.system.discord.DiscordWebhooksActor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">markeitech.system.discord.DiscordWebhooksActor</span>
 
 
-<a href="#markeitech.system.discord.DiscordHealthActor" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#markeitech.system.discord.DiscordWebhooksActor" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
     <div class="doc doc-contents first">
@@ -877,11 +877,11 @@ components, status, and evidence remain deferred to a separately reviewed source
 
 
 
-        <p>Project optional system-health notifications to Discord.</p>
+        <p>Project system and resource health to an outbound Discord webhook.</p>
 <section class="markeitech-responsibilities" aria-label="Responsibilities">
 <h4>Responsibilities</h4>
 <ul>
-<li>Project system health, resource health, and operational readiness through configured Discord delivery workers.</li>
+<li>Project accepted system and runtime resource health without changing their state.</li>
 </ul>
 </section>
 
@@ -889,15 +889,15 @@ components, status, and evidence remain deferred to a separately reviewed source
 <h4>Markeitech Metadata</h4>
 <dl>
 <dt><code>architecture.component.id</code></dt>
-<dd>actor.discord-health</dd>
+<dd>actor.discord-webhooks</dd>
 <dt><code>architecture.component.label</code></dt>
-<dd>Discord Health Projection</dd>
+<dd>Discord Webhooks</dd>
 <dt><code>architecture.component.kind</code></dt>
 <dd>markeitech_actor</dd>
 <dt><code>architecture.component.boundary</code></dt>
 <dd>boundary.system</dd>
 <dt><code>architecture.component.responsibilities</code></dt>
-<dd>Project system health, resource health, and operational readiness through configured Discord delivery workers.</dd>
+<dd>Project accepted system and runtime resource health without changing their state.</dd>
 </dl>
 </section>
 

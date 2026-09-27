@@ -19,10 +19,10 @@ not implement them. Historical verification below is retained with its original 
 |---|---|
 | Runtime | NautilusTrader `2.0.0rc5`, market-data client and code-owned actor composition |
 | Provider | Interactive Brokers through TWS/IB Gateway |
-| Profiles | Seven-instrument example with ten actors; no separate operational profile |
+| Profiles | Example profile with four mandatory actors and optional Discord webhooks |
 | Execution and account monitor | Not implemented in the current node; next development priority |
 | Strategies and indicators | No strategy registration or active metric-producing actors; shared contracts remain |
-| Discord | Optional outbound operational health webhook |
+| Discord | Optional outbound system and resource health webhook |
 | Persistence | PostgreSQL operational audit and compact evidence-recency profiles |
 | CLI | Unified `markeitech` hierarchy, including compact `system start` |
 
@@ -80,10 +80,9 @@ event coverage under the user-reported Master `1` setting, or connected acceptan
 ## Tracked Example Profile
 
 [`config/runtime.example.toml`](../config/runtime.example.toml) selects reviewed limits from
-[`config/system.policy.toml`](../config/system.policy.toml) and contains seven explicit watchlist
-instruments. Its ten actors are System
-Control, Session State, Evidence Health, Discord Health, Historical Evidence Planner, Watchlist,
-Data Acquisition, Runtime Resources, Runtime Resource Health, and Operational Persistence.
+[`config/system.policy.toml`](../config/system.policy.toml). Its active plan contains System Control,
+Operational Persistence, Runtime Resources, Runtime Resource Health, and optional Discord Webhooks.
+Other configured actor settings remain inactive during the composition redesign.
 
 The former `system.v3-es-minimal.toml` review profile has been removed. Single-calendar offline
 delivery tests derive a bounded ES fixture from the current template.
@@ -99,14 +98,15 @@ replacement plan. QuoteQualityMetricsActor, its midpoint/spread calculations, an
 configuration and dedicated tests are also removed. The current runtime has ten actor classes.
 Independent canonical bar/metric and entity contracts remain.
 
-The API registry selects 98 public objects; the diagram source census recognizes ten actor
-registrations. Offline checks do not establish connected acceptance.
+The API registry selects 98 public objects; the active actor plan has five registrations when
+Discord is enabled and four when it is disabled. Offline checks do not establish connected
+acceptance.
 
 The tracked runtime example is schema 30: operator choices and watchlist membership are in the
-runtime profile, reviewed runtime policy is in `system.policy.toml`, and active calendars are
-derived from watchlist members. An empty watchlist uses the policy's `idle_calendar_ids` so the
-zero-instrument runtime can still synchronize session state. Complete schema-29 profiles remain
-supported. Older local profiles need
+runtime profile, and reviewed runtime policy is in `system.policy.toml`. Calendar definitions are
+derived from configured members, but Session State is not currently composed. An empty watchlist
+uses the policy's `idle_calendar_ids` for configuration; it does not start Session State. Complete
+schema-29 profiles remain supported. Older local profiles need
 their retired `[dashboard]`, `[acquisition]`, `[historical.probe]`,
 `[visual_debug_capture]`, and `[metrics]` sections removed before setting schema 29. Retain
 `[historical]`, which configures the production acquisition owner. Local files are not migrated
@@ -120,7 +120,8 @@ automatically. See [developer setup](operations/developer-setup.md) for the sche
 - `LiveNode` construction, caller-owned embedded lifecycle tests, guarded production startup,
   controlled shutdown, rotating logs, and explicit IB connection confirmation exist.
 - NautilusTrader owns IB market-data connectivity and native normalized observations.
-- `DataAcquisitionActor` owns logical provider demand and subscription/request lifetime.
+- `DataAcquisitionActor` owns logical provider demand and subscription/request lifetime when
+  composed; it is inactive in the current actor plan.
 - Static watchlist ownership and native multi-consumer market-data delivery were accepted in the
   predecessor V2 profile.
 - Provider-subscription recovery, full connection-loss recovery, and several pacing/cancellation
@@ -150,10 +151,12 @@ See [developer setup](operations/developer-setup.md) for the complete command co
 
 ### Calendar, evidence health, and historical acquisition
 
+These actor implementations remain in source but are not registered in the current actor plan.
+
 - `SessionStateActor` owns canonical calendar evaluation and publishes typed transitions and
   bounded current-state projections.
 - The tracked calendar catalog contains CBOE SPXW, NYSE, CME equity, CBOT equity, and CME energy
-  definitions; only `cme_equity` is active in the V3 ES profile.
+  definitions; the active plan does not evaluate them through Session State.
 - `EvidenceHealthActor` owns source/feed freshness and fidelity state for configured observations.
 - `HistoricalEvidencePlannerActor` converts symbolic approved needs into exact UTC request plans;
   `DataAcquisitionActor` executes admitted provider work.
@@ -179,15 +182,24 @@ contract tests do not establish active outputs; reach the issue's live scenario 
   evidence-recency profiles.
 - Schema preflight, idempotent repair, bounded non-blocking admission, batched writes, retry, and
   shutdown reconciliation exist within their recorded acceptance envelope.
-- Runtime-resource samples and state transitions exist behind optional configuration; they are
-  disabled in the active V3 profile.
+- The versioned `[system_control]` policy in `config/system.policy.toml` maps reported component
+  failures to startup and running health. It currently covers operational persistence and both
+  mandatory resource actors. A recovery fact is committed before persistence reports restored write
+  capability; lost event counts remain in that fact and are not treated as repaired records. System
+  Control reevaluates its operational gates after recovery; acquisition status and instrument
+  counts are not global readiness gates.
+- Native LiveNode failures remain node errors. The CLI marks their runtime run `FAILED` when the
+  operational store permits, without replacing the original node error if closing the run fails.
+- Runtime-resource sampling and health evaluation are mandatory in the active actor plan. System
+  Control waits for the first evaluated sample; confirmed critical resource health degrades the
+  system, while warning remains advisory. This path has not had connected acceptance.
 - Raw provider observations, historical responses, numerical metric streams, option chains,
   broker order/fill payloads, conversations, and trade episodes are not currently persisted as
   canonical product data.
 
 ### Existing Discord projection
 
-`DiscordHealthActor` is an optional outbound projection for health and operational messages.
+`DiscordWebhooksActor` is an optional outbound projection for system and resource health messages.
 It has bounded delivery and failure isolation. It remains general operational infrastructure.
 It does not receive conversations, calculate market truth or control orders.
 

@@ -17,7 +17,6 @@ def minimal_calendar_config() -> SystemConfig:
             item for item in config.sessions.calendars if item.calendar_id == "cme_equity"
         )),
         discord=replace(config.discord, enabled=False),
-        runtime_resources=replace(config.runtime_resources, enabled=False),
         historical=replace(
             config.historical, maximum_plan_requests=1,
             maximum_observations_per_request=60, maximum_total_observations=60,

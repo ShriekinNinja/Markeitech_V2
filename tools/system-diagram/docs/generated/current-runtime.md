@@ -2,30 +2,24 @@
 
 > Offline architecture documentation. No current order submission or execution.
 
-Profile-specific implemented and enabled topology for the tracked seven-instrument review profile.
+Implemented and enabled topology for the tracked example profile.
 
 - View ID: `view.current-runtime`
 - Profile: `profile.example`
 - Manifest: `markeitech-v3-system-dataflow` schema 1
-- Checkout evidence: `417bc3a3f716c5ec539758f26a9fcf23b533672c`
+- Checkout evidence: `5cb865e74653c8451f407320f566aa72bb73c3d2`
 - Review status: `proposed`
 
 ## Components
 
 | ID | Component | Kind | Implementation | Composition | Order | Active profile | Semantic owner | Boundary |
 |---|---|---|---|---|---:|---|---|---|
-| `actor.data-acquisition` | Data Acquisition | markeitech_actor | implemented | always | 7 | enabled | `actor.data-acquisition` | `boundary.acquisition` |
-| `actor.discord-health` | Discord Health Projection | markeitech_actor | implemented | conditional | 4 | enabled | `actor.discord-health` | `boundary.system` |
-| `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | always | 3 | enabled | `actor.evidence-health` | `boundary.intelligence` |
-| `actor.historical-planner` | Historical Evidence Planner | markeitech_actor | implemented | always | 5 | enabled | `actor.historical-planner` | `boundary.intelligence` |
-| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 10 | enabled | `actor.operational-persistence` | `boundary.system` |
-| `actor.runtime-resource-health` | Runtime Resource Health | markeitech_actor | implemented | conditional | 9 | enabled | `actor.runtime-resource-health` | `boundary.system` |
-| `actor.runtime-resources` | Runtime Resources | markeitech_actor | implemented | conditional | 8 | enabled | `actor.runtime-resources` | `boundary.system` |
-| `actor.session-state` | Session State | markeitech_actor | implemented | always | 2 | enabled | `actor.session-state` | `boundary.intelligence` |
+| `actor.discord-webhooks` | Discord Webhooks | markeitech_actor | implemented | conditional | 2 | enabled | `actor.discord-webhooks` | `boundary.system` |
+| `actor.operational-persistence` | Operational Persistence | markeitech_actor | implemented | always | 3 | enabled | `actor.operational-persistence` | `boundary.system` |
+| `actor.runtime-resource-health` | Runtime Resource Health | markeitech_actor | implemented | always | 5 | enabled | `actor.runtime-resource-health` | `boundary.system` |
+| `actor.runtime-resources` | Runtime Resources | markeitech_actor | implemented | always | 4 | enabled | `actor.runtime-resources` | `boundary.system` |
 | `actor.system-control` | System Control | markeitech_actor | implemented | always | 1 | enabled | `actor.system-control` | `boundary.system` |
-| `actor.watchlist` | Watchlist | markeitech_actor | implemented | conditional | 6 | enabled | `actor.watchlist` | `boundary.acquisition` |
 | `component.cache` | Nautilus Cache | engine | implemented | always | not applicable | enabled | `component.cache` | `boundary.nautilus` |
-| `component.canonical-calendar` | Canonical Calendar | engine | implemented | not_composed | not applicable | enabled | `actor.session-state` | `boundary.intelligence` |
 | `component.data-engine` | Nautilus Data Engine | engine | implemented | always | not applicable | enabled | `component.data-engine` | `boundary.nautilus` |
 | `component.live-node` | Nautilus LiveNode | framework | implemented | always | not applicable | enabled | `component.live-node` | `boundary.nautilus` |
 | `operator.markeitect` | Markeitect / Operator | operator | external | external | not applicable | not_applicable | `operator.markeitect` | `boundary.projections` |
@@ -41,42 +35,29 @@ Profile-specific implemented and enabled topology for the tracked seven-instrume
 
 | ID | Owning component | Capability | Implementation | Composition | Active profile | Configuration |
 |---|---|---|---|---|---|---|
-| `capability.acquisition.historical-bars` | `actor.data-acquisition` | Bounded analytical historical bar requests | implemented | conditional | enabled | historical plus consumer AnalyticalDemand |
-| `capability.acquisition.watchlist-last` | `actor.data-acquisition` | Watchlist last-price bar acquisition | implemented | conditional | enabled | watchlist.members[].capabilities contains watchlist_last |
-| `capability.discord.notifications` | `actor.discord-health` | Queued Discord health notifications | implemented | conditional | disabled | discord.enabled |
-| `capability.runtime-resources.health` | `actor.runtime-resource-health` | Runtime resource health classification | implemented | conditional | disabled | runtime_resources.enabled and runtime_resources.health.enabled |
-| `capability.runtime-resources.telemetry` | `actor.runtime-resources` | Runtime resource telemetry | implemented | conditional | disabled | runtime_resources.enabled |
+| `capability.discord.notifications` | `actor.discord-webhooks` | Queued Discord system and resource health notifications | implemented | conditional | enabled | discord.enabled |
+| `capability.runtime-resources.health` | `actor.runtime-resource-health` | Runtime resource health classification | implemented | always | enabled | not applicable |
+| `capability.runtime-resources.telemetry` | `actor.runtime-resources` | Runtime resource telemetry | implemented | always | enabled | not applicable |
 
 ## Flows
 
 | ID | Source | Target | Category | Contract | Transport | Required | Condition | Delivery |
 |---|---|---|---|---|---|---|---|---|
-| `edge.acquisition-status-system` | `actor.data-acquisition` | `actor.system-control` | publication | `contract.acquisition-status` | nautilus_signal | yes | always | unknown |
-| `edge.acquisition-status-watchlist` | `actor.data-acquisition` | `actor.watchlist` | response | `contract.acquisition-status` | nautilus_signal | yes | always | unknown |
-| `edge.acquisition-stream-health` | `actor.data-acquisition` | `actor.evidence-health` | publication | `contract.acquisition-stream` | nautilus_signal | yes | always | unknown |
-| `edge.acquisition-subscribe` | `actor.data-acquisition` | `component.data-engine` | subscription_command | `contract.native-subscription-command` | method_call | yes | watchlist.capabilities.watchlist_last | at_most_once_attempt |
-| `edge.calendar-request-health` | `actor.evidence-health` | `actor.session-state` | query | `contract.calendar-state-snapshot-request` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-request-planner` | `actor.historical-planner` | `actor.session-state` | query | `contract.calendar-projection-request` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-response-health` | `actor.session-state` | `actor.evidence-health` | response | `contract.calendar-state-snapshot-response` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-response-planner` | `actor.session-state` | `actor.historical-planner` | response | `contract.calendar-projection-response` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-state-request-planner` | `actor.historical-planner` | `actor.session-state` | query | `contract.calendar-state-snapshot-request` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-state-response-planner` | `actor.session-state` | `actor.historical-planner` | response | `contract.calendar-state-snapshot-response` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-transition-health` | `actor.session-state` | `actor.evidence-health` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-transition-persistence` | `actor.session-state` | `actor.operational-persistence` | persistence | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
-| `edge.calendar-transition-planner` | `actor.session-state` | `actor.historical-planner` | publication | `contract.calendar-transition` | nautilus_custom_data | yes | always | unknown |
-| `edge.data-engine-live-callback` | `component.data-engine` | `actor.data-acquisition` | callback | `contract.native-bar` | nautilus_callback | yes | always | unknown |
-| `edge.historical-plan-acquisition` | `actor.historical-planner` | `actor.data-acquisition` | publication | `contract.historical-request-plan` | nautilus_custom_data | yes | always | unknown |
-| `edge.historical-provider-response` | `provider.interactive-brokers` | `component.data-engine` | response | `contract.native-bar` | nautilus_native_data | yes | historical.enabled | unknown |
-| `edge.ib-native-bars` | `provider.interactive-brokers` | `component.data-engine` | native_observation | `contract.native-bar` | nautilus_native_data | yes | always | unknown |
-| `edge.native-historical-request` | `actor.data-acquisition` | `component.data-engine` | query | `contract.native-historical-request` | method_call | yes | historical.enabled | at_most_once_attempt |
+| `edge.component-recovery` | `actor.operational-persistence` | `actor.system-control` | event | `contract.component-recovery` | nautilus_signal | no | always | unknown |
+| `edge.discord-external` | `worker.discord` | `projection.discord` | notification | `contract.discord-notification` | external_http | no | discord.enabled | at_least_once_attempt |
+| `edge.discord-queue` | `actor.discord-webhooks` | `queue.discord` | queue_admission | `contract.discord-notification` | thread_queue | no | discord.enabled | at_least_once_attempt |
+| `edge.discord-worker` | `queue.discord` | `worker.discord` | queue_admission | `contract.discord-notification` | thread_queue | no | discord.enabled | at_least_once_attempt |
 | `edge.persistence-failure` | `actor.operational-persistence` | `actor.system-control` | failure | `contract.component-failure` | nautilus_signal | yes | always | unknown |
 | `edge.persistence-queue` | `actor.operational-persistence` | `queue.persistence` | queue_admission | `contract.operational-event` | thread_queue | yes | always | at_least_once_attempt |
 | `edge.persistence-ready-request` | `actor.system-control` | `actor.operational-persistence` | query | `contract.persistence-ready-request` | nautilus_signal | yes | always | unknown |
 | `edge.persistence-ready-response` | `actor.operational-persistence` | `actor.system-control` | readiness | `contract.persistence-ready` | nautilus_signal | yes | always | unknown |
 | `edge.queue-worker` | `queue.persistence` | `worker.persistence` | queue_admission | `contract.operational-event` | thread_queue | yes | always | at_least_once_attempt |
+| `edge.resource-health-discord` | `actor.runtime-resource-health` | `actor.discord-webhooks` | notification | `contract.runtime-health` | nautilus_signal | no | discord.enabled | unknown |
+| `edge.resource-health-system` | `actor.runtime-resource-health` | `actor.system-control` | publication | `contract.runtime-health` | nautilus_signal | no | always | unknown |
+| `edge.resource-monitor-ready` | `actor.runtime-resource-health` | `actor.system-control` | readiness | `contract.runtime-monitor-ready` | nautilus_signal | no | always | unknown |
+| `edge.resource-sample` | `actor.runtime-resources` | `actor.runtime-resource-health` | publication | `contract.runtime-resource` | nautilus_signal | no | always | unknown |
+| `edge.system-health-discord` | `actor.system-control` | `actor.discord-webhooks` | notification | `contract.system-health` | nautilus_signal | no | discord.enabled | unknown |
 | `edge.system-health-persistence` | `actor.system-control` | `actor.operational-persistence` | publication | `contract.system-health` | nautilus_signal | yes | always | unknown |
-| `edge.watchlist-demand` | `actor.watchlist` | `actor.data-acquisition` | publication | `contract.watchlist-demand` | nautilus_signal | yes | always | unknown |
-| `edge.watchlist-status-request` | `actor.watchlist` | `actor.data-acquisition` | query | `contract.acquisition-status-request` | nautilus_signal | yes | always | unknown |
 | `edge.worker-postgres` | `worker.persistence` | `store.postgres` | persistence | `contract.operational-event` | postgres_write | yes | always | at_least_once_attempt |
 | `edge.worker-result` | `worker.persistence` | `actor.operational-persistence` | worker_result | `contract.persistence-result` | thread_queue | yes | always | at_least_once_attempt |
 

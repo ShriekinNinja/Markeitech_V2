@@ -40,6 +40,7 @@ from markeitech.system.messages import (
     ACQUISITION_STREAM_SIGNAL,
     ANALYTICAL_DEMAND_SIGNAL,
     COMPONENT_FAILURE_SIGNAL,
+    COMPONENT_RECOVERY_SIGNAL,
     PERSISTENCE_READY_REQUEST_SIGNAL,
     PERSISTENCE_READY_SIGNAL,
     SYSTEM_HEALTH_SIGNAL,
@@ -51,6 +52,7 @@ from markeitech.system.messages import (
     AcquisitionStreamEvent,
     AnalyticalDemandEvent,
     ComponentFailureEvent,
+    ComponentRecoveryEvent,
     PersistenceReadyEvent,
     PersistenceReadyRequest,
     SystemHealthEvent,
@@ -771,8 +773,13 @@ class OperationalPersistenceActor(DataActor):
         self._worker: PersistenceWorker | None = None
         self._sequence = 0
         self._subscribed_signals: set[str] = set()
-        self._failure_published = False
-        self._reported_failures: set[tuple[str, str]] = set()
+        self._active_failures: dict[str, tuple[str, str]] = {}
+        self._recovery_pending: dict[int, tuple[str, ComponentRecoveryEvent, int]] = {}
+        self._lost_event_count = 0
+        self._first_lost_sequence: int | None = None
+        self._last_lost_sequence: int | None = None
+        self._next_recovery_attempt_at = 0.0
+        self._ready_announced = False
         self._calendar_transition_type = DataType(CALENDAR_TRANSITION_V2_TYPE_NAME)
         self._active = False
 
@@ -838,7 +845,9 @@ class OperationalPersistenceActor(DataActor):
             try:
                 PersistenceReadyRequest.from_signal_value(signal.value)
             except ValueError as exc:
-                self._report_failure("invalid_persistence_ready_request", type(exc).__name__)
+                self.log.error(
+                    f"PERSISTENCE_READY_REQUEST_REJECTED | error={type(exc).__name__}",
+                )
                 return
             self._publish_ready()
             return
@@ -849,7 +858,7 @@ class OperationalPersistenceActor(DataActor):
         try:
             record = _record_from_signal(self._run_id, self._sequence, signal)
         except ValueError as exc:
-            self._report_failure("invalid_operational_event", type(exc).__name__)
+            self.log.error(f"OPERATIONAL_EVENT_REJECTED | error={type(exc).__name__}")
             return
         self._submit_record(record)
 
@@ -869,6 +878,7 @@ class OperationalPersistenceActor(DataActor):
     def _submit_record(self, record: PersistedRecord) -> None:
         assert self._worker is not None
         if not self._worker.submit(record, critical=_is_critical_record(record)):
+            self._mark_lost(record.sequence)
             stats = self._worker.snapshot()
             self._report_failure(
                 "persistence_admission_rejected",
@@ -881,7 +891,11 @@ class OperationalPersistenceActor(DataActor):
                 },
             )
 
-    def _publish_ready(self) -> None:
+    def _publish_ready(self) -> bool:
+        # A late request must not replay readiness after this actor has reported failure.
+        if not self._active or self._worker is None or self._active_failures:
+            return False
+        # The store check passed and the worker started; durable writes report outcomes later.
         self.publish_signal(
             PERSISTENCE_READY_SIGNAL,
             PersistenceReadyEvent(
@@ -889,10 +903,12 @@ class OperationalPersistenceActor(DataActor):
                 run_id=str(self._run_id),
             ).to_signal_value(),
         )
+        self._ready_announced = True
+        return True
 
     def _announce_ready(self, _event) -> None:  # noqa: ANN001
-        self._publish_ready()
-        self.log.info(f"OPERATIONAL_PERSISTENCE_READY | run_id={self._run_id}")
+        if self._publish_ready():
+            self.log.info(f"OPERATIONAL_PERSISTENCE_READY | run_id={self._run_id}")
 
     def on_stop(self) -> None:
         self._active = False
@@ -920,17 +936,97 @@ class OperationalPersistenceActor(DataActor):
             try:
                 result = self._worker.results.get_nowait()
             except Empty:
-                return
+                break
+            pending = self._recovery_pending.pop(result.sequence, None)
             if result.stored:
                 self.log.debug(
                     f"OPERATIONAL_EVENT_STORED | sequence={result.sequence} | state={result.state}",
                 )
+                if pending is not None:
+                    code, recovery, gap_count = pending
+                    if (
+                        code in self._active_failures
+                        and self._active_failures[code][1] == recovery.evidence["incident_id"]
+                        and gap_count == self._lost_event_count
+                    ):
+                        # The recovery fact is committed before SystemControl can clear the gate.
+                        del self._active_failures[code]
+                        self.publish_signal(
+                            COMPONENT_RECOVERY_SIGNAL,
+                            recovery.to_signal_value(),
+                        )
+                        if not self._active_failures and not self._ready_announced:
+                            if self._publish_ready():
+                                self.log.info(
+                                    f"OPERATIONAL_PERSISTENCE_READY | run_id={self._run_id}",
+                                )
             else:
+                self._mark_lost(result.sequence)
+                self._next_recovery_attempt_at = monotonic() + self._write_retry_backoff_ms / 1_000
                 self._report_failure(
                     "operational_event_write_failed",
                     result.error_code or "unknown",
                     evidence={"attempts": result.attempts, "sequence": result.sequence},
                 )
+        # The timer retries a recovery fact even when no ordinary events arrive.
+        self._queue_recovery_records()
+
+    def _mark_lost(self, sequence: int) -> None:
+        self._lost_event_count += 1
+        if self._first_lost_sequence is None:
+            self._first_lost_sequence = sequence
+        self._last_lost_sequence = sequence
+
+    def _queue_recovery_records(self) -> None:
+        if not self._active or self._worker is None or monotonic() < self._next_recovery_attempt_at:
+            return
+        pending_codes = {item[0] for item in self._recovery_pending.values()}
+        for code in ("operational_event_write_failed", "persistence_admission_rejected"):
+            if code not in self._active_failures or code in pending_codes:
+                continue
+            recovery = ComponentRecoveryEvent(
+                component="operational_persistence",
+                code=code,
+                reason="operational persistence committed a subsequent event",
+                evidence={
+                    "run_id": str(self._run_id),
+                    "incident_id": self._active_failures[code][1],
+                    "lost_event_count": self._lost_event_count,
+                    "first_lost_sequence": self._first_lost_sequence,
+                    "last_lost_sequence": self._last_lost_sequence,
+                },
+            )
+            self._sequence += 1
+            now_ns = time_ns()
+            record = OperationalEventRecord(
+                event_id=str(uuid4()),
+                run_id=self._run_id,
+                sequence=self._sequence,
+                signal_name=COMPONENT_RECOVERY_SIGNAL,
+                event_type="component.recovery",
+                source="operational_persistence",
+                correlation_id=code,
+                causation_id=None,
+                payload=json.loads(recovery.to_signal_value()),
+                ts_event_ns=now_ns,
+                ts_init_ns=now_ns,
+                schema_version=recovery.schema_version,
+            )
+            if self._worker.submit(record, critical=True):
+                self._recovery_pending[record.sequence] = (
+                    code,
+                    recovery,
+                    self._lost_event_count,
+                )
+            else:
+                self._mark_lost(record.sequence)
+                self._next_recovery_attempt_at = monotonic() + self._write_retry_backoff_ms / 1_000
+                self._report_failure(
+                    "persistence_admission_rejected",
+                    "queue_full_or_closed",
+                    evidence={"rejected_sequence": record.sequence},
+                )
+                return
 
     def _report_failure(
         self,
@@ -939,15 +1035,13 @@ class OperationalPersistenceActor(DataActor):
         *,
         evidence: dict[str, str | int | float | bool | None] | None = None,
     ) -> None:
-        identity = (reason, error_code)
-        if identity not in self._reported_failures:
-            self._reported_failures.add(identity)
-            self.log.error(
-                f"OPERATIONAL_PERSISTENCE_FAILED | reason={reason} | error={error_code}",
-            )
-        if self._failure_published:
+        if reason in self._active_failures:
             return
-        self._failure_published = True
+        incident_id = str(uuid4())
+        self._active_failures[reason] = (error_code, incident_id)
+        self.log.error(
+            f"OPERATIONAL_PERSISTENCE_FAILED | reason={reason} | error={error_code}",
+        )
         self.publish_signal(
             COMPONENT_FAILURE_SIGNAL,
             ComponentFailureEvent(
@@ -955,9 +1049,10 @@ class OperationalPersistenceActor(DataActor):
                 code=reason,
                 reason="operational persistence is unavailable",
                 evidence={
+                    **(evidence or {}),
                     "error_code": error_code,
                     "run_id": str(self._run_id),
-                    **(evidence or {}),
+                    "incident_id": incident_id,
                 },
             ).to_signal_value(),
         )
@@ -986,7 +1081,7 @@ def _is_critical_record(record: PersistedRecord) -> bool:
         return True
     if not isinstance(record, OperationalEventRecord):
         return False
-    return record.event_type == "component.failure" or (
+    return record.event_type in {"component.failure", "component.recovery"} or (
         record.event_type == "runtime.resource_health" and record.payload.get("state") == "CRITICAL"
     )
 
@@ -1222,8 +1317,7 @@ def _record_from_calendar_transition(
         event_type="calendar.transition",
         source=event.source,
         correlation_id=(
-            f"calendar:{event.source_epoch}:{event.calendar_id}:"
-            f"{event.trade_date or 'unknown'}"
+            f"calendar:{event.source_epoch}:{event.calendar_id}:{event.trade_date or 'unknown'}"
         ),
         causation_id=None,
         payload=asdict(event),

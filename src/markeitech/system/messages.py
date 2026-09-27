@@ -10,6 +10,8 @@ SYSTEM_HEALTH_SIGNAL = "markeitech.system.health"
 SYSTEM_HEALTH_SCHEMA_VERSION = 1
 COMPONENT_FAILURE_SIGNAL = "markeitech.component.failure"
 COMPONENT_FAILURE_SCHEMA_VERSION = 1
+COMPONENT_RECOVERY_SIGNAL = "markeitech.component.recovery"
+COMPONENT_RECOVERY_SCHEMA_VERSION = 1
 PERSISTENCE_READY_REQUEST_SIGNAL = "markeitech.persistence.ready.request"
 PERSISTENCE_READY_SIGNAL = "markeitech.persistence.ready"
 PERSISTENCE_READY_SCHEMA_VERSION = 1
@@ -88,6 +90,11 @@ class PersistenceReadyRequest:
 
 @dataclass(frozen=True, slots=True)
 class PersistenceReadyEvent:
+    """Confirm store connectivity and writer startup for one run.
+
+    This event does not acknowledge a durable operational-event write.
+    """
+
     source: str
     run_id: str
     schema_version: int = PERSISTENCE_READY_SCHEMA_VERSION
@@ -732,6 +739,54 @@ class ComponentFailureEvent:
             reason=payload["reason"],
             evidence=payload["evidence"],
         )
+
+
+@dataclass(frozen=True, slots=True)
+class ComponentRecoveryEvent:
+    """Confirm restoration of one reported component capability in the current run."""
+
+    component: str
+    code: str
+    reason: str
+    evidence: Mapping[str, EvidenceValue]
+    schema_version: int = COMPONENT_RECOVERY_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _validate_schema_version(
+            self.schema_version,
+            COMPONENT_RECOVERY_SCHEMA_VERSION,
+            "component recovery",
+        )
+        for field_name in ("component", "code", "reason"):
+            object.__setattr__(
+                self,
+                field_name,
+                _required_text(getattr(self, field_name), field_name),
+            )
+        _validate_evidence(self.evidence)
+        object.__setattr__(self, "evidence", MappingProxyType(dict(self.evidence)))
+
+    def to_signal_value(self) -> str:
+        return json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "component": self.component,
+                "code": self.code,
+                "reason": self.reason,
+                "evidence": dict(self.evidence),
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> ComponentRecoveryEvent:
+        payload = _load_exact_json_object(
+            value,
+            label="component recovery",
+            expected={"schema_version", "component", "code", "reason", "evidence"},
+        )
+        return cls(**payload)  # type: ignore[arg-type]
 
 
 @dataclass(frozen=True, slots=True)

@@ -202,16 +202,19 @@ def test_loads_split_system_profile_with_policy_and_watchlist(tmp_path: Path) ->
     config = load_system_config(path)
 
     assert config.schema_version == 30
-    assert len(config.instrument_ids) == 7
+    assert config.instrument_ids == ("ESZ6.CME", "SPY.SMART", "^SPX.CBOE")
     assert config.ib.market_data_type == "realtime"
     assert config.ib.batch_quotes is True
+    assert config.system_control.component_failures[0].component == "operational_persistence"
+    assert config.system_control.component_failures[0].startup == "FAILED"
+    assert config.system_control.component_failures[0].running == "DEGRADED"
     assert config.persistence.queue_capacity == 512
     assert config.logging.file_name == "markeitech-v2"
     assert config.logging.max_file_size_bytes == 100_000_000
     assert config.logging.max_backup_count == 5
     assert config.runtime_resources.health.threshold_version == "2026-08-22-v2"
     assert {calendar.calendar_id for calendar in config.sessions.calendars} == {
-        "cme_equity", "cme_energy", "us_equities",
+        "cme_equity", "us_equities",
     }
 
 
@@ -265,10 +268,59 @@ def test_rejects_unsupported_policy_version(tmp_path: Path) -> None:
     path = _write_split_profile(tmp_path)
     policy_path = tmp_path / "system.policy.toml"
     policy_path.write_text(
-        policy_path.read_text().replace("policy_version = 1", "policy_version = true", 1),
+        policy_path.read_text().replace("policy_version = 3", "policy_version = true", 1),
     )
 
-    with pytest.raises(ValueError, match="unsupported policy_version: True; expected 1"):
+    with pytest.raises(ValueError, match="unsupported policy_version: True; expected 3"):
+        load_system_config(path)
+
+
+def test_resource_actors_cannot_be_disabled_in_legacy_profile(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            "[runtime_resources]\nenabled = true",
+            "[runtime_resources]\nenabled = false",
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="resource actors are mandatory"):
+        load_system_config(path)
+
+
+def test_split_policy_rejects_removed_resource_enable_switch(tmp_path: Path) -> None:
+    path = _write_split_profile(tmp_path)
+    policy_path = tmp_path / "system.policy.toml"
+    policy_path.write_text(
+        policy_path.read_text().replace(
+            "[runtime_resources]\n",
+            "[runtime_resources]\nenabled = false\n",
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="runtime_resources has unknown keys: enabled"):
+        load_system_config(path)
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement"),
+    [
+        ('startup = "FAILED"', 'startup = "READY"'),
+        ('running = "DEGRADED"', 'running = "UNKNOWN"'),
+    ],
+)
+def test_rejects_invalid_system_control_failure_policy(
+    tmp_path: Path,
+    original: str,
+    replacement: str,
+) -> None:
+    path = _write_split_profile(tmp_path)
+    policy_path = tmp_path / "system.policy.toml"
+    policy_path.write_text(policy_path.read_text().replace(original, replacement, 1))
+
+    with pytest.raises(ValueError, match="states must be FAILED or DEGRADED"):
         load_system_config(path)
 
 
@@ -304,12 +356,10 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.discord.enabled is True
     assert config.discord.queue_capacity == 32
     assert config.discord.ping_critical_resource_alerts is True
-    assert config.runtime_resources.enabled is True
     assert config.runtime_resources.sample_interval_ms == 10000
     assert config.runtime_resources.log_every_samples == 1
     assert config.runtime_resources.include_cache_counts is True
     assert config.runtime_resources.disk_path == "/"
-    assert config.runtime_resources.health.enabled is True
     assert config.runtime_resources.health.threshold_version == "test-v1"
     assert config.runtime_resources.health.warning.host_memory_available_percent == 15.0
     assert config.runtime_resources.health.critical.process_rss_bytes == 8_589_934_592

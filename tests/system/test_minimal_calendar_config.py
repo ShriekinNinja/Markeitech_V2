@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from uuid import UUID
 
-from markeitech.intelligence.actors import SessionStateActor, SessionStateActorConfig
 from markeitech.system.composition import StartupPrerequisites, build_actor_plan
 from tests.system.config_fixtures import minimal_calendar_config
 
@@ -17,44 +15,6 @@ def test_minimal_calendar_config_has_operational_calendar_surface() -> None:
             operational_persistence_ready=True,
         ),
     )
-
-    session_state = next(item for item in plan if item.key == "session_state")
-    acquisition = next(item for item in plan if item.key == "data_acquisition")
-    planner = next(item for item in plan if item.key == "historical_evidence_planner")
-    evidence_health = next(item for item in plan if item.key == "evidence_health")
-    assert len(session_state.config.config["calendars"]) == 1
-    assert all(
-        "definition_digest" in calendar for calendar in session_state.config.config["calendars"]
-    )
-    assert session_state.config.config["allowed_current_state_requesters"] == [
-        "EVIDENCE-HEALTH",
-        "HISTORICAL-EVIDENCE-PLANNER",
-    ]
-    assert session_state.config.config["current_state_delivery"]["policy_version"] == 1
-    assert "calendars" not in acquisition.config.config
-    assert planner.config.config["expected_calendar_digests"]
-    for registration in (evidence_health, planner):
-        assert registration.config.config["calendar_source"] == "SESSION-STATE"
-        assert registration.config.config["calendar_source_epoch"] == (
-            "00000000-0000-0000-0000-000000000001"
-        )
-        assert registration.config.config["current_state_delivery"]["policy_version"] == 1
-        assert registration.config.config["calendar_expectations"]
-    assert planner.config.config["projection_retry"] == {
-        "response_timeout_ms": 5000,
-        "maximum_attempts": 3,
-        "retry_backoff_ms": 1000,
-        "maximum_elapsed_ms": 60000,
-    }
-    assert "projection_retry" not in evidence_health.config.config
-
-    actor = SessionStateActor(SessionStateActorConfig(**session_state.config.config))
-    assert len(actor._calendars) == len(config.sessions.calendars)
-    assert set(actor._calendars) == {calendar.calendar_id for calendar in config.sessions.calendars}
-    maintenance_break_ns = int(
-        datetime(2026, 8, 24, 20, 20, tzinfo=UTC).timestamp() * 1_000_000_000
-    )
-    assert actor._calendars["cme_equity"].evaluate(maintenance_break_ns).market_state == "OPEN"
 
     assert config.instrument_ids == ("ESZ6.CME",)
     assert config.watchlist.members[0].capabilities == ("watchlist_last",)
@@ -86,7 +46,6 @@ def test_minimal_calendar_config_has_operational_calendar_surface() -> None:
         "cme-equity-remove-1515-pause",
     )
     assert config.discord.enabled is False
-    assert config.runtime_resources.enabled is False
     assert config.historical.maximum_plan_requests == 1
     assert config.historical.maximum_observations_per_request == 60
     assert config.historical.maximum_total_observations == 60
@@ -95,16 +54,13 @@ def test_minimal_calendar_config_has_operational_calendar_surface() -> None:
     assert config.historical.maximum_attempts == 1
     assert [registration.key for registration in plan] == [
         "system_control",
-        "session_state",
-        "evidence_health",
-        "historical_evidence_planner",
-        "watchlist",
-        "data_acquisition",
         "operational_persistence",
+        "runtime_resources",
+        "runtime_resource_health",
     ]
 
 
-def test_minimal_calendar_composes_active_calendar_operational_path() -> None:
+def test_minimal_calendar_is_configured_but_its_actors_are_not_yet_composed() -> None:
     config = minimal_calendar_config()
 
     plan = build_actor_plan(
@@ -118,12 +74,11 @@ def test_minimal_calendar_composes_active_calendar_operational_path() -> None:
     keys = [registration.key for registration in plan]
     assert keys == [
         "system_control",
-        "session_state",
-        "evidence_health",
-        "historical_evidence_planner",
-        "watchlist",
-        "data_acquisition",
         "operational_persistence",
+        "runtime_resources",
+        "runtime_resource_health",
     ]
+    # Calendar definitions remain loaded for the next composition stage.
+    assert {item.calendar_id for item in config.sessions.calendars} == {"cme_equity"}
     assert "entity_analysis" not in keys
     assert "session_metrics" not in keys

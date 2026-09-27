@@ -2,15 +2,19 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+from uuid import uuid4
 
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
 from nautilus_trader.model import ActorId
 
+from markeitech.system.messages import COMPONENT_FAILURE_SIGNAL, ComponentFailureEvent
 from markeitech.system.resource_contracts import (
     RUNTIME_RESOURCE_HEALTH_SIGNAL,
+    RUNTIME_RESOURCE_MONITOR_READY_SIGNAL,
     RUNTIME_RESOURCE_SIGNAL,
     RuntimeResourceEvent,
     RuntimeResourceHealthEvent,
+    RuntimeResourceMonitorReadyEvent,
 )
 
 _STALE_TIMER = "runtime-resource-health-stale"
@@ -147,6 +151,7 @@ class RuntimeResourceHealthEvaluator:
 class RuntimeResourceHealthActorConfig(DataActorConfig):
     def __new__(
         cls,
+        run_id: str,
         sample_interval_ms: int,
         threshold_version: str,
         warning_consecutive_samples: int,
@@ -164,6 +169,7 @@ class RuntimeResourceHealthActorConfig(DataActorConfig):
             actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
         )
         obj = super().__new__(cls, actor_id=resolved_actor_id)
+        obj.run_id = run_id
         obj.sample_interval_ms = sample_interval_ms
         obj.threshold_version = threshold_version
         obj.warning_consecutive_samples = warning_consecutive_samples
@@ -190,6 +196,8 @@ class RuntimeResourceHealthActor(DataActor):
 
     def __init__(self, config: RuntimeResourceHealthActorConfig) -> None:
         super().__init__(config)
+        self._run_id = config.run_id
+        self._threshold_version = config.threshold_version
         policy = ResourceHealthPolicy(
             threshold_version=config.threshold_version,
             warning_consecutive_samples=config.warning_consecutive_samples,
@@ -209,6 +217,7 @@ class RuntimeResourceHealthActor(DataActor):
         self._samples = 0
         self._transitions = 0
         self._rejected = 0
+        self._monitor_ready_announced = False
 
     def on_start(self) -> None:
         self._started_ts_ns = self.clock.timestamp_ns()
@@ -232,9 +241,40 @@ class RuntimeResourceHealthActor(DataActor):
                 f" | rejected={self._rejected} | error={type(exc).__name__}: {exc}",
             )
             return
+        if sample.source != "RUNTIME-RESOURCES":
+            self._rejected += 1
+            self.log.error("RUNTIME_RESOURCE_HEALTH_REJECTED | reason=source_mismatch")
+            return
         self._samples += 1
         self._last_sample_ts_ns = sample.observed_ts_ns
         self._publish(self._evaluator.evaluate(sample))
+        if not self._monitor_ready_announced:
+            # A normal first assessment produces no transition, so acknowledge it separately.
+            self.publish_signal(
+                RUNTIME_RESOURCE_MONITOR_READY_SIGNAL,
+                RuntimeResourceMonitorReadyEvent(
+                    run_id=self._run_id,
+                    source=str(self.actor_id),
+                    sample_event_id=sample.event_id,
+                    sample_sequence=sample.sample_sequence,
+                    observed_ts_ns=sample.observed_ts_ns,
+                    state=self._evaluator.state,
+                    threshold_version=self._threshold_version,
+                ).to_signal_value(),
+            )
+            self._monitor_ready_announced = True
+
+    def on_fault(self) -> None:
+        # A faulted evaluator cannot attest to future resource samples or recoveries.
+        self.publish_signal(
+            COMPONENT_FAILURE_SIGNAL,
+            ComponentFailureEvent(
+                component="runtime_resource_health",
+                code="resource_evaluator_faulted",
+                reason="runtime resource health evaluator faulted",
+                evidence={"run_id": self._run_id, "incident_id": str(uuid4())},
+            ).to_signal_value(),
+        )
 
     def on_stop(self) -> None:
         self.unsubscribe_signal(RUNTIME_RESOURCE_SIGNAL)

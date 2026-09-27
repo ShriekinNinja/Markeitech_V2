@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import importlib
-import json
 from dataclasses import replace
 from pathlib import Path
 from time import monotonic
@@ -17,14 +16,8 @@ from nautilus_trader.model import TraderId
 from markeitech.system.acquisition import InstrumentDefinitionTracker
 from markeitech.system.composition import StartupPrerequisites, build_actor_plan
 from markeitech.system.config import load_system_config
-from markeitech.system.discord import (
-    OPERATIONAL_EVENTS_WEBHOOK_ENV,
-    SYSTEM_HEALTH_WEBHOOK_ENV,
-    DiscordDeliveryWorker,
-    OperationalReadinessProjection,
-    render_operational_readiness_message,
-)
-from markeitech.system.messages import AcquisitionStatusEvent, SystemHealthEvent
+from markeitech.system.control import SystemHealthState
+from markeitech.system.messages import AcquisitionStatusEvent
 from markeitech.system.node import build_ib_data_client_config
 from markeitech.system.persistence import OperationalStore
 from markeitech.system.resource_actor import ProcessResourceSample, ProcessResourceSampler
@@ -32,14 +25,10 @@ from markeitech.system.resource_actor import ProcessResourceSample, ProcessResou
 EXAMPLE = Path(__file__).parents[2] / "config/runtime.example.toml"
 ROSTER = [
     "system_control",
-    "session_state",
-    "evidence_health",
-    "discord_health",
-    "historical_evidence_planner",
-    "data_acquisition",
+    "discord_webhooks",
+    "operational_persistence",
     "runtime_resources",
     "runtime_resource_health",
-    "operational_persistence",
 ]
 
 
@@ -86,31 +75,9 @@ def test_empty_acquisition_status_roundtrips_without_provider_requests() -> None
     assert "idle" in status.reason
 
 
-def test_discord_zero_work_summary_requires_explicit_configuration_and_ready() -> None:
-    ready = SystemHealthEvent(
-        state="READY", reason="empty acquisition initialized", source="SYSTEM", evidence={}
-    )
-    assert OperationalReadinessProjection().accept_system_health(ready, 100) is None
-    projection = OperationalReadinessProjection(empty_universe=True)
-    starting = SystemHealthEvent(
-        state="STARTING", reason="initializing", source="SYSTEM", evidence={}
-    )
-    assert projection.accept_system_health(starting, 99) is None
-    result = projection.accept_system_health(ready, 100)
-    assert result is not None and result.is_ready and result.completed_at_ns == 100
-    embed = json.loads(render_operational_readiness_message(result))["embeds"][0]
-    assert "zero instruments" in embed["title"]
-    assert "separate operational checks" in embed["description"]
-    assert all(field["value"] for field in embed["fields"])
-    assert projection.accept_system_health(ready, 101) is None
-
-
-def test_nine_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch) -> None:
-    """Exercise native lifecycle/workers with SQL, HTTP and host samples replaced."""
+def test_four_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch) -> None:
+    """Exercise the current native lifecycle with SQL and host samples replaced."""
     records = []
-    deliveries = []
-    monkeypatch.setenv(SYSTEM_HEALTH_WEBHOOK_ENV, "https://example.invalid/health")
-    monkeypatch.setenv(OPERATIONAL_EVENTS_WEBHOOK_ENV, "https://example.invalid/operational")
     monkeypatch.setattr(
         OperationalStore,
         "from_environment",
@@ -119,14 +86,6 @@ def test_nine_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch
         ),
     )
 
-    def post(url, **kwargs):
-        deliveries.append(json.loads(kwargs["data"]))
-        return SimpleNamespace(status_code=204)
-
-    monkeypatch.setattr(
-        "markeitech.system.discord.DiscordDeliveryWorker",
-        lambda *args, **kwargs: DiscordDeliveryWorker(*args, **kwargs, post=post),
-    )
     monkeypatch.setattr(
         ProcessResourceSampler,
         "sample",
@@ -151,8 +110,11 @@ def test_nine_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch
         ),
     )
     config = load_system_config(_empty_profile(tmp_path))
+    # Keep this lifecycle probe offline; webhook delivery is covered with a fake HTTP sender.
     config = replace(
-        config, runtime_resources=replace(config.runtime_resources, sample_interval_ms=50),
+        config,
+        discord=replace(config.discord, enabled=False),
+        runtime_resources=replace(config.runtime_resources, sample_interval_ms=50),
     )
     plan = build_actor_plan(config, StartupPrerequisites(uuid4(), True))
     node = (
@@ -182,48 +144,51 @@ def test_nine_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch
                         getattr(record, "event_type", "") == "runtime.resource"
                         for record in records
                     )
-                    and any("zero instruments" in d["embeds"][0]["title"] for d in deliveries)
-                    and actors["session_state"]._revisions
-                    and actors["evidence_health"]._session_state.phase.value == "LIVE"
-                    and actors["historical_evidence_planner"]._session_state.phase.value == "LIVE"
+                    and actors["runtime_resource_health"]._monitor_ready_announced
+                    and actors["system_control"]._resource_monitor_ready
+                    and actors["system_control"]._health.state is SystemHealthState.READY
                 ):
                     if task.done():
                         await task
                         pytest.fail("node stopped before operational initialization")
                     await asyncio.sleep(0.02)
-            acquisition = actors["data_acquisition"]
-            assert acquisition._startup_released
-            assert acquisition._instrument_requests == 0
-            assert "historical-execution" not in acquisition.clock.timer_names()
             assert actors["runtime_resource_health"]._samples > 0
             assert actors["runtime_resource_health"]._rejected == 0
-            assert not actors["operational_persistence"]._failure_published
-            assert not acquisition._managed_stream_keys
-            assert not acquisition._pending_demands
-            assert actors["historical_evidence_planner"]._counts["planned"] == 0
-            assert actors["evidence_health"]._requirements == ()
+            assert not actors["operational_persistence"]._active_failures
             samples = [r for r in records if getattr(r, "event_type", "") == "runtime.resource"]
             assert all(r.payload["cache_instrument_count"] == 0 for r in samples)
         finally:
             node.handle().stop()
             await asyncio.wait_for(task, 5)
         assert not node.is_running
-        for name in ("discord_health", "operational_persistence"):
-            stats = actors[name]._worker.snapshot()
-            assert stats.pending == stats.failed == stats.rejected == 0
-        operational = actors["discord_health"]._operational_worker.snapshot()
-        assert operational.pending == operational.failed == operational.rejected == 0
+        stats = actors["operational_persistence"]._worker.snapshot()
+        assert stats.pending == stats.failed == stats.rejected == 0
         assert any(getattr(getattr(r, "event", None), "state", None) == "STOPPING" for r in records)
 
     asyncio.run(exercise())
 
 
-def test_empty_control_waits_for_acquisition_acknowledgement() -> None:
+def test_control_ready_does_not_require_an_acquisition_acknowledgement() -> None:
     from markeitech.system.actor import SystemControlActor, SystemControlActorConfig
 
-    actor = SystemControlActor(SystemControlActorConfig(instrument_ids=[]))
+    actor = SystemControlActor(
+        SystemControlActorConfig(
+            run_id=str(uuid4()),
+            resource_threshold_version="test-v1",
+            failure_policy=[
+                {
+                    "component": "operational_persistence",
+                    "startup": "FAILED",
+                    "running": "DEGRADED",
+                },
+            ],
+        ),
+    )
+    actor._health.transition(SystemHealthState.STARTING, reason="boot", source="SYSTEM-CONTROL")
     actor._evaluation_started = True
     actor._persistence_ready = True
-    # Without acquisition's matching status the empty set cannot release READY.
+    actor._resource_monitor_ready = True
+    actor.publish_signal = lambda *_args: None
+    # System Control owns operational gates; instrument checks belong to the consumer.
     actor._publish_ready_if_complete()
-    assert actor._health.state is None
+    assert actor._health.state is SystemHealthState.READY
