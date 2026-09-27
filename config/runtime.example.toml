@@ -6,7 +6,7 @@ schema_version = 30 # Split system profile schema.
 policy_file = "system.policy.toml" # Versioned engineering limits and delivery policy.
 
 [runtime]
-name = "MARKEITECH-V2-001" # Name recorded for this local runtime instance and its operational run.
+name = "MARKEITECH" # Name recorded for this local runtime instance and its operational run.
 trader_id = "MARKEITECH-001" # NautilusTrader identity for this runtime; it is not a broker account ID.
 environment = "live" # NautilusTrader live environment; connecting still requires operator confirmation.
 

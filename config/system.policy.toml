@@ -17,6 +17,10 @@ handle_revised_bars = false # False disables the adapter's revised-bar handling.
 connection_timeout_seconds = 30 # Maximum seconds allowed for the IB connection attempt.
 request_timeout_seconds = 30 # Maximum seconds allowed for an IB request response.
 
+[discord]
+request_timeout_seconds = 5 # Maximum seconds for one webhook HTTP request.
+queue_capacity = 32 # Maximum queued outbound webhook messages.
+
 [system_control]
 # A component reports a lost capability; these rules determine system-wide impact.
 
@@ -83,10 +87,6 @@ process_rss_growth_bytes = 1073741824 # Critical when resident memory grows this
 process_cpu_percent = 800.0 # Critical when process CPU use reaches this percent across cores.
 thread_count = 250 # Critical when the process reaches this many threads.
 open_fd_ratio = 0.90 # Critical when open file descriptors reach this share of the limit.
-
-[discord]
-request_timeout_seconds = 5 # Maximum seconds for one webhook HTTP request.
-queue_capacity = 32 # Maximum queued outbound webhook messages.
 
 [watchlist]
 consumer_retry_interval_ms = 1000 # Milliseconds between native watchlist handler attachment attempts.
