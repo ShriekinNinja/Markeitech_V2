@@ -1,9 +1,26 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from enum import StrEnum
 
 from markeitech.system.messages import ComponentFailureEvent, EvidenceValue, SystemHealthEvent
+
+
+@dataclass(frozen=True, slots=True)
+class ComponentFailureRule:
+    """Map one component's reported capability loss to system health by run phase."""
+
+    component: str
+    startup: str
+    running: str
+
+
+@dataclass(frozen=True, slots=True)
+class SystemControlPolicy:
+    """Hold the versioned, validated component-failure rules for System Control."""
+
+    component_failures: tuple[ComponentFailureRule, ...]
 
 
 class SystemHealthState(StrEnum):
@@ -81,13 +98,16 @@ class SystemHealthStateMachine:
 def component_failure_target(
     failure: ComponentFailureEvent,
     current_state: SystemHealthState | None,
-) -> SystemHealthState:
+    policy: SystemControlPolicy,
+    *,
+    ready_once: bool,
+) -> SystemHealthState | None:
+    rule = next(
+        (item for item in policy.component_failures if item.component == failure.component),
+        None,
+    )
+    if rule is None:
+        return None
     if current_state in {SystemHealthState.FAILED, SystemHealthState.STOPPING}:
         return current_state
-    if failure.component == "operational_persistence":
-        if failure.code == "persistence_admission_rejected":
-            return SystemHealthState.DEGRADED
-        if current_state in {None, SystemHealthState.STARTING}:
-            return SystemHealthState.FAILED
-        return SystemHealthState.DEGRADED
-    return SystemHealthState.FAILED
+    return SystemHealthState(rule.running if ready_once else rule.startup)

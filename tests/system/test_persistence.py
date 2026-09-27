@@ -63,15 +63,18 @@ from markeitech.system.resource_contracts import (
 )
 def test_persistence_admits_exact_contracts_before_validation(name, rejected) -> None:
     failures = []
+    errors = []
     actor = SimpleNamespace(
         _subscribed_signals={SYSTEM_HEALTH_SIGNAL, WATCHLIST_MEMBERSHIP_SIGNAL},
         _worker=object(),
         _run_id=uuid4(),
         _sequence=0,
         _report_failure=lambda *args: failures.append(args),
+        log=SimpleNamespace(error=errors.append),
     )
     OperationalPersistenceActor.on_signal(actor, Signal(name, "not-json", 1, 1))
-    assert bool(failures) is rejected
+    assert not failures
+    assert bool(errors) is rejected
     assert actor._sequence == int(rejected)
 
 

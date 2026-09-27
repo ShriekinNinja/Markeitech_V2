@@ -179,6 +179,13 @@ contract tests do not establish active outputs; reach the issue's live scenario 
   evidence-recency profiles.
 - Schema preflight, idempotent repair, bounded non-blocking admission, batched writes, retry, and
   shutdown reconciliation exist within their recorded acceptance envelope.
+- The versioned `[system_control]` policy in `config/system.policy.toml` maps reported component
+  failures to startup and running health. It currently covers operational persistence. A recovery
+  fact is committed before persistence reports restored write capability; lost event counts remain
+  in that fact and are not treated as repaired records. System Control requests fresh acquisition
+  status before returning from `DEGRADED` to `READY`.
+- Native LiveNode failures remain node errors. The CLI marks their runtime run `FAILED` when the
+  operational store permits, without replacing the original node error if closing the run fails.
 - Runtime-resource samples and state transitions exist behind optional configuration; they are
   disabled in the active V3 profile.
 - Raw provider observations, historical responses, numerical metric streams, option chains,

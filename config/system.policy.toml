@@ -1,7 +1,13 @@
 # Reviewed runtime policy. Operator choices live in runtime.example.toml or runtime.local.toml.
 # Relative catalog and log paths resolve against the selected system TOML.
 
-policy_version = 1 # Policy document schema for system schema 30.
+policy_version = 2 # Policy document schema for system schema 30.
+
+[logging]
+directory = "../data/logs" # Runtime log directory, resolved relative to the selected system TOML.
+file_name = "markeitech-v2" # Base name for the timestamped runtime log files.
+max_file_size_bytes = 100000000 # Rotate before the next entry would exceed 100 MB.
+max_backup_count = 5 # Retain up to five rotated log files.
 
 [ib]
 convert_exchange_to_mic_venue = false # Keep configured exchange venues instead of converting them to MIC codes.
@@ -11,11 +17,12 @@ handle_revised_bars = false # False disables the adapter's revised-bar handling.
 connection_timeout_seconds = 30 # Maximum seconds allowed for the IB connection attempt.
 request_timeout_seconds = 30 # Maximum seconds allowed for an IB request response.
 
-[logging]
-directory = "../data/logs" # Runtime log directory, resolved relative to the selected system TOML.
-file_name = "markeitech-v2" # Base name for the timestamped runtime log files.
-max_file_size_bytes = 100000000 # Rotate before the next entry would exceed 100 MB.
-max_backup_count = 5 # Retain up to five rotated log files.
+[system_control]
+# A component reports a lost capability; these rules determine system-wide impact.
+
+[system_control.component_failures.operational_persistence]
+startup = "FAILED" # Audit loss before the first READY prevents this run from becoming ready.
+running = "DEGRADED" # Later audit loss is observable while independent work may continue.
 
 [discord]
 request_timeout_seconds = 5 # Maximum seconds for one webhook HTTP request.

@@ -202,16 +202,19 @@ def test_loads_split_system_profile_with_policy_and_watchlist(tmp_path: Path) ->
     config = load_system_config(path)
 
     assert config.schema_version == 30
-    assert len(config.instrument_ids) == 7
+    assert config.instrument_ids == ("ESZ6.CME", "SPY.SMART", "^SPX.CBOE")
     assert config.ib.market_data_type == "realtime"
     assert config.ib.batch_quotes is True
+    assert config.system_control.component_failures[0].component == "operational_persistence"
+    assert config.system_control.component_failures[0].startup == "FAILED"
+    assert config.system_control.component_failures[0].running == "DEGRADED"
     assert config.persistence.queue_capacity == 512
     assert config.logging.file_name == "markeitech-v2"
     assert config.logging.max_file_size_bytes == 100_000_000
     assert config.logging.max_backup_count == 5
     assert config.runtime_resources.health.threshold_version == "2026-08-22-v2"
     assert {calendar.calendar_id for calendar in config.sessions.calendars} == {
-        "cme_equity", "cme_energy", "us_equities",
+        "cme_equity", "us_equities",
     }
 
 
@@ -265,10 +268,30 @@ def test_rejects_unsupported_policy_version(tmp_path: Path) -> None:
     path = _write_split_profile(tmp_path)
     policy_path = tmp_path / "system.policy.toml"
     policy_path.write_text(
-        policy_path.read_text().replace("policy_version = 1", "policy_version = true", 1),
+        policy_path.read_text().replace("policy_version = 2", "policy_version = true", 1),
     )
 
-    with pytest.raises(ValueError, match="unsupported policy_version: True; expected 1"):
+    with pytest.raises(ValueError, match="unsupported policy_version: True; expected 2"):
+        load_system_config(path)
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement"),
+    [
+        ('startup = "FAILED"', 'startup = "READY"'),
+        ('running = "DEGRADED"', 'running = "UNKNOWN"'),
+    ],
+)
+def test_rejects_invalid_system_control_failure_policy(
+    tmp_path: Path,
+    original: str,
+    replacement: str,
+) -> None:
+    path = _write_split_profile(tmp_path)
+    policy_path = tmp_path / "system.policy.toml"
+    policy_path.write_text(policy_path.read_text().replace(original, replacement, 1))
+
+    with pytest.raises(ValueError, match="states must be FAILED or DEGRADED"):
         load_system_config(path)
 
 

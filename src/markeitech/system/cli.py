@@ -112,7 +112,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     caffeinate = _start_caffeinate() if args.keep_awake else None
     try:
         node.run()
-    except BaseException:
+    except BaseException as exc:
+        # Native node errors may occur before any actor can publish an operational signal.
+        # Keep the original exception even if the audit store also became unavailable.
+        try:
+            store.close_run(run_id, "FAILED", f"Nautilus LiveNode raised {type(exc).__name__}")
+        except Exception as close_exc:
+            print(
+                "SYSTEM_RUN_CLOSE_FAILED"
+                f" | run_id={run_id} | error={type(close_exc).__name__}",
+                flush=True,
+            )
         raise
     else:
         store.close_run(run_id, "STOPPED", "Nautilus LiveNode returned cleanly")

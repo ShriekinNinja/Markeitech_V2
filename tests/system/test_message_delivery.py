@@ -538,7 +538,15 @@ def test_acquisition_status_publication_advances_control_to_ready() -> None:
         config={
             "actor_id": "SYSTEM-CONTROL",
             "instrument_ids": instrument_ids,
+            "run_id": "36a468b3-df4b-49fa-809e-c60e8d19d9a0",
             "operational_persistence_ready": True,
+            "failure_policy": [
+                {
+                    "component": "operational_persistence",
+                    "startup": "FAILED",
+                    "running": "DEGRADED",
+                },
+            ],
         },
     )
     acquisition = ImportableActorConfig(
@@ -552,7 +560,7 @@ def test_acquisition_status_publication_advances_control_to_ready() -> None:
     persistence = ImportableActorConfig(
         actor_path="tests.system.message_actor_fixtures:PersistenceReadyFixture",
         config_path="tests.system.message_actor_fixtures:PersistenceReadyFixtureConfig",
-        config={"actor_id": "PERSISTENCE-READY-FIXTURE"},
+        config={"actor_id": "OPERATIONAL-PERSISTENCE"},
     )
     for actor in [control, acquisition, persistence]:
         node.add_actor_from_config(actor)

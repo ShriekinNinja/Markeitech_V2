@@ -71,16 +71,16 @@
       },
       {
         "boundary": "boundary.system",
-        "definition_line": 749,
+        "definition_line": 751,
         "id": "actor.operational-persistence",
         "implementation_ref": "src/markeitech/system/persistence.py:OperationalPersistenceActor",
         "kind": "markeitech_actor",
         "label": "Operational Persistence",
         "object_path": "markeitech.system.persistence.OperationalPersistenceActor",
-        "record_sha256": "9bc9c3d445e7988efaeedc586fe321391ac75a4cc250574ffd5b9d3fe94c2829",
+        "record_sha256": "8ffc9f4d38eb3585af18840295de00e53268b1393829bbabef2f10a2044cbbbb",
         "responsibilities": [],
         "source": "src/markeitech/system/persistence.py",
-        "source_sha256": "b480d8a8c21549d9567a3dd1b5ad97b28950b404fab6600db940cbb82f8d6ef0"
+        "source_sha256": "6d38ba919c6996bccd3a5693b38a8678bfe0f50e9cf61ad2bab17920a0b5894e"
       },
       {
         "boundary": "boundary.system",
@@ -127,16 +127,16 @@
       },
       {
         "boundary": "boundary.system",
-        "definition_line": 46,
+        "definition_line": 69,
         "id": "actor.system-control",
         "implementation_ref": "src/markeitech/system/actor.py:SystemControlActor",
         "kind": "markeitech_actor",
         "label": "System Control",
         "object_path": "markeitech.system.actor.SystemControlActor",
-        "record_sha256": "a285e4d0a7dd12702ce8c951953aa0fefa544412bc69fad05279738166dc6f40",
+        "record_sha256": "6858663a7db3bd91f9d5adba6c0ddb5164f945b7bec1e2722260216235df3c05",
         "responsibilities": [],
         "source": "src/markeitech/system/actor.py",
-        "source_sha256": "593969d5574d7a6d7782272ff6061063d0a4046162f877349f05a3fa98b5b766"
+        "source_sha256": "eab50d39fa4f64f0de6b63dfda935abe31dd6dad1de3f67d90d151d4b4f509e6"
       },
       {
         "boundary": "boundary.acquisition",
@@ -188,7 +188,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "98e850e4c84afb259f94963987893ab44abf67b5cd3cd9c19d0675a096faac24"
+    "source_snapshot_sha256": "b7df210164a319b1fdae6c4eee121d91b44adc267819dbfdca1518bf5a76cbcf"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1254,7 +1254,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.SystemConfig",
-        "definition_line": 286,
+        "definition_line": 288,
         "exposed": "markeitech.system.SystemConfig",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1276,7 +1276,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.load_system_config",
-        "definition_line": 307,
+        "definition_line": 310,
         "exposed": "markeitech.system.load_system_config",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1311,7 +1311,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 68,
-    "input_signature": "98e850e4c84afb259f94963987893ab44abf67b5cd3cd9c19d0675a096faac24"
+    "input_signature": "b7df210164a319b1fdae6c4eee121d91b44adc267819dbfdca1518bf5a76cbcf"
   },
-  "source_snapshot_sha256": "98e850e4c84afb259f94963987893ab44abf67b5cd3cd9c19d0675a096faac24"
+  "source_snapshot_sha256": "b7df210164a319b1fdae6c4eee121d91b44adc267819dbfdca1518bf5a76cbcf"
 }

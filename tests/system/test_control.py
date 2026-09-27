@@ -3,11 +3,17 @@ from __future__ import annotations
 import pytest
 
 from markeitech.system.control import (
+    ComponentFailureRule,
+    SystemControlPolicy,
     SystemHealthState,
     SystemHealthStateMachine,
     component_failure_target,
 )
 from markeitech.system.messages import ComponentFailureEvent
+
+POLICY = SystemControlPolicy(
+    (ComponentFailureRule("operational_persistence", "FAILED", "DEGRADED"),),
+)
 
 
 def _failure(component: str = "operational_persistence") -> ComponentFailureEvent:
@@ -149,16 +155,44 @@ def test_control_plane_does_not_advance_when_event_validation_fails() -> None:
 def test_persistence_failure_is_fatal_during_startup_and_degradable_after_ready() -> None:
     failure = _failure()
 
-    assert component_failure_target(failure, None) is SystemHealthState.FAILED
-    assert component_failure_target(failure, SystemHealthState.STARTING) is SystemHealthState.FAILED
-    assert component_failure_target(failure, SystemHealthState.READY) is SystemHealthState.DEGRADED
     assert (
-        component_failure_target(failure, SystemHealthState.DEGRADED) is SystemHealthState.DEGRADED
+        component_failure_target(failure, None, POLICY, ready_once=False)
+        is SystemHealthState.FAILED
+    )
+    assert (
+        component_failure_target(failure, SystemHealthState.STARTING, POLICY, ready_once=False)
+        is SystemHealthState.FAILED
+    )
+    assert (
+        component_failure_target(failure, SystemHealthState.READY, POLICY, ready_once=True)
+        is SystemHealthState.DEGRADED
+    )
+    assert (
+        component_failure_target(failure, SystemHealthState.DEGRADED, POLICY, ready_once=True)
+        is SystemHealthState.DEGRADED
     )
 
 
-def test_unknown_code_owned_component_failure_is_fatal() -> None:
+def test_unconfigured_component_does_not_acquire_a_failure_policy() -> None:
     assert (
-        component_failure_target(_failure("unknown_component"), SystemHealthState.READY)
+        component_failure_target(
+            _failure("unknown_component"), SystemHealthState.READY, POLICY, ready_once=True,
+        )
+        is None
+    )
+
+
+def test_failure_target_uses_configured_component_policy() -> None:
+    policy = SystemControlPolicy(
+        (ComponentFailureRule("data_acquisition", "DEGRADED", "FAILED"),),
+    )
+    failure = _failure("data_acquisition")
+
+    assert (
+        component_failure_target(failure, SystemHealthState.STARTING, policy, ready_once=False)
+        is SystemHealthState.DEGRADED
+    )
+    assert (
+        component_failure_target(failure, SystemHealthState.READY, policy, ready_once=True)
         is SystemHealthState.FAILED
     )

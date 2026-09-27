@@ -197,7 +197,7 @@ def test_nine_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch
             assert "historical-execution" not in acquisition.clock.timer_names()
             assert actors["runtime_resource_health"]._samples > 0
             assert actors["runtime_resource_health"]._rejected == 0
-            assert not actors["operational_persistence"]._failure_published
+            assert not actors["operational_persistence"]._active_failures
             assert not acquisition._managed_stream_keys
             assert not acquisition._pending_demands
             assert actors["historical_evidence_planner"]._counts["planned"] == 0
@@ -221,7 +221,19 @@ def test_nine_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch
 def test_empty_control_waits_for_acquisition_acknowledgement() -> None:
     from markeitech.system.actor import SystemControlActor, SystemControlActorConfig
 
-    actor = SystemControlActor(SystemControlActorConfig(instrument_ids=[]))
+    actor = SystemControlActor(
+        SystemControlActorConfig(
+            instrument_ids=[],
+            run_id=str(uuid4()),
+            failure_policy=[
+                {
+                    "component": "operational_persistence",
+                    "startup": "FAILED",
+                    "running": "DEGRADED",
+                },
+            ],
+        ),
+    )
     actor._evaluation_started = True
     actor._persistence_ready = True
     # Without acquisition's matching status the empty set cannot release READY.
