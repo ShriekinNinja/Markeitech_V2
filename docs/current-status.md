@@ -19,10 +19,10 @@ not implement them. Historical verification below is retained with its original 
 |---|---|
 | Runtime | NautilusTrader `2.0.0rc5`, market-data client and code-owned actor composition |
 | Provider | Interactive Brokers through TWS/IB Gateway |
-| Profiles | Seven-instrument example with ten actors; no separate operational profile |
+| Profiles | Example profile with four mandatory actors and optional Discord webhooks |
 | Execution and account monitor | Not implemented in the current node; next development priority |
 | Strategies and indicators | No strategy registration or active metric-producing actors; shared contracts remain |
-| Discord | Optional outbound operational health webhook |
+| Discord | Optional outbound system and resource health webhook |
 | Persistence | PostgreSQL operational audit and compact evidence-recency profiles |
 | CLI | Unified `markeitech` hierarchy, including compact `system start` |
 
@@ -80,10 +80,9 @@ event coverage under the user-reported Master `1` setting, or connected acceptan
 ## Tracked Example Profile
 
 [`config/runtime.example.toml`](../config/runtime.example.toml) selects reviewed limits from
-[`config/system.policy.toml`](../config/system.policy.toml) and contains seven explicit watchlist
-instruments. Its ten actors are System
-Control, Session State, Evidence Health, Discord Health, Historical Evidence Planner, Watchlist,
-Data Acquisition, Runtime Resources, Runtime Resource Health, and Operational Persistence.
+[`config/system.policy.toml`](../config/system.policy.toml). Its active plan contains System Control,
+Operational Persistence, Runtime Resources, Runtime Resource Health, and optional Discord Webhooks.
+Other configured actor settings remain inactive during the composition redesign.
 
 The former `system.v3-es-minimal.toml` review profile has been removed. Single-calendar offline
 delivery tests derive a bounded ES fixture from the current template.
@@ -196,7 +195,7 @@ contract tests do not establish active outputs; reach the issue's live scenario 
 
 ### Existing Discord projection
 
-`DiscordHealthActor` is an optional outbound projection for health and operational messages.
+`DiscordWebhooksActor` is an optional outbound projection for system and resource health messages.
 It has bounded delivery and failure isolation. It remains general operational infrastructure.
 It does not receive conversations, calculate market truth or control orders.
 

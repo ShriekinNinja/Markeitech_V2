@@ -22,18 +22,18 @@
       },
       {
         "boundary": "boundary.system",
-        "definition_line": 329,
-        "id": "actor.discord-health",
-        "implementation_ref": "src/markeitech/system/discord.py:DiscordHealthActor",
+        "definition_line": 199,
+        "id": "actor.discord-webhooks",
+        "implementation_ref": "src/markeitech/system/discord.py:DiscordWebhooksActor",
         "kind": "markeitech_actor",
-        "label": "Discord Health Projection",
-        "object_path": "markeitech.system.discord.DiscordHealthActor",
-        "record_sha256": "3ec35d8363cc5c932a2ae85409e63764c36586292e0845547bddcaacd6c322fc",
+        "label": "Discord Webhooks",
+        "object_path": "markeitech.system.discord.DiscordWebhooksActor",
+        "record_sha256": "8b6856f49cb568f7b291497ec2b40c71c4dfcd5522be76f9bb0ddfb2c76eeaab",
         "responsibilities": [
-          "Project system health, resource health, and operational readiness through configured Discord delivery workers."
+          "Project accepted system and runtime resource health without changing their state."
         ],
         "source": "src/markeitech/system/discord.py",
-        "source_sha256": "4b6385a60bea99821f55c2adab15128265b141f3a5a4a022eb2df86ab2cd5351"
+        "source_sha256": "2cad1b3c08649854db5ed3a3dcb0778babdca918d2cc123ff25fa5e3caeecbc5"
       },
       {
         "boundary": "boundary.intelligence",
@@ -84,29 +84,29 @@
       },
       {
         "boundary": "boundary.system",
-        "definition_line": 181,
+        "definition_line": 187,
         "id": "actor.runtime-resource-health",
         "implementation_ref": "src/markeitech/system/resource_health_actor.py:RuntimeResourceHealthActor",
         "kind": "markeitech_actor",
         "label": "Runtime Resource Health",
         "object_path": "markeitech.system.resource_health_actor.RuntimeResourceHealthActor",
-        "record_sha256": "3d082a2f01db8115319694d87f877f44940a972f4cd3e8fe2696f282db48d42b",
+        "record_sha256": "6ff3b50624409f235affdf3ec8ca14face8f9d44579e7ff59c68ac54702deb39",
         "responsibilities": [],
         "source": "src/markeitech/system/resource_health_actor.py",
-        "source_sha256": "d8cb374b9407842d700f13453d23e75639de2386043b13d61530158796c81828"
+        "source_sha256": "2ee8e6a6e65487c0a4840362dd414ee52bfe297ff5bddb0232e27766754136ec"
       },
       {
         "boundary": "boundary.system",
-        "definition_line": 115,
+        "definition_line": 119,
         "id": "actor.runtime-resources",
         "implementation_ref": "src/markeitech/system/resource_actor.py:RuntimeResourceActor",
         "kind": "markeitech_actor",
         "label": "Runtime Resources",
         "object_path": "markeitech.system.resource_actor.RuntimeResourceActor",
-        "record_sha256": "25aee4f81e3c39e97acefaf117ddc3176ed8b004162d9d4204c2cf1bd9fc1711",
+        "record_sha256": "6e7d78c9e510d700b98975795762178b6bf69a5c9bef568b6bc66fcb1e147521",
         "responsibilities": [],
         "source": "src/markeitech/system/resource_actor.py",
-        "source_sha256": "75d97557b9b5676df6ea3d3524eb597ddc31ce7142f3a67fa4111cb3d26f4d91"
+        "source_sha256": "6e3cb77365f8d5a6ad6caf96202e91e11449002d30ae67ef7e2363b104f3688d"
       },
       {
         "boundary": "boundary.intelligence",
@@ -127,16 +127,16 @@
       },
       {
         "boundary": "boundary.system",
-        "definition_line": 69,
+        "definition_line": 79,
         "id": "actor.system-control",
         "implementation_ref": "src/markeitech/system/actor.py:SystemControlActor",
         "kind": "markeitech_actor",
         "label": "System Control",
         "object_path": "markeitech.system.actor.SystemControlActor",
-        "record_sha256": "6858663a7db3bd91f9d5adba6c0ddb5164f945b7bec1e2722260216235df3c05",
+        "record_sha256": "8fa8ce5d7a6a12691ddd533de8929daead69744e1ff55dbf8eaeac7fd5a5476a",
         "responsibilities": [],
         "source": "src/markeitech/system/actor.py",
-        "source_sha256": "eab50d39fa4f64f0de6b63dfda935abe31dd6dad1de3f67d90d151d4b4f509e6"
+        "source_sha256": "5d8684f1276dfe4fe948970d4444510081797d3c9031fb8302f1be45ae34d50d"
       },
       {
         "boundary": "boundary.acquisition",
@@ -188,7 +188,7 @@
     },
     "schema_id": "markeitech-architecture-class-components",
     "schema_version": 1,
-    "source_snapshot_sha256": "b7df210164a319b1fdae6c4eee121d91b44adc267819dbfdca1518bf5a76cbcf"
+    "source_snapshot_sha256": "15512d36317bd76c9e62d4903d3aaf9df8b67eb0b3a0e80394ec0e2ac95b3366"
   },
   "authority": "non_authoritative_discovery_only",
   "limitations": [
@@ -1254,7 +1254,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.SystemConfig",
-        "definition_line": 288,
+        "definition_line": 286,
         "exposed": "markeitech.system.SystemConfig",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1276,7 +1276,7 @@
       {
         "alias": true,
         "canonical": "markeitech.system.config.load_system_config",
-        "definition_line": 310,
+        "definition_line": 308,
         "exposed": "markeitech.system.load_system_config",
         "has_docstring": true,
         "inclusion_reason": "literal export from markeitech.system.__all__",
@@ -1311,7 +1311,7 @@
   "schema_version": 2,
   "source_snapshot": {
     "file_count": 68,
-    "input_signature": "b7df210164a319b1fdae6c4eee121d91b44adc267819dbfdca1518bf5a76cbcf"
+    "input_signature": "15512d36317bd76c9e62d4903d3aaf9df8b67eb0b3a0e80394ec0e2ac95b3366"
   },
-  "source_snapshot_sha256": "b7df210164a319b1fdae6c4eee121d91b44adc267819dbfdca1518bf5a76cbcf"
+  "source_snapshot_sha256": "15512d36317bd76c9e62d4903d3aaf9df8b67eb0b3a0e80394ec0e2ac95b3366"
 }

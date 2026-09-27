@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import importlib
-import json
 from dataclasses import replace
 from pathlib import Path
 from time import monotonic
@@ -18,11 +17,7 @@ from markeitech.system.acquisition import InstrumentDefinitionTracker
 from markeitech.system.composition import StartupPrerequisites, build_actor_plan
 from markeitech.system.config import load_system_config
 from markeitech.system.control import SystemHealthState
-from markeitech.system.discord import (
-    OperationalReadinessProjection,
-    render_operational_readiness_message,
-)
-from markeitech.system.messages import AcquisitionStatusEvent, SystemHealthEvent
+from markeitech.system.messages import AcquisitionStatusEvent
 from markeitech.system.node import build_ib_data_client_config
 from markeitech.system.persistence import OperationalStore
 from markeitech.system.resource_actor import ProcessResourceSample, ProcessResourceSampler
@@ -30,6 +25,7 @@ from markeitech.system.resource_actor import ProcessResourceSample, ProcessResou
 EXAMPLE = Path(__file__).parents[2] / "config/runtime.example.toml"
 ROSTER = [
     "system_control",
+    "discord_webhooks",
     "operational_persistence",
     "runtime_resources",
     "runtime_resource_health",
@@ -79,25 +75,6 @@ def test_empty_acquisition_status_roundtrips_without_provider_requests() -> None
     assert "idle" in status.reason
 
 
-def test_discord_zero_work_summary_requires_explicit_configuration_and_ready() -> None:
-    ready = SystemHealthEvent(
-        state="READY", reason="empty acquisition initialized", source="SYSTEM", evidence={}
-    )
-    assert OperationalReadinessProjection().accept_system_health(ready, 100) is None
-    projection = OperationalReadinessProjection(empty_universe=True)
-    starting = SystemHealthEvent(
-        state="STARTING", reason="initializing", source="SYSTEM", evidence={}
-    )
-    assert projection.accept_system_health(starting, 99) is None
-    result = projection.accept_system_health(ready, 100)
-    assert result is not None and result.is_ready and result.completed_at_ns == 100
-    embed = json.loads(render_operational_readiness_message(result))["embeds"][0]
-    assert "zero instruments" in embed["title"]
-    assert "separate operational checks" in embed["description"]
-    assert all(field["value"] for field in embed["fields"])
-    assert projection.accept_system_health(ready, 101) is None
-
-
 def test_four_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch) -> None:
     """Exercise the current native lifecycle with SQL and host samples replaced."""
     records = []
@@ -133,8 +110,11 @@ def test_four_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch
         ),
     )
     config = load_system_config(_empty_profile(tmp_path))
+    # Keep this lifecycle probe offline; webhook delivery is covered with a fake HTTP sender.
     config = replace(
-        config, runtime_resources=replace(config.runtime_resources, sample_interval_ms=50),
+        config,
+        discord=replace(config.discord, enabled=False),
+        runtime_resources=replace(config.runtime_resources, sample_interval_ms=50),
     )
     plan = build_actor_plan(config, StartupPrerequisites(uuid4(), True))
     node = (

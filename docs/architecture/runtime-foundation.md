@@ -180,7 +180,7 @@ Console, Discord webhooks and user interfaces are projections.
 They render canonical state and delivery outcomes; they do not calculate or mutate market,
 broker, policy, or trade truth.
 
-The current [`DiscordHealthActor`](../operations/discord-health-webhook.md) is an optional outbound
+The current [`DiscordWebhooksActor`](../operations/discord-health-webhook.md) is an optional outbound
 webhook projection. The former Visual Debug capture path has been removed.
 
 Projection failure must remain bounded and must not stop provider ingestion, deterministic

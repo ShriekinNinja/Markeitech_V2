@@ -12,10 +12,7 @@ from markeitech.system.composition import (
     validate_runtime_environment,
 )
 from markeitech.system.config import load_system_config
-from markeitech.system.discord import (
-    OPERATIONAL_EVENTS_WEBHOOK_ENV,
-    SYSTEM_HEALTH_WEBHOOK_ENV,
-)
+from markeitech.system.discord import SYSTEM_HEALTH_WEBHOOK_ENV
 
 
 @pytest.fixture(autouse=True)
@@ -36,13 +33,14 @@ def _prerequisites(ready: bool = True) -> StartupPrerequisites:
     )
 
 
-def test_actor_plan_has_four_mandatory_actors() -> None:
+def test_actor_plan_adds_enabled_discord_to_mandatory_actors() -> None:
     prerequisites = _prerequisites()
     config = _config()
     plan = build_actor_plan(config, prerequisites)
 
     assert [registration.key for registration in plan] == [
         "system_control",
+        "discord_webhooks",
         "operational_persistence",
         "runtime_resources",
         "runtime_resource_health",
@@ -51,7 +49,10 @@ def test_actor_plan_has_four_mandatory_actors() -> None:
     assert all(
         registration.config.config["run_id"] == str(prerequisites.run_id)
         for registration in plan
+        if registration.key != "discord_webhooks"
     )
+    assert plan[1].actor_id == "DISCORD-WEBHOOKS"
+    assert plan[1].config.actor_path == "markeitech.system.discord:DiscordWebhooksActor"
     control = plan[0].config.config
     assert "instrument_ids" not in control
     assert control["resource_threshold_version"] == (
@@ -63,9 +64,9 @@ def test_actor_plan_has_four_mandatory_actors() -> None:
         "runtime_resource_health",
     }
     # The sampler is registered before the evaluator that consumes its timed samples.
-    health = plan[3].config.config
+    health = plan[4].config.config
     assert health["stale_critical_ms"] == config.runtime_resources.health.stale_critical_ms
-    assert plan[2].config.config["sample_interval_ms"] == (
+    assert plan[3].config.config["sample_interval_ms"] == (
         config.runtime_resources.sample_interval_ms
     )
 
@@ -89,7 +90,7 @@ def test_actor_plan_rejects_missing_required_preflight() -> None:
         build_actor_plan(_config(), _prerequisites(ready=False))
 
 
-def test_enabled_discord_and_postgres_environment_are_required() -> None:
+def test_enabled_discord_requires_one_webhook_and_postgres_environment() -> None:
     config = _config()
 
     with pytest.raises(RuntimeError, match=SYSTEM_HEALTH_WEBHOOK_ENV):
@@ -98,14 +99,13 @@ def test_enabled_discord_and_postgres_environment_are_required() -> None:
             {config.persistence.dsn_env: "postgresql://configured"},
         )
 
-    with pytest.raises(RuntimeError, match=OPERATIONAL_EVENTS_WEBHOOK_ENV):
-        validate_runtime_environment(
-            config,
-            {
-                config.persistence.dsn_env: "postgresql://configured",
-                SYSTEM_HEALTH_WEBHOOK_ENV: "https://configured",
-            },
-        )
+    validate_runtime_environment(
+        config,
+        {
+            config.persistence.dsn_env: "postgresql://configured",
+            SYSTEM_HEALTH_WEBHOOK_ENV: "https://configured",
+        },
+    )
 
 
 def test_disabled_discord_requires_only_postgres_environment() -> None:
