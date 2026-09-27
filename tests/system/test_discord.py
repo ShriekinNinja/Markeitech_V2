@@ -49,12 +49,9 @@ def test_discord_validates_only_exact_health_signal(name, rejected) -> None:
 def test_renders_readable_health_embed_without_mentions() -> None:
     event = SystemHealthEvent(
         state="READY",
-        reason="configured instrument definitions are available",
+        reason="operational prerequisites are ready",
         source="SYSTEM-CONTROL",
         evidence={
-            "available_instrument_count": 2,
-            "expected_instrument_count": 2,
-            "expected_instruments": "ESU6.CME,SPY.ARCA",
             "previous_state": "STARTING",
         },
     )
@@ -65,12 +62,10 @@ def test_renders_readable_health_embed_without_mentions() -> None:
     assert "content" not in payload
     embed = payload["embeds"][0]
     assert embed["title"] == "Markeitech V2 | READY"
-    assert embed["description"] == "configured instrument definitions are available"
+    assert embed["description"] == "operational prerequisites are ready"
     assert {field["name"]: field["value"] for field in embed["fields"]} == {
         "State": "READY",
-        "Instruments": "2/2",
         "Source": "SYSTEM-CONTROL",
-        "Configured instruments": "ESU6.CME,SPY.ARCA",
         "Previous state": "STARTING",
     }
 

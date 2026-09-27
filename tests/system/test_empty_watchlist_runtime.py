@@ -17,6 +17,7 @@ from nautilus_trader.model import TraderId
 from markeitech.system.acquisition import InstrumentDefinitionTracker
 from markeitech.system.composition import StartupPrerequisites, build_actor_plan
 from markeitech.system.config import load_system_config
+from markeitech.system.control import SystemHealthState
 from markeitech.system.discord import (
     OperationalReadinessProjection,
     render_operational_readiness_message,
@@ -165,6 +166,7 @@ def test_four_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch
                     )
                     and actors["runtime_resource_health"]._monitor_ready_announced
                     and actors["system_control"]._resource_monitor_ready
+                    and actors["system_control"]._health.state is SystemHealthState.READY
                 ):
                     if task.done():
                         await task
@@ -186,12 +188,11 @@ def test_four_empty_watchlist_actors_boot_and_stop_offline(tmp_path, monkeypatch
     asyncio.run(exercise())
 
 
-def test_empty_control_waits_for_acquisition_acknowledgement() -> None:
+def test_control_ready_does_not_require_an_acquisition_acknowledgement() -> None:
     from markeitech.system.actor import SystemControlActor, SystemControlActorConfig
 
     actor = SystemControlActor(
         SystemControlActorConfig(
-            instrument_ids=[],
             run_id=str(uuid4()),
             resource_threshold_version="test-v1",
             failure_policy=[
@@ -203,9 +204,11 @@ def test_empty_control_waits_for_acquisition_acknowledgement() -> None:
             ],
         ),
     )
+    actor._health.transition(SystemHealthState.STARTING, reason="boot", source="SYSTEM-CONTROL")
     actor._evaluation_started = True
     actor._persistence_ready = True
     actor._resource_monitor_ready = True
-    # Without acquisition's matching status the empty set cannot release READY.
+    actor.publish_signal = lambda *_args: None
+    # System Control owns operational gates; instrument checks belong to the consumer.
     actor._publish_ready_if_complete()
-    assert actor._health.state is None
+    assert actor._health.state is SystemHealthState.READY

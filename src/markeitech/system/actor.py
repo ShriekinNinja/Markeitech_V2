@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from nautilus_trader.common import DataActor, DataActorConfig, Signal
-from nautilus_trader.model import ActorId, InstrumentId
+from nautilus_trader.model import ActorId
 
 from markeitech.system.control import (
     ComponentFailureRule,
@@ -11,16 +11,11 @@ from markeitech.system.control import (
     component_failure_target,
 )
 from markeitech.system.messages import (
-    ACQUISITION_STATUS_REQUEST_SIGNAL,
-    ACQUISITION_STATUS_SIGNAL,
     COMPONENT_FAILURE_SIGNAL,
     COMPONENT_RECOVERY_SIGNAL,
-    INSTRUMENTS_READY,
     PERSISTENCE_READY_REQUEST_SIGNAL,
     PERSISTENCE_READY_SIGNAL,
     SYSTEM_HEALTH_SIGNAL,
-    AcquisitionStatusEvent,
-    AcquisitionStatusRequest,
     ComponentFailureEvent,
     ComponentRecoveryEvent,
     PersistenceReadyEvent,
@@ -45,7 +40,6 @@ _RUN_SCOPED_COMPONENTS = frozenset(
 class SystemControlActorConfig(DataActorConfig):
     def __new__(
         cls,
-        instrument_ids: list[str],
         run_id: str,
         failure_policy: list[dict[str, str]],
         resource_threshold_version: str,
@@ -58,7 +52,6 @@ class SystemControlActorConfig(DataActorConfig):
             actor_id if isinstance(actor_id, ActorId) else ActorId.from_str(actor_id)
         )
         obj = super().__new__(cls, actor_id=resolved_actor_id)
-        obj.instrument_ids = tuple(instrument_ids)
         obj.run_id = run_id.strip()
         if (
             not isinstance(resource_threshold_version, str)
@@ -95,15 +88,12 @@ class SystemControlActor(DataActor):
 
     def __init__(self, config: SystemControlActorConfig) -> None:
         super().__init__(config)
-        self._expected = {InstrumentId.from_str(value) for value in config.instrument_ids}
         self._run_id = config.run_id
         self._failure_policy = config.failure_policy
         self._resource_threshold_version = config.resource_threshold_version
         self._resource_monitor_ready = False
         self._resource_health_state = "NORMAL"
         self._resource_monitor_observed_ns = 0
-        self._available: set[InstrumentId] = set()
-        self._acquisition_ready = False
         self._health = SystemHealthStateMachine()
         self._evaluation_started = False
         self._persistence_preflight_ready = config.operational_persistence_ready
@@ -113,15 +103,14 @@ class SystemControlActor(DataActor):
         self._ready_once = False
         self._component_failures_received = 0
         self._malformed_failure_reports = 0
-        self._acquisition_statuses_received = 0
-        self._malformed_acquisition_statuses = 0
         self._transitions_published = 0
         self._duplicate_transitions_suppressed = 0
 
     def on_start(self) -> None:
+        # Nautilus connects data clients and prepares their startup instruments before actors start.
+        # Each data consumer validates the instrument contract it needs independently.
         self.subscribe_signal(COMPONENT_FAILURE_SIGNAL)
         self.subscribe_signal(COMPONENT_RECOVERY_SIGNAL)
-        self.subscribe_signal(ACQUISITION_STATUS_SIGNAL)
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.subscribe_signal(RUNTIME_RESOURCE_MONITOR_READY_SIGNAL)
         self.subscribe_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL)
@@ -134,11 +123,10 @@ class SystemControlActor(DataActor):
         self._publish_transition(
             SystemHealthState.STOPPING,
             reason="system control actor is stopping",
-            evidence=self._instrument_evidence(),
+            evidence=self._readiness_evidence(),
         )
         self.unsubscribe_signal(COMPONENT_FAILURE_SIGNAL)
         self.unsubscribe_signal(COMPONENT_RECOVERY_SIGNAL)
-        self.unsubscribe_signal(ACQUISITION_STATUS_SIGNAL)
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
         self.unsubscribe_signal(RUNTIME_RESOURCE_MONITOR_READY_SIGNAL)
         self.unsubscribe_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL)
@@ -146,8 +134,6 @@ class SystemControlActor(DataActor):
             "SYSTEM_CONTROL_SUMMARY"
             f" | component_failures={self._component_failures_received}"
             f" | malformed={self._malformed_failure_reports}"
-            f" | acquisition_statuses={self._acquisition_statuses_received}"
-            f" | malformed_acquisition={self._malformed_acquisition_statuses}"
             f" | transitions={self._transitions_published}"
             f" | duplicates={self._duplicate_transitions_suppressed}",
         )
@@ -177,11 +163,6 @@ class SystemControlActor(DataActor):
                 return
             self._persistence_ready = True
             self._release_startup()
-            return
-        if signal.name == ACQUISITION_STATUS_SIGNAL:
-            if not self._startup_released:
-                return
-            self._handle_acquisition_status(signal)
             return
         if signal.name == COMPONENT_RECOVERY_SIGNAL:
             try:
@@ -214,15 +195,8 @@ class SystemControlActor(DataActor):
                 SystemHealthState.FAILED,
                 SystemHealthState.STOPPING,
             }:
-                if self._ready_once:
-                    # A prior acquisition acknowledgement may be stale after a degraded period.
-                    self._acquisition_ready = False
-                    self.publish_signal(
-                        ACQUISITION_STATUS_REQUEST_SIGNAL,
-                        AcquisitionStatusRequest(requester=str(self.actor_id)).to_signal_value(),
-                    )
-                else:
-                    self._publish_ready_if_complete()
+                # Recovery recomputes only the global operational gates still owned here.
+                self._publish_ready_if_complete()
             return
         if signal.name != COMPONENT_FAILURE_SIGNAL:
             return
@@ -255,7 +229,7 @@ class SystemControlActor(DataActor):
             target,
             reason=failure.reason,
             evidence={
-                **self._instrument_evidence(),
+                **self._readiness_evidence(),
                 "failed_component": failure.component,
                 "failure_code": failure.code,
                 **dict(failure.evidence),
@@ -287,7 +261,7 @@ class SystemControlActor(DataActor):
             self._publish_transition(
                 SystemHealthState.DEGRADED,
                 reason="confirmed critical runtime resource health",
-                evidence=self._instrument_evidence(),
+                evidence=self._readiness_evidence(),
             )
         else:
             self._publish_ready_if_complete()
@@ -327,72 +301,29 @@ class SystemControlActor(DataActor):
                 target,
                 reason="confirmed critical runtime resource health",
                 evidence={
-                    **self._instrument_evidence(),
+                    **self._readiness_evidence(),
                     "resource_reasons": ",".join(health.reason_codes),
                 },
             )
         elif previous == "CRITICAL" and not self._active_component_failures:
-            # Recheck the other runtime gate after a period of confirmed resource pressure.
-            if self._ready_once:
-                self._acquisition_ready = False
-                self.publish_signal(
-                    ACQUISITION_STATUS_REQUEST_SIGNAL,
-                    AcquisitionStatusRequest(requester=str(self.actor_id)).to_signal_value(),
-                )
-            else:
-                self._publish_ready_if_complete()
+            # Resource recovery can restore READY only when the other global gates still hold.
+            self._publish_ready_if_complete()
 
     def _release_startup(self) -> None:
         if self._startup_released:
             return
         self._startup_released = True
-        self.publish_signal(
-            ACQUISITION_STATUS_REQUEST_SIGNAL,
-            AcquisitionStatusRequest(requester=str(self.actor_id)).to_signal_value(),
-        )
         self.clock.set_time_alert_ns(
             _INITIAL_EVALUATION_ALERT,
             self.clock.timestamp_ns() + _INITIAL_EVALUATION_DELAY_NS,
             callback=self._begin_evaluation,
         )
 
-    def _handle_acquisition_status(self, signal: Signal) -> None:
-        self._acquisition_statuses_received += 1
-        try:
-            status = AcquisitionStatusEvent.from_signal_value(signal.value)
-        except ValueError as exc:
-            self._malformed_acquisition_statuses += 1
-            self.log.error(
-                f"ACQUISITION_STATUS_REJECTED | reason=invalid_event | error={type(exc).__name__}",
-            )
-            return
-        reported_expected = {
-            InstrumentId.from_str(value) for value in status.expected_instrument_ids
-        }
-        if reported_expected != self._expected:
-            self._malformed_acquisition_statuses += 1
-            self.log.error(
-                "ACQUISITION_STATUS_REJECTED | reason=instrument_set_mismatch",
-            )
-            return
-        self._available = {
-            InstrumentId.from_str(value) for value in status.available_instrument_ids
-        }
-        self.log.debug(
-            f"ACQUISITION_STATUS_ACCEPTED | state={status.state}"
-            f" | available={len(self._available)}/{len(self._expected)}",
-        )
-        self._acquisition_ready = status.state == INSTRUMENTS_READY
-        if not self._evaluation_started:
-            self._begin_evaluation(None)
-        if status.state == INSTRUMENTS_READY:
-            self._publish_ready_if_complete()
-
     def on_fault(self) -> None:
         self._publish_transition(
             SystemHealthState.FAILED,
             reason="system control actor entered fault state",
-            evidence=self._instrument_evidence(),
+            evidence=self._readiness_evidence(),
         )
 
     def _begin_evaluation(self, _event) -> None:  # noqa: ANN001
@@ -403,12 +334,8 @@ class SystemControlActor(DataActor):
             self._publish_transition(
                 SystemHealthState.STARTING,
                 reason="evaluating runtime prerequisites",
-                evidence=self._instrument_evidence(),
+                evidence=self._readiness_evidence(),
             )
-        self.publish_signal(
-            ACQUISITION_STATUS_REQUEST_SIGNAL,
-            AcquisitionStatusRequest(requester=str(self.actor_id)).to_signal_value(),
-        )
         self._publish_ready_if_complete()
 
     def _publish_ready_if_complete(self) -> None:
@@ -419,19 +346,13 @@ class SystemControlActor(DataActor):
             or not self._persistence_ready
             or not self._resource_monitor_ready
             or self._resource_health_state == "CRITICAL"
-            or not self._acquisition_ready
-            or self._available != self._expected
             or self._active_component_failures
         ):
             return
         self._publish_transition(
             SystemHealthState.READY,
-            reason=(
-                "no instruments configured; operational acquisition is idle"
-                if not self._expected
-                else "configured instrument definitions are available"
-            ),
-            evidence=self._instrument_evidence(),
+            reason="operational prerequisites are ready",
+            evidence=self._readiness_evidence(),
         )
 
     def _publish_transition(
@@ -454,10 +375,7 @@ class SystemControlActor(DataActor):
             self._ready_once = True
         self._transitions_published += 1
         self.publish_signal(SYSTEM_HEALTH_SIGNAL, event.to_signal_value())
-        message = (
-            f"SYSTEM_HEALTH | state={event.state} | reason={event.reason}"
-            f" | available={len(self._available)}/{len(self._expected)}"
-        )
+        message = f"SYSTEM_HEALTH | state={event.state} | reason={event.reason}"
         if target == SystemHealthState.DEGRADED:
             self.log.warning(message)
         elif target == SystemHealthState.FAILED:
@@ -465,14 +383,9 @@ class SystemControlActor(DataActor):
         else:
             self.log.info(message)
 
-    def _instrument_evidence(self) -> dict[str, str | int]:
-        available = sorted(str(value) for value in self._available)
-        expected = sorted(str(value) for value in self._expected)
+    def _readiness_evidence(self) -> dict[str, str | int]:
+        # Keep global health evidence about operational prerequisites, not market inputs.
         return {
-            "available_instrument_count": len(available),
-            "available_instruments": ",".join(available),
-            "expected_instrument_count": len(expected),
-            "expected_instruments": ",".join(expected),
             "operational_persistence_ready": self._persistence_ready,
             "operational_persistence_preflight_ready": self._persistence_preflight_ready,
             "resource_monitor_ready": self._resource_monitor_ready,

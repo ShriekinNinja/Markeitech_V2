@@ -53,7 +53,7 @@ def test_actor_plan_has_four_mandatory_actors() -> None:
         for registration in plan
     )
     control = plan[0].config.config
-    assert control["instrument_ids"] == list(config.instrument_ids)
+    assert "instrument_ids" not in control
     assert control["resource_threshold_version"] == (
         config.runtime_resources.health.threshold_version
     )

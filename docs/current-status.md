@@ -183,8 +183,8 @@ contract tests do not establish active outputs; reach the issue's live scenario 
   failures to startup and running health. It currently covers operational persistence and both
   mandatory resource actors. A recovery fact is committed before persistence reports restored write
   capability; lost event counts remain in that fact and are not treated as repaired records. System
-  Control requests fresh acquisition
-  status before returning from `DEGRADED` to `READY`.
+  Control reevaluates its operational gates after recovery; acquisition status and instrument
+  counts are not global readiness gates.
 - Native LiveNode failures remain node errors. The CLI marks their runtime run `FAILED` when the
   operational store permits, without replacing the original node error if closing the run fails.
 - Runtime-resource sampling and health evaluation are mandatory in the active actor plan. System

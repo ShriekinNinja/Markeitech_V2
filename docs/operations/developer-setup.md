@@ -316,9 +316,10 @@ Expected startup behavior:
 
 1. PostgreSQL is reachable and its schema is verified/repaired idempotently.
 2. The operational run is opened.
-3. Actors start independently and publish readiness through the Nautilus bus.
-4. Instrument definitions, acquisition, historical dependencies, and evidence health converge.
-5. System control publishes `READY` only when mandatory prerequisites are satisfied.
+3. Nautilus connects its data clients and prepares startup instruments before starting actors.
+4. Actors publish operational readiness through the Nautilus bus; each data consumer checks its
+   own instrument contract and evidence needs.
+5. System Control publishes `READY` when persistence, resource, and required-component gates pass.
 6. Discord receives eligible system-health transitions.
 
 Runtime logs are written under `data/logs/`. All `data/` content is local and ignored.

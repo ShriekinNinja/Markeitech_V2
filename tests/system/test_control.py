@@ -32,13 +32,13 @@ def test_control_plane_follows_the_approved_startup_and_stop_path() -> None:
         SystemHealthState.STARTING,
         reason="evaluating prerequisites",
         source="SYSTEM-CONTROL",
-        evidence={"available_instrument_count": 0},
+        evidence={"operational_persistence_ready": False},
     )
     ready = machine.transition(
         SystemHealthState.READY,
-        reason="instrument definitions available",
+        reason="operational prerequisites are ready",
         source="SYSTEM-CONTROL",
-        evidence={"available_instrument_count": 2},
+        evidence={"operational_persistence_ready": True},
     )
     stopping = machine.transition(
         SystemHealthState.STOPPING,

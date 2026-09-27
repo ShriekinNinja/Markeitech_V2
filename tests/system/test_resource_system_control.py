@@ -30,12 +30,9 @@ def _control() -> tuple[SimpleNamespace, list[str]]:
         _health=machine,
         _persistence_ready=True,
         _evaluation_started=True,
-        _acquisition_ready=True,
-        _available=set(),
-        _expected=set(),
         _active_component_failures={},
         _ready_once=False,
-        _instrument_evidence=lambda: {},
+        _readiness_evidence=lambda: {},
         _publish_transition=lambda target, *, reason, evidence: machine.transition(
             target,
             reason=reason,
@@ -120,12 +117,8 @@ def test_critical_degrades_and_recovery_rechecks_other_gate() -> None:
         control,
         Signal(RUNTIME_RESOURCE_HEALTH_SIGNAL, _health("WARNING").to_signal_value(), 3, 3),
     )
-    assert control._health.state is SystemHealthState.DEGRADED
-    assert not control._acquisition_ready
-    assert requests == ["markeitech.acquisition.status.request"]
-    control._acquisition_ready = True
-    control._publish_ready_if_complete()
     assert control._health.state is SystemHealthState.READY
+    assert not requests
 
 
 def test_confirmed_critical_first_assessment_blocks_ready() -> None:

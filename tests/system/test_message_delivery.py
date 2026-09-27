@@ -511,7 +511,7 @@ def test_calendar_consumers_stop_after_bounded_correlated_timeouts() -> None:
         assert len(request_ids) == 3
 
 
-def test_acquisition_status_publication_advances_control_to_ready() -> None:
+def test_acquisition_status_does_not_replace_resource_readiness() -> None:
     received.clear()
     ready_received.clear()
     received_events.clear()
@@ -537,8 +537,8 @@ def test_acquisition_status_publication_advances_control_to_ready() -> None:
         config_path="markeitech.system.actor:SystemControlActorConfig",
         config={
             "actor_id": "SYSTEM-CONTROL",
-            "instrument_ids": instrument_ids,
             "run_id": "36a468b3-df4b-49fa-809e-c60e8d19d9a0",
+            "resource_threshold_version": "test-v1",
             "operational_persistence_ready": True,
             "failure_policy": [
                 {
@@ -565,6 +565,9 @@ def test_acquisition_status_publication_advances_control_to_ready() -> None:
     for actor in [control, acquisition, persistence]:
         node.add_actor_from_config(actor)
 
-    asyncio.run(_run_node_until(node, ready_received))
+    # The fixture publishes an instrument-ready status, but no resource monitor is registered.
+    asyncio.run(_run_node_until_then_hold(node, received, 0.05))
 
-    assert [event.state for event in received_events][:2] == ["STARTING", "READY"]
+    # The subscriber stops before System Control, so it sees the startup state only.
+    assert [event.state for event in received_events] == ["STARTING"]
+    assert not ready_received.is_set()

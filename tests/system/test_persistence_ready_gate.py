@@ -58,7 +58,6 @@ def test_control_accepts_persistence_ready_only_from_current_run(
 def test_control_requires_a_run_id_in_its_config() -> None:
     with pytest.raises(ValueError, match="run_id must be a non-empty string"):
         SystemControlActorConfig(
-            instrument_ids=[],
             run_id=" ",
             resource_threshold_version="test-v1",
             failure_policy=[

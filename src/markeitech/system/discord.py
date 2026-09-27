@@ -579,14 +579,10 @@ class DiscordHealthActor(DataActor):
 
 
 def render_system_health_message(event: SystemHealthEvent, ts_event: int) -> bytes:
-    available = event.evidence.get("available_instrument_count", "unknown")
-    expected = event.evidence.get("expected_instrument_count", "unknown")
-    instruments = event.evidence.get("expected_instruments", "not reported")
+    # Global health reports operational readiness; consumers own instrument availability.
     fields: list[dict[str, Any]] = [
         {"name": "State", "value": event.state, "inline": True},
-        {"name": "Instruments", "value": f"{available}/{expected}", "inline": True},
         {"name": "Source", "value": event.source, "inline": True},
-        {"name": "Configured instruments", "value": str(instruments) or "none"},
     ]
     previous = event.evidence.get("previous_state")
     if previous is not None:

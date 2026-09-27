@@ -9,7 +9,6 @@ from nautilus_trader.common import Signal
 from markeitech.system.actor import SystemControlActor
 from markeitech.system.control import ComponentFailureRule, SystemControlPolicy, SystemHealthState
 from markeitech.system.messages import (
-    ACQUISITION_STATUS_REQUEST_SIGNAL,
     COMPONENT_FAILURE_SIGNAL,
     COMPONENT_RECOVERY_SIGNAL,
     PERSISTENCE_READY_SIGNAL,
@@ -43,9 +42,8 @@ def test_control_clears_only_the_matching_failure_after_positive_recovery() -> N
         _ready_once=True,
         _health=SimpleNamespace(state=SystemHealthState.READY),
         _active_component_failures={},
-        _acquisition_ready=True,
         _component_failures_received=0,
-        _instrument_evidence=lambda: {},
+        _readiness_evidence=lambda: {},
         log=SimpleNamespace(error=errors.append),
         _publish_transition=lambda target, **_kwargs: transitions.append(target),
         _publish_ready_if_complete=lambda: ready_checks.append(True),
@@ -89,12 +87,11 @@ def test_control_clears_only_the_matching_failure_after_positive_recovery() -> N
             evidence={"run_id": RUN_ID, "incident_id": code, "lost_event_count": 1},
         )
         SystemControlActor.on_signal(control, _signal(COMPONENT_RECOVERY_SIGNAL, recovered))
-        assert len(requests) == int(code == "persistence_admission_rejected")
+        assert len(ready_checks) == int(code == "persistence_admission_rejected")
 
     assert transitions == [SystemHealthState.DEGRADED, SystemHealthState.DEGRADED]
-    assert requests == [ACQUISITION_STATUS_REQUEST_SIGNAL]
-    assert not control._acquisition_ready
-    assert not ready_checks
+    assert not requests
+    assert ready_checks == [True]
     assert any("run_id_mismatch" in value for value in errors)
     assert any("incident_id_mismatch" in value for value in errors)
     assert not control._active_component_failures

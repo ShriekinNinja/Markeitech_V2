@@ -196,10 +196,10 @@ transient and are not written to PostgreSQL.
 - Completed-bar and `MetricValue` subject identity does not yet carry complete calendar-definition
   identity for cross-epoch conflict detection. That remains a V3-03 prerequisite; it does not
   create a second calendar authority in the accepted V3-01 runtime.
-- Global `SYSTEM_HEALTH READY` retains its narrow control-plane meaning: operational persistence
-  and configured instrument-definition availability. Calendar-dependent consumers own their local
-  bounded projection readiness; adding a global calendar prerequisite requires a separate
-  architecture decision.
+- Global `SYSTEM_HEALTH READY` covers operational persistence, resource health, and required
+  component failures after Nautilus data-client startup. Instrument and calendar-dependent
+  consumers own their local contract and bounded projection readiness; adding a global calendar
+  prerequisite requires a separate architecture decision.
 - The first health owner covers configured native quotes and external five-second bars only.
 - Evidence health remains a bounded capability-specific projection, not a universal product
   readiness or unrestricted query service.

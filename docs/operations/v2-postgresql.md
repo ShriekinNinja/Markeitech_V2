@@ -62,8 +62,9 @@ Before connecting to IB, Markeitech:
 4. confirms the persistence actor can connect; and
 5. opens the runtime run record.
 
-`READY` requires configured instrument definitions, operational persistence readiness, and an
-evaluated runtime-resource sample without a confirmed critical condition.
+`READY` requires operational persistence readiness, an evaluated runtime-resource sample without
+a confirmed critical condition, and no active required-component failure. Nautilus completes data
+client startup before actors start; System Control does not separately count instrument definitions.
 
 During shutdown, the actor records `STOPPING`. The CLI records `STOPPED` only after Nautilus has
 fully returned. An unclosed run is intentional evidence of a crash, forced kill, or failed terminal

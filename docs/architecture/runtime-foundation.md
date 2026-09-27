@@ -88,9 +88,12 @@ delivery is never inferred.
 invalid transitions fail visibly.
 
 Global `READY` requires operational persistence, one evaluated runtime-resource sample without a
-confirmed critical condition, and configured instrument-definition/acquisition conditions. It does
-not prove that every feed is fresh, a calendar-dependent consumer is synchronized, options are
-usable, broker state is reconciled or Discord is connected.
+confirmed critical condition, and no active required-component failure. Nautilus starts actors
+after connecting its data clients and preparing startup instruments; System Control does not
+separately gate on an acquisition status or a configured instrument list. Each consumer checks the
+contract identity and availability of the instruments it needs. `READY` does not prove that every
+feed is fresh, a calendar-dependent consumer is synchronized, options are usable, broker state is
+reconciled or Discord is connected.
 
 Local owners publish dimensional facts for provider demand, session state, evidence freshness,
 historical readiness, resources, persistence, and enabled analytical capabilities. A process may
