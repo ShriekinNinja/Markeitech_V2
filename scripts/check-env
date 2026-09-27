@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$ROOT_DIR/.env"
-CONFIG_FILE="$ROOT_DIR/config/system.local.toml"
+CONFIG_FILE="$ROOT_DIR/config/runtime.local.toml"
 COMPOSE_FILE="$ROOT_DIR/compose.yaml"
 WITH_IB=false
 
@@ -75,7 +75,7 @@ docker compose version >/dev/null 2>&1 || fail "Docker Compose is unavailable"
 pass "Docker Compose is available"
 
 [[ -f "$ENV_FILE" ]] || fail "missing .env; copy .env.example without overwriting existing files"
-[[ -f "$CONFIG_FILE" ]] || fail "missing config/system.local.toml; copy the tracked example"
+[[ -f "$CONFIG_FILE" ]] || fail "missing config/runtime.local.toml; copy the tracked example"
 pass "local environment and system configuration exist"
 
 git check-ignore -q "$ENV_FILE" || fail ".env is not ignored by Git"

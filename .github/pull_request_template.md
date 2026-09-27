@@ -62,7 +62,7 @@ For runtime work, include a short practical live handoff. Documentation-only wor
 ## Integrity checklist
 
 - [ ] This scoped branch targets `master` and includes only the requested batch.
-- [ ] No secrets, webhook URLs, passwords, tokens, local `.env`, or `system.local.toml` were committed.
+- [ ] No secrets, webhook URLs, passwords, tokens, local `.env`, or `runtime.local.toml` were committed.
 - [ ] No raw market data, vendor exports, runtime logs, or database dumps were committed.
 - [ ] No live IB/TWS, Discord, or execution path was invoked by CI.
 

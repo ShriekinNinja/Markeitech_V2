@@ -330,7 +330,7 @@ class HistoricalEvidencePlannerActor(DataActor):
                 raise ValueError("historical demand instrument is outside planner scope")
         except ValueError as exc:
             self._counts["rejected"] += 1
-            self.log.error(
+            self.log.warning(
                 f"HISTORICAL_PLAN_DEMAND_REJECTED | error={type(exc).__name__}",
             )
             return
@@ -365,7 +365,7 @@ class HistoricalEvidencePlannerActor(DataActor):
             if timer_name in self.clock.timer_names():
                 self.clock.cancel_timer(timer_name)
         self._deferred.clear()
-        self.log.info(
+        self.log.debug(
             "HISTORICAL_EVIDENCE_PLANNER_STOPPED"
             f" | planned={self._counts['planned']}"
             f" | deferred={self._counts['deferred']}"
@@ -439,11 +439,17 @@ class HistoricalEvidencePlannerActor(DataActor):
         )
         self._session_state = update.state
         if self._session_state.phase is not previous_phase:
-            self.log.info(
+            message = (
                 "HISTORICAL_PLAN_SESSION_STATE_SYNC"
                 f" | phase={self._session_state.phase.value}"
-                f" | calendars={len(self._calendar_expectations)}",
+                f" | calendars={len(self._calendar_expectations)}"
             )
+            if self._session_state.phase is SessionStateDeliveryPhase.LIVE:
+                self.log.info(message)
+            elif self._session_state.phase is SessionStateDeliveryPhase.DEGRADED:
+                self.log.warning(message)
+            else:
+                self.log.debug(message)
         self._apply_installed_session_revisions(update.installed_calendar_ids)
         if self._session_state.phase is SessionStateDeliveryPhase.CONFLICT:
             self._cancel_session_state_alert()
@@ -743,7 +749,7 @@ class HistoricalEvidencePlannerActor(DataActor):
             except ValueError as exc:
                 self._pending.pop(demand_id, None)
                 self._counts["rejected"] += 1
-                self.log.error(
+                self.log.warning(
                     "HISTORICAL_PLAN_REJECTED"
                     f" | demand_id={demand_id} | error={type(exc).__name__}: {exc}",
                 )

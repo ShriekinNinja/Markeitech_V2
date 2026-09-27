@@ -61,10 +61,11 @@ release and provider cancellation; Nautilus owns local actor-handler cleanup.
 
 ## Session Configuration
 
-System schema 21 loads one dedicated
-`config/market-calendars.toml` schema-3/catalog-version-4 startup catalog. Inline definitions,
-legacy dated overrides, and older system or catalog schemas are rejected. Each system profile
-selects its active `calendar_ids`; definitions which are available but unused are validated without
+The current runtime profile loads one dedicated
+`config/system.calendars.toml` schema-3/catalog-version-4 startup catalog. Inline definitions,
+legacy dated overrides, and unsupported system or catalog schemas are rejected. Schema 30 derives
+active calendar IDs from the watchlist's instrument bindings. The policy selects explicit idle
+calendars only when the watchlist is empty. Available but unused definitions are validated without
 being instantiated. The runtime watchlist is the sole binding authority between exact admitted
 instruments and reusable calendar IDs, so futures rollover does not require editing temporal
 definitions.

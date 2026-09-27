@@ -73,15 +73,15 @@ client in an ordinary market-data run. Those settings may affect which manual TW
 visible or controllable and belong to the selected execution issue and its authorized live scenario.
 
 Use the socket port configured in the actual TWS/Gateway session and set the same value in
-`config/system.local.toml`. The example port is a connection setting, not account classification.
+`config/runtime.local.toml`. The example port is a connection setting, not account classification.
 
 ## Local Configuration
 
 Create the ignored local file once:
 
 ```bash
-test -e config/system.local.toml || \
-  cp config/system.example.toml config/system.local.toml
+test -e config/runtime.local.toml || \
+  cp config/runtime.example.toml config/runtime.local.toml
 ```
 
 Review the `[ib]` section:
@@ -92,12 +92,13 @@ host = "127.0.0.1"
 port = 4002
 client_id = 20
 symbology_method = "simplified"
-convert_exchange_to_mic_venue = false
 market_data_type = "realtime"
 use_regular_trading_hours = false
 ```
 
-These are example values, not universal machine settings. Keep the local file outside Git.
+These are example values, not universal machine settings. Keep the local file outside Git. The
+adapter's `convert_exchange_to_mic_venue` and other reviewed IB limits live in tracked
+`config/system.policy.toml`.
 
 ## Instruments And Entitlements
 
@@ -136,7 +137,7 @@ Run the guarded command directly or place it in a local, untracked PyCharm Shell
 ```bash
 docker compose --env-file .env -f compose.yaml up -d --wait postgres
 .venv/bin/markeitech system run \
-  --config config/system.local.toml \
+  --config config/runtime.local.toml \
   --connect I_UNDERSTAND_THIS_CONNECTS_TO_IB --keep-awake
 ```
 
@@ -184,7 +185,7 @@ allowed.
 
 ### Client ID conflict
 
-Another process is using the configured ID. Select a free value in `system.local.toml`.
+Another process is using the configured ID. Select a free value in `runtime.local.toml`.
 
 ### Instrument definition failure
 

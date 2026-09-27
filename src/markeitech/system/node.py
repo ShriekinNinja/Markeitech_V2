@@ -90,10 +90,14 @@ def build_system_node(config: SystemConfig, prerequisites: StartupPrerequisites)
         .with_logging(
             LoggerConfig(
                 stdout_level=LogLevel.INFO,
-                fileout_level=LogLevel.INFO,
+                fileout_level=LogLevel.DEBUG,
                 file_config=FileWriterConfig(
                     directory=str(config.logging.directory),
                     file_name=config.logging.file_name,
+                    file_rotate=(
+                        config.logging.max_file_size_bytes,
+                        config.logging.max_backup_count,
+                    ),
                 ),
                 clear_log_file=False,
                 fileout_sync_on_flush=True,

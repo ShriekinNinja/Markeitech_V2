@@ -319,7 +319,7 @@ class WatchlistActor(DataActor):
                 self._publish_attachment_degraded(demand)
         for demand in self._demands:
             self.publish_signal(WATCHLIST_DEMAND_SIGNAL, demand.to_signal_value())
-        self.log.info(
+        self.log.debug(
             f"WATCHLIST_DEMANDS_PUBLISHED | instruments={len(self._state.instrument_ids)}"
             f" | demands={len(self._demands)}",
         )
@@ -371,7 +371,7 @@ class WatchlistActor(DataActor):
             )
         snapshot = self._state.snapshot()
         for state in snapshot.instruments:
-            self.log.info(
+            self.log.debug(
                 "WATCHLIST_SUMMARY"
                 f" | instrument_id={state.instrument_id}"
                 f" | best_bid={state.best_bid}"
@@ -396,7 +396,7 @@ class WatchlistActor(DataActor):
             state = next(
                 item for item in snapshot.instruments if item.instrument_id == instrument_id
             )
-            self.log.info(
+            self.log.debug(
                 "WATCHLIST_INSTRUMENT_OBSERVED"
                 f" | instrument_id={instrument_id}"
                 f" | best_bid={state.best_bid}"

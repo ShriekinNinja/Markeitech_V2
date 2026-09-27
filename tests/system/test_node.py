@@ -15,7 +15,7 @@ from markeitech.system.node import build_ib_data_client_config, build_system_nod
 
 def test_maps_provider_boundary_to_installed_ib_config() -> None:
     root = Path(__file__).parents[2]
-    config = load_system_config(root / "config/system.example.toml")
+    config = load_system_config(root / "config/runtime.example.toml")
 
     data_config = build_ib_data_client_config(config)
     provider_config = data_config.instrument_provider
@@ -40,7 +40,7 @@ def test_maps_provider_boundary_to_installed_ib_config() -> None:
 
 def test_builds_v2_node_without_connecting() -> None:
     root = Path(__file__).parents[2]
-    config = load_system_config(root / "config/system.example.toml")
+    config = load_system_config(root / "config/runtime.example.toml")
 
     node = build_system_node(
         config,

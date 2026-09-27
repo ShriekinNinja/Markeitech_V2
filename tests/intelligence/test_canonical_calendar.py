@@ -21,7 +21,7 @@ def _ns(value: str) -> int:
 
 def _config():  # noqa: ANN202
     root = Path(__file__).parents[2]
-    return load_system_config(root / "config/system.example.toml")
+    return load_system_config(root / "config/runtime.example.toml")
 
 
 def test_modern_cme_equity_removes_the_obsolete_1515_pause() -> None:

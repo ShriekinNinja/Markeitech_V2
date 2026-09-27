@@ -7,7 +7,7 @@ from markeitech.system.config import SystemConfig, load_system_config
 
 def minimal_calendar_config() -> SystemConfig:
     """Derive a bounded ES-only fixture without maintaining a runtime profile."""
-    config = load_system_config(Path(__file__).parents[2] / "config/system.example.toml")
+    config = load_system_config(Path(__file__).parents[2] / "config/runtime.example.toml")
     return replace(
         config,
         watchlist=replace(config.watchlist, members=(

@@ -481,7 +481,7 @@ class DiscordHealthActor(DataActor):
             except Empty:
                 return
             if result.delivered:
-                self.log.info(f"{label}_DELIVERED | state={result.state} | status={result.status}")
+                self.log.debug(f"{label}_DELIVERED | state={result.state} | status={result.status}")
             else:
                 self.log.error(
                     f"{label}_DELIVERY_FAILED | state={result.state}"
@@ -493,10 +493,6 @@ class DiscordHealthActor(DataActor):
             return
         self._summary_logged = True
         if self._worker is None:
-            self.log.info(
-                "DISCORD_HEALTH_SUMMARY | accepted=0 | delivered=0"
-                " | failed=0 | rejected=0 | pending=0",
-            )
             return
         stats = self._worker.snapshot()
         self.log.info(
@@ -564,7 +560,7 @@ class DiscordHealthActor(DataActor):
             )
             return
         if not event.notification_eligible:
-            self.log.info(
+            self.log.debug(
                 f"DISCORD_RESOURCE_HEALTH_SUPPRESSED | state={event.state} | reason=cooldown",
             )
             return

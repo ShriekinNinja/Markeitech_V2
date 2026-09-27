@@ -138,44 +138,61 @@ The following commands never overwrite existing machine files:
 
 ```bash
 test -e .env || cp .env.example .env
-test -e config/system.local.toml || \
-  cp config/system.example.toml config/system.local.toml
+test -e config/runtime.local.toml || \
+  cp config/runtime.example.toml config/runtime.local.toml
 ```
 
-Both destination files are ignored by Git.
+Both destination files are ignored by Git. The schema-30 example and local runtime profiles select
+tracked `config/system.policy.toml` and contain their own `[watchlist]` table. The profile owns
+exact instruments, calendar bindings, requested feeds, and whether the watchlist actor runs. The
+policy owns reviewed runtime limits, delivery behavior, and the watchlist handler retry interval.
+The policy path resolves relative to the selected runtime TOML.
 
-The current loader accepts only system schema **29**. To migrate a schema-23/24 local profile:
+The loader accepts the split system schema **30** and complete legacy schema **29** profiles.
+Schema 30 keeps operator and policy settings in their respective files; duplicate settings are
+rejected. It derives active calendars from the distinct `calendar_id` values in watchlist members.
+For an empty watchlist, policy `sessions.idle_calendar_ids` preserves the zero-instrument session
+monitor. A local policy copy can be selected with `policy_file` when reviewed limits must differ
+on one machine. Complete schema-29 profiles may still use `watchlist_file` and explicit
+`sessions.calendar_ids`.
+
+To migrate a schema-23/24 local profile to the supported schema 29 first:
 
 1. Remove the complete `[acquisition]` section, which contained only native-consumer diagnostic settings.
 2. Remove the complete `[historical.probe]` section; keep `[historical]` and its production limits.
 3. Remove `[visual_debug_capture]` if present; the capture actor and renderer have been removed.
 4. Remove the entire `[metrics]` tree, including quote quality, session measurements, entity analysis, and all child tables.
-5. Remove the entire `[dashboard]` section if present. Set `schema_version = 29` and compare the result with the corresponding tracked profile.
+5. Remove the entire `[dashboard]` section if present. Set `schema_version = 29` and compare the result with the current policy and operator profile.
 
 For a schema-25/26/27/28 profile, remove the entire `[dashboard]` section if present, then set
 `schema_version = 29`. Keep the production `[historical]` section.
 
 Preserve machine-specific IB settings, paths, thresholds, and secret environment references.
 Local files are not migrated automatically. For profiles older than schema 23, also apply the
-calendar and current-state changes below; a version-number edit alone is insufficient.
+calendar and current-state changes below; a version-number edit alone is insufficient. To use
+schema 30 after that migration, start with the short `runtime.example.toml`, transfer the reviewed
+operator values into `runtime.local.toml`, and compare the legacy policy values with
+`system.policy.toml` before selecting that policy. Move exact watchlist members into the local
+runtime profile and keep changed machine-specific limits in a separately selected local policy
+copy.
 
 For pre-calendar-cutover profiles, remove the retired `[visual_acceptance]` and
 `[live_evidence_review]` sections and replace inline `[[sessions.calendars]]` definitions with the
-schema-3 `calendar_catalog = "market-calendars.toml"` reference under `[sessions]`. Add the bounded
-projection settings shown in `system.example.toml`: `projection_lookback_days`,
-`projection_lookahead_days`, `maximum_projection_days`, and
+schema-3 `calendar_catalog = "system.calendars.toml"` reference under `[sessions]`. For a split
+profile, the catalog reference and bounded projection settings are in `system.policy.toml`:
+`projection_lookback_days`, `projection_lookahead_days`, `maximum_projection_days`, and
 `maximum_calendars_per_request`. Add `[sessions.projection_retry]` with the tracked bounded
 `response_timeout_ms`, `maximum_attempts`, `retry_backoff_ms`, and `maximum_elapsed_ms` values;
 these local actor-delivery controls are independent of IB historical polling and metric-demand
 retries. The referenced catalog path is resolved relative to the system
-TOML and must exist; the tracked catalog is `config/market-calendars.toml`. Set `calendar_ids`
-to the exact catalog definitions this profile needs; unused entries are validated but are not
-instantiated. Concrete instrument-to-calendar bindings belong
-only to `[[watchlist.members]]`; rolling a futures contract does not require editing the calendar
-catalog. The CME/CBOT definitions also expose overlapping `ASIA`, `LONDON`, and `NEW_YORK` phases.
+TOML and must exist; the tracked catalog is `config/system.calendars.toml`. Schema-29 profiles
+select explicit `calendar_ids`. Schema-30 profiles derive active IDs from `[[watchlist.members]]`
+in the runtime profile; definitions available but unused are validated without being instantiated.
+Rolling a futures contract does not require editing the calendar catalog. The CME/CBOT definitions
+also expose overlapping `ASIA`, `LONDON`, and `NEW_YORK` phases.
 Those phase clocks describe market regions and do not create analytical windows by themselves.
 
-Include the complete `[sessions.current_state_delivery]` section from the current example:
+Include the complete `[sessions.current_state_delivery]` section from the current policy file:
 versioned response timeout, attempts/backoff/elapsed bounds, per-calendar and total transition
 buffers, and boundary-delivery grace. Remove the entire `[metrics]` tree; its quote-quality,
 session-measurement, and entity-analysis actors and configuration have been removed.
@@ -183,9 +200,9 @@ session-measurement, and entity-analysis actors and configuration have been remo
 The loader rejects older schemas, dead visual sections, inline definitions or overrides,
 unavailable provider columns, invalid phase timezones, incomplete source/correction identity,
 obsolete catalog-owned instrument mappings, and projection requests which exceed configured
-bounds. Do not overwrite
-the rest of an existing machine-local profile; compare it with `system.example.toml` and preserve
-its reviewed IB, instrument, and persistence settings.
+bounds. Do not overwrite the rest of an existing machine-local profile; compare it with
+`runtime.example.toml`, `system.policy.toml`, and `system.calendars.toml`. Preserve its reviewed
+IB, instrument, and persistence settings.
 
 ### Environment file
 
@@ -200,14 +217,14 @@ its values into issues, pull requests, logs, or documentation.
 
 ### System configuration
 
-Review `config/system.local.toml` before connecting:
+Review `config/runtime.local.toml` and its selected policy and calendar files before connecting:
 
 1. `[ib].host`, `[ib].port`, and `[ib].client_id`
 2. current explicit futures contracts in profile bindings and watchlist members
 3. instruments covered by the current user's IB market-data entitlements
-4. active `calendar_ids`, calendar/profile assignments, and the dedicated
-   `market-calendars.toml` catalog identity
-5. Discord, resource-health, persistence, historical, and metric policy
+4. watchlist `calendar_id` assignments, derived active calendars, and the dedicated
+   `system.calendars.toml` catalog identity
+5. Discord, resource-health, persistence, historical, and evidence-health policy
 
 The tracked example contains reviewed defaults, not universally valid contracts or entitlements.
 Do not replace explicit futures with continuous futures without a separate architecture decision.
@@ -262,32 +279,32 @@ layout, and interpreter metadata remain local and cannot affect another machine'
 To construct the configured node without provider or service connection:
 
 ```bash
-.venv/bin/markeitech system build --config config/system.local.toml
+.venv/bin/markeitech system build --config config/runtime.local.toml
 ```
 
 The compact disconnected path checks the environment, starts PostgreSQL, builds the selected
 configuration without connecting to IB, and exits:
 
 ```bash
-.venv/bin/markeitech system start --config config/system.local.toml
+.venv/bin/markeitech system start --config config/runtime.local.toml
 ```
 
 With the optional PATH installation, the equivalent command is:
 
 ```bash
-markeitech system start --config config/system.local.toml
+markeitech system start --config config/runtime.local.toml
 ```
 
 Add `--ib` only for a connected runtime:
 
 ```bash
-.venv/bin/markeitech system start --config config/system.local.toml --ib
+.venv/bin/markeitech system start --config config/runtime.local.toml --ib
 ```
 
 With the optional PATH installation, the equivalent connected command is:
 
 ```bash
-markeitech system start --config config/system.local.toml --ib
+markeitech system start --config config/runtime.local.toml --ib
 ```
 
 The flag is explicit connection consent. The command checks that the configured TWS/IB Gateway
@@ -327,7 +344,7 @@ Git alone restores source, tests, project instructions, notes, and the portable 
 continue with local state, transfer these separately through a secure channel:
 
 - `.env`
-- `config/system.local.toml`
+- `config/runtime.local.toml`
 - required files under `data/`, such as licensed vendor exports
 - an optional PostgreSQL dump when operational history must continue
 

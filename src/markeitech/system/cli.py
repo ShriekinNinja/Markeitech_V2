@@ -16,7 +16,7 @@ from markeitech.system.persistence import OperationalStore
 
 IB_CONFIRMATION = "I_UNDERSTAND_THIS_CONNECTS_TO_IB"
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_CONFIG_FILE = PROJECT_ROOT / "config/system.local.toml"
+DEFAULT_CONFIG_FILE = PROJECT_ROOT / "config/runtime.local.toml"
 DEFAULT_ENV_FILE = PROJECT_ROOT / ".env"
 
 
@@ -45,7 +45,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         nargs="?",
         type=Path,
         default=DEFAULT_CONFIG_FILE,
-        help="Path to the local V2 system TOML (default: config/system.local.toml).",
+        help="Path to the local V2 system TOML (default: config/runtime.local.toml).",
     )
     parser.add_argument(
         "--connect",

@@ -922,7 +922,7 @@ class OperationalPersistenceActor(DataActor):
             except Empty:
                 return
             if result.stored:
-                self.log.info(
+                self.log.debug(
                     f"OPERATIONAL_EVENT_STORED | sequence={result.sequence} | state={result.state}",
                 )
             else:
@@ -964,10 +964,6 @@ class OperationalPersistenceActor(DataActor):
 
     def _log_summary(self) -> None:
         if self._worker is None:
-            self.log.info(
-                "OPERATIONAL_PERSISTENCE_SUMMARY | accepted=0 | stored=0"
-                " | retries=0 | failed=0 | rejected=0 | pending=0",
-            )
             return
         stats = self._worker.snapshot()
         self.log.info(

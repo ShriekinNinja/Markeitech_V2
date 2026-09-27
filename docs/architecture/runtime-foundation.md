@@ -35,9 +35,9 @@ select approved optional components and their configuration, but it cannot name 
 imports or construct a plugin graph. `node.py` builds the Nautilus clients and registers the
 validated plan; it does not redefine component ownership.
 
-The tracked example composes ten actors; the zero-instrument operational profile composes nine.
-See [current status](../current-status.md). Strategy registration and active indicator producers
-are not implemented. Extend composition only as needed by the selected issue.
+The tracked example composes ten actors. See [current status](../current-status.md). Strategy
+registration and active indicator producers are not implemented. Extend composition only as needed
+by the selected issue.
 
 Composition invariants are:
 
@@ -52,12 +52,12 @@ Composition invariants are:
 - dynamic actor loading/removal and a generic dependency-injection or plugin system are not part
   of the current runtime.
 
-The [zero-instrument operational profile](../operations/operational-boot.md) retains IB and all nine
-operational actors, including Discord and resource monitoring. Acquisition accepts zero expected
-instruments and performs no provider work or historical polling. Empty startup readiness requires
-its matching status and persistence readiness; it does not prove provider connectivity, calendar
-synchronization, webhook delivery, resource health, or market evidence. Those conditions are
-verified independently. Configuration identity and source semantics remain startup-only.
+The code supports an explicitly disabled, empty watchlist. In that configuration, acquisition
+accepts zero expected instruments and performs no provider work or historical polling. Empty startup
+readiness requires its matching status and persistence readiness; it does not prove provider
+connectivity, calendar synchronization, webhook delivery, resource health, or market evidence.
+Those conditions require separate verification. Configuration identity and source semantics remain
+startup-only. No tracked zero-instrument profile is maintained.
 
 ## Messaging And State Transfer
 

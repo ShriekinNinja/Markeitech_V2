@@ -108,7 +108,7 @@ def test_system_build_delegates_without_connection(monkeypatch: pytest.MonkeyPat
             "system",
             "build",
             "--config",
-            "config/system.example.toml",
+            "config/runtime.example.toml",
             "--env-file",
             "missing.env",
         ]
@@ -116,7 +116,7 @@ def test_system_build_delegates_without_connection(monkeypatch: pytest.MonkeyPat
 
     assert result == 0
     system_main.assert_called_once_with(
-        ["config/system.example.toml", "--env-file", "missing.env"]
+        ["config/runtime.example.toml", "--env-file", "missing.env"]
     )
     assert "--connect" not in system_main.call_args.args[0]
 
@@ -196,13 +196,13 @@ def test_system_run_forwards_owned_arguments(monkeypatch: pytest.MonkeyPatch) ->
 def test_start_checks_environment_starts_postgres_and_builds_without_ib(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    config = cli.PROJECT_ROOT / "config/system.local.toml"
+    config = cli.PROJECT_ROOT / "config/runtime.local.toml"
     run_process = Mock(side_effect=[0, 0])
     system_main = Mock(return_value=0)
     monkeypatch.setattr(cli, "_run_process", run_process)
     monkeypatch.setattr("markeitech.system.cli.main", system_main)
 
-    assert cli.main(["system", "start", "--config", "config/system.local.toml"]) == 0
+    assert cli.main(["system", "start", "--config", "config/runtime.local.toml"]) == 0
 
     assert run_process.call_args_list == [
         call(
@@ -233,7 +233,7 @@ def test_start_checks_environment_starts_postgres_and_builds_without_ib(
 def test_start_with_ib_checks_endpoint_and_runs_connected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    config = cli.PROJECT_ROOT / "config/system.local.toml"
+    config = cli.PROJECT_ROOT / "config/runtime.local.toml"
     run_process = Mock(side_effect=[0, 0])
     system_main = Mock(return_value=0)
     monkeypatch.setattr(cli, "_run_process", run_process)
@@ -241,7 +241,7 @@ def test_start_with_ib_checks_endpoint_and_runs_connected(
 
     assert (
         cli.main(
-            ["system", "start", "--config", "config/system.local.toml", "--ib"]
+            ["system", "start", "--config", "config/runtime.local.toml", "--ib"]
         )
         == 0
     )
@@ -274,7 +274,7 @@ def test_start_stops_after_setup_failure(
     monkeypatch.setattr("markeitech.system.cli.main", system_main)
 
     assert (
-        cli.main(["system", "start", "--config", "config/system.local.toml"])
+        cli.main(["system", "start", "--config", "config/runtime.local.toml"])
         == results[-1]
     )
 

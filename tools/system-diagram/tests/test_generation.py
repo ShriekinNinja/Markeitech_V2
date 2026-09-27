@@ -127,16 +127,14 @@ class GenerationTests(unittest.TestCase):
         report = validate_source_census(manifest, repository_root=REPOSITORY_ROOT)
 
         self.assertEqual(len(report.actor_registrations), 10)
-        self.assertEqual(
-            report.checked_profiles, ("profile.example", "profile.operational")
-        )
+        self.assertEqual(report.checked_profiles, ("profile.example",))
         self.assertGreaterEqual(len(report.contract_constants), 20)
 
     def test_view_selection_uses_only_explicit_edges(self) -> None:
         manifest = load_manifest(CANONICAL, repository_root=REPOSITORY_ROOT)
         selected = select_view(manifest, "view.complete-inventory")
 
-        self.assertEqual(len(selected.components), 25)
+        self.assertEqual(len(selected.components), 24)
         self.assertEqual(len(selected.tombstones), 5)
         self.assertEqual(selected.edges, ())
 

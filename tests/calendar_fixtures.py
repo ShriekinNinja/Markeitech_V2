@@ -14,7 +14,7 @@ from markeitech.system.config import load_system_config
 
 def canonical_calendar(calendar_id: str) -> CanonicalCalendar:
     root = Path(__file__).parents[1]
-    config = load_system_config(root / "config/system.example.toml")
+    config = load_system_config(root / "config/runtime.example.toml")
     definition = next(
         item
         for item in config.sessions.available_calendars

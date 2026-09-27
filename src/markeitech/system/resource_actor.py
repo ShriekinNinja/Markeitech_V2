@@ -152,7 +152,7 @@ class RuntimeResourceActor(DataActor):
             self._sample_interval_ns,
             callback=self._sample,
         )
-        self.log.info(
+        self.log.debug(
             "RUNTIME_RESOURCE_STARTED"
             f" | sample_interval_ms={self._sample_interval_ms}"
             f" | include_cache_counts={self._include_cache_counts}"
@@ -167,7 +167,7 @@ class RuntimeResourceActor(DataActor):
             if self._initial_rss_bytes is None or self._latest_rss_bytes is None
             else self._latest_rss_bytes - self._initial_rss_bytes
         )
-        self.log.info(
+        self.log.debug(
             "RUNTIME_RESOURCE_SUMMARY"
             f" | samples={self._sequence}"
             f" | failures={self._failures}"
@@ -308,7 +308,7 @@ class RuntimeResourceActor(DataActor):
             )
 
     def _log_sample(self, resource: RuntimeResourceEvent) -> None:
-        self.log.info(
+        self.log.debug(
             "RUNTIME_RESOURCE"
             f" | sample={resource.sample_sequence}"
             f" | rss_mb={resource.rss_bytes / 1_048_576:.1f}"

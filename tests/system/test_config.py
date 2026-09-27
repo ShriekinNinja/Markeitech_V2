@@ -108,7 +108,7 @@ projection_lookback_days = 120
 projection_lookahead_days = 14
 maximum_projection_days = 400
 maximum_calendars_per_request = 8
-calendar_catalog = "market-calendars.toml"
+calendar_catalog = "system.calendars.toml"
 calendar_ids = ["cme_equity"]
 
 [sessions.projection_retry]
@@ -181,12 +181,106 @@ owner_ids = ["config:system"]
 capabilities = ["top_of_book", "watchlist_last"]
 """
 
-CALENDAR_CATALOG = (Path(__file__).parents[2] / "config/market-calendars.toml").read_text()
+CALENDAR_CATALOG = (Path(__file__).parents[2] / "config/system.calendars.toml").read_text()
+EXAMPLE_CONFIG_DIRECTORY = Path(__file__).parents[2] / "config"
 
 
 @pytest.fixture(autouse=True)
 def _write_calendar_catalog(tmp_path: Path) -> None:
-    (tmp_path / "market-calendars.toml").write_text(CALENDAR_CATALOG)
+    (tmp_path / "system.calendars.toml").write_text(CALENDAR_CATALOG)
+
+
+def _write_split_profile(tmp_path: Path) -> Path:
+    for name in ("runtime.example.toml", "system.policy.toml"):
+        (tmp_path / name).write_bytes((EXAMPLE_CONFIG_DIRECTORY / name).read_bytes())
+    return tmp_path / "runtime.example.toml"
+
+
+def test_loads_split_system_profile_with_policy_and_watchlist(tmp_path: Path) -> None:
+    path = _write_split_profile(tmp_path)
+
+    config = load_system_config(path)
+
+    assert config.schema_version == 30
+    assert len(config.instrument_ids) == 7
+    assert config.ib.market_data_type == "realtime"
+    assert config.ib.batch_quotes is True
+    assert config.persistence.queue_capacity == 512
+    assert config.logging.file_name == "markeitech-v2"
+    assert config.logging.max_file_size_bytes == 100_000_000
+    assert config.logging.max_backup_count == 5
+    assert config.runtime_resources.health.threshold_version == "2026-08-22-v2"
+    assert {calendar.calendar_id for calendar in config.sessions.calendars} == {
+        "cme_equity", "cme_energy", "us_equities",
+    }
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement", "message"),
+    [
+        ("max_file_size_bytes = 100000000", "max_file_size_bytes = 999999", "max_file_size_bytes"),
+        (
+            "max_file_size_bytes = 100000000",
+            "max_file_size_bytes = 1000000001",
+            "max_file_size_bytes",
+        ),
+        ("max_backup_count = 5", "max_backup_count = true", "max_backup_count"),
+        ("max_backup_count = 5", "max_backup_count = 21", "max_backup_count"),
+    ],
+)
+def test_rejects_invalid_log_rotation_policy(
+    tmp_path: Path,
+    original: str,
+    replacement: str,
+    message: str,
+) -> None:
+    path = _write_split_profile(tmp_path)
+    policy_path = tmp_path / "system.policy.toml"
+    policy_path.write_text(policy_path.read_text().replace(original, replacement, 1))
+
+    with pytest.raises(ValueError, match=message):
+        load_system_config(path)
+
+
+def test_rejects_operator_key_owned_by_policy(tmp_path: Path) -> None:
+    path = _write_split_profile(tmp_path)
+    path.write_text(path.read_text().replace("[ib]\n", "[ib]\nbatch_quotes = true\n", 1))
+
+    with pytest.raises(ValueError, match="ib has unknown keys: batch_quotes"):
+        load_system_config(path)
+
+
+def test_rejects_policy_key_owned_by_operator(tmp_path: Path) -> None:
+    path = _write_split_profile(tmp_path)
+    policy_path = tmp_path / "system.policy.toml"
+    policy_path.write_text(
+        policy_path.read_text().replace("[ib]\n", '[ib]\nhost = "127.0.0.1"\n', 1),
+    )
+
+    with pytest.raises(ValueError, match="ib keys appear in both system and policy: host"):
+        load_system_config(path)
+
+
+def test_rejects_unsupported_policy_version(tmp_path: Path) -> None:
+    path = _write_split_profile(tmp_path)
+    policy_path = tmp_path / "system.policy.toml"
+    policy_path.write_text(
+        policy_path.read_text().replace("policy_version = 1", "policy_version = true", 1),
+    )
+
+    with pytest.raises(ValueError, match="unsupported policy_version: True; expected 1"):
+        load_system_config(path)
+
+
+def test_rejects_unknown_idle_calendar_even_with_members(tmp_path: Path) -> None:
+    path = _write_split_profile(tmp_path)
+    policy_path = tmp_path / "system.policy.toml"
+    policy_path.write_text(
+        policy_path.read_text().replace('"cboe_spxw"', '"unknown_calendar"', 1),
+    )
+
+    with pytest.raises(ValueError, match="idle_calendar_ids reference unknown catalog calendars"):
+        load_system_config(path)
 
 
 def test_loads_standalone_system_config(tmp_path: Path) -> None:
@@ -203,7 +297,9 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.ib.ignore_quote_tick_size_updates is False
     assert config.ib.handle_revised_bars is False
     assert config.logging.directory == tmp_path.parent / "data/logs"
-    assert config.logging.file_name == "markeitech-v2.log"
+    assert config.logging.file_name == "markeitech-v2"
+    assert config.logging.max_file_size_bytes == 100_000_000
+    assert config.logging.max_backup_count == 5
     assert config.discord.request_timeout_seconds == 5
     assert config.discord.enabled is True
     assert config.discord.queue_capacity == 32
@@ -258,6 +354,56 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.watchlist.consumer_retry_interval_ms == 1000
     assert config.watchlist.members[0].owner_ids == ("config:system",)
     assert config.watchlist.members[0].capabilities == ("top_of_book", "watchlist_last")
+
+
+def test_loads_watchlist_from_relative_file(tmp_path: Path) -> None:
+    system_text, watchlist_text = VALID_CONFIG.split("\n[watchlist]\n", 1)
+    (tmp_path / "legacy-watchlist.toml").write_text("[watchlist]\n" + watchlist_text)
+    path = tmp_path / "system.toml"
+    path.write_text(
+        system_text.replace(
+            "schema_version = 29",
+            'schema_version = 29\nwatchlist_file = "legacy-watchlist.toml"',
+            1,
+        ),
+    )
+
+    config = load_system_config(path)
+
+    assert config.watchlist.members[0].instrument_id == "ESU6.CME"
+    assert config.instrument_ids == ("ESU6.CME",)
+
+
+def test_rejects_both_inline_and_external_watchlists(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(
+        VALID_CONFIG.replace(
+            "schema_version = 29",
+            'schema_version = 29\nwatchlist_file = "legacy-watchlist.toml"',
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="exactly one of watchlist or watchlist_file"):
+        load_system_config(path)
+
+
+def test_rejects_unexpected_tables_in_external_watchlist(tmp_path: Path) -> None:
+    system_text, watchlist_text = VALID_CONFIG.split("\n[watchlist]\n", 1)
+    (tmp_path / "legacy-watchlist.toml").write_text(
+        "[watchlist]\n" + watchlist_text + "\n[unrelated]\nvalue = true\n",
+    )
+    path = tmp_path / "system.toml"
+    path.write_text(
+        system_text.replace(
+            "schema_version = 29",
+            'schema_version = 29\nwatchlist_file = "legacy-watchlist.toml"',
+            1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="watchlist_file has unknown keys: unrelated"):
+        load_system_config(path)
 
 
 def test_rejects_unknown_configuration(tmp_path: Path) -> None:
@@ -389,7 +535,7 @@ boundary_delivery_grace_ms = 2000
 
 def test_rejects_missing_dedicated_calendar_catalog(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("market-calendars.toml", "missing.toml", 1))
+    path.write_text(VALID_CONFIG.replace("system.calendars.toml", "missing.toml", 1))
 
     with pytest.raises(ValueError, match="session calendar catalog does not exist"):
         load_system_config(path)
@@ -397,7 +543,7 @@ def test_rejects_missing_dedicated_calendar_catalog(tmp_path: Path) -> None:
 
 def test_rejects_pre_cleanup_calendar_catalog_schema(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    (tmp_path / "market-calendars.toml").write_text(
+    (tmp_path / "system.calendars.toml").write_text(
         CALENDAR_CATALOG.replace("schema_version = 3", "schema_version = 2", 1),
     )
     path.write_text(VALID_CONFIG)
@@ -408,7 +554,7 @@ def test_rejects_pre_cleanup_calendar_catalog_schema(tmp_path: Path) -> None:
 
 def test_rejects_calendar_catalog_for_a_different_engine_version(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    (tmp_path / "market-calendars.toml").write_text(
+    (tmp_path / "system.calendars.toml").write_text(
         CALENDAR_CATALOG.replace(
             'calendar_engine_version = "5.4.0"',
             'calendar_engine_version = "5.5.0"',
@@ -428,8 +574,8 @@ def test_rejects_inline_session_calendars(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
     path.write_text(
         VALID_CONFIG.replace(
-            'calendar_catalog = "market-calendars.toml"',
-            'calendar_catalog = "market-calendars.toml"\ncalendars = []',
+            'calendar_catalog = "system.calendars.toml"',
+            'calendar_catalog = "system.calendars.toml"\ncalendars = []',
         ),
     )
 
@@ -468,7 +614,7 @@ def test_rejects_selected_calendars_above_request_bound(tmp_path: Path) -> None:
 
 def test_rejects_invalid_product_phase_timezone(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    catalog_path = tmp_path / "market-calendars.toml"
+    catalog_path = tmp_path / "system.calendars.toml"
     catalog_path.write_text(
         CALENDAR_CATALOG.replace(
             '[[calendars.phases]]\nname = "GLOBEX"\ntimezone = "provider"',
@@ -489,7 +635,7 @@ def test_rejects_calendar_correction_without_product_scope(
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "system.toml"
-    (tmp_path / "market-calendars.toml").write_text(
+    (tmp_path / "system.calendars.toml").write_text(
         CALENDAR_CATALOG.replace(
             'product_roots = ["ES", "NQ", "YM"]',
             "product_roots = []",
@@ -504,7 +650,7 @@ def test_rejects_calendar_correction_without_product_scope(
 
 def test_rejects_unavailable_provider_schedule_column(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    catalog_path = tmp_path / "market-calendars.toml"
+    catalog_path = tmp_path / "system.calendars.toml"
     catalog_path.write_text(
         CALENDAR_CATALOG.replace(
             'schedule_columns = ["market_open", "market_close"]',
@@ -529,7 +675,7 @@ def test_calendar_definition_digest_is_stable_and_content_derived(tmp_path: Path
     assert original.definition_digest == repeated.definition_digest
     assert first.sessions.catalog_digest == second.sessions.catalog_digest
 
-    catalog_path = tmp_path / "market-calendars.toml"
+    catalog_path = tmp_path / "system.calendars.toml"
     catalog_path.write_text(
         CALENDAR_CATALOG.replace(
             'calendar_id = "cme_equity"\n'
@@ -562,7 +708,7 @@ def test_equal_definition_versions_with_unequal_content_have_unequal_digests(
     original = next(
         item for item in original_config.sessions.calendars if item.calendar_id == "cme_equity"
     )
-    (tmp_path / "market-calendars.toml").write_text(
+    (tmp_path / "system.calendars.toml").write_text(
         CALENDAR_CATALOG.replace(
             'calendar_id = "cme_equity"\n'
             'calendar_engine = "pandas_market_calendars"\n'
@@ -586,7 +732,7 @@ def test_equal_definition_versions_with_unequal_content_have_unequal_digests(
 
 def test_rejects_legacy_instrument_mappings_in_calendar_catalog(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    (tmp_path / "market-calendars.toml").write_text(
+    (tmp_path / "system.calendars.toml").write_text(
         CALENDAR_CATALOG.replace(
             'calendar_engine_version = "5.4.0"',
             'calendar_engine_version = "5.4.0"\ninstrument_mappings = []',
@@ -699,7 +845,7 @@ max_unavailable_ms = 60000
 
 def test_rejects_obsolete_calendar_overrides(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
-    (tmp_path / "market-calendars.toml").write_text(
+    (tmp_path / "system.calendars.toml").write_text(
         CALENDAR_CATALOG.replace(
             'calendar_id = "us_equities"\ncalendar_engine = "pandas_market_calendars"',
             'calendar_id = "us_equities"\noverrides = []\n'

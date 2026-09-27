@@ -89,7 +89,7 @@ class SystemControlActor(DataActor):
         self.unsubscribe_signal(COMPONENT_FAILURE_SIGNAL)
         self.unsubscribe_signal(ACQUISITION_STATUS_SIGNAL)
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
-        self.log.info(
+        self.log.debug(
             "SYSTEM_CONTROL_SUMMARY"
             f" | component_failures={self._component_failures_received}"
             f" | malformed={self._malformed_failure_reports}"
@@ -177,7 +177,7 @@ class SystemControlActor(DataActor):
         self._available = {
             InstrumentId.from_str(value) for value in status.available_instrument_ids
         }
-        self.log.info(
+        self.log.debug(
             f"ACQUISITION_STATUS_ACCEPTED | state={status.state}"
             f" | available={len(self._available)}/{len(self._expected)}",
         )
@@ -247,10 +247,16 @@ class SystemControlActor(DataActor):
             return
         self._transitions_published += 1
         self.publish_signal(SYSTEM_HEALTH_SIGNAL, event.to_signal_value())
-        self.log.info(
+        message = (
             f"SYSTEM_HEALTH | state={event.state} | reason={event.reason}"
-            f" | available={len(self._available)}/{len(self._expected)}",
+            f" | available={len(self._available)}/{len(self._expected)}"
         )
+        if target == SystemHealthState.DEGRADED:
+            self.log.warning(message)
+        elif target == SystemHealthState.FAILED:
+            self.log.error(message)
+        else:
+            self.log.info(message)
 
     def _instrument_evidence(self) -> dict[str, str | int]:
         available = sorted(str(value) for value in self._available)

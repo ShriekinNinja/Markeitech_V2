@@ -205,6 +205,8 @@ class EvidenceHealthConfig:
 class LoggingConfig:
     directory: Path
     file_name: str
+    max_file_size_bytes: int
+    max_backup_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -324,10 +326,15 @@ def load_system_config(path: str | Path) -> SystemConfig:
     with config_path.open("rb") as file:
         raw = tomllib.load(file)
 
-    if raw.get("schema_version") != 29:
-        raise ValueError(f"unsupported schema_version: {raw.get('schema_version')!r}; expected 29")
+    schema_version = raw.get("schema_version")
+    if schema_version == 30:
+        raw = _load_split_system_config(raw, config_path)
+    elif schema_version != 29:
+        raise ValueError(
+            f"unsupported schema_version: {schema_version!r}; expected 29 or 30",
+        )
 
-    root_keys = {
+    required_root_keys = {
         "schema_version",
         "runtime",
         "ib",
@@ -336,11 +343,17 @@ def load_system_config(path: str | Path) -> SystemConfig:
         "runtime_resources",
         "persistence",
         "historical",
-        "watchlist",
         "sessions",
         "evidence_health",
     }
-    _require_keys(raw, root_keys, "root")
+    _require_keys_allowing(
+        raw,
+        required_root_keys,
+        {"watchlist", "watchlist_file"},
+        "root",
+    )
+    if ("watchlist" in raw) == ("watchlist_file" in raw):
+        raise ValueError("root requires exactly one of watchlist or watchlist_file")
 
     runtime = _load_runtime(raw["runtime"])
     ib = _load_ib(raw["ib"])
@@ -348,9 +361,44 @@ def load_system_config(path: str | Path) -> SystemConfig:
     discord = _load_discord(raw["discord"])
     runtime_resources = _load_runtime_resources(raw["runtime_resources"])
     persistence = _load_persistence(raw["persistence"])
-    watchlist = _load_watchlist(raw["watchlist"])
+    if "watchlist_file" in raw:
+        watchlist_path = config_path.parent / _non_empty_string(
+            raw["watchlist_file"], "watchlist_file",
+        )
+        with watchlist_path.open("rb") as file:
+            watchlist_document = tomllib.load(file)
+        _require_keys(watchlist_document, {"watchlist"}, "watchlist_file")
+        watchlist = _load_watchlist(watchlist_document["watchlist"])
+    else:
+        watchlist = _load_watchlist(raw["watchlist"])
     historical = _load_historical(raw["historical"])
-    sessions = _load_sessions(raw["sessions"], config_path.parent)
+    session_values = raw["sessions"]
+    idle_calendar_ids: tuple[str, ...] = ()
+    if schema_version == 30:
+        session_values = _mapping(session_values, "sessions")
+        idle_calendar_ids = _unique_strings(
+            session_values["idle_calendar_ids"], "sessions.idle_calendar_ids",
+        )
+        if not idle_calendar_ids:
+            raise ValueError("sessions.idle_calendar_ids must not be empty")
+        selected_calendar_ids = tuple(dict.fromkeys(
+            member.calendar_id for member in watchlist.members
+        )) or idle_calendar_ids
+        session_values = {
+            **{key: value for key, value in session_values.items() if key != "idle_calendar_ids"},
+            "calendar_ids": list(selected_calendar_ids),
+        }
+    sessions = _load_sessions(session_values, config_path.parent)
+    if schema_version == 30:
+        available_ids = {calendar.calendar_id for calendar in sessions.available_calendars}
+        unknown_idle_ids = sorted(set(idle_calendar_ids) - available_ids)
+        if unknown_idle_ids:
+            raise ValueError(
+                "sessions.idle_calendar_ids reference unknown catalog calendars: "
+                f"{', '.join(unknown_idle_ids)}",
+            )
+        if len(idle_calendar_ids) > sessions.maximum_calendars_per_request:
+            raise ValueError("sessions.idle_calendar_ids exceed maximum_calendars_per_request")
     evidence_health = _load_evidence_health(raw["evidence_health"])
     known_calendars = {calendar.calendar_id for calendar in sessions.calendars}
     unknown_calendars = sorted(
@@ -394,6 +442,62 @@ def load_system_config(path: str | Path) -> SystemConfig:
         sessions=sessions,
         evidence_health=evidence_health,
     )
+
+
+def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[str, Any]:
+    """Assemble schema-30 operator choices and disjoint versioned policy settings."""
+    _require_keys(
+        raw,
+        {"schema_version", "policy_file", "runtime", "ib", "discord", "watchlist"},
+        "root",
+    )
+    operator_keys = {
+        "runtime": {"name", "trader_id", "environment"},
+        "ib": {
+            "host", "port", "client_id", "symbology_method", "market_data_type",
+            "use_regular_trading_hours",
+        },
+        "discord": {"enabled", "ping_critical_resource_alerts"},
+        "watchlist": {"enabled", "members"},
+    }
+    for section, keys in operator_keys.items():
+        _require_keys(_mapping(raw[section], section), keys, section)
+
+    policy_path = config_path.parent / _non_empty_string(raw["policy_file"], "policy_file")
+    with policy_path.open("rb") as file:
+        policy = tomllib.load(file)
+    if type(policy.get("policy_version")) is not int or policy["policy_version"] != 1:
+        raise ValueError(
+            f"unsupported policy_version: {policy.get('policy_version')!r}; expected 1",
+        )
+    _require_keys(
+        policy,
+        {
+            "policy_version", "ib", "logging", "discord", "watchlist",
+            "runtime_resources", "persistence", "historical", "sessions", "evidence_health",
+        },
+        "policy",
+    )
+    policy_sessions = _mapping(policy["sessions"], "policy.sessions")
+    if "idle_calendar_ids" not in policy_sessions:
+        raise ValueError("policy.sessions missing keys: idle_calendar_ids")
+    if "calendar_ids" in policy_sessions:
+        raise ValueError("policy.sessions has unknown keys: calendar_ids")
+
+    assembled = {key: value for key, value in policy.items() if key != "policy_version"}
+    for section in ("ib", "discord", "watchlist"):
+        policy_values = _mapping(policy[section], f"policy.{section}")
+        overlap = set(policy_values) & set(raw[section])
+        if overlap:
+            raise ValueError(
+                f"{section} keys appear in both system and policy: {', '.join(sorted(overlap))}",
+            )
+        assembled[section] = {**policy_values, **raw[section]}
+    assembled.update(
+        schema_version=30,
+        runtime=raw["runtime"],
+    )
+    return assembled
 
 
 def _load_runtime(raw: Any) -> RuntimeConfig:
@@ -474,13 +578,35 @@ def _load_ib(raw: Any) -> InteractiveBrokersConfig:
 
 def _load_logging(raw: Any, config_directory: Path) -> LoggingConfig:
     values = _mapping(raw, "logging")
-    _require_keys(values, {"directory", "file_name"}, "logging")
+    _require_keys_allowing(
+        values,
+        {"directory", "file_name"},
+        {"max_file_size_bytes", "max_backup_count"},
+        "logging",
+    )
     directory = Path(_non_empty_string(values["directory"], "logging.directory"))
     if not directory.is_absolute():
         directory = (config_directory / directory).resolve()
+    file_name = _non_empty_string(values["file_name"], "logging.file_name").removesuffix(".log")
+    if not file_name:
+        raise ValueError("logging.file_name must contain a basename")
+    max_file_size_bytes = _positive_int(
+        values.get("max_file_size_bytes", 100_000_000),
+        "logging.max_file_size_bytes",
+    )
+    if not 1_000_000 <= max_file_size_bytes <= 1_000_000_000:
+        raise ValueError("logging.max_file_size_bytes must be between 1000000 and 1000000000")
+    max_backup_count = _positive_int(
+        values.get("max_backup_count", 5),
+        "logging.max_backup_count",
+    )
+    if max_backup_count > 20:
+        raise ValueError("logging.max_backup_count must be at most 20")
     return LoggingConfig(
         directory=directory,
-        file_name=_non_empty_string(values["file_name"], "logging.file_name"),
+        file_name=file_name,
+        max_file_size_bytes=max_file_size_bytes,
+        max_backup_count=max_backup_count,
     )
 
 

@@ -237,6 +237,68 @@ def _dotted_value(raw: dict[str, Any], dotted_path: str, location: str) -> Any:
     return value
 
 
+def _profile_configuration(repository_root: Path, config_path: str) -> dict[str, Any]:
+    raw = _read_toml(repository_root, config_path)
+    policy_file = raw.get("policy_file")
+    if policy_file is not None:
+        if not isinstance(policy_file, str) or not policy_file:
+            raise ManifestError(
+                "DRIFT_PROFILE_POLICY_SOURCE",
+                config_path,
+                "profile must select a valid policy file",
+            )
+        policy_path = Path(config_path).parent / policy_file
+        policy_document = _read_toml(repository_root, policy_path.as_posix())
+        if (
+            type(policy_document.get("policy_version")) is not int
+            or policy_document["policy_version"] != 1
+        ):
+            raise ManifestError(
+                "DRIFT_PROFILE_POLICY_SOURCE",
+                policy_path.as_posix(),
+                "referenced policy version is unsupported",
+            )
+        for section in ("ib", "discord", "watchlist"):
+            policy_values = policy_document.get(section)
+            operator_values = raw.get(section)
+            if not isinstance(policy_values, dict) or not isinstance(operator_values, dict):
+                raise ManifestError(
+                    "DRIFT_PROFILE_POLICY_SOURCE",
+                    policy_path.as_posix(),
+                    f"policy or operator {section} table is missing",
+                )
+            if set(policy_values) & set(operator_values):
+                raise ManifestError(
+                    "DRIFT_PROFILE_POLICY_SOURCE",
+                    policy_path.as_posix(),
+                    f"policy and operator {section} keys overlap",
+                )
+        raw = {
+            **{key: value for key, value in policy_document.items() if key != "policy_version"},
+            **raw,
+        }
+        for section in ("ib", "discord", "watchlist"):
+            raw[section] = {**policy_document[section], **raw[section]}
+    watchlist_file = raw.get("watchlist_file")
+    if watchlist_file is None:
+        return raw
+    if "watchlist" in raw or not isinstance(watchlist_file, str) or not watchlist_file:
+        raise ManifestError(
+            "DRIFT_PROFILE_WATCHLIST_SOURCE",
+            config_path,
+            "profile must select one valid watchlist source",
+        )
+    watchlist_path = Path(config_path).parent / watchlist_file
+    watchlist_document = _read_toml(repository_root, watchlist_path.as_posix())
+    if set(watchlist_document) != {"watchlist"}:
+        raise ManifestError(
+            "DRIFT_PROFILE_WATCHLIST_SOURCE",
+            watchlist_path.as_posix(),
+            "referenced file must contain only the watchlist table",
+        )
+    return {**raw, "watchlist": watchlist_document["watchlist"]}
+
+
 def _validate_node_shape(repository_root: Path, relative_path: str) -> None:
     tree = _parse_python(repository_root, relative_path)
     calls = {
@@ -330,7 +392,7 @@ def validate_source_census(
     profiles_by_id = {profile.id: profile for profile in manifest.profiles}
     checked_profiles: list[str] = []
     for profile_id, profile in profiles_by_id.items():
-        raw = _read_toml(repository_root, profile.config_path)
+        raw = _profile_configuration(repository_root, profile.config_path)
         schema_version = raw.get("schema_version")
         if schema_version != profile.config_schema_version:
             raise ManifestError(
