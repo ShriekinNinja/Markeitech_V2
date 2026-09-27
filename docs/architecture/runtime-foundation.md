@@ -46,8 +46,8 @@ Composition invariants are:
 - one `OperationalPersistenceActor` owns operational writes while the node is running;
 - one `WatchlistActor`, when enabled, owns the configured observation membership; a disabled
   empty watchlist omits this actor while retaining the operational acquisition infrastructure;
-- optional projections, resource actors, and intelligence actors are included only when
-  their validated configuration enables them;
+- resource sampling and resource health are mandatory; optional projections and intelligence
+  actors are included only when their validated configuration enables them;
 - duplicate actor IDs and missing mandatory prerequisites fail before provider connection; and
 - dynamic actor loading/removal and a generic dependency-injection or plugin system are not part
   of the current runtime.
@@ -87,10 +87,10 @@ delivery is never inferred.
 `STARTING`, `READY`, `DEGRADED`, `FAILED`, and `STOPPING`. Repeating the current state is suppressed;
 invalid transitions fail visibly.
 
-Global `READY` remains deliberately narrow: the accepted startup prerequisites and configured
-instrument-definition/acquisition conditions are satisfied. It does not prove that every feed is
-fresh, a calendar-dependent consumer is synchronized, options are usable, broker state is
-reconciled or Discord is connected.
+Global `READY` requires operational persistence, one evaluated runtime-resource sample without a
+confirmed critical condition, and configured instrument-definition/acquisition conditions. It does
+not prove that every feed is fresh, a calendar-dependent consumer is synchronized, options are
+usable, broker state is reconciled or Discord is connected.
 
 Local owners publish dimensional facts for provider demand, session state, evidence freshness,
 historical readiness, resources, persistence, and enabled analytical capabilities. A process may

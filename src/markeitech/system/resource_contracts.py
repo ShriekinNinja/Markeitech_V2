@@ -7,8 +7,10 @@ from typing import Any
 
 RUNTIME_RESOURCE_SIGNAL = "markeitech.runtime.resource"
 RUNTIME_RESOURCE_HEALTH_SIGNAL = "markeitech.runtime.health"
+RUNTIME_RESOURCE_MONITOR_READY_SIGNAL = "markeitech.runtime.monitor_ready"
 RUNTIME_RESOURCE_SCHEMA_VERSION = 2
 RUNTIME_RESOURCE_HEALTH_SCHEMA_VERSION = 1
+RUNTIME_RESOURCE_MONITOR_READY_SCHEMA_VERSION = 1
 RUNTIME_RESOURCE_HEALTH_STATES = frozenset({"NORMAL", "WARNING", "CRITICAL"})
 
 
@@ -208,6 +210,47 @@ class RuntimeResourceHealthEvent:
         )
         payload["reason_codes"] = tuple(payload["reason_codes"])
         return cls(**payload)
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeResourceMonitorReadyEvent:
+    """Acknowledge that this run's first resource sample was evaluated."""
+
+    run_id: str
+    source: str
+    sample_event_id: str
+    sample_sequence: int
+    observed_ts_ns: int
+    state: str
+    threshold_version: str
+    schema_version: int = RUNTIME_RESOURCE_MONITOR_READY_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        if self.schema_version != RUNTIME_RESOURCE_MONITOR_READY_SCHEMA_VERSION:
+            raise ValueError(f"unsupported resource monitor ready schema: {self.schema_version}")
+        for field_name in ("run_id", "source", "sample_event_id", "threshold_version"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{field_name} must be a non-empty string")
+            object.__setattr__(self, field_name, value.strip())
+        _require_non_negative_int(self.sample_sequence, "sample_sequence")
+        _require_non_negative_int(self.observed_ts_ns, "observed_ts_ns")
+        if self.sample_sequence == 0:
+            raise ValueError("sample_sequence must be positive")
+        if self.state not in RUNTIME_RESOURCE_HEALTH_STATES:
+            raise ValueError(f"unsupported resource monitor state: {self.state}")
+
+    def to_signal_value(self) -> str:
+        return json.dumps(self.to_dict(), separators=(",", ":"), sort_keys=True)
+
+    def to_dict(self) -> dict[str, object]:
+        return {field_name: getattr(self, field_name) for field_name in self.__dataclass_fields__}
+
+    @classmethod
+    def from_signal_value(cls, value: str) -> RuntimeResourceMonitorReadyEvent:
+        return cls(
+            **_contract_payload(value, set(cls.__dataclass_fields__), "resource monitor ready")
+        )
 
 
 def _contract_payload(value: str, expected: set[str], label: str) -> dict[str, Any]:

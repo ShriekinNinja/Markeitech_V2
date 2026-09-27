@@ -26,10 +26,20 @@ from markeitech.system.messages import (
     PersistenceReadyEvent,
     PersistenceReadyRequest,
 )
+from markeitech.system.resource_contracts import (
+    RUNTIME_RESOURCE_HEALTH_SIGNAL,
+    RUNTIME_RESOURCE_MONITOR_READY_SIGNAL,
+    RuntimeResourceHealthEvent,
+    RuntimeResourceMonitorReadyEvent,
+)
 
 _INITIAL_EVALUATION_ALERT = "system-control-initial-evaluation"
 _INITIAL_EVALUATION_DELAY_NS = 1_000_000
 _PERSISTENCE_ACTOR_ID = "OPERATIONAL-PERSISTENCE"
+_RESOURCE_HEALTH_ACTOR_ID = "RUNTIME-RESOURCE-HEALTH"
+_RUN_SCOPED_COMPONENTS = frozenset(
+    {"operational_persistence", "runtime_resources", "runtime_resource_health"},
+)
 
 
 class SystemControlActorConfig(DataActorConfig):
@@ -38,6 +48,7 @@ class SystemControlActorConfig(DataActorConfig):
         instrument_ids: list[str],
         run_id: str,
         failure_policy: list[dict[str, str]],
+        resource_threshold_version: str,
         operational_persistence_ready: bool = False,
         actor_id: str | ActorId = "SYSTEM-CONTROL",
     ) -> SystemControlActorConfig:
@@ -49,6 +60,12 @@ class SystemControlActorConfig(DataActorConfig):
         obj = super().__new__(cls, actor_id=resolved_actor_id)
         obj.instrument_ids = tuple(instrument_ids)
         obj.run_id = run_id.strip()
+        if (
+            not isinstance(resource_threshold_version, str)
+            or not resource_threshold_version.strip()
+        ):
+            raise ValueError("resource_threshold_version must be a non-empty string")
+        obj.resource_threshold_version = resource_threshold_version.strip()
         rules: list[ComponentFailureRule] = []
         for item in failure_policy:
             if set(item) != {"component", "startup", "running"}:
@@ -81,6 +98,10 @@ class SystemControlActor(DataActor):
         self._expected = {InstrumentId.from_str(value) for value in config.instrument_ids}
         self._run_id = config.run_id
         self._failure_policy = config.failure_policy
+        self._resource_threshold_version = config.resource_threshold_version
+        self._resource_monitor_ready = False
+        self._resource_health_state = "NORMAL"
+        self._resource_monitor_observed_ns = 0
         self._available: set[InstrumentId] = set()
         self._acquisition_ready = False
         self._health = SystemHealthStateMachine()
@@ -102,6 +123,8 @@ class SystemControlActor(DataActor):
         self.subscribe_signal(COMPONENT_RECOVERY_SIGNAL)
         self.subscribe_signal(ACQUISITION_STATUS_SIGNAL)
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
+        self.subscribe_signal(RUNTIME_RESOURCE_MONITOR_READY_SIGNAL)
+        self.subscribe_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL)
         self.publish_signal(
             PERSISTENCE_READY_REQUEST_SIGNAL,
             PersistenceReadyRequest(requester=str(self.actor_id)).to_signal_value(),
@@ -117,6 +140,8 @@ class SystemControlActor(DataActor):
         self.unsubscribe_signal(COMPONENT_RECOVERY_SIGNAL)
         self.unsubscribe_signal(ACQUISITION_STATUS_SIGNAL)
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
+        self.unsubscribe_signal(RUNTIME_RESOURCE_MONITOR_READY_SIGNAL)
+        self.unsubscribe_signal(RUNTIME_RESOURCE_HEALTH_SIGNAL)
         self.log.debug(
             "SYSTEM_CONTROL_SUMMARY"
             f" | component_failures={self._component_failures_received}"
@@ -128,6 +153,12 @@ class SystemControlActor(DataActor):
         )
 
     def on_signal(self, signal: Signal) -> None:
+        if signal.name == RUNTIME_RESOURCE_MONITOR_READY_SIGNAL:
+            self._handle_resource_monitor_ready(signal)
+            return
+        if signal.name == RUNTIME_RESOURCE_HEALTH_SIGNAL:
+            self._handle_resource_health(signal)
+            return
         if signal.name == PERSISTENCE_READY_SIGNAL:
             try:
                 ready = PersistenceReadyEvent.from_signal_value(signal.value)
@@ -204,7 +235,7 @@ class SystemControlActor(DataActor):
                 f"COMPONENT_FAILURE_REJECTED | reason=invalid_event | error={type(exc).__name__}",
             )
             return
-        if failure.component == "operational_persistence" and (
+        if failure.component in _RUN_SCOPED_COMPONENTS and (
             failure.evidence.get("run_id") != self._run_id
             or not failure.evidence.get("incident_id")
         ):
@@ -230,6 +261,86 @@ class SystemControlActor(DataActor):
                 **dict(failure.evidence),
             },
         )
+
+    def _handle_resource_monitor_ready(self, signal: Signal) -> None:
+        try:
+            ready = RuntimeResourceMonitorReadyEvent.from_signal_value(signal.value)
+        except ValueError as exc:
+            self.log.error(f"RESOURCE_MONITOR_READY_REJECTED | error={type(exc).__name__}")
+            return
+        if (
+            ready.run_id != self._run_id
+            or ready.source != _RESOURCE_HEALTH_ACTOR_ID
+            or ready.threshold_version != self._resource_threshold_version
+        ):
+            self.log.error("RESOURCE_MONITOR_READY_REJECTED | reason=identity_mismatch")
+            return
+        if self._health.state in {SystemHealthState.FAILED, SystemHealthState.STOPPING}:
+            return
+        if self._resource_monitor_ready:
+            return
+        # This acknowledgement proves both required actors completed the first sample handoff.
+        self._resource_monitor_ready = True
+        self._resource_monitor_observed_ns = ready.observed_ts_ns
+        self._resource_health_state = ready.state
+        if ready.state == "CRITICAL":
+            self._publish_transition(
+                SystemHealthState.DEGRADED,
+                reason="confirmed critical runtime resource health",
+                evidence=self._instrument_evidence(),
+            )
+        else:
+            self._publish_ready_if_complete()
+
+    def _handle_resource_health(self, signal: Signal) -> None:
+        try:
+            health = RuntimeResourceHealthEvent.from_signal_value(signal.value)
+        except ValueError as exc:
+            self.log.error(f"RESOURCE_HEALTH_REJECTED | error={type(exc).__name__}")
+            return
+        if (
+            health.source != _RESOURCE_HEALTH_ACTOR_ID
+            or health.threshold_version != self._resource_threshold_version
+            or (
+                self._resource_monitor_ready
+                and health.observed_ts_ns < self._resource_monitor_observed_ns
+            )
+        ):
+            self.log.error("RESOURCE_HEALTH_REJECTED | reason=identity_mismatch")
+            return
+        if self._health.state in {SystemHealthState.FAILED, SystemHealthState.STOPPING}:
+            return
+        if not self._resource_monitor_ready and health.state != "CRITICAL":
+            # The first-sample acknowledgement carries the initial confirmed state.
+            return
+        previous = self._resource_health_state
+        self._resource_health_state = health.state
+        if health.state == "CRITICAL":
+            # No first sample by the stale threshold means mandatory monitoring never started.
+            target = (
+                SystemHealthState.FAILED
+                if not self._resource_monitor_ready
+                and "resource_samples_stale" in health.reason_codes
+                else SystemHealthState.DEGRADED
+            )
+            self._publish_transition(
+                target,
+                reason="confirmed critical runtime resource health",
+                evidence={
+                    **self._instrument_evidence(),
+                    "resource_reasons": ",".join(health.reason_codes),
+                },
+            )
+        elif previous == "CRITICAL" and not self._active_component_failures:
+            # Recheck the other runtime gate after a period of confirmed resource pressure.
+            if self._ready_once:
+                self._acquisition_ready = False
+                self.publish_signal(
+                    ACQUISITION_STATUS_REQUEST_SIGNAL,
+                    AcquisitionStatusRequest(requester=str(self.actor_id)).to_signal_value(),
+                )
+            else:
+                self._publish_ready_if_complete()
 
     def _release_startup(self) -> None:
         if self._startup_released:
@@ -306,6 +417,8 @@ class SystemControlActor(DataActor):
             or self._health.state == SystemHealthState.READY
             or not self._evaluation_started
             or not self._persistence_ready
+            or not self._resource_monitor_ready
+            or self._resource_health_state == "CRITICAL"
             or not self._acquisition_ready
             or self._available != self._expected
             or self._active_component_failures
@@ -362,4 +475,6 @@ class SystemControlActor(DataActor):
             "expected_instruments": ",".join(expected),
             "operational_persistence_ready": self._persistence_ready,
             "operational_persistence_preflight_ready": self._persistence_preflight_ready,
+            "resource_monitor_ready": self._resource_monitor_ready,
+            "resource_health_state": self._resource_health_state,
         }

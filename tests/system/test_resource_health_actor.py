@@ -1,13 +1,20 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+from nautilus_trader.common import Signal
+
 from markeitech.system.resource_contracts import (
     RUNTIME_RESOURCE_HEALTH_SIGNAL,
+    RUNTIME_RESOURCE_MONITOR_READY_SIGNAL,
     RUNTIME_RESOURCE_SIGNAL,
     RuntimeResourceEvent,
     RuntimeResourceHealthEvent,
+    RuntimeResourceMonitorReadyEvent,
 )
 from markeitech.system.resource_health_actor import (
     ResourceHealthPolicy,
+    RuntimeResourceHealthActor,
     RuntimeResourceHealthEvaluator,
 )
 
@@ -109,6 +116,40 @@ def test_resource_health_contract_round_trips_exactly() -> None:
 def test_resource_signal_names_do_not_overlap_under_prefix_routing() -> None:
     assert not RUNTIME_RESOURCE_HEALTH_SIGNAL.startswith(RUNTIME_RESOURCE_SIGNAL)
     assert not RUNTIME_RESOURCE_SIGNAL.startswith(RUNTIME_RESOURCE_HEALTH_SIGNAL)
+    assert not RUNTIME_RESOURCE_MONITOR_READY_SIGNAL.startswith(RUNTIME_RESOURCE_SIGNAL)
+    assert not RUNTIME_RESOURCE_SIGNAL.startswith(RUNTIME_RESOURCE_MONITOR_READY_SIGNAL)
+
+
+def test_first_assessed_sample_announces_monitor_ready_once() -> None:
+    published: list[tuple[str, str]] = []
+    actor = SimpleNamespace(
+        _run_id="36a468b3-df4b-49fa-809e-c60e8d19d9a0",
+        _threshold_version="test-v1",
+        _evaluator=RuntimeResourceHealthEvaluator(_policy(), "RUNTIME-RESOURCE-HEALTH"),
+        _monitor_ready_announced=False,
+        _samples=0,
+        _rejected=0,
+        _last_sample_ts_ns=None,
+        actor_id="RUNTIME-RESOURCE-HEALTH",
+        _publish=lambda _event: None,
+        publish_signal=lambda name, value: published.append((name, value)),
+    )
+    sample = _sample(1)
+
+    RuntimeResourceHealthActor.on_signal(
+        actor,
+        Signal(RUNTIME_RESOURCE_SIGNAL, sample.to_signal_value(), 1, 1),
+    )
+    RuntimeResourceHealthActor.on_signal(
+        actor,
+        Signal(RUNTIME_RESOURCE_SIGNAL, _sample(2).to_signal_value(), 1, 1),
+    )
+
+    assert [name for name, _ in published] == [RUNTIME_RESOURCE_MONITOR_READY_SIGNAL]
+    ready = RuntimeResourceMonitorReadyEvent.from_signal_value(published[0][1])
+    assert ready.run_id == actor._run_id
+    assert ready.sample_event_id == sample.event_id
+    assert ready.state == "NORMAL"
 
 
 def test_evaluator_requires_sustained_warning_and_recovery() -> None:

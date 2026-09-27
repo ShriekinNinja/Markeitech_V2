@@ -249,7 +249,6 @@ class RuntimeResourceThresholdConfig:
 
 @dataclass(frozen=True, slots=True)
 class RuntimeResourceHealthConfig:
-    enabled: bool
     threshold_version: str
     warning_consecutive_samples: int
     critical_consecutive_samples: int
@@ -264,7 +263,6 @@ class RuntimeResourceHealthConfig:
 
 @dataclass(frozen=True, slots=True)
 class RuntimeResourcesConfig:
-    enabled: bool
     sample_interval_ms: int
     log_every_samples: int
     include_cache_counts: bool
@@ -368,6 +366,8 @@ def load_system_config(path: str | Path) -> SystemConfig:
             SystemControlPolicy(
                 component_failures=(
                     ComponentFailureRule("operational_persistence", "FAILED", "DEGRADED"),
+                    ComponentFailureRule("runtime_resources", "FAILED", "DEGRADED"),
+                    ComponentFailureRule("runtime_resource_health", "FAILED", "DEGRADED"),
                 ),
             )
         )
@@ -375,7 +375,10 @@ def load_system_config(path: str | Path) -> SystemConfig:
     ib = _load_ib(raw["ib"])
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
-    runtime_resources = _load_runtime_resources(raw["runtime_resources"])
+    runtime_resources = _load_runtime_resources(
+        raw["runtime_resources"],
+        legacy_enabled=schema_version == 29,
+    )
     persistence = _load_persistence(raw["persistence"])
     if "watchlist_file" in raw:
         watchlist_path = config_path.parent / _non_empty_string(
@@ -490,9 +493,9 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
     policy_path = config_path.parent / _non_empty_string(raw["policy_file"], "policy_file")
     with policy_path.open("rb") as file:
         policy = tomllib.load(file)
-    if type(policy.get("policy_version")) is not int or policy["policy_version"] != 2:
+    if type(policy.get("policy_version")) is not int or policy["policy_version"] != 3:
         raise ValueError(
-            f"unsupported policy_version: {policy.get('policy_version')!r}; expected 2",
+            f"unsupported policy_version: {policy.get('policy_version')!r}; expected 3",
         )
     _require_keys(
         policy,
@@ -693,12 +696,14 @@ def _load_discord(raw: Any) -> DiscordConfig:
     )
 
 
-def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
+def _load_runtime_resources(raw: Any, *, legacy_enabled: bool) -> RuntimeResourcesConfig:
     values = _mapping(raw, "runtime_resources")
+    # Schema 29's enable switches remain readable only when both mandatory actors are enabled.
+    enabled_keys = {"enabled"} if legacy_enabled else set()
     _require_keys(
         values,
-        {
-            "enabled",
+        enabled_keys
+        | {
             "sample_interval_ms",
             "log_every_samples",
             "include_cache_counts",
@@ -710,8 +715,8 @@ def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
     health_values = _mapping(values["health"], "runtime_resources.health")
     _require_keys(
         health_values,
-        {
-            "enabled",
+        enabled_keys
+        | {
             "threshold_version",
             "warning_consecutive_samples",
             "critical_consecutive_samples",
@@ -725,6 +730,11 @@ def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
         },
         "runtime_resources.health",
     )
+    if legacy_enabled and (
+        not _bool(values["enabled"], "runtime_resources.enabled")
+        or not _bool(health_values["enabled"], "runtime_resources.health.enabled")
+    ):
+        raise ValueError("runtime resource actors are mandatory and cannot be disabled")
     warning = _load_runtime_resource_thresholds(
         health_values["warning"],
         "runtime_resources.health.warning",
@@ -747,7 +757,6 @@ def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
             "runtime_resources.health.stale_critical_ms must exceed stale_warning_ms",
         )
     return RuntimeResourcesConfig(
-        enabled=_bool(values["enabled"], "runtime_resources.enabled"),
         sample_interval_ms=_positive_int(
             values["sample_interval_ms"],
             "runtime_resources.sample_interval_ms",
@@ -762,7 +771,6 @@ def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
         ),
         disk_path=_non_empty_string(values["disk_path"], "runtime_resources.disk_path"),
         health=RuntimeResourceHealthConfig(
-            enabled=_bool(health_values["enabled"], "runtime_resources.health.enabled"),
             threshold_version=_non_empty_string(
                 health_values["threshold_version"],
                 "runtime_resources.health.threshold_version",

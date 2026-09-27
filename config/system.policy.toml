@@ -1,7 +1,7 @@
 # Reviewed runtime policy. Operator choices live in runtime.example.toml or runtime.local.toml.
 # Relative catalog and log paths resolve against the selected system TOML.
 
-policy_version = 2 # Policy document schema for system schema 30.
+policy_version = 3 # Policy document schema for system schema 30.
 
 [logging]
 directory = "../data/logs" # Runtime log directory, resolved relative to the selected system TOML.
@@ -24,22 +24,33 @@ request_timeout_seconds = 30 # Maximum seconds allowed for an IB request respons
 startup = "FAILED" # Audit loss before the first READY prevents this run from becoming ready.
 running = "DEGRADED" # Later audit loss is observable while independent work may continue.
 
-[discord]
-request_timeout_seconds = 5 # Maximum seconds for one webhook HTTP request.
-queue_capacity = 32 # Maximum queued outbound webhook messages.
+[system_control.component_failures.runtime_resources]
+startup = "FAILED" # A faulted sampler before READY prevents monitoring this run.
+running = "DEGRADED" # Other runtime work can continue while monitoring is unavailable.
 
-[watchlist]
-consumer_retry_interval_ms = 1000 # Milliseconds between native watchlist handler attachment attempts.
+[system_control.component_failures.runtime_resource_health]
+startup = "FAILED" # A faulted evaluator cannot attest to resource health at startup.
+running = "DEGRADED" # Keep the loss visible without stopping unrelated actors.
+
+[persistence]
+dsn_env = "MARKEITECH_POSTGRES_DSN" # Environment variable holding the PostgreSQL connection string.
+connect_timeout_seconds = 5 # Maximum seconds to establish a PostgreSQL connection.
+queue_capacity = 512 # Maximum pending operational writes in the actor queue.
+critical_queue_reserve = 32 # Queue slots reserved for critical operational writes.
+write_batch_size = 64 # Maximum operational records written in one batch.
+result_poll_interval_ms = 250 # Milliseconds between checks for completed database work.
+shutdown_timeout_seconds = 10 # Maximum seconds allowed to drain writes during shutdown.
+write_max_attempts = 3 # Maximum attempts for a retryable operational write.
+write_retry_backoff_ms = 100 # Milliseconds between retryable write attempts.
 
 [runtime_resources]
-enabled = true # Start periodic host and process resource sampling.
+# The sampler and health evaluator are mandatory; neither has an enable switch.
 sample_interval_ms = 10000 # Milliseconds between resource samples.
 log_every_samples = 1 # Write one resource log entry after this many samples.
 include_cache_counts = true # Include Nautilus cache object counts in resource samples.
 disk_path = "/" # Filesystem path whose free space is sampled.
 
 [runtime_resources.health]
-enabled = true # Evaluate resource samples against warning and critical limits.
 threshold_version = "2026-08-22-v2" # Identity recorded with resource-health threshold decisions.
 warning_consecutive_samples = 6 # Warning requires this many consecutive breaching samples.
 critical_consecutive_samples = 3 # Critical requires this many consecutive breaching samples.
@@ -73,16 +84,12 @@ process_cpu_percent = 800.0 # Critical when process CPU use reaches this percent
 thread_count = 250 # Critical when the process reaches this many threads.
 open_fd_ratio = 0.90 # Critical when open file descriptors reach this share of the limit.
 
-[persistence]
-dsn_env = "MARKEITECH_POSTGRES_DSN" # Environment variable holding the PostgreSQL connection string.
-connect_timeout_seconds = 5 # Maximum seconds to establish a PostgreSQL connection.
-queue_capacity = 512 # Maximum pending operational writes in the actor queue.
-critical_queue_reserve = 32 # Queue slots reserved for critical operational writes.
-write_batch_size = 64 # Maximum operational records written in one batch.
-result_poll_interval_ms = 250 # Milliseconds between checks for completed database work.
-shutdown_timeout_seconds = 10 # Maximum seconds allowed to drain writes during shutdown.
-write_max_attempts = 3 # Maximum attempts for a retryable operational write.
-write_retry_backoff_ms = 100 # Milliseconds between retryable write attempts.
+[discord]
+request_timeout_seconds = 5 # Maximum seconds for one webhook HTTP request.
+queue_capacity = 32 # Maximum queued outbound webhook messages.
+
+[watchlist]
+consumer_retry_interval_ms = 1000 # Milliseconds between native watchlist handler attachment attempts.
 
 [historical]
 maximum_plan_requests = 64 # Maximum provider requests compiled from one historical need.

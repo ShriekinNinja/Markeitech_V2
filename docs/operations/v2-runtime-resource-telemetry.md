@@ -20,7 +20,8 @@ cache-policy or Redis decision.
 The `[runtime_resources]` block in tracked `config/system.policy.toml` owns the behavior. The
 selected local `config/runtime.local.toml` profile points to that policy file:
 
-- `enabled`: registers or omits the actor.
+- The sampler and health evaluator are mandatory in the current runtime; neither has an enable
+  switch.
 - `sample_interval_ms`: cadence for resource samples; initially 10 seconds.
 - `log_every_samples`: compact log cadence expressed in samples.
 - `include_cache_counts`: enables inspection through public Nautilus cache methods.
@@ -37,8 +38,11 @@ consecutive samples and below 2% as critical evidence after three. The independe
 and 5 GiB critical byte thresholds remain active, so a small absolute reserve cannot be hidden by a
 large filesystem. These are reviewable starting values, not machine-independent truths.
 
-These are operational parameters, not trading parameters. They do not change global system health;
-`SystemControlActor` remains the sole owner of that state.
+These are operational parameters, not trading parameters. `SystemControlActor` remains the sole
+owner of global health. It waits for Resource Health to acknowledge the first evaluated sample.
+Confirmed `WARNING` remains advisory, while confirmed `CRITICAL` holds or moves global health to
+`DEGRADED`. A critical stale-sample condition before the first valid sample marks startup `FAILED`.
+After recovery from `CRITICAL`, System Control checks its other gates before returning to `READY`.
 
 ## Published Contract
 
@@ -58,6 +62,9 @@ CPU percentage is process CPU-time growth divided by elapsed wall time. It may e
 when the process uses multiple cores. Peak RSS is the maximum observed by this actor during the
 current run, not an operating-system lifetime high-water mark.
 
+The health actor publishes a run-scoped `markeitech.runtime.monitor_ready` acknowledgement after
+evaluating its first valid sampler event. A normal first sample has no health transition, so this
+acknowledgement establishes that both mandatory actors are working without inventing a transition.
 The health actor publishes `markeitech.runtime.health` schema version 1 only when a
 configured state transition survives its confirmation window. Evaluated dimensions are host
 available-memory percentage, host CPU, swap percentage, disk bytes/percentage free, process RSS,
@@ -88,7 +95,8 @@ and observed cache counts. Shutdown does not publish a final event, avoiding a l
 persistence has begun stopping.
 
 Sampling failures are caught and logged as `RUNTIME_RESOURCE_SAMPLE_FAILED`. Missing samples are
-then visible to the independent stale-sample policy. Neither actor blocks or stops unrelated actors.
+then visible to the independent stale-sample policy. Confirmed critical pressure degrades global
+health; it does not stop unrelated actors.
 
 ## Controlled Diagnostic Protocol
 

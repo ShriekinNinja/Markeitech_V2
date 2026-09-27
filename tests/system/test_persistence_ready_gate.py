@@ -60,6 +60,7 @@ def test_control_requires_a_run_id_in_its_config() -> None:
         SystemControlActorConfig(
             instrument_ids=[],
             run_id=" ",
+            resource_threshold_version="test-v1",
             failure_policy=[
                 {
                     "component": "operational_persistence",
@@ -98,12 +99,25 @@ def test_composition_passes_the_current_run_to_control() -> None:
         minimal_calendar_config(),
         StartupPrerequisites(run_id=run_id, operational_persistence_ready=True),
     )
+    assert [item.key for item in plan] == [
+        "system_control",
+        "operational_persistence",
+        "runtime_resources",
+        "runtime_resource_health",
+    ]
 
     control = next(item for item in plan if item.key == "system_control")
     assert control.config.config["run_id"] == str(run_id)
-    assert control.config.config["failure_policy"] == [
-        {"component": "operational_persistence", "startup": "FAILED", "running": "DEGRADED"},
-    ]
+    assert {item["component"] for item in control.config.config["failure_policy"]} == {
+        "operational_persistence", "runtime_resources", "runtime_resource_health",
+    }
+    assert control.config.config["resource_threshold_version"] == (
+        minimal_calendar_config().runtime_resources.health.threshold_version
+    )
+    assert all(
+        item.config.config["run_id"] == str(run_id)
+        for item in plan
+    )
 
 
 def test_persistence_does_not_reply_ready_after_reported_failure() -> None:
