@@ -19,7 +19,7 @@ material is paraphrased; no external skill text or code is copied into this prop
 | `docs/development-guidelines.md` | Runtime ownership, transport-neutral analytics, configuration, and review discipline. |
 | `docs/README.md` | Documentation precedence and current-versus-historical classification. |
 | `docs/architecture/runtime-foundation.md` | Native messaging, composition, system control, persistence, projection, failure, and bounded-work boundaries. |
-| `docs/architecture/market-data-and-acquisition.md` | Native provider transport, demand ownership, watchlist, and historical execution boundaries. |
+| `docs/architecture/market-data-and-acquisition.md` | Native provider transport, demand ownership and historical execution boundaries. |
 | `docs/architecture/session-evidence-health.md` | Calendar/session ownership and evidence-health semantics. |
 | `docs/architecture/deterministic-evidence-contracts.md` | Completed-bar, measurement, entity, identity, health, and fidelity boundaries. |
 | `plugins/kite/skills/markeitech-advisor-router/SKILL.md` | Minimum specialist contract and evidence/permission expectations. |

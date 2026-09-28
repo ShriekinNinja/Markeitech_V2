@@ -24,16 +24,9 @@ from markeitech.system.messages import (
     ACQUISITION_STATUS_REQUEST_SIGNAL,
     ACQUISITION_STREAM_SIGNAL,
     SYSTEM_HEALTH_SIGNAL,
-    WATCHLIST_DEMAND_SIGNAL,
-    WATCHLIST_LIFECYCLE_SIGNAL,
-    WATCHLIST_MEMBERSHIP_SIGNAL,
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
     SystemHealthEvent,
-    WatchlistDemandEvent,
-    WatchlistLifecycleEvent,
-    WatchlistMember,
-    WatchlistMembershipEvent,
 )
 from markeitech.system.persistence import (
     HealthEventRecord,
@@ -55,17 +48,17 @@ from markeitech.system.resource_contracts import (
 @pytest.mark.parametrize(
     ("name", "rejected"),
     [
-        ("markeitech.watchlist.membership.request", False),
+        ("markeitech.acquisition.stream.request", False),
         ("markeitech.system.health.request", False),
         (SYSTEM_HEALTH_SIGNAL, True),
-        (WATCHLIST_MEMBERSHIP_SIGNAL, True),
+        (ACQUISITION_STREAM_SIGNAL, True),
     ],
 )
 def test_persistence_admits_exact_contracts_before_validation(name, rejected) -> None:
     failures = []
     errors = []
     actor = SimpleNamespace(
-        _subscribed_signals={SYSTEM_HEALTH_SIGNAL, WATCHLIST_MEMBERSHIP_SIGNAL},
+        _subscribed_signals={SYSTEM_HEALTH_SIGNAL, ACQUISITION_STREAM_SIGNAL},
         _worker=object(),
         _run_id=uuid4(),
         _sequence=0,
@@ -80,34 +73,34 @@ def test_persistence_admits_exact_contracts_before_validation(name, rejected) ->
 
 def test_operational_event_record_validates_durable_identity_and_timestamps() -> None:
     record = OperationalEventRecord(
-        event_id=" watchlist-membership:1 ",
+        event_id=" acquisition-stream:1 ",
         run_id=uuid4(),
         sequence=1,
-        signal_name=" markeitech.watchlist.membership ",
-        event_type=" watchlist.membership ",
-        source=" WATCHLIST ",
+        signal_name=" markeitech.acquisition.stream ",
+        event_type=" acquisition.stream ",
+        source=" DATA-ACQUISITION ",
         correlation_id=" baseline:config ",
         causation_id=None,
-        payload={"membership_revision": 1},
+        payload={"stream_sequence": 1},
         ts_event_ns=10,
         ts_init_ns=11,
         schema_version=1,
     )
 
-    assert record.event_id == "watchlist-membership:1"
-    assert record.signal_name == "markeitech.watchlist.membership"
+    assert record.event_id == "acquisition-stream:1"
+    assert record.signal_name == "markeitech.acquisition.stream"
     assert record.correlation_id == "baseline:config"
     with pytest.raises(TypeError):
-        record.payload["membership_revision"] = 2  # type: ignore[index]
+        record.payload["stream_sequence"] = 2  # type: ignore[index]
 
     with pytest.raises(ValueError, match="sequence must be a positive integer"):
         OperationalEventRecord(
-            event_id="watchlist-membership:2",
+            event_id="acquisition-stream:2",
             run_id=uuid4(),
             sequence=0,
-            signal_name="markeitech.watchlist.membership",
-            event_type="watchlist.membership",
-            source="WATCHLIST",
+            signal_name="markeitech.acquisition.stream",
+            event_type="acquisition.stream",
+            source="DATA-ACQUISITION",
             payload={},
             ts_event_ns=10,
             ts_init_ns=11,
@@ -221,13 +214,13 @@ def test_worker_preserves_order_across_health_and_generic_operational_records() 
     assert worker.submit(_record(1, "STARTING"))
     assert worker.submit(
         OperationalEventRecord(
-            event_id="watchlist-membership:1",
+            event_id="acquisition-stream:1",
             run_id=run_id,
             sequence=2,
-            signal_name=WATCHLIST_MEMBERSHIP_SIGNAL,
-            event_type="watchlist.membership",
-            source="WATCHLIST",
-            payload={"membership_revision": 1},
+            signal_name=ACQUISITION_STREAM_SIGNAL,
+            event_type="acquisition.stream",
+            source="DATA-ACQUISITION",
+            payload={"stream_sequence": 1},
             ts_event_ns=2,
             ts_init_ns=2,
             schema_version=1,
@@ -239,85 +232,6 @@ def test_worker_preserves_order_across_health_and_generic_operational_records() 
         (1, "HealthEventRecord"),
         (2, "OperationalEventRecord"),
     ]
-
-
-def test_watchlist_signals_convert_to_auditable_records_without_market_payloads() -> None:
-    run_id = uuid4()
-    membership = WatchlistMembershipEvent(
-        event_id="watchlist-membership:1",
-        membership_revision=1,
-        source="WATCHLIST",
-        reason="static baseline",
-        members=(
-            WatchlistMember(
-                instrument_id="ESU6.CME",
-                calendar_id="cme_equity",
-                capabilities=("top_of_book", "watchlist_last"),
-                owner_ids=("config:system",),
-            ),
-        ),
-    )
-    membership_record = _record_from_signal(
-        run_id,
-        1,
-        Signal(
-            name=WATCHLIST_MEMBERSHIP_SIGNAL,
-            value=membership.to_signal_value(),
-            ts_event=10,
-            ts_init=11,
-        ),
-    )
-    lifecycle = WatchlistLifecycleEvent(
-        event_id="watchlist-lifecycle:1",
-        membership_revision=1,
-        state="CONFIGURED",
-        source="WATCHLIST",
-        reason="static baseline",
-        owner_id="config:system",
-        correlation_id="watchlist-membership:1",
-    )
-    lifecycle_record = _record_from_signal(
-        run_id,
-        2,
-        Signal(
-            name=WATCHLIST_LIFECYCLE_SIGNAL,
-            value=lifecycle.to_signal_value(),
-            ts_event=12,
-            ts_init=13,
-        ),
-    )
-    demand = WatchlistDemandEvent(
-        demand_id="watchlist:1:ESU6.CME/quotes/default",
-        action="REQUEST",
-        instrument_id="ESU6.CME",
-        capability="top_of_book",
-        feed_kind="quotes",
-        selector="default",
-        owner_id="config:system",
-        purpose="static watchlist top_of_book",
-    )
-    demand_record = _record_from_signal(
-        run_id,
-        3,
-        Signal(
-            name=WATCHLIST_DEMAND_SIGNAL,
-            value=demand.to_signal_value(),
-            ts_event=14,
-            ts_init=15,
-        ),
-    )
-
-    assert isinstance(membership_record, OperationalEventRecord)
-    assert membership_record.event_type == "watchlist.membership"
-    assert membership_record.correlation_id == membership.event_id
-    assert "best_bid" not in membership_record.payload
-    assert isinstance(lifecycle_record, OperationalEventRecord)
-    assert lifecycle_record.event_type == "watchlist.lifecycle"
-    assert lifecycle_record.correlation_id == membership.event_id
-    assert isinstance(demand_record, OperationalEventRecord)
-    assert demand_record.event_type == "watchlist.demand"
-    assert demand_record.correlation_id == demand.demand_id
-    assert "best_bid" not in demand_record.payload
 
 
 def test_existing_acquisition_intent_and_outcome_convert_to_audit_records() -> None:
@@ -339,8 +253,8 @@ def test_existing_acquisition_intent_and_outcome_convert_to_audit_records() -> N
         feed_kind="quotes",
         selector="default",
         source="DATA-ACQUISITION",
-        demand_id="watchlist:1:ESU6.CME/quotes/default",
-        consumer_ids=("watchlist:1:ESU6.CME/quotes/default",),
+        demand_id="analysis:1:ESU6.CME/quotes/default",
+        consumer_ids=("analysis:1:ESU6.CME/quotes/default",),
         detail="native subscription command issued",
     )
     stream_record = _record_from_signal(

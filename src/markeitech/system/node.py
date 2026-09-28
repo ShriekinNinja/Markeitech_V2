@@ -38,10 +38,10 @@ _ENVIRONMENTS = {
 
 
 def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataClientConfig:
-    instrument_ids = [InstrumentId.from_str(value) for value in config.instrument_ids]
+    # Resolve the validated startup roster once for the native IB instrument provider.
     provider_config = InteractiveBrokersInstrumentProviderConfig(
         symbology_method=_SYMBOLOGY_METHODS[config.ib.symbology_method],
-        load_ids=set(instrument_ids),
+        load_ids={InstrumentId.from_str(value) for value in config.preload_instruments},
         convert_exchange_to_mic_venue=config.ib.convert_exchange_to_mic_venue,
     )
     return InteractiveBrokersDataClientConfig(

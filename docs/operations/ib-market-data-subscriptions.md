@@ -36,10 +36,10 @@ Subscribe in phases:
 
 ## Phase 1: Historical ES-Only Planning Baseline
 
-The former ES-only review profile used `ESU6.CME`, `watchlist_last`, and bounded historical-bar
-requests. That profile has been removed. The current
-[`example watchlist`](../../config/runtime.example.toml) enables seven instruments; this ES-only
-entitlement baseline does not cover that full watchlist.
+The tracked example preloads eight exact RAW futures, ETF, and index definitions at
+startup, and the active actor plan makes no market-data subscriptions. Loading definitions does
+not establish market-data entitlement or delivery. The entitlement information below remains
+planning context for a later connected scenario.
 
 | IBKR subscription | Coverage | Markeitech requirement | Published non-professional price |
 | --- | --- | --- | ---: |
@@ -60,8 +60,9 @@ The following are not required by the exact current profile:
 
 ## Phase 2: Broader Configured Observation Universe
 
-The full configuration template contains ES, NQ, YM, CL, SPY, QQQ, SPX, VIX, TSM, and several
-Nasdaq-listed equities. Enabling that universe with real-time, consolidated Level 1 data requires
+The current preload set includes ES, NQ, CL, SPY, QQQ, SOXL, SPX, and VIX; it does not request
+their live data. A broader observation universe could also include YM, TSM, and other equities.
+Enabling that universe with real-time, consolidated Level 1 data requires
 the following direct feeds.
 
 | Exact IBKR subscription name | Markeitech instruments or class | Published non-professional price |
@@ -342,10 +343,7 @@ Only after this authenticated check should the final account-specific purchase l
 
 ### Verified From Current Checkout
 
-- The exact tracked V3 profile is ES-only and requests `watchlist_last` plus bounded historical
-  bars.
-- The full template contains the broader futures, equities, ETFs, and cash-index observation
-  universe listed above.
+- The tracked IB data client preloads eight definitions; market-data demand is not composed.
 - SPXW, SPY, and QQQ are a future configurable expression universe with no globally preferred
   product.
 - Option-chain acquisition and live options intelligence remain future work.

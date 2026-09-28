@@ -130,7 +130,8 @@ if not webhook.startswith("https://"):
 
 config = load_system_config(config_path)
 validate_runtime_environment(config, environment)
-print(f"PASS: V2 configuration parsed for {len(config.instrument_ids)} instruments")
+# Instrument selection is configured separately; parsing alone does not establish a count.
+print("PASS: V2 configuration parsed")
 print("PASS: required environment values are present and mutually consistent")
 PY
 

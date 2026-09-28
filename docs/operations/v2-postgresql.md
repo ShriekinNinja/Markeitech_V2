@@ -21,8 +21,7 @@ version. Profiles let evidence health resume with observed delivery cadence afte
 policy-version isolation prevents incompatible settings from silently reusing old learning.
 
 The persistence actor consumes existing acquisition requests, acquisition status and stream
-lifecycle, component failures, evidence recency checkpoints, and static watchlist membership and
-lifecycle signals through one ordered bounded worker. The worker writes bounded batches in one
+lifecycle, component failures, and evidence recency checkpoints through one ordered bounded worker. The worker writes bounded batches in one
 transaction and reserves configured admission capacity for health and failure records. It records
 semantic control history only; native quote and bar callbacks remain outside PostgreSQL.
 
@@ -30,7 +29,7 @@ Nautilus signals are transient rather than retained. Runtime startup therefore h
 guarantees. Process preflight verifies PostgreSQL and migrations before the node is built. Inside
 the node, the persistence actor publishes a versioned readiness fact only after its worker is
 running, all audited signal subscriptions are installed, and its Nautilus `on_start` callback has
-returned. System control, acquisition, and watchlist actors request and wait for that fact before
+returned. System control and acquisition actors request and wait for that fact before
 publishing startup events.
 
 This ordering preserves acquisition `REQUESTED`, `ACCEPTED`, and `SUBSCRIBED` events before the

@@ -142,39 +142,17 @@ test -e config/runtime.local.toml || \
   cp config/runtime.example.toml config/runtime.local.toml
 ```
 
-Both destination files are ignored by Git. The schema-30 example and local runtime profiles select
-tracked `config/system.policy.toml` and contain their own `[watchlist]` table. The profile owns
-exact instruments, calendar bindings, requested feeds, and whether the watchlist actor runs. The
-policy owns reviewed runtime limits, delivery behavior, and the watchlist handler retry interval.
-The policy path resolves relative to the selected runtime TOML.
-
-The loader accepts the split system schema **30** and complete legacy schema **29** profiles.
-Schema 30 keeps operator and policy settings in their respective files; duplicate settings are
-rejected. It derives active calendars from the distinct `calendar_id` values in watchlist members.
-For an empty watchlist, policy `sessions.idle_calendar_ids` preserves the zero-instrument session
-monitor. A local policy copy can be selected with `policy_file` when reviewed limits must differ
-on one machine. Complete schema-29 profiles may still use `watchlist_file` and explicit
-`sessions.calendar_ids`.
-
-To migrate a schema-23/24 local profile to the supported schema 29 first:
-
-1. Remove the complete `[acquisition]` section, which contained only native-consumer diagnostic settings.
-2. Remove the complete `[historical.probe]` section; keep `[historical]` and its production limits.
-3. Remove `[visual_debug_capture]` if present; the capture actor and renderer have been removed.
-4. Remove the entire `[metrics]` tree, including quote quality, session measurements, entity analysis, and all child tables.
-5. Remove the entire `[dashboard]` section if present. Set `schema_version = 29` and compare the result with the current policy and operator profile.
-
-For a schema-25/26/27/28 profile, remove the entire `[dashboard]` section if present, then set
-`schema_version = 29`. Keep the production `[historical]` section.
-
-Preserve machine-specific IB settings, paths, thresholds, and secret environment references.
-Local files are not migrated automatically. For profiles older than schema 23, also apply the
-calendar and current-state changes below; a version-number edit alone is insufficient. To use
-schema 30 after that migration, start with the short `runtime.example.toml`, transfer the reviewed
-operator values into `runtime.local.toml`, and compare the legacy policy values with
-`system.policy.toml` before selecting that policy. Move exact watchlist members into the local
-runtime profile and keep changed machine-specific limits in a separately selected local policy
-copy.
+Both destination files are ignored by Git. The schema-32 runtime profile selects tracked
+`config/system.policy.toml`. The profile holds operator choices; the policy holds reviewed
+limits, delivery behavior, and explicit `sessions.calendar_ids`. The policy path resolves relative
+to the selected runtime TOML. The loader also accepts a complete standalone schema-32 profile.
+Older schema versions are rejected; local files are not migrated automatically. Preserve
+machine-specific IB settings, paths, thresholds, and secret environment references when copying
+those choices into the current example profile. Add `[preload_instruments].ids` to the local
+profile. The tracked example selects eight exact futures, ETF, and index definitions; use an empty
+array to start without instrument preloads. The selected RAW notation must match
+`[ib].symbology_method`.
+Preloading resolves definitions at startup and does not subscribe to market data.
 
 For pre-calendar-cutover profiles, remove the retired `[visual_acceptance]` and
 `[live_evidence_review]` sections and replace inline `[[sessions.calendars]]` definitions with the
@@ -185,9 +163,8 @@ profile, the catalog reference and bounded projection settings are in `system.po
 `response_timeout_ms`, `maximum_attempts`, `retry_backoff_ms`, and `maximum_elapsed_ms` values;
 these local actor-delivery controls are independent of IB historical polling and metric-demand
 retries. The referenced catalog path is resolved relative to the system
-TOML and must exist; the tracked catalog is `config/system.calendars.toml`. Schema-29 profiles
-select explicit `calendar_ids`. Schema-30 profiles derive active IDs from `[[watchlist.members]]`
-in the runtime profile; definitions available but unused are validated without being instantiated.
+TOML and must exist; the tracked catalog is `config/system.calendars.toml`. Schema 32
+selects `calendar_ids` in the policy; definitions available but unused are validated without being instantiated.
 Rolling a futures contract does not require editing the calendar catalog. The CME/CBOT definitions
 also expose overlapping `ASIA`, `LONDON`, and `NEW_YORK` phases.
 Those phase clocks describe market regions and do not create analytical windows by themselves.
@@ -202,7 +179,7 @@ unavailable provider columns, invalid phase timezones, incomplete source/correct
 obsolete catalog-owned instrument mappings, and projection requests which exceed configured
 bounds. Do not overwrite the rest of an existing machine-local profile; compare it with
 `runtime.example.toml`, `system.policy.toml`, and `system.calendars.toml`. Preserve its reviewed
-IB, instrument, and persistence settings.
+IB and persistence settings.
 
 ### Environment file
 
@@ -220,11 +197,9 @@ its values into issues, pull requests, logs, or documentation.
 Review `config/runtime.local.toml` and its selected policy and calendar files before connecting:
 
 1. `[ib].host`, `[ib].port`, and `[ib].client_id`
-2. current explicit futures contracts in profile bindings and watchlist members
-3. instruments covered by the current user's IB market-data entitlements
-4. watchlist `calendar_id` assignments, derived active calendars, and the dedicated
-   `system.calendars.toml` catalog identity
-5. Discord, resource-health, persistence, historical, and evidence-health policy
+2. the explicit `sessions.calendar_ids` and `system.calendars.toml` catalog identity
+3. Discord, resource-health, persistence, historical, and evidence-health policy
+4. `[preload_instruments].ids`, exact dated futures identity, and the matching IB symbology method
 
 The tracked example contains reviewed defaults, not universally valid contracts or entitlements.
 Do not replace explicit futures with continuous futures without a separate architecture decision.

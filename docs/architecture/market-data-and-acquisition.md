@@ -3,9 +3,9 @@
 **Status:** Consolidated current architecture; active scope and connected evidence remain governed
 by [`current-status.md`](../current-status.md)
 
-This document owns the provider-data, observation-universe, watchlist, live-demand, historical-
+This document owns the provider-data, observation-universe, live-demand, historical-
 dependency, and acquisition-control boundaries. It consolidates the still-current decisions from
-the former provider-boundary, adaptive-data-plane, historical-execution, and watchlist plans.
+the former provider-boundary, adaptive-data-plane, and historical-execution plans.
 
 ## Core Boundary
 
@@ -16,13 +16,13 @@ in a parallel raw-data model.
 `DataAcquisitionActor` is the sole logical owner of provider-facing live subscriptions and
 historical requests. Consumers declare bounded demand. Acquisition resolves instruments,
 validates support and policy, reconciles shared requirements, owns pacing/retry/cancellation, and
-publishes lifecycle facts. Analytical actors, strategies, the watchlist and projections declare
+publishes lifecycle facts. Analytical actors, strategies, and projections declare
 data needs through acquisition rather than creating independent market-data connections. Execution
 client ownership belongs to its selected issue and does not duplicate market-data ownership.
 
 ```text
 configuration/operator/future policy intent
-    -> watchlist or capability declaration
+    -> bounded consumer demand
     -> exact logical live/historical demand
     -> DataAcquisitionActor
     -> Nautilus DataEngine and approved provider adapter
@@ -70,9 +70,10 @@ Source and fidelity are field-specific:
 - delayed or frozen data is never labelled real time; and
 - unsupported, absent, partial, stale, and unknown are valid outcomes.
 
-The current IB configuration keeps simplified symbology, MIC conversion disabled, quote batching
-enabled, quote size-only updates preserved, and revised-bar handling disabled. A change to those
-semantics requires explicit configuration, compatibility review, and acceptance.
+The tracked IB example uses RAW symbology with exact `=FUT`, `=STK`, and `=IND` instrument IDs, MIC
+conversion disabled, quote batching enabled, quote size-only updates preserved, and revised-bar
+handling disabled. Its configured IDs preload definitions without subscribing to market data.
+Changes to these semantics require explicit configuration, compatibility review, and acceptance.
 
 ## Live Demand And Subscription Lifetime
 
@@ -95,30 +96,6 @@ does not remove acquisition's logical lifetime ownership.
 
 Book and option-chain request shapes require their own bounded contracts. Native type presence is
 not evidence that the pinned IB adapter supplies every stream or field.
-
-## Watchlist Ownership
-
-`WatchlistActor` owns current configured observation membership and one bounded latest-state
-projection per member. Configuration supplies the durable startup claims. It translates approved
-business capabilities such as `top_of_book` or `watchlist_last` into logical demand, observes
-native callbacks, and publishes membership/readiness facts—not raw market data.
-
-The active profile remains configuration-seeded. Dynamic membership is deferred and requires a
-focused decision covering:
-
-- stable intent and claim owner identity;
-- add, update, release, and focus actions;
-- exact or policy-resolvable instrument identity;
-- requested capabilities, priority, reason, correlation/causation, and expiry;
-- deterministic policy disposition and measured provider/resource budgets;
-- effective capabilities as the union of all active claims;
-- release ordering so one claim cannot tear down another consumer's data;
-- idempotent durable intent/lifecycle history and a rebuildable effective-membership projection;
-- restart behavior which restores configured and still-valid claims but never resurrects expired
-  runtime claims; and
-- explicit provider gaps, including whether broad five-second bar-derived last is sufficient.
-
-Consumers and operator requests use the acquisition owner for market-data subscriptions.
 
 ## Historical Dependency Planning
 

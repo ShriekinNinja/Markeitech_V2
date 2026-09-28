@@ -130,7 +130,7 @@ class GenerationTests(unittest.TestCase):
         manifest = load_manifest(CANONICAL, repository_root=REPOSITORY_ROOT)
         selected = select_view(manifest, "view.complete-inventory")
 
-        self.assertEqual(len(selected.components), 24)
+        self.assertEqual(len(selected.components), 23)
         self.assertEqual(len(selected.tombstones), 5)
         self.assertEqual(selected.edges, ())
 

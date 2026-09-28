@@ -24,7 +24,7 @@ from markeitech.system.resource_contracts import RuntimeResourceHealthEvent
 @pytest.mark.parametrize(
     ("name", "rejected"),
     [
-        ("markeitech.watchlist.membership.request", False),
+        ("markeitech.acquisition.stream.request", False),
         ("markeitech.system.health.request", False),
         (SYSTEM_HEALTH_SIGNAL, True),
     ],

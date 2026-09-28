@@ -40,15 +40,15 @@ def test_postgres_migrations_restart_reads_and_duplicate_event_write() -> None:
     store.write_health_event(record)
     store.write_health_event(record)
     operational_record = OperationalEventRecord(
-        event_id="watchlist-membership:1",
+        event_id="acquisition-stream:1",
         run_id=run_id,
         sequence=1,
-        signal_name="markeitech.watchlist.membership",
-        event_type="watchlist.membership",
-        source="WATCHLIST",
+        signal_name="markeitech.acquisition.stream",
+        event_type="acquisition.stream",
+        source="DATA-ACQUISITION",
         correlation_id="baseline:config",
         causation_id=None,
-        payload={"membership_revision": 1, "instrument_count": 2},
+        payload={"stream_sequence": 1, "instrument_count": 2},
         ts_event_ns=102,
         ts_init_ns=103,
         schema_version=1,
@@ -97,7 +97,7 @@ def test_postgres_migrations_restart_reads_and_duplicate_event_write() -> None:
                 source=operational_record.source,
                 correlation_id=operational_record.correlation_id,
                 causation_id=operational_record.causation_id,
-                payload={"membership_revision": 999},
+                payload={"stream_sequence": 999},
                 ts_event_ns=operational_record.ts_event_ns,
                 ts_init_ns=operational_record.ts_init_ns,
                 schema_version=operational_record.schema_version,
@@ -114,9 +114,9 @@ def test_postgres_migrations_restart_reads_and_duplicate_event_write() -> None:
     assert stored_events[0].sequence == 1
     assert stored_events[0].evidence == {"operational_persistence_ready": True}
     assert len(stored_operational_events) == 2
-    assert stored_operational_events[0].event_id == "watchlist-membership:1"
+    assert stored_operational_events[0].event_id == "acquisition-stream:1"
     assert stored_operational_events[0].payload == {
-        "membership_revision": 1,
+        "stream_sequence": 1,
         "instrument_count": 2,
     }
     stored_profile = next(

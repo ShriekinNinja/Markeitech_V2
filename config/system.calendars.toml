@@ -1,7 +1,7 @@
 # Canonical temporal catalog. mcal supplies exchange dates, holidays, special closes, DST-aware
 # schedule rows, and the admitted schedule columns. Markeitech supplies source-cited structural
 # corrections and independently timezoned product phases. Concrete instruments bind to these
-# reusable definitions through the runtime watchlist, never through this catalog. All runtime
+# reusable definitions through runtime policy, never through this catalog. All runtime
 # instants produced from this catalog are UTC nanoseconds.
 
 schema_version = 3

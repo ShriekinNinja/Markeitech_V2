@@ -23,7 +23,6 @@ Show implemented, conditional, disabled, external, and future components without
 | `actor.runtime-resources` | Runtime Resources | markeitech_actor | implemented | always | 4 | enabled | `actor.runtime-resources` | `boundary.system` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | not_composed | not applicable | disabled | `actor.session-state` | `boundary.intelligence` |
 | `actor.system-control` | System Control | markeitech_actor | implemented | always | 1 | enabled | `actor.system-control` | `boundary.system` |
-| `actor.watchlist` | Watchlist | markeitech_actor | implemented | not_composed | not applicable | disabled | `actor.watchlist` | `boundary.acquisition` |
 | `component.cache` | Nautilus Cache | engine | implemented | always | not applicable | enabled | `component.cache` | `boundary.nautilus` |
 | `component.canonical-calendar` | Canonical Calendar | engine | implemented | not_composed | not applicable | disabled | `actor.session-state` | `boundary.intelligence` |
 | `component.data-engine` | Nautilus Data Engine | engine | implemented | always | not applicable | enabled | `component.data-engine` | `boundary.nautilus` |
@@ -44,7 +43,6 @@ Show implemented, conditional, disabled, external, and future components without
 | ID | Owning component | Capability | Implementation | Composition | Active profile | Configuration |
 |---|---|---|---|---|---|---|
 | `capability.acquisition.historical-bars` | `actor.data-acquisition` | Bounded analytical historical bar requests | implemented | not_composed | disabled | historical plus consumer AnalyticalDemand |
-| `capability.acquisition.watchlist-last` | `actor.data-acquisition` | Watchlist last-price bar acquisition | implemented | not_composed | disabled | watchlist.members[].capabilities contains watchlist_last |
 | `capability.discord.notifications` | `actor.discord-webhooks` | Queued Discord system and resource health notifications | implemented | conditional | enabled | discord.enabled |
 | `capability.runtime-resources.health` | `actor.runtime-resource-health` | Runtime resource health classification | implemented | always | enabled | not applicable |
 | `capability.runtime-resources.telemetry` | `actor.runtime-resources` | Runtime resource telemetry | implemented | always | enabled | not applicable |

@@ -27,8 +27,7 @@ Address these only when selected or when they directly block the current issue:
 - account/order/fill/position reconciliation and recovery after the execution path exists;
 - indicator production, late-consumer state and historical/live warmup;
 - persistence or webhook delivery failures encountered in operation;
-- dynamic watchlist membership, additional feeds, options evidence or interfaces required by a
-  named consumer.
+- additional feeds, options evidence, or interfaces required by a named consumer.
 
 Existing issues retain their own scope and decisions. The list does not authorize new storage,
 providers, schemas, policy or dependencies. Use existing foundations until concrete behavior

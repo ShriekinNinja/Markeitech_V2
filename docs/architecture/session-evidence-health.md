@@ -63,12 +63,10 @@ release and provider cancellation; Nautilus owns local actor-handler cleanup.
 
 The current runtime profile loads one dedicated
 `config/system.calendars.toml` schema-3/catalog-version-4 startup catalog. Inline definitions,
-legacy dated overrides, and unsupported system or catalog schemas are rejected. Schema 30 derives
-active calendar IDs from the watchlist's instrument bindings. The policy selects explicit idle
-calendars only when the watchlist is empty. Available but unused definitions are validated without
-being instantiated. The runtime watchlist is the sole binding authority between exact admitted
-instruments and reusable calendar IDs, so futures rollover does not require editing temporal
-definitions.
+legacy dated overrides, and unsupported system or catalog schemas are rejected. Schema 31 selects
+calendar IDs explicitly from policy `sessions.calendar_ids`. Available but unused definitions are
+validated without being instantiated. Instrument-to-calendar binding for future consumers is not
+configured in this batch; futures rollover does not require editing temporal definitions.
 
 Every immutable calendar definition identifies:
 
@@ -162,9 +160,10 @@ configured minimum sample count protects cold start. Effective thresholds are de
 exponentially weighted interval mean and variance, then clamped to configured hard minimums and
 maximums. Five-second bars retain cadence-based fixed policy in the current configuration.
 
-SPX and VIX cash indexes currently declare bar-derived last only and use cash-session expectations.
-The SPXW option session remains separately configured for future option contracts; an extended
-option session does not imply that the cash index publishes the same underlying feed overnight.
+The tracked profile preloads SPX and VIX cash-index definitions without declaring a live feed.
+Any future data demand must retain cash-session expectations. The SPXW option session remains
+separately configured for future option contracts; an extended option session does not imply that
+the cash index publishes the same underlying feed overnight.
 
 ## Persistence
 

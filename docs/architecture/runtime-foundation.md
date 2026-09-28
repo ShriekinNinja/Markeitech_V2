@@ -45,19 +45,20 @@ Composition invariants are:
 - one `SystemControlActor` owns global system-health transitions;
 - `DataAcquisitionActor` owns provider-facing demand and request lifetime when composed;
 - one `OperationalPersistenceActor` owns operational writes while the node is running;
-- Watchlist and Data Acquisition are currently unregistered, even when the profile contains
-  watchlist members; consumers can verify instrument availability through Nautilus;
+- Data Acquisition is currently unregistered; consumers can verify instrument availability
+  through Nautilus;
 - resource sampling and resource health are mandatory, while Discord composition follows its
   enable setting;
 - duplicate actor IDs and missing mandatory prerequisites fail before provider connection; and
 - dynamic actor loading/removal and a generic dependency-injection or plugin system are not part
   of the current runtime.
 
-The code supports an explicitly disabled, empty watchlist. That profile selects no instrument IDs
-for native IB provider loading. System Control readiness still requires its current persistence and
-resource gates; it does not wait for watchlist observations, historical work, or market ticks.
-Configuration identity and source semantics remain startup-only. No tracked zero-instrument profile
-is maintained.
+The IB data-client configuration preloads the exact instrument definitions selected by
+`[preload_instruments].ids` at startup. The tracked example selects eight RAW IDs covering
+dated ES, NQ, and CL futures, SMART-routed SPY, QQQ, and SOXL ETFs, and CBOE SPX and VIX indexes.
+Preloading does not subscribe to market data. System Control
+readiness still requires its persistence and resource gates; it does not wait for historical work
+or market ticks. Configuration identity and source semantics remain startup-only.
 
 ## Messaging And State Transfer
 

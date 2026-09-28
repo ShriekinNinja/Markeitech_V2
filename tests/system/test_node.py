@@ -7,6 +7,7 @@ from nautilus_trader.adapters.interactive_brokers import (
     MarketDataType,
     SymbologyMethod,
 )
+from nautilus_trader.model import InstrumentId
 
 from markeitech.system.composition import StartupPrerequisites
 from markeitech.system.config import load_system_config
@@ -25,13 +26,19 @@ def test_maps_provider_boundary_to_installed_ib_config() -> None:
     assert data_config.batch_quotes is True
     assert data_config.ignore_quote_tick_size_updates is False
     assert data_config.handle_revised_bars is False
-    assert provider_config.symbology_method == SymbologyMethod.SIMPLIFIED
-    assert provider_config.convert_exchange_to_mic_venue is False
-    assert {str(instrument_id) for instrument_id in provider_config.load_ids} == {
-        "ESZ6.CME",
-        "SPY.SMART",
-        "^SPX.CBOE",
+    assert provider_config.symbology_method == SymbologyMethod.RAW
+    # The provider receives definitions to preload, while this offline check opens no IB session.
+    assert provider_config.load_ids == {
+        InstrumentId.from_str("ESZ6=FUT.CME"),
+        InstrumentId.from_str("NQZ6=FUT.CME"),
+        InstrumentId.from_str("CLX6=FUT.NYMEX"),
+        InstrumentId.from_str("SPY=STK.SMART"),
+        InstrumentId.from_str("QQQ=STK.SMART"),
+        InstrumentId.from_str("SOXL=STK.SMART"),
+        InstrumentId.from_str("SPX=IND.CBOE"),
+        InstrumentId.from_str("VIX=IND.CBOE"),
     }
+    assert provider_config.convert_exchange_to_mic_venue is False
 
 
 def test_builds_v2_node_without_connecting() -> None:

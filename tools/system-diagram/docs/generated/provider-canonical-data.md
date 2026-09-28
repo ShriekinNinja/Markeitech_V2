@@ -18,7 +18,6 @@ Show provider capability, native Nautilus boundary, acquisition ownership, histo
 | `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | not_composed | not applicable | disabled | `actor.evidence-health` | `boundary.intelligence` |
 | `actor.historical-planner` | Historical Evidence Planner | markeitech_actor | implemented | not_composed | not applicable | disabled | `actor.historical-planner` | `boundary.intelligence` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | not_composed | not applicable | disabled | `actor.session-state` | `boundary.intelligence` |
-| `actor.watchlist` | Watchlist | markeitech_actor | implemented | not_composed | not applicable | disabled | `actor.watchlist` | `boundary.acquisition` |
 | `component.cache` | Nautilus Cache | engine | implemented | always | not applicable | enabled | `component.cache` | `boundary.nautilus` |
 | `component.canonical-calendar` | Canonical Calendar | engine | implemented | not_composed | not applicable | disabled | `actor.session-state` | `boundary.intelligence` |
 | `component.data-engine` | Nautilus Data Engine | engine | implemented | always | not applicable | enabled | `component.data-engine` | `boundary.nautilus` |
@@ -29,15 +28,13 @@ Show provider capability, native Nautilus boundary, acquisition ownership, histo
 | ID | Owning component | Capability | Implementation | Composition | Active profile | Configuration |
 |---|---|---|---|---|---|---|
 | `capability.acquisition.historical-bars` | `actor.data-acquisition` | Bounded analytical historical bar requests | implemented | not_composed | disabled | historical plus consumer AnalyticalDemand |
-| `capability.acquisition.watchlist-last` | `actor.data-acquisition` | Watchlist last-price bar acquisition | implemented | not_composed | disabled | watchlist.members[].capabilities contains watchlist_last |
 
 ## Flows
 
 | ID | Source | Target | Category | Contract | Transport | Required | Condition | Delivery |
 |---|---|---|---|---|---|---|---|---|
-| `edge.acquisition-status-watchlist` | `actor.data-acquisition` | `actor.watchlist` | response | `contract.acquisition-status` | nautilus_signal | yes | always | unknown |
 | `edge.acquisition-stream-health` | `actor.data-acquisition` | `actor.evidence-health` | publication | `contract.acquisition-stream` | nautilus_signal | yes | always | unknown |
-| `edge.acquisition-subscribe` | `actor.data-acquisition` | `component.data-engine` | subscription_command | `contract.native-subscription-command` | method_call | yes | watchlist.capabilities.watchlist_last | at_most_once_attempt |
+| `edge.acquisition-subscribe` | `actor.data-acquisition` | `component.data-engine` | subscription_command | `contract.native-subscription-command` | method_call | yes | always | at_most_once_attempt |
 | `edge.calendar-request-health` | `actor.evidence-health` | `actor.session-state` | query | `contract.calendar-state-snapshot-request` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-request-planner` | `actor.historical-planner` | `actor.session-state` | query | `contract.calendar-projection-request` | nautilus_custom_data | yes | always | unknown |
 | `edge.calendar-response-health` | `actor.session-state` | `actor.evidence-health` | response | `contract.calendar-state-snapshot-response` | nautilus_custom_data | yes | always | unknown |
@@ -51,8 +48,6 @@ Show provider capability, native Nautilus boundary, acquisition ownership, histo
 | `edge.historical-provider-response` | `provider.interactive-brokers` | `component.data-engine` | response | `contract.native-bar` | nautilus_native_data | yes | historical.enabled | unknown |
 | `edge.ib-native-bars` | `provider.interactive-brokers` | `component.data-engine` | native_observation | `contract.native-bar` | nautilus_native_data | yes | always | unknown |
 | `edge.native-historical-request` | `actor.data-acquisition` | `component.data-engine` | query | `contract.native-historical-request` | method_call | yes | historical.enabled | at_most_once_attempt |
-| `edge.watchlist-demand` | `actor.watchlist` | `actor.data-acquisition` | publication | `contract.watchlist-demand` | nautilus_signal | yes | always | unknown |
-| `edge.watchlist-status-request` | `actor.watchlist` | `actor.data-acquisition` | query | `contract.acquisition-status-request` | nautilus_signal | yes | always | unknown |
 
 ## Limitations
 

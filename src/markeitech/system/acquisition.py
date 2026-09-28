@@ -41,7 +41,6 @@ from markeitech.system.messages import (
     INSTRUMENTS_RESOLVING,
     PERSISTENCE_READY_REQUEST_SIGNAL,
     PERSISTENCE_READY_SIGNAL,
-    WATCHLIST_DEMAND_SIGNAL,
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
@@ -49,7 +48,6 @@ from markeitech.system.messages import (
     ComponentFailureEvent,
     PersistenceReadyEvent,
     PersistenceReadyRequest,
-    WatchlistDemandEvent,
 )
 
 _HISTORICAL_TIMER = "historical-execution"
@@ -175,10 +173,11 @@ class DataAcquisitionActor(DataActor):
         self._statuses_published = 0
         self._failure_published = False
         self._startup_released = False
+
     def on_start(self) -> None:
         self.subscribe_signal(ACQUISITION_STATUS_REQUEST_SIGNAL)
         self.subscribe_signal(PERSISTENCE_READY_SIGNAL)
-        self.subscribe_signal(WATCHLIST_DEMAND_SIGNAL)
+        # Consumer demand remains distinct from provider subscription ownership.
         self.subscribe_signal(ANALYTICAL_DEMAND_SIGNAL)
         self.subscribe_data(self._historical_plan_type)
         self.publish_signal(
@@ -217,9 +216,6 @@ class DataAcquisitionActor(DataActor):
             self._duplicate_instruments += 1
 
     def on_signal(self, signal: Signal) -> None:
-        if signal.name == WATCHLIST_DEMAND_SIGNAL:
-            self._handle_watchlist_demand(signal.value)
-            return
         if signal.name == ANALYTICAL_DEMAND_SIGNAL:
             self._handle_analytical_demand(signal.value)
             return
@@ -327,7 +323,6 @@ class DataAcquisitionActor(DataActor):
                 )
         self.unsubscribe_signal(ACQUISITION_STATUS_REQUEST_SIGNAL)
         self.unsubscribe_signal(PERSISTENCE_READY_SIGNAL)
-        self.unsubscribe_signal(WATCHLIST_DEMAND_SIGNAL)
         self.unsubscribe_signal(ANALYTICAL_DEMAND_SIGNAL)
         self.unsubscribe_data(self._historical_plan_type)
         if _HISTORICAL_TIMER in self.clock.timer_names():
@@ -380,26 +375,6 @@ class DataAcquisitionActor(DataActor):
             f" | available={len(status.available_instrument_ids)}"
             f"/{len(status.expected_instrument_ids)}",
         )
-
-    def _handle_watchlist_demand(self, value: str) -> None:
-        try:
-            event = WatchlistDemandEvent.from_signal_value(value)
-            if event.instrument_id not in self._expected_instrument_ids:
-                raise ValueError("demand instrument is outside configured acquisition scope")
-            demand = _watchlist_observation_demand(event)
-        except ValueError as exc:
-            self.log.error(
-                f"WATCHLIST_DEMAND_REJECTED | reason=invalid_event | error={type(exc).__name__}",
-            )
-            return
-        if event.action == "RELEASE":
-            self._pending_demands.pop(event.demand_id, None)
-            self._publish_lifecycle_events(
-                self._coordinator.cancel(event.demand_id, now=self.clock.utc_now()),
-            )
-            return
-        self._pending_demands[event.demand_id] = demand
-        self._start_pending_demands_if_ready()
 
     def _handle_analytical_demand(self, value: str) -> None:
         try:
@@ -616,20 +591,6 @@ def validate_historical_plan_limits(
     outstanding_observations = sum(item.limit for item in outstanding_requests)
     if outstanding_observations + request.limit > maximum_observations_outstanding:
         raise ValueError("historical plan exceeds outstanding observation limit")
-
-
-def _watchlist_observation_demand(event: WatchlistDemandEvent) -> ObservationDemand:
-    return ObservationDemand(
-        demand_id=event.demand_id,
-        owner=DemandOwner(DemandOwnerKind.WATCHLIST, event.owner_id),
-        requirement=FeedRequirement(
-            instrument_id=event.instrument_id,
-            kind=FeedKind(event.feed_kind),
-            selector=event.selector,
-        ),
-        priority=event.priority,
-        purpose=event.purpose,
-    )
 
 
 def _analytical_observation_demand(event: AnalyticalDemandEvent) -> ObservationDemand:

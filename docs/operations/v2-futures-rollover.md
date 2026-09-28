@@ -8,18 +8,18 @@ Markeitech uses explicit dated futures contracts. It does not silently substitut
 contracts. This procedure keeps provider identity, historical dependencies, analytical lineage,
 and operator expectations aligned when the configured contract changes.
 
-The current tracked example selects:
-
-- `ESZ6.CME` and `NQZ6.CME`: December 2026 equity-index futures; and
-- `CLX6.NYMEX`: November 2026 crude-oil futures.
+The current tracked example preloads the exact dated `ESZ6=FUT.CME` and `NQZ6=FUT.CME`
+December 2026 equity-index futures, plus the `CLX6=FUT.NYMEX` November 2026 crude-oil future.
+These use RAW IB symbology; preloading does not subscribe to market data.
 
 Month code `U` means September, `V` means October, `X` means November, and `Z` means December.
 Read each configured symbol's month code directly rather than inferring its expiry month from
-another instrument or from a watchlist label.
+another instrument.
 
 Markeitect requested the ES/NQ December selection and confirmed the runtime stopped before
-the configuration changed. Offline configuration validation passes; connected December-contract
-resolution, live delivery, and historical coverage have not been recorded as accepted.
+the earlier configuration changed. The current preload restores ES and NQ as startup definition
+requests. Connected contract resolution, live delivery, and historical coverage have not been
+recorded as accepted.
 For issue #74, Markeitect approved changing the CL starting example to `CLX6.NYMEX` before a
 connected check. That change does not establish IB contract resolution, entitlement, live delivery,
 or historical coverage for CLX6.

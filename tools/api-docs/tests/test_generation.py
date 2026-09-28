@@ -43,7 +43,8 @@ class GenerationTest(unittest.TestCase):
         self.assertTrue(index["not_runtime_configuration"])
         self.assertEqual(index["public_surface"]["selected"], 98)
         self.assertEqual(index["metadata"]["occurrence_count"], 0)
-        self.assertEqual(index["architecture_components"]["counts"]["components"], 11)
+        # The component census excludes the removed Watchlist actor.
+        self.assertEqual(index["architecture_components"]["counts"]["components"], 10)
         self.assertEqual(
             index["architecture_components"]["counts"]["with_responsibilities"],
             6,
