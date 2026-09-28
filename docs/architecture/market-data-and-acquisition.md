@@ -70,9 +70,10 @@ Source and fidelity are field-specific:
 - delayed or frozen data is never labelled real time; and
 - unsupported, absent, partial, stale, and unknown are valid outcomes.
 
-The current IB configuration keeps simplified symbology, MIC conversion disabled, quote batching
-enabled, quote size-only updates preserved, and revised-bar handling disabled. A change to those
-semantics requires explicit configuration, compatibility review, and acceptance.
+The tracked IB example uses RAW symbology with exact `=FUT`, `=STK`, and `=IND` instrument IDs, MIC
+conversion disabled, quote batching enabled, quote size-only updates preserved, and revised-bar
+handling disabled. Its configured IDs preload definitions without subscribing to market data.
+Changes to these semantics require explicit configuration, compatibility review, and acceptance.
 
 ## Live Demand And Subscription Lifetime
 

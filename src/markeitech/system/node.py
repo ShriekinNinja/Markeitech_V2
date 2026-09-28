@@ -14,7 +14,7 @@ from nautilus_trader.common import (
     LogLevel,
 )
 from nautilus_trader.live import LiveNode
-from nautilus_trader.model import TraderId
+from nautilus_trader.model import InstrumentId, TraderId
 
 from markeitech.system.composition import StartupPrerequisites, build_actor_plan
 from markeitech.system.config import SystemConfig
@@ -38,10 +38,10 @@ _ENVIRONMENTS = {
 
 
 def build_ib_data_client_config(config: SystemConfig) -> InteractiveBrokersDataClientConfig:
-    # Instrument selection is deferred; keep the provider scope empty until it is configured.
+    # Resolve the validated startup roster once for the native IB instrument provider.
     provider_config = InteractiveBrokersInstrumentProviderConfig(
         symbology_method=_SYMBOLOGY_METHODS[config.ib.symbology_method],
-        load_ids=set(),
+        load_ids={InstrumentId.from_str(value) for value in config.preload_instruments},
         convert_exchange_to_mic_venue=config.ib.convert_exchange_to_mic_venue,
     )
     return InteractiveBrokersDataClientConfig(

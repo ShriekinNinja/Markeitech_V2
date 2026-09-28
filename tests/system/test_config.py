@@ -7,7 +7,7 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 31
+schema_version = 32
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
@@ -39,6 +39,9 @@ ignore_quote_tick_size_updates = false
 handle_revised_bars = false
 connection_timeout_seconds = 30
 request_timeout_seconds = 30
+
+[preload_instruments]
+ids = []
 
 [logging]
 directory = "../data/logs"
@@ -203,7 +206,18 @@ def test_loads_split_system_profile_with_policy(tmp_path: Path) -> None:
 
     config = load_system_config(path)
 
-    assert config.schema_version == 31
+    assert config.schema_version == 32
+    # Preserve every requested contract and routing venue in the operator example.
+    assert config.preload_instruments == (
+        "ESZ6=FUT.CME",
+        "NQZ6=FUT.CME",
+        "CLX6=FUT.NYMEX",
+        "SPY=STK.SMART",
+        "QQQ=STK.SMART",
+        "SOXL=STK.SMART",
+        "SPX=IND.CBOE",
+        "VIX=IND.CBOE",
+    )
     assert config.ib.market_data_type == "realtime"
     assert config.ib.batch_quotes is True
     assert config.system_control.component_failures[0].component == "operational_persistence"
@@ -349,6 +363,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert config.runtime.name == "MARKEITECH-V2-TEST-001"
     assert config.ib.port == 4002
     assert config.ib.symbology_method == "simplified"
+    assert config.preload_instruments == ()
     assert config.ib.convert_exchange_to_mic_venue is False
     assert config.ib.batch_quotes is True
     assert config.ib.ignore_quote_tick_size_updates is False
@@ -404,7 +419,52 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert len(cme_equity.definition_digest) == 64
     assert config.evidence_health.policies[0].fresh_for_ms == 2000
     assert config.evidence_health.consumer_retry_interval_ms == 1000
-    assert config.schema_version == 31
+    assert config.schema_version == 32
+
+
+def test_loads_simplified_preload_ids_in_standalone_profile(tmp_path: Path) -> None:
+    path = tmp_path / "system.toml"
+    path.write_text(VALID_CONFIG.replace("ids = []", 'ids = ["ESZ6.CME", "SPY.SMART"]', 1))
+
+    config = load_system_config(path)
+
+    assert config.preload_instruments == ("ESZ6.CME", "SPY.SMART")
+
+
+def test_rejects_mismatched_raw_id_in_split_profile(tmp_path: Path) -> None:
+    path = _write_split_profile(tmp_path)
+    path.write_text(path.read_text().replace("ESZ6=FUT.CME", "ESZ6.CME", 1))
+
+    with pytest.raises(ValueError, match="requires RAW IB notation"):
+        load_system_config(path)
+
+
+@pytest.mark.parametrize(
+    ("symbology_method", "ids", "message"),
+    [
+        ("raw", '["ESZ6.CME"]', "requires RAW IB notation"),
+        ("simplified", '["SPY=STK.SMART"]', "requires SIMPLIFIED IB notation"),
+        ("raw", '["SPY=STK.SMART", "SPY=STK.SMART"]', "must contain unique values"),
+        ("raw", '["SPY=STK"]', "invalid preload_instruments.ids entry"),
+    ],
+)
+def test_rejects_invalid_preload_ids_before_node_construction(
+    tmp_path: Path,
+    symbology_method: str,
+    ids: str,
+    message: str,
+) -> None:
+    path = tmp_path / "system.toml"
+    # Validate IDs in the loader so a connected node never receives a mixed notation roster.
+    profile = VALID_CONFIG.replace(
+        'symbology_method = "simplified"',
+        f'symbology_method = "{symbology_method}"',
+        1,
+    )
+    path.write_text(profile.replace("ids = []", f"ids = {ids}", 1))
+
+    with pytest.raises(ValueError, match=message):
+        load_system_config(path)
 
 
 def test_rejects_unknown_configuration(tmp_path: Path) -> None:
@@ -433,10 +493,10 @@ def test_rejects_retired_root_sections(tmp_path: Path, section: str) -> None:
         load_system_config(path)
 
 
-@pytest.mark.parametrize("version", [22, 23, 24, 25, 28, 29, 30])
+@pytest.mark.parametrize("version", [22, 23, 24, 25, 28, 29, 30, 31])
 def test_rejects_older_system_schema(tmp_path: Path, version: int) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("schema_version = 31", f"schema_version = {version}", 1))
+    path.write_text(VALID_CONFIG.replace("schema_version = 32", f"schema_version = {version}", 1))
 
     with pytest.raises(ValueError, match=f"unsupported schema_version: {version}"):
         load_system_config(path)

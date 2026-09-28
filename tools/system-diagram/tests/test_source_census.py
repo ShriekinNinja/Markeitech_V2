@@ -14,11 +14,12 @@ from markeitech_system_diagram.source_census import (
 
 class SourceCensusTests(unittest.TestCase):
     def test_resolves_relative_policy_for_profile_conditions(self) -> None:
+        # The fixture mirrors the current split profile schema while probing policy resolution.
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "config").mkdir()
             (root / "config/runtime.example.toml").write_text(
-                'schema_version = 31\npolicy_file = "system.policy.toml"\n'
+                'schema_version = 32\npolicy_file = "system.policy.toml"\n'
                 "[ib]\n[discord]\nenabled = true\n",
             )
             (root / "config/system.policy.toml").write_text(
@@ -36,7 +37,7 @@ class SourceCensusTests(unittest.TestCase):
             root = Path(directory)
             (root / "config").mkdir()
             (root / "config/runtime.example.toml").write_text(
-                'schema_version = 31\npolicy_file = "system.policy.toml"\n',
+                'schema_version = 32\npolicy_file = "system.policy.toml"\n',
             )
             (root / "config/system.policy.toml").write_text("policy_version = 1\n")
 

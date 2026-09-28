@@ -142,14 +142,17 @@ test -e config/runtime.local.toml || \
   cp config/runtime.example.toml config/runtime.local.toml
 ```
 
-Both destination files are ignored by Git. The schema-31 runtime profile selects tracked
+Both destination files are ignored by Git. The schema-32 runtime profile selects tracked
 `config/system.policy.toml`. The profile holds operator choices; the policy holds reviewed
 limits, delivery behavior, and explicit `sessions.calendar_ids`. The policy path resolves relative
-to the selected runtime TOML. The loader also accepts a complete standalone schema-31 profile.
+to the selected runtime TOML. The loader also accepts a complete standalone schema-32 profile.
 Older schema versions are rejected; local files are not migrated automatically. Preserve
 machine-specific IB settings, paths, thresholds, and secret environment references when copying
-those choices into the current example profile. The current IB data client preloads no instruments.
-Instrument selection will be configured in a later batch.
+those choices into the current example profile. Add `[preload_instruments].ids` to the local
+profile. The tracked example selects eight exact futures, ETF, and index definitions; use an empty
+array to start without instrument preloads. The selected RAW notation must match
+`[ib].symbology_method`.
+Preloading resolves definitions at startup and does not subscribe to market data.
 
 For pre-calendar-cutover profiles, remove the retired `[visual_acceptance]` and
 `[live_evidence_review]` sections and replace inline `[[sessions.calendars]]` definitions with the
@@ -160,7 +163,7 @@ profile, the catalog reference and bounded projection settings are in `system.po
 `response_timeout_ms`, `maximum_attempts`, `retry_backoff_ms`, and `maximum_elapsed_ms` values;
 these local actor-delivery controls are independent of IB historical polling and metric-demand
 retries. The referenced catalog path is resolved relative to the system
-TOML and must exist; the tracked catalog is `config/system.calendars.toml`. Schema 31
+TOML and must exist; the tracked catalog is `config/system.calendars.toml`. Schema 32
 selects `calendar_ids` in the policy; definitions available but unused are validated without being instantiated.
 Rolling a futures contract does not require editing the calendar catalog. The CME/CBOT definitions
 also expose overlapping `ASIA`, `LONDON`, and `NEW_YORK` phases.
@@ -196,7 +199,7 @@ Review `config/runtime.local.toml` and its selected policy and calendar files be
 1. `[ib].host`, `[ib].port`, and `[ib].client_id`
 2. the explicit `sessions.calendar_ids` and `system.calendars.toml` catalog identity
 3. Discord, resource-health, persistence, historical, and evidence-health policy
-4. the absence of configured instrument preloads until the later instrument batch
+4. `[preload_instruments].ids`, exact dated futures identity, and the matching IB symbology method
 
 The tracked example contains reviewed defaults, not universally valid contracts or entitlements.
 Do not replace explicit futures with continuous futures without a separate architecture decision.

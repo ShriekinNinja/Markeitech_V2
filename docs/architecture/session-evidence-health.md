@@ -160,9 +160,10 @@ configured minimum sample count protects cold start. Effective thresholds are de
 exponentially weighted interval mean and variance, then clamped to configured hard minimums and
 maximums. Five-second bars retain cadence-based fixed policy in the current configuration.
 
-SPX and VIX cash indexes currently declare bar-derived last only and use cash-session expectations.
-The SPXW option session remains separately configured for future option contracts; an extended
-option session does not imply that the cash index publishes the same underlying feed overnight.
+The tracked profile preloads SPX and VIX cash-index definitions without declaring a live feed.
+Any future data demand must retain cash-session expectations. The SPXW option session remains
+separately configured for future option contracts; an extended option session does not imply that
+the cash index publishes the same underlying feed overnight.
 
 ## Persistence
 

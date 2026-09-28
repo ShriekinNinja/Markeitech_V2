@@ -84,16 +84,23 @@ test -e config/runtime.local.toml || \
   cp config/runtime.example.toml config/runtime.local.toml
 ```
 
-Review the `[ib]` section:
+Review the `[ib]` and `[preload_instruments]` sections:
 
 ```toml
 [ib]
 host = "127.0.0.1"
 port = 4002
 client_id = 20
-symbology_method = "simplified"
+symbology_method = "raw"
 market_data_type = "realtime"
 use_regular_trading_hours = false
+
+[preload_instruments]
+ids = [
+    "ESZ6=FUT.CME", "NQZ6=FUT.CME", "CLX6=FUT.NYMEX",
+    "SPY=STK.SMART", "QQQ=STK.SMART", "SOXL=STK.SMART",
+    "SPX=IND.CBOE", "VIX=IND.CBOE",
+]
 ```
 
 These are example values, not universal machine settings. Keep the local file outside Git. The
@@ -105,10 +112,10 @@ adapter's `convert_exchange_to_mic_venue` and other reviewed IB limits live in t
 The tracked template is a reviewed project starting point. Before a connected run:
 
 - roll expired futures everywhere they appear;
-- verify venue and simplified Nautilus instrument identity;
+- verify venue and exact RAW Nautilus instrument identity against the IB symbology setting;
 - remove or disable instruments the user cannot lawfully receive;
 - confirm real-time versus delayed data behavior;
-- verify each instrument's calendar/profile assignment; and
+- verify any session/calendar assumptions made by its intended consumers; and
 - keep explicit-expiry futures for canonical observation unless a separate decision changes that
   boundary.
 

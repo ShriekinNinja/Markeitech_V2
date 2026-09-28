@@ -80,8 +80,8 @@ test -e config/runtime.local.toml || \
 
 Edit `.env` with a local PostgreSQL password, matching DSN, and a Discord system-health
 webhook. Edit `config/runtime.local.toml` for the local IB port/client ID and reviewed runtime
-policy. The current node preloads no instruments; instrument selection will be configured
-in a later batch.
+policy. Review `[preload_instruments].ids` before connecting: the example resolves eight exact
+RAW futures, ETF, and index definitions at startup without subscribing to market data.
 
 Start Docker Desktop, then use the compact disconnected startup to check the selected local
 configuration, start PostgreSQL, build without connecting to IB, and exit:

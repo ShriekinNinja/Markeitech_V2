@@ -11,6 +11,7 @@ from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas_market_calendars as market_calendars
+from nautilus_trader.model import InstrumentId
 
 from markeitech.system.control import ComponentFailureRule, SystemControlPolicy
 
@@ -276,6 +277,7 @@ class SystemConfig:
     runtime: RuntimeConfig
     system_control: SystemControlPolicy
     ib: InteractiveBrokersConfig
+    preload_instruments: tuple[str, ...]
     logging: LoggingConfig
     discord: DiscordConfig
     runtime_resources: RuntimeResourcesConfig
@@ -308,9 +310,9 @@ def load_system_config(path: str | Path) -> SystemConfig:
         raw = tomllib.load(file)
 
     schema_version = raw.get("schema_version")
-    if schema_version != 31:
+    if schema_version != 32:
         raise ValueError(
-            f"unsupported schema_version: {schema_version!r}; expected 31",
+            f"unsupported schema_version: {schema_version!r}; expected 32",
         )
     # A policy reference selects the split format; standalone profiles remain valid at this schema.
     if "policy_file" in raw:
@@ -322,6 +324,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
             "runtime",
             "system_control",
             "ib",
+            "preload_instruments",
             "logging",
             "discord",
             "runtime_resources",
@@ -336,6 +339,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
     runtime = _load_runtime(raw["runtime"])
     system_control = _load_system_control(raw["system_control"])
     ib = _load_ib(raw["ib"])
+    preload_instruments = _load_preload_instruments(raw["preload_instruments"], ib)
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
     runtime_resources = _load_runtime_resources(raw["runtime_resources"])
@@ -355,6 +359,7 @@ def load_system_config(path: str | Path) -> SystemConfig:
         runtime=runtime,
         system_control=system_control,
         ib=ib,
+        preload_instruments=preload_instruments,
         logging=logging,
         discord=discord,
         runtime_resources=runtime_resources,
@@ -369,7 +374,7 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
     """Assemble operator choices and disjoint versioned policy settings."""
     _require_keys(
         raw,
-        {"schema_version", "policy_file", "runtime", "ib", "discord"},
+        {"schema_version", "policy_file", "runtime", "ib", "preload_instruments", "discord"},
         "root",
     )
     operator_keys = {
@@ -382,6 +387,7 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
             "market_data_type",
             "use_regular_trading_hours",
         },
+        "preload_instruments": {"ids"},
         "discord": {"enabled", "ping_critical_resource_alerts"},
     }
     for section, keys in operator_keys.items():
@@ -419,7 +425,11 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
                 f"{section} keys appear in both system and policy: {', '.join(sorted(overlap))}",
             )
         assembled[section] = {**policy_values, **raw[section]}
-    assembled.update(schema_version=31, runtime=raw["runtime"])
+    assembled.update(
+        schema_version=32,
+        runtime=raw["runtime"],
+        preload_instruments=raw["preload_instruments"],
+    )
     return assembled
 
 
@@ -521,6 +531,26 @@ def _load_ib(raw: Any) -> InteractiveBrokersConfig:
             "ib.request_timeout_seconds",
         ),
     )
+
+
+def _load_preload_instruments(raw: Any, ib: InteractiveBrokersConfig) -> tuple[str, ...]:
+    values = _mapping(raw, "preload_instruments")
+    _require_keys(values, {"ids"}, "preload_instruments")
+    ids = _unique_strings(values["ids"], "preload_instruments.ids")
+    if len(ids) > 64:
+        raise ValueError("preload_instruments.ids must contain at most 64 instruments")
+    for value in ids:
+        try:
+            instrument_id = InstrumentId.from_str(value)
+        except ValueError as exc:
+            raise ValueError(f"invalid preload_instruments.ids entry: {value!r}") from exc
+        symbol = instrument_id.symbol.value
+        # IB RAW identifies the security type in the symbol; SIMPLIFIED omits that suffix.
+        if ib.symbology_method == "raw" and re.fullmatch(r"[^=]+=[A-Z][A-Z0-9]*", symbol) is None:
+            raise ValueError(f"preload instrument {value!r} requires RAW IB notation")
+        if ib.symbology_method == "simplified" and "=" in symbol:
+            raise ValueError(f"preload instrument {value!r} requires SIMPLIFIED IB notation")
+    return ids
 
 
 def _load_logging(raw: Any, config_directory: Path) -> LoggingConfig:

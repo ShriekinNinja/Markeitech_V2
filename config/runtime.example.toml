@@ -2,7 +2,7 @@
 # Review the IB session and notification policy.
 # Secrets belong in the ignored .env.
 
-schema_version = 31 # Split system profile schema.
+schema_version = 32 # Split system profile with explicit IB instrument preloads.
 policy_file = "system.policy.toml" # Versioned engineering limits and delivery policy.
 
 [runtime]
@@ -14,9 +14,23 @@ environment = "live" # NautilusTrader live environment; connecting still require
 host = "127.0.0.1" # TWS or IB Gateway API host.
 port = 4002 # TWS or IB Gateway API port; verify it against the selected session.
 client_id = 20 # API client identity for this data connection, distinct from the broker account.
-symbology_method = "raw" # Select native IB raw symbology for future instrument resolution.
+symbology_method = "raw" # Select native IB RAW symbology for startup instrument resolution.
 market_data_type = "realtime" # Request real-time IB market data; delivery still depends on permissions.
 use_regular_trading_hours = false # False includes eligible extended-session data in IB requests.
+
+[preload_instruments]
+# Resolve exact dated futures, SMART-routed ETFs, and CBOE cash indexes at startup.
+# Definition loading does not subscribe to market data or roll a futures contract.
+ids = [
+    "ESZ6=FUT.CME",
+    "NQZ6=FUT.CME",
+    "CLX6=FUT.NYMEX",
+    "SPY=STK.SMART",
+    "QQQ=STK.SMART",
+    "SOXL=STK.SMART",
+    "SPX=IND.CBOE",
+    "VIX=IND.CBOE",
+]
 
 [discord]
 enabled = true # Enable outbound health and operational webhooks, not a conversational bot.

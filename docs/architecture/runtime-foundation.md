@@ -53,10 +53,12 @@ Composition invariants are:
 - dynamic actor loading/removal and a generic dependency-injection or plugin system are not part
   of the current runtime.
 
-The current IB data-client configuration preloads no instruments. System Control readiness still
-requires its persistence and resource gates; it does not wait for historical work or market ticks.
-Configuration identity and source semantics remain startup-only. Instrument selection will be
-configured in a later batch.
+The IB data-client configuration preloads the exact instrument definitions selected by
+`[preload_instruments].ids` at startup. The tracked example selects eight RAW IDs covering
+dated ES, NQ, and CL futures, SMART-routed SPY, QQQ, and SOXL ETFs, and CBOE SPX and VIX indexes.
+Preloading does not subscribe to market data. System Control
+readiness still requires its persistence and resource gates; it does not wait for historical work
+or market ticks. Configuration identity and source semantics remain startup-only.
 
 ## Messaging And State Transfer
 

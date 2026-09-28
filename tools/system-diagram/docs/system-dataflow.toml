@@ -167,8 +167,8 @@ limitations = ["Policy settings do not prove runtime or provider acceptance."]
 [[profiles]]
 id = "profile.example"
 config_path = "config/runtime.example.toml"
-config_schema_version = 31
-content_sha256 = "fc1e58281e4a27badbf7c7862873f05e635b1ffc60a8aed96f735a2ed05fdb6e"
+config_schema_version = 32
+content_sha256 = "97e78f81ee699af01ae243ee4181e12ce63a5c053f99d001e4df5eaec252af49"
 status = "tracked_active_review_profile"
 limitations = ["Represents the named tracked profile, not all available capabilities or a connected runtime observation."]
 evidence = ["evidence.profile", "evidence.policy"]

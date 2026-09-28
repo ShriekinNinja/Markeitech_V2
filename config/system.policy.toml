@@ -1,7 +1,7 @@
 # Reviewed runtime policy. Operator choices live in runtime.example.toml or runtime.local.toml.
 # Relative catalog and log paths resolve against the selected system TOML.
 
-policy_version = 4 # Policy document schema for system schema 31.
+policy_version = 4 # Policy document schema for system schema 32.
 
 [logging]
 directory = "../data/logs" # Runtime log directory, resolved relative to the selected system TOML.

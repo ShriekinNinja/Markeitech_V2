@@ -102,11 +102,13 @@ The API registry selects 98 public objects; the active actor plan has five regis
 Discord is enabled and four when it is disabled. Offline checks do not establish connected
 acceptance.
 
-The tracked runtime example is schema 31: operator choices are in the runtime profile and
+The tracked runtime example is schema 32: operator choices are in the runtime profile and
 reviewed runtime policy is in `system.policy.toml`. The policy selects session calendar IDs
-explicitly. The IB data client currently preloads no instruments; instrument selection and node
-configuration will be handled in a later batch. Older local profiles must be migrated to schema
-31; they are not migrated automatically. See [developer setup](operations/developer-setup.md).
+explicitly. The runtime profile selects exact IB instrument IDs for startup definition loading;
+the example preloads eight RAW IDs: dated ES, NQ, and CL futures, SMART-routed SPY, QQQ, and SOXL
+ETFs, and CBOE SPX and VIX indexes. This does not subscribe to market data. Older local profiles
+must be migrated to schema 32; they are not migrated automatically. See
+[developer setup](operations/developer-setup.md).
 
 ## Implemented Foundation
 
