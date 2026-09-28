@@ -27,11 +27,6 @@ def test_maps_provider_boundary_to_installed_ib_config() -> None:
     assert data_config.handle_revised_bars is False
     assert provider_config.symbology_method == SymbologyMethod.SIMPLIFIED
     assert provider_config.convert_exchange_to_mic_venue is False
-    assert {str(instrument_id) for instrument_id in provider_config.load_ids} == {
-        "ESZ6.CME",
-        "SPY.SMART",
-        "^SPX.CBOE",
-    }
 
 
 def test_builds_v2_node_without_connecting() -> None:

@@ -49,7 +49,6 @@ class DemandOwnerKind(StrEnum):
     """Kinds of components authorized to identify an observation-demand owner."""
 
     BOOTSTRAP = "bootstrap"
-    WATCHLIST = "watchlist"
     OPERATOR = "operator"
     ANALYZER = "analyzer"
     PROJECTION = "projection"

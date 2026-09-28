@@ -29,11 +29,11 @@ are the next development priority, not implemented capabilities. See the
 ## Current State
 
 The implemented foundation includes NautilusTrader `2.0.0rc5`, guarded Interactive Brokers market
-data, actor composition, static watchlist/shared acquisition, session/evidence health, historical
+data, actor composition, acquisition contracts, session/evidence health, historical
 planning, PostgreSQL operational audit, resource monitoring and optional Discord health webhooks.
-The tracked example composes ten actors. Shared metric/entity contracts exist; active indicator
-production and strategy registration do not. The current node registers a data client and no
-execution client.
+The tracked example composes five actors, including optional Discord. Shared metric/entity
+contracts exist; active indicator production and strategy registration do not. The current node
+registers a data client and no execution client.
 
 See [current status](docs/current-status.md) for implementation and known gaps. The project direction
 includes execution; a run or order requires explicit account and action authorization.
@@ -80,8 +80,8 @@ test -e config/runtime.local.toml || \
 
 Edit `.env` with a local PostgreSQL password, matching DSN, and a Discord system-health
 webhook. Edit `config/runtime.local.toml` for the local IB port/client ID and reviewed runtime
-policy. Review its `[watchlist]` table for current explicit futures contracts and entitled
-instruments.
+policy. The current node preloads no instruments; instrument selection will be configured
+in a later batch.
 
 Start Docker Desktop, then use the compact disconnected startup to check the selected local
 configuration, start PostgreSQL, build without connecting to IB, and exit:
@@ -108,7 +108,6 @@ IB Gateway. Review the [developer setup](docs/operations/developer-setup.md) and
 - `config/runtime.local.toml` is the ignored machine/runtime configuration.
 - [`config/system.policy.toml`](config/system.policy.toml) is the tracked runtime limits and
   delivery policy selected by the example and default local profile.
-- The `[watchlist]` table in the runtime profile selects exact instruments and requested feeds.
 - [`config/system.calendars.toml`](config/system.calendars.toml) is the tracked calendar catalog,
   containing reusable exchange-calendar definitions, product phases, and source-cited corrections.
 - `.env.example` documents required environment keys.
@@ -116,9 +115,8 @@ IB Gateway. Review the [developer setup](docs/operations/developer-setup.md) and
 - `.idea/` is entirely local; create IDE launchers around the documented command as needed.
 
 Under `[sessions]` in the policy TOML, `calendar_catalog = "system.calendars.toml"` selects the
-catalog relative to the selected runtime profile. Active calendars come from the distinct
-`calendar_id` values in `[[watchlist.members]]`; the policy supplies calendars for an empty
-watchlist. Rolling a futures contract does not require editing the calendar catalog. See
+catalog relative to the selected runtime profile. Selected calendars come from `sessions.calendar_ids` in the policy. Rolling a futures contract
+does not require editing the calendar catalog. See
 [developer setup](docs/operations/developer-setup.md) for configuration details.
 
 Never commit `.env`, `runtime.local.toml`, runtime logs, vendor exports, database dumps, or other

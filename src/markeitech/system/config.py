@@ -39,21 +39,6 @@ class InteractiveBrokersConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class WatchlistMemberConfig:
-    instrument_id: str
-    calendar_id: str
-    owner_ids: tuple[str, ...]
-    capabilities: tuple[str, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class WatchlistConfig:
-    consumer_retry_interval_ms: int
-    members: tuple[WatchlistMemberConfig, ...]
-    enabled: bool = True
-
-
-@dataclass(frozen=True, slots=True)
 class HistoricalConfig:
     maximum_plan_requests: int
     maximum_observations_per_request: int
@@ -296,13 +281,8 @@ class SystemConfig:
     runtime_resources: RuntimeResourcesConfig
     persistence: PersistenceConfig
     historical: HistoricalConfig
-    watchlist: WatchlistConfig
     sessions: SessionsConfig
     evidence_health: EvidenceHealthConfig
-
-    @property
-    def instrument_ids(self) -> tuple[str, ...]:
-        return tuple(member.instrument_id for member in self.watchlist.members)
 
 
 def load_system_config(path: str | Path) -> SystemConfig:
@@ -328,131 +308,50 @@ def load_system_config(path: str | Path) -> SystemConfig:
         raw = tomllib.load(file)
 
     schema_version = raw.get("schema_version")
-    if schema_version == 30:
-        raw = _load_split_system_config(raw, config_path)
-    elif schema_version != 29:
+    if schema_version != 31:
         raise ValueError(
-            f"unsupported schema_version: {schema_version!r}; expected 29 or 30",
+            f"unsupported schema_version: {schema_version!r}; expected 31",
         )
-
-    required_root_keys = {
-        "schema_version",
-        "runtime",
-        "ib",
-        "logging",
-        "discord",
-        "runtime_resources",
-        "persistence",
-        "historical",
-        "sessions",
-        "evidence_health",
-    }
-    if schema_version == 30:
-        required_root_keys.add("system_control")
-    _require_keys_allowing(
+    # A policy reference selects the split format; standalone profiles remain valid at this schema.
+    if "policy_file" in raw:
+        raw = _load_split_system_config(raw, config_path)
+    _require_keys(
         raw,
-        required_root_keys,
-        {"watchlist", "watchlist_file"},
+        {
+            "schema_version",
+            "runtime",
+            "system_control",
+            "ib",
+            "logging",
+            "discord",
+            "runtime_resources",
+            "persistence",
+            "historical",
+            "sessions",
+            "evidence_health",
+        },
         "root",
     )
-    if ("watchlist" in raw) == ("watchlist_file" in raw):
-        raise ValueError("root requires exactly one of watchlist or watchlist_file")
 
     runtime = _load_runtime(raw["runtime"])
-    system_control = (
-        _load_system_control(raw["system_control"])
-        if schema_version == 30
-        else (
-            SystemControlPolicy(
-                component_failures=(
-                    ComponentFailureRule("operational_persistence", "FAILED", "DEGRADED"),
-                    ComponentFailureRule("runtime_resources", "FAILED", "DEGRADED"),
-                    ComponentFailureRule("runtime_resource_health", "FAILED", "DEGRADED"),
-                ),
-            )
-        )
-    )
+    system_control = _load_system_control(raw["system_control"])
     ib = _load_ib(raw["ib"])
     logging = _load_logging(raw["logging"], config_path.parent)
     discord = _load_discord(raw["discord"])
-    runtime_resources = _load_runtime_resources(
-        raw["runtime_resources"],
-        legacy_enabled=schema_version == 29,
-    )
+    runtime_resources = _load_runtime_resources(raw["runtime_resources"])
     persistence = _load_persistence(raw["persistence"])
-    if "watchlist_file" in raw:
-        watchlist_path = config_path.parent / _non_empty_string(
-            raw["watchlist_file"],
-            "watchlist_file",
-        )
-        with watchlist_path.open("rb") as file:
-            watchlist_document = tomllib.load(file)
-        _require_keys(watchlist_document, {"watchlist"}, "watchlist_file")
-        watchlist = _load_watchlist(watchlist_document["watchlist"])
-    else:
-        watchlist = _load_watchlist(raw["watchlist"])
     historical = _load_historical(raw["historical"])
-    session_values = raw["sessions"]
-    idle_calendar_ids: tuple[str, ...] = ()
-    if schema_version == 30:
-        session_values = _mapping(session_values, "sessions")
-        idle_calendar_ids = _unique_strings(
-            session_values["idle_calendar_ids"],
-            "sessions.idle_calendar_ids",
-        )
-        if not idle_calendar_ids:
-            raise ValueError("sessions.idle_calendar_ids must not be empty")
-        selected_calendar_ids = (
-            tuple(dict.fromkeys(member.calendar_id for member in watchlist.members))
-            or idle_calendar_ids
-        )
-        session_values = {
-            **{key: value for key, value in session_values.items() if key != "idle_calendar_ids"},
-            "calendar_ids": list(selected_calendar_ids),
-        }
-    sessions = _load_sessions(session_values, config_path.parent)
-    if schema_version == 30:
-        available_ids = {calendar.calendar_id for calendar in sessions.available_calendars}
-        unknown_idle_ids = sorted(set(idle_calendar_ids) - available_ids)
-        if unknown_idle_ids:
-            raise ValueError(
-                "sessions.idle_calendar_ids reference unknown catalog calendars: "
-                f"{', '.join(unknown_idle_ids)}",
-            )
-        if len(idle_calendar_ids) > sessions.maximum_calendars_per_request:
-            raise ValueError("sessions.idle_calendar_ids exceed maximum_calendars_per_request")
+    sessions = _load_sessions(raw["sessions"], config_path.parent)
     evidence_health = _load_evidence_health(raw["evidence_health"])
-    known_calendars = {calendar.calendar_id for calendar in sessions.calendars}
-    unknown_calendars = sorted(
-        {member.calendar_id for member in watchlist.members} - known_calendars,
-    )
-    if unknown_calendars:
-        raise ValueError(
-            f"watchlist references unknown calendars: {', '.join(unknown_calendars)}",
-        )
-    available_policies = {
-        (policy.feed_kind, policy.selector) for policy in evidence_health.policies
-    }
-    required_policies: set[tuple[str, str]] = set()
-    for member in watchlist.members:
-        if "top_of_book" in member.capabilities:
-            required_policies.add(("quotes", "default"))
-        if "watchlist_last" in member.capabilities:
-            required_policies.add(("bars", "5-SECOND-LAST-EXTERNAL"))
-    missing_policies = sorted(required_policies - available_policies)
-    if missing_policies:
-        formatted = ", ".join(f"{kind}/{selector}" for kind, selector in missing_policies)
-        raise ValueError(f"watchlist feeds lack evidence-health policies: {formatted}")
-    feed_count = sum(len(member.capabilities) for member in watchlist.members)
-    minimum_normal_capacity = feed_count * 4 + len(watchlist.members) * 2 + 16
+    # The remaining operational producers need bounded queue room without a market-data roster.
     normal_capacity = persistence.queue_capacity - persistence.critical_queue_reserve
-    if normal_capacity < minimum_normal_capacity:
+    if normal_capacity < 16:
         raise ValueError(
-            "persistence normal queue capacity is below the configured startup event envelope: "
-            f"capacity={normal_capacity}, required={minimum_normal_capacity}",
+            "persistence normal queue capacity is below the startup event minimum: "
+            f"capacity={normal_capacity}, required=16",
         )
     return SystemConfig(
-        schema_version=raw["schema_version"],
+        schema_version=schema_version,
         runtime=runtime,
         system_control=system_control,
         ib=ib,
@@ -461,17 +360,16 @@ def load_system_config(path: str | Path) -> SystemConfig:
         runtime_resources=runtime_resources,
         persistence=persistence,
         historical=historical,
-        watchlist=watchlist,
         sessions=sessions,
         evidence_health=evidence_health,
     )
 
 
 def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[str, Any]:
-    """Assemble schema-30 operator choices and disjoint versioned policy settings."""
+    """Assemble operator choices and disjoint versioned policy settings."""
     _require_keys(
         raw,
-        {"schema_version", "policy_file", "runtime", "ib", "discord", "watchlist"},
+        {"schema_version", "policy_file", "runtime", "ib", "discord"},
         "root",
     )
     operator_keys = {
@@ -485,7 +383,6 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
             "use_regular_trading_hours",
         },
         "discord": {"enabled", "ping_critical_resource_alerts"},
-        "watchlist": {"enabled", "members"},
     }
     for section, keys in operator_keys.items():
         _require_keys(_mapping(raw[section], section), keys, section)
@@ -493,9 +390,9 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
     policy_path = config_path.parent / _non_empty_string(raw["policy_file"], "policy_file")
     with policy_path.open("rb") as file:
         policy = tomllib.load(file)
-    if type(policy.get("policy_version")) is not int or policy["policy_version"] != 3:
+    if type(policy.get("policy_version")) is not int or policy["policy_version"] != 4:
         raise ValueError(
-            f"unsupported policy_version: {policy.get('policy_version')!r}; expected 3",
+            f"unsupported policy_version: {policy.get('policy_version')!r}; expected 4",
         )
     _require_keys(
         policy,
@@ -505,7 +402,6 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
             "system_control",
             "logging",
             "discord",
-            "watchlist",
             "runtime_resources",
             "persistence",
             "historical",
@@ -514,14 +410,8 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
         },
         "policy",
     )
-    policy_sessions = _mapping(policy["sessions"], "policy.sessions")
-    if "idle_calendar_ids" not in policy_sessions:
-        raise ValueError("policy.sessions missing keys: idle_calendar_ids")
-    if "calendar_ids" in policy_sessions:
-        raise ValueError("policy.sessions has unknown keys: calendar_ids")
-
     assembled = {key: value for key, value in policy.items() if key != "policy_version"}
-    for section in ("ib", "discord", "watchlist"):
+    for section in ("ib", "discord"):
         policy_values = _mapping(policy[section], f"policy.{section}")
         overlap = set(policy_values) & set(raw[section])
         if overlap:
@@ -529,10 +419,7 @@ def _load_split_system_config(raw: dict[str, Any], config_path: Path) -> dict[st
                 f"{section} keys appear in both system and policy: {', '.join(sorted(overlap))}",
             )
         assembled[section] = {**policy_values, **raw[section]}
-    assembled.update(
-        schema_version=30,
-        runtime=raw["runtime"],
-    )
+    assembled.update(schema_version=31, runtime=raw["runtime"])
     return assembled
 
 
@@ -696,14 +583,11 @@ def _load_discord(raw: Any) -> DiscordConfig:
     )
 
 
-def _load_runtime_resources(raw: Any, *, legacy_enabled: bool) -> RuntimeResourcesConfig:
+def _load_runtime_resources(raw: Any) -> RuntimeResourcesConfig:
     values = _mapping(raw, "runtime_resources")
-    # Schema 29's enable switches remain readable only when both mandatory actors are enabled.
-    enabled_keys = {"enabled"} if legacy_enabled else set()
     _require_keys(
         values,
-        enabled_keys
-        | {
+        {
             "sample_interval_ms",
             "log_every_samples",
             "include_cache_counts",
@@ -715,8 +599,7 @@ def _load_runtime_resources(raw: Any, *, legacy_enabled: bool) -> RuntimeResourc
     health_values = _mapping(values["health"], "runtime_resources.health")
     _require_keys(
         health_values,
-        enabled_keys
-        | {
+        {
             "threshold_version",
             "warning_consecutive_samples",
             "critical_consecutive_samples",
@@ -730,11 +613,6 @@ def _load_runtime_resources(raw: Any, *, legacy_enabled: bool) -> RuntimeResourc
         },
         "runtime_resources.health",
     )
-    if legacy_enabled and (
-        not _bool(values["enabled"], "runtime_resources.enabled")
-        or not _bool(health_values["enabled"], "runtime_resources.health.enabled")
-    ):
-        raise ValueError("runtime resource actors are mandatory and cannot be disabled")
     warning = _load_runtime_resource_thresholds(
         health_values["warning"],
         "runtime_resources.health.warning",
@@ -937,65 +815,6 @@ def _load_persistence(raw: Any) -> PersistenceConfig:
             values["write_retry_backoff_ms"],
             "persistence.write_retry_backoff_ms",
         ),
-    )
-
-
-def _load_watchlist(raw: Any) -> WatchlistConfig:
-    values = _mapping(raw, "watchlist")
-    keys = {"consumer_retry_interval_ms", "members"}
-    if "enabled" in values:
-        keys.add("enabled")
-    _require_keys(values, keys, "watchlist")
-    enabled = _bool(values.get("enabled", True), "watchlist.enabled")
-    members_raw = values["members"]
-    if not isinstance(members_raw, list) or (enabled and not members_raw):
-        raise ValueError("enabled watchlist.members must be a non-empty array")
-    if not enabled and members_raw:
-        raise ValueError("disabled watchlist must have no members")
-    members: list[WatchlistMemberConfig] = []
-    seen_instruments: set[str] = set()
-    for index, item in enumerate(members_raw):
-        label = f"watchlist.members[{index}]"
-        member = _mapping(item, label)
-        _require_keys(
-            member,
-            {"instrument_id", "calendar_id", "owner_ids", "capabilities"},
-            label,
-        )
-        instrument_id = _non_empty_string(
-            member["instrument_id"],
-            f"{label}.instrument_id",
-        )
-        if instrument_id in seen_instruments:
-            raise ValueError(f"duplicate watchlist instrument id: {instrument_id}")
-        seen_instruments.add(instrument_id)
-        owner_ids = _unique_non_empty_strings(member["owner_ids"], f"{label}.owner_ids")
-        capabilities = _unique_non_empty_strings(
-            member["capabilities"],
-            f"{label}.capabilities",
-        )
-        supported_capabilities = {"top_of_book", "watchlist_last"}
-        unknown_capabilities = set(capabilities) - supported_capabilities
-        if unknown_capabilities:
-            raise ValueError(
-                f"{label}.capabilities contains unsupported values: "
-                f"{', '.join(sorted(unknown_capabilities))}",
-            )
-        members.append(
-            WatchlistMemberConfig(
-                instrument_id=instrument_id,
-                calendar_id=_non_empty_string(member["calendar_id"], f"{label}.calendar_id"),
-                owner_ids=tuple(sorted(owner_ids)),
-                capabilities=tuple(sorted(capabilities)),
-            ),
-        )
-    return WatchlistConfig(
-        consumer_retry_interval_ms=_positive_int(
-            values["consumer_retry_interval_ms"],
-            "watchlist.consumer_retry_interval_ms",
-        ),
-        members=tuple(members),
-        enabled=enabled,
     )
 
 

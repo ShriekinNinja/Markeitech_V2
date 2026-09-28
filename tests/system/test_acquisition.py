@@ -16,7 +16,6 @@ from markeitech.acquisition.historical_windows import HistoricalWindowResolver
 from markeitech.system.acquisition import (
     InstrumentDefinitionTracker,
     _analytical_observation_demand,
-    _watchlist_observation_demand,
     validate_historical_plan_limits,
 )
 from markeitech.system.historical_planner import (
@@ -28,7 +27,6 @@ from markeitech.system.messages import (
     INSTRUMENTS_READY,
     INSTRUMENTS_RESOLVING,
     AnalyticalDemandEvent,
-    WatchlistDemandEvent,
 )
 from tests.calendar_fixtures import projection_view
 
@@ -57,29 +55,6 @@ def test_tracker_rejects_duplicate_configuration(
 ) -> None:
     with pytest.raises(ValueError):
         InstrumentDefinitionTracker(instrument_ids)
-
-
-def test_watchlist_contract_maps_to_acquisition_demand() -> None:
-    event = WatchlistDemandEvent(
-        demand_id="watchlist:1:ESU6.CME/bars/5-SECOND-LAST-EXTERNAL",
-        action="REQUEST",
-        instrument_id="ESU6.CME",
-        capability="watchlist_last",
-        feed_kind="bars",
-        selector="5-SECOND-LAST-EXTERNAL",
-        owner_id="config:system",
-        purpose="static watchlist last",
-    )
-
-    demand = _watchlist_observation_demand(event)
-
-    assert demand.demand_id == event.demand_id
-    assert demand.owner.kind.value == "watchlist"
-    assert demand.requirement.stream_key == (
-        "ESU6.CME",
-        "bars",
-        "5-SECOND-LAST-EXTERNAL",
-    )
 
 
 def test_analytical_contract_maps_to_analyzer_owned_acquisition_demand() -> None:

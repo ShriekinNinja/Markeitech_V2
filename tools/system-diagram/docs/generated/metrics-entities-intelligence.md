@@ -17,7 +17,6 @@ Show calendar state, historical planning, and evidence-health capabilities.
 | `actor.evidence-health` | Evidence Health | markeitech_actor | implemented | not_composed | not applicable | disabled | `actor.evidence-health` | `boundary.intelligence` |
 | `actor.historical-planner` | Historical Evidence Planner | markeitech_actor | implemented | not_composed | not applicable | disabled | `actor.historical-planner` | `boundary.intelligence` |
 | `actor.session-state` | Session State | markeitech_actor | implemented | not_composed | not applicable | disabled | `actor.session-state` | `boundary.intelligence` |
-| `actor.watchlist` | Watchlist | markeitech_actor | implemented | not_composed | not applicable | disabled | `actor.watchlist` | `boundary.acquisition` |
 | `component.canonical-calendar` | Canonical Calendar | engine | implemented | not_composed | not applicable | disabled | `actor.session-state` | `boundary.intelligence` |
 | `component.data-engine` | Nautilus Data Engine | engine | implemented | always | not applicable | enabled | `component.data-engine` | `boundary.nautilus` |
 

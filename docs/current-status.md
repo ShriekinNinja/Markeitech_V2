@@ -85,7 +85,7 @@ Operational Persistence, Runtime Resources, Runtime Resource Health, and optiona
 Other configured actor settings remain inactive during the composition redesign.
 
 The former `system.v3-es-minimal.toml` review profile has been removed. Single-calendar offline
-delivery tests derive a bounded ES fixture from the current template.
+delivery tests derive a bounded calendar fixture from the current template.
 
 ## Diagnostic And Inactive Actor Removal
 
@@ -95,22 +95,18 @@ Visual Debug capture, its writer/renderer, configuration, and dedicated tests ar
 SessionMetricsActor and its dependent session-reference, market-state, and market-structure
 actors are removed, together with their dedicated calculations, configuration, tests, and
 replacement plan. QuoteQualityMetricsActor, its midpoint/spread calculations, and its
-configuration and dedicated tests are also removed. The current runtime has ten actor classes.
+configuration and dedicated tests are also removed. The current runtime has nine actor classes.
 Independent canonical bar/metric and entity contracts remain.
 
 The API registry selects 98 public objects; the active actor plan has five registrations when
 Discord is enabled and four when it is disabled. Offline checks do not establish connected
 acceptance.
 
-The tracked runtime example is schema 30: operator choices and watchlist membership are in the
-runtime profile, and reviewed runtime policy is in `system.policy.toml`. Calendar definitions are
-derived from configured members, but Session State is not currently composed. An empty watchlist
-uses the policy's `idle_calendar_ids` for configuration; it does not start Session State. Complete
-schema-29 profiles remain supported. Older local profiles need
-their retired `[dashboard]`, `[acquisition]`, `[historical.probe]`,
-`[visual_debug_capture]`, and `[metrics]` sections removed before setting schema 29. Retain
-`[historical]`, which configures the production acquisition owner. Local files are not migrated
-automatically. See [developer setup](operations/developer-setup.md) for the schema-30 split.
+The tracked runtime example is schema 31: operator choices are in the runtime profile and
+reviewed runtime policy is in `system.policy.toml`. The policy selects session calendar IDs
+explicitly. The IB data client currently preloads no instruments; instrument selection and node
+configuration will be handled in a later batch. Older local profiles must be migrated to schema
+31; they are not migrated automatically. See [developer setup](operations/developer-setup.md).
 
 ## Implemented Foundation
 
@@ -122,8 +118,6 @@ automatically. See [developer setup](operations/developer-setup.md) for the sche
 - NautilusTrader owns IB market-data connectivity and native normalized observations.
 - `DataAcquisitionActor` owns logical provider demand and subscription/request lifetime when
   composed; it is inactive in the current actor plan.
-- Static watchlist ownership and native multi-consumer market-data delivery were accepted in the
-  predecessor V2 profile.
 - Provider-subscription recovery, full connection-loss recovery, and several pacing/cancellation
   semantics remain documented reliability debt.
 

@@ -99,10 +99,8 @@ def _historical_planner_config(config: SystemConfig, source_epoch: str) -> Impor
         config_path="markeitech.system.historical_planner:HistoricalEvidencePlannerActorConfig",
         config={
             "actor_id": "HISTORICAL-EVIDENCE-PLANNER",
-            "instrument_ids": list(config.instrument_ids),
-            "instrument_calendars": {
-                member.instrument_id: member.calendar_id for member in config.watchlist.members
-            },
+            "instrument_ids": ["ESZ6.CME"],
+            "instrument_calendars": {"ESZ6.CME": "cme_equity"},
             "expected_calendar_digests": {
                 calendar.calendar_id: calendar.definition_digest
                 for calendar in config.sessions.calendars

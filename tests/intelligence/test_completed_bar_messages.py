@@ -65,9 +65,7 @@ def _lineage(
         input_identity=CompletedBarInputIdentity(
             provider_id="IB",
             adapter_id="nautilus-ib",
-            source_stream_id=(
-                "historical-bars" if source_class == "HISTORICAL" else "watchlist-last-5s"
-            ),
+            source_stream_id=("historical-bars" if source_class == "HISTORICAL" else "ib-bars-5s"),
             source_selector=(
                 "ESU6.CME-1-MINUTE-LAST-EXTERNAL"
                 if source_class == "HISTORICAL"

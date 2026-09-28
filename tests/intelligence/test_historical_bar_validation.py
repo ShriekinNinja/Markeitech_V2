@@ -344,7 +344,7 @@ def test_wrong_historical_input_path_is_rejected_without_splitting_series() -> N
         lineage=(
             replace(
                 _lineage(0),
-                input_identity=replace(_input_identity(), source_stream_id="watchlist-last-5s"),
+                input_identity=replace(_input_identity(), source_stream_id="ib-bars-5s"),
             ),
         ),
     )

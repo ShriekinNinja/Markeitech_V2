@@ -16,8 +16,6 @@ def test_minimal_calendar_config_has_operational_calendar_surface() -> None:
         ),
     )
 
-    assert config.instrument_ids == ("ESZ6.CME",)
-    assert config.watchlist.members[0].capabilities == ("watchlist_last",)
     assert len(config.sessions.calendars) == 1
     assert len(config.sessions.available_calendars) == 5
     assert config.sessions.catalog_id == "markeitech-market-calendars"

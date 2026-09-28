@@ -36,10 +36,9 @@ Subscribe in phases:
 
 ## Phase 1: Historical ES-Only Planning Baseline
 
-The former ES-only review profile used `ESU6.CME`, `watchlist_last`, and bounded historical-bar
-requests. That profile has been removed. The current
-[`example watchlist`](../../config/runtime.example.toml) enables seven instruments; this ES-only
-entitlement baseline does not cover that full watchlist.
+The current node preloads no instruments, and the active actor plan makes no market-data
+subscriptions. The entitlement information below is planning context for a later instrument
+configuration batch.
 
 | IBKR subscription | Coverage | Markeitech requirement | Published non-professional price |
 | --- | --- | --- | ---: |
@@ -342,10 +341,7 @@ Only after this authenticated check should the final account-specific purchase l
 
 ### Verified From Current Checkout
 
-- The exact tracked V3 profile is ES-only and requests `watchlist_last` plus bounded historical
-  bars.
-- The full template contains the broader futures, equities, ETFs, and cash-index observation
-  universe listed above.
+- The current IB data client preloads no instruments; market-data demand is not composed.
 - SPXW, SPY, and QQQ are a future configurable expression universe with no globally preferred
   product.
 - Option-chain acquisition and live options intelligence remain future work.

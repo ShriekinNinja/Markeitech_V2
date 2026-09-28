@@ -196,20 +196,6 @@ def test_cme_and_cbot_have_distinct_identity_but_equal_current_hours() -> None:
     assert cme.definition_digest != cbot.definition_digest
 
 
-def test_configured_instrument_calendar_bindings_match_selected_watchlist() -> None:
-    config = _config()
-    mappings = {item.instrument_id: item.calendar_id for item in config.watchlist.members}
-
-    assert mappings == {
-        "ESZ6.CME": "cme_equity",
-        "SPY.SMART": "us_equities",
-        "^SPX.CBOE": "us_equities",
-    }
-    # Calendar correction product scope is independent of current watchlist membership.
-    correction = canonical_calendar("cme_equity").definition.corrections[0]
-    assert correction.product_roots == ("ES", "NQ", "YM")
-
-
 def test_cl_uses_product_specific_provider_calendar_and_globex_phase() -> None:
     calendar = canonical_calendar("cme_energy")
     projection = calendar.projection(date(2026, 8, 24), date(2026, 8, 24))

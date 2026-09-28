@@ -64,31 +64,6 @@ def _canonical_calendar_payload(calendar) -> dict[str, object]:  # noqa: ANN001
     }
 
 
-def _watchlist_feeds(config: SystemConfig) -> list[dict[str, str]]:
-    feeds: list[dict[str, str]] = []
-    for member in config.watchlist.members:
-        capabilities = set(member.capabilities)
-        if "top_of_book" in capabilities:
-            feeds.append(
-                {
-                    "instrument_id": member.instrument_id,
-                    "calendar_id": member.calendar_id,
-                    "kind": "quotes",
-                    "selector": "default",
-                },
-            )
-        if "watchlist_last" in capabilities:
-            feeds.append(
-                {
-                    "instrument_id": member.instrument_id,
-                    "calendar_id": member.calendar_id,
-                    "kind": "bars",
-                    "selector": "5-SECOND-LAST-EXTERNAL",
-                },
-            )
-    return feeds
-
-
 @dataclass(frozen=True, slots=True)
 class StartupPrerequisites:
     run_id: UUID
@@ -111,7 +86,6 @@ def build_actor_plan(
         raise ValueError("operational persistence must pass preflight before actor composition")
 
     # Inputs used by the previous full registration plan below.
-    # instrument_ids = list(config.instrument_ids)
     # projection_retry = {
     #     "response_timeout_ms": config.sessions.projection_retry.response_timeout_ms,
     #     "maximum_attempts": config.sessions.projection_retry.maximum_attempts,
@@ -260,8 +234,8 @@ def build_actor_plan(
     )
 
     # Remaining pre-redesign registrations, retained for the actors not yet restored.
-    # Original order: session_state -> evidence_health -> historical_evidence_planner ->
-    # [watchlist] -> data_acquisition. Brackets mark optional registration.
+    # Original order: session_state -> evidence_health -> historical_evidence_planner
+    # -> data_acquisition.
     # registrations = [
     #     ActorRegistration(
     #         key="session_state",
@@ -294,7 +268,7 @@ def build_actor_plan(
     #             config_path="markeitech.intelligence.actors:EvidenceHealthActorConfig",
     #             config={
     #                 "actor_id": "EVIDENCE-HEALTH",
-    #                 "feeds": _watchlist_feeds(config),
+    #                 "feeds": [],  # Feed selection is deferred with instrument configuration.
     #                 "evaluation_interval_ms": config.evidence_health.evaluation_interval_ms,
     #                 "consumer_retry_interval_ms": (
     #                     config.evidence_health.consumer_retry_interval_ms
@@ -359,11 +333,8 @@ def build_actor_plan(
     #                 ),
     #                 config={
     #                     "actor_id": "HISTORICAL-EVIDENCE-PLANNER",
-    #                     "instrument_ids": instrument_ids,
-    #                     "instrument_calendars": {
-    #                         member.instrument_id: member.calendar_id
-    #                         for member in config.watchlist.members
-    #                     },
+    #                     "instrument_ids": [],
+    #                     "instrument_calendars": {},
     #                     "expected_calendar_digests": {
     #                         calendar.calendar_id: calendar.definition_digest
     #                         for calendar in config.sessions.calendars
@@ -397,30 +368,6 @@ def build_actor_plan(
     #         ),
     #     ],
     # )
-    # if config.watchlist.enabled:
-    #     registrations.append(
-    #         ActorRegistration(
-    #             key="watchlist",
-    #             actor_id="WATCHLIST",
-    #             config=ImportableActorConfig(
-    #                 actor_path="markeitech.system.watchlist:WatchlistActor",
-    #                 config_path="markeitech.system.watchlist:WatchlistActorConfig",
-    #                 config={
-    #                     "actor_id": "WATCHLIST",
-    #                     "consumer_retry_interval_ms": config.watchlist.consumer_retry_interval_ms,
-    #                     "members": [
-    #                         {
-    #                             "instrument_id": member.instrument_id,
-    #                             "calendar_id": member.calendar_id,
-    #                             "owner_ids": list(member.owner_ids),
-    #                             "capabilities": list(member.capabilities),
-    #                         }
-    #                         for member in config.watchlist.members
-    #                     ],
-    #                 },
-    #             ),
-    #         ),
-    #     )
     # registrations.append(
     #     ActorRegistration(
     #         key="data_acquisition",
@@ -430,7 +377,7 @@ def build_actor_plan(
     #             config_path="markeitech.system.acquisition:DataAcquisitionActorConfig",
     #             config={
     #                 "actor_id": "DATA-ACQUISITION",
-    #                 "instrument_ids": instrument_ids,
+    #                 "instrument_ids": [],
     #                 "historical": {
     #                     "maximum_plan_requests": config.historical.maximum_plan_requests,
     #                     "maximum_observations_per_request": (

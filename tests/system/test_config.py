@@ -7,12 +7,24 @@ import pytest
 from markeitech.system.config import load_system_config
 
 VALID_CONFIG = """\
-schema_version = 29
+schema_version = 31
 
 [runtime]
 name = "MARKEITECH-V2-TEST-001"
 trader_id = "MARKEITECH-001"
 environment = "sandbox"
+
+[system_control.component_failures.operational_persistence]
+startup = "FAILED"
+running = "DEGRADED"
+
+[system_control.component_failures.runtime_resources]
+startup = "FAILED"
+running = "DEGRADED"
+
+[system_control.component_failures.runtime_resource_health]
+startup = "FAILED"
+running = "DEGRADED"
 
 [ib]
 host = "127.0.0.1"
@@ -39,14 +51,12 @@ queue_capacity = 32
 ping_critical_resource_alerts = true
 
 [runtime_resources]
-enabled = true
 sample_interval_ms = 10000
 log_every_samples = 1
 include_cache_counts = true
 disk_path = "/"
 
 [runtime_resources.health]
-enabled = true
 threshold_version = "test-v1"
 warning_consecutive_samples = 3
 critical_consecutive_samples = 2
@@ -171,14 +181,6 @@ max_stale_ms = 20000
 min_unavailable_ms = 20000
 max_unavailable_ms = 60000
 
-[watchlist]
-consumer_retry_interval_ms = 1000
-
-[[watchlist.members]]
-instrument_id = "ESU6.CME"
-calendar_id = "cme_equity"
-owner_ids = ["config:system"]
-capabilities = ["top_of_book", "watchlist_last"]
 """
 
 CALENDAR_CATALOG = (Path(__file__).parents[2] / "config/system.calendars.toml").read_text()
@@ -196,13 +198,12 @@ def _write_split_profile(tmp_path: Path) -> Path:
     return tmp_path / "runtime.example.toml"
 
 
-def test_loads_split_system_profile_with_policy_and_watchlist(tmp_path: Path) -> None:
+def test_loads_split_system_profile_with_policy(tmp_path: Path) -> None:
     path = _write_split_profile(tmp_path)
 
     config = load_system_config(path)
 
-    assert config.schema_version == 30
-    assert config.instrument_ids == ("ESZ6.CME", "SPY.SMART", "^SPX.CBOE")
+    assert config.schema_version == 31
     assert config.ib.market_data_type == "realtime"
     assert config.ib.batch_quotes is True
     assert config.system_control.component_failures[0].component == "operational_persistence"
@@ -214,7 +215,11 @@ def test_loads_split_system_profile_with_policy_and_watchlist(tmp_path: Path) ->
     assert config.logging.max_backup_count == 5
     assert config.runtime_resources.health.threshold_version == "2026-08-22-v2"
     assert {calendar.calendar_id for calendar in config.sessions.calendars} == {
-        "cme_equity", "us_equities",
+        "cboe_spxw",
+        "us_equities",
+        "cme_equity",
+        "cbot_equity",
+        "cme_energy",
     }
 
 
@@ -268,24 +273,24 @@ def test_rejects_unsupported_policy_version(tmp_path: Path) -> None:
     path = _write_split_profile(tmp_path)
     policy_path = tmp_path / "system.policy.toml"
     policy_path.write_text(
-        policy_path.read_text().replace("policy_version = 3", "policy_version = true", 1),
+        policy_path.read_text().replace("policy_version = 4", "policy_version = true", 1),
     )
 
-    with pytest.raises(ValueError, match="unsupported policy_version: True; expected 3"):
+    with pytest.raises(ValueError, match="unsupported policy_version: True; expected 4"):
         load_system_config(path)
 
 
-def test_resource_actors_cannot_be_disabled_in_legacy_profile(tmp_path: Path) -> None:
+def test_resource_enable_switch_is_rejected_in_standalone_profile(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
     path.write_text(
         VALID_CONFIG.replace(
-            "[runtime_resources]\nenabled = true",
+            "[runtime_resources]",
             "[runtime_resources]\nenabled = false",
             1,
         ),
     )
 
-    with pytest.raises(ValueError, match="resource actors are mandatory"):
+    with pytest.raises(ValueError, match="runtime_resources has unknown keys: enabled"):
         load_system_config(path)
 
 
@@ -324,14 +329,14 @@ def test_rejects_invalid_system_control_failure_policy(
         load_system_config(path)
 
 
-def test_rejects_unknown_idle_calendar_even_with_members(tmp_path: Path) -> None:
+def test_rejects_unknown_selected_calendar(tmp_path: Path) -> None:
     path = _write_split_profile(tmp_path)
     policy_path = tmp_path / "system.policy.toml"
     policy_path.write_text(
         policy_path.read_text().replace('"cboe_spxw"', '"unknown_calendar"', 1),
     )
 
-    with pytest.raises(ValueError, match="idle_calendar_ids reference unknown catalog calendars"):
+    with pytest.raises(ValueError, match="calendar_ids reference unknown catalog calendars"):
         load_system_config(path)
 
 
@@ -399,61 +404,7 @@ def test_loads_standalone_system_config(tmp_path: Path) -> None:
     assert len(cme_equity.definition_digest) == 64
     assert config.evidence_health.policies[0].fresh_for_ms == 2000
     assert config.evidence_health.consumer_retry_interval_ms == 1000
-    assert config.schema_version == 29
-    assert config.instrument_ids == ("ESU6.CME",)
-    assert config.watchlist.consumer_retry_interval_ms == 1000
-    assert config.watchlist.members[0].owner_ids == ("config:system",)
-    assert config.watchlist.members[0].capabilities == ("top_of_book", "watchlist_last")
-
-
-def test_loads_watchlist_from_relative_file(tmp_path: Path) -> None:
-    system_text, watchlist_text = VALID_CONFIG.split("\n[watchlist]\n", 1)
-    (tmp_path / "legacy-watchlist.toml").write_text("[watchlist]\n" + watchlist_text)
-    path = tmp_path / "system.toml"
-    path.write_text(
-        system_text.replace(
-            "schema_version = 29",
-            'schema_version = 29\nwatchlist_file = "legacy-watchlist.toml"',
-            1,
-        ),
-    )
-
-    config = load_system_config(path)
-
-    assert config.watchlist.members[0].instrument_id == "ESU6.CME"
-    assert config.instrument_ids == ("ESU6.CME",)
-
-
-def test_rejects_both_inline_and_external_watchlists(tmp_path: Path) -> None:
-    path = tmp_path / "system.toml"
-    path.write_text(
-        VALID_CONFIG.replace(
-            "schema_version = 29",
-            'schema_version = 29\nwatchlist_file = "legacy-watchlist.toml"',
-            1,
-        ),
-    )
-
-    with pytest.raises(ValueError, match="exactly one of watchlist or watchlist_file"):
-        load_system_config(path)
-
-
-def test_rejects_unexpected_tables_in_external_watchlist(tmp_path: Path) -> None:
-    system_text, watchlist_text = VALID_CONFIG.split("\n[watchlist]\n", 1)
-    (tmp_path / "legacy-watchlist.toml").write_text(
-        "[watchlist]\n" + watchlist_text + "\n[unrelated]\nvalue = true\n",
-    )
-    path = tmp_path / "system.toml"
-    path.write_text(
-        system_text.replace(
-            "schema_version = 29",
-            'schema_version = 29\nwatchlist_file = "legacy-watchlist.toml"',
-            1,
-        ),
-    )
-
-    with pytest.raises(ValueError, match="watchlist_file has unknown keys: unrelated"):
-        load_system_config(path)
+    assert config.schema_version == 31
 
 
 def test_rejects_unknown_configuration(tmp_path: Path) -> None:
@@ -482,10 +433,10 @@ def test_rejects_retired_root_sections(tmp_path: Path, section: str) -> None:
         load_system_config(path)
 
 
-@pytest.mark.parametrize("version", [22, 23, 24, 25, 28])
+@pytest.mark.parametrize("version", [22, 23, 24, 25, 28, 29, 30])
 def test_rejects_older_system_schema(tmp_path: Path, version: int) -> None:
     path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("schema_version = 29", f"schema_version = {version}", 1))
+    path.write_text(VALID_CONFIG.replace("schema_version = 31", f"schema_version = {version}", 1))
 
     with pytest.raises(ValueError, match=f"unsupported schema_version: {version}"):
         load_system_config(path)
@@ -798,30 +749,6 @@ def test_rejects_legacy_instrument_mappings_in_calendar_catalog(tmp_path: Path) 
         load_system_config(path)
 
 
-def test_futures_contract_roll_does_not_require_calendar_catalog_edit(tmp_path: Path) -> None:
-    path = tmp_path / "system.toml"
-    path.write_text(VALID_CONFIG.replace("ESU6.CME", "ESZ6.CME"))
-
-    config = load_system_config(path)
-
-    assert config.watchlist.members[0].instrument_id == "ESZ6.CME"
-    assert config.watchlist.members[0].calendar_id == "cme_equity"
-
-
-def test_rejects_duplicate_watchlist_instruments(tmp_path: Path) -> None:
-    path = tmp_path / "system.toml"
-    path.write_text(
-        VALID_CONFIG
-        + '\n[[watchlist.members]]\ninstrument_id = "ESU6.CME"\n'
-        + 'calendar_id = "cme_equity"\n'
-        + 'owner_ids = ["config:system"]\n'
-        + 'capabilities = ["top_of_book", "watchlist_last"]\n',
-    )
-
-    with pytest.raises(ValueError, match="duplicate watchlist instrument id: ESU6.CME"):
-        load_system_config(path)
-
-
 def test_rejects_unknown_ib_symbology_method(tmp_path: Path) -> None:
     path = tmp_path / "system.toml"
     path.write_text(
@@ -832,64 +759,6 @@ def test_rejects_unknown_ib_symbology_method(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ValueError, match="unsupported ib.symbology_method: 'guess'"):
-        load_system_config(path)
-
-
-def test_accepts_feed_specific_watchlist_capabilities(tmp_path: Path) -> None:
-    path = tmp_path / "system.toml"
-    path.write_text(
-        VALID_CONFIG.replace(
-            'capabilities = ["top_of_book", "watchlist_last"]',
-            'capabilities = ["top_of_book"]',
-        )
-    )
-
-    config = load_system_config(path)
-
-    assert config.watchlist.members[0].capabilities == ("top_of_book",)
-
-
-def test_rejects_duplicate_watchlist_owners(tmp_path: Path) -> None:
-    path = tmp_path / "system.toml"
-    path.write_text(
-        VALID_CONFIG.replace(
-            'owner_ids = ["config:system"]',
-            'owner_ids = ["config:system", "config:system"]',
-        ),
-    )
-
-    with pytest.raises(ValueError, match="owner_ids must contain unique values"):
-        load_system_config(path)
-
-
-def test_rejects_missing_evidence_policy_for_a_watchlist_feed(tmp_path: Path) -> None:
-    path = tmp_path / "system.toml"
-    bars_policy = """
-[[evidence_health.policies]]
-feed_kind = "bars"
-selector = "5-SECOND-LAST-EXTERNAL"
-fresh_for_ms = 7000
-stale_after_ms = 15000
-unavailable_after_ms = 30000
-adaptive = false
-minimum_samples = 20
-decay_factor = 0.95
-fresh_stddev_multiplier = 2.0
-stale_stddev_multiplier = 4.0
-unavailable_stddev_multiplier = 8.0
-min_fresh_ms = 5000
-max_fresh_ms = 10000
-min_stale_ms = 10000
-max_stale_ms = 20000
-min_unavailable_ms = 20000
-max_unavailable_ms = 60000
-"""
-    path.write_text(VALID_CONFIG.replace(bars_policy, ""))
-
-    with pytest.raises(
-        ValueError,
-        match="watchlist feeds lack evidence-health policies: bars/5-SECOND-LAST-EXTERNAL",
-    ):
         load_system_config(path)
 
 

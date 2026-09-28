@@ -44,9 +44,6 @@ from markeitech.system.messages import (
     PERSISTENCE_READY_REQUEST_SIGNAL,
     PERSISTENCE_READY_SIGNAL,
     SYSTEM_HEALTH_SIGNAL,
-    WATCHLIST_DEMAND_SIGNAL,
-    WATCHLIST_LIFECYCLE_SIGNAL,
-    WATCHLIST_MEMBERSHIP_SIGNAL,
     AcquisitionStatusEvent,
     AcquisitionStatusRequest,
     AcquisitionStreamEvent,
@@ -56,9 +53,6 @@ from markeitech.system.messages import (
     PersistenceReadyEvent,
     PersistenceReadyRequest,
     SystemHealthEvent,
-    WatchlistDemandEvent,
-    WatchlistLifecycleEvent,
-    WatchlistMembershipEvent,
 )
 from markeitech.system.persistence_migrations import MIGRATIONS, REQUIRED_SCHEMA_COLUMNS
 from markeitech.system.resource_contracts import (
@@ -804,16 +798,14 @@ class OperationalPersistenceActor(DataActor):
         )
         self._worker.start()
         self._active = True
+        # Only retained operational contracts are admitted to the ordered audit worker.
         for signal_name in (
             SYSTEM_HEALTH_SIGNAL,
             COMPONENT_FAILURE_SIGNAL,
             ACQUISITION_STATUS_REQUEST_SIGNAL,
             ACQUISITION_STATUS_SIGNAL,
             ACQUISITION_STREAM_SIGNAL,
-            WATCHLIST_DEMAND_SIGNAL,
             ANALYTICAL_DEMAND_SIGNAL,
-            WATCHLIST_MEMBERSHIP_SIGNAL,
-            WATCHLIST_LIFECYCLE_SIGNAL,
             EVIDENCE_HEALTH_SIGNAL,
             EVIDENCE_RECENCY_PROFILE_SIGNAL,
             PERSISTENCE_READY_REQUEST_SIGNAL,
@@ -1127,22 +1119,6 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             ts_init_ns=signal.ts_init,
             schema_version=event.schema_version,
         )
-    if signal.name == WATCHLIST_MEMBERSHIP_SIGNAL:
-        event = WatchlistMembershipEvent.from_signal_value(signal.value)
-        return OperationalEventRecord(
-            event_id=event.event_id,
-            run_id=run_id,
-            sequence=sequence,
-            signal_name=signal.name,
-            event_type="watchlist.membership",
-            source=event.source,
-            correlation_id=event.event_id,
-            causation_id=None,
-            payload=json.loads(signal.value),
-            ts_event_ns=signal.ts_event,
-            ts_init_ns=signal.ts_init,
-            schema_version=event.schema_version,
-        )
     if signal.name == HISTORICAL_DEPENDENCY_DEMAND_SIGNAL:
         event = HistoricalDependencyDemandEvent.from_signal_value(signal.value)
         return _generic_signal_record(
@@ -1186,17 +1162,6 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             ts_init_ns=signal.ts_init,
             schema_version=event.schema_version,
         )
-    if signal.name == WATCHLIST_DEMAND_SIGNAL:
-        event = WatchlistDemandEvent.from_signal_value(signal.value)
-        return _generic_signal_record(
-            run_id,
-            sequence,
-            signal,
-            event_type="watchlist.demand",
-            source=event.owner_id,
-            schema_version=event.schema_version,
-            correlation_id=event.demand_id,
-        )
     if signal.name == ANALYTICAL_DEMAND_SIGNAL:
         event = AnalyticalDemandEvent.from_signal_value(signal.value)
         return _generic_signal_record(
@@ -1207,22 +1172,6 @@ def _record_from_signal(run_id: UUID, sequence: int, signal: Signal) -> Persiste
             source=event.owner_id,
             schema_version=event.schema_version,
             correlation_id=event.demand_id,
-        )
-    if signal.name == WATCHLIST_LIFECYCLE_SIGNAL:
-        event = WatchlistLifecycleEvent.from_signal_value(signal.value)
-        return OperationalEventRecord(
-            event_id=event.event_id,
-            run_id=run_id,
-            sequence=sequence,
-            signal_name=signal.name,
-            event_type="watchlist.lifecycle",
-            source=event.source,
-            correlation_id=event.correlation_id,
-            causation_id=None,
-            payload=json.loads(signal.value),
-            ts_event_ns=signal.ts_event,
-            ts_init_ns=signal.ts_init,
-            schema_version=event.schema_version,
         )
     if signal.name == COMPONENT_FAILURE_SIGNAL:
         event = ComponentFailureEvent.from_signal_value(signal.value)

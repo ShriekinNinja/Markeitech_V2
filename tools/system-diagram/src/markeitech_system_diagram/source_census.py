@@ -252,14 +252,14 @@ def _profile_configuration(repository_root: Path, config_path: str) -> dict[str,
         # Match the runtime loader's exact schema; older policy documents are not merged.
         if (
             type(policy_document.get("policy_version")) is not int
-            or policy_document["policy_version"] != 3
+            or policy_document["policy_version"] != 4
         ):
             raise ManifestError(
                 "DRIFT_PROFILE_POLICY_SOURCE",
                 policy_path.as_posix(),
                 "referenced policy version is unsupported",
             )
-        for section in ("ib", "discord", "watchlist"):
+        for section in ("ib", "discord"):
             policy_values = policy_document.get(section)
             operator_values = raw.get(section)
             if not isinstance(policy_values, dict) or not isinstance(operator_values, dict):
@@ -278,26 +278,10 @@ def _profile_configuration(repository_root: Path, config_path: str) -> dict[str,
             **{key: value for key, value in policy_document.items() if key != "policy_version"},
             **raw,
         }
-        for section in ("ib", "discord", "watchlist"):
+        # Match the runtime loader's disjoint operator and policy ownership.
+        for section in ("ib", "discord"):
             raw[section] = {**policy_document[section], **raw[section]}
-    watchlist_file = raw.get("watchlist_file")
-    if watchlist_file is None:
-        return raw
-    if "watchlist" in raw or not isinstance(watchlist_file, str) or not watchlist_file:
-        raise ManifestError(
-            "DRIFT_PROFILE_WATCHLIST_SOURCE",
-            config_path,
-            "profile must select one valid watchlist source",
-        )
-    watchlist_path = Path(config_path).parent / watchlist_file
-    watchlist_document = _read_toml(repository_root, watchlist_path.as_posix())
-    if set(watchlist_document) != {"watchlist"}:
-        raise ManifestError(
-            "DRIFT_PROFILE_WATCHLIST_SOURCE",
-            watchlist_path.as_posix(),
-            "referenced file must contain only the watchlist table",
-        )
-    return {**raw, "watchlist": watchlist_document["watchlist"]}
+    return raw
 
 
 def _validate_node_shape(repository_root: Path, relative_path: str) -> None:
